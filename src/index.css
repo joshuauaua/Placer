@@ -1,0 +1,57 @@
+/* PLOT — design system base */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-feature-settings: 'ss01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.plot-mono {
+  font-family: 'Space Mono', monospace;
+}
+
+.plot-disp {
+  font-family: 'Archivo Expanded', 'Archivo', sans-serif;
+}
+
+.plot-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.plot-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+@keyframes plot-pin-pop {
+  0% {
+    transform: translateY(6px) scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
