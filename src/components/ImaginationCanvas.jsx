@@ -1,6 +1,6 @@
 /* PLOT — Imagination Canvas with built-in asset library */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Stage, Layer, Circle, Text, Transformer, Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
 import { THEME } from '../theme';
@@ -125,13 +125,13 @@ const ImaginationCanvas = ({
     onCanvasAssetsChange(updatedAssets);
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = useCallback(() => {
     if (selectedAssetId) {
       const filtered = canvasAssets.filter(asset => asset.id !== selectedAssetId);
       onCanvasAssetsChange(filtered);
       setSelectedAssetId(null);
     }
-  };
+  }, [selectedAssetId, canvasAssets, onCanvasAssetsChange]);
 
   const handleStageClick = (e) => {
     if (e.target === e.target.getStage()) {
@@ -149,8 +149,7 @@ const ImaginationCanvas = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAssetId, canvasAssets]);
+  }, [selectedAssetId, handleDeleteSelected]);
 
   return (
     <div style={{ display: 'flex', height: '100%', background: t.page }}>
