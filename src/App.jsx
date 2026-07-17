@@ -1,17 +1,26 @@
 /* PLOT — Reimagine Your City */
 
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { THEME } from './theme';
 import { Logo, Btn, Avatar } from './components/UI';
 import { Icon } from './components/Icon';
 import MapContainer from './components/MapContainer';
-import { StreetScreen } from './components/StreetScreen';
 import { AboutPage } from './components/AboutPage';
 import { ResourcesPage } from './components/ResourcesPage';
-import { SurveyPage } from './components/SurveyPage';
-import { AdminDashboard } from './components/AdminDashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
+
+const StreetScreen = lazy(() => import('./components/StreetScreen'));
+const SurveyPage = lazy(() => import('./components/SurveyPage'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+
+function LoadingFallback() {
+  return (
+    <div style={{ width: '100%', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ fontSize: 14, color: '#888' }}>Loading…</div>
+    </div>
+  );
+}
 
 function MainApp() {
   const t = THEME;
@@ -35,7 +44,11 @@ function MainApp() {
 
 
   if (currentView === 'street') {
-    return <StreetScreen t={t} onBack={handleBackToMap} onNext={handleNextStep} capturedView={capturedView} />;
+    return (
+      <Suspense fallback={<LoadingFallback />}>
+        <StreetScreen t={t} onBack={handleBackToMap} onNext={handleNextStep} capturedView={capturedView} />
+      </Suspense>
+    );
   }
 
   return (
@@ -164,14 +177,16 @@ function AdminGate({ children, t }) {
   return children;
 }
 
+export { AdminGate };
+
 function App() {
   const t = THEME;
 
   return (
     <ErrorBoundary>
       <Routes>
-        <Route path="/survey" element={<SurveyPage t={t} />} />
-        <Route path="/admin" element={<AdminGate t={t}><AdminDashboard t={t} /></AdminGate>} />
+        <Route path="/survey" element={<Suspense fallback={<LoadingFallback />}><SurveyPage t={t} /></Suspense>} />
+        <Route path="/admin" element={<Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminDashboard t={t} /></AdminGate></Suspense>} />
         <Route path="/*" element={<MainApp />} />
       </Routes>
     </ErrorBoundary>
