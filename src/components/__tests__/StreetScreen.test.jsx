@@ -41,13 +41,37 @@ describe('StreetScreen', () => {
     expect(screen.getByText('Save draft')).toBeInTheDocument();
   });
 
-  it('renders ImaginationCanvas with the captured screenshot as background', () => {
+  it('renders ImaginationCanvas with the captured screenshot as background', async () => {
     const capturedView = { screenshot: 'data:image/png;base64,mockScreenshot' };
     render(<StreetScreen t={THEME} onBack={vi.fn()} onNext={vi.fn()} capturedView={capturedView} />);
 
-    expect(screen.getByTestId('imagination-canvas')).toHaveAttribute(
+    expect(await screen.findByTestId('imagination-canvas')).toHaveAttribute(
       'data-background',
       'data:image/png;base64,mockScreenshot'
     );
+  });
+
+  it('shows the "Loading canvas…" fallback while the lazy import is pending, then renders the canvas', async () => {
+    let resolveImport;
+    vi.resetModules();
+    vi.doMock('../ImaginationCanvas', () => new Promise((resolve) => { resolveImport = resolve; }));
+
+    const { StreetScreen: FreshStreetScreen } = await import('../StreetScreen');
+    render(<FreshStreetScreen t={THEME} onBack={vi.fn()} onNext={vi.fn()} />);
+
+    expect(screen.getByText('Loading canvas…')).toBeInTheDocument();
+
+    await vi.waitFor(() => expect(resolveImport).toBeInstanceOf(Function));
+    resolveImport({
+      default: (props) => (
+        <div data-testid="imagination-canvas" data-background={props.backgroundImage}>
+          Canvas Mock
+        </div>
+      ),
+    });
+
+    expect(await screen.findByTestId('imagination-canvas')).toBeInTheDocument();
+
+    vi.doUnmock('../ImaginationCanvas');
   });
 });
