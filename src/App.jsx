@@ -164,6 +164,8 @@ function AdminGate({ children, t }) {
   return children;
 }
 
+export { AdminGate };
+
 function App() {
   const t = THEME;
 
