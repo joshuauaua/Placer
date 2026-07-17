@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vp dev",
     "build": "vp build",
-    "lint": "vp lint",
+    "lint": "vp lint --ignore-pattern 'docs/ref/**'",
     "preview": "vp preview",
     "test": "vp test",
     "test:run": "vp test run"
