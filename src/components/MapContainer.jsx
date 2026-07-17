@@ -90,6 +90,7 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
     } catch (error) {
       console.error('Error initializing maps:', error);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [googleLoaded]);
 
   // Initialize Google Places Autocomplete
