@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 /**
  * BeforeAfterSlider Component
@@ -23,17 +23,20 @@ const BeforeAfterSlider = ({
   const [sliderPosition, setSliderPosition] = useState(50); // Percentage
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef(null);
+  const isDraggingRef = useRef(false);
 
-  const handleMouseDown = () => {
+  const handleMouseDown = useCallback(() => {
+    isDraggingRef.current = true;
     setIsDragging(true);
-  };
+  }, []);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
+    isDraggingRef.current = false;
     setIsDragging(false);
-  };
+  }, []);
 
-  const handleMouseMove = (e) => {
-    if (!isDragging || !containerRef.current) return;
+  const handleMouseMove = useCallback((e) => {
+    if (!isDraggingRef.current || !containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -41,10 +44,10 @@ const BeforeAfterSlider = ({
 
     // Clamp between 0 and 100
     setSliderPosition(Math.max(0, Math.min(100, percentage)));
-  };
+  }, []);
 
-  const handleTouchMove = (e) => {
-    if (!isDragging || !containerRef.current) return;
+  const handleTouchMove = useCallback((e) => {
+    if (!isDraggingRef.current || !containerRef.current) return;
 
     const touch = e.touches[0];
     const rect = containerRef.current.getBoundingClientRect();
@@ -52,7 +55,7 @@ const BeforeAfterSlider = ({
     const percentage = (x / rect.width) * 100;
 
     setSliderPosition(Math.max(0, Math.min(100, percentage)));
-  };
+  }, []);
 
   useEffect(() => {
     if (isDragging) {
@@ -68,8 +71,7 @@ const BeforeAfterSlider = ({
         window.removeEventListener('touchend', handleMouseUp);
       };
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDragging, sliderPosition]);
+  }, [isDragging, handleMouseMove, handleTouchMove, handleMouseUp]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
