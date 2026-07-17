@@ -1,7 +1,7 @@
 /* PLOT — Map Container with Google Maps */
 
 import { useState, useEffect, useRef } from 'react';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import { Icon } from './Icon';
 import { Btn } from './UI';
 import { THEME } from '../theme';
@@ -149,16 +149,9 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
       await new Promise(resolve => setTimeout(resolve, 300));
 
       // Capture screenshot of the map
-      const canvas = await html2canvas(mapRef.current, {
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        scale: 1
+      const screenshotDataUrl = await toPng(mapRef.current, {
+        cacheBust: true,
       });
-
-      // Convert canvas to blob
-      const screenshotDataUrl = canvas.toDataURL('image/png');
-
 
       const captureData = {
         position: currentPosition,

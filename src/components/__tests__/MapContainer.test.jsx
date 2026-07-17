@@ -1,14 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import MapContainer from '../MapContainer';
 
-vi.mock('html2canvas', () => ({
-  default: vi.fn(() =>
-    Promise.resolve({
-      toDataURL: () => 'data:image/png;base64,mock',
-    })
-  ),
+vi.mock('html-to-image', () => ({
+  toPng: vi.fn(() => Promise.resolve('data:image/png;base64,mock')),
 }));
 
 function mockGoogleMaps({ getZoom = vi.fn(() => 1) } = {}) {
@@ -118,8 +114,8 @@ describe('MapContainer', () => {
     expect(getZoom).toHaveBeenCalled();
   });
 
-  it('calls onCaptureView with screenshot: null when html2canvas throws', async () => {
-    html2canvas.mockImplementationOnce(() => Promise.reject(new Error('capture failed')));
+  it('calls onCaptureView with screenshot: null when html-to-image throws', async () => {
+    toPng.mockImplementationOnce(() => Promise.reject(new Error('capture failed')));
     const onCaptureView = vi.fn();
     render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
