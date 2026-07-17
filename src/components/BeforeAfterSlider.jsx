@@ -66,6 +66,7 @@ const BeforeAfterSlider = ({
         window.removeEventListener('touchend', handleMouseUp);
       };
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDragging, sliderPosition]);
 
   return (
