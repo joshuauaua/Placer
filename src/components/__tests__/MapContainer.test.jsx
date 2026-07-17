@@ -140,4 +140,34 @@ describe('MapContainer', () => {
 
     expect(screen.getByText('Capturing...')).toBeDisabled();
   });
+
+  it('does not re-initialize Google Map when currentPosition changes', async () => {
+    let clickHandler;
+    const googleMaps = mockGoogleMaps();
+    googleMaps.maps.Map = vi.fn(function () {
+      return {
+        getZoom: vi.fn(() => 1),
+        setCenter: vi.fn(),
+        setZoom: vi.fn(),
+        addListener: vi.fn((event, handler) => {
+          if (event === 'click') {
+            clickHandler = handler;
+          }
+        }),
+      };
+    });
+    window.google = googleMaps;
+
+    render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+    expect(googleMaps.maps.Map).toHaveBeenCalledTimes(1);
+
+    clickHandler({ latLng: { lat: () => 1.2345, lng: () => 6.789 } });
+
+    await waitFor(() =>
+      expect(screen.getByText('1.2345, 6.7890')).toBeInTheDocument()
+    );
+
+    expect(googleMaps.maps.Map).toHaveBeenCalledTimes(1);
+  });
 });
