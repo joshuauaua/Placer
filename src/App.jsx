@@ -5,7 +5,6 @@ import { Routes, Route } from 'react-router-dom';
 import { THEME } from './theme';
 import { Logo, Btn, Avatar } from './components/UI';
 import { Icon } from './components/Icon';
-import MapContainer from './components/MapContainer';
 import { AboutPage } from './components/AboutPage';
 import { ResourcesPage } from './components/ResourcesPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -13,6 +12,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const MapContainer = lazy(() => import('./components/MapContainer'));
 
 function LoadingFallback() {
   return (
@@ -138,10 +138,12 @@ function MainApp() {
         )}
 
         {currentView === 'map' && (
-          <MapContainer
-            onCaptureView={handleCaptureView}
-            apiKey={GOOGLE_MAPS_API_KEY}
-          />
+          <Suspense fallback={<LoadingFallback />}>
+            <MapContainer
+              onCaptureView={handleCaptureView}
+              apiKey={GOOGLE_MAPS_API_KEY}
+            />
+          </Suspense>
         )}
 
         {currentView === 'about' && (
