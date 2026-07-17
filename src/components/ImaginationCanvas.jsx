@@ -37,7 +37,7 @@ const Asset = ({ asset, isSelected, onSelect, onChange }) => {
             y: e.target.y()
           });
         }}
-        onTransformEnd={(e) => {
+        onTransformEnd={() => {
           const node = shapeRef.current;
           const scaleX = node.scaleX();
 
@@ -90,7 +90,6 @@ const BackgroundImage = ({ src, width, height }) => {
 };
 
 const ImaginationCanvas = ({
-  capturedView,
   availableAssets = [],
   canvasAssets = [],
   onCanvasAssetsChange,
@@ -101,10 +100,12 @@ const ImaginationCanvas = ({
   const t = THEME;
   const [selectedAssetId, setSelectedAssetId] = useState(null);
   const stageRef = useRef();
+  const assetCounter = useRef(0);
 
   const handleAddAsset = (libraryAsset) => {
+    assetCounter.current += 1;
     const newAsset = {
-      id: `canvas-asset-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `canvas-asset-${assetCounter.current}`,
       type: libraryAsset.type,
       label: libraryAsset.label,
       cat: libraryAsset.cat,
@@ -148,6 +149,7 @@ const ImaginationCanvas = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAssetId, canvasAssets]);
 
   return (

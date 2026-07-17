@@ -167,7 +167,6 @@ export function SurveyPage({ t }) {
 
   const handleSubmit = () => {
     setSubmitted(true);
-    console.log('Survey responses:', answers);
   };
 
   const progress = ((currentQuestion + 1) / questions.length) * 100;
