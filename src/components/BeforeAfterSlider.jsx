@@ -7,12 +7,14 @@ import { useState, useRef, useEffect } from 'react';
  * and after (with canvas overlay) states.
  *
  * Props:
+ * - t: Theme object (from src/theme.js)
  * - beforeImage: URL or element representing the before state
  * - afterImage: URL or element representing the after state
  * - width: Slider width
  * - height: Slider height
  */
 const BeforeAfterSlider = ({
+  t,
   beforeImage,
   afterImage,
   width = 800,
@@ -70,52 +72,64 @@ const BeforeAfterSlider = ({
   }, [isDragging, sliderPosition]);
 
   return (
-    <div className="flex flex-col">
-      <div className="bg-white shadow-md p-4 mb-2 rounded-lg">
-        <h3 className="text-lg font-bold text-gray-800 mb-2">Before / After Comparison</h3>
-        <p className="text-sm text-gray-600">
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: t.surface, boxShadow: t.shadow, padding: 16, marginBottom: 8, borderRadius: 12 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 700, color: t.ink, marginBottom: 8 }}>Before / After Comparison</h3>
+        <p style={{ fontSize: 14, color: t.inkDim }}>
           Drag the slider to compare the original space with your imagination
         </p>
       </div>
 
       <div
         ref={containerRef}
-        className="relative overflow-hidden bg-gray-900 rounded-lg shadow-lg cursor-col-resize"
-        style={{ width, height }}
+        style={{
+          position: 'relative', overflow: 'hidden', background: t.chrome,
+          borderRadius: 12, boxShadow: t.shadow, cursor: 'col-resize',
+          width, height
+        }}
       >
         {/* Before Image (Background) */}
         <div
-          className="absolute inset-0"
           style={{
+            position: 'absolute', inset: 0,
             backgroundImage: `url(${beforeImage})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           }}
         >
-          <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-full text-sm font-semibold">
+          <div style={{
+            position: 'absolute', top: 16, left: 16,
+            background: 'rgba(0,0,0,0.7)', color: '#fff',
+            padding: '4px 12px', borderRadius: 999, fontSize: 14, fontWeight: 600
+          }}>
             BEFORE
           </div>
         </div>
 
         {/* After Image (Clipped) */}
         <div
-          className="absolute inset-0"
           style={{
+            position: 'absolute', inset: 0,
             clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
             backgroundImage: `url(${afterImage})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           }}
         >
-          <div className="absolute top-4 right-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-full text-sm font-semibold">
+          <div style={{
+            position: 'absolute', top: 16, right: 16,
+            background: 'rgba(0,0,0,0.7)', color: '#fff',
+            padding: '4px 12px', borderRadius: 999, fontSize: 14, fontWeight: 600
+          }}>
             AFTER
           </div>
         </div>
 
         {/* Slider Handle */}
         <div
-          className="absolute top-0 bottom-0 w-1 bg-white shadow-lg cursor-col-resize"
           style={{
+            position: 'absolute', top: 0, bottom: 0, width: 4,
+            background: '#fff', boxShadow: t.shadow, cursor: 'col-resize',
             left: `${sliderPosition}%`,
             transform: 'translateX(-50%)'
           }}
@@ -123,9 +137,16 @@ const BeforeAfterSlider = ({
           onTouchStart={handleMouseDown}
         >
           {/* Handle Circle */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-xl border-4 border-blue-500 flex items-center justify-center">
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            width: 48, height: 48, background: '#fff', borderRadius: '50%',
+            boxShadow: t.shadow, border: `4px solid ${t.accent}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
             <svg
-              className="w-6 h-6 text-blue-500"
+              width={24}
+              height={24}
+              style={{ color: t.accent }}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -141,7 +162,10 @@ const BeforeAfterSlider = ({
         </div>
       </div>
 
-      <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-3 mt-2 text-sm">
+      <div style={{
+        background: t.surfaceAlt, borderLeft: `4px solid ${t.accent}`, color: t.ink,
+        padding: 12, marginTop: 8, fontSize: 14
+      }}>
         <strong>Tip:</strong> Click and drag the slider or handle to compare your changes
       </div>
     </div>
