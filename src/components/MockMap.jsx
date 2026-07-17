@@ -7,7 +7,7 @@ export function MockMap({ t, onCaptureView }) {
   const handleCapture = () => {
     onCaptureView({
       position: { lat: 37.774900, lng: -122.419400 },
-      pov: { heading: 0, pitch: 0 },
+      pov: { heading: 0, pitch: 0, zoom: 1 },
       timestamp: new Date().toISOString()
     });
   };
