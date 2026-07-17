@@ -1,10 +1,11 @@
 /* PLOT — Street View: place assets screen */
 
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Icon } from './Icon';
 import { Btn } from './UI';
-import ImaginationCanvas from './ImaginationCanvas';
 import { ASSET_LIB } from '../data';
+
+const ImaginationCanvas = lazy(() => import('./ImaginationCanvas'));
 
 function StepBar({ t, step = 1 }) {
   const steps = ['Place assets', 'Describe', 'Post'];
@@ -49,15 +50,21 @@ export function StreetScreen({ t, onBack, onNext, capturedView }) {
 
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         {/* ImaginationCanvas with built-in asset library */}
-        <ImaginationCanvas
-          capturedView={capturedView || {}}
-          availableAssets={ASSET_LIB}
-          canvasAssets={canvasAssets}
-          onCanvasAssetsChange={setCanvasAssets}
-          width={1000}
-          height={700}
-          backgroundImage={capturedView?.screenshot || null}
-        />
+        <Suspense fallback={
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.inkDim }}>
+            Loading canvas…
+          </div>
+        }>
+          <ImaginationCanvas
+            capturedView={capturedView || {}}
+            availableAssets={ASSET_LIB}
+            canvasAssets={canvasAssets}
+            onCanvasAssetsChange={setCanvasAssets}
+            width={1000}
+            height={700}
+            backgroundImage={capturedView?.screenshot || null}
+          />
+        </Suspense>
       </div>
     </div>
   );
