@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, within } from '@testing-library/react';
 import { fireEvent } from '@testing-library/react';
 import { AdminDashboard } from '../AdminDashboard';
