@@ -2,7 +2,49 @@
 
 import { useState } from 'react';
 import { Icon } from './Icon';
-import { Btn, Chip } from './UI';
+import { Btn } from './UI';
+
+function StatCard({ icon, label, value, change, color, t }) {
+  const cardColor = color || t.accent;
+  return (
+    <div style={{
+      background: t.surface,
+      border: `1px solid ${t.line}`,
+      borderRadius: 12,
+      padding: 24,
+      boxShadow: t.shadow
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div style={{
+          width: 48,
+          height: 48,
+          borderRadius: 10,
+          background: cardColor + '15',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <Icon name={icon} size={24} stroke={2} style={{ color: cardColor }} />
+        </div>
+        {change && (
+          <span style={{
+            fontSize: 13,
+            fontWeight: 700,
+            color: change.startsWith('+') ? '#3E9D4E' : '#D6452F'
+          }}>
+            {change}
+          </span>
+        )}
+      </div>
+      <div style={{ fontSize: 32, fontWeight: 900, color: t.ink, marginBottom: 4 }}>
+        {value}
+      </div>
+      <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
+        {label}
+      </div>
+    </div>
+  );
+}
 
 export function AdminDashboard({ t }) {
   const [activeTab, setActiveTab] = useState('overview');
@@ -124,7 +166,6 @@ export function AdminDashboard({ t }) {
 
   const handleAddArticle = (e) => {
     e.preventDefault();
-    console.log('New article submitted:', newArticle);
     alert('Article added successfully! (In production, this would save to database)');
     setNewArticle({
       title: '',
@@ -145,45 +186,6 @@ export function AdminDashboard({ t }) {
   const handleRemoveTag = (tagToRemove) => {
     setNewArticle({ ...newArticle, tags: newArticle.tags.filter(tag => tag !== tagToRemove) });
   };
-
-  const StatCard = ({ icon, label, value, change, color = t.accent }) => (
-    <div style={{
-      background: t.surface,
-      border: `1px solid ${t.line}`,
-      borderRadius: 12,
-      padding: 24,
-      boxShadow: t.shadow
-    }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{
-          width: 48,
-          height: 48,
-          borderRadius: 10,
-          background: color + '15',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <Icon name={icon} size={24} stroke={2} style={{ color }} />
-        </div>
-        {change && (
-          <span style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: change.startsWith('+') ? '#3E9D4E' : '#D6452F'
-          }}>
-            {change}
-          </span>
-        )}
-      </div>
-      <div style={{ fontSize: 32, fontWeight: 900, color: t.ink, marginBottom: 4 }}>
-        {value}
-      </div>
-      <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
-        {label}
-      </div>
-    </div>
-  );
 
   return (
     <div style={{
@@ -278,10 +280,10 @@ export function AdminDashboard({ t }) {
                 gap: 20,
                 marginBottom: 32
               }}>
-                <StatCard icon="users" label="Total Users" value={userStats.totalUsers.toLocaleString()} change="+12.5%" />
-                <StatCard icon="eye" label="Total Visits" value={analytics.totalVisits.toLocaleString()} change="+8.3%" />
-                <StatCard icon="clipboard" label="Survey Responses" value={surveyStats.totalResponses} change="+15.2%" />
-                <StatCard icon="fileText" label="Active Projects" value={userStats.activeProjects} change="+5.7%" />
+                <StatCard t={t} icon="users" label="Total Users" value={userStats.totalUsers.toLocaleString()} change="+12.5%" />
+                <StatCard t={t} icon="eye" label="Total Visits" value={analytics.totalVisits.toLocaleString()} change="+8.3%" />
+                <StatCard t={t} icon="clipboard" label="Survey Responses" value={surveyStats.totalResponses} change="+15.2%" />
+                <StatCard t={t} icon="fileText" label="Active Projects" value={userStats.activeProjects} change="+5.7%" />
               </div>
 
               <div style={{
@@ -369,10 +371,10 @@ export function AdminDashboard({ t }) {
                 gap: 20,
                 marginBottom: 32
               }}>
-                <StatCard icon="eye" label="Page Views" value={analytics.pageViews.toLocaleString()} />
-                <StatCard icon="users" label="Unique Visitors" value={analytics.uniqueVisitors.toLocaleString()} />
-                <StatCard icon="userPlus" label="New Users" value={analytics.newUsers.toLocaleString()} />
-                <StatCard icon="userCheck" label="Returning Users" value={analytics.returningUsers.toLocaleString()} />
+                <StatCard t={t} icon="eye" label="Page Views" value={analytics.pageViews.toLocaleString()} />
+                <StatCard t={t} icon="users" label="Unique Visitors" value={analytics.uniqueVisitors.toLocaleString()} />
+                <StatCard t={t} icon="userPlus" label="New Users" value={analytics.newUsers.toLocaleString()} />
+                <StatCard t={t} icon="userCheck" label="Returning Users" value={analytics.returningUsers.toLocaleString()} />
               </div>
 
               {/* Top Pages */}
@@ -430,9 +432,9 @@ export function AdminDashboard({ t }) {
                 gap: 20,
                 marginBottom: 32
               }}>
-                <StatCard icon="clipboard" label="Total Responses" value={surveyStats.totalResponses} />
-                <StatCard icon="checkCircle" label="Completion Rate" value={surveyStats.completionRate} />
-                <StatCard icon="clock" label="Avg Time" value={surveyStats.avgTimeToComplete} />
+                <StatCard t={t} icon="clipboard" label="Total Responses" value={surveyStats.totalResponses} />
+                <StatCard t={t} icon="checkCircle" label="Completion Rate" value={surveyStats.completionRate} />
+                <StatCard t={t} icon="clock" label="Avg Time" value={surveyStats.avgTimeToComplete} />
               </div>
 
               {/* Top Answers */}
@@ -525,10 +527,10 @@ export function AdminDashboard({ t }) {
                 gap: 20,
                 marginBottom: 32
               }}>
-                <StatCard icon="users" label="Total Users" value={userStats.totalUsers.toLocaleString()} />
-                <StatCard icon="userCheck" label="Active Users" value={userStats.activeUsers.toLocaleString()} />
-                <StatCard icon="userPlus" label="New This Month" value={userStats.newThisMonth.toLocaleString()} />
-                <StatCard icon="fileText" label="Total Projects" value={userStats.totalProjects.toLocaleString()} />
+                <StatCard t={t} icon="users" label="Total Users" value={userStats.totalUsers.toLocaleString()} />
+                <StatCard t={t} icon="userCheck" label="Active Users" value={userStats.activeUsers.toLocaleString()} />
+                <StatCard t={t} icon="userPlus" label="New This Month" value={userStats.newThisMonth.toLocaleString()} />
+                <StatCard t={t} icon="fileText" label="Total Projects" value={userStats.totalProjects.toLocaleString()} />
               </div>
 
               {/* Recent Users */}
