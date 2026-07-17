@@ -421,3 +421,5 @@ export function SurveyPage({ t }) {
     </div>
   );
 }
+
+export default SurveyPage;

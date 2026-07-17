@@ -164,3 +164,5 @@ export function StreetScreen({ t, onBack, onNext, capturedView }) {
     </div>
   );
 }
+
+export default StreetScreen;
