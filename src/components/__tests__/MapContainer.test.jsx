@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import html2canvas from 'html2canvas';
 import MapContainer from '../MapContainer';
 
@@ -11,20 +11,26 @@ vi.mock('html2canvas', () => ({
   ),
 }));
 
-function mockGoogleMaps() {
+function mockGoogleMaps({ getZoom = vi.fn(() => 1) } = {}) {
   return {
     maps: {
-      Map: vi.fn(() => ({
-        setCenter: vi.fn(),
-        setZoom: vi.fn(),
-        addListener: vi.fn(),
-      })),
+      Map: vi.fn(function () {
+        return {
+          getZoom,
+          setCenter: vi.fn(),
+          setZoom: vi.fn(),
+          addListener: vi.fn(),
+        };
+      }),
       Marker: vi.fn(),
       event: { clearInstanceListeners: vi.fn() },
       places: {
-        Autocomplete: vi.fn(() => ({
-          addListener: vi.fn(),
-        })),
+        Autocomplete: vi.fn(function () {
+          return {
+            addListener: vi.fn(),
+            getPlace: vi.fn(() => ({})),
+          };
+        }),
       },
     },
   };
@@ -32,6 +38,7 @@ function mockGoogleMaps() {
 
 describe('MapContainer', () => {
   afterEach(() => {
+    cleanup();
     delete window.google;
     vi.restoreAllMocks();
   });
@@ -94,6 +101,21 @@ describe('MapContainer', () => {
       timestamp: expect.any(String),
       screenshot: 'data:image/png;base64,mock',
     });
+  });
+
+  it('sends capture data with a numeric pov.zoom read from the live map', async () => {
+    const getZoom = vi.fn(() => 15);
+    window.google = mockGoogleMaps({ getZoom });
+    const onCaptureView = vi.fn();
+    render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
+
+    fireEvent.click(screen.getByText('Capture View'));
+
+    await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
+
+    const captureData = onCaptureView.mock.calls[0][0];
+    expect(captureData.pov).toEqual({ heading: 0, pitch: 0, zoom: 15 });
+    expect(getZoom).toHaveBeenCalled();
   });
 
   it('calls onCaptureView with screenshot: null when html2canvas throws', async () => {
