@@ -18,13 +18,6 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
     lat: 59.3293,  // Stockholm latitude
     lng: 18.0686   // Stockholm longitude
   });
-  // eslint-disable-next-line no-unused-vars
-  const [currentPov, setCurrentPov] = useState({
-    heading: 0,
-    pitch: 0,
-    zoom: 1
-  });
-
   // Load Google Maps script
   useEffect(() => {
     if (window.google) {
@@ -159,7 +152,11 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
 
       const captureData = {
         position: currentPosition,
-        pov: currentPov,
+        pov: {
+          heading: 0,
+          pitch: 0,
+          zoom: map ? map.getZoom() : 1
+        },
         timestamp: new Date().toISOString(),
         screenshot: screenshotDataUrl
       };
@@ -171,7 +168,11 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
       // Fallback: send data without screenshot
       const captureData = {
         position: currentPosition,
-        pov: currentPov,
+        pov: {
+          heading: 0,
+          pitch: 0,
+          zoom: map ? map.getZoom() : 1
+        },
         timestamp: new Date().toISOString(),
         screenshot: null
       };
