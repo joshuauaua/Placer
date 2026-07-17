@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vis.gl/react-google-maps": "^1.8.3",
     "html2canvas": "^1.4.1",
     "konva": "^10.3.0",
     "react": "^19.2.6",
