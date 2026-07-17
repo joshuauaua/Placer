@@ -54,10 +54,15 @@ VITE_GOOGLE_MAPS_API_KEY=your_actual_api_key_here
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select an existing one
 3. Enable the following APIs:
-   - Maps JavaScript API
-   - Street View Static API (optional)
+   - **Maps JavaScript API** (required for interactive map)
+   - **Street View Static API** (required for screenshot capture)
+   - **Places API** (required for address search)
 4. Create credentials (API Key)
-5. Copy the API key to your `.env` file
+5. **Important**: Add API restrictions to your key for security:
+   - Go to API Key settings
+   - Under "Application restrictions", select "HTTP referrers"
+   - Add your domain (e.g., `localhost:5173/*` for dev, `yourdomain.com/*` for prod)
+6. Copy the API key to your `.env` file
 
 ### Running the Development Server
 
