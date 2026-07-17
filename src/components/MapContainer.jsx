@@ -10,6 +10,7 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
   const t = THEME;
   const mapRef = useRef(null);
   const searchInputRef = useRef(null);
+  const mapInitializedRef = useRef(false);
   const [map, setMap] = useState(null);
   const [googleLoaded, setGoogleLoaded] = useState(() => !!window.google);
   const [searchValue, setSearchValue] = useState('');
@@ -18,6 +19,13 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
     lat: 59.3293,  // Stockholm latitude
     lng: 18.0686   // Stockholm longitude
   });
+  // Tracks the latest position without making the init effect below re-run on every change —
+  // currentPosition should only seed the map's initial center, not trigger re-initialization.
+  const currentPositionRef = useRef(currentPosition);
+  useEffect(() => {
+    currentPositionRef.current = currentPosition;
+  }, [currentPosition]);
+
   // Load Google Maps script
   useEffect(() => {
     if (window.google) {
@@ -49,10 +57,13 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
       return;
     }
 
+    if (mapInitializedRef.current) {
+      return;
+    }
 
     try {
       const googleMap = new window.google.maps.Map(mapRef.current, {
-        center: currentPosition,
+        center: currentPositionRef.current,
         zoom: 15,
         mapTypeControl: true,
         streetViewControl: true,
@@ -73,7 +84,7 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
       });
 
       setMap(googleMap);
-
+      mapInitializedRef.current = true;
 
       return () => {
         if (googleMap) {
@@ -83,7 +94,6 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
     } catch (error) {
       console.error('Error initializing maps:', error);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [googleLoaded]);
 
   // Initialize Google Places Autocomplete
