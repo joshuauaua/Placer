@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Btn } from './UI';
 
 /**
  * SidebarForm Component
@@ -8,6 +9,7 @@ import { useState } from 'react';
  * Includes mock upvote, comment, and share functionality.
  *
  * Props:
+ * - t: Theme object (from src/theme.js)
  * - imaginationData: Current imagination data
  * - onSave: Callback when user saves the imagination
  * - onUpvote: Callback when user upvotes
@@ -15,6 +17,7 @@ import { useState } from 'react';
  * - onShare: Callback when user shares
  */
 const SidebarForm = ({
+  t,
   imaginationData = {},
   onSave,
   onUpvote,
@@ -65,21 +68,28 @@ const SidebarForm = ({
   const upvoteCount = imaginationData.upvotes || 0;
   const comments = imaginationData.comments || [];
 
+  const labelStyle = { display: 'block', fontSize: 14, fontWeight: 600, color: t.ink, marginBottom: 8 };
+  const fieldStyle = {
+    width: '100%', padding: '8px 16px', border: `1px solid ${t.line}`,
+    borderRadius: 12, outline: 'none', background: t.surface, color: t.ink,
+    fontFamily: "'Archivo', sans-serif", fontSize: 15, boxSizing: 'border-box'
+  };
+
   return (
-    <div className="w-full lg:w-96 bg-white shadow-lg flex flex-col h-full">
+    <div style={{ width: '100%', maxWidth: 384, background: t.surface, boxShadow: t.shadow, display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
-        <h2 className="text-2xl font-bold">Your Imagination</h2>
-        <p className="text-blue-100 text-sm mt-1">
+      <div style={{ background: t.primaryBg, color: t.primaryFg, padding: 24 }}>
+        <h2 style={{ fontSize: 24, fontWeight: 700 }}>Your Imagination</h2>
+        <p style={{ color: t.primaryFg, opacity: 0.7, fontSize: 14, marginTop: 4 }}>
           Add details about your placemaking vision
         </p>
       </div>
 
       {/* Form Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* Title */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <label style={labelStyle}>
             Title *
           </label>
           <input
@@ -87,13 +97,13 @@ const SidebarForm = ({
             value={formData.title}
             onChange={(e) => handleChange('title', e.target.value)}
             placeholder="e.g., Green Corner Park Redesign"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            style={fieldStyle}
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <label style={labelStyle}>
             Description
           </label>
           <textarea
@@ -101,13 +111,13 @@ const SidebarForm = ({
             onChange={(e) => handleChange('description', e.target.value)}
             placeholder="Describe your vision for this space..."
             rows={4}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none transition-all"
+            style={{ ...fieldStyle, resize: 'none' }}
           />
         </div>
 
         {/* Existing Problems */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <label style={labelStyle}>
             Existing Problems
           </label>
           <textarea
@@ -115,13 +125,13 @@ const SidebarForm = ({
             onChange={(e) => handleChange('existingProblems', e.target.value)}
             placeholder="What issues does this space currently have?"
             rows={3}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none transition-all"
+            style={{ ...fieldStyle, resize: 'none' }}
           />
         </div>
 
         {/* Proposed Solution */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <label style={labelStyle}>
             Proposed Solution
           </label>
           <textarea
@@ -129,49 +139,36 @@ const SidebarForm = ({
             onChange={(e) => handleChange('proposedSolution', e.target.value)}
             placeholder="How will your changes improve this space?"
             rows={3}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none transition-all"
+            style={{ ...fieldStyle, resize: 'none' }}
           />
         </div>
 
         {/* Social Interactions Section */}
-        <div className="border-t border-gray-200 pt-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Community</h3>
+        <div style={{ borderTop: `1px solid ${t.line}`, paddingTop: 24 }}>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: t.ink, marginBottom: 16 }}>Community</h3>
 
           {/* Upvote Button */}
-          <div className="flex items-center gap-4 mb-4">
-            <button
-              onClick={onUpvote}
-              className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 15l7-7 7 7"
-                />
-              </svg>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+            <Btn t={t} variant="accent" icon="arrowUp" onClick={onUpvote}>
               Upvote
-            </button>
-            <span className="text-2xl font-bold text-gray-700">
+            </Btn>
+            <span style={{ fontSize: 24, fontWeight: 700, color: t.ink }}>
               {upvoteCount}
             </span>
           </div>
 
           {/* Comments Section */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-gray-700">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: t.ink }}>
                 Comments ({comments.length})
               </span>
               <button
                 onClick={() => setShowCommentForm(!showCommentForm)}
-                className="text-blue-600 hover:text-blue-700 text-sm font-semibold"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: t.accent, fontSize: 14, fontWeight: 600
+                }}
               >
                 {showCommentForm ? 'Cancel' : 'Add Comment'}
               </button>
@@ -179,44 +176,43 @@ const SidebarForm = ({
 
             {/* Comment Form */}
             {showCommentForm && (
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div style={{ marginBottom: 16, padding: 12, background: t.surfaceAlt, borderRadius: 12, border: `1px solid ${t.line}` }}>
                 <textarea
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder="Share your thoughts..."
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none text-sm"
+                  style={{ ...fieldStyle, resize: 'none', fontSize: 14, background: t.surface }}
                 />
-                <button
-                  onClick={handleAddComment}
-                  className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors duration-200"
-                >
-                  Post Comment
-                </button>
+                <div style={{ marginTop: 8 }}>
+                  <Btn t={t} size="sm" onClick={handleAddComment}>
+                    Post Comment
+                  </Btn>
+                </div>
               </div>
             )}
 
             {/* Comments List */}
-            <div className="space-y-3 max-h-64 overflow-y-auto">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 256, overflowY: 'auto' }}>
               {comments.map((comment) => (
                 <div
                   key={comment.id}
-                  className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                  style={{ padding: 12, background: t.surfaceAlt, borderRadius: 12, border: `1px solid ${t.line}` }}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-semibold text-gray-800">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: t.ink }}>
                       {comment.author}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span style={{ fontSize: 12, color: t.inkFaint }}>
                       {new Date(comment.createdAt).toLocaleDateString()}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700">{comment.text}</p>
+                  <p style={{ fontSize: 14, color: t.inkDim }}>{comment.text}</p>
                 </div>
               ))}
 
               {comments.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p style={{ fontSize: 14, color: t.inkFaint, textAlign: 'center', padding: '16px 0' }}>
                   No comments yet. Be the first to share your thoughts!
                 </p>
               )}
@@ -224,36 +220,19 @@ const SidebarForm = ({
           </div>
 
           {/* Share Button */}
-          <button
-            onClick={onShare}
-            className="w-full mt-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-md flex items-center justify-center gap-2"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-              />
-            </svg>
-            Share Imagination
-          </button>
+          <div style={{ marginTop: 16 }}>
+            <Btn t={t} full icon="share" onClick={onShare}>
+              Share Imagination
+            </Btn>
+          </div>
         </div>
       </div>
 
       {/* Footer - Fixed */}
-      <div className="border-t border-gray-200 p-6 bg-gray-50">
-        <button
-          onClick={handleSave}
-          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-lg font-bold text-lg transition-all duration-200 shadow-lg"
-        >
+      <div style={{ borderTop: `1px solid ${t.line}`, padding: 24, background: t.surfaceAlt }}>
+        <Btn t={t} full size="lg" onClick={handleSave}>
           Save Imagination
-        </button>
+        </Btn>
       </div>
     </div>
   );
