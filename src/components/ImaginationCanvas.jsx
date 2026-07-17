@@ -1,7 +1,11 @@
 /* PLOT — Imagination Canvas with built-in asset library */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Stage, Layer, Circle, Text, Transformer, Image as KonvaImage } from 'react-konva';
+import { Stage, Layer, Circle, Text, Transformer, Image as KonvaImage } from 'react-konva/lib/ReactKonvaCore';
+import 'konva/lib/shapes/Circle';
+import 'konva/lib/shapes/Text';
+import 'konva/lib/shapes/Transformer';
+import 'konva/lib/shapes/Image';
 import useImage from 'use-image';
 import { THEME } from '../theme';
 import { CAT } from '../theme';

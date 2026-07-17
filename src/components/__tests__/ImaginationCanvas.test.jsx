@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vite-plus/test';
 import { render, fireEvent, screen } from '@testing-library/react';
 import ImaginationCanvas from '../ImaginationCanvas';
 
-vi.mock('react-konva', () => ({
+vi.mock('react-konva/lib/ReactKonvaCore', () => ({
   Stage: ({ children, onMouseDown, onTouchStart }) => (
     <div data-testid="stage" onMouseDown={onMouseDown} onTouchStart={onTouchStart}>
       {children}
@@ -16,6 +16,11 @@ vi.mock('react-konva', () => ({
   Transformer: () => null,
   Image: () => null,
 }));
+
+vi.mock('konva/lib/shapes/Circle', () => ({}));
+vi.mock('konva/lib/shapes/Text', () => ({}));
+vi.mock('konva/lib/shapes/Transformer', () => ({}));
+vi.mock('konva/lib/shapes/Image', () => ({}));
 
 vi.mock('use-image', () => ({
   default: () => [null],
