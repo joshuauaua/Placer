@@ -11,6 +11,7 @@ import { AboutPage } from './components/AboutPage';
 import { ResourcesPage } from './components/ResourcesPage';
 import { SurveyPage } from './components/SurveyPage';
 import { AdminDashboard } from './components/AdminDashboard';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function MainApp() {
   const t = THEME;
@@ -18,8 +19,6 @@ function MainApp() {
   const [capturedView, setCapturedView] = useState(null);
 
   const handleCaptureView = (viewData) => {
-    console.log('App received capture data:', viewData);
-    console.log('Switching to street view...');
     setCapturedView(viewData);
     setCurrentView('street');
   };
@@ -34,7 +33,6 @@ function MainApp() {
 
   const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
-  console.log('Google Maps API Key:', GOOGLE_MAPS_API_KEY ? 'Loaded' : 'Missing');
 
   if (currentView === 'street') {
     return <StreetScreen t={t} onBack={handleBackToMap} onNext={handleNextStep} capturedView={capturedView} />;
@@ -145,15 +143,38 @@ function MainApp() {
   );
 }
 
+function AdminGate({ children, t }) {
+  const adminEnabled = import.meta.env.VITE_ADMIN_ENABLED === 'true';
+
+  if (!adminEnabled) {
+    return (
+      <div style={{ width: '100%', height: '100vh', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', background: t.page, color: t.ink }}>
+        <div style={{ textAlign: 'center', maxWidth: 400 }}>
+          <Icon name="shield" size={48} stroke={2} style={{ color: t.inkDim, margin: '0 auto 16px' }} />
+          <h1 className="plot-disp" style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Access Restricted</h1>
+          <p style={{ fontSize: 15, color: t.inkDim }}>
+            The admin dashboard is not available in this environment.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return children;
+}
+
 function App() {
   const t = THEME;
 
   return (
-    <Routes>
-      <Route path="/survey" element={<SurveyPage t={t} />} />
-      <Route path="/admin" element={<AdminDashboard t={t} />} />
-      <Route path="/*" element={<MainApp />} />
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/survey" element={<SurveyPage t={t} />} />
+        <Route path="/admin" element={<AdminGate t={t}><AdminDashboard t={t} /></AdminGate>} />
+        <Route path="/*" element={<MainApp />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }
 
