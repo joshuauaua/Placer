@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SurveyPage } from '../SurveyPage';
 import { THEME } from '../../theme';

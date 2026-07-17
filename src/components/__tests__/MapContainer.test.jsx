@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import html2canvas from 'html2canvas';
 import MapContainer from '../MapContainer';
