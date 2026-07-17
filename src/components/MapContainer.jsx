@@ -11,13 +11,14 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
   const mapRef = useRef(null);
   const searchInputRef = useRef(null);
   const [map, setMap] = useState(null);
-  const [googleLoaded, setGoogleLoaded] = useState(false);
+  const [googleLoaded, setGoogleLoaded] = useState(() => !!window.google);
   const [searchValue, setSearchValue] = useState('');
   const [isCapturing, setIsCapturing] = useState(false);
   const [currentPosition, setCurrentPosition] = useState({
     lat: 59.3293,  // Stockholm latitude
     lng: 18.0686   // Stockholm longitude
   });
+  // eslint-disable-next-line no-unused-vars
   const [currentPov, setCurrentPov] = useState({
     heading: 0,
     pitch: 0,
@@ -27,18 +28,14 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
   // Load Google Maps script
   useEffect(() => {
     if (window.google) {
-      console.log('Google Maps already loaded');
-      setGoogleLoaded(true);
       return;
     }
 
-    console.log('Loading Google Maps script...');
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
     script.async = true;
 
     script.onload = () => {
-      console.log('Google Maps script loaded successfully!');
       setGoogleLoaded(true);
     };
 
@@ -52,16 +49,13 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
   // Initialize Google Maps
   useEffect(() => {
     if (!googleLoaded) {
-      console.log('Waiting for Google Maps to load...');
       return;
     }
 
     if (!mapRef.current) {
-      console.log('Waiting for DOM refs...');
       return;
     }
 
-    console.log('Initializing Google Maps...');
 
     try {
       const googleMap = new window.google.maps.Map(mapRef.current, {
@@ -74,7 +68,6 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
         ]
       });
 
-      console.log('Map created');
 
       // Add click listener to update current position
       googleMap.addListener('click', (e) => {
@@ -88,7 +81,6 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
 
       setMap(googleMap);
 
-      console.log('Map initialized successfully!');
 
       return () => {
         if (googleMap) {
@@ -98,6 +90,7 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
     } catch (error) {
       console.error('Error initializing maps:', error);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [googleLoaded]);
 
   // Initialize Google Places Autocomplete
@@ -112,7 +105,6 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
       const place = autocomplete.getPlace();
 
       if (!place.geometry || !place.geometry.location) {
-        console.log('No geometry found for place');
         return;
       }
 
@@ -141,7 +133,6 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
   }, [googleLoaded, map]);
 
   const handleCaptureView = async () => {
-    console.log('Capture button clicked!');
 
     if (!mapRef.current) {
       console.error('Map ref not found');
@@ -155,7 +146,6 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
       await new Promise(resolve => setTimeout(resolve, 300));
 
       // Capture screenshot of the map
-      console.log('Capturing screenshot...');
       const canvas = await html2canvas(mapRef.current, {
         useCORS: true,
         allowTaint: true,
@@ -166,7 +156,6 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
       // Convert canvas to blob
       const screenshotDataUrl = canvas.toDataURL('image/png');
 
-      console.log('Screenshot captured successfully');
 
       const captureData = {
         position: currentPosition,
@@ -175,7 +164,6 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
         screenshot: screenshotDataUrl
       };
 
-      console.log('Capturing view data:', captureData);
       onCaptureView(captureData);
     } catch (error) {
       console.error('Error capturing screenshot:', error);
