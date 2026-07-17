@@ -29,14 +29,14 @@ describe('App', () => {
     expect(screen.getByText('Reimagine Your City')).toBeInTheDocument();
   });
 
-  it('renders SurveyPage at /survey', () => {
+  it('renders SurveyPage at /survey', async () => {
     render(
       <MemoryRouter initialEntries={['/survey']}>
         <App />
       </MemoryRouter>
     );
     expect(
-      screen.getByText(/how often do you visit public spaces/i)
+      await screen.findByText(/how often do you visit public spaces/i)
     ).toBeInTheDocument();
   });
 
@@ -49,7 +49,7 @@ describe('App', () => {
     expect(screen.getByText('Access Restricted')).toBeInTheDocument();
   });
 
-  it('ErrorBoundary catches errors thrown by route content instead of crashing the app', () => {
+  it('ErrorBoundary catches errors thrown by route content instead of crashing the app', async () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
@@ -58,6 +58,6 @@ describe('App', () => {
 
     fireEvent.click(screen.getByText('Start imagining'));
 
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
   });
 });
