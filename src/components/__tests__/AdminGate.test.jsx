@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vite-plus/test';
 import { render, screen } from '@testing-library/react';
 import { AdminGate } from '../../App';
 import { THEME } from '../../theme';
