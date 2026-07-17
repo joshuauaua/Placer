@@ -96,11 +96,44 @@ const ImaginationCanvas = ({
   onCanvasAssetsChange,
   width = 1000,
   height = 700,
-  backgroundImage = null
+  backgroundImage = null,
+  onExport
 }) => {
   const t = THEME;
   const [selectedAssetId, setSelectedAssetId] = useState(null);
   const stageRef = useRef();
+
+  // Export function to capture the canvas with all assets
+  const exportCanvas = () => {
+    if (!stageRef.current) {
+      console.error('Stage ref not available');
+      return null;
+    }
+
+    try {
+      // Get the stage (Konva canvas)
+      const stage = stageRef.current;
+
+      // Export as data URL (PNG image)
+      const dataUrl = stage.toDataURL({
+        pixelRatio: 2, // Higher quality
+        mimeType: 'image/png'
+      });
+
+      console.log('Canvas exported successfully');
+      return dataUrl;
+    } catch (error) {
+      console.error('Error exporting canvas:', error);
+      return null;
+    }
+  };
+
+  // Expose export function to parent via ref or callback
+  useEffect(() => {
+    if (onExport) {
+      onExport(exportCanvas);
+    }
+  }, [onExport]);
 
   const handleAddAsset = (libraryAsset) => {
     const newAsset = {

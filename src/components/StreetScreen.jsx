@@ -108,6 +108,8 @@ function SceneToolbar({ t, onDelete }) {
 export function StreetScreen({ t, onBack, onNext, capturedView }) {
   const [canvasAssets, setCanvasAssets] = useState([]);
   const [selectedAssetId, setSelectedAssetId] = useState(null);
+  const [exportFunction, setExportFunction] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleAddAsset = (libraryAsset) => {
     const newAsset = {
@@ -131,6 +133,77 @@ export function StreetScreen({ t, onBack, onNext, capturedView }) {
     }
   };
 
+  const handleNext = async () => {
+    setIsExporting(true);
+
+    try {
+      // Small delay to ensure canvas is fully rendered
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Export the canvas with all assets
+      if (exportFunction) {
+        const exportedImage = exportFunction();
+
+        if (exportedImage) {
+          console.log('Exported image with assets:', exportedImage);
+
+          // Create a download link (for user to keep the image)
+          const link = document.createElement('a');
+          link.download = `plot-design-${Date.now()}.png`;
+          link.href = exportedImage;
+          link.click();
+
+          // Small delay for download to start
+          await new Promise(resolve => setTimeout(resolve, 300));
+
+          // Call the original onNext handler with all the data
+          onNext({
+            originalView: capturedView,
+            editedImage: exportedImage,
+            assets: canvasAssets,
+            assetCount: canvasAssets.length,
+            timestamp: new Date().toISOString()
+          });
+        } else {
+          // If export fails, just proceed without image
+          console.warn('Failed to export canvas');
+          onNext({
+            originalView: capturedView,
+            editedImage: null,
+            assets: canvasAssets,
+            assetCount: canvasAssets.length,
+            timestamp: new Date().toISOString()
+          });
+        }
+      } else {
+        // No export function available
+        onNext({
+          originalView: capturedView,
+          editedImage: null,
+          assets: canvasAssets,
+          assetCount: canvasAssets.length,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error during export:', error);
+      // Still proceed even if there's an error
+      onNext({
+        originalView: capturedView,
+        editedImage: null,
+        assets: canvasAssets,
+        assetCount: canvasAssets.length,
+        timestamp: new Date().toISOString()
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportFunction = (exportFn) => {
+    setExportFunction(() => exportFn);
+  };
+
   return (
     <div className="plot-screen" style={{ background: t.page, color: t.ink, display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Top bar */}
@@ -142,7 +215,16 @@ export function StreetScreen({ t, onBack, onNext, capturedView }) {
         </button>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}><StepBar t={t} step={1} /></div>
         <Btn t={t} variant="ghost" size="sm" style={{ color: t.inkDim }}>Save draft</Btn>
-        <Btn t={t} variant="primary" size="sm" icon="arrowRight" onClick={onNext}>Next: Describe</Btn>
+        <Btn
+          t={t}
+          variant="primary"
+          size="sm"
+          icon={isExporting ? "loader" : "arrowRight"}
+          onClick={handleNext}
+          disabled={isExporting}
+        >
+          {isExporting ? 'Saving...' : 'Next: Describe'}
+        </Btn>
       </div>
 
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
@@ -155,6 +237,7 @@ export function StreetScreen({ t, onBack, onNext, capturedView }) {
           width={1000}
           height={700}
           backgroundImage={capturedView?.screenshot || null}
+          onExport={handleExportFunction}
         />
       </div>
     </div>
