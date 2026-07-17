@@ -11,11 +11,13 @@ import { AboutPage } from './components/AboutPage';
 import { ResourcesPage } from './components/ResourcesPage';
 import { SurveyPage } from './components/SurveyPage';
 import { AdminDashboard } from './components/AdminDashboard';
+import { DescribeForm } from './components/DescribeForm';
 
 function MainApp() {
   const t = THEME;
-  const [currentView, setCurrentView] = useState('welcome'); // 'welcome', 'map', 'street', 'about', 'resources'
+  const [currentView, setCurrentView] = useState('welcome'); // 'welcome', 'map', 'street', 'describe', 'about', 'resources'
   const [capturedView, setCapturedView] = useState(null);
+  const [designData, setDesignData] = useState(null);
 
   const handleCaptureView = (viewData) => {
     console.log('App received capture data:', viewData);
@@ -28,8 +30,36 @@ function MainApp() {
     setCurrentView('map');
   };
 
-  const handleNextStep = () => {
-    alert('Next: Describe your imagination');
+  const handleBackToCanvas = () => {
+    setCurrentView('street');
+  };
+
+  const handleNextToDescribe = (designDataFromCanvas) => {
+    console.log('Design completed with data:', designDataFromCanvas);
+    setDesignData(designDataFromCanvas);
+    setCurrentView('describe');
+  };
+
+  const handleSubmitProject = (projectData) => {
+    console.log('Project submitted:', projectData);
+
+    // In a real app, this would save to database
+    // For now, show success message
+    alert(
+      '🎉 Project Published!\n\n' +
+      `"${projectData.title}" has been created.\n\n` +
+      'Your imagination has been shared with the community!\n\n' +
+      'In a full version, this would:\n' +
+      '✓ Save to database\n' +
+      '✓ Share with community feed\n' +
+      '✓ Notify local planning authorities\n' +
+      '✓ Allow voting and comments'
+    );
+
+    // Return to welcome screen
+    setCurrentView('welcome');
+    setCapturedView(null);
+    setDesignData(null);
   };
 
   const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
@@ -37,7 +67,11 @@ function MainApp() {
   console.log('Google Maps API Key:', GOOGLE_MAPS_API_KEY ? 'Loaded' : 'Missing');
 
   if (currentView === 'street') {
-    return <StreetScreen t={t} onBack={handleBackToMap} onNext={handleNextStep} capturedView={capturedView} />;
+    return <StreetScreen t={t} onBack={handleBackToMap} onNext={handleNextToDescribe} capturedView={capturedView} />;
+  }
+
+  if (currentView === 'describe') {
+    return <DescribeForm t={t} designData={designData} onBack={handleBackToCanvas} onSubmit={handleSubmitProject} />;
   }
 
   return (
