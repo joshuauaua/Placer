@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { Router } from 'wouter';
+import { memoryLocation } from 'wouter/memory-location';
 import App from '../../App';
 
 vi.mock('../MapContainer', () => ({
@@ -8,6 +9,15 @@ vi.mock('../MapContainer', () => ({
     throw new Error('Map failed to load');
   },
 }));
+
+function renderAt(path) {
+  const { hook } = memoryLocation({ path });
+  return render(
+    <Router hook={hook}>
+      <App />
+    </Router>
+  );
+}
 
 describe('App', () => {
   let consoleErrorSpy;
@@ -21,40 +31,24 @@ describe('App', () => {
   });
 
   it('renders MainApp welcome view at root path', () => {
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAt('/');
     expect(screen.getByText('Reimagine Your City')).toBeInTheDocument();
   });
 
   it('renders SurveyPage at /survey', async () => {
-    render(
-      <MemoryRouter initialEntries={['/survey']}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAt('/survey');
     expect(
       await screen.findByText(/how often do you visit public spaces/i)
     ).toBeInTheDocument();
   });
 
   it('renders AdminGate restricted view at /admin when admin is disabled', () => {
-    render(
-      <MemoryRouter initialEntries={['/admin']}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAt('/admin');
     expect(screen.getByText('Access Restricted')).toBeInTheDocument();
   });
 
   it('ErrorBoundary catches errors thrown by route content instead of crashing the app', async () => {
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAt('/');
 
     fireEvent.click(screen.getByText('Start imagining'));
 

@@ -262,3 +262,5 @@ export function ResourcesPage({ t }) {
 
 // Need React import for useState
 import React from 'react';
+
+export default ResourcesPage;
