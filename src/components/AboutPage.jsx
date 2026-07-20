@@ -222,3 +222,5 @@ export function AboutPage({ t }) {
     </div>
   );
 }
+
+export default AboutPage;
