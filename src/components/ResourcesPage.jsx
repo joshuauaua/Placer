@@ -1,5 +1,6 @@
 /* PLOT — Resources Page */
 
+import { useState } from 'react';
 import { Icon } from './Icon';
 import { Chip } from './UI';
 
@@ -79,7 +80,7 @@ export function ResourcesPage({ t }) {
     },
   ];
 
-  const [selectedTag, setSelectedTag] = React.useState(null);
+  const [selectedTag, setSelectedTag] = useState(null);
   const allTags = ['All', 'Guide', 'Research', 'Tutorial', 'Case Study', 'Community', 'Design', 'Education'];
 
   const filteredPosts = selectedTag && selectedTag !== 'All'
@@ -259,8 +260,5 @@ export function ResourcesPage({ t }) {
     </div>
   );
 }
-
-// Need React import for useState
-import React from 'react';
 
 export default ResourcesPage;
