@@ -1,18 +1,18 @@
 /* PLOT — Reimagine Your City */
 
 import { useState, lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Switch, Route } from 'wouter';
 import { THEME } from './theme';
 import { Logo, Btn, Avatar } from './components/UI';
 import { Icon } from './components/Icon';
-import { AboutPage } from './components/AboutPage';
-import { ResourcesPage } from './components/ResourcesPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const MapContainer = lazy(() => import('./components/MapContainer'));
+const AboutPage = lazy(() => import('./components/AboutPage'));
+const ResourcesPage = lazy(() => import('./components/ResourcesPage'));
 
 function LoadingFallback() {
   return (
@@ -147,11 +147,15 @@ function MainApp() {
         )}
 
         {currentView === 'about' && (
-          <AboutPage t={t} />
+          <Suspense fallback={<LoadingFallback />}>
+            <AboutPage t={t} />
+          </Suspense>
         )}
 
         {currentView === 'resources' && (
-          <ResourcesPage t={t} />
+          <Suspense fallback={<LoadingFallback />}>
+            <ResourcesPage t={t} />
+          </Suspense>
         )}
       </div>
     </div>
@@ -186,11 +190,11 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <Routes>
-        <Route path="/survey" element={<Suspense fallback={<LoadingFallback />}><SurveyPage t={t} /></Suspense>} />
-        <Route path="/admin" element={<Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminDashboard t={t} /></AdminGate></Suspense>} />
-        <Route path="/*" element={<MainApp />} />
-      </Routes>
+      <Switch>
+        <Route path="/survey"><Suspense fallback={<LoadingFallback />}><SurveyPage t={t} /></Suspense></Route>
+        <Route path="/admin"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminDashboard t={t} /></AdminGate></Suspense></Route>
+        <Route><MainApp /></Route>
+      </Switch>
     </ErrorBoundary>
   );
 }
