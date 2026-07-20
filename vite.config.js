@@ -27,6 +27,9 @@ export default defineConfig({
           if (id.includes('/react-reconciler/') || id.includes('/konva/')) {
             return 'vendor-konva'
           }
+          if (id.includes('/react-dom/')) {
+            return 'vendor-react'
+          }
         },
       },
     },
