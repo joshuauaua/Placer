@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import { toPng } from 'html-to-image';
 import MapContainer from '../MapContainer';
 
@@ -72,14 +72,46 @@ describe('MapContainer', () => {
     expect(screen.getByPlaceholderText('Search for an address...')).toBeInTheDocument();
   });
 
-  it('renders the "Capture View" button', () => {
+  it('renders the capture button as an icon only, with no visible text', () => {
     render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-    expect(screen.getByText('Capture View')).toBeInTheDocument();
+
+    const button = screen.getByLabelText('Capture view');
+    expect(button).toBeInTheDocument();
+    expect(button.textContent).toBe('');
+    expect(button.querySelector('svg')).toBeInTheDocument();
   });
 
-  it('shows the default Stockholm coordinates in the position display', () => {
+  it('does not render a coordinate readout', () => {
     render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-    expect(screen.getByText('59.3293, 18.0686')).toBeInTheDocument();
+    expect(screen.queryByText('55.6054, 12.9854')).not.toBeInTheDocument();
+  });
+
+  it('floats the search box centered along the bottom, on top of the map', () => {
+    render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+    const searchBox = screen.getByPlaceholderText('Search for an address...').parentElement;
+    const floatingBar = searchBox.parentElement;
+
+    expect(floatingBar).toHaveStyle({
+      position: 'absolute',
+      bottom: '24px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+    });
+    expect(Number(floatingBar.style.zIndex)).toBeGreaterThan(0);
+  });
+
+  it('places the capture button after the search box in the same floating bar', () => {
+    render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+    const searchBox = screen.getByPlaceholderText('Search for an address...').parentElement;
+    const floatingBar = searchBox.parentElement;
+    const button = screen.getByLabelText('Capture view');
+
+    expect(button.parentElement).toBe(floatingBar);
+
+    const order = Array.from(floatingBar.children);
+    expect(order.indexOf(button)).toBeGreaterThan(order.indexOf(searchBox));
   });
 
   it('calls onCaptureView with position, pov, timestamp, and screenshot data when "Capture View" is clicked', async () => {
@@ -87,12 +119,12 @@ describe('MapContainer', () => {
     const onCaptureView = vi.fn();
     render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-    fireEvent.click(screen.getByText('Capture View'));
+    fireEvent.click(screen.getByLabelText('Capture view'));
 
     await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
     expect(onCaptureView).toHaveBeenCalledWith({
-      position: { lat: 59.3293, lng: 18.0686 },
+      position: { lat: 55.6054, lng: 12.9854 },
       pov: { heading: 0, pitch: 0, zoom: 1 },
       timestamp: expect.any(String),
       screenshot: 'data:image/png;base64,mock',
@@ -105,7 +137,7 @@ describe('MapContainer', () => {
     const onCaptureView = vi.fn();
     render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-    fireEvent.click(screen.getByText('Capture View'));
+    fireEvent.click(screen.getByLabelText('Capture view'));
 
     await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
@@ -119,7 +151,7 @@ describe('MapContainer', () => {
     const onCaptureView = vi.fn();
     render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-    fireEvent.click(screen.getByText('Capture View'));
+    fireEvent.click(screen.getByLabelText('Capture view'));
 
     await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
@@ -128,13 +160,13 @@ describe('MapContainer', () => {
     );
   });
 
-  it('shows "Capturing..." and disables the button while capturing', () => {
+  it('relabels to "Capturing view" and disables the button while capturing', () => {
     const onCaptureView = vi.fn();
     render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-    fireEvent.click(screen.getByText('Capture View'));
+    fireEvent.click(screen.getByLabelText('Capture view'));
 
-    expect(screen.getByText('Capturing...')).toBeDisabled();
+    expect(screen.getByLabelText('Capturing view')).toBeDisabled();
   });
 
   it('does not re-initialize Google Map when currentPosition changes', async () => {
@@ -154,16 +186,22 @@ describe('MapContainer', () => {
     });
     window.google = googleMaps;
 
-    render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+    const onCaptureView = vi.fn();
+    render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
     expect(googleMaps.maps.Map).toHaveBeenCalledTimes(1);
 
-    clickHandler({ latLng: { lat: () => 1.2345, lng: () => 6.789 } });
+    act(() => {
+      clickHandler({ latLng: { lat: () => 1.2345, lng: () => 6.789 } });
+    });
 
-    await waitFor(() =>
-      expect(screen.getByText('1.2345, 6.7890')).toBeInTheDocument()
-    );
+    // The captured payload is the only surface for currentPosition now that the
+    // coordinate readout is gone — it proves the click updated state...
+    fireEvent.click(screen.getByLabelText('Capture view'));
+    await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
+    expect(onCaptureView.mock.calls[0][0].position).toEqual({ lat: 1.2345, lng: 6.789 });
 
+    // ...without the init effect rebuilding the map.
     expect(googleMaps.maps.Map).toHaveBeenCalledTimes(1);
   });
 });
