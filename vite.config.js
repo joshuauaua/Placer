@@ -24,6 +24,13 @@ export default defineConfig({
         // rolldown (vite-plus's bundler) requires manualChunks as a
         // function — the object-map form rollup accepts isn't supported.
         manualChunks(id) {
+          // OpenCV.js is ~13 MB raw / 3.8 MB gzip — an order of magnitude
+          // larger than everything else here. Pinning it to its own chunk keeps
+          // it out of the entry and out of vendor-konva, so it is only fetched
+          // when src/lib/detectLines.js dynamically imports it.
+          if (id.includes('opencv')) {
+            return 'vendor-opencv'
+          }
           if (id.includes('/react-reconciler/') || id.includes('/konva/')) {
             return 'vendor-konva'
           }
