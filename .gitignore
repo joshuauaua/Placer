@@ -17,6 +17,10 @@ dist
 dist-ssr
 *.local
 
+# Python tooling (tools/streetview_lines)
+.venv
+__pycache__
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
