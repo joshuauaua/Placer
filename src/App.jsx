@@ -46,7 +46,13 @@ function MainApp() {
   if (currentView === 'street') {
     return (
       <Suspense fallback={<LoadingFallback />}>
-        <StreetScreen t={t} onBack={handleBackToMap} onNext={handleNextStep} capturedView={capturedView} />
+        <StreetScreen
+          t={t}
+          onBack={handleBackToMap}
+          onNext={handleNextStep}
+          capturedView={capturedView}
+          apiKey={GOOGLE_MAPS_API_KEY}
+        />
       </Suspense>
     );
   }

@@ -31,8 +31,9 @@ function StepBar({ t, step = 1 }) {
   );
 }
 
-export function StreetScreen({ t, onBack, onNext, capturedView }) {
+export function StreetScreen({ t, onBack, onNext, capturedView, apiKey = '' }) {
   const [canvasAssets, setCanvasAssets] = useState([]);
+  const [lines, setLines] = useState([]);
 
   return (
     <div className="plot-screen" style={{ background: t.page, color: t.ink, display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -60,6 +61,9 @@ export function StreetScreen({ t, onBack, onNext, capturedView }) {
             availableAssets={ASSET_LIB}
             canvasAssets={canvasAssets}
             onCanvasAssetsChange={setCanvasAssets}
+            lines={lines}
+            onLinesChange={setLines}
+            apiKey={apiKey}
             width={1000}
             height={700}
             backgroundImage={capturedView?.screenshot || null}
