@@ -16,8 +16,8 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
   const [searchValue, setSearchValue] = useState('');
   const [isCapturing, setIsCapturing] = useState(false);
   const [currentPosition, setCurrentPosition] = useState({
-    lat: 59.3293,  // Stockholm latitude
-    lng: 18.0686   // Stockholm longitude
+    lat: 55.6054,  // STPLN, Malmöhusvägen 5, Malmö — latitude
+    lng: 12.9854   // STPLN, Malmöhusvägen 5, Malmö — longitude
   });
   // Tracks the latest position without making the init effect below re-run on every change —
   // currentPosition should only seed the map's initial center, not trigger re-initialization.
@@ -188,63 +188,77 @@ const MapContainer = ({ onCaptureView, apiKey = '' }) => {
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: t.page }}>
-      {/* Top Bar */}
-      <div style={{ background: t.chrome, borderBottom: `1px solid ${t.line}`, padding: '18px 20px',
-        display: 'flex', alignItems: 'center', gap: 16 }}>
-
-        {/* Search Bar */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          flex: '0 0 400px',
-          height: 44,
-          padding: '0 16px',
-          borderRadius: 10,
-          border: `1.5px solid ${t.line}`,
-          background: t.surface
-        }}>
-          <Icon name="search" size={19} stroke={2} style={{ color: t.inkDim }} />
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search for an address..."
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            style={{
-              flex: 1,
-              border: 'none',
-              background: 'transparent',
-              outline: 'none',
-              fontFamily: "'Archivo', sans-serif",
-              fontSize: 15,
-              fontWeight: 500,
-              color: t.ink,
-              '::placeholder': { color: t.inkDim }
-            }}
-          />
-        </div>
-
-        {/* Position Info */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-          <Icon name="pin" size={18} stroke={2} style={{ color: t.accent }} />
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: t.ink }}>
-              {currentPosition.lat.toFixed(4)}, {currentPosition.lng.toFixed(4)}
-            </div>
-          </div>
-        </div>
-
-        {/* Capture Button */}
-        <Btn t={t} variant="accent" icon={isCapturing ? "loader" : "sparkle"} onClick={handleCaptureView} disabled={isCapturing}>
-          {isCapturing ? 'Capturing...' : 'Capture View'}
-        </Btn>
-      </div>
-
       {/* Map View */}
       <div style={{ flex: 1, minHeight: 0 }}>
         <div style={{ width: '100%', height: '100%', position: 'relative', background: t.surface }}>
           <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+
+          {/* Floating controls — bottom-centered over the map: search + capture */}
+          <div style={{
+            position: 'absolute',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 5,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            maxWidth: 'calc(100% - 32px)'
+          }}>
+            {/* Search Bar */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              flex: '1 1 400px',
+              minWidth: 0,
+              height: 44,
+              padding: '0 16px',
+              borderRadius: 10,
+              border: `1.5px solid ${t.line}`,
+              background: t.surface,
+              boxShadow: t.shadow
+            }}>
+              <Icon name="search" size={19} stroke={2} style={{ color: t.inkDim }} />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search for an address..."
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  border: 'none',
+                  background: 'transparent',
+                  outline: 'none',
+                  fontFamily: "'Archivo', sans-serif",
+                  fontSize: 15,
+                  fontWeight: 500,
+                  color: t.ink,
+                  '::placeholder': { color: t.inkDim }
+                }}
+              />
+            </div>
+
+            {/* Capture Button — icon only */}
+            <Btn
+              t={t}
+              variant="accent"
+              icon={isCapturing ? 'loader' : 'camera'}
+              onClick={handleCaptureView}
+              disabled={isCapturing}
+              ariaLabel={isCapturing ? 'Capturing view' : 'Capture view'}
+              iconStyle={isCapturing ? { animation: 'plot-spin 0.8s linear infinite' } : undefined}
+              style={{
+                flex: '0 0 auto',
+                width: 44,
+                height: 44,
+                padding: 0,
+                boxShadow: t.shadow
+              }}
+            />
+          </div>
         </div>
       </div>
 
