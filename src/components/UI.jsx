@@ -28,7 +28,7 @@ export function Avatar({ name = '', size = 34, ring }) {
   );
 }
 
-export function Btn({ t, children, variant = 'primary', icon, size = 'md', style, full, onClick, disabled }) {
+export function Btn({ t, children, variant = 'primary', icon, size = 'md', style, full, onClick, disabled, ariaLabel, title, iconStyle }) {
   const sizes = { sm: { h: 34, px: 14, fs: 13.5 }, md: { h: 42, px: 18, fs: 15 }, lg: { h: 50, px: 24, fs: 16.5 } };
   const z = sizes[size];
   const variants = {
@@ -38,12 +38,13 @@ export function Btn({ t, children, variant = 'primary', icon, size = 'md', style
     ghost:   { background: 'transparent', color: t.ink, border: '1px solid transparent' },
   };
   return (
-    <button disabled={disabled} onClick={onClick} style={{ height: z.h, padding: `0 ${z.px}px`, borderRadius: 9, cursor: disabled ? 'not-allowed' : 'pointer',
+    <button disabled={disabled} onClick={onClick} aria-label={ariaLabel} title={title ?? ariaLabel}
+      style={{ height: z.h, padding: `0 ${z.px}px`, borderRadius: 9, cursor: disabled ? 'not-allowed' : 'pointer',
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: full ? '100%' : 'auto',
       fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: z.fs, letterSpacing: '-0.01em',
       opacity: disabled ? 0.5 : 1,
       ...variants[variant], ...style }}>
-      {icon && <Icon name={icon} size={z.fs + 3} stroke={2.1} />}
+      {icon && <Icon name={icon} size={z.fs + 3} stroke={2.1} style={iconStyle} />}
       {children}
     </button>
   );

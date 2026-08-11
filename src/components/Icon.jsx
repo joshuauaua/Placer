@@ -76,6 +76,13 @@ const ICON_ELEMENTS = {
     </>
   ),
   sparkle: <path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6L12 3z" />,
+  camera: (
+    <>
+      <path d="M3 9a2 2 0 012-2h2l1.4-2.2h7.2L17 7h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+      <circle cx="12" cy="13" r="3.4" />
+    </>
+  ),
+  loader: <path d="M12 3a9 9 0 109 9" />,
   grid: <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />,
   image: (
     <>
