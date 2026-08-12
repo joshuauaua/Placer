@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vp dev",
+    "prebuild": "npm run deps:check",
     "build": "vp build",
     "lint": "vp lint",
     "preview": "vp preview",
     "test": "vp test",
-    "test:run": "vp test run"
+    "test:run": "vp test run",
+    "deps:check": "node scripts/check-deps.mjs"
   },
   "dependencies": {
     "@techstark/opencv-js": "^5.0.0-release.1",

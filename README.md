@@ -39,6 +39,19 @@ cd Plot
 npm install
 ```
 
+Re-run `npm ci` after pulling a commit that changes `package-lock.json` — `npm audit`
+reads the lockfile, not `node_modules`, so it reports a clean tree even while an outdated
+(and possibly vulnerable) build stays installed. Run `npm run deps:check` at any time to
+confirm `node_modules` matches the lockfile.
+
+Optionally, opt in to a warn-only post-merge hook that runs this check automatically after
+every `git pull`/`git merge`:
+```bash
+git config core.hooksPath .githooks
+```
+The hook only prints a warning if drift is detected — it never blocks a merge, and does
+nothing until you run the command above.
+
 3. Set up environment variables:
 ```bash
 cp .env.example .env
