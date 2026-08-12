@@ -16,15 +16,20 @@
 //     detectMarkings below for why.
 
 // Explicit extension so this module also resolves under plain Node, which lets
-// the pipeline be run against a real image outside the browser.
+// the pipeline be run against a real image outside the browser — a Node script
+// imports '@techstark/opencv-js' itself (there is no DOM to inject a <script>
+// into) and hands the resolved namespace to setOpenCv().
 import { DEFAULT_LINE_CLASS } from './lineClasses.js';
 import { mergeLines } from './mergeLines.js';
+import { loadOpenCv } from './opencvLoader.js';
 import {
   clipSegmentToRect,
   focalFor,
   projectTileSegment,
   verticalFov,
 } from './panoGeometry.js';
+
+export { loadOpenCv, setOpenCv, _resetOpenCvCache } from './opencvLoader.js';
 
 // Adaptive marking guard — not present in the Python tool.
 //
@@ -87,28 +92,6 @@ export const DETECT_DEFAULTS = {
   // detections into the wide frame, so it must match the actual capture.
   wideFov: 90,
 };
-
-let opencvPromise = null;
-
-// Cached across calls so the ~4 MB module is fetched and instantiated once.
-export function loadOpenCv() {
-  if (!opencvPromise) {
-    opencvPromise = import('@techstark/opencv-js').then((mod) => {
-      // The package is an Emscripten MODULARIZE build: the export is a thenable
-      // that resolves to the cv namespace once the runtime is ready. Awaiting it
-      // is required — the older cv.onRuntimeInitialized callback is not set on
-      // this build and waiting for it hangs forever.
-      const candidate = mod?.default ?? mod;
-      return Promise.resolve(candidate).then((cv) => cv?.default ?? cv);
-    });
-  }
-  return opencvPromise;
-}
-
-// Exposed for tests, which need to reset the module-level cache between cases.
-export function _resetOpenCvCache() {
-  opencvPromise = null;
-}
 
 // Decode an image source (data: URL or plain URL) into ImageData, downscaling to
 // resizeMaxWidth the way load_image does.
