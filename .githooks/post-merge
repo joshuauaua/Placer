@@ -1,0 +1,3 @@
+#!/bin/sh
+# Warns when a pull/merge changed package-lock.json but node_modules wasn't reinstalled.
+node "$(git rev-parse --show-toplevel)/scripts/check-deps.mjs" || true
