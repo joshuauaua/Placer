@@ -129,10 +129,9 @@ const cvMock = {
   },
 };
 
-vi.mock('@techstark/opencv-js', () => ({ default: Promise.resolve(cvMock) }));
-
 const { detectLines, classifySegment, DETECT_DEFAULTS, MARKING_MAX_COVERAGE, _resetOpenCvCache } =
   await import('../detectLines');
+const { setOpenCv } = await import('../opencvLoader');
 
 // A stub image that reports a fixed intrinsic size and fires onload immediately.
 function stubImage(width = 640, height = 448) {
@@ -155,6 +154,7 @@ beforeEach(() => {
   cvState.liveMats = 0;
   cvState.calls = [];
   _resetOpenCvCache();
+  setOpenCv(cvMock);
 
   // jsdom canvas: getImageData is not implemented, so stub the 2d context.
   HTMLCanvasElement.prototype.getContext = () => ({

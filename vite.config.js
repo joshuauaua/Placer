@@ -1,10 +1,59 @@
+import { createRequire } from 'node:module'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite-plus'
 import react from '@vitejs/plugin-react'
 
+const require = createRequire(import.meta.url)
+const opencvFile = require.resolve('@techstark/opencv-js')
+const opencvVersion = require('@techstark/opencv-js/package.json').version
+// Version-keyed so the file lands under the immutable Cache-Control rule in
+// public/_headers and stays cached across app deploys, unlike a bundler chunk
+// hash which churns on every rebuild regardless of whether OpenCV changed.
+const opencvAssetPath = `assets/opencv-${opencvVersion}.js`
+
+// OpenCV.js is a 13 MB UMD build with its WASM embedded. Bundling it inflates
+// it further (~2.2 MB of pure overhead) and drags in a "crypto externalized"
+// warning, so emit it as a plain static asset instead of running it through
+// the bundler at all.
+// Two plugins, not one, because `apply` gates every hook on the object: the
+// build-time emitFile() call and the dev/test-time serve middleware need
+// opposite `apply` values, and emitFile() warns (context method not
+// supported) if it fires during `vp dev`/`vp test`'s serve-mode plugin
+// container.
+function opencvAssetBuildPlugin() {
+  return {
+    name: 'opencv-asset-build',
+    apply: 'build',
+    buildStart() {
+      this.emitFile({
+        type: 'asset',
+        fileName: opencvAssetPath,
+        source: readFileSync(opencvFile),
+      })
+    },
+  }
+}
+
+function opencvAssetServePlugin() {
+  return {
+    name: 'opencv-asset-serve',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use(`/${opencvAssetPath}`, (req, res) => {
+        res.setHeader('Content-Type', 'text/javascript')
+        res.end(readFileSync(opencvFile))
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), opencvAssetBuildPlugin(), opencvAssetServePlugin()],
+  define: {
+    __OPENCV_ASSET_PATH__: JSON.stringify(opencvAssetPath),
+  },
   resolve: {
     alias: [
       // Exact-match only — a plain string key would also match (and mangle)
@@ -24,13 +73,6 @@ export default defineConfig({
         // rolldown (vite-plus's bundler) requires manualChunks as a
         // function — the object-map form rollup accepts isn't supported.
         manualChunks(id) {
-          // OpenCV.js is ~13 MB raw / 3.8 MB gzip — an order of magnitude
-          // larger than everything else here. Pinning it to its own chunk keeps
-          // it out of the entry and out of vendor-konva, so it is only fetched
-          // when src/lib/detectLines.js dynamically imports it.
-          if (id.includes('opencv')) {
-            return 'vendor-opencv'
-          }
           if (id.includes('/react-reconciler/') || id.includes('/konva/')) {
             return 'vendor-konva'
           }
