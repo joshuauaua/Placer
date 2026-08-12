@@ -32,5 +32,8 @@
     "jsdom": "^29.1.1",
     "postcss": "^8.5.23",
     "vite-plus": "^0.2.5"
+  },
+  "allowScripts": {
+    "fsevents@2.3.3": true
   }
 }
