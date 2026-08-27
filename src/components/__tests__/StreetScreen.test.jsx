@@ -1,17 +1,33 @@
-import { describe, it, expect, vi } from 'vite-plus/test';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { StreetScreen } from '../StreetScreen';
 import { THEME } from '../../theme';
 
+// Stands in for the Konva stage the real canvas would attach. Tests that care about
+// the composite export set this before rendering; it stays null otherwise, which is
+// what a canvas that has not mounted through Suspense looks like.
+let fakeStage = null;
+
 vi.mock('../ImaginationCanvas', () => ({
-  default: (props) => (
-    <div data-testid="imagination-canvas" data-background={props.backgroundImage}>
-      Canvas Mock
-    </div>
-  ),
+  default: (props) => {
+    if (props.stageRef) props.stageRef.current = fakeStage;
+    return (
+      <div
+        data-testid="imagination-canvas"
+        data-background={props.backgroundImage}
+        data-assets={props.canvasAssets?.length}
+        data-lines={props.lines?.length}>
+        Canvas Mock
+      </div>
+    );
+  },
 }));
 
 describe('StreetScreen', () => {
+  beforeEach(() => {
+    fakeStage = null;
+  });
+
   it('renders "Back to map" and calls onBack when clicked', () => {
     const onBack = vi.fn();
     render(<StreetScreen t={THEME} onBack={onBack} onNext={vi.fn()} />);
@@ -26,6 +42,85 @@ describe('StreetScreen', () => {
 
     fireEvent.click(screen.getByText('Next: Describe'));
     expect(onNext).toHaveBeenCalledTimes(1);
+  });
+
+  it('advances with a null preview when no live Konva stage is available', () => {
+    // The canvas is mocked here, so nothing ever populates stageRef. Advancing must
+    // still work rather than throwing on the missing stage.
+    const onNext = vi.fn();
+    render(<StreetScreen t={THEME} onBack={vi.fn()} onNext={onNext} />);
+
+    fireEvent.click(screen.getByText('Next: Describe'));
+    expect(onNext).toHaveBeenCalledWith(null);
+  });
+
+  it('exports the composite as a downscaled JPEG when a photo is behind the drawing', async () => {
+    const toDataURL = vi.fn(() => 'data:image/jpeg;base64,mockComposite');
+    fakeStage = { toDataURL };
+    const onNext = vi.fn();
+    render(
+      <StreetScreen
+        t={THEME}
+        onBack={vi.fn()}
+        onNext={onNext}
+        capturedView={{ screenshot: 'data:image/jpeg;base64,mockScreenshot' }}
+      />
+    );
+    await screen.findByTestId('imagination-canvas');
+
+    fireEvent.click(screen.getByText('Next: Describe'));
+
+    expect(toDataURL).toHaveBeenCalledWith({ mimeType: 'image/jpeg', quality: 0.75, pixelRatio: 0.7 });
+    expect(onNext).toHaveBeenCalledWith('data:image/jpeg;base64,mockComposite');
+  });
+
+  it('exports PNG when there is no photo, since JPEG would flatten alpha to black', async () => {
+    const toDataURL = vi.fn(() => 'data:image/png;base64,mockComposite');
+    fakeStage = { toDataURL };
+    render(<StreetScreen t={THEME} onBack={vi.fn()} onNext={vi.fn()} capturedView={{ screenshot: null }} />);
+    await screen.findByTestId('imagination-canvas');
+
+    fireEvent.click(screen.getByText('Next: Describe'));
+
+    expect(toDataURL).toHaveBeenCalledWith({ mimeType: 'image/png', pixelRatio: 0.7 });
+  });
+
+  it('still advances with a null preview when the export throws', async () => {
+    // A tainted canvas would throw here. Losing the preview must not trap the user.
+    fakeStage = { toDataURL: () => { throw new Error('tainted canvas'); } };
+    const onNext = vi.fn();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    render(
+      <StreetScreen
+        t={THEME}
+        onBack={vi.fn()}
+        onNext={onNext}
+        capturedView={{ screenshot: 'data:image/jpeg;base64,mockScreenshot' }}
+      />
+    );
+    await screen.findByTestId('imagination-canvas');
+
+    fireEvent.click(screen.getByText('Next: Describe'));
+
+    expect(onNext).toHaveBeenCalledWith(null);
+    consoleError.mockRestore();
+  });
+
+  it('passes the lifted canvas state through to ImaginationCanvas', async () => {
+    const onCanvasAssetsChange = vi.fn();
+    render(
+      <StreetScreen
+        t={THEME}
+        onBack={vi.fn()}
+        onNext={vi.fn()}
+        canvasAssets={[{ id: 'a1' }]}
+        onCanvasAssetsChange={onCanvasAssetsChange}
+        lines={[{ id: 'l1' }]}
+        onLinesChange={vi.fn()}
+      />
+    );
+
+    expect(await screen.findByTestId('imagination-canvas')).toHaveAttribute('data-assets', '1');
   });
 
   it('renders the StepBar showing step 1 ("Place assets") as active', () => {

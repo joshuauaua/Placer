@@ -200,6 +200,48 @@ export const addComment = async (imaginationId, commentData) => {
 };
 
 /**
+ * Export every piece of PLOT data held in this browser.
+ * Backs the data portability request on the GDPR page.
+ */
+export const exportAllData = async () => {
+  await simulateDelay();
+
+  const data = {};
+  Object.values(STORAGE_KEYS).forEach(key => {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return;
+    try {
+      data[key] = JSON.parse(raw);
+    } catch {
+      // Keep unparseable values verbatim so nothing is silently dropped
+      data[key] = raw;
+    }
+  });
+
+  const payload = { exportedAt: new Date().toISOString(), data };
+  const dataStr = JSON.stringify(payload, null, 2);
+
+  return {
+    ...payload,
+    dataUri: 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr)
+  };
+};
+
+/**
+ * Delete every piece of PLOT data held in this browser.
+ * Backs the erasure request on the GDPR page. The default asset library is
+ * recreated on the next page load, since it is seed data rather than user data.
+ */
+export const eraseAllData = async () => {
+  await simulateDelay();
+
+  const keys = Object.values(STORAGE_KEYS);
+  keys.forEach(key => localStorage.removeItem(key));
+
+  return { success: true, keysCleared: keys.length };
+};
+
+/**
  * Export imagination data as JSON (for sharing)
  */
 export const exportImagination = async (id) => {

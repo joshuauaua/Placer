@@ -17,6 +17,7 @@
     "@techstark/opencv-js": "^5.0.0-release.1",
     "html-to-image": "^1.11.13",
     "konva": "^10.3.0",
+    "posthog-js": "^1.421.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-konva": "^19.2.5",
