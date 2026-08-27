@@ -1,6 +1,7 @@
 /* PLOT — Imagination Canvas with built-in asset library */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import posthog from 'posthog-js';
 import { Stage, Layer, Circle, Line, Text, Transformer, Image as KonvaImage } from 'react-konva/lib/ReactKonvaCore';
 import 'konva/lib/shapes/Circle';
 import 'konva/lib/shapes/Line';
@@ -142,7 +143,11 @@ const ImaginationCanvas = ({
   apiKey = '',
   width = 1000,
   height = 700,
-  backgroundImage = null
+  backgroundImage = null,
+  // Optional: parent-owned ref, so a caller can export the composite via
+  // stage.toDataURL(). A plain prop rather than forwardRef, because this component
+  // is consumed through lazy() + Suspense.
+  stageRef: externalStageRef = null
 }) => {
   const t = THEME;
   const [selectedAssetId, setSelectedAssetId] = useState(null);
@@ -154,7 +159,8 @@ const ImaginationCanvas = ({
   // 'idle' | 'loading' (fetching the ~4 MB detector) | 'detecting'
   const [detectPhase, setDetectPhase] = useState('idle');
   const [detectNote, setDetectNote] = useState(null);
-  const stageRef = useRef();
+  const internalStageRef = useRef();
+  const stageRef = externalStageRef || internalStageRef;
   const assetCounter = useRef(0);
   const lineCounter = useRef(0);
 
@@ -218,6 +224,11 @@ const ImaginationCanvas = ({
       } else if (stats.markingVMin > 175) {
         parts.push(`marking threshold raised to ${stats.markingVMin}`);
       }
+      posthog.capture('canvas_lines_auto_detected', {
+        lines_detected: detected.length,
+        tiles_used: stats.tiles ?? 0,
+        merged_away: stats.mergedAway ?? 0,
+      });
       setDetectNote(parts.join(' · '));
     } catch (error) {
       console.error('Auto-detect failed:', error);
@@ -239,6 +250,11 @@ const ImaginationCanvas = ({
       scale: 1
     };
 
+    posthog.capture('canvas_asset_added', {
+      asset_type: libraryAsset.type,
+      asset_category: libraryAsset.cat,
+      total_assets: canvasAssets.length + 1,
+    });
     onCanvasAssetsChange([...canvasAssets, newAsset]);
     setSelectedAssetId(newAsset.id);
   };
