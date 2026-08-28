@@ -2,10 +2,13 @@ import { describe, it, expect } from 'vite-plus/test';
 import {
   clipSegmentToRect,
   focalFor,
+  planGridTiles,
   planTiles,
   projectTilePoint,
   projectTileSegment,
   roadBandCentreDeg,
+  tilingGain,
+  unprojectWidePoint,
   verticalFov,
 } from '../panoGeometry';
 
@@ -100,6 +103,132 @@ describe('projectTilePoint', () => {
     const pb = projectTilePoint(inB, tileB, WIDE);
     expect(pa.x).toBeCloseTo(pb.x, 4);
     expect(pa.y).toBeCloseTo(pb.y, 4);
+  });
+});
+
+describe('unprojectWidePoint', () => {
+  const tile = { width: 640, height: 640, fov: 50, headingOffset: 18, pitchOffset: -12 };
+
+  it('inverts projectTilePoint exactly', () => {
+    for (const point of [
+      { x: 320, y: 320 },
+      { x: 10, y: 10 },
+      { x: 630, y: 12 },
+      { x: 8, y: 620 },
+      { x: 415, y: 260 },
+    ]) {
+      const wide = projectTilePoint(point, tile, WIDE);
+      const back = unprojectWidePoint(wide, tile, WIDE);
+      expect(back.x).toBeCloseTo(point.x, 6);
+      expect(back.y).toBeCloseTo(point.y, 6);
+    }
+  });
+
+  it('maps the wide centre onto the tile pixel aimed at it', () => {
+    const centred = { ...tile, headingOffset: 0, pitchOffset: 0 };
+    const p = unprojectWidePoint({ x: 320, y: 224 }, centred, WIDE);
+    expect(p.x).toBeCloseTo(320, 6);
+    expect(p.y).toBeCloseTo(320, 6);
+  });
+
+  it('reports directions outside the tile rather than clamping them', () => {
+    // A tile aimed hard right does not see the wide frame's left edge, and the
+    // stitcher relies on that showing up as an out-of-bounds coordinate.
+    const right = { ...tile, headingOffset: 30, pitchOffset: 0 };
+    const p = unprojectWidePoint({ x: 0, y: 224 }, right, WIDE);
+    expect(p.x).toBeLessThan(0);
+  });
+
+  it('returns null for a direction behind the tile', () => {
+    const behind = { ...tile, headingOffset: 179, pitchOffset: 0 };
+    expect(unprojectWidePoint({ x: 320, y: 224 }, behind, WIDE)).toBeNull();
+  });
+});
+
+describe('planGridTiles', () => {
+  it('produces cols x rows tiles', () => {
+    expect(planGridTiles({ wide: WIDE, cols: 2, rows: 2 })).toHaveLength(4);
+    expect(planGridTiles({ wide: WIDE, cols: 3, rows: 2 })).toHaveLength(6);
+  });
+
+  it('centres the grid on the wide view', () => {
+    const plan = planGridTiles({ fov: 90, wide: WIDE, cols: 2, rows: 2 });
+    const headings = plan.reduce((a, t) => a + t.headingOffset, 0);
+    const pitches = plan.reduce((a, t) => a + t.pitchOffset, 0);
+    expect(headings).toBeCloseTo(0, 6);
+    expect(pitches).toBeCloseTo(0, 6);
+  });
+
+  it('puts row 0 above row 1, since pitch grows upward', () => {
+    const plan = planGridTiles({ fov: 90, wide: WIDE, cols: 1, rows: 2 });
+    expect(plan[0].pitchOffset).toBeGreaterThan(plan[1].pitchOffset);
+  });
+
+  it('sizes the tile FOV to the wider of the two spans plus the overlap', () => {
+    // fov 90 over 2 columns is 45 deg per tile horizontally; the 70 deg vertical
+    // FOV over 2 rows is 35. The horizontal span wins, so 45 + 6.
+    const plan = planGridTiles({ fov: 90, wide: WIDE, cols: 2, rows: 2, overlapDeg: 6 });
+    expect(plan[0].fov).toBeCloseTo(51, 6);
+  });
+
+  it('respects the API ceiling on fov', () => {
+    const plan = planGridTiles({ fov: 120, wide: WIDE, cols: 1, rows: 1, overlapDeg: 30 });
+    expect(plan[0].fov).toBe(120);
+  });
+
+  it('covers every part of the wide frame', () => {
+    // The whole point of a background grid: no holes. Corners are the worst case,
+    // because a tile's edges bow inward under projection.
+    const plan = planGridTiles({ fov: 90, wide: WIDE, cols: 2, rows: 2 });
+    for (let y = 0; y <= WIDE.height; y += 8) {
+      for (let x = 0; x <= WIDE.width; x += 8) {
+        const covered = plan.some((tile) => {
+          const p = unprojectWidePoint({ x, y }, tile, WIDE);
+          return p && p.x >= 0 && p.x <= tile.width && p.y >= 0 && p.y <= tile.height;
+        });
+        expect(covered, `wide pixel ${x},${y} is not covered by any tile`).toBe(true);
+      }
+    }
+  });
+
+  it('still covers the frame at a narrow FOV and an odd grid', () => {
+    const wide = { width: 640, height: 448, fov: 40 };
+    const plan = planGridTiles({ fov: 40, wide, cols: 3, rows: 2 });
+    for (let y = 0; y <= wide.height; y += 16) {
+      for (let x = 0; x <= wide.width; x += 16) {
+        const covered = plan.some((tile) => {
+          const p = unprojectWidePoint({ x, y }, tile, wide);
+          return p && p.x >= 0 && p.x <= tile.width && p.y >= 0 && p.y <= tile.height;
+        });
+        expect(covered, `wide pixel ${x},${y} is not covered by any tile`).toBe(true);
+      }
+    }
+  });
+});
+
+describe('tilingGain', () => {
+  it('reports how much finer the tiles resolve the scene', () => {
+    const plan = planGridTiles({ fov: 90, wide: WIDE, cols: 2, rows: 2, overlapDeg: 6 });
+    // 640px over 51 deg against 640px over 90.
+    expect(tilingGain(plan, WIDE)).toBeCloseTo(90 / 51, 6);
+  });
+
+  it('falls away as the wide FOV narrows, and is a loss once the overlap dominates', () => {
+    // A deep panorama zoom already spends its whole 640px on a narrow arc, so a
+    // tile — which must add the overlap on top — resolves it no better. At fov 8
+    // over two columns the tile FOV is 4 + 6, wider than the wide shot itself.
+    const gainAt = (fov) => {
+      const wide = { width: 640, height: 448, fov };
+      return tilingGain(planGridTiles({ fov, wide, cols: 2, rows: 2, overlapDeg: 6 }), wide);
+    };
+    expect(gainAt(90)).toBeGreaterThan(gainAt(45));
+    expect(gainAt(45)).toBeGreaterThan(gainAt(20));
+    expect(gainAt(8)).toBeLessThan(1);
+  });
+
+  it('treats an empty plan as no gain', () => {
+    expect(tilingGain([], WIDE)).toBe(1);
+    expect(tilingGain(null, WIDE)).toBe(1);
   });
 });
 

@@ -54,7 +54,7 @@ describe('StreetScreen', () => {
     expect(onNext).toHaveBeenCalledWith(null);
   });
 
-  it('exports the composite as a downscaled JPEG when a photo is behind the drawing', async () => {
+  it('exports the composite as a JPEG at stage resolution when a photo is behind the drawing', async () => {
     const toDataURL = vi.fn(() => 'data:image/jpeg;base64,mockComposite');
     fakeStage = { toDataURL };
     const onNext = vi.fn();
@@ -70,7 +70,7 @@ describe('StreetScreen', () => {
 
     fireEvent.click(screen.getByText('Next: Describe'));
 
-    expect(toDataURL).toHaveBeenCalledWith({ mimeType: 'image/jpeg', quality: 0.75, pixelRatio: 0.7 });
+    expect(toDataURL).toHaveBeenCalledWith({ mimeType: 'image/jpeg', quality: 0.75, pixelRatio: 1 });
     expect(onNext).toHaveBeenCalledWith('data:image/jpeg;base64,mockComposite');
   });
 
@@ -82,7 +82,7 @@ describe('StreetScreen', () => {
 
     fireEvent.click(screen.getByText('Next: Describe'));
 
-    expect(toDataURL).toHaveBeenCalledWith({ mimeType: 'image/png', pixelRatio: 0.7 });
+    expect(toDataURL).toHaveBeenCalledWith({ mimeType: 'image/png', pixelRatio: 1 });
   });
 
   it('still advances with a null preview when the export throws', async () => {
