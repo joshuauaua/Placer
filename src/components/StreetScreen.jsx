@@ -29,15 +29,19 @@ export function StreetScreen({
   const handleNext = () => {
     let preview = null;
     try {
-      // With a photo behind them, JPEG at reduced scale keeps the export near 100 KB
-      // — a full-size PNG of a 1000x700 stage runs 1-2 MB, and saveImagination
-      // rewrites the whole array into localStorage's ~5 MB budget. Without a photo
-      // (a capture that failed) the stage is transparent, and JPEG has no alpha, so
-      // it would flatten to solid black; PNG is both correct and small there.
+      // JPEG rather than PNG because saveImagination rewrites the whole array into
+      // localStorage's ~5 MB budget and a full-size PNG of a 1000x700 stage runs
+      // 1-2 MB; at quality 0.75 the same frame is a couple of hundred KB.
+      // pixelRatio 1 exports the stage at its own size and no further: the
+      // background is a stitched capture of roughly that resolution (see
+      // streetViewBackgroundTiles), so going above 1 would only interpolate the
+      // photo while spending budget the overlays do not need. Without a photo (a
+      // capture that failed) the stage is transparent, and JPEG has no alpha, so it
+      // would flatten to solid black; PNG is both correct and small there.
       preview = stageRef.current?.toDataURL(
         backgroundImage
-          ? { mimeType: 'image/jpeg', quality: 0.75, pixelRatio: 0.7 }
-          : { mimeType: 'image/png', pixelRatio: 0.7 }
+          ? { mimeType: 'image/jpeg', quality: 0.75, pixelRatio: 1 }
+          : { mimeType: 'image/png', pixelRatio: 1 }
       ) ?? null;
     } catch (error) {
       // Shouldn't happen — captures are inlined as data: URLs precisely to keep the

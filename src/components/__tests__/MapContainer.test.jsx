@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-libra
 import { toPng } from 'html-to-image';
 import MapContainer from '../MapContainer';
 import { fetchImaginations } from '../../services/api';
+import { stitchPanoTiles } from '../../lib/panoStitch';
 import { CAT, THEME } from '../../theme';
 
 vi.mock('html-to-image', () => ({
@@ -11,6 +12,14 @@ vi.mock('html-to-image', () => ({
 
 vi.mock('../../services/api', () => ({
   fetchImaginations: vi.fn(() => Promise.resolve([])),
+}));
+
+// Stitching is real canvas work, which jsdom has no 2D context for. Mocked so
+// these tests can pin the request routing either side of it: a resolved value
+// stands for a composed frame, null for one that could not be composed.
+const STITCHED = 'data:image/jpeg;base64,mockStitched';
+vi.mock('../../lib/panoStitch', () => ({
+  stitchPanoTiles: vi.fn(() => Promise.resolve(STITCHED)),
 }));
 
 // A StreetViewPanorama stub. Defaults to hidden so the map capture path — which
@@ -242,6 +251,14 @@ describe('MapContainer', () => {
       zoom: 2,
     };
 
+    // Every request a capture made, as { pathname, params }.
+    const requestsOf = (fetchMock) => fetchMock.mock.calls.map(([url]) => {
+      const parsed = new URL(url);
+      return { pathname: parsed.pathname, params: parsed.searchParams };
+    });
+
+    const mean = (values) => values.reduce((a, b) => a + b, 0) / values.length;
+
     it('requests the Street View Static endpoint instead of rasterizing the DOM', async () => {
       window.google = mockGoogleMaps({ panorama: mockPanorama(OPEN_PANORAMA) });
       const fetchMock = stubStaticImageFetch();
@@ -256,7 +273,7 @@ describe('MapContainer', () => {
       expect(toPng).not.toHaveBeenCalled();
     });
 
-    it('sends the panorama position, heading, pitch and derived fov to the API', async () => {
+    it('fetches a grid of narrow tiles, since the endpoint caps one image at 640px', async () => {
       window.google = mockGoogleMaps({ panorama: mockPanorama(OPEN_PANORAMA) });
       const fetchMock = stubStaticImageFetch();
       const onCaptureView = vi.fn();
@@ -265,13 +282,95 @@ describe('MapContainer', () => {
       fireEvent.click(screen.getByLabelText('Capture view'));
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
-      const params = new URL(fetchMock.mock.calls[0][0]).searchParams;
-      expect(params.get('location')).toBe('55.60123,12.98456');
-      expect(params.get('heading')).toBe('217.5');
-      expect(params.get('pitch')).toBe('-4.25');
-      // Panorama zoom 2 is a 45 degree field of view.
-      expect(params.get('fov')).toBe('45');
-      expect(params.get('key')).toBe('test-key');
+      const requests = requestsOf(fetchMock);
+      expect(requests).toHaveLength(4);
+      for (const { pathname, params } of requests) {
+        expect(pathname).toBe('/maps/api/streetview');
+        // Square and at the cap, to keep the vertical FOV as large as it allows.
+        expect(params.get('size')).toBe('640x640');
+        // Narrower than the 45 deg wide view is the whole source of the gain.
+        expect(Number(params.get('fov'))).toBeLessThan(45);
+      }
+      expect(onCaptureView.mock.calls[0][0].screenshot).toBe(STITCHED);
+    });
+
+    it('sends the panorama position and key with every tile', async () => {
+      window.google = mockGoogleMaps({ panorama: mockPanorama(OPEN_PANORAMA) });
+      const fetchMock = stubStaticImageFetch();
+      const onCaptureView = vi.fn();
+      render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
+
+      fireEvent.click(screen.getByLabelText('Capture view'));
+      await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
+
+      for (const { params } of requestsOf(fetchMock)) {
+        expect(params.get('location')).toBe('55.60123,12.98456');
+        expect(params.get('key')).toBe('test-key');
+      }
+    });
+
+    it('centres the tile grid on the panorama POV', async () => {
+      window.google = mockGoogleMaps({ panorama: mockPanorama(OPEN_PANORAMA) });
+      const fetchMock = stubStaticImageFetch();
+      const onCaptureView = vi.fn();
+      render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
+
+      fireEvent.click(screen.getByLabelText('Capture view'));
+      await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
+
+      const requests = requestsOf(fetchMock);
+      const headings = requests.map(({ params }) => Number(params.get('heading')));
+      const pitches = requests.map(({ params }) => Number(params.get('pitch')));
+      // The grid is symmetric about the view it stands in for, so the offsets
+      // cancel: what the user was looking at is the middle of the composite.
+      expect(mean(headings)).toBeCloseTo(217.5, 4);
+      expect(mean(pitches)).toBeCloseTo(-4.25, 4);
+      // Spread either side of it on both axes, rather than all aimed alike.
+      expect(new Set(headings).size).toBe(2);
+      expect(new Set(pitches).size).toBe(2);
+    });
+
+    it('skips tiling at a deep zoom, where a tile resolves no better than the wide shot', async () => {
+      // Panorama zoom 4 is a 11.25 degree field of view; a tile would have to add
+      // the seam overlap on top of its slice of that, coming out wider than the
+      // wide shot itself. One request, at the exact POV.
+      window.google = mockGoogleMaps({
+        panorama: mockPanorama({ ...OPEN_PANORAMA, zoom: 4 }),
+      });
+      const fetchMock = stubStaticImageFetch();
+      const onCaptureView = vi.fn();
+      render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
+
+      fireEvent.click(screen.getByLabelText('Capture view'));
+      await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
+
+      const requests = requestsOf(fetchMock);
+      expect(requests).toHaveLength(1);
+      expect(requests[0].params.get('heading')).toBe('217.5');
+      expect(requests[0].params.get('pitch')).toBe('-4.25');
+      expect(requests[0].params.get('fov')).toBe('11.25');
+      expect(requests[0].params.get('size')).toBe('640x448');
+    });
+
+    it('falls back to one wide image when the tiles cannot be composed', async () => {
+      vi.mocked(stitchPanoTiles).mockResolvedValueOnce(null);
+      window.google = mockGoogleMaps({ panorama: mockPanorama(OPEN_PANORAMA) });
+      const fetchMock = stubStaticImageFetch();
+      const onCaptureView = vi.fn();
+      render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
+
+      fireEvent.click(screen.getByLabelText('Capture view'));
+      await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
+
+      const requests = requestsOf(fetchMock);
+      expect(requests).toHaveLength(5);
+      // The last one is the whole view in a single image, at the exact POV.
+      const wide = requests[4].params;
+      expect(wide.get('heading')).toBe('217.5');
+      expect(wide.get('pitch')).toBe('-4.25');
+      expect(wide.get('fov')).toBe('45');
+      expect(onCaptureView.mock.calls[0][0].screenshot)
+        .toMatch(/^data:image\/jpeg;base64,/);
     });
 
     it('records the real panorama POV rather than the hardcoded zeros', async () => {
@@ -325,13 +424,17 @@ describe('MapContainer', () => {
     it('falls back to a top-down map image when the spot has no Street View coverage', async () => {
       window.google = mockGoogleMaps({ panorama: mockPanorama(OPEN_PANORAMA) });
       // return_error_code=true makes Google 404 rather than serve a gray tile.
-      const fetchMock = vi.fn()
-        .mockResolvedValueOnce({ ok: false, status: 404 })
-        .mockResolvedValueOnce({
-          ok: true,
-          status: 200,
-          blob: () => Promise.resolve(new Blob(['tile'], { type: 'image/png' })),
-        });
+      // Keyed on the endpoint rather than call order, since the tiles go out
+      // together and there is no guaranteed order among them.
+      const fetchMock = vi.fn((url) => Promise.resolve(
+        new URL(url).pathname === '/maps/api/streetview'
+          ? { ok: false, status: 404 }
+          : {
+            ok: true,
+            status: 200,
+            blob: () => Promise.resolve(new Blob(['tile'], { type: 'image/png' })),
+          }
+      ));
       vi.stubGlobal('fetch', fetchMock);
       const onCaptureView = vi.fn();
       render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
@@ -339,10 +442,14 @@ describe('MapContainer', () => {
       fireEvent.click(screen.getByLabelText('Capture view'));
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-      const fallback = new URL(fetchMock.mock.calls[1][0]);
+      const requests = requestsOf(fetchMock);
+      const fallback = requests[requests.length - 1];
       expect(fallback.pathname).toBe('/maps/api/staticmap');
-      expect(fallback.searchParams.get('center')).toBe('55.60123,12.98456');
+      expect(fallback.params.get('center')).toBe('55.60123,12.98456');
+      // Exactly one map request: a 404 from the tiles already means no coverage,
+      // so there is no point asking the same endpoint for the wide image too.
+      expect(requests.filter((r) => r.pathname === '/maps/api/staticmap')).toHaveLength(1);
+      expect(requests.filter((r) => r.pathname === '/maps/api/streetview')).toHaveLength(4);
       expect(onCaptureView.mock.calls[0][0].screenshot)
         .toMatch(/^data:image\/png;base64,/);
     });
@@ -356,9 +463,10 @@ describe('MapContainer', () => {
       fireEvent.click(screen.getByLabelText('Capture view'));
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
-      // A misconfigured key is not missing coverage — retrying the fallback
-      // would just 403 again and hide the real cause.
-      expect(fetchMock).toHaveBeenCalledTimes(1);
+      // A misconfigured key is not missing coverage — retrying either the wide
+      // image or the map fallback would just 403 again and hide the real cause.
+      const requests = requestsOf(fetchMock);
+      expect(requests.every((r) => r.pathname === '/maps/api/streetview')).toBe(true);
       expect(onCaptureView.mock.calls[0][0].screenshot).toBeNull();
     });
   });

@@ -6,7 +6,7 @@
 // frame with only Google's DOM controls on top. Asking Google's servers for the
 // image instead is the only reliable route from a static front end.
 
-import { planTiles } from './panoGeometry.js'
+import { planGridTiles, planTiles } from './panoGeometry.js'
 
 const STREET_VIEW_ENDPOINT = 'https://maps.googleapis.com/maps/api/streetview'
 const STATIC_MAP_ENDPOINT = 'https://maps.googleapis.com/maps/api/staticmap'
@@ -19,8 +19,17 @@ const STATIC_MAP_ENDPOINT = 'https://maps.googleapis.com/maps/api/staticmap'
 export const MAX_STATIC_SIZE = 640
 
 // The Konva stage in StreetScreen is 1000x700, so 640x448 fills it without
-// stretching while staying inside the cap.
+// stretching while staying inside the cap. It does not *fill* it at native
+// resolution — 640 stretched to 1000 is visibly soft — which is what the
+// scale parameter below and streetViewBackgroundTiles are for.
 export const DEFAULT_SIZE = { width: 640, height: 448 }
+
+// The Maps Static API accepts scale=1 or 2, where 2 "returns twice as many
+// pixels while retaining the same coverage area and level of detail" — so a
+// 640x448 request comes back 1280x896, enough to fill the stage natively. It
+// counts as one request either way. The Street View endpoint has no equivalent,
+// which is why higher resolution there needs tiling instead.
+export const MAX_MAP_SCALE = 2
 
 // Documented ceiling for the Street View `fov` parameter; the floor is ours, to
 // keep an extreme panorama zoom from asking for a degenerate sliver.
@@ -82,17 +91,25 @@ export function staticMapUrl({
   // terrain are the types that actually serve.
   maptype = 'roadmap',
   size = DEFAULT_SIZE,
+  scale = MAX_MAP_SCALE,
 }) {
   const { width, height } = clampSize(size)
   const params = new URLSearchParams({
     center: `${center.lat},${center.lng}`,
     zoom: String(zoom),
     size: `${width}x${height}`,
+    // Requested in CSS-ish pixels: `size` stays inside the 640 cap and scale
+    // multiplies the pixels delivered, so this is 1280x896 of image describing
+    // the same 640x448 of map.
+    scale: String(clamp(Math.round(scale), 1, MAX_MAP_SCALE)),
     maptype,
     key: apiKey,
   })
   return `${STATIC_MAP_ENDPOINT}?${params.toString()}`
 }
+
+// Street View headings wrap at 360.
+const wrapHeading = (deg) => ((deg % 360) + 360) % 360
 
 /**
  * Build a row of higher-resolution tiles covering the same view as a single wide
@@ -136,8 +153,54 @@ export function streetViewTileUrls({
     url: streetViewStaticUrl({
       apiKey,
       location,
-      // Street View headings wrap at 360.
-      heading: (((baseHeading + tile.headingOffset) % 360) + 360) % 360,
+      heading: wrapHeading(baseHeading + tile.headingOffset),
+      pitch: pitch + tile.pitchOffset,
+      fov: tile.fov,
+      size: { width: tile.width, height: tile.height },
+    }),
+  }));
+}
+
+/**
+ * Build a grid of tiles covering the whole of a wide view, for stitching back
+ * into one sharper background image.
+ *
+ * streetViewTileUrls above covers the road band only, which is all detection
+ * reads. A background has to cover the sky too, so this walks both axes — at the
+ * defaults, four requests resolving the scene ~1.8x more finely than the single
+ * wide shot. See src/lib/panoStitch.js for the recombination.
+ *
+ * @returns array of { url, tile }, where tile is the descriptor stitchPanoTiles
+ *          needs to place that image in the wide frame
+ */
+export function streetViewBackgroundTiles({
+  apiKey,
+  location,
+  heading,
+  pitch = 0,
+  fov = 90,
+  cols = 2,
+  rows = 2,
+  overlapDeg = 6,
+  wideSize = DEFAULT_SIZE,
+  size = MAX_STATIC_SIZE,
+}) {
+  const plan = planGridTiles({
+    fov,
+    cols,
+    rows,
+    overlapDeg,
+    wide: { width: wideSize.width, height: wideSize.height, fov },
+    size,
+  });
+  const baseHeading = Number.isFinite(heading) ? heading : 0;
+
+  return plan.map((tile) => ({
+    tile,
+    url: streetViewStaticUrl({
+      apiKey,
+      location,
+      heading: wrapHeading(baseHeading + tile.headingOffset),
       pitch: pitch + tile.pitchOffset,
       fov: tile.fov,
       size: { width: tile.width, height: tile.height },

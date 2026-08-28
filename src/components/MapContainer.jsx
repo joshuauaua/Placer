@@ -9,14 +9,28 @@ import { ImaginationPreview } from './ImaginationPreview';
 import { CAT, THEME } from '../theme';
 import { fetchImaginations } from '../services/api';
 import {
+  DEFAULT_SIZE,
   fetchAsDataUrl,
   fovFromPanoramaZoom,
   staticMapUrl,
+  streetViewBackgroundTiles,
   streetViewStaticUrl,
 } from '../lib/staticMaps';
+import { tilingGain } from '../lib/panoGeometry';
 
 // Pin colour for an imagination saved without a recognised category.
 const FALLBACK_PIN_COLOR = THEME.accent;
+
+// Below this resolution gain, tiling is not worth its extra requests: the gain
+// comes from spending a whole 640px tile on a slice of the view, so it shrinks as
+// the panorama zooms in and the wide shot is already spending its own 640px on a
+// narrow arc. At two columns this bows out somewhere around fov 30.
+const MIN_TILING_GAIN = 1.25;
+
+// Ceiling on the stitched output, independent of the gain. Composing runs one
+// inverse projection per output pixel, and past the 1000x700 stage the extra
+// pixels cost time for detail nothing displays.
+const MAX_TILING_SCALE = 2;
 
 const hasCoords = (position) =>
   Number.isFinite(position?.lat) && Number.isFinite(position?.lng);
@@ -277,21 +291,64 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
     };
   };
 
-  // Ask Google's servers for the panorama image. Falls back to a top-down map
-  // tile when the spot has no Street View coverage (signalled by a 404, which
-  // return_error_code=true in streetViewStaticUrl makes Google send instead of a
-  // gray placeholder image).
-  const captureStreetView = async (view) => {
-    const url = streetViewStaticUrl({
+  // Fetch the view as a grid of narrow tiles and stitch them into one frame
+  // sharper than the 640px cap allows on its own. Returns null when tiling is not
+  // worth its extra requests, or when composing the tiles failed, leaving the
+  // caller on the single wide request.
+  //
+  // Fetch failures are not caught here on purpose. A 404 means the spot has no
+  // coverage and the caller's map fallback is the answer; anything else — a
+  // rejected key, a network fault — would meet the single wide request in exactly
+  // the same way, so retrying it just spends another request to learn the same
+  // thing.
+  const captureTiledStreetView = async (view) => {
+    const wide = { width: DEFAULT_SIZE.width, height: DEFAULT_SIZE.height, fov: view.fov };
+    const sources = streetViewBackgroundTiles({
       apiKey,
       location: view.position,
       heading: view.heading,
       pitch: view.pitch,
       fov: view.fov,
+      wideSize: DEFAULT_SIZE,
     });
+    const tiles = sources.map(({ tile }) => tile);
+    const gain = tilingGain(tiles, wide);
+    if (gain < MIN_TILING_GAIN) return null;
+
+    const images = await Promise.all(sources.map(({ url }) => fetchAsDataUrl(url)));
 
     try {
-      return await fetchAsDataUrl(url);
+      const { stitchPanoTiles } = await import('../lib/panoStitch');
+      return await stitchPanoTiles({
+        images,
+        tiles,
+        wide,
+        scale: Math.min(gain, MAX_TILING_SCALE),
+      });
+    } catch (error) {
+      // Composing is all that can still fail with the images already in hand, and
+      // a wide capture does not depend on it — so that one is worth a try.
+      console.warn('Could not stitch the tiled capture — falling back to one wide image', error);
+      return null;
+    }
+  };
+
+  // Ask Google's servers for the panorama image. Falls back to a top-down map
+  // tile when the spot has no Street View coverage (signalled by a 404, which
+  // return_error_code=true in streetViewStaticUrl makes Google send instead of a
+  // gray placeholder image).
+  const captureStreetView = async (view) => {
+    try {
+      const stitched = await captureTiledStreetView(view);
+      if (stitched) return stitched;
+
+      return await fetchAsDataUrl(streetViewStaticUrl({
+        apiKey,
+        location: view.position,
+        heading: view.heading,
+        pitch: view.pitch,
+        fov: view.fov,
+      }));
     } catch (error) {
       if (error.status !== 404) {
         throw error;
