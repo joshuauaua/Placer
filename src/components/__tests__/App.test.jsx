@@ -54,4 +54,41 @@ describe('App', () => {
 
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
   });
+
+  describe('/admin/imaginations route', () => {
+    let originalValue;
+
+    beforeEach(() => {
+      originalValue = import.meta.env.VITE_ADMIN_ENABLED;
+    });
+
+    afterEach(() => {
+      import.meta.env.VITE_ADMIN_ENABLED = originalValue;
+    });
+
+    it('renders the imaginations admin page when admin is enabled', async () => {
+      import.meta.env.VITE_ADMIN_ENABLED = 'true';
+      renderAt('/admin/imaginations');
+
+      // Reads through the real api against jsdom localStorage, so with nothing
+      // saved it settles on the empty state.
+      expect(await screen.findByText('Nothing posted yet')).toBeInTheDocument();
+    });
+
+    it('does not fall through to the main dashboard', async () => {
+      import.meta.env.VITE_ADMIN_ENABLED = 'true';
+      renderAt('/admin/imaginations');
+      await screen.findByText('Nothing posted yet');
+
+      expect(screen.queryByText('Admin Dashboard')).not.toBeInTheDocument();
+    });
+
+    it('is gated behind VITE_ADMIN_ENABLED like the dashboard', async () => {
+      delete import.meta.env.VITE_ADMIN_ENABLED;
+      renderAt('/admin/imaginations');
+
+      expect(await screen.findByText('Access Restricted')).toBeInTheDocument();
+      expect(screen.queryByText('Imaginations')).not.toBeInTheDocument();
+    });
+  });
 });

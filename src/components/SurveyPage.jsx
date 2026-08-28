@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Icon } from './Icon';
 import { Btn } from './UI';
+import posthog from 'posthog-js';
 
 export function SurveyPage({ t }) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -166,6 +167,10 @@ export function SurveyPage({ t }) {
   };
 
   const handleSubmit = () => {
+    posthog.capture('survey_submitted', {
+      questions_answered: Object.keys(answers).length,
+      total_questions: questions.length,
+    });
     setSubmitted(true);
   };
 

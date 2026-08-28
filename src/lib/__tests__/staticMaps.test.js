@@ -6,6 +6,7 @@ import {
   fetchAsDataUrl,
   fovFromPanoramaZoom,
   staticMapUrl,
+  streetViewBackgroundTiles,
   streetViewStaticUrl,
 } from '../staticMaps';
 
@@ -118,6 +119,74 @@ describe('staticMapUrl', () => {
   it('defaults to roadmap, since satellite and hybrid are refused under EEA terms', () => {
     const url = staticMapUrl({ apiKey: KEY, center: LOCATION });
     expect(paramsOf(url).maptype).toBe('roadmap');
+  });
+
+  it('asks for double-density pixels, which this endpoint supports and Street View does not', () => {
+    // 640x448 at scale 2 is delivered as 1280x896, enough to fill the 1000x700
+    // stage without upscaling, and still billed as one request.
+    expect(paramsOf(staticMapUrl({ apiKey: KEY, center: LOCATION })).scale).toBe('2');
+  });
+
+  it('clamps scale to what the API accepts', () => {
+    expect(paramsOf(staticMapUrl({ apiKey: KEY, center: LOCATION, scale: 4 })).scale).toBe('2');
+    expect(paramsOf(staticMapUrl({ apiKey: KEY, center: LOCATION, scale: 0 })).scale).toBe('1');
+  });
+
+  it('still accepts scale 1 for callers that want the smaller payload', () => {
+    expect(paramsOf(staticMapUrl({ apiKey: KEY, center: LOCATION, scale: 1 })).scale).toBe('1');
+  });
+});
+
+describe('streetViewBackgroundTiles', () => {
+  const view = { apiKey: KEY, location: LOCATION, heading: 90, pitch: 0, fov: 90 };
+
+  it('covers the frame in a grid, one request per tile', () => {
+    const tiles = streetViewBackgroundTiles({ ...view, cols: 2, rows: 2 });
+    expect(tiles).toHaveLength(4);
+    for (const { url } of tiles) {
+      expect(paramsOf(url).size).toBe(`${MAX_STATIC_SIZE}x${MAX_STATIC_SIZE}`);
+    }
+  });
+
+  it('asks each tile for a narrower FOV than the wide shot — the whole point', () => {
+    const [{ url }] = streetViewBackgroundTiles({ ...view, cols: 2, rows: 2 });
+    expect(Number(paramsOf(url).fov)).toBeLessThan(view.fov);
+  });
+
+  it('spreads the tiles either side of the requested heading', () => {
+    const headings = streetViewBackgroundTiles({ ...view, cols: 2, rows: 1 })
+      .map(({ url }) => Number(paramsOf(url).heading));
+    expect(headings).toHaveLength(2);
+    expect(headings[0]).toBeLessThan(90);
+    expect(headings[1]).toBeGreaterThan(90);
+  });
+
+  it('wraps headings past north into the 0-360 range the API accepts', () => {
+    const headings = streetViewBackgroundTiles({ ...view, heading: 10, cols: 2, rows: 1 })
+      .map(({ url }) => Number(paramsOf(url).heading));
+    for (const heading of headings) {
+      expect(heading).toBeGreaterThanOrEqual(0);
+      expect(heading).toBeLessThan(360);
+    }
+    // -12.5 rather than 347.5 would be rejected.
+    expect(headings[0]).toBeCloseTo(347.5, 4);
+  });
+
+  it('aims the rows above and below the horizon, unlike the road-band row', () => {
+    const pitches = streetViewBackgroundTiles({ ...view, cols: 1, rows: 2 })
+      .map(({ url }) => Number(paramsOf(url).pitch));
+    expect(pitches[0]).toBeGreaterThan(0);
+    expect(pitches[1]).toBeLessThan(0);
+  });
+
+  it('returns the tile descriptor the stitcher needs alongside each URL', () => {
+    const [first] = streetViewBackgroundTiles({ ...view, cols: 2, rows: 2 });
+    expect(first.tile).toMatchObject({
+      width: MAX_STATIC_SIZE,
+      height: MAX_STATIC_SIZE,
+    });
+    expect(Number.isFinite(first.tile.headingOffset)).toBe(true);
+    expect(Number.isFinite(first.tile.pitchOffset)).toBe(true);
   });
 });
 
