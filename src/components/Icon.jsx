@@ -142,6 +142,51 @@ const ICON_ELEMENTS = {
       <path d="M6.5 16l4-7h5l-2.5 7M10.5 9h5.5M9 9h3" />
     </>
   ),
+  flask: (
+    <>
+      <path d="M9 3h6M10 3v5L5.2 17.8A2 2 0 007 21h10a2 2 0 001.8-3.2L14 8V3" />
+      <path d="M7.4 15h9.2" />
+    </>
+  ),
+  section: (
+    <>
+      <path d="M2 17h20" />
+      <path d="M5 17v-3M8.5 17V6M14 17V9.5M19 17v-5" />
+    </>
+  ),
+  path: (
+    <>
+      <path d="M5.5 18.5c5 .5 4-5 7-8s5-3.5 6.5-4.5" />
+      <circle cx="5" cy="19" r="1.5" />
+      <circle cx="19.5" cy="5.5" r="1.5" />
+    </>
+  ),
+  walk: (
+    <>
+      <circle cx="13.5" cy="4.5" r="2" />
+      <path d="M13.5 7l-2.2 5.2L14 15l1 5M11.3 12.2L8 14M14.6 9.4L17.5 11" />
+    </>
+  ),
+  coins: (
+    <>
+      <ellipse cx="12" cy="6.5" rx="7" ry="2.8" />
+      <path d="M5 6.5v5c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8v-5" />
+      <path d="M5 11.5v5c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8v-5" />
+    </>
+  ),
+  link: (
+    <>
+      <path d="M9.5 14.5l5-5" />
+      <path d="M13.5 6.8l1-1a3.6 3.6 0 015.1 5.1l-2.6 2.6" />
+      <path d="M10.5 17.2l-1 1a3.6 3.6 0 01-5.1-5.1l2.6-2.6" />
+    </>
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.2V12l3.2 2.1" />
+    </>
+  ),
 };
 
 export function Icon({ name, size = 22, stroke = 1.7, fill = 'none', style, color }) {
