@@ -1,4 +1,4 @@
-/* PLOT — Sandbox: Street Section Mixer.
+/* PLACER — Sandbox: Street Section Mixer.
  *
  * The street is a fixed number of metres wide and every metre is already spoken for,
  * so nothing can be added without something else giving way. Dragging a divider makes
@@ -126,7 +126,7 @@ export function StreetMixer({ t, experiment }) {
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(280px, 1fr)', gap: 20, alignItems: 'start' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
         <Panel t={t} title="The street" aside={
-          <span className="plot-mono" style={{ fontSize: 12, color: current.unallocated > 0 ? '#C0392B' : t.inkDim }}>
+          <span className="placer-mono" style={{ fontSize: 12, color: current.unallocated > 0 ? '#C0392B' : t.inkDim }}>
             {formatMetres(current.used)} of {formatMetres(streetWidth)}
             {current.unallocated > 0 && ` — ${formatMetres(current.unallocated)} spare`}
           </span>
@@ -222,7 +222,7 @@ export function StreetMixer({ t, experiment }) {
               onChange={(event) => setStreetWidth(Math.max(widthFloor, Number(event.target.value)))}
               style={{ flex: '1 1 200px', accentColor: experiment.color }}
             />
-            <span className="plot-mono" style={{ fontSize: 13, color: t.inkDim, minWidth: 58 }}>{formatMetres(streetWidth)}</span>
+            <span className="placer-mono" style={{ fontSize: 13, color: t.inkDim, minWidth: 58 }}>{formatMetres(streetWidth)}</span>
             {current.unallocated > 0 && (
               <button
                 onClick={() => apply(distributeSlack(segments, streetWidth))}
@@ -249,7 +249,7 @@ export function StreetMixer({ t, experiment }) {
                     borderBottom: index === segments.length - 1 ? 'none' : `1px solid ${t.line}` }}>
                   <span style={{ width: 12, height: 12, borderRadius: 3, background: type.color, flex: '0 0 auto' }} />
                   <span style={{ fontSize: 14, fontWeight: 700, color: t.ink, flex: 1, minWidth: 0 }}>{type.label}</span>
-                  <span className="plot-mono" style={{ fontSize: 13, color: t.inkDim, minWidth: 56, textAlign: 'right' }}>
+                  <span className="placer-mono" style={{ fontSize: 13, color: t.inkDim, minWidth: 56, textAlign: 'right' }}>
                     {formatMetres(segment.width)}
                   </span>
                   <button onClick={() => nudge(index, -NUDGE)} aria-label={`Narrow ${type.label}`} style={stepStyle(t)}>
@@ -271,7 +271,7 @@ export function StreetMixer({ t, experiment }) {
           </ul>
 
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${t.line}` }}>
-            <div className="plot-mono" style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase',
+            <div className="placer-mono" style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase',
               color: t.inkDim, marginBottom: 10 }}>
               Add to the street
             </div>
@@ -330,7 +330,7 @@ export function StreetMixer({ t, experiment }) {
             Trees shade about twice their own width, which is why a 1.5-metre planting strip
             does more for summer heat than the same width of anything else.
           </p>
-          <p className="plot-mono" style={{ fontSize: 11.5, color: t.inkFaint, lineHeight: 1.6, marginTop: 14 }}>
+          <p className="placer-mono" style={{ fontSize: 11.5, color: t.inkFaint, lineHeight: 1.6, marginTop: 14 }}>
             Figures are rough, and calibrated to make the trade-offs feel right rather than to
             size a real scheme.
           </p>

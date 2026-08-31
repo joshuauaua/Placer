@@ -1,4 +1,4 @@
-/* PLOT — Sandbox: 15-Minute Reach.
+/* PLACER — Sandbox: 15-Minute Reach.
  *
  * Sixteen hundred metres square, four housing clusters, and a railway that can only be
  * crossed in two places. Place a food shop, a school, a clinic, a park and a transit
@@ -98,7 +98,7 @@ export function FifteenMinute({ t, experiment }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(280px, 1fr)', gap: 20, alignItems: 'start' }}>
       <Panel t={t} title="The neighbourhood" aside={
-        <span className="plot-mono" style={{ fontSize: 12, color: t.inkDim }}>
+        <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>
           {placements.length} placed · 100 m cells
         </span>
       }>

@@ -1,4 +1,4 @@
-/* PLOT — Resources Page */
+/* PLACER — Resources Page */
 
 import { useState } from 'react';
 import { Icon } from './Icon';
@@ -36,7 +36,7 @@ export function ResourcesPage({ t }) {
     {
       id: 4,
       title: 'Case Study: Transforming a Neighborhood Park',
-      excerpt: 'How one community used PLOT to redesign their local park and secure funding.',
+      excerpt: 'How one community used PLACER to redesign their local park and secure funding.',
       image: { bg: '#E08A2B', icon: 'award' },
       tags: ['Case Study', 'Success Story'],
       date: 'May 28, 2026',
@@ -45,7 +45,7 @@ export function ResourcesPage({ t }) {
     {
       id: 5,
       title: 'Getting Started with Asset Placement',
-      excerpt: 'A beginner-friendly tutorial on visualizing improvements with PLOT\'s asset library.',
+      excerpt: 'A beginner-friendly tutorial on visualizing improvements with PLACER\'s asset library.',
       image: { bg: '#D4407E', icon: 'box' },
       tags: ['Tutorial', 'Basics'],
       date: 'May 20, 2026',
@@ -98,7 +98,7 @@ export function ResourcesPage({ t }) {
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         {/* Header */}
         <div style={{ marginBottom: 48 }}>
-          <h1 className="plot-disp" style={{
+          <h1 className="placer-disp" style={{
             fontSize: 48,
             fontWeight: 900,
             color: t.ink,

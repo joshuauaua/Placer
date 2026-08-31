@@ -152,7 +152,7 @@ describe('MapContainer', () => {
     expect(floatingBar).toHaveStyle({
       position: 'absolute',
       // Offset by the cookie banner's height while it is up, 0 otherwise.
-      bottom: 'calc(24px + var(--plot-consent-inset, 0px))',
+      bottom: 'calc(24px + var(--placer-consent-inset, 0px))',
       left: '50%',
       transform: 'translateX(-50%)',
     });

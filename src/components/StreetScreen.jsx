@@ -1,4 +1,4 @@
-/* PLOT — Step 1: place assets on the captured view */
+/* PLACER — Step 1: place assets on the captured view */
 
 import { useRef, lazy, Suspense } from 'react';
 import { Btn } from './UI';

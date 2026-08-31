@@ -1,4 +1,4 @@
-/* PLOT — assemble the design canvas. */
+/* PLACER — assemble the design canvas. */
 
 function Board({ children }) {
   return <div style={{ width: '100%', height: '100%' }}>{children}</div>;
@@ -9,7 +9,7 @@ function App() {
   const W = 1440, H = 900;
   return (
     <DesignCanvas>
-      <DCSection id="flow" title="Core flow" subtitle="PLOT · Reimagine Your City — desktop, primary direction (Bone)">
+      <DCSection id="flow" title="Core flow" subtitle="PLACER · Reimagine Your City — desktop, primary direction (Bone)">
         <DCArtboard id="home" label="1 · Map Home" width={W} height={H}><Board><MapHome t={bone} /></Board></DCArtboard>
         <DCArtboard id="search" label="2 · Search & Filter" width={W} height={H}><Board><SearchFilterScreen t={bone} /></Board></DCArtboard>
         <DCArtboard id="street" label="3 · Street View — place assets" width={W} height={H}><Board><StreetScreen t={bone} /></Board></DCArtboard>

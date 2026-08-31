@@ -1,4 +1,4 @@
-/* PLOT — copy to clipboard, for browsers that allow it and browsers that do not.
+/* PLACER — copy to clipboard, for browsers that allow it and browsers that do not.
  *
  * The async Clipboard API is missing in older browsers, absent outside a secure
  * context, and rejects outright if the permission is refused. Callers need to know

@@ -1,4 +1,4 @@
-/* PLOT — street-view diorama. Flat editorial scene; assets sit on the sidewalk.
+/* PLACER — street-view diorama. Flat editorial scene; assets sit on the sidewalk.
    StreetScene({mode, placed:[{type,x,scale,selected}], showGuides}). */
 
 const STREET_PAL = {

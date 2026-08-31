@@ -1,4 +1,4 @@
-/* PLOT — map mock. MapCanvas = SVG "tiles" (light/dark). MapView = tiles +
+/* PLACER — map mock. MapCanvas = SVG "tiles" (light/dark). MapView = tiles +
    pin overlay + controls. Pins are absolutely-positioned HTML over the SVG. */
 
 const MAP_PAL = {
@@ -88,14 +88,14 @@ function Pin({ cat, x, y, count, selected, size = 36, theme, onClick, children }
       zIndex: selected ? 40 : 10, cursor: 'pointer' }} onClick={onClick}>
       {children}
       <div style={{ position: 'relative', width: s, height: s, margin: '0 auto',
-        animation: 'plot-pin-pop .35s cubic-bezier(.2,.8,.3,1) both' }}>
+        animation: 'placer-pin-pop .35s cubic-bezier(.2,.8,.3,1) both' }}>
         <div style={{ position: 'absolute', inset: 0, background: c.color,
           borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)',
           border: selected ? `2.5px solid ${theme.accent}` : '2px solid rgba(255,255,255,.92)',
           boxShadow: '0 4px 10px rgba(0,0,0,.28)' }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
           {count
-            ? <span className="plot-disp" style={{ fontSize: s * 0.42, fontWeight: 800, color: '#fff' }}>{count}</span>
+            ? <span className="placer-disp" style={{ fontSize: s * 0.42, fontWeight: 800, color: '#fff' }}>{count}</span>
             : <Icon name={c.icon} size={s * 0.5} stroke={2.1} />}
         </div>
       </div>

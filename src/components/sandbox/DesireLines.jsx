@@ -1,4 +1,4 @@
-/* PLOT — Sandbox: Desire Lines.
+/* PLACER — Sandbox: Desire Lines.
  *
  * The plaza is paved the way plazas are paved — a ring and a cross — and the things
  * people walk between are in the corners. Draw the walks you would actually make and
@@ -99,7 +99,7 @@ export function DesireLines({ t, experiment }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(280px, 1fr)', gap: 20, alignItems: 'start' }}>
       <Panel t={t} title="The plaza" aside={
-        <span className="plot-mono" style={{ fontSize: 12, color: t.inkDim }}>
+        <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>
           {pending && !dragTo
             ? `From ${pending.label} — now pick where you are going`
             : `${lines.length} ${lines.length === 1 ? 'journey' : 'journeys'} drawn`}

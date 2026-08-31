@@ -13,7 +13,7 @@ vi.mock('posthog-js', () => ({
   },
 }));
 
-const CONSENT_KEY = 'plot_analytics_consent';
+const CONSENT_KEY = 'placer_analytics_consent';
 
 // analytics.js remembers whether PostHog has been loaded in this page load, so
 // each test gets a fresh copy of it — and the banner that imports it.

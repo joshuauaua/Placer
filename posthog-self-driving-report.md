@@ -1,8 +1,8 @@
-# PostHog Self-driving setup — PLOT
+# PostHog Self-driving setup — PLACER
 
 ## Summary
 
-Session Replay, Error Tracking, and Support were enabled; seven signal sources are now wired to the inbox; a six-scout troop is active (one custom scout written for PLOT's core imagination funnel); and two Replay Vision scanners are armed to surface on-screen defects and user frustration as soon as recordings arrive. Findings will start appearing in your [Self-driving inbox](https://eu.posthog.com/project/259020/inbox) within ~30 minutes.
+Session Replay, Error Tracking, and Support were enabled; seven signal sources are now wired to the inbox; a six-scout troop is active (one custom scout written for PLACER's core imagination funnel); and two Replay Vision scanners are armed to surface on-screen defects and user frustration as soon as recordings arrive. Findings will start appearing in your [Self-driving inbox](https://eu.posthog.com/project/259020/inbox) within ~30 minutes.
 
 ---
 
@@ -55,7 +55,7 @@ Session Replay, Error Tracking, and Support were enabled; seven signal sources a
 
 | Tool | Status |
 |---|---|
-| GitHub Issues | **Selected but not connected** — you skipped connecting `joshuauaua/Plot` during setup. The responder row is enabled and stays dormant until you connect the warehouse source. See follow-ups. |
+| GitHub Issues | **Selected but not connected** — you skipped connecting `joshuauaua/Placer` during setup. The responder row is enabled and stays dormant until you connect the warehouse source. See follow-ups. |
 | Linear, Jira, Sentry, Zendesk | Not used (not selected) |
 
 The GitHub Issues responder only emits once its warehouse source syncs. No other records are currently being watched.
@@ -76,8 +76,8 @@ The GitHub Issues responder only emits once its warehouse source syncs. No other
 | `product-analytics` | Conversion and retention regressions in saved funnels and lifecycle flows |
 | `web-analytics` | Per-channel session volume, attribution breakage, and landing-page health |
 | `observability-gaps` | High-volume events with no insight, dashboard, or alert coverage |
-| `web-vitals` | Per-page LCP, INP, CLS, FCP against Google thresholds and PLOT's own history |
-| `imagination-funnel` *(custom)* | PLOT's core 3-step imagination submission flow — see Custom scouts below |
+| `web-vitals` | Per-page LCP, INP, CLS, FCP against Google thresholds and PLACER's own history |
+| `imagination-funnel` *(custom)* | PLACER's core 3-step imagination submission flow — see Custom scouts below |
 
 ### Disabled (22 scouts)
 
@@ -89,7 +89,7 @@ The GitHub Issues responder only emits once its warehouse source syncs. No other
 | `revenue-analytics` | No payment SDK or revenue events |
 | `feature-flags` | No feature flags in use |
 | `experiments` | No A/B experiments running |
-| `surveys` | No PostHog native surveys (PLOT uses a custom survey form) |
+| `surveys` | No PostHog native surveys (PLACER uses a custom survey form) |
 | `logs` | PostHog logs product not in use |
 | `csp-violations` | No CSP reporting configured |
 | `customer-analytics` | Consumer/community app, not B2B |
@@ -104,7 +104,7 @@ The GitHub Issues responder only emits once its warehouse source syncs. No other
 | `insight-alerts` | No alerts configured yet |
 | `mcp-tool-calls` | No `$mcp_tool_call` telemetry |
 | `skills-store` | Internal PostHog tooling scout |
-| `tasks` | Not applicable to PLOT's usage |
+| `tasks` | Not applicable to PLACER's usage |
 
 Enable any disabled scout from the [Self-driving inbox](https://eu.posthog.com/project/259020/inbox) if you add that surface later.
 
@@ -114,7 +114,7 @@ Enable any disabled scout from the [Self-driving inbox](https://eu.posthog.com/p
 
 ### Created: `signals-scout-imagination-funnel`
 
-**What it watches:** PLOT's core 4-step creation flow — `explore_started` → `view_captured` → `imagination_description_started` → `imagination_posted` / `imagination_post_failed`. Speaks up when end-to-end conversion drops ≥ 25% relative to the prior week, or when post failures (`imagination_post_failed`) spike above the baseline.
+**What it watches:** PLACER's core 4-step creation flow — `explore_started` → `view_captured` → `imagination_description_started` → `imagination_posted` / `imagination_post_failed`. Speaks up when end-to-end conversion drops ≥ 25% relative to the prior week, or when post failures (`imagination_post_failed`) spike above the baseline.
 
 **Why no built-in scout covers it:** `signals-scout-product-analytics` watches *saved* PostHog funnels and retention insights. On a fresh project with no saved funnels, it closes out empty every run. This custom scout watches the raw event sequence directly, so it produces signal immediately.
 
@@ -147,7 +147,7 @@ Credit spend per observation: 5 credits. Monthly estimate: 0 (no recordings). Th
 | Imagination creation breakage | `01a042e8-f8da-78de-a6bb-276354a2471a` | monitor | Sessions at root path (`$pathname = "/"`) — where the 3-step creation flow lives | 50% | **Created**, enabled, `emits_signals: true` |
 | Imagination creation frustration | `01a042e9-057b-78cf-aa27-5cb4a98cce92` | monitor | Sessions with a `$rageclick` event | 100% | **Created**, enabled, `emits_signals: true` |
 
-**Why root path for breakage:** PLOT is a single-page app; the imagination creation flow (street view → canvas → describe → post) all happens at `$pathname = "/"`. The other routes (`/survey`, `/admin`, `/privacy`, `/gdpr`) are separate paths excluded by this filter.
+**Why root path for breakage:** PLACER is a single-page app; the imagination creation flow (street view → canvas → describe → post) all happens at `$pathname = "/"`. The other routes (`/survey`, `/admin`, `/privacy`, `/gdpr`) are separate paths excluded by this filter.
 
 **Why `$rageclick` for frustration:** The frustration monitor owns the *what they did* axis. Gating on `$rageclick` is cheap and high-precision. The two monitors are intentionally disjoint — the breakage monitor must never add an event gate, and the frustration monitor must never add a URL scope.
 
@@ -155,7 +155,7 @@ Credit spend per observation: 5 credits. Monthly estimate: 0 (no recordings). Th
 
 ## Follow-ups
 
-- [ ] **Connect GitHub Issues warehouse source** — you selected GitHub Issues but skipped connecting `joshuauaua/Plot`. Connect it at [New warehouse source](https://eu.posthog.com/project/259020/pipeline/new/source). The responder row is already enabled and will start emitting once the source syncs.
+- [ ] **Connect GitHub Issues warehouse source** — you selected GitHub Issues but skipped connecting `joshuauaua/Placer`. Connect it at [New warehouse source](https://eu.posthog.com/project/259020/pipeline/new/source). The responder row is already enabled and will start emitting once the source syncs.
 - [ ] **Connect a Support inbound channel** — Conversations (support) is enabled but needs an email, inbox, or Slack channel connected before tickets flow in. Configure it in PostHog → Support settings.
 - [ ] **Add funnels and retention insights in PostHog** — The `signals-scout-product-analytics` scout watches *saved* PostHog funnels. Build a funnel from `explore_started` → `imagination_posted` (and a retention insight) so the scout has saved flows to monitor over time. The custom `imagination-funnel` scout watches raw events as an interim measure.
 

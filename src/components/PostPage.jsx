@@ -1,4 +1,4 @@
-/* PLOT — Step 3: review and post the imagination */
+/* PLACER — Step 3: review and post the imagination */
 
 import { useState } from 'react';
 import { Btn, CatTag } from './UI';
@@ -16,7 +16,7 @@ function formatLoc(position) {
 function Row({ t, label, children }) {
   return (
     <div style={{ display: 'flex', gap: 20, padding: '14px 0', borderTop: `1px solid ${t.line}` }}>
-      <div className="plot-mono" style={{ width: 130, flex: '0 0 auto', fontSize: 11,
+      <div className="placer-mono" style={{ width: 130, flex: '0 0 auto', fontSize: 11,
         letterSpacing: '0.06em', textTransform: 'uppercase', color: t.inkDim, fontWeight: 600, paddingTop: 3 }}>
         {label}
       </div>
@@ -86,10 +86,10 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], l
       }
     >
       <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page, padding: '40px 40px 96px' }}
-        className="plot-scroll">
+        className="placer-scroll">
         <div style={{ maxWidth: 760, margin: '0 auto' }}>
           <div style={{ marginBottom: 36 }}>
-            <h1 className="plot-disp" style={{ fontSize: 36, fontWeight: 900, color: t.ink,
+            <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 900, color: t.ink,
               letterSpacing: '-0.03em', marginBottom: 12, lineHeight: 1.1 }}>
               Ready to post
             </h1>
@@ -107,7 +107,7 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], l
             />
           )}
 
-          <h2 className="plot-disp" style={{ fontSize: 26, fontWeight: 800, color: t.ink,
+          <h2 className="placer-disp" style={{ fontSize: 26, fontWeight: 800, color: t.ink,
             letterSpacing: '-0.02em', marginBottom: 16, lineHeight: 1.2 }}>
             {draft.title}
           </h2>
@@ -118,9 +118,9 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], l
             {loc || <span style={{ color: t.inkDim }}>Not recorded</span>}
           </Row>
           <Row t={t} label="On the canvas">
-            <span className="plot-disp" style={{ fontWeight: 700 }}>{canvasAssets.length}</span> assets placed
+            <span className="placer-disp" style={{ fontWeight: 700 }}>{canvasAssets.length}</span> assets placed
             <span style={{ margin: '0 8px', color: t.inkFaint }}>·</span>
-            <span className="plot-disp" style={{ fontWeight: 700 }}>{lines.length}</span> lines
+            <span className="placer-disp" style={{ fontWeight: 700 }}>{lines.length}</span> lines
           </Row>
 
           {error && (

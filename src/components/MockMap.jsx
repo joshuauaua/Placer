@@ -1,4 +1,4 @@
-/* PLOT — Mock Map Interface (no Google Maps dependency) */
+/* PLACER — Mock Map Interface (no Google Maps dependency) */
 
 import { Icon } from './Icon';
 import { Btn } from './UI';
@@ -20,7 +20,7 @@ export function MockMap({ t, onCaptureView }) {
           <Icon name="pin" size={20} stroke={2} style={{ color: t.accent }} />
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: t.ink }}>Riverside Blvd & 8th</div>
-            <div className="plot-mono" style={{ fontSize: 12, color: t.inkDim }}>Position: 37.774900, -122.419400</div>
+            <div className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>Position: 37.774900, -122.419400</div>
           </div>
         </div>
         <Btn t={t} variant="accent" icon="sparkle" onClick={handleCapture}>

@@ -1,4 +1,4 @@
-/* PLOT — design tokens: themes + category palette */
+/* PLACER — design tokens: themes + category palette */
 
 // Category color coding
 export const CAT = {

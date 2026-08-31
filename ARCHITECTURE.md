@@ -1,8 +1,8 @@
-# Placemaking Tool - Architecture Documentation
+# Placer - Architecture Documentation
 
 ## System Overview
 
-The Placemaking Tool is a single-page React application that enables users to reimagine public spaces by overlaying visual assets onto Google Street View captures.
+Placer is a single-page React application that enables users to reimagine public spaces by overlaying visual assets onto Google Street View captures.
 
 ## Component Hierarchy
 

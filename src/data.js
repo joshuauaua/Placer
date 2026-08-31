@@ -1,16 +1,4 @@
-/* PLOT — sample content */
-
-export const IMAGINATIONS = [
-  { id: 'i1', cat: 'green',   title: 'Pocket park on the old Lot 7 parking', author: 'Mara Quinn',   when: '2d', votes: 342, comments: 28, x: 31, y: 57, loc: 'Riverside Blvd & 8th', blurb: 'Three rows of parking nobody uses. Swap the asphalt for trees, a lawn, and a few benches.' },
-  { id: 'i2', cat: 'seating', title: 'Shade + seating along 8th Street',      author: 'Devon Park',   when: '5h', votes: 218, comments: 14, x: 47, y: 39, loc: '8th St, Midtown',     blurb: 'The walk to the transit stop is brutal in summer. Street trees and benches every block.' },
-  { id: 'i3', cat: 'art',     title: 'Mural wall under the rail bridge',       author: 'Lena Cho',     when: '1d', votes: 287, comments: 41, x: 18, y: 70, loc: 'Canal underpass',     blurb: 'The underpass is grim and unlit. Commission local artists for a rotating mural program.' },
-  { id: 'i4', cat: 'food',    title: 'Friday night market on Canal Ave',       author: 'Theo Banks',   when: '3d', votes: 401, comments: 63, x: 63, y: 31, loc: 'Canal Ave',           blurb: 'Close two blocks on Friday evenings for food carts, makers, and live music.' },
-  { id: 'i5', cat: 'safety',  title: 'Brighter, safer crossing at Market',     author: 'Priya N.',     when: '8h', votes: 176, comments: 9,  x: 54, y: 63, loc: 'Market Ave & 11th',   blurb: 'Add pedestrian lighting and a raised crosswalk where the avenue meets the school route.' },
-  { id: 'i6', cat: 'play',    title: 'Playground for the Highland corner',     author: 'Sam Ortiz',    when: '6d', votes: 153, comments: 22, x: 79, y: 21, loc: 'Highland Park',       blurb: 'The northeast corner of the park is empty. Kids in the area have nowhere close to play.' },
-  { id: 'i7', cat: 'green',   title: 'Rain garden + planters on River Mill',   author: 'Iris Wong',    when: '4d', votes: 129, comments: 11, x: 73, y: 69, loc: 'River Mill Walk',     blurb: 'Soak up runoff and soften the waterfront path with planters and a small rain garden.' },
-];
-
-export const FEATURED = IMAGINATIONS[0];
+/* PLACER — sample content */
 
 export const COMMENTS = [
   { author: 'Devon Park',  when: '2d',  votes: 18, text: 'Yes. I bike past Lot 7 every day and it is always half-empty. This would change the whole block.' },

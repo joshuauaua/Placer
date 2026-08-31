@@ -1,11 +1,11 @@
-/* PLOT — Create: describe & post the imagination. */
+/* PLACER — Create: describe & post the imagination. */
 
 function Field({ t, label, hint, children }) {
   return (
     <div style={{ marginBottom: 20 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
         <span style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>{label}</span>
-        {hint && <span className="plot-mono" style={{ fontSize: 11.5, color: t.inkFaint }}>{hint}</span>}
+        {hint && <span className="placer-mono" style={{ fontSize: 11.5, color: t.inkFaint }}>{hint}</span>}
       </div>
       {children}
     </div>
@@ -21,7 +21,7 @@ function CreateScreen({ t }) {
     { type: 'light', label: 'Lighting', n: 1 },
   ];
   return (
-    <div className="plot-screen" style={{ background: t.page, color: t.ink, display: 'flex', flexDirection: 'column' }}>
+    <div className="placer-screen" style={{ background: t.page, color: t.ink, display: 'flex', flexDirection: 'column' }}>
       <div style={{ height: 60, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 16, padding: '0 20px',
         background: t.chrome, borderBottom: `1px solid ${t.line}`, zIndex: 30 }}>
         <button style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 12px 0 8px', borderRadius: 9,
@@ -35,7 +35,7 @@ function CreateScreen({ t }) {
 
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         {/* preview */}
-        <div className="plot-scroll" style={{ flex: 1, overflowY: 'auto', padding: 32, display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div className="placer-scroll" style={{ flex: 1, overflowY: 'auto', padding: 32, display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div style={{ borderRadius: 16, overflow: 'hidden', boxShadow: t.shadow, border: `1px solid ${t.line}`, background: t.surface }}>
             <div style={{ height: 392, position: 'relative' }}>
               <StreetScene mode="light" placed={PLACED_FEATURED} />
@@ -47,12 +47,12 @@ function CreateScreen({ t }) {
                 background: 'rgba(12,13,16,.8)', backdropFilter: 'blur(6px)', color: '#fff' }}>
                 <Icon name="pin" size={16} stroke={2} style={{ color: t.accent }} />
                 <span style={{ fontSize: 13.5, fontWeight: 700 }}>Lot 7</span>
-                <span className="plot-mono" style={{ fontSize: 12, opacity: 0.7 }}>Riverside Blvd & 8th</span>
+                <span className="placer-mono" style={{ fontSize: 12, opacity: 0.7 }}>Riverside Blvd & 8th</span>
               </div>
             </div>
           </div>
           <div>
-            <div className="plot-mono" style={{ fontSize: 11, letterSpacing: '0.06em', color: t.inkDim, textTransform: 'uppercase', marginBottom: 10 }}>Assets used · 5</div>
+            <div className="placer-mono" style={{ fontSize: 11, letterSpacing: '0.06em', color: t.inkDim, textTransform: 'uppercase', marginBottom: 10 }}>Assets used · 5</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>
               {used.map((u) => (
                 <span key={u.type} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 38, padding: '0 13px 0 8px', borderRadius: 999, border: `1px solid ${t.line}`, background: t.surface }}>
@@ -60,7 +60,7 @@ function CreateScreen({ t }) {
                     <svg viewBox="0 0 60 60" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}><g transform="translate(30,54) scale(0.4)"><AssetArt type={u.type} p={STREET_PAL.light} /></g></svg>
                   </span>
                   <span style={{ fontSize: 13.5, fontWeight: 700, color: t.ink }}>{u.label}</span>
-                  {u.n > 1 && <span className="plot-mono" style={{ fontSize: 12, color: t.inkDim }}>×{u.n}</span>}
+                  {u.n > 1 && <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>×{u.n}</span>}
                 </span>
               ))}
             </div>
@@ -68,8 +68,8 @@ function CreateScreen({ t }) {
         </div>
 
         {/* form */}
-        <div className="plot-scroll" style={{ width: 460, flex: '0 0 auto', background: t.chrome, borderLeft: `1px solid ${t.line}`, overflowY: 'auto', padding: '28px 30px 32px' }}>
-          <h2 className="plot-disp" style={{ margin: '0 0 4px', fontSize: 26, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em' }}>Describe your imagination</h2>
+        <div className="placer-scroll" style={{ width: 460, flex: '0 0 auto', background: t.chrome, borderLeft: `1px solid ${t.line}`, overflowY: 'auto', padding: '28px 30px 32px' }}>
+          <h2 className="placer-disp" style={{ margin: '0 0 4px', fontSize: 26, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em' }}>Describe your imagination</h2>
           <p style={{ margin: '0 0 26px', fontSize: 14.5, color: t.inkDim, lineHeight: 1.5 }}>A clear title and a short why help neighbors understand and back your idea.</p>
 
           <Field t={t} label="Title" hint="46 / 70">
@@ -97,7 +97,7 @@ function CreateScreen({ t }) {
               <Icon name="pin" size={19} stroke={2} style={{ color: CAT.green.color }} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>Lot 7 · Riverside Blvd & 8th</div>
-                <div className="plot-mono" style={{ fontSize: 11.5, color: t.inkDim }}>47.6105, −122.3421</div>
+                <div className="placer-mono" style={{ fontSize: 11.5, color: t.inkDim }}>47.6105, −122.3421</div>
               </div>
               <Icon name="pencil" size={17} stroke={2} style={{ color: t.inkDim }} />
             </div>
