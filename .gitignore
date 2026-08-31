@@ -17,6 +17,12 @@ dist
 dist-ssr
 *.local
 
+# Playwright (e2e/) output — reports, traces, videos, browser downloads
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
+
 # Python tooling (tools/streetview_lines)
 .venv
 __pycache__

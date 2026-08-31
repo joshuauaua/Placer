@@ -341,9 +341,18 @@ export const saveImagination = async (data) => {
 
 ### E2E Tests
 
-- Full user workflows
-- Google Maps integration
-- Cross-browser compatibility
+Implemented, in `e2e/` — Playwright against a production build in Chromium, run by
+`.github/workflows/e2e.yml` on every pull request. `npm run test:e2e`.
+
+- Full user workflows: capture → draw → describe → post, and the posted
+  imagination read back out of localStorage
+- Every route as a cold load, including the lazy chunks and `/sandbox/<experiment>`
+- Consent, across a reload
+- Google Maps by way of a stub of the API surface `MapContainer` uses, plus the
+  keyless map on its own, so a run needs no key and no network. Real Maps
+  integration is the one thing this cannot cover.
+- Chromium only. Other engines would need the canvas paths re-verified rather than
+  just re-run.
 
 ## Deployment Considerations
 

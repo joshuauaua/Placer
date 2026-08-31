@@ -11,6 +11,8 @@
     "preview": "vp preview",
     "test": "vp test",
     "test:run": "vp test run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "deps:check": "node scripts/check-deps.mjs"
   },
   "dependencies": {
@@ -25,6 +27,7 @@
     "wouter": "^3.10.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
