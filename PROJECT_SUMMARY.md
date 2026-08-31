@@ -1,4 +1,4 @@
-# Placemaking Tool - Project Summary
+# Placer - Project Summary
 
 ## What Was Built
 
@@ -86,7 +86,7 @@ A complete frontend React application for reimagining public spaces using Google
 
 ### File Structure
 ```
-Plot/
+Placer/
 ├── src/
 │   ├── components/           # React components
 │   │   ├── MapContainer.jsx

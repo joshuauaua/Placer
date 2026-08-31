@@ -16,6 +16,48 @@ const STORAGE_KEYS = {
 // Simulate network delay for realistic async behavior
 const simulateDelay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Bumped whenever stored data from an earlier version has to be discarded.
+// Version 1: the PLOT -> PLACER rename, which starts the imagination set over.
+const STORAGE_VERSION_KEY = 'placer_storage_version';
+const STORAGE_VERSION = 1;
+
+/**
+ * Discard stored data left over from an earlier version of the app. Runs once
+ * per browser on boot, before anything reads storage.
+ *
+ * The asset library is deliberately left alone: it is seed data, recreated on
+ * demand rather than authored by the visitor. The analytics consent record is
+ * not in STORAGE_KEYS and is not touched here either, so a decision the visitor
+ * already made still stands (see analytics.js).
+ */
+export const migrateStorage = () => {
+  let seen = 0;
+  try {
+    seen = Number(localStorage.getItem(STORAGE_VERSION_KEY)) || 0;
+  } catch {
+    // Storage blocked (private mode, cookies disabled). Nothing is stored, so
+    // there is nothing to discard.
+    return { migrated: false, from: null };
+  }
+
+  if (seen >= STORAGE_VERSION) return { migrated: false, from: seen };
+
+  try {
+    // Everything the visitor authored under the old name, and the vote and
+    // comment records that only make sense alongside it.
+    localStorage.removeItem(STORAGE_KEYS.IMAGINATIONS);
+    localStorage.removeItem(STORAGE_KEYS.UPVOTES);
+    localStorage.removeItem(STORAGE_KEYS.COMMENTS);
+    localStorage.setItem(STORAGE_VERSION_KEY, String(STORAGE_VERSION));
+  } catch {
+    // A failed write means the purge is retried on the next load rather than
+    // being silently marked done.
+    return { migrated: false, from: seen };
+  }
+
+  return { migrated: true, from: seen };
+};
+
 /**
  * Initialize default asset library if not present
  */
@@ -200,7 +242,7 @@ export const addComment = async (imaginationId, commentData) => {
 };
 
 /**
- * Export every piece of PLOT data held in this browser.
+ * Export every piece of PLACER data held in this browser.
  * Backs the data portability request on the GDPR page.
  */
 export const exportAllData = async () => {
@@ -228,7 +270,7 @@ export const exportAllData = async () => {
 };
 
 /**
- * Delete every piece of PLOT data held in this browser.
+ * Delete every piece of PLACER data held in this browser.
  * Backs the erasure request on the GDPR page. The default asset library is
  * recreated on the next page load, since it is seed data rather than user data.
  */

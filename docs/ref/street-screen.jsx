@@ -1,4 +1,4 @@
-/* PLOT — Street View: place assets. The core "imagine it differently" step. */
+/* PLACER — Street View: place assets. The core "imagine it differently" step. */
 
 function StepBar({ t, step = 1 }) {
   const steps = ['Place assets', 'Describe', 'Post'];
@@ -11,7 +11,7 @@ function StepBar({ t, step = 1 }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: on || done ? 1 : 0.5 }}>
               <span style={{ width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: on ? t.primaryBg : done ? t.accent : 'transparent', color: on ? t.primaryFg : done ? t.accentInk : t.inkDim,
-                border: on || done ? 'none' : `1.5px solid ${t.lineStrong}`, fontWeight: 800, fontSize: 12.5 }} className="plot-mono">
+                border: on || done ? 'none' : `1.5px solid ${t.lineStrong}`, fontWeight: 800, fontSize: 12.5 }} className="placer-mono">
                 {done ? <Icon name="check" size={14} stroke={2.6} /> : i + 1}
               </span>
               <span style={{ fontSize: 14, fontWeight: on ? 800 : 600, color: on ? t.ink : t.inkDim }}>{s}</span>
@@ -52,23 +52,23 @@ function AssetLibrary({ t }) {
       <div style={{ padding: '18px 18px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}>
           <Icon name="grid" size={19} stroke={2} style={{ color: t.ink }} />
-          <span className="plot-disp" style={{ fontSize: 19, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em' }}>Asset library</span>
+          <span className="placer-disp" style={{ fontSize: 19, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em' }}>Asset library</span>
         </div>
         <SearchBar t={t} placeholder="Search assets…" />
-        <div className="plot-scroll" style={{ display: 'flex', gap: 7, marginTop: 13, overflowX: 'auto', paddingBottom: 2 }}>
+        <div className="placer-scroll" style={{ display: 'flex', gap: 7, marginTop: 13, overflowX: 'auto', paddingBottom: 2 }}>
           {tabs.map((tb, i) => <Chip key={tb} t={t} active={i === 0}>{tb}</Chip>)}
         </div>
       </div>
       <div style={{ height: 1, background: t.line, margin: '14px 0 0' }} />
-      <div className="plot-scroll" style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-        <div className="plot-mono" style={{ fontSize: 11, letterSpacing: '0.06em', color: t.inkDim, textTransform: 'uppercase', marginBottom: 11 }}>Suggested for this block</div>
+      <div className="placer-scroll" style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+        <div className="placer-mono" style={{ fontSize: 11, letterSpacing: '0.06em', color: t.inkDim, textTransform: 'uppercase', marginBottom: 11 }}>Suggested for this block</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11 }}>
           {ASSET_LIB.map((a, i) => <AssetTile key={a.type} t={t} a={a} active={i === 0} />)}
         </div>
       </div>
       <div style={{ padding: 16, borderTop: `1px solid ${t.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 13.5, color: t.inkDim, fontWeight: 600 }}>
-          <b style={{ color: t.ink }} className="plot-disp">5</b> assets placed
+          <b style={{ color: t.ink }} className="placer-disp">5</b> assets placed
         </span>
         <Btn t={t} variant="primary" size="sm" icon="arrowRight">Next: Describe</Btn>
       </div>
@@ -95,7 +95,7 @@ function SceneToolbar({ t }) {
 function StreetScreen({ t }) {
   const placed = PLACED_FEATURED.map((p, i) => ({ ...p, selected: i === 1 }));
   return (
-    <div className="plot-screen" style={{ background: t.page, color: t.ink, display: 'flex', flexDirection: 'column' }}>
+    <div className="placer-screen" style={{ background: t.page, color: t.ink, display: 'flex', flexDirection: 'column' }}>
       {/* top bar */}
       <div style={{ height: 60, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 16, padding: '0 20px',
         background: t.chrome, borderBottom: `1px solid ${t.line}`, zIndex: 30 }}>
@@ -118,7 +118,7 @@ function StreetScreen({ t }) {
             background: t.surface, border: `1px solid ${t.line}`, boxShadow: t.shadow, zIndex: 20 }}>
             <Icon name="pin" size={17} stroke={2} style={{ color: CAT.green.color }} />
             <span style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>Lot 7</span>
-            <span className="plot-mono" style={{ fontSize: 12, color: t.inkDim }}>Riverside Blvd & 8th · 47.61, −122.34</span>
+            <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>Riverside Blvd & 8th · 47.61, −122.34</span>
           </div>
 
           {/* before/after + undo cluster, top-right of scene */}

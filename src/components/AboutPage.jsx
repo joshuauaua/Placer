@@ -1,4 +1,4 @@
-/* PLOT — About Page */
+/* PLACER — About Page */
 
 import { Icon } from './Icon';
 
@@ -75,7 +75,7 @@ export function AboutPage({ t }) {
 
         {/* Text Content */}
         <div style={{ textAlign: 'center', marginBottom: 64 }}>
-          <h1 className="plot-disp" style={{
+          <h1 className="placer-disp" style={{
             fontSize: 56,
             fontWeight: 900,
             color: t.ink,
@@ -83,7 +83,7 @@ export function AboutPage({ t }) {
             marginBottom: 24,
             lineHeight: 1.1
           }}>
-            About PLOT
+            About PLACER
           </h1>
 
           <p style={{
@@ -94,7 +94,7 @@ export function AboutPage({ t }) {
             maxWidth: 680,
             margin: '0 auto 24px'
           }}>
-            PLOT is a community-driven platform that empowers citizens to reimagine and reshape their urban environments.
+            PLACER is a community-driven platform that empowers citizens to reimagine and reshape their urban environments.
             We believe everyone should have a voice in how public spaces evolve.
           </p>
 
@@ -105,7 +105,7 @@ export function AboutPage({ t }) {
             maxWidth: 680,
             margin: '0 auto'
           }}>
-            By combining interactive mapping, visual asset placement, and community feedback, PLOT makes urban planning
+            By combining interactive mapping, visual asset placement, and community feedback, PLACER makes urban planning
             accessible and collaborative. From street trees to public art, benches to bike lanes — visualize improvements
             and bring your ideas to life.
           </p>
@@ -175,7 +175,7 @@ export function AboutPage({ t }) {
           border: `1px solid ${t.line}`,
           textAlign: 'center'
         }}>
-          <div className="plot-mono" style={{
+          <div className="placer-mono" style={{
             fontSize: 11,
             letterSpacing: '0.06em',
             color: t.inkDim,

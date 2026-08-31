@@ -1,4 +1,4 @@
-/* PLOT — Imagination detail: hero, vote/rank, discussion. */
+/* PLACER — Imagination detail: hero, vote/rank, discussion. */
 
 function CommentItem({ t, c }) {
   return (
@@ -8,7 +8,7 @@ function CommentItem({ t, c }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           <span style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>{c.author}</span>
           {c.badge && <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: CAT.safety.color + '1E', color: CAT.safety.color }}>{c.badge}</span>}
-          <span className="plot-mono" style={{ fontSize: 12, color: t.inkFaint }}>· {c.when}</span>
+          <span className="placer-mono" style={{ fontSize: 12, color: t.inkFaint }}>· {c.when}</span>
         </div>
         <p style={{ margin: '0 0 10px', fontSize: 14.5, color: t.ink, lineHeight: 1.55, textWrap: 'pretty' }}>{c.text}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
@@ -31,9 +31,9 @@ function RailCard({ t, children, pad = 18 }) {
 function DetailScreen({ t }) {
   const im = FEATURED;
   return (
-    <div className="plot-screen" style={{ background: t.page, color: t.ink, display: 'flex', flexDirection: 'column' }}>
+    <div className="placer-screen" style={{ background: t.page, color: t.ink, display: 'flex', flexDirection: 'column' }}>
       <NavBar t={t} />
-      <div className="plot-scroll" style={{ flex: 1, overflowY: 'auto' }}>
+      <div className="placer-scroll" style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{ maxWidth: 1240, margin: '0 auto', padding: '26px 40px 56px', display: 'flex', gap: 34 }}>
           {/* main column */}
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -58,7 +58,7 @@ function DetailScreen({ t }) {
               </div>
             </div>
 
-            <h1 className="plot-disp" style={{ margin: '0 0 16px', fontSize: 40, fontWeight: 800, color: t.ink, letterSpacing: '-0.025em', lineHeight: 1.05, textWrap: 'balance' }}>
+            <h1 className="placer-disp" style={{ margin: '0 0 16px', fontSize: 40, fontWeight: 800, color: t.ink, letterSpacing: '-0.025em', lineHeight: 1.05, textWrap: 'balance' }}>
               A pocket park where Lot 7 sits today
             </h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22, flexWrap: 'wrap' }}>
@@ -66,7 +66,7 @@ function DetailScreen({ t }) {
                 <Avatar name={im.author} size={36} />
                 <span>
                   <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: t.ink }}>{im.author}</span>
-                  <span className="plot-mono" style={{ fontSize: 12, color: t.inkDim }}>Posted {im.when} ago</span>
+                  <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>Posted {im.when} ago</span>
                 </span>
               </span>
               <span style={{ width: 1, height: 30, background: t.line }} />
@@ -87,7 +87,7 @@ function DetailScreen({ t }) {
               <button style={{ display: 'inline-flex', alignItems: 'center', gap: 10, height: 48, padding: '0 20px', borderRadius: 11, cursor: 'pointer',
                 background: t.accent, color: t.accentInk, border: 'none' }}>
                 <Icon name="arrowUp" size={20} stroke={2.6} />
-                <span className="plot-disp" style={{ fontSize: 18, fontWeight: 800 }}>{im.votes}</span>
+                <span className="placer-disp" style={{ fontSize: 18, fontWeight: 800 }}>{im.votes}</span>
                 <span style={{ fontSize: 14.5, fontWeight: 700 }}>Upvote</span>
               </button>
               {[['comment', `${im.comments}`], ['share', 'Share'], ['bookmark', 'Save']].map(([ic, lb]) => (
@@ -104,8 +104,8 @@ function DetailScreen({ t }) {
 
             {/* discussion */}
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 16 }}>
-              <h2 className="plot-disp" style={{ margin: 0, fontSize: 22, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em' }}>Discussion</h2>
-              <span className="plot-mono" style={{ fontSize: 14, color: t.inkDim }}>{im.comments} comments</span>
+              <h2 className="placer-disp" style={{ margin: 0, fontSize: 22, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em' }}>Discussion</h2>
+              <span className="placer-mono" style={{ fontSize: 14, color: t.inkDim }}>{im.comments} comments</span>
               <div style={{ flex: 1 }} />
               <SortPill t={t} value="Top" />
             </div>
@@ -126,11 +126,11 @@ function DetailScreen({ t }) {
             <RailCard t={t}>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 14 }}>
                 <div>
-                  <div className="plot-disp" style={{ fontSize: 38, fontWeight: 800, color: t.ink, lineHeight: 1, letterSpacing: '-0.02em' }}>{im.votes}</div>
+                  <div className="placer-disp" style={{ fontSize: 38, fontWeight: 800, color: t.ink, lineHeight: 1, letterSpacing: '-0.02em' }}>{im.votes}</div>
                   <div style={{ fontSize: 13, color: t.inkDim, fontWeight: 600, marginTop: 4 }}>upvotes</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div className="plot-disp" style={{ fontSize: 22, fontWeight: 800, color: CAT.green.color, lineHeight: 1 }}>#3</div>
+                  <div className="placer-disp" style={{ fontSize: 22, fontWeight: 800, color: CAT.green.color, lineHeight: 1 }}>#3</div>
                   <div style={{ fontSize: 12.5, color: t.inkDim, fontWeight: 600, marginTop: 4 }}>in Midtown</div>
                 </div>
               </div>
@@ -158,19 +158,19 @@ function DetailScreen({ t }) {
               </div>
               <div style={{ padding: 16 }}>
                 <div style={{ fontSize: 14.5, fontWeight: 700, color: t.ink, marginBottom: 3 }}>{im.loc}</div>
-                <div className="plot-mono" style={{ fontSize: 12, color: t.inkDim }}>47.6105, −122.3421 · Lot 7</div>
+                <div className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>47.6105, −122.3421 · Lot 7</div>
               </div>
             </RailCard>
 
             <RailCard t={t}>
-              <div className="plot-mono" style={{ fontSize: 11, letterSpacing: '0.06em', color: t.inkDim, textTransform: 'uppercase', marginBottom: 13 }}>Nearby imaginations</div>
+              <div className="placer-mono" style={{ fontSize: 11, letterSpacing: '0.06em', color: t.inkDim, textTransform: 'uppercase', marginBottom: 13 }}>Nearby imaginations</div>
               {IMAGINATIONS.slice(1, 3).map((n) => (
                 <div key={n.id} style={{ display: 'flex', gap: 11, alignItems: 'center', padding: '9px 0' }}>
                   <Thumb im={n} size={46} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 700, color: t.ink, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{n.title}</div>
                   </div>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 800, color: t.ink }} className="plot-disp">
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 800, color: t.ink }} className="placer-disp">
                     <Icon name="arrowUp" size={14} stroke={2.4} />{n.votes}
                   </span>
                 </div>

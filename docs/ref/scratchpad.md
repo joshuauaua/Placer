@@ -1,11 +1,15 @@
-# PLOT — "Reimagine Your City" — Placemaking app mockup
+# PLACER — "Reimagine Your City" — Placemaking app mockup
 
 Desktop web app · static hi-fi screens · bold & modern, high-contrast editorial.
 Presented on a design canvas. Realistic (Google/Mapbox-style) map tiles, mocked in SVG.
 
 ## Product name
-**PLOT** — wordmark in Archivo Expanded. Double meaning: a plot of land + to plot a
-change on the map. Tagline / subtitle: *Reimagine Your City.*
+**PLACER** — wordmark in Archivo Expanded. Double meaning: placemaking + one who
+places, the person putting benches, trees, and crossings onto the map. Tagline /
+subtitle: *Reimagine Your City.*
+
+(Renamed from PLOT, whose own double meaning was "a plot of land" + "to plot a
+change on the map".)
 The user-generated proposals are called **Imaginations**.
 
 ## Design language
@@ -38,7 +42,7 @@ Bench · Flowerpot/planter · Tree · Bike rack · Lighting · Playground — li
 
 ## Screens (1440×900 desktop)
 CORE FLOW (Bone theme):
-1. Map Home — top nav (PLOT · search · avatar + Create), left rail (categories,
+1. Map Home — top nav (PLACER · search · avatar + Create), left rail (categories,
    sort: Trending/New/Top, Imagination list cards), map w/ pins + selected popover,
    map controls.
 2. Search & Filter — query filled, category filter panel open, sort=Top voted,

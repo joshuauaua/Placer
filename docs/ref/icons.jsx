@@ -1,4 +1,4 @@
-/* PLOT — icon set. <Icon name size stroke fill/> renders a 24-grid SVG.
+/* PLACER — icon set. <Icon name size stroke fill/> renders a 24-grid SVG.
    Line icons use currentColor stroke; pass via style/color on parent. */
 
 const ICON_PATHS = {

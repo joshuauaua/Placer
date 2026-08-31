@@ -1,4 +1,4 @@
-/* PLOT — Step 2: describe the imagination */
+/* PLACER — Step 2: describe the imagination */
 
 import { Btn, Chip } from './UI';
 import { FlowScreen } from './FlowLayout';
@@ -56,10 +56,10 @@ export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview 
       }
     >
       <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page, padding: '40px 40px 96px' }}
-        className="plot-scroll">
+        className="placer-scroll">
         <div style={{ maxWidth: 760, margin: '0 auto' }}>
           <div style={{ marginBottom: 36 }}>
-            <h1 className="plot-disp" style={{ fontSize: 36, fontWeight: 900, color: t.ink,
+            <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 900, color: t.ink,
               letterSpacing: '-0.03em', marginBottom: 12, lineHeight: 1.1 }}>
               Describe your imagination
             </h1>

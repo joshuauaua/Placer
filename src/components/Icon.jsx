@@ -1,4 +1,4 @@
-/* PLOT — icon set */
+/* PLACER — icon set */
 
 const ICON_ELEMENTS = {
   search: (

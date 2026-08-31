@@ -1,4 +1,4 @@
-/* PLOT — 15-Minute Reach: what a neighbourhood can walk to.
+/* PLACER — 15-Minute Reach: what a neighbourhood can walk to.
  *
  * A 16 × 16 grid of 100-metre cells, with a railway across the middle that can only
  * be crossed at two bridges. Amenities get placed by hand; the grid answers how much

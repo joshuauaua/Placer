@@ -1,4 +1,4 @@
-/* PLOT — design tokens: themes + category palette + shared helpers */
+/* PLACER — design tokens: themes + category palette + shared helpers */
 
 // Category color coding — editorial solid colors used for pins, tags, filters.
 const CAT = {

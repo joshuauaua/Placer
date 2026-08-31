@@ -1,4 +1,4 @@
-/* PLOT — Survey Page */
+/* PLACER — Survey Page */
 
 import { useState } from 'react';
 import { Icon } from './Icon';
@@ -136,7 +136,7 @@ export function SurveyPage({ t }) {
     },
     {
       id: 12,
-      question: "What feature would make you use a urban planning tool like PLOT?",
+      question: "What feature would make you use a urban planning tool like PLACER?",
       options: [
         "Easy-to-use interface",
         "Ability to see realistic visualizations",
@@ -211,7 +211,7 @@ export function SurveyPage({ t }) {
             <Icon name="check" size={44} stroke={3} style={{ color: t.accentInk }} />
           </div>
 
-          <h1 className="plot-disp" style={{
+          <h1 className="placer-disp" style={{
             fontSize: 36,
             fontWeight: 900,
             color: t.ink,
@@ -257,7 +257,7 @@ export function SurveyPage({ t }) {
       }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h2 className="plot-disp" style={{
+            <h2 className="placer-disp" style={{
               fontSize: 24,
               fontWeight: 800,
               color: t.ink,
@@ -265,7 +265,7 @@ export function SurveyPage({ t }) {
             }}>
               Community Survey
             </h2>
-            <span className="plot-mono" style={{
+            <span className="placer-mono" style={{
               fontSize: 13,
               fontWeight: 600,
               color: t.inkDim

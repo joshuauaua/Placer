@@ -1,4 +1,4 @@
-/* PLOT — design system base: fonts, reset, scrollbars, keyframes */
+/* PLACER — design system base: fonts, reset, scrollbars, keyframes */
 
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
 
@@ -7,11 +7,11 @@
 html, body { margin: 0; padding: 0; }
 
 /* hide scrollbars inside the mock screens but keep scrollability */
-.plot-scroll { scrollbar-width: none; -ms-overflow-style: none; }
-.plot-scroll::-webkit-scrollbar { display: none; }
+.placer-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+.placer-scroll::-webkit-scrollbar { display: none; }
 
 /* artboard root resets so each screen is a clean fixed canvas */
-.plot-screen {
+.placer-screen {
   font-family: 'Archivo', system-ui, sans-serif;
   font-feature-settings: 'ss01';
   -webkit-font-smoothing: antialiased;
@@ -22,10 +22,10 @@ html, body { margin: 0; padding: 0; }
   overflow: hidden;
 }
 
-.plot-mono { font-family: 'Space Mono', monospace; }
-.plot-disp { font-family: 'Archivo Expanded', 'Archivo', sans-serif; }
+.placer-mono { font-family: 'Space Mono', monospace; }
+.placer-disp { font-family: 'Archivo Expanded', 'Archivo', sans-serif; }
 
-@keyframes plot-pin-pop {
+@keyframes placer-pin-pop {
   0% { transform: translateY(6px) scale(.6); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }

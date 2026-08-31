@@ -1,4 +1,4 @@
-/* PLOT — Error Boundary */
+/* PLACER — Error Boundary */
 
 import { Component } from 'react';
 import { THEME } from '../theme';
@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component {
               display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
               <Icon name="alert" size={32} stroke={2} style={{ color: '#D6452F' }} />
             </div>
-            <h1 className="plot-disp" style={{ fontSize: 28, fontWeight: 900, marginBottom: 8,
+            <h1 className="placer-disp" style={{ fontSize: 28, fontWeight: 900, marginBottom: 8,
               letterSpacing: '-0.02em' }}>Something went wrong</h1>
             <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 24 }}>
               An unexpected error occurred. Try refreshing the page or click below to recover.

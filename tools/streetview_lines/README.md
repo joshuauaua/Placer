@@ -7,8 +7,8 @@ uses classical computer vision only (OpenCV: bilateral/Gaussian denoise,
 Canny edge detection, `HoughLinesP`, HSV colour masking) — no machine
 learning, no external services.
 
-This tool is not wired into the PLOT app. It's a script you run by hand
-against an exported screenshot. See "Using the output in PLOT" below.
+This tool is not wired into the PLACER app. It's a script you run by hand
+against an exported screenshot. See "Using the output in PLACER" below.
 
 ## Install
 
@@ -105,9 +105,9 @@ When in doubt, run with `--debug` and look at `_canny.png` first — it's the
 most direct signal for "too much" vs "too little" line detection, before the
 Hough/classification stages even run.
 
-## Using the output in PLOT
+## Using the output in PLACER
 
-PLOT's `handleCaptureView` (in
+PLACER's `handleCaptureView` (in
 [`src/components/MapContainer.jsx`](../../src/components/MapContainer.jsx))
 captures the live Maps/Street View `<div>` with `html-to-image`'s `toPng()`
 and holds the result as a base64 data URL on `capturedView.screenshot` — it's
@@ -146,10 +146,10 @@ Instead of extracting lines from pixels, an alternative approach projects
 real-world vector data (OpenStreetMap) into the camera's image plane using
 the Street View pano's own metadata. This is geometrically exact where the
 pixel-based CV approach above is a noisy approximation, but it depends on
-data PLOT does not currently capture. Outlined here, not implemented.
+data PLACER does not currently capture. Outlined here, not implemented.
 
 1. **Metadata needed**: pano `lat/lon`, `heading` (degrees from north),
-   `pitch`, `fov`, output `W×H`, and an assumed camera height (≈2.5 m). PLOT
+   `pitch`, `fov`, output `W×H`, and an assumed camera height (≈2.5 m). PLACER
    does not capture these yet —
    [`MapContainer.jsx`](../../src/components/MapContainer.jsx) hardcodes
    `pov: { heading: 0, pitch: 0 }` on capture. The Street View Image
@@ -179,7 +179,7 @@ data PLOT does not currently capture. Outlined here, not implemented.
 8. **Trade-offs**: geometrically exact, no pixel noise, features come
    pre-labelled by OSM tag, and occlusion ordering falls out of the
    projected depth — but it depends on OSM completeness in the area, on
-   accurate pano heading/pitch (which PLOT doesn't capture today), and on a
+   accurate pano heading/pitch (which PLACER doesn't capture today), and on a
    flat-ground assumption (hills or tall kerbs would need a DEM). It cannot
    see anything OSM doesn't record.
 9. Extra dependencies this route would need if built: `requests` or

@@ -9,7 +9,8 @@ vi.mock('posthog-js', () => ({
   },
 }));
 
-const CONSENT_KEY = 'plot_analytics_consent';
+const CONSENT_KEY = 'placer_analytics_consent';
+const LEGACY_CONSENT_KEY = 'plot_analytics_consent';
 const GRANTED = 'granted';
 const DENIED = 'denied';
 
@@ -153,5 +154,35 @@ describe('analytics consent gate', () => {
 
     getItem.mockRestore();
     setItem.mockRestore();
+  });
+
+  // The key was renamed with the project, from PLOT to PLACER. A visitor who had
+  // already decided must not be asked a second time under the new name.
+  it('honours a decision recorded under the pre-rename key', () => {
+    localStorage.setItem(LEGACY_CONSENT_KEY, DENIED);
+    expect(analytics.readConsent()).toBe(DENIED);
+
+    localStorage.setItem(LEGACY_CONSENT_KEY, GRANTED);
+    expect(analytics.readConsent()).toBe(GRANTED);
+  });
+
+  it('does not load PostHog for a visitor who rejected under the pre-rename key', () => {
+    configure();
+    localStorage.setItem(LEGACY_CONSENT_KEY, DENIED);
+    analytics.initAnalytics();
+
+    expect(posthog.init).not.toHaveBeenCalled();
+  });
+
+  it('prefers the current key and clears the pre-rename one once a choice is made', () => {
+    configure();
+    localStorage.setItem(LEGACY_CONSENT_KEY, GRANTED);
+
+    analytics.denyConsent();
+
+    expect(localStorage.getItem(CONSENT_KEY)).toBe(DENIED);
+    // Left in place, the stale "granted" would outlive the withdrawal.
+    expect(localStorage.getItem(LEGACY_CONSENT_KEY)).toBeNull();
+    expect(analytics.readConsent()).toBe(DENIED);
   });
 });

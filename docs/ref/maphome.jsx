@@ -1,4 +1,4 @@
-/* PLOT — Map Home screen (themeable). Reused for the Search/Filter state and
+/* PLACER — Map Home screen (themeable). Reused for the Search/Filter state and
    the three visual-direction artboards. */
 
 function NavBar({ t, query, filterState }) {
@@ -69,7 +69,7 @@ function ImCard({ t, im, active }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
           <Avatar name={im.author} size={18} />
           <span style={{ fontSize: 12.5, color: t.inkDim, fontWeight: 500 }}>{im.author}</span>
-          <span className="plot-mono" style={{ fontSize: 11.5, color: t.inkFaint }}>· {im.when}</span>
+          <span className="placer-mono" style={{ fontSize: 11.5, color: t.inkFaint }}>· {im.when}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <CatTag cat={im.cat} t={t} size="sm" />
@@ -90,10 +90,10 @@ function LeftRail({ t, sort, activeCat, filterState }) {
       <div style={{ padding: '18px 18px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span className="plot-disp" style={{ fontSize: 22, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em' }}>
+            <span className="placer-disp" style={{ fontSize: 22, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em' }}>
               {filterState ? 'Results' : 'Imaginations'}
             </span>
-            <span className="plot-mono" style={{ fontSize: 13, color: t.inkDim }}>{filterState ? '24' : '312'} nearby</span>
+            <span className="placer-mono" style={{ fontSize: 13, color: t.inkDim }}>{filterState ? '24' : '312'} nearby</span>
           </div>
           <SortPill t={t} value={sort || 'Trending'} />
         </div>
@@ -109,7 +109,7 @@ function LeftRail({ t, sort, activeCat, filterState }) {
         </div>
       </div>
       <div style={{ height: 1, background: t.line, margin: '4px 0' }} />
-      <div className="plot-scroll" style={{ flex: 1, overflowY: 'auto', padding: '8px 10px 18px' }}>
+      <div className="placer-scroll" style={{ flex: 1, overflowY: 'auto', padding: '8px 10px 18px' }}>
         {list.map((im, i) => <ImCard key={im.id} t={t} im={im} active={i === 0} />)}
       </div>
     </div>
@@ -150,7 +150,7 @@ function PinPopover({ t, im }) {
             <Avatar name={im.author} size={20} />
             <span style={{ fontSize: 12.5, color: t.inkDim, fontWeight: 600 }}>{im.author}</span>
           </span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 800, color: t.ink }} className="plot-disp">
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 800, color: t.ink }} className="placer-disp">
             <Icon name="arrowUp" size={15} stroke={2.6} style={{ color: t.mapMode === 'dark' ? t.accent : t.ink }} />{im.votes}
           </span>
         </div>
@@ -198,7 +198,7 @@ function MapArea({ t, filterState }) {
 
 function MapHome({ t, query, sort, activeCat, filterState }) {
   return (
-    <div className="plot-screen" style={{ background: t.page, color: t.ink, display: 'flex', flexDirection: 'column' }}>
+    <div className="placer-screen" style={{ background: t.page, color: t.ink, display: 'flex', flexDirection: 'column' }}>
       <NavBar t={t} query={query} filterState={filterState} />
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         <LeftRail t={t} sort={sort} activeCat={activeCat} filterState={filterState} />
@@ -212,7 +212,7 @@ function MapHome({ t, query, sort, activeCat, filterState }) {
 function FilterRow({ t, label, children }) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <div className="plot-mono" style={{ fontSize: 11, letterSpacing: '0.06em', color: t.inkDim, textTransform: 'uppercase', marginBottom: 9 }}>{label}</div>
+      <div className="placer-mono" style={{ fontSize: 11, letterSpacing: '0.06em', color: t.inkDim, textTransform: 'uppercase', marginBottom: 9 }}>{label}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>{children}</div>
     </div>
   );
@@ -223,7 +223,7 @@ function FilterPanel({ t }) {
     <div style={{ position: 'absolute', top: 18, left: 18, width: 320, zIndex: 55,
       background: t.surface, borderRadius: 14, boxShadow: t.shadow, border: `1px solid ${t.line}`, overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 16px 13px', borderBottom: `1px solid ${t.line}` }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, fontWeight: 800, fontSize: 16, color: t.ink }} className="plot-disp">
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, fontWeight: 800, fontSize: 16, color: t.ink }} className="placer-disp">
           <Icon name="filter" size={18} stroke={2.2} />Filters
         </span>
         <span style={{ fontSize: 13, fontWeight: 700, color: t.accent === '#D7FB36' ? t.ink : t.accent }}>Reset</span>
@@ -258,7 +258,7 @@ function FilterPanel({ t }) {
 
 function SearchFilterScreen({ t }) {
   return (
-    <div className="plot-screen" style={{ background: t.page, color: t.ink, display: 'flex', flexDirection: 'column' }}>
+    <div className="placer-screen" style={{ background: t.page, color: t.ink, display: 'flex', flexDirection: 'column' }}>
       <NavBar t={t} query="benches & shade near Riverside" filterState />
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         <LeftRail t={t} sort="Top voted" filterState />

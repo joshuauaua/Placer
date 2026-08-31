@@ -1,4 +1,4 @@
-# Placemaking Tool
+# Placer
 
 An interactive web application for reimagining public spaces using Google Maps Street View and HTML5 Canvas manipulation.
 
@@ -31,7 +31,7 @@ An interactive web application for reimagining public spaces using Google Maps S
 1. Clone the repository:
 ```bash
 git clone <your-repo-url>
-cd Plot
+cd Placer
 ```
 
 2. Install dependencies:
@@ -83,7 +83,7 @@ The application will be available at `http://localhost:5173`
 ## Project Structure
 
 ```
-Plot/
+Placer/
 ├── src/
 │   ├── components/
 │   │   ├── MapContainer.jsx          # Google Maps & Street View

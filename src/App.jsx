@@ -1,4 +1,4 @@
-/* PLOT — Reimagine Your City */
+/* PLACER — Reimagine Your City */
 
 import { useState, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
@@ -221,11 +221,11 @@ function MainApp({ initialView = 'welcome' }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Icon name="pin" size={44} stroke={2.4} style={{ color: t.accentInk }} />
                 </div>
-                <h1 className="plot-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink, letterSpacing: '-0.03em', marginBottom: 16 }}>
+                <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink, letterSpacing: '-0.03em', marginBottom: 16 }}>
                   Reimagine Your City
                 </h1>
                 <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, marginBottom: 32 }}>
-                  PLOT is a community platform for visualizing public space improvements.
+                  PLACER is a community platform for visualizing public space improvements.
                   Place assets, share your vision, and bring better spaces to life.
                 </p>
               </div>
@@ -239,7 +239,7 @@ function MainApp({ initialView = 'welcome' }) {
               </div>
               <div style={{ marginTop: 48, padding: 24, background: t.surface, borderRadius: 12, border: `1px solid ${t.line}`,
                 boxShadow: t.shadow }}>
-                <div className="plot-mono" style={{ fontSize: 11, letterSpacing: '0.06em', color: t.inkDim,
+                <div className="placer-mono" style={{ fontSize: 11, letterSpacing: '0.06em', color: t.inkDim,
                   textTransform: 'uppercase', marginBottom: 16 }}>How it works</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, textAlign: 'center' }}>
                   <div>
@@ -307,7 +307,7 @@ function MainApp({ initialView = 'welcome' }) {
       {/* Footer */}
       <div style={{ height: 44, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 18,
         padding: '0 22px', background: t.chrome, borderTop: `1px solid ${t.line}`, fontSize: 13, zIndex: 60 }}>
-        <span style={{ color: t.inkFaint }}>© 2026 PLOT</span>
+        <span style={{ color: t.inkFaint }}>© 2026 PLACER</span>
         <div style={{ flex: 1 }} />
         <FooterLink t={t} active={view === 'privacy'} onClick={() => show('privacy')}>
           Privacy Policy
@@ -329,7 +329,7 @@ function AdminGate({ children, t }) {
         justifyContent: 'center', background: t.page, color: t.ink }}>
         <div style={{ textAlign: 'center', maxWidth: 400 }}>
           <Icon name="shield" size={48} stroke={2} style={{ color: t.inkDim, margin: '0 auto 16px' }} />
-          <h1 className="plot-disp" style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Access Restricted</h1>
+          <h1 className="placer-disp" style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Access Restricted</h1>
           <p style={{ fontSize: 15, color: t.inkDim }}>
             The admin dashboard is not available in this environment.
           </p>

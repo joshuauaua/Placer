@@ -1,4 +1,4 @@
-/* PLOT — Imagination Canvas with built-in asset library */
+/* PLACER — Imagination Canvas with built-in asset library */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import posthog from 'posthog-js';
@@ -351,9 +351,9 @@ const ImaginationCanvas = ({
           border: `1px solid ${t.line}`, boxShadow: t.shadow, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
-              <span className="plot-disp" style={{ color: t.ink, fontWeight: 700 }}>{canvasAssets.length}</span> assets placed
+              <span className="placer-disp" style={{ color: t.ink, fontWeight: 700 }}>{canvasAssets.length}</span> assets placed
               <span style={{ margin: '0 8px', color: t.inkFaint }}>·</span>
-              <span className="plot-disp" style={{ color: t.ink, fontWeight: 700 }}>{lines.length}</span> lines
+              <span className="placer-disp" style={{ color: t.ink, fontWeight: 700 }}>{lines.length}</span> lines
               {selectedAssetId && (
                 <span style={{ marginLeft: 16, color: t.accent }}>
                   Selected: {canvasAssets.find(a => a.id === selectedAssetId)?.label}
@@ -537,7 +537,7 @@ const ImaginationCanvas = ({
         display: 'flex', flexDirection: 'column', height: '100%', padding: 16 }}>
         <h3 style={{ fontSize: 18, fontWeight: 800, color: t.ink, marginBottom: 16 }}>Asset Library</h3>
 
-        <div style={{ flex: 1, overflowY: 'auto' }} className="plot-scroll">
+        <div style={{ flex: 1, overflowY: 'auto' }} className="placer-scroll">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {availableAssets.map((asset) => {
               const cat = CAT[asset.cat];

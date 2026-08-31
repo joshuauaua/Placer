@@ -1,4 +1,4 @@
-/* PLOT — Budget Ballot: one street, a quarter of a million euros, no way to have it all.
+/* PLACER — Budget Ballot: one street, a quarter of a million euros, no way to have it all.
  *
  * Nine things a neighbourhood might ask for, with what each one costs and what each
  * one does. The interesting part is not the total — it is that some of the effects
@@ -217,7 +217,7 @@ export function formatEuros(amount) {
 /** A plain-text version of a ballot, for the copy button. */
 export function summaryText(result) {
   const lines = [
-    'My street budget — PLOT Sandbox',
+    'My street budget — PLACER Sandbox',
     `Spent ${formatEuros(result.spent)} of ${formatEuros(BUDGET)}`,
     '',
   ];

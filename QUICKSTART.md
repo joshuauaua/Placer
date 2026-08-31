@@ -1,4 +1,4 @@
-# Placemaking Tool - Quick Start Guide
+# Placer - Quick Start Guide
 
 Get up and running in 5 minutes!
 
