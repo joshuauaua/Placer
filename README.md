@@ -80,6 +80,37 @@ npm run dev
 
 The application will be available at `http://localhost:5173`
 
+### Running the Tests
+
+```bash
+npm run test:run     # unit and component tests (vitest, jsdom)
+npm run test:e2e     # end-to-end tests (Playwright, Chromium)
+npm run test:e2e:ui  # the same suite in Playwright's UI mode
+```
+
+The first E2E run needs a browser: `npx playwright install chromium`.
+
+The E2E suite lives in `e2e/` and covers what jsdom cannot — drawing on the Konva
+canvas, lazy route chunks, `/sandbox/<experiment>` URLs, and consent surviving a
+reload. Two things about how it runs:
+
+- **It builds the app itself.** `playwright.config.js` runs
+  `npm run build -- -m e2e` and serves the result with `vp preview`, so the specs
+  test the built app rather than the dev server. `-m e2e` loads `.env.e2e`, which
+  overrides your `.env`: a run on your machine sees the same empty Google Maps key
+  and placeholder PostHog credentials CI does.
+- **Nothing leaves the browser.** The fixtures in `e2e/fixtures/app.js` abort every
+  request that is not to the preview server, and the create-flow spec injects a stub
+  of the small part of the Maps JS API that `MapContainer` uses instead of a real
+  key — which is also what keeps a CI run free of secrets. `map.e2e.js` covers the
+  keyless map on purpose, since that is what a misconfigured deployment looks like.
+
+Specs are named `*.e2e.js`, not `*.spec.js`, which is what keeps vitest and
+Playwright from collecting each other's files.
+
+`.github/workflows/e2e.yml` runs the suite on every pull request and on pushes to
+`Development`, and attaches the HTML report as a build artifact.
+
 ## Project Structure
 
 ```
@@ -96,7 +127,9 @@ Placer/
 │   ├── main.jsx                      # React entry point
 │   └── index.css                     # Tailwind CSS imports
 ├── public/                           # Static assets
+├── e2e/                              # Playwright end-to-end specs (*.e2e.js)
 ├── .env.example                      # Environment variables template
+├── .env.e2e                          # Environment the E2E suite builds against
 └── package.json
 ```
 
