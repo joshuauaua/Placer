@@ -1,4 +1,4 @@
-/* PLOT — Street Section Mixer: the arithmetic of a street's cross-section.
+/* PLACER — Street Section Mixer: the arithmetic of a street's cross-section.
  *
  * A street is a fixed number of metres wide, and that is the whole point of the
  * experiment: every metre given to one thing is taken from another. Everything

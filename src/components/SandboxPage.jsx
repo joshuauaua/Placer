@@ -1,4 +1,4 @@
-/* PLOT — Sandbox: a gallery of small experiments about participatory urban design.
+/* PLACER — Sandbox: a gallery of small experiments about participatory urban design.
  *
  * Each tile is a self-contained toy in the spirit of Chrome Music Lab: no sign-in,
  * nothing saved, and something moving within a second of arriving. The register of
@@ -50,14 +50,14 @@ function Tile({ t, experiment, onOpen }) {
       </span>
 
       <Icon name={experiment.icon} size={30} stroke={2.1} />
-      <span className="plot-disp" style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.15, position: 'relative' }}>
+      <span className="placer-disp" style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.15, position: 'relative' }}>
         {experiment.name}
       </span>
       <span style={{ fontSize: 15, fontWeight: 600, opacity: 0.92, lineHeight: 1.45, position: 'relative', maxWidth: 320 }}>
         {experiment.tagline}
       </span>
       <div style={{ flex: 1 }} />
-      <span className="plot-mono" style={{ fontSize: 11.5, letterSpacing: '0.06em', textTransform: 'uppercase',
+      <span className="placer-mono" style={{ fontSize: 11.5, letterSpacing: '0.06em', textTransform: 'uppercase',
         display: 'inline-flex', alignItems: 'center', gap: 6, position: 'relative' }}>
         Open <Icon name="arrowRight" size={14} stroke={2.4} />
       </span>
@@ -88,12 +88,12 @@ export function SandboxPage({ t }) {
         ) : (
           <>
             <div style={{ marginBottom: 40 }}>
-              <div className="plot-mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 11.5,
+              <div className="placer-mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 11.5,
                 letterSpacing: '0.08em', textTransform: 'uppercase', color: t.inkDim, marginBottom: 14 }}>
                 <Icon name="flask" size={15} stroke={2.1} />
                 Experiments
               </div>
-              <h1 className="plot-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink,
+              <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink,
                 letterSpacing: '-0.03em', marginBottom: 16, lineHeight: 1.05 }}>
                 Sandbox
               </h1>
@@ -107,7 +107,7 @@ export function SandboxPage({ t }) {
             {missing && (
               <p role="status" style={{ marginBottom: 24, padding: '12px 16px', borderRadius: 10,
                 background: t.surfaceAlt, border: `1px solid ${t.line}`, fontSize: 14, color: t.ink }}>
-                There is no experiment called <span className="plot-mono">{missing}</span>. Here is everything there is.
+                There is no experiment called <span className="placer-mono">{missing}</span>. Here is everything there is.
               </p>
             )}
 

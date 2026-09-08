@@ -1,4 +1,4 @@
-/* PLOT — shortest walking distances across a rectangular cell grid.
+/* PLACER — shortest walking distances across a rectangular cell grid.
  *
  * Shared by the sandbox experiments: 15-Minute Reach measures how far an amenity
  * is from every home, and Desire Lines measures how long the paved route between

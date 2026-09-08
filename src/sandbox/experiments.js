@@ -1,4 +1,4 @@
-/* PLOT — the Sandbox register.
+/* PLACER — the Sandbox register.
  *
  * One entry per experiment. Adding a fifth means adding one object here and one
  * component under src/components/sandbox — the gallery, the routing and the copyable

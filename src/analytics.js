@@ -1,4 +1,4 @@
-/* PLOT — PostHog analytics, gated on the visitor's cookie consent.
+/* PLACER — PostHog analytics, gated on the visitor's cookie consent.
  *
  * PostHog is not loaded at all until the visitor accepts on the cookie banner:
  * no request leaves the browser, no cookie is written, no session is recorded.
@@ -11,7 +11,11 @@ import posthog from 'posthog-js';
 // Where the decision is remembered. Deliberately outside the STORAGE_KEYS map in
 // services/api.js, so "erase my data" does not wipe the record of a choice the
 // visitor has to be able to rely on — the GDPR page changes it explicitly.
-export const CONSENT_KEY = 'plot_analytics_consent';
+export const CONSENT_KEY = 'placer_analytics_consent';
+// What the key was called before the rename from PLOT. A visitor who already
+// accepted or refused must not be asked again — a withdrawal in particular has
+// to keep holding — so the old value is migrated across on first read.
+const LEGACY_CONSENT_KEY = 'plot_analytics_consent';
 export const GRANTED = 'granted';
 export const DENIED = 'denied';
 
@@ -23,11 +27,20 @@ export function isAnalyticsConfigured() {
   return Boolean(import.meta.env.VITE_POSTHOG_KEY && import.meta.env.VITE_POSTHOG_HOST);
 }
 
+const asDecision = (stored) => (stored === GRANTED || stored === DENIED ? stored : null);
+
 /** The stored decision, or null if the visitor has not been asked yet. */
 export function readConsent() {
   try {
-    const stored = localStorage.getItem(CONSENT_KEY);
-    return stored === GRANTED || stored === DENIED ? stored : null;
+    const stored = asDecision(localStorage.getItem(CONSENT_KEY));
+    if (stored) return stored;
+
+    const legacy = asDecision(localStorage.getItem(LEGACY_CONSENT_KEY));
+    if (legacy) {
+      localStorage.setItem(CONSENT_KEY, legacy);
+      localStorage.removeItem(LEGACY_CONSENT_KEY);
+    }
+    return legacy;
   } catch {
     // Storage blocked (private mode, cookies disabled). Treat as undecided —
     // the banner shows again, and analytics stay off.

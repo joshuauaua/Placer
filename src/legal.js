@@ -1,10 +1,10 @@
-/* PLOT — details shared by the legal pages (privacy, GDPR) */
+/* PLACER — details shared by the legal pages (privacy, GDPR) */
 
 // TODO: replace with the real operating entity before publishing these pages.
 export const OPERATOR = {
   name: '[Organisation name]',
   address: '[Registered address, country]',
-  email: 'privacy@plot.example',
+  email: 'privacy@placer.example',
 };
 
 // Shown as "Last updated" on every legal page.

@@ -1,4 +1,4 @@
-/* PLOT — Reimagine Your City */
+/* PLACER — Reimagine Your City */
 
 import { useState, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
@@ -201,11 +201,6 @@ function MainApp({ initialView = 'welcome' }) {
             cursor: 'pointer' }}>Sandbox</span>
         </nav>
         <div style={{ flex: 1 }} />
-        <button style={{ width: 42, height: 42, borderRadius: 10, border: `1.5px solid ${t.line}`, background: 'transparent',
-          color: t.inkDim, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
-          <Icon name="bell" size={20} stroke={2} />
-          <span style={{ position: 'absolute', top: 9, right: 10, width: 7, height: 7, borderRadius: '50%', background: '#D6452F' }} />
-        </button>
         <Btn t={t} variant="accent" icon="sparkle" onClick={handleExplore}>Explore</Btn>
         <Avatar name="You There" size={40} ring={t.line} />
       </div>
@@ -221,11 +216,11 @@ function MainApp({ initialView = 'welcome' }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Icon name="pin" size={44} stroke={2.4} style={{ color: t.accentInk }} />
                 </div>
-                <h1 className="plot-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink, letterSpacing: '-0.03em', marginBottom: 16 }}>
+                <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink, letterSpacing: '-0.03em', marginBottom: 16 }}>
                   Reimagine Your City
                 </h1>
                 <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, marginBottom: 32 }}>
-                  PLOT is a community platform for visualizing public space improvements.
+                  PLACER is a community platform for visualizing public space improvements.
                   Place assets, share your vision, and bring better spaces to life.
                 </p>
               </div>
@@ -236,28 +231,6 @@ function MainApp({ initialView = 'welcome' }) {
                 <Btn t={t} variant="outline" size="lg">
                   Explore ideas
                 </Btn>
-              </div>
-              <div style={{ marginTop: 48, padding: 24, background: t.surface, borderRadius: 12, border: `1px solid ${t.line}`,
-                boxShadow: t.shadow }}>
-                <div className="plot-mono" style={{ fontSize: 11, letterSpacing: '0.06em', color: t.inkDim,
-                  textTransform: 'uppercase', marginBottom: 16 }}>How it works</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, textAlign: 'center' }}>
-                  <div>
-                    <Icon name="search" size={28} stroke={2} style={{ color: t.accent, margin: '0 auto 12px' }} />
-                    <div style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 4 }}>Find a spot</div>
-                    <div style={{ fontSize: 12, color: t.inkDim }}>Navigate to any location</div>
-                  </div>
-                  <div>
-                    <Icon name="layers" size={28} stroke={2} style={{ color: t.accent, margin: '0 auto 12px' }} />
-                    <div style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 4 }}>Place assets</div>
-                    <div style={{ fontSize: 12, color: t.inkDim }}>Add trees, benches, art</div>
-                  </div>
-                  <div>
-                    <Icon name="share" size={28} stroke={2} style={{ color: t.accent, margin: '0 auto 12px' }} />
-                    <div style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 4 }}>Share it</div>
-                    <div style={{ fontSize: 12, color: t.inkDim }}>Get community feedback</div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -307,7 +280,7 @@ function MainApp({ initialView = 'welcome' }) {
       {/* Footer */}
       <div style={{ height: 44, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 18,
         padding: '0 22px', background: t.chrome, borderTop: `1px solid ${t.line}`, fontSize: 13, zIndex: 60 }}>
-        <span style={{ color: t.inkFaint }}>© 2026 PLOT</span>
+        <span style={{ color: t.inkFaint }}>© 2026 PLACER</span>
         <div style={{ flex: 1 }} />
         <FooterLink t={t} active={view === 'privacy'} onClick={() => show('privacy')}>
           Privacy Policy
@@ -329,7 +302,7 @@ function AdminGate({ children, t }) {
         justifyContent: 'center', background: t.page, color: t.ink }}>
         <div style={{ textAlign: 'center', maxWidth: 400 }}>
           <Icon name="shield" size={48} stroke={2} style={{ color: t.inkDim, margin: '0 auto 16px' }} />
-          <h1 className="plot-disp" style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Access Restricted</h1>
+          <h1 className="placer-disp" style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Access Restricted</h1>
           <p style={{ fontSize: 15, color: t.inkDim }}>
             The admin dashboard is not available in this environment.
           </p>

@@ -1,4 +1,4 @@
-/* PLOT — Desire Lines: the paths people actually take across a square.
+/* PLACER — Desire Lines: the paths people actually take across a square.
  *
  * The plaza below is laid out the way plazas usually are — a ring around the edge
  * and a cross through the middle — while the things people walk between sit in the

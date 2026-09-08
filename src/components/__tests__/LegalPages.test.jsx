@@ -68,7 +68,7 @@ describe('GdprPage data controls', () => {
     const clickSpy = vi
       .spyOn(HTMLAnchorElement.prototype, 'click')
       .mockImplementation(function () {
-        expect(this.download).toBe('plot-data-export.json');
+        expect(this.download).toBe('placer-data-export.json');
         expect(decodeURIComponent(this.href)).toContain('placemaking_imaginations');
       });
 
@@ -86,19 +86,19 @@ describe('GdprPage data controls', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /accept analytics/i }));
     await waitFor(() =>
-      expect(localStorage.getItem('plot_analytics_consent')).toBe('granted')
+      expect(localStorage.getItem('placer_analytics_consent')).toBe('granted')
     );
     expect(screen.getByText(/analytics are on for this browser/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /accept analytics/i })).toBeDisabled();
 
     fireEvent.click(screen.getByRole('button', { name: /reject analytics/i }));
     await waitFor(() =>
-      expect(localStorage.getItem('plot_analytics_consent')).toBe('denied')
+      expect(localStorage.getItem('placer_analytics_consent')).toBe('denied')
     );
     expect(screen.getByText(/analytics are off/i)).toBeInTheDocument();
   });
 
-  it('requires a second click before erasing, then clears PLOT storage', async () => {
+  it('requires a second click before erasing, then clears PLACER storage', async () => {
     render(<GdprPage t={THEME} onNavigate={() => {}} />);
 
     fireEvent.click(screen.getByRole('button', { name: /erase my data/i }));
