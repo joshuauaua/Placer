@@ -1,4 +1,4 @@
-/* PLOT — preview card for an imagination picked off the map */
+/* PLACER — preview card for an imagination picked off the map */
 
 import { Icon } from './Icon';
 import { CatTag } from './UI';
@@ -24,7 +24,7 @@ export function ImaginationPreview({ t, imagination, onClose }) {
         maxWidth: 'calc(100% - 32px)', maxHeight: 'calc(100% - 32px)', overflowY: 'auto',
         background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12,
         boxShadow: t.shadow, color: t.ink }}
-      className="plot-scroll">
+      className="placer-scroll">
       <div style={{ position: 'relative' }}>
         {preview && (
           <img
@@ -47,7 +47,7 @@ export function ImaginationPreview({ t, imagination, onClose }) {
       <div style={{ padding: 16 }}>
         {cat && <div style={{ marginBottom: 10 }}><CatTag cat={cat} t={t} size="sm" /></div>}
 
-        <h2 className="plot-disp" style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em',
+        <h2 className="placer-disp" style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em',
           lineHeight: 1.25, marginBottom: blurb ? 8 : 0 }}>
           {title || 'Untitled imagination'}
         </h2>
@@ -63,9 +63,9 @@ export function ImaginationPreview({ t, imagination, onClose }) {
           borderTop: `1px solid ${t.line}`, fontSize: 12.5, color: t.inkDim, fontWeight: 600 }}>
           {loc && <div>{loc}</div>}
           <div>
-            <span className="plot-disp" style={{ color: t.ink, fontWeight: 700 }}>{canvasAssets.length}</span> assets
+            <span className="placer-disp" style={{ color: t.ink, fontWeight: 700 }}>{canvasAssets.length}</span> assets
             <span style={{ margin: '0 6px', color: t.inkFaint }}>·</span>
-            <span className="plot-disp" style={{ color: t.ink, fontWeight: 700 }}>{lines.length}</span> lines
+            <span className="placer-disp" style={{ color: t.ink, fontWeight: 700 }}>{lines.length}</span> lines
             {author && <> <span style={{ margin: '0 6px', color: t.inkFaint }}>·</span> {author}</>}
           </div>
         </div>

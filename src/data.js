@@ -1,4 +1,4 @@
-/* PLOT — sample content */
+/* PLACER — sample content */
 
 export const IMAGINATIONS = [
   { id: 'i1', cat: 'green',   title: 'Pocket park on the old Lot 7 parking', author: 'Mara Quinn',   when: '2d', votes: 342, comments: 28, x: 31, y: 57, loc: 'Riverside Blvd & 8th', blurb: 'Three rows of parking nobody uses. Swap the asphalt for trees, a lawn, and a few benches.' },

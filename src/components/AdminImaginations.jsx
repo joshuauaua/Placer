@@ -1,4 +1,4 @@
-/* PLOT — Admin: moderate the imaginations people have posted */
+/* PLACER — Admin: moderate the imaginations people have posted */
 
 import { useState, useEffect } from 'react';
 import { Icon } from './Icon';
@@ -48,7 +48,7 @@ function Row({ t, imagination, confirming, busy, onAskDelete, onCancelDelete, on
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <h2 className="plot-disp" style={{ fontSize: 17, fontWeight: 800, color: t.ink,
+          <h2 className="placer-disp" style={{ fontSize: 17, fontWeight: 800, color: t.ink,
             letterSpacing: '-0.01em', margin: 0 }}>
             {name}
           </h2>
@@ -150,12 +150,12 @@ export function AdminImaginations({ t }) {
 
   return (
     <div style={{ width: '100%', height: '100vh', overflowY: 'auto', background: t.page, color: t.ink }}
-      className="plot-scroll">
+      className="placer-scroll">
       {/* Header — matches the main admin dashboard's chrome. */}
       <div style={{ background: t.surface, borderBottom: `1px solid ${t.line}`, padding: '20px 32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <div>
-            <h1 className="plot-disp" style={{ fontSize: 28, fontWeight: 900, color: t.ink,
+            <h1 className="placer-disp" style={{ fontSize: 28, fontWeight: 900, color: t.ink,
               letterSpacing: '-0.02em', marginBottom: 4 }}>
               Imaginations
             </h1>
@@ -163,7 +163,7 @@ export function AdminImaginations({ t }) {
               Everything people have posted, newest first. Deleting is permanent.
             </p>
           </div>
-          <div className="plot-mono" style={{ padding: '8px 16px', background: t.accent + '15',
+          <div className="placer-mono" style={{ padding: '8px 16px', background: t.accent + '15',
             borderRadius: 8, border: `1px solid ${t.accent}`, fontSize: 13, fontWeight: 700, color: t.ink }}>
             {imaginations.length} saved
           </div>

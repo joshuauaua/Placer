@@ -1,132 +1,451 @@
-import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { SurveyPage } from '../SurveyPage';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { THEME } from '../../theme';
 
-function getOptionButtons() {
-  return screen
-    .getAllByRole('button')
-    .filter((btn) => !['Previous', 'Next Question', 'Submit Survey'].includes(btn.textContent));
+vi.mock('posthog-js', () => ({
+  default: { capture: vi.fn() },
+}));
+
+const posthog = (await import('posthog-js')).default;
+const { SurveyPage } = await import('../SurveyPage');
+const { SurveyForm } = await import('../survey/SurveyForm');
+const { resolveSurveyContent } = await import('../survey/content');
+
+const content = resolveSurveyContent();
+const TOTAL = content.section1.length + content.section2.length + content.section3.length;
+
+// One question per section, exercising the multiple and scale variants that the
+// shipped survey does not currently use.
+const fixture = {
+  hero: { title: 'Fixture survey', subtitle: 'A short one.', startLabel: 'Begin' },
+  steps: {
+    section1Title: 'Section A',
+    section1Description: 'The first one.',
+    section2Title: 'Section B',
+    section2Description: 'The second one.',
+    section3Title: 'Section C',
+    section3Description: 'The third one.',
+    emailTitle: 'Your email',
+    emailDescription: 'So we can write back.',
+    consentLabel: 'Send me the report',
+    emailLabel: 'Email',
+    emailPlaceholder: 'you@example.com',
+    nextLabel: 'Next',
+    backLabel: 'Back',
+    submitLabel: 'Send',
+    submittingLabel: 'Sending…',
+  },
+  section1: [
+    {
+      key: 'picks',
+      label: 'Pick any of these',
+      multiple: true,
+      options: [
+        { value: 'trees', label: 'Trees' },
+        { value: 'benches', label: 'Benches' },
+        { value: 'lights', label: 'Lights' },
+      ],
+    },
+  ],
+  section2: [
+    {
+      key: 'rating',
+      label: 'Rate it',
+      scale: true,
+      options: [
+        { value: '1', label: '1' },
+        { value: '2', label: '2' },
+        { value: '3', label: '3' },
+      ],
+    },
+  ],
+  section3: [
+    {
+      key: 'last',
+      label: 'One last thing',
+      options: [
+        { value: 'yes', label: 'Yes' },
+        { value: 'no', label: 'No' },
+      ],
+    },
+  ],
+  success: { title: 'All done', body: 'Saved.', closeLabel: 'Home' },
+  errorMessage: 'Could not save your answers.',
+};
+
+const options = () => within(screen.getByRole('group')).getAllByRole('button');
+const optIn = (labels) => screen.getByRole('checkbox', { name: labels.consentLabel });
+const button = (name) => screen.getByRole('button', { name });
+const heading = (name) => screen.getByRole('heading', { name });
+
+/** Answers the question on screen and moves on. */
+function answerAndAdvance(labels, optionIndex = 0) {
+  fireEvent.click(options()[optionIndex]);
+  fireEvent.click(button(labels.nextLabel));
 }
 
-function answerCurrentQuestion(optionIndex = 0) {
-  fireEvent.click(getOptionButtons()[optionIndex]);
+/** Walks from the intro to the email step, taking the first option each time. */
+function walkToEmail(surveyContent, questionCount) {
+  fireEvent.click(button(surveyContent.hero.startLabel));
+  for (let i = 0; i < questionCount; i++) answerAndAdvance(surveyContent.steps);
 }
 
 describe('SurveyPage', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    localStorage.clear();
+    posthog.capture.mockClear();
   });
 
-  it('renders the first question text on mount', () => {
-    render(<SurveyPage t={THEME} />);
-    expect(
-      screen.getByText('How often do you visit public spaces in your neighborhood?')
-    ).toBeInTheDocument();
+  describe('intro', () => {
+    it('opens on the hero rather than the first question', () => {
+      render(<SurveyPage t={THEME} />);
+
+      expect(heading(content.hero.title)).toBeInTheDocument();
+      expect(screen.getByText(content.hero.subtitle)).toBeInTheDocument();
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    });
+
+    it('shows the first question of section 1 once started', () => {
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.hero.startLabel));
+
+      expect(heading(content.steps.section1Title)).toBeInTheDocument();
+      expect(screen.getByText(content.steps.section1Description)).toBeInTheDocument();
+      expect(heading(content.section1[0].label)).toBeInTheDocument();
+      expect(screen.getByText(`1 / ${TOTAL}`)).toBeInTheDocument();
+    });
+
+    it('goes back to the hero from the first question', () => {
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.hero.startLabel));
+      fireEvent.click(button(content.steps.backLabel));
+
+      expect(heading(content.hero.title)).toBeInTheDocument();
+    });
   });
 
-  it('displays a progress indicator showing "1 / 12"', () => {
-    render(<SurveyPage t={THEME} />);
-    expect(screen.getByText('1 / 12')).toBeInTheDocument();
+  describe('answering a single-choice question', () => {
+    beforeEach(() => {
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.hero.startLabel));
+    });
+
+    it('keeps Next disabled until an option is chosen', () => {
+      expect(button(content.steps.nextLabel)).toBeDisabled();
+      fireEvent.click(options()[0]);
+      expect(button(content.steps.nextLabel)).not.toBeDisabled();
+    });
+
+    it('marks the chosen option as pressed', () => {
+      fireEvent.click(options()[1]);
+
+      expect(options()[1]).toHaveAttribute('aria-pressed', 'true');
+      expect(options()[0]).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('replaces the answer when a second option is chosen', () => {
+      fireEvent.click(options()[0]);
+      fireEvent.click(options()[1]);
+
+      expect(options()[0]).toHaveAttribute('aria-pressed', 'false');
+      expect(options()[1]).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('advances to the next question and updates the counter', () => {
+      answerAndAdvance(content.steps);
+
+      expect(screen.getByText(`2 / ${TOTAL}`)).toBeInTheDocument();
+      expect(heading(content.section1[1].label)).toBeInTheDocument();
+    });
+
+    it('preserves the answer when stepping back', () => {
+      fireEvent.click(options()[1]);
+      fireEvent.click(button(content.steps.nextLabel));
+      fireEvent.click(button(content.steps.backLabel));
+
+      expect(screen.getByText(`1 / ${TOTAL}`)).toBeInTheDocument();
+      expect(options()[1]).toHaveAttribute('aria-pressed', 'true');
+      expect(button(content.steps.nextLabel)).not.toBeDisabled();
+    });
   });
 
-  it('highlights the selected answer', () => {
-    render(<SurveyPage t={THEME} />);
-    const option = getOptionButtons()[0];
-    fireEvent.click(option);
-    expect(option).toHaveStyle({ borderColor: THEME.accent });
+  describe('moving between sections', () => {
+    it('changes the heading when section 1 runs out of questions', () => {
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.hero.startLabel));
+      for (let i = 0; i < content.section1.length; i++) answerAndAdvance(content.steps);
+
+      expect(heading(content.steps.section2Title)).toBeInTheDocument();
+      expect(heading(content.section2[0].label)).toBeInTheDocument();
+      expect(
+        screen.getByText(`${content.section1.length + 1} / ${TOTAL}`),
+      ).toBeInTheDocument();
+    });
+
+    it('steps back into the last question of the previous section', () => {
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.hero.startLabel));
+      for (let i = 0; i < content.section1.length; i++) answerAndAdvance(content.steps);
+      fireEvent.click(button(content.steps.backLabel));
+
+      expect(heading(content.steps.section1Title)).toBeInTheDocument();
+      const last = content.section1[content.section1.length - 1];
+      expect(heading(last.label)).toBeInTheDocument();
+    });
   });
 
-  it('disables "Next Question" until an option is selected', () => {
-    render(<SurveyPage t={THEME} />);
-    expect(screen.getByText('Next Question')).toBeDisabled();
-    answerCurrentQuestion();
-    expect(screen.getByText('Next Question')).not.toBeDisabled();
+  describe('the email step', () => {
+    beforeEach(() => {
+      render(<SurveyPage t={THEME} />);
+      walkToEmail(content, TOTAL);
+    });
+
+    it('replaces the counter with the final step and a full progress bar', () => {
+      expect(screen.getByText('Final step')).toBeInTheDocument();
+      expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
+      expect(heading(content.steps.emailTitle)).toBeInTheDocument();
+    });
+
+    it('offers Submit right away, with no email asked for', () => {
+      expect(button(content.steps.submitLabel)).not.toBeDisabled();
+      expect(optIn(content.steps)).not.toBeChecked();
+      expect(screen.queryByLabelText(content.steps.emailLabel)).not.toBeInTheDocument();
+    });
+
+    it('asks for an address only once the report is opted into', () => {
+      fireEvent.click(optIn(content.steps));
+
+      const field = screen.getByLabelText(content.steps.emailLabel);
+      expect(button(content.steps.submitLabel)).toBeDisabled();
+
+      fireEvent.change(field, { target: { value: 'not-an-email' } });
+      expect(button(content.steps.submitLabel)).toBeDisabled();
+
+      fireEvent.change(field, { target: { value: 'resident@example.com' } });
+      expect(button(content.steps.submitLabel)).not.toBeDisabled();
+    });
+
+    it('frees Submit again when the opt-in is cleared', () => {
+      fireEvent.click(optIn(content.steps));
+      fireEvent.change(screen.getByLabelText(content.steps.emailLabel), {
+        target: { value: 'still-typing' },
+      });
+      expect(button(content.steps.submitLabel)).toBeDisabled();
+
+      fireEvent.click(optIn(content.steps));
+
+      expect(button(content.steps.submitLabel)).not.toBeDisabled();
+      expect(screen.queryByLabelText(content.steps.emailLabel)).not.toBeInTheDocument();
+    });
+
+    it('steps back into the last question of section 3', () => {
+      fireEvent.click(button(content.steps.backLabel));
+
+      const last = content.section3[content.section3.length - 1];
+      expect(heading(content.steps.section3Title)).toBeInTheDocument();
+      expect(heading(last.label)).toBeInTheDocument();
+    });
   });
 
-  it('advances to question 2 and updates progress to "2 / 12" on "Next Question"', () => {
-    render(<SurveyPage t={THEME} />);
-    answerCurrentQuestion();
-    fireEvent.click(screen.getByText('Next Question'));
-    expect(screen.getByText('2 / 12')).toBeInTheDocument();
-    expect(
-      screen.getByText('What type of public space improvement would benefit your community most?')
-    ).toBeInTheDocument();
+  describe('submitting', () => {
+    it('stores the response, reports it, and shows the thank you screen', async () => {
+      render(<SurveyPage t={THEME} />);
+      walkToEmail(content, TOTAL);
+
+      fireEvent.click(optIn(content.steps));
+      fireEvent.change(screen.getByLabelText(content.steps.emailLabel), {
+        target: { value: 'resident@example.com' },
+      });
+      fireEvent.click(button(content.steps.submitLabel));
+
+      expect(await screen.findByRole('heading', { name: content.success.title })).toBeInTheDocument();
+      expect(screen.getByText(content.success.body)).toBeInTheDocument();
+
+      const stored = JSON.parse(localStorage.getItem('placemaking_survey_responses'));
+      expect(stored).toHaveLength(1);
+      expect(stored[0]).toMatchObject({
+        email: 'resident@example.com',
+        source: 'community_survey',
+        section1: { [content.section1[0].key]: content.section1[0].options[0].value },
+      });
+      expect(stored[0].submittedAt).toBeTruthy();
+
+      expect(posthog.capture).toHaveBeenCalledWith('survey_submitted', {
+        source: 'community_survey',
+        questions_answered: TOTAL,
+        total_questions: TOTAL,
+      });
+    });
+
+    it('stores a response with no address when the report is declined', async () => {
+      render(<SurveyPage t={THEME} />);
+      walkToEmail(content, TOTAL);
+
+      fireEvent.click(button(content.steps.submitLabel));
+
+      expect(await screen.findByRole('heading', { name: content.success.title })).toBeInTheDocument();
+
+      const stored = JSON.parse(localStorage.getItem('placemaking_survey_responses'));
+      expect(stored).toHaveLength(1);
+      expect(stored[0].email).toBeNull();
+      expect(stored[0].section3[content.section3[0].key]).toBe(
+        content.section3[0].options[0].value,
+      );
+    });
+
+    it('drops an address typed before the opt-in was cleared', async () => {
+      render(<SurveyPage t={THEME} />);
+      walkToEmail(content, TOTAL);
+
+      fireEvent.click(optIn(content.steps));
+      fireEvent.change(screen.getByLabelText(content.steps.emailLabel), {
+        target: { value: 'resident@example.com' },
+      });
+      fireEvent.click(optIn(content.steps));
+      fireEvent.click(button(content.steps.submitLabel));
+
+      expect(await screen.findByRole('heading', { name: content.success.title })).toBeInTheDocument();
+
+      const stored = JSON.parse(localStorage.getItem('placemaking_survey_responses'));
+      expect(stored[0].email).toBeNull();
+    });
+
+    it('sends the visitor home from the thank you screen', async () => {
+      delete window.location;
+      window.location = { href: '' };
+
+      render(<SurveyPage t={THEME} />);
+      walkToEmail(content, TOTAL);
+      fireEvent.click(button(content.steps.submitLabel));
+
+      fireEvent.click(await screen.findByRole('button', { name: content.success.closeLabel }));
+      expect(window.location.href).toBe('/');
+    });
+  });
+});
+
+describe('SurveyForm', () => {
+  const renderFixture = (submit) =>
+    render(
+      <SurveyForm
+        t={THEME}
+        content={fixture}
+        submit={submit}
+        source="fixture_survey"
+        idPrefix="fixture"
+      />,
+    );
+
+  it('lets a multiple-choice question hold several answers', () => {
+    renderFixture(vi.fn());
+    fireEvent.click(button(fixture.hero.startLabel));
+
+    expect(screen.getByText('Select all that apply.')).toBeInTheDocument();
+    expect(button(fixture.steps.nextLabel)).toBeDisabled();
+
+    fireEvent.click(options()[0]);
+    fireEvent.click(options()[2]);
+
+    expect(options()[0]).toHaveAttribute('aria-pressed', 'true');
+    expect(options()[1]).toHaveAttribute('aria-pressed', 'false');
+    expect(options()[2]).toHaveAttribute('aria-pressed', 'true');
+    expect(button(fixture.steps.nextLabel)).not.toBeDisabled();
   });
 
-  it('disables "Previous" on question 1', () => {
-    render(<SurveyPage t={THEME} />);
-    expect(screen.getByText('Previous')).toBeDisabled();
+  it('unselects a multiple-choice option on a second click', () => {
+    renderFixture(vi.fn());
+    fireEvent.click(button(fixture.hero.startLabel));
+    fireEvent.click(options()[0]);
+    fireEvent.click(options()[0]);
+
+    expect(options()[0]).toHaveAttribute('aria-pressed', 'false');
+    expect(button(fixture.steps.nextLabel)).toBeDisabled();
   });
 
-  it('navigates back to the prior question with the answer preserved', () => {
-    render(<SurveyPage t={THEME} />);
-    const firstOption = getOptionButtons()[1];
-    fireEvent.click(firstOption);
-    fireEvent.click(screen.getByText('Next Question'));
-    fireEvent.click(screen.getByText('Previous'));
+  it('lays a scale question out in a row and other questions in a column', () => {
+    renderFixture(vi.fn());
+    fireEvent.click(button(fixture.hero.startLabel));
+    expect(screen.getByRole('group')).toHaveStyle({ flexDirection: 'column' });
 
-    expect(screen.getByText('1 / 12')).toBeInTheDocument();
-    expect(screen.getByText('Next Question')).not.toBeDisabled();
-    expect(getOptionButtons()[1]).toHaveStyle({ borderColor: THEME.accent });
+    answerAndAdvance(fixture.steps);
+    expect(heading(fixture.section2[0].label)).toBeInTheDocument();
+    expect(screen.getByRole('group')).toHaveStyle({ flexDirection: 'row' });
   });
 
-  it('replaces the prior answer when a different option is selected on the same question', () => {
-    render(<SurveyPage t={THEME} />);
-    const options = getOptionButtons();
-    fireEvent.click(options[0]);
-    fireEvent.click(options[1]);
+  it('hands the grouped answers and the trimmed email to submit', async () => {
+    const submit = vi.fn().mockResolvedValue({ id: 'saved' });
+    renderFixture(submit);
 
-    expect(options[1]).toHaveStyle({ borderColor: THEME.accent });
-    expect(options[0]).toHaveStyle({ borderColor: THEME.line });
+    fireEvent.click(button(fixture.hero.startLabel));
+    fireEvent.click(options()[0]);
+    fireEvent.click(options()[1]);
+    fireEvent.click(button(fixture.steps.nextLabel));
+    answerAndAdvance(fixture.steps, 2);
+    answerAndAdvance(fixture.steps, 0);
+
+    fireEvent.click(optIn(fixture.steps));
+    fireEvent.change(screen.getByLabelText(fixture.steps.emailLabel), {
+      target: { value: '  resident@example.com  ' },
+    });
+    fireEvent.click(button(fixture.steps.submitLabel));
+
+    expect(await screen.findByRole('heading', { name: fixture.success.title })).toBeInTheDocument();
+    expect(submit).toHaveBeenCalledWith({
+      section1: { picks: ['trees', 'benches'] },
+      section2: { rating: '3' },
+      section3: { last: 'yes' },
+      email: 'resident@example.com',
+      source: 'fixture_survey',
+    });
   });
 
-  it('replaces "Next Question" with "Submit Survey" on the last question', () => {
-    render(<SurveyPage t={THEME} />);
-    for (let i = 0; i < 11; i++) {
-      answerCurrentQuestion();
-      fireEvent.click(screen.getByText('Next Question'));
-    }
-    expect(screen.getByText('12 / 12')).toBeInTheDocument();
-    expect(screen.queryByText('Next Question')).not.toBeInTheDocument();
-    expect(screen.getByText('Submit Survey')).toBeInTheDocument();
+  it('submits a null email when the report is not opted into', async () => {
+    const submit = vi.fn().mockResolvedValue({ id: 'saved' });
+    renderFixture(submit);
+
+    fireEvent.click(button(fixture.hero.startLabel));
+    answerAndAdvance(fixture.steps);
+    answerAndAdvance(fixture.steps);
+    answerAndAdvance(fixture.steps);
+    fireEvent.click(button(fixture.steps.submitLabel));
+
+    expect(await screen.findByRole('heading', { name: fixture.success.title })).toBeInTheDocument();
+    expect(submit).toHaveBeenCalledWith(
+      expect.objectContaining({ email: null, source: 'fixture_survey' }),
+    );
   });
 
-  it('disables "Submit Survey" until all 12 questions are answered', () => {
-    render(<SurveyPage t={THEME} />);
-    for (let i = 0; i < 11; i++) {
-      answerCurrentQuestion();
-      fireEvent.click(screen.getByText('Next Question'));
-    }
-    expect(screen.getByText('Submit Survey')).toBeDisabled();
-    answerCurrentQuestion();
-    expect(screen.getByText('Submit Survey')).not.toBeDisabled();
+  it('submits when Enter is pressed in the email field', async () => {
+    const submit = vi.fn().mockResolvedValue({ id: 'saved' });
+    renderFixture(submit);
+
+    fireEvent.click(button(fixture.hero.startLabel));
+    answerAndAdvance(fixture.steps);
+    answerAndAdvance(fixture.steps);
+    answerAndAdvance(fixture.steps);
+
+    fireEvent.click(optIn(fixture.steps));
+    const field = screen.getByLabelText(fixture.steps.emailLabel);
+    fireEvent.change(field, { target: { value: 'resident@example.com' } });
+    fireEvent.keyDown(field, { key: 'Enter' });
+
+    expect(await screen.findByRole('heading', { name: fixture.success.title })).toBeInTheDocument();
   });
 
-  it('renders the "Thank You!" confirmation after submission', () => {
-    render(<SurveyPage t={THEME} />);
-    for (let i = 0; i < 11; i++) {
-      answerCurrentQuestion();
-      fireEvent.click(screen.getByText('Next Question'));
-    }
-    answerCurrentQuestion();
-    fireEvent.click(screen.getByText('Submit Survey'));
-    expect(screen.getByText('Thank You!')).toBeInTheDocument();
-  });
+  it('keeps the visitor on the email step and explains a failed save', async () => {
+    const submit = vi.fn().mockRejectedValue(new Error('quota exceeded'));
+    renderFixture(submit);
 
-  it('sets window.location.href to "/" when "Return to Home" is clicked', () => {
-    delete window.location;
-    window.location = { href: '' };
+    fireEvent.click(button(fixture.hero.startLabel));
+    answerAndAdvance(fixture.steps);
+    answerAndAdvance(fixture.steps);
+    answerAndAdvance(fixture.steps);
 
-    render(<SurveyPage t={THEME} />);
-    for (let i = 0; i < 11; i++) {
-      answerCurrentQuestion();
-      fireEvent.click(screen.getByText('Next Question'));
-    }
-    answerCurrentQuestion();
-    fireEvent.click(screen.getByText('Submit Survey'));
-    fireEvent.click(screen.getByText('Return to Home'));
+    fireEvent.click(button(fixture.steps.submitLabel));
 
-    expect(window.location.href).toBe('/');
+    expect(await screen.findByRole('alert')).toHaveTextContent(fixture.errorMessage);
+    expect(screen.queryByRole('heading', { name: fixture.success.title })).not.toBeInTheDocument();
+    expect(button(fixture.steps.submitLabel)).not.toBeDisabled();
+    expect(optIn(fixture.steps)).toBeInTheDocument();
   });
 });

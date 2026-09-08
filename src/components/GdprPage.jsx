@@ -1,4 +1,4 @@
-/* PLOT — GDPR / data rights */
+/* PLACER — GDPR / data rights */
 
 import { useState } from 'react';
 import { LegalPage, Section, P, Bullets, Callout, Table, ExternalLink, PageLink } from './LegalLayout';
@@ -31,10 +31,10 @@ function DataControls({ t }) {
       const { dataUri } = await exportAllData();
       const link = document.createElement('a');
       link.href = dataUri;
-      link.download = 'plot-data-export.json';
+      link.download = 'placer-data-export.json';
       link.click();
       posthog.capture('data_exported');
-      setStatus('Your data has been downloaded as plot-data-export.json.');
+      setStatus('Your data has been downloaded as placer-data-export.json.');
     } catch {
       setStatus('The export could not be created. Your browser may be blocking local storage.');
     } finally {
@@ -52,7 +52,7 @@ function DataControls({ t }) {
     try {
       await eraseAllData();
       posthog.capture('data_erased');
-      setStatus('Everything PLOT stored in this browser has been deleted.');
+      setStatus('Everything PLACER stored in this browser has been deleted.');
     } catch {
       setStatus('The data could not be erased. Try clearing site data in your browser settings.');
     } finally {
@@ -74,7 +74,7 @@ function DataControls({ t }) {
         Exercise your rights on this device
       </div>
       <P t={t} style={{ fontSize: 15, marginBottom: 20 }}>
-        Because PLOT keeps your work in your own browser rather than on a server, you can act
+        Because PLACER keeps your work in your own browser rather than on a server, you can act
         on access, portability and erasure yourself, immediately — no request needed.
       </P>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -123,7 +123,7 @@ function ConsentControls({ t }) {
         Analytics consent
       </div>
       <P t={t} style={{ fontSize: 15, marginBottom: 20 }}>
-        PLOT asks before it turns on PostHog analytics, and you can change that answer here at
+        PLACER asks before it turns on PostHog analytics, and you can change that answer here at
         any time. Withdrawing consent stops capture immediately; it does not undo events already
         collected, though you can ask us to delete those using the contact address above.
       </P>
@@ -149,11 +149,11 @@ export function GdprPage({ t, onNavigate }) {
     <LegalPage
       t={t}
       title="GDPR"
-      intro="Your rights under the EU General Data Protection Regulation and the UK GDPR, and how PLOT meets them."
+      intro="Your rights under the EU General Data Protection Regulation and the UK GDPR, and how PLACER meets them."
     >
       <Callout t={t} icon="check" title="Where your data actually sits">
         The ideas you make stay with you: assets, comments and upvotes are written to your
-        browser&rsquo;s local storage, not to a PLOT server, so most of what follows is something
+        browser&rsquo;s local storage, not to a PLACER server, so most of what follows is something
         you can do yourself in a couple of clicks rather than a request you have to send us. The
         one exception is usage analytics, which go to PostHog &mdash; and only if you accept them.
       </Callout>
@@ -184,8 +184,8 @@ export function GdprPage({ t, onNavigate }) {
               'Held in the page only; discarded on close or reload',
             ],
             [
-              'Usage analytics sent to PostHog: the features you use, the events PLOT emits (for example posting an imagination), a session recording of your visit, error reports, and the device, browser and IP-derived approximate location behind them',
-              'Understanding how PLOT is used, and finding the parts of it that break',
+              'Usage analytics sent to PostHog: the features you use, the events PLACER emits (for example posting an imagination), a session recording of your visit, error reports, and the device, browser and IP-derived approximate location behind them',
+              'Understanding how PLACER is used, and finding the parts of it that break',
               'Consent (Art. 6(1)(a)) — off unless you accept, withdrawable at any time',
               'As configured in our PostHog project; nothing at all before you accept',
             ],
@@ -198,9 +198,9 @@ export function GdprPage({ t, onNavigate }) {
           ]}
         />
         <P t={t}>
-          PLOT does not process special category data and makes no automated decisions about you
+          PLACER does not process special category data and makes no automated decisions about you
           within the meaning of Article 22. Analytics are used in aggregate: PostHog gives your
-          browser an anonymous identifier so that repeat visits can be counted, but PLOT never
+          browser an anonymous identifier so that repeat visits can be counted, but PLACER never
           links it to a name, an email address or an account, because it holds none.
         </P>
       </Section>
@@ -221,7 +221,7 @@ export function GdprPage({ t, onNavigate }) {
           to extend that by up to two further months for a complex request. There is no charge.
         </P>
         <P t={t}>
-          One practical limit worth stating plainly: since PLOT holds no account or identifier
+          One practical limit worth stating plainly: since PLACER holds no account or identifier
           for you, we usually have no way to look up &ldquo;your&rdquo; data on our side — which
           is also why we cannot restore anything you erase.
         </P>
@@ -247,7 +247,7 @@ export function GdprPage({ t, onNavigate }) {
 
       <Section t={t} title="Cookies and similar technologies">
         <P t={t}>
-          PLOT runs no advertising scripts and sets no cookies of its own. Two kinds of browser
+          PLACER runs no advertising scripts and sets no cookies of its own. Two kinds of browser
           storage are in play:
         </P>
         <Bullets t={t} items={[
@@ -285,7 +285,7 @@ export function GdprPage({ t, onNavigate }) {
         <P t={t}>
           The{' '}
           <PageLink t={t} onClick={() => onNavigate('privacy')}>Privacy Policy</PageLink>{' '}
-          describes in plain language what PLOT does with information.
+          describes in plain language what PLACER does with information.
         </P>
       </Section>
     </LegalPage>

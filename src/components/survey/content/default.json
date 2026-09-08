@@ -1,0 +1,170 @@
+{
+  "hero": {
+    "title": "Tell us how your neighborhood should change",
+    "subtitle": "Twelve questions about the public space around you. It takes about three minutes, and it shapes what we build next.",
+    "startLabel": "Start the survey"
+  },
+  "steps": {
+    "section1Title": "Section 1: You and your neighborhood",
+    "section1Description": "A little context, so we can group answers fairly.",
+    "section2Title": "Section 2: What you'd change",
+    "section2Description": "Where the public space around you falls short today.",
+    "section3Title": "Section 3: Getting involved",
+    "section3Description": "How planning decisions reach you now, and what would help.",
+    "emailTitle": "That's everything",
+    "emailDescription": "Your answers are ready to submit. If you'd like the community report when it is published, tick the box and leave your email \u2014 that part is optional.",
+    "consentLabel": "Email me the community report when it is published",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "nextLabel": "Next",
+    "backLabel": "Back",
+    "submitLabel": "Submit survey",
+    "submittingLabel": "Sending…"
+  },
+  "section1": [
+    {
+      "key": "ageGroup",
+      "label": "What age group do you belong to?",
+      "options": [
+        { "value": "under-18", "label": "Under 18" },
+        { "value": "18-24", "label": "18-24" },
+        { "value": "25-34", "label": "25-34" },
+        { "value": "35-44", "label": "35-44" },
+        { "value": "45-54", "label": "45-54" },
+        { "value": "55-64", "label": "55-64" },
+        { "value": "65-plus", "label": "65 or older" }
+      ]
+    },
+    {
+      "key": "neighborhoodType",
+      "label": "How would you describe your neighborhood?",
+      "options": [
+        { "value": "urban-center", "label": "Urban downtown/city center" },
+        { "value": "urban-residential", "label": "Urban residential" },
+        { "value": "suburban", "label": "Suburban" },
+        { "value": "rural", "label": "Rural" },
+        { "value": "mixed-use", "label": "Mixed-use area" }
+      ]
+    },
+    {
+      "key": "visitFrequency",
+      "label": "How often do you visit public spaces in your neighborhood?",
+      "options": [
+        { "value": "daily", "label": "Daily" },
+        { "value": "several-weekly", "label": "Several times a week" },
+        { "value": "weekly", "label": "Once a week" },
+        { "value": "monthly", "label": "Once a month" },
+        { "value": "rarely", "label": "Rarely or never" }
+      ]
+    }
+  ],
+  "section2": [
+    {
+      "key": "improvementPriority",
+      "label": "What type of public space improvement would benefit your community most?",
+      "options": [
+        { "value": "green", "label": "More green spaces and parks" },
+        { "value": "pedestrian", "label": "Better pedestrian infrastructure" },
+        { "value": "art", "label": "Public art and cultural spaces" },
+        { "value": "safety", "label": "Improved lighting and safety" },
+        { "value": "gathering", "label": "Community gathering spaces" }
+      ]
+    },
+    {
+      "key": "urbanElement",
+      "label": "Which urban element would you most like to see more of?",
+      "options": [
+        { "value": "trees", "label": "Street trees and vegetation" },
+        { "value": "seating", "label": "Seating areas and benches" },
+        { "value": "bike", "label": "Bike lanes and cycling infrastructure" },
+        { "value": "transit", "label": "Public transit stops and shelters" },
+        { "value": "water", "label": "Water features and fountains" }
+      ]
+    },
+    {
+      "key": "motivation",
+      "label": "What's your primary motivation for wanting to improve public spaces?",
+      "options": [
+        { "value": "environment", "label": "Environmental sustainability" },
+        { "value": "community", "label": "Community building and social connection" },
+        { "value": "safety", "label": "Safety and accessibility" },
+        { "value": "economy", "label": "Economic development" },
+        { "value": "enjoyment", "label": "Personal enjoyment and quality of life" }
+      ]
+    },
+    {
+      "key": "visualImportance",
+      "label": "How important is visual representation when proposing changes?",
+      "options": [
+        { "value": "extremely", "label": "Extremely important" },
+        { "value": "very", "label": "Very important" },
+        { "value": "moderately", "label": "Moderately important" },
+        { "value": "slightly", "label": "Slightly important" },
+        { "value": "not", "label": "Not important" }
+      ]
+    }
+  ],
+  "section3": [
+    {
+      "key": "planningComfort",
+      "label": "How comfortable are you with current urban planning processes?",
+      "options": [
+        { "value": "very-comfortable", "label": "Very comfortable - I understand how to participate" },
+        { "value": "comfortable", "label": "Somewhat comfortable" },
+        { "value": "neutral", "label": "Neutral" },
+        { "value": "uncomfortable", "label": "Somewhat uncomfortable" },
+        { "value": "very-uncomfortable", "label": "Very uncomfortable - I don't know where to start" }
+      ]
+    },
+    {
+      "key": "sharingChannel",
+      "label": "How do you currently share ideas about community improvements?",
+      "options": [
+        { "value": "social", "label": "Social media and online forums" },
+        { "value": "meetings", "label": "Community meetings and town halls" },
+        { "value": "officials", "label": "Direct contact with local officials" },
+        { "value": "associations", "label": "Neighborhood associations" },
+        { "value": "none", "label": "I don't currently share ideas" }
+      ]
+    },
+    {
+      "key": "engagementBarrier",
+      "label": "What's the biggest barrier to community engagement in planning?",
+      "options": [
+        { "value": "time", "label": "Lack of time" },
+        { "value": "jargon", "label": "Complex processes and jargon" },
+        { "value": "unclear-how", "label": "Not knowing how to get involved" },
+        { "value": "voice", "label": "Feeling like my voice won't matter" },
+        { "value": "none", "label": "No barriers - I'm actively engaged" }
+      ]
+    },
+    {
+      "key": "supportLikelihood",
+      "label": "How likely are you to support a community-proposed project?",
+      "options": [
+        { "value": "very-likely", "label": "Very likely - I actively support local initiatives" },
+        { "value": "likely", "label": "Somewhat likely" },
+        { "value": "neutral", "label": "Neutral - depends on the project" },
+        { "value": "unlikely", "label": "Somewhat unlikely" },
+        { "value": "very-unlikely", "label": "Very unlikely" }
+      ]
+    },
+    {
+      "key": "desiredFeature",
+      "label": "What feature would make you use an urban planning tool like PLACER?",
+      "options": [
+        { "value": "interface", "label": "Easy-to-use interface" },
+        { "value": "visuals", "label": "Ability to see realistic visualizations" },
+        { "value": "voting", "label": "Community voting and feedback" },
+        { "value": "government", "label": "Connection to local government" },
+        { "value": "mobile", "label": "Mobile app accessibility" }
+      ]
+    }
+  ],
+  "success": {
+    "title": "Thank You!",
+    "body": "Your answers are in. We'll send the community report to your inbox as soon as it is published.",
+    "closeLabel": "Return to Home"
+  },
+  "errorMessage": "Something went wrong saving your answers. Please try again."
+}

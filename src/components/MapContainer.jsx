@@ -1,4 +1,4 @@
-/* PLOT — Map Container with Google Maps */
+/* PLACER — Map Container with Google Maps */
 
 import { useState, useEffect, useRef } from 'react';
 import posthog from 'posthog-js';
@@ -433,7 +433,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
           <div style={{
             position: 'absolute',
             // Clears the cookie banner while it is up, so search and capture stay reachable.
-            bottom: 'calc(24px + var(--plot-consent-inset, 0px))',
+            bottom: 'calc(24px + var(--placer-consent-inset, 0px))',
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 5,
@@ -486,7 +486,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
               onClick={handleCaptureView}
               disabled={isCapturing}
               ariaLabel={isCapturing ? 'Capturing view' : 'Capture view'}
-              iconStyle={isCapturing ? { animation: 'plot-spin 0.8s linear infinite' } : undefined}
+              iconStyle={isCapturing ? { animation: 'placer-spin 0.8s linear infinite' } : undefined}
               style={{
                 flex: '0 0 auto',
                 width: 44,

@@ -10,7 +10,8 @@ const STORAGE_KEYS = {
   IMAGINATIONS: 'placemaking_imaginations',
   ASSETS_LIBRARY: 'placemaking_assets',
   UPVOTES: 'placemaking_upvotes',
-  COMMENTS: 'placemaking_comments'
+  COMMENTS: 'placemaking_comments',
+  SURVEY_RESPONSES: 'placemaking_survey_responses'
 };
 
 // Simulate network delay for realistic async behavior
@@ -200,7 +201,35 @@ export const addComment = async (imaginationId, commentData) => {
 };
 
 /**
- * Export every piece of PLOT data held in this browser.
+ * Fetch every submitted survey response
+ */
+export const fetchSurveyResponses = async () => {
+  await simulateDelay();
+  const responses = localStorage.getItem(STORAGE_KEYS.SURVEY_RESPONSES);
+  return responses ? JSON.parse(responses) : [];
+};
+
+/**
+ * Save a completed survey response. Throws if it could not be stored, so the
+ * survey can tell the visitor rather than showing a thank-you for nothing.
+ */
+export const saveSurveyResponse = async (response) => {
+  await simulateDelay();
+
+  const responses = await fetchSurveyResponses();
+  const saved = {
+    ...response,
+    id: `survey-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+    submittedAt: new Date().toISOString()
+  };
+
+  responses.push(saved);
+  localStorage.setItem(STORAGE_KEYS.SURVEY_RESPONSES, JSON.stringify(responses));
+  return saved;
+};
+
+/**
+ * Export every piece of PLACER data held in this browser.
  * Backs the data portability request on the GDPR page.
  */
 export const exportAllData = async () => {
@@ -228,7 +257,7 @@ export const exportAllData = async () => {
 };
 
 /**
- * Delete every piece of PLOT data held in this browser.
+ * Delete every piece of PLACER data held in this browser.
  * Backs the erasure request on the GDPR page. The default asset library is
  * recreated on the next page load, since it is seed data rather than user data.
  */

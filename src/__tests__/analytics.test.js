@@ -9,9 +9,11 @@ vi.mock('posthog-js', () => ({
   },
 }));
 
-const CONSENT_KEY = 'plot_analytics_consent';
+const CONSENT_KEY = 'placer_analytics_consent';
 const GRANTED = 'granted';
 const DENIED = 'denied';
+// The key consent was stored under before the rename from PLOT.
+const LEGACY_CONSENT_KEY = 'plot_analytics_consent';
 
 // The module tracks whether posthog.init() has run in this page load, so each
 // test needs a fresh copy of it — and a fresh set of mocks with it.
@@ -153,5 +155,59 @@ describe('analytics consent gate', () => {
 
     getItem.mockRestore();
     setItem.mockRestore();
+  });
+});
+
+describe('consent stored under the pre-rename key', () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    vi.resetModules();
+    posthog = (await import('posthog-js')).default;
+    vi.clearAllMocks();
+    analytics = await import('../analytics');
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('carries an acceptance across to the new key', () => {
+    localStorage.setItem(LEGACY_CONSENT_KEY, GRANTED);
+
+    expect(analytics.readConsent()).toBe(GRANTED);
+    expect(localStorage.getItem(CONSENT_KEY)).toBe(GRANTED);
+    expect(localStorage.getItem(LEGACY_CONSENT_KEY)).toBeNull();
+  });
+
+  it('carries a refusal across, so the visitor is not asked again', () => {
+    localStorage.setItem(LEGACY_CONSENT_KEY, DENIED);
+
+    expect(analytics.readConsent()).toBe(DENIED);
+    expect(localStorage.getItem(CONSENT_KEY)).toBe(DENIED);
+    expect(localStorage.getItem(LEGACY_CONSENT_KEY)).toBeNull();
+  });
+
+  it('starts PostHog on boot for a visitor who accepted before the rename', () => {
+    configure();
+    localStorage.setItem(LEGACY_CONSENT_KEY, GRANTED);
+
+    analytics.initAnalytics();
+
+    expect(posthog.init).toHaveBeenCalledTimes(1);
+    expect(posthog.opt_in_capturing).toHaveBeenCalledWith({ captureEventName: false });
+  });
+
+  it('prefers the current key when both are present', () => {
+    localStorage.setItem(CONSENT_KEY, DENIED);
+    localStorage.setItem(LEGACY_CONSENT_KEY, GRANTED);
+
+    expect(analytics.readConsent()).toBe(DENIED);
+  });
+
+  it('ignores a legacy value that is not a decision', () => {
+    localStorage.setItem(LEGACY_CONSENT_KEY, 'maybe');
+
+    expect(analytics.readConsent()).toBeNull();
+    expect(localStorage.getItem(CONSENT_KEY)).toBeNull();
   });
 });

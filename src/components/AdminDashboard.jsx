@@ -1,4 +1,4 @@
-/* PLOT — Admin Dashboard */
+/* PLACER — Admin Dashboard */
 
 import { useState } from 'react';
 import { Icon } from './Icon';
@@ -203,7 +203,7 @@ export function AdminDashboard({ t }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
-            <h1 className="plot-disp" style={{
+            <h1 className="placer-disp" style={{
               fontSize: 28,
               fontWeight: 900,
               color: t.ink,

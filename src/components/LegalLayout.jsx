@@ -1,4 +1,4 @@
-/* PLOT — layout primitives shared by the legal pages (privacy, GDPR) */
+/* PLACER — layout primitives shared by the legal pages (privacy, GDPR) */
 
 import { Icon } from './Icon';
 import { LAST_UPDATED } from '../legal';
@@ -14,7 +14,7 @@ export function LegalPage({ t, title, intro, children }) {
     }}>
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <div style={{ marginBottom: 40, paddingBottom: 32, borderBottom: `1px solid ${t.line}` }}>
-          <div className="plot-mono" style={{
+          <div className="placer-mono" style={{
             fontSize: 11,
             letterSpacing: '0.06em',
             color: t.inkDim,
@@ -24,7 +24,7 @@ export function LegalPage({ t, title, intro, children }) {
           }}>
             Last updated {LAST_UPDATED}
           </div>
-          <h1 className="plot-disp" style={{
+          <h1 className="placer-disp" style={{
             fontSize: 48,
             fontWeight: 900,
             color: t.ink,
@@ -121,7 +121,7 @@ export function Table({ t, columns, rows }) {
         <thead>
           <tr>
             {columns.map(col => (
-              <th key={col} className="plot-mono" style={{
+              <th key={col} className="placer-mono" style={{
                 textAlign: 'left',
                 padding: '12px 16px',
                 fontSize: 11,

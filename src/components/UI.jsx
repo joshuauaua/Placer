@@ -1,4 +1,4 @@
-/* PLOT — shared UI primitives */
+/* PLACER — shared UI primitives */
 
 import { Icon } from './Icon';
 import { CAT } from '../theme';
@@ -10,7 +10,7 @@ export function Logo({ t, size = 22 }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.accentInk }}>
         <Icon name="pin" size={size * 0.82} stroke={2.2} />
       </div>
-      <span className="plot-disp" style={{ fontSize: size * 1.15, fontWeight: 800, letterSpacing: '-0.02em', color: t.ink }}>PLOT</span>
+      <span className="placer-disp" style={{ fontSize: size * 1.15, fontWeight: 800, letterSpacing: '-0.02em', color: t.ink }}>PLACER</span>
     </div>
   );
 }
@@ -89,8 +89,8 @@ export function Vote({ t, count, voted, size = 'md', rank }) {
       border: `1.5px solid ${voted ? t.accent : t.line}`,
       background: voted ? (t.mapMode === 'dark' ? 'rgba(215,251,54,.1)' : t.accent + '22') : 'transparent' }}>
       <Icon name="arrowUp" size={z.ic} stroke={2.4} style={{ color: voted ? (t.mapMode === 'dark' ? t.accent : t.ink) : t.ink }} />
-      <span className="plot-disp" style={{ fontSize: z.fs, fontWeight: 800, color: t.ink, lineHeight: 1 }}>{count}</span>
-      {rank && <span className="plot-mono" style={{ fontSize: z.rfs, color: t.inkDim, marginTop: 2 }}>{rank}</span>}
+      <span className="placer-disp" style={{ fontSize: z.fs, fontWeight: 800, color: t.ink, lineHeight: 1 }}>{count}</span>
+      {rank && <span className="placer-mono" style={{ fontSize: z.rfs, color: t.inkDim, marginTop: 2 }}>{rank}</span>}
     </div>
   );
 }

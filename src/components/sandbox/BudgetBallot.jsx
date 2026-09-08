@@ -1,4 +1,4 @@
-/* PLOT — Sandbox: Budget Ballot.
+/* PLACER — Sandbox: Budget Ballot.
  *
  * One street, €250,000, and nine things a neighbourhood might ask for. The money runs
  * out long before the street is full, so the sliders are a set of choices rather than a
@@ -58,7 +58,7 @@ export function BudgetBallot({ t, experiment }) {
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(300px, 1fr)', gap: 20, alignItems: 'start' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
         <Panel t={t} title="The money" aside={
-          <span className="plot-mono" style={{ fontSize: 12, color: result.remaining === 0 ? experiment.color : t.inkDim }}>
+          <span className="placer-mono" style={{ fontSize: 12, color: result.remaining === 0 ? experiment.color : t.inkDim }}>
             {formatEuros(result.remaining)} left
           </span>
         }>
@@ -92,7 +92,7 @@ export function BudgetBallot({ t, experiment }) {
                       {item.label}
                     </label>
                     <div style={{ flex: 1 }} />
-                    <span className="plot-mono" style={{ fontSize: 12, color: t.inkDim }}>
+                    <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>
                       {formatEuros(item.unitCost)} / {item.unit}
                     </span>
                   </div>
@@ -108,10 +108,10 @@ export function BudgetBallot({ t, experiment }) {
                       onChange={(event) => setQuantity(item.key, Number(event.target.value))}
                       style={{ flex: 1, accentColor: experiment.color }}
                     />
-                    <span className="plot-mono" style={{ fontSize: 13, fontWeight: 700, color: t.ink, minWidth: 74, textAlign: 'right' }}>
+                    <span className="placer-mono" style={{ fontSize: 13, fontWeight: 700, color: t.ink, minWidth: 74, textAlign: 'right' }}>
                       {quantity} {pluralise(item.unit, quantity)}
                     </span>
-                    <span className="plot-mono" style={{ fontSize: 13, color: t.inkDim, minWidth: 74, textAlign: 'right' }}>
+                    <span className="placer-mono" style={{ fontSize: 13, color: t.inkDim, minWidth: 74, textAlign: 'right' }}>
                       {formatEuros(item.unitCost * quantity)}
                     </span>
                   </div>
@@ -133,7 +133,7 @@ export function BudgetBallot({ t, experiment }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
         <Panel t={t} title="What it achieves" aside={
-          <span className="plot-mono" style={{ fontSize: 11, color: t.inkFaint }}>vs the draft</span>
+          <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>vs the draft</span>
         }>
           {OUTCOME_LIST.map((outcome) => (
             <Meter
@@ -181,7 +181,7 @@ export function BudgetBallot({ t, experiment }) {
                   <span style={{ color: t.ink, fontWeight: 600, flex: 1, minWidth: 0 }}>
                     {item.label} × {item.quantity}
                   </span>
-                  <span className="plot-mono" style={{ color: t.inkDim }}>{formatEuros(item.cost)}</span>
+                  <span className="placer-mono" style={{ color: t.inkDim }}>{formatEuros(item.cost)}</span>
                 </li>
               ))}
             </ul>

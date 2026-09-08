@@ -38,7 +38,7 @@ describe('App', () => {
   it('renders SurveyPage at /survey', async () => {
     renderAt('/survey');
     expect(
-      await screen.findByText(/how often do you visit public spaces/i)
+      await screen.findByText(/tell us how your neighborhood should change/i)
     ).toBeInTheDocument();
   });
 

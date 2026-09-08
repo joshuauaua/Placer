@@ -1,4 +1,4 @@
-/* PLOT — shared chrome for a sandbox experiment, and the small readout primitives
+/* PLACER — shared chrome for a sandbox experiment, and the small readout primitives
    the experiments build their panels from. Named after FlowLayout.jsx, which does
    the same job for the three steps of making an imagination. */
 
@@ -64,12 +64,12 @@ export function SandboxLayout({ t, experiment, onBack, children }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>
               <Icon name={experiment.icon} size={22} stroke={2.2} />
             </span>
-            <h1 className="plot-disp" style={{ fontSize: 32, fontWeight: 900, color: t.ink, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+            <h1 className="placer-disp" style={{ fontSize: 32, fontWeight: 900, color: t.ink, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
               {experiment.name}
             </h1>
           </div>
           <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6, maxWidth: 660 }}>{experiment.blurb}</p>
-          <p className="plot-mono" style={{ marginTop: 12, fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: experiment.color }}>
+          <p className="placer-mono" style={{ marginTop: 12, fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: experiment.color }}>
             Try this — {experiment.hint}
           </p>
         </div>
@@ -89,7 +89,7 @@ export function Panel({ t, title, aside, children, style }) {
       {(title || aside) && (
         <header style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 }}>
           {title && (
-            <h2 className="plot-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
+            <h2 className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
               textTransform: 'uppercase', color: t.inkDim }}>
               {title}
             </h2>
@@ -109,12 +109,12 @@ export function Readout({ t, label, value, unit, delta, deltaLabel, tone }) {
   return (
     <div style={{ minWidth: 0 }}>
       <div style={{ fontSize: 12.5, fontWeight: 700, color: t.inkDim, marginBottom: 4 }}>{label}</div>
-      <div className="plot-disp" style={{ fontSize: 26, fontWeight: 900, color: tone || t.ink, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+      <div className="placer-disp" style={{ fontSize: 26, fontWeight: 900, color: tone || t.ink, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
         {value}
         {unit && <span style={{ fontSize: 14, fontWeight: 700, color: t.inkDim, marginLeft: 4 }}>{unit}</span>}
       </div>
       {delta !== undefined && delta !== null && (
-        <div className="plot-mono" style={{ fontSize: 11.5, marginTop: 4, color: delta === 0 ? t.inkFaint : delta > 0 ? '#2E7D32' : '#C0392B' }}>
+        <div className="placer-mono" style={{ fontSize: 11.5, marginTop: 4, color: delta === 0 ? t.inkFaint : delta > 0 ? '#2E7D32' : '#C0392B' }}>
           {delta === 0 ? 'no change' : `${sign}${delta}`} {deltaLabel}
         </div>
       )}
@@ -130,7 +130,7 @@ export function Meter({ t, label, value, color, caption, signed }) {
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 5 }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: t.ink }}>{label}</span>
         <div style={{ flex: 1 }} />
-        <span className="plot-mono" style={{ fontSize: 12, color: t.inkDim }}>{caption}</span>
+        <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>{caption}</span>
       </div>
       <div style={{ position: 'relative', height: 8, borderRadius: 999, background: t.surfaceAlt, overflow: 'hidden' }}>
         {signed && <span style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: t.line }} />}
