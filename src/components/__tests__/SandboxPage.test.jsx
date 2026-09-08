@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
@@ -131,6 +131,12 @@ describe('the copy link button', () => {
 });
 
 describe('inside the app', () => {
+  // These reach the inner app through the nav bar, which is off by default while
+  // the site is a landing page. Switch it on so the routing stays covered.
+  beforeEach(() => {
+    vi.stubEnv('VITE_SHOW_NAV', 'true');
+  });
+
   it('reaches the Sandbox from the nav bar', async () => {
     const { location } = renderAt('/');
 
@@ -192,10 +198,10 @@ describe('inside the app', () => {
     expect(nav.getByText('About')).toHaveStyle({ background: 'transparent' });
   });
 
-  it('does not fall through to the welcome view', async () => {
+  it('does not fall through to the landing page', async () => {
     renderAt('/sandbox');
     await screen.findByRole('heading', { level: 1, name: 'Sandbox' });
 
-    expect(screen.queryByText('Reimagine Your City')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1, name: 'PLACER' })).not.toBeInTheDocument();
   });
 });
