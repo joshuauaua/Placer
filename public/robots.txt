@@ -1,0 +1,16 @@
+# This branch serves the non-production hosts: Development -> staging.plcr.org
+# and main -> beta.plcr.org. Neither should appear in search results, so all
+# crawling is refused here.
+#
+# The public site is plcr.org, served from the landingpage branch, which carries
+# its own robots.txt permitting indexing. The two files are meant to differ.
+#
+# WARNING: if this branch is ever made the Vercel production branch, this file
+# will deindex the public site. Replace it deliberately rather than inheriting it.
+#
+# Note that Disallow stops crawling, not indexing: a URL linked from elsewhere
+# can still be listed without being fetched. An X-Robots-Tag: noindex response
+# header is the enforceable control if these hosts turn up in results anyway.
+
+User-agent: *
+Disallow: /
