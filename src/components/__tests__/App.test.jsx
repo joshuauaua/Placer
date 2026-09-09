@@ -30,24 +30,9 @@ describe('App', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('renders the landing page at root path, with no nav bar', () => {
+  it('renders MainApp welcome view at root path', () => {
     renderAt('/');
-
-    expect(screen.getByRole('heading', { level: 1, name: 'PLACER' })).toBeInTheDocument();
-    expect(screen.getByText('a tool for participatory placemaking')).toBeInTheDocument();
-    expect(screen.getByText(/strengthen participatory placemaking and democratic urban/i)).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Aks Creative Hub' })).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'STPLN' })).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Funded by Swedish Institute' })).toBeInTheDocument();
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
-  });
-
-  it('shows the nav bar when it is switched on', () => {
-    vi.stubEnv('VITE_SHOW_NAV', 'true');
-    renderAt('/');
-
-    expect(screen.getByRole('navigation')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 1, name: 'PLACER' })).toBeInTheDocument();
+    expect(screen.getByText('Reimagine Your City')).toBeInTheDocument();
   });
 
   it('renders SurveyPage at /survey', async () => {
@@ -63,12 +48,9 @@ describe('App', () => {
   });
 
   it('ErrorBoundary catches errors thrown by route content instead of crashing the app', async () => {
-    // Reached through the nav's Explore button, since the landing page has no
-    // call to action of its own.
-    vi.stubEnv('VITE_SHOW_NAV', 'true');
     renderAt('/');
 
-    fireEvent.click(screen.getByText('Explore'));
+    fireEvent.click(screen.getByText('Start imagining'));
 
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
   });

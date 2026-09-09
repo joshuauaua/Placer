@@ -8,7 +8,6 @@ import { Logo, Btn, Avatar } from './components/UI';
 import { Icon } from './components/Icon';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieBanner } from './components/CookieBanner';
-import { LandingPage } from './components/LandingPage';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -24,11 +23,6 @@ const AdminImaginations = lazy(() => import('./components/AdminImaginations'));
 const SandboxPage = lazy(() => import('./components/SandboxPage'));
 
 const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
-
-// The site is a landing page for now, so the nav bar is off unless asked for.
-// Read at render time rather than module load, the same way AdminGate reads its
-// flag, so tests and a staging environment can switch it on.
-const isNavEnabled = () => import.meta.env.VITE_SHOW_NAV === 'true';
 
 // The three steps of making an imagination. They render full-bleed, without the nav
 // bar and footer the other views sit inside.
@@ -70,8 +64,6 @@ function MainApp({ initialView = 'welcome' }) {
   // Where the map should open. Set when an imagination is posted, so the map comes
   // back centred on the new pin instead of the default location.
   const [mapFocus, setMapFocus] = useState(null);
-
-  const showNav = isNavEnabled();
 
   // The Sandbox is the one view that lives in the URL, because every experiment has a
   // link worth sharing. So it is read off the location rather than held in state, and
@@ -182,42 +174,67 @@ function MainApp({ initialView = 'welcome' }) {
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', background: t.page, color: t.ink }}>
       {/* Navigation Bar */}
-      {showNav && (
-        <div style={{ height: 66, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 20,
-          padding: '0 22px', background: t.chrome, borderBottom: `1px solid ${t.line}`, zIndex: 60 }}>
-          <div onClick={() => show('welcome')} style={{ cursor: 'pointer' }}>
-            <Logo t={t} size={20} />
-          </div>
-          <div style={{ width: 1, height: 26, background: t.line }} />
-          <nav style={{ display: 'flex', gap: 4 }}>
-            <span
-              onClick={() => show('about')}
-              style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
-              color: view === 'about' ? t.ink : t.inkDim,
-              background: view === 'about' ? t.surfaceAlt : 'transparent',
-              cursor: 'pointer' }}>About</span>
-            <span
-              onClick={() => show('resources')}
-              style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
-              color: view === 'resources' ? t.ink : t.inkDim,
-              background: view === 'resources' ? t.surfaceAlt : 'transparent',
-              cursor: 'pointer' }}>Resources</span>
-            <span
-              onClick={() => show('sandbox')}
-              style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
-              color: view === 'sandbox' ? t.ink : t.inkDim,
-              background: view === 'sandbox' ? t.surfaceAlt : 'transparent',
-              cursor: 'pointer' }}>Sandbox</span>
-          </nav>
-          <div style={{ flex: 1 }} />
-          <Btn t={t} variant="accent" icon="sparkle" onClick={handleExplore}>Explore</Btn>
-          <Avatar name="You There" size={40} ring={t.line} />
+      <div style={{ height: 66, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 20,
+        padding: '0 22px', background: t.chrome, borderBottom: `1px solid ${t.line}`, zIndex: 60 }}>
+        <div onClick={() => show('welcome')} style={{ cursor: 'pointer' }}>
+          <Logo t={t} size={20} />
         </div>
-      )}
+        <div style={{ width: 1, height: 26, background: t.line }} />
+        <nav style={{ display: 'flex', gap: 4 }}>
+          <span
+            onClick={() => show('about')}
+            style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
+            color: view === 'about' ? t.ink : t.inkDim,
+            background: view === 'about' ? t.surfaceAlt : 'transparent',
+            cursor: 'pointer' }}>About</span>
+          <span
+            onClick={() => show('resources')}
+            style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
+            color: view === 'resources' ? t.ink : t.inkDim,
+            background: view === 'resources' ? t.surfaceAlt : 'transparent',
+            cursor: 'pointer' }}>Resources</span>
+          <span
+            onClick={() => show('sandbox')}
+            style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
+            color: view === 'sandbox' ? t.ink : t.inkDim,
+            background: view === 'sandbox' ? t.surfaceAlt : 'transparent',
+            cursor: 'pointer' }}>Sandbox</span>
+        </nav>
+        <div style={{ flex: 1 }} />
+        <Btn t={t} variant="accent" icon="sparkle" onClick={handleExplore}>Explore</Btn>
+        <Avatar name="You There" size={40} ring={t.line} />
+      </div>
 
       {/* Main Content */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-        {view === 'welcome' && <LandingPage t={t} />}
+        {view === 'welcome' && (
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `linear-gradient(135deg, ${t.page} 0%, ${t.chrome} 100%)` }}>
+            <div style={{ maxWidth: 600, textAlign: 'center', padding: 40 }}>
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ width: 80, height: 80, background: t.accent, borderRadius: 16, margin: '0 auto 20px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name="pin" size={44} stroke={2.4} style={{ color: t.accentInk }} />
+                </div>
+                <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink, letterSpacing: '-0.03em', marginBottom: 16 }}>
+                  Reimagine Your City
+                </h1>
+                <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, marginBottom: 32 }}>
+                  PLACER is a community platform for visualizing public space improvements.
+                  Place assets, share your vision, and bring better spaces to life.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                <Btn t={t} variant="accent" size="lg" icon="sparkle" onClick={handleExplore}>
+                  Start imagining
+                </Btn>
+                <Btn t={t} variant="outline" size="lg">
+                  Explore ideas
+                </Btn>
+              </div>
+            </div>
+          </div>
+        )}
 
         {view === 'map' && (
           <Suspense fallback={<LoadingFallback />}>
