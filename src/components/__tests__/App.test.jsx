@@ -91,4 +91,84 @@ describe('App', () => {
       expect(screen.queryByText('Imaginations')).not.toBeInTheDocument();
     });
   });
+  describe('account menu', () => {
+    // record: true, unlike the shared helper, so the URL the menu navigates to
+    // can be asserted.
+    const renderRecording = (path = '/') => {
+      const location = memoryLocation({ path, record: true });
+      render(
+        <Router hook={location.hook}>
+          <App />
+        </Router>
+      );
+      return location;
+    };
+
+    const trigger = () => screen.getByRole('button', { name: 'Account menu' });
+
+    afterEach(() => {
+      // The profile lives in localStorage, which nothing else resets.
+      localStorage.clear();
+    });
+
+    it('shows the display name in the nav bar', () => {
+      renderRecording();
+
+      expect(trigger()).toHaveTextContent('You There');
+    });
+
+    it('opens the profile from the menu and puts it in the URL', async () => {
+      const location = renderRecording();
+
+      fireEvent.click(trigger());
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Profile' }));
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Profile' })).toBeInTheDocument();
+      expect(location.history.at(-1)).toBe('/profile');
+    });
+
+    it('opens the settings from the menu', async () => {
+      const location = renderRecording();
+
+      fireEvent.click(trigger());
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Settings' }));
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
+      expect(location.history.at(-1)).toBe('/settings');
+    });
+
+    it('opens the profile on a direct visit, so the URL survives a refresh', async () => {
+      renderRecording('/profile');
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Profile' })).toBeInTheDocument();
+    });
+
+    it('goes back to the root URL when another nav item is picked', async () => {
+      const location = renderRecording('/profile');
+      await screen.findByRole('heading', { level: 1, name: 'Profile' });
+
+      fireEvent.click(screen.getByText('Resources'));
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Resources' })).toBeInTheDocument();
+      expect(location.history.at(-1)).toBe('/');
+    });
+
+    it('offers a way back in after logging out', () => {
+      renderRecording();
+
+      fireEvent.click(trigger());
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));
+
+      expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Account menu' })).not.toBeInTheDocument();
+    });
+
+    it('says so when /profile is reached while logged out', () => {
+      localStorage.setItem('placemaking_profile', JSON.stringify({ signedIn: false }));
+      renderRecording('/profile');
+
+      expect(screen.getByText('You are logged out')).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { level: 1, name: 'Profile' })).not.toBeInTheDocument();
+    });
+  });
 });

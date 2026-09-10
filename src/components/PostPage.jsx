@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Btn, CatTag } from './UI';
 import { FlowScreen } from './FlowLayout';
 import { saveImagination } from '../services/api';
+import { DEFAULT_NAME } from '../services/profile';
 import posthog from 'posthog-js';
 
 // Human-readable stand-in until reverse geocoding exists; the raw coordinates are
@@ -25,7 +26,8 @@ function Row({ t, label, children }) {
   );
 }
 
-export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], lines = [], onBack, onPosted }) {
+export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], lines = [],
+  onBack, onPosted, authorName = DEFAULT_NAME }) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'error'
   const [error, setError] = useState(null);
 
@@ -40,7 +42,7 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], l
         cat: draft.cat,
         blurb: draft.blurb,
         loc,
-        author: 'You There',
+        author: authorName,
         source: capturedView?.source ?? null,
         position: capturedView?.position ?? null,
         pov: capturedView?.pov ?? null,

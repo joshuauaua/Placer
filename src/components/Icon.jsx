@@ -187,6 +187,21 @@ const ICON_ELEMENTS = {
       <path d="M12 7.2V12l3.2 2.1" />
     </>
   ),
+  // A hub with eight teeth, rather than a single gear silhouette: at the 17px the
+  // account menu renders it, an outline gear turns to mush.
+  gear: (
+    <>
+      <circle cx="12" cy="12" r="4.4" />
+      <path d="M16.4 12h3.5M12 7.6V4.1M7.6 12H4.1M12 16.4v3.5" />
+      <path d="M15.1 8.9l2.5-2.5M8.9 8.9L6.4 6.4M8.9 15.1l-2.5 2.5M15.1 15.1l2.5 2.5" />
+    </>
+  ),
+  logout: (
+    <>
+      <path d="M9.5 19.5H6.5a2 2 0 01-2-2v-11a2 2 0 012-2h3" />
+      <path d="M9.5 12h9M15 8.5l3.5 3.5-3.5 3.5" />
+    </>
+  ),
 };
 
 export function Icon({ name, size = 22, stroke = 1.7, fill = 'none', style, color }) {

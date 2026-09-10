@@ -6,12 +6,20 @@
  * in a real backend without changing UI components.
  */
 
+// The one registry of everything PLACER keeps in the browser: exportAllData and
+// eraseAllData walk it, so a key listed here is covered by the GDPR portability
+// and erasure requests for free — and a key that is not is silently missed by
+// both. PROFILE is owned by services/profile.js, which declares the same literal
+// rather than importing it, so that mocking this module in a test cannot take the
+// profile module down with it. services/__tests__/api.test.js holds the two sides
+// together.
 const STORAGE_KEYS = {
   IMAGINATIONS: 'placemaking_imaginations',
   ASSETS_LIBRARY: 'placemaking_assets',
   UPVOTES: 'placemaking_upvotes',
   COMMENTS: 'placemaking_comments',
-  SURVEY_RESPONSES: 'placemaking_survey_responses'
+  SURVEY_RESPONSES: 'placemaking_survey_responses',
+  PROFILE: 'placemaking_profile'
 };
 
 // Simulate network delay for realistic async behavior

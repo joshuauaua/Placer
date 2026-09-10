@@ -4,10 +4,13 @@ import { useState, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
 import { Switch, Route, useLocation } from 'wouter';
 import { THEME } from './theme';
-import { Logo, Btn, Avatar } from './components/UI';
+import { Logo, Btn } from './components/UI';
 import { Icon } from './components/Icon';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieBanner } from './components/CookieBanner';
+// Not lazy: the nav bar renders it on every view, so there is nothing to defer.
+import { UserMenu } from './components/UserMenu';
+import { readProfile, signIn, signOut, DEFAULT_NAME } from './services/profile';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -21,12 +24,19 @@ const DescribePage = lazy(() => import('./components/DescribePage'));
 const PostPage = lazy(() => import('./components/PostPage'));
 const AdminImaginations = lazy(() => import('./components/AdminImaginations'));
 const SandboxPage = lazy(() => import('./components/SandboxPage'));
+const ProfilePage = lazy(() => import('./components/ProfilePage'));
+const SettingsPage = lazy(() => import('./components/SettingsPage'));
 
 const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
 
 // The three steps of making an imagination. They render full-bleed, without the nav
 // bar and footer the other views sit inside.
 const FLOW_VIEWS = ['street', 'describe', 'post'];
+
+// The account views live in the URL, for the same reason the Sandbox does: a
+// settings page you cannot bookmark or refresh into is a worse settings page.
+const ACCOUNT_PATHS = { profile: '/profile', settings: '/settings' };
+const ACCOUNT_VIEWS = { '/profile': 'profile', '/settings': 'settings' };
 
 function LoadingFallback() {
   return (
@@ -49,6 +59,26 @@ function FooterLink({ t, active, onClick, children }) {
   );
 }
 
+// What /profile and /settings show to someone who has logged out. Not a redirect,
+// so the URL still works once they log back in.
+function SignedOutNotice({ t, onSignIn }) {
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', background: t.page, color: t.ink }}>
+      <div style={{ textAlign: 'center', maxWidth: 400, padding: 40 }}>
+        <Icon name="user" size={48} stroke={2} style={{ color: t.inkDim, margin: '0 auto 16px' }} />
+        <h1 className="placer-disp" style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
+          You are logged out
+        </h1>
+        <p style={{ fontSize: 15, color: t.inkDim, marginBottom: 24 }}>
+          Log back in to see your profile and settings.
+        </p>
+        <Btn t={t} variant="primary" onClick={onSignIn}>Sign in</Btn>
+      </div>
+    </div>
+  );
+}
+
 function MainApp({ initialView = 'welcome' }) {
   const t = THEME;
   // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'resources', 'sandbox', 'privacy', 'gdpr'
@@ -65,6 +95,10 @@ function MainApp({ initialView = 'welcome' }) {
   // back centred on the new pin instead of the default location.
   const [mapFocus, setMapFocus] = useState(null);
 
+  // Held in state rather than read on each render so that logging out, or renaming
+  // yourself in Settings, updates the nav bar immediately. Null means logged out.
+  const [profile, setProfile] = useState(readProfile);
+
   // The Sandbox is the one view that lives in the URL, because every experiment has a
   // link worth sharing. So it is read off the location rather than held in state, and
   // `show` keeps the two in step: going to the Sandbox writes the URL, and leaving it
@@ -75,16 +109,23 @@ function MainApp({ initialView = 'welcome' }) {
   // never remounted when the matched Route changes and an initialView prop only ever
   // applies on first mount — which works for a URL that is only an entry point, and
   // silently does nothing for one you can navigate to from inside the app.
+  // Profile and Settings are read off the location the same way, and for the same
+  // reason: they are reachable both from a link and from the account menu.
   const [location, navigate] = useLocation();
   const inSandbox = location.startsWith('/sandbox');
-  const view = inSandbox ? 'sandbox' : currentView;
+  const accountView = ACCOUNT_VIEWS[location];
+  const view = accountView ?? (inSandbox ? 'sandbox' : currentView);
 
   const show = (next) => {
     if (next === 'sandbox') {
       navigate('/sandbox');
       return;
     }
-    if (inSandbox) navigate('/');
+    if (ACCOUNT_PATHS[next]) {
+      navigate(ACCOUNT_PATHS[next]);
+      return;
+    }
+    if (inSandbox || accountView) navigate('/');
     setCurrentView(next);
   };
 
@@ -126,6 +167,17 @@ function MainApp({ initialView = 'welcome' }) {
     show('map');
   };
 
+  const handleSignIn = () => {
+    setProfile(signIn());
+  };
+
+  // Back to the welcome view, because the account views have nothing to show
+  // someone who has just left them.
+  const handleSignOut = () => {
+    setProfile(signOut());
+    show('welcome');
+  };
+
   const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 
@@ -165,6 +217,7 @@ function MainApp({ initialView = 'welcome' }) {
             lines={lines}
             onBack={() => show('describe')}
             onPosted={handlePosted}
+            authorName={profile?.name ?? DEFAULT_NAME}
           />
         )}
       </Suspense>
@@ -202,7 +255,13 @@ function MainApp({ initialView = 'welcome' }) {
         </nav>
         <div style={{ flex: 1 }} />
         <Btn t={t} variant="accent" icon="sparkle" onClick={handleExplore}>Explore</Btn>
-        <Avatar name="You There" size={40} ring={t.line} />
+        <UserMenu
+          t={t}
+          profile={profile}
+          onNavigate={show}
+          onSignIn={handleSignIn}
+          onSignOut={handleSignOut}
+        />
       </div>
 
       {/* Main Content */}
@@ -261,6 +320,23 @@ function MainApp({ initialView = 'welcome' }) {
         {view === 'sandbox' && (
           <Suspense fallback={<LoadingFallback />}>
             <SandboxPage t={t} />
+          </Suspense>
+        )}
+
+        {/* Reachable by URL, so both have to cope with arriving logged out. */}
+        {(view === 'profile' || view === 'settings') && !profile && (
+          <SignedOutNotice t={t} onSignIn={handleSignIn} />
+        )}
+
+        {view === 'profile' && profile && (
+          <Suspense fallback={<LoadingFallback />}>
+            <ProfilePage t={t} profile={profile} onNavigate={show} />
+          </Suspense>
+        )}
+
+        {view === 'settings' && profile && (
+          <Suspense fallback={<LoadingFallback />}>
+            <SettingsPage t={t} profile={profile} onProfileChange={setProfile} onNavigate={show} />
           </Suspense>
         )}
 
