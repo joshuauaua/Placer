@@ -34,3 +34,7 @@ __pycache__
 
 # Claude Code local settings (machine-specific permissions)
 .claude/settings.local.json
+
+# Contact exports: personal data (names, emails, phone numbers) must not be
+# committed. Kept as an explicit rule so the scraped CSV cannot return.
+european_planning_contacts.csv
