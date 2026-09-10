@@ -4,13 +4,11 @@
  * funds it. Shown as the home view only, with the nav bar hidden (see App.jsx).
  */
 
-import logoAks from '../assets/logo-aks.png';
-import logoStpln from '../assets/logo-stpln.png';
 import logoSwedishInstitute from '../assets/logo-swedish-institute.png';
+import { ExternalLink } from './LegalLayout';
 
-// Trimmed to their artwork and stored at 160px tall, so a height here is enough
-// to size them and the widths stay in proportion.
-const PARTNER_HEIGHT = 32;
+// Trimmed to its artwork and stored at 160px tall, so a height here is enough
+// to size it and the width stays in proportion.
 const FUNDER_HEIGHT = 52;
 
 export function LandingPage({ t }) {
@@ -43,7 +41,8 @@ export function LandingPage({ t }) {
         </p>
 
         {/* The rule carries the separation the dropped heading used to provide,
-          * setting the funding note and the logos apart from the pitch above. */}
+          * setting the credit line apart from the pitch above. The two partners
+          * are links rather than logos. */}
         <p style={{
           fontSize: 15.5,
           color: t.inkDim,
@@ -52,22 +51,10 @@ export function LandingPage({ t }) {
           paddingTop: 28,
           marginBottom: 48
         }}>
-          PLACER is developed through an international collaboration between STPLN and
-          Aks Ankara, funded by the Swedish Institute as part of the Participatory
-          Urban Design Toolkit for Inclusive and Democratic Citymaking project.
+          PLACER is developed by <ExternalLink t={t} href="https://stpln.se/">STPLN</ExternalLink>{' '}
+          and <ExternalLink t={t} href="https://ankaraaks.com/">Aks Ankara</ExternalLink>, funded
+          by the Swedish Institute.
         </p>
-
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 56,
-          flexWrap: 'wrap',
-          marginBottom: 72
-        }}>
-          <img src={logoAks} alt="Aks Creative Hub" style={{ height: PARTNER_HEIGHT, width: 'auto' }} />
-          <img src={logoStpln} alt="STPLN" style={{ height: PARTNER_HEIGHT, width: 'auto' }} />
-        </div>
 
         {/* The lockup reads "Funded by Swedish Institute" as part of the artwork. */}
         <img
