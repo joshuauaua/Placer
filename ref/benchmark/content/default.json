@@ -1,0 +1,403 @@
+{
+  "hero": {
+    "title": "The 2026 State of Agentic Engineering Survey",
+    "subtitle": "Help us map the shift to agentic workflows. Take our 3-minute survey and get early access to the full report.",
+    "startLabel": "Start the Survey"
+  },
+  "steps": {
+    "section1Title": "Section 1: Team & Professional Profile",
+    "section1Description": "Mapping the demographics of the agentic shift.",
+    "section2Title": "Section 2: Company Culture & Perspective",
+    "section2Description": "Governance, investment, and the perceived value of AI.",
+    "section3Title": "Section 3: AI Tooling & Practice",
+    "section3Description": "The technical reality of agentic workflows.",
+    "emailTitle": "Where should we send your report?",
+    "emailDescription": "Enter your work email to receive early access to the industry-wide report when it is ready.",
+    "emailLabel": "Work email",
+    "emailPlaceholder": "you@company.com",
+    "consentLabel": "I'd like to receive the full benchmark report when it's published.",
+    "nextLabel": "Next",
+    "backLabel": "Back",
+    "submitLabel": "Submit",
+    "submittingLabel": "Sending..."
+  },
+  "section1": [
+    {
+      "key": "companyType",
+      "label": "1. What kind of company do you work at?",
+      "options": [
+        {
+          "value": "startup",
+          "label": "Startup"
+        },
+        {
+          "value": "smb",
+          "label": "Small or mid-sized business (SMB)"
+        },
+        {
+          "value": "enterprise",
+          "label": "Enterprise"
+        },
+        {
+          "value": "agency",
+          "label": "Agency or consultancy"
+        },
+        {
+          "value": "other",
+          "label": "Other"
+        }
+      ]
+    },
+    {
+      "key": "headcount",
+      "label": "2. What is the total headcount of your organization?",
+      "options": [
+        {
+          "value": "1-10",
+          "label": "1–10"
+        },
+        {
+          "value": "11-50",
+          "label": "11–50"
+        },
+        {
+          "value": "51-200",
+          "label": "51–200"
+        },
+        {
+          "value": "201-1000",
+          "label": "201–1,000"
+        },
+        {
+          "value": "1000+",
+          "label": "1,000+"
+        }
+      ]
+    },
+    {
+      "key": "role",
+      "label": "3. What is your primary role?",
+      "options": [
+        {
+          "value": "engineer",
+          "label": "Engineer (Individual Contributor)"
+        },
+        {
+          "value": "engineering-manager",
+          "label": "Engineering Manager"
+        },
+        {
+          "value": "director-vp",
+          "label": "Director or VP"
+        },
+        {
+          "value": "cto-founder",
+          "label": "CTO or Founder"
+        },
+        {
+          "value": "product",
+          "label": "Product Management"
+        },
+        {
+          "value": "other",
+          "label": "Other"
+        }
+      ]
+    },
+    {
+      "key": "industry",
+      "label": "4. What industry are you in?",
+      "options": [
+        {
+          "value": "tech",
+          "label": "Tech / IT"
+        },
+        {
+          "value": "finance",
+          "label": "Finance, Banking"
+        },
+        {
+          "value": "healthcare",
+          "label": "Healthcare"
+        },
+        {
+          "value": "ecommerce",
+          "label": "E-commerce"
+        },
+        {
+          "value": "marketing",
+          "label": "Marketing & Media"
+        },
+        {
+          "value": "legal",
+          "label": "Legal & Professional Services"
+        },
+        {
+          "value": "other",
+          "label": "Other"
+        }
+      ]
+    }
+  ],
+  "section2": [
+    {
+      "key": "stance",
+      "label": "5. What is your organization’s official stance on AI Coding tools?",
+      "options": [
+        {
+          "value": "supported",
+          "label": "Officially Supported"
+        },
+        {
+          "value": "evaluating",
+          "label": "Under evaluation / Pilot phase"
+        },
+        {
+          "value": "shadow",
+          "label": "Unofficially used (Shadow IT)"
+        },
+        {
+          "value": "prohibited",
+          "label": "Strictly prohibited"
+        }
+      ]
+    },
+    {
+      "key": "investment",
+      "label": "6. How is your AI investment trending for the next 12 months?",
+      "options": [
+        {
+          "value": "increasing",
+          "label": "Increasing significantly"
+        },
+        {
+          "value": "steady",
+          "label": "Steady / Stable"
+        },
+        {
+          "value": "flat",
+          "label": "Flat or declining"
+        },
+        {
+          "value": "unsure",
+          "label": "Unsure"
+        },
+        {
+          "value": "none",
+          "label": "None"
+        }
+      ]
+    },
+    {
+      "key": "roi",
+      "label": "7. How do you measure the ROI of AI tool adoption?",
+      "options": [
+        {
+          "value": "ad-hoc",
+          "label": "Ad-hoc anecdotes and gut feel"
+        },
+        {
+          "value": "none",
+          "label": "We don't measure it"
+        },
+        {
+          "value": "unsure",
+          "label": "Unsure"
+        },
+        {
+          "value": "structured",
+          "label": "Structured KPIs (e.g., Velocity, Cycle Time, Cost per Feature)"
+        },
+        {
+          "value": "no-ai",
+          "label": "I/We don't use AI"
+        }
+      ]
+    },
+    {
+      "key": "concerns",
+      "label": "8. What are the primary concerns preventing broader adoption in your workplace?",
+      "multiple": true,
+      "options": [
+        {
+          "value": "privacy",
+          "label": "Data Sovereignty & Privacy"
+        },
+        {
+          "value": "restrictions",
+          "label": "Regulatory or Company Restrictions"
+        },
+        {
+          "value": "security",
+          "label": "Security Vulnerabilities"
+        },
+        {
+          "value": "tech-debt",
+          "label": "Technical Debt / 'Unmaintainable Codebases'"
+        },
+        {
+          "value": "culture",
+          "label": "Resistance to Change / Cultural Barriers"
+        },
+        {
+          "value": "none",
+          "label": "None"
+        }
+      ]
+    },
+    {
+      "key": "advantage",
+      "label": "9. How much of a competitive advantage do these tools provide in your specific industry?",
+      "options": [
+        {
+          "value": "none",
+          "label": "No Advantage"
+        },
+        {
+          "value": "minor",
+          "label": "Minor efficiency gains"
+        },
+        {
+          "value": "strategic",
+          "label": "Significant strategic edge"
+        },
+        {
+          "value": "critical",
+          "label": "Critical / Existential Advantage"
+        }
+      ]
+    }
+  ],
+  "section3": [
+    {
+      "key": "frequency",
+      "label": "10. How often does your team use AI coding tools in their day to day tasks?",
+      "options": [
+        {
+          "value": "consistently",
+          "label": "Consistently"
+        },
+        {
+          "value": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "value": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "value": "never",
+          "label": "Never"
+        }
+      ]
+    },
+    {
+      "key": "tools",
+      "label": "11. Which of the following agents/tools does your team use on a daily basis?",
+      "multiple": true,
+      "options": [
+        {
+          "value": "claude",
+          "label": "Claude Code"
+        },
+        {
+          "value": "cursor",
+          "label": "Cursor"
+        },
+        {
+          "value": "copilot",
+          "label": "Microsoft Copilot / GitHub Copilot"
+        },
+        {
+          "value": "custom",
+          "label": "Custom/In-house Agentic Frameworks"
+        },
+        {
+          "value": "other",
+          "label": "Other"
+        },
+        {
+          "value": "none",
+          "label": "None"
+        }
+      ]
+    },
+    {
+      "key": "driver",
+      "label": "12. What is the primary driver for using or considering these tools?",
+      "multiple": true,
+      "options": [
+        {
+          "value": "productivity",
+          "label": "Increasing Developer Productivity"
+        },
+        {
+          "value": "prototyping",
+          "label": "Rapid Prototyping"
+        },
+        {
+          "value": "backlog",
+          "label": "Reducing internal tool backlog"
+        },
+        {
+          "value": "barrier",
+          "label": "Lowering the barrier for non-technical stakeholders"
+        },
+        {
+          "value": "none",
+          "label": "None"
+        }
+      ]
+    },
+    {
+      "key": "review",
+      "label": "13. How is AI-generated code reviewed in your pipeline?",
+      "options": [
+        {
+          "value": "both",
+          "label": "Automated tooling and humans both verify it"
+        },
+        {
+          "value": "human",
+          "label": "Same standard as human-written code (Peer Review)"
+        },
+        {
+          "value": "auto",
+          "label": "Fully automated review/merge for non-critical paths"
+        },
+        {
+          "value": "no-ai",
+          "label": "I/We don't use AI"
+        }
+      ]
+    },
+    {
+      "key": "deployment",
+      "label": "14. What is the scope and autonomy of your agentic deployments?",
+      "options": [
+        {
+          "value": "in-the-loop",
+          "label": "\"In-the-loop\" (Agent only runs when I am present)"
+        },
+        {
+          "value": "hybrid",
+          "label": "Hybrid (Occasional independent runs)"
+        },
+        {
+          "value": "out-of-the-loop",
+          "label": "Running live, autonomous workloads / \"Out-of-the-loop\" (Runs independently/overnight)"
+        },
+        {
+          "value": "no-ai",
+          "label": "I/We don't use AI"
+        }
+      ]
+    }
+  ],
+  "success": {
+    "title": "Thank you!",
+    "body": "Thank you for filling out the survey. You will receive early access to the industry-wide benchmark report before it is released to the public.",
+    "closeLabel": "Go to Home"
+  },
+  "errorMessage": "Something went wrong sending your report. Please try again."
+}
