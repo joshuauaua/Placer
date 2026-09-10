@@ -1,7 +1,9 @@
 /* PLACER — survey flow state.
  *
  * Drives the whole survey: an intro, one question per screen across three
- * sections, an email step, and a thank-you screen. The component tree below only
+ * sections, a final step, and a thank-you screen. The final step asks for an
+ * address behind a consent box, or — when the content carries a `contact` block
+ * — for contact details behind an opt-in question. The component tree below only
  * renders what this returns, so the navigation rules live in one place and are
  * testable without a DOM.
  */
@@ -30,6 +32,10 @@ function isAnswered(question, value) {
  * @param source   tag recorded with the response, e.g. `community_survey`
  */
 export function useSurveyForm({ content, submit, source }) {
+  // Present when the final step is lead capture — an opt-in question plus the
+  // fields it reveals — rather than the consent checkbox and one address.
+  const contact = content.contact ?? null;
+
   const [step, setStep] = useState('intro');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState(emptyAnswers);
@@ -37,6 +43,8 @@ export function useSurveyForm({ content, submit, source }) {
   // The report is an opt-in. Leaving it off is a complete submission with no
   // address attached, so the survey never withholds Submit over an empty field.
   const [wantsReport, setWantsReport] = useState(false);
+  const [contactChoice, setContactChoice] = useState(undefined);
+  const [contactValues, setContactValues] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
 
@@ -81,8 +89,30 @@ export function useSurveyForm({ content, submit, source }) {
 
   const trimmedEmail = email.trim();
   const emailValid = EMAIL_PATTERN.test(trimmedEmail);
-  // An address is only required by the visitor asking for the report.
-  const canSubmit = !wantsReport || emailValid;
+
+  const setContactField = (key, value) =>
+    setContactValues((current) => ({ ...current, [key]: value }));
+
+  const contactField = (key) => (contactValues[key] ?? '').trim();
+
+  // Only some answers ask for contact details; "no thanks" is a complete
+  // submission that collects none.
+  const contactRevealed = Boolean(contact) && contact.revealOn.includes(contactChoice);
+
+  /** A required field has to be filled, and an email field has to look like one. */
+  const contactFieldValid = (field) => {
+    const value = contactField(field.key);
+    if (value === '') return !field.required;
+    return field.type !== 'email' || EMAIL_PATTERN.test(value);
+  };
+
+  // With lead capture the opt-in is a question like any other and has to be
+  // answered; otherwise an address is only required by the visitor asking for
+  // the report.
+  const canSubmit = contact
+    ? contactChoice !== undefined &&
+      (!contactRevealed || contact.fields.every(contactFieldValid))
+    : !wantsReport || emailValid;
 
   /**
    * Records the current question's answer. Single-choice questions replace it;
@@ -153,6 +183,32 @@ export function useSurveyForm({ content, submit, source }) {
     scrollToTop();
   };
 
+  /**
+   * The opt-in answer, plus the fields if it asked for them. Values are trimmed,
+   * and an empty optional field is left out rather than stored as ''.
+   */
+  const contactResponse = () => {
+    if (!contactRevealed) return { choice: contactChoice };
+
+    const filled = contact.fields
+      .map((field) => [field.key, contactField(field.key)])
+      .filter(([, value]) => value !== '');
+
+    return { choice: contactChoice, ...Object.fromEntries(filled) };
+  };
+
+  const contactEmailKey = contact?.fields.find((field) => field.type === 'email')?.key;
+
+  /**
+   * The captured address, repeated at the top level of the response so anything
+   * reading a response's `email` — the shape every response has had so far —
+   * still finds one. Null unless the opt-in asked for contact details.
+   */
+  const contactEmail = () => {
+    if (!contactRevealed || !contactEmailKey) return null;
+    return contactField(contactEmailKey) || null;
+  };
+
   const onSubmit = async () => {
     if (!canSubmit || isSubmitting) return;
 
@@ -160,12 +216,18 @@ export function useSurveyForm({ content, submit, source }) {
     setIsSubmitting(true);
 
     try {
-      // Nothing typed before the box was cleared is kept: no opt-in, no address.
-      await submit({ ...answers, email: wantsReport ? trimmedEmail : null, source });
+      // Nothing typed before the box was cleared, or before "no thanks" was
+      // picked, is kept: no opt-in, no address.
+      await submit(
+        contact
+          ? { ...answers, email: contactEmail(), contact: contactResponse(), source }
+          : { ...answers, email: wantsReport ? trimmedEmail : null, source },
+      );
       posthog.capture('survey_submitted', {
         source,
         questions_answered: answeredCount,
         total_questions: totalQuestions,
+        ...(contact ? { contact_opt_in: contactChoice } : {}),
       });
       setStep('success');
     } catch {
@@ -195,6 +257,12 @@ export function useSurveyForm({ content, submit, source }) {
     setEmail,
     wantsReport,
     setWantsReport,
+    contact,
+    contactChoice,
+    setContactChoice,
+    contactRevealed,
+    contactValues,
+    setContactField,
     canSubmit,
     isSubmitting,
     errorMessage,

@@ -22,6 +22,23 @@ const inputStyle = (t) => ({
   outline: 'none',
 });
 
+// The label above any text field on the final step.
+const fieldLabelStyle = (t) => ({
+  display: 'block',
+  fontSize: 14,
+  fontWeight: 700,
+  color: t.ink,
+  marginBottom: 8,
+});
+
+// The browser's own hint for the contact fields a survey can ask for. Anything
+// not listed is left for the browser to guess.
+const AUTOCOMPLETE = {
+  name: 'name',
+  organization: 'organization',
+  email: 'email',
+};
+
 // The alert red used across the app.
 const DANGER = '#D6452F';
 
@@ -45,10 +62,110 @@ function FullScreen({ t, children }) {
 }
 
 /**
+ * The default final step: a consent box that gates one address field. Without
+ * the box ticked there is nothing to validate and Submit stays available.
+ */
+function ConsentStep({ t, content, survey, consentId, emailId, onEnter }) {
+  return (
+    <>
+      <label
+        htmlFor={consentId}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '16px 20px',
+          borderRadius: 12,
+          border: `2px solid ${survey.wantsReport ? t.accent : t.line}`,
+          background: survey.wantsReport
+            ? t.accent + (t.mapMode === 'dark' ? '14' : '22')
+            : t.surface,
+          cursor: 'pointer',
+        }}
+      >
+        <input
+          id={consentId}
+          type="checkbox"
+          checked={survey.wantsReport}
+          onChange={(e) => survey.setWantsReport(e.target.checked)}
+          style={{ width: 20, height: 20, accentColor: t.accent, cursor: 'pointer', flex: '0 0 auto' }}
+        />
+        <span style={{ fontSize: 16, fontWeight: survey.wantsReport ? 600 : 500, color: t.ink }}>
+          {content.steps.consentLabel}
+        </span>
+      </label>
+
+      {survey.wantsReport && (
+        <div style={{ marginTop: 24 }}>
+          <label htmlFor={emailId} style={fieldLabelStyle(t)}>
+            {content.steps.emailLabel}
+          </label>
+          <input
+            id={emailId}
+            type="email"
+            autoComplete="email"
+            value={survey.email}
+            placeholder={content.steps.emailPlaceholder}
+            onChange={(e) => survey.setEmail(e.target.value)}
+            onKeyDown={onEnter}
+            style={inputStyle(t)}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+/**
+ * The lead-capture final step, for content carrying a `contact` block: the
+ * opt-in asked as a normal question, and the fields the chosen answer reveals.
+ */
+function ContactStep({ t, survey, idPrefix, onEnter }) {
+  const { contact } = survey;
+
+  return (
+    <>
+      <SurveyQuestion
+        t={t}
+        question={contact.question}
+        value={survey.contactChoice}
+        onToggle={survey.setContactChoice}
+      />
+
+      {survey.contactRevealed && (
+        <div style={{ marginTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {contact.fields.map((field) => {
+            const fieldId = `${idPrefix}-${field.key}`;
+            return (
+              <div key={field.key}>
+                <label htmlFor={fieldId} style={fieldLabelStyle(t)}>
+                  {field.label}
+                </label>
+                <input
+                  id={fieldId}
+                  type={field.type ?? 'text'}
+                  autoComplete={AUTOCOMPLETE[field.key]}
+                  required={field.required}
+                  value={survey.contactValues[field.key] ?? ''}
+                  placeholder={field.placeholder}
+                  onChange={(e) => survey.setContactField(field.key, e.target.value)}
+                  onKeyDown={onEnter}
+                  style={inputStyle(t)}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+}
+
+/**
  * @param content  a validated survey, from `resolveSurveyContent`
  * @param submit   persists the finished response; rejects if it could not
  * @param source   tag recorded with the response, e.g. `community_survey`
- * @param idPrefix namespaces the email field's ids, so two surveys never collide
+ * @param idPrefix namespaces the final step's field ids, so two surveys never collide
  */
 export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) {
   const survey = useSurveyForm({ content, submit, source });
@@ -168,6 +285,14 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
   const emailId = `${idPrefix}-email`;
   const consentId = `${idPrefix}-consent`;
 
+  // There is no <form> around the final step's fields — the shared Btn renders a
+  // submit button, which would make Back and Next submit too.
+  const submitOnEnter = (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    survey.onSubmit();
+  };
+
   return (
     <div
       style={{
@@ -255,67 +380,17 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
 
           {onEmailStep ? (
             <div>
-              {/* The opt-in gates the field: without it there is nothing to
-                  validate and Submit stays available. */}
-              <label
-                htmlFor={consentId}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '16px 20px',
-                  borderRadius: 12,
-                  border: `2px solid ${survey.wantsReport ? t.accent : t.line}`,
-                  background: survey.wantsReport
-                    ? t.accent + (t.mapMode === 'dark' ? '14' : '22')
-                    : t.surface,
-                  cursor: 'pointer',
-                }}
-              >
-                <input
-                  id={consentId}
-                  type="checkbox"
-                  checked={survey.wantsReport}
-                  onChange={(e) => survey.setWantsReport(e.target.checked)}
-                  style={{ width: 20, height: 20, accentColor: t.accent, cursor: 'pointer', flex: '0 0 auto' }}
+              {survey.contact ? (
+                <ContactStep t={t} survey={survey} idPrefix={idPrefix} onEnter={submitOnEnter} />
+              ) : (
+                <ConsentStep
+                  t={t}
+                  content={content}
+                  survey={survey}
+                  consentId={consentId}
+                  emailId={emailId}
+                  onEnter={submitOnEnter}
                 />
-                <span style={{ fontSize: 16, fontWeight: survey.wantsReport ? 600 : 500, color: t.ink }}>
-                  {content.steps.consentLabel}
-                </span>
-              </label>
-
-              {survey.wantsReport && (
-                <div style={{ marginTop: 24 }}>
-                  <label
-                    htmlFor={emailId}
-                    style={{
-                      display: 'block',
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: t.ink,
-                      marginBottom: 8,
-                    }}
-                  >
-                    {content.steps.emailLabel}
-                  </label>
-                  <input
-                    id={emailId}
-                    type="email"
-                    autoComplete="email"
-                    value={survey.email}
-                    placeholder={content.steps.emailPlaceholder}
-                    onChange={(e) => survey.setEmail(e.target.value)}
-                    // There is no <form> around this — the shared Btn renders a
-                    // submit button, which would make Back and Next submit too.
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        survey.onSubmit();
-                      }
-                    }}
-                    style={inputStyle(t)}
-                  />
-                </div>
               )}
 
               {/* A failed save, not a rejected address — so it sits outside the

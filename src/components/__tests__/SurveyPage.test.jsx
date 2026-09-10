@@ -8,10 +8,12 @@ vi.mock('posthog-js', () => ({
 
 const posthog = (await import('posthog-js')).default;
 const { SurveyPage } = await import('../SurveyPage');
+const { PractitionersSurveyPage } = await import('../PractitionersSurveyPage');
 const { SurveyForm } = await import('../survey/SurveyForm');
 const { resolveSurveyContent } = await import('../survey/content');
 
 const content = resolveSurveyContent();
+const practitioners = (await import('../survey/content/practitioners.json')).default;
 const TOTAL = content.section1.length + content.section2.length + content.section3.length;
 
 // One question per section, exercising the multiple and scale variants that the
@@ -71,6 +73,34 @@ const fixture = {
   ],
   success: { title: 'All done', body: 'Saved.', closeLabel: 'Home' },
   errorMessage: 'Could not save your answers.',
+};
+
+// The same fixture with a lead-capture final step instead of the consent box.
+const contactFixture = {
+  ...fixture,
+  steps: {
+    ...fixture.steps,
+    emailTitle: 'Shape what we build',
+    emailDescription: 'Where to reach you.',
+  },
+  contact: {
+    question: {
+      key: 'betaInterest',
+      label: 'Want a hand in what comes next?',
+      options: [
+        { value: 'beta', label: 'Yes, beta access' },
+        { value: 'updates', label: 'Just keep me updated' },
+        { value: 'no', label: 'No, thanks' },
+      ],
+    },
+    revealOn: ['beta', 'updates'],
+    fields: [
+      { key: 'name', label: 'Name', required: true },
+      { key: 'organization', label: 'Organization' },
+      { key: 'email', label: 'Work Email', type: 'email', required: true },
+      { key: 'location', label: 'City / Country' },
+    ],
+  },
 };
 
 const options = () => within(screen.getByRole('group')).getAllByRole('button');
@@ -447,5 +477,209 @@ describe('SurveyForm', () => {
     expect(screen.queryByRole('heading', { name: fixture.success.title })).not.toBeInTheDocument();
     expect(button(fixture.steps.submitLabel)).not.toBeDisabled();
     expect(optIn(fixture.steps)).toBeInTheDocument();
+  });
+});
+
+describe('SurveyForm with lead capture', () => {
+  const labels = contactFixture.steps;
+
+  const renderFixture = (submit) =>
+    render(
+      <SurveyForm
+        t={THEME}
+        content={contactFixture}
+        submit={submit}
+        source="practitioner_fixture"
+        idPrefix="practitioner-fixture"
+      />,
+    );
+
+  /** Answers the three questions and lands on the lead-capture step. */
+  const walkToContact = () => {
+    const submit = vi.fn().mockResolvedValue({ id: 'saved' });
+    renderFixture(submit);
+    walkToEmail(contactFixture, 3);
+    return submit;
+  };
+
+  it('asks the opt-in as a question instead of a consent box', () => {
+    walkToContact();
+
+    expect(heading(labels.emailTitle)).toBeInTheDocument();
+    expect(heading(contactFixture.contact.question.label)).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.getByText('Final step')).toBeInTheDocument();
+  });
+
+  it('holds Submit until the opt-in is answered', () => {
+    walkToContact();
+    expect(button(labels.submitLabel)).toBeDisabled();
+
+    fireEvent.click(options()[2]);
+    expect(button(labels.submitLabel)).not.toBeDisabled();
+  });
+
+  it('asks for nothing more when the opt-in is declined', async () => {
+    const submit = walkToContact();
+    fireEvent.click(options()[2]);
+
+    expect(screen.queryByLabelText('Name')).not.toBeInTheDocument();
+    fireEvent.click(button(labels.submitLabel));
+
+    expect(
+      await screen.findByRole('heading', { name: contactFixture.success.title }),
+    ).toBeInTheDocument();
+    expect(submit).toHaveBeenCalledWith(
+      expect.objectContaining({ email: null, contact: { choice: 'no' } }),
+    );
+  });
+
+  it('reveals the fields and holds Submit until the required ones are valid', () => {
+    walkToContact();
+    fireEvent.click(options()[0]);
+
+    expect(screen.getByLabelText('Organization')).toBeInTheDocument();
+    expect(screen.getByLabelText('City / Country')).toBeInTheDocument();
+    expect(button(labels.submitLabel)).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Ada' } });
+    expect(button(labels.submitLabel)).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText('Work Email'), { target: { value: 'not-an-email' } });
+    expect(button(labels.submitLabel)).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText('Work Email'), { target: { value: 'ada@studio.com' } });
+    expect(button(labels.submitLabel)).not.toBeDisabled();
+  });
+
+  it('submits the trimmed fields, leaving empty optional ones out', async () => {
+    const submit = walkToContact();
+    fireEvent.click(options()[1]);
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '  Ada Lovelace  ' } });
+    fireEvent.change(screen.getByLabelText('Organization'), {
+      target: { value: ' Analytical Engines ' },
+    });
+    fireEvent.change(screen.getByLabelText('Work Email'), {
+      target: { value: '  ada@studio.com ' },
+    });
+    fireEvent.click(button(labels.submitLabel));
+
+    expect(
+      await screen.findByRole('heading', { name: contactFixture.success.title }),
+    ).toBeInTheDocument();
+    expect(submit).toHaveBeenCalledWith({
+      section1: { picks: ['trees'] },
+      section2: { rating: '1' },
+      section3: { last: 'yes' },
+      // Kept at the top level too, so anything reading a response's email finds one.
+      email: 'ada@studio.com',
+      contact: {
+        choice: 'updates',
+        name: 'Ada Lovelace',
+        organization: 'Analytical Engines',
+        email: 'ada@studio.com',
+      },
+      source: 'practitioner_fixture',
+    });
+  });
+
+  it('drops the details when the opt-in switches to declining', async () => {
+    const submit = walkToContact();
+    fireEvent.click(options()[0]);
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Ada' } });
+    fireEvent.change(screen.getByLabelText('Work Email'), { target: { value: 'ada@studio.com' } });
+
+    fireEvent.click(options()[2]);
+    expect(screen.queryByLabelText('Name')).not.toBeInTheDocument();
+
+    fireEvent.click(button(labels.submitLabel));
+
+    expect(
+      await screen.findByRole('heading', { name: contactFixture.success.title }),
+    ).toBeInTheDocument();
+    expect(submit).toHaveBeenCalledWith(
+      expect.objectContaining({ email: null, contact: { choice: 'no' } }),
+    );
+  });
+
+  it('submits when Enter is pressed in a contact field', async () => {
+    walkToContact();
+    fireEvent.click(options()[0]);
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Ada' } });
+
+    const field = screen.getByLabelText('Work Email');
+    fireEvent.change(field, { target: { value: 'ada@studio.com' } });
+    fireEvent.keyDown(field, { key: 'Enter' });
+
+    expect(
+      await screen.findByRole('heading', { name: contactFixture.success.title }),
+    ).toBeInTheDocument();
+  });
+
+  it('ignores Enter while a required field is still empty', () => {
+    const submit = walkToContact();
+    fireEvent.click(options()[0]);
+
+    const field = screen.getByLabelText('Work Email');
+    fireEvent.change(field, { target: { value: 'ada@studio.com' } });
+    fireEvent.keyDown(field, { key: 'Enter' });
+
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('steps back into the last question of section 3', () => {
+    walkToContact();
+    fireEvent.click(button(labels.backLabel));
+
+    expect(heading(contactFixture.section3[0].label)).toBeInTheDocument();
+  });
+});
+
+describe('PractitionersSurveyPage', () => {
+  const labels = practitioners.steps;
+  const PRACTITIONER_TOTAL =
+    practitioners.section1.length + practitioners.section2.length + practitioners.section3.length;
+
+  beforeEach(() => {
+    localStorage.clear();
+    posthog.capture.mockClear();
+  });
+
+  it('asks the practitioner questions and stores a tagged lead', async () => {
+    render(<PractitionersSurveyPage t={THEME} />);
+
+    expect(heading(practitioners.hero.title)).toBeInTheDocument();
+    walkToEmail(practitioners, PRACTITIONER_TOTAL);
+
+    expect(heading(labels.emailTitle)).toBeInTheDocument();
+    fireEvent.click(options()[0]);
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Ada Lovelace' } });
+    fireEvent.change(screen.getByLabelText('Work Email'), { target: { value: 'ada@studio.com' } });
+    fireEvent.click(button(labels.submitLabel));
+
+    expect(
+      await screen.findByRole('heading', { name: practitioners.success.title }),
+    ).toBeInTheDocument();
+
+    const stored = JSON.parse(localStorage.getItem('placemaking_survey_responses'));
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toMatchObject({
+      source: 'practitioners_survey',
+      email: 'ada@studio.com',
+      contact: { choice: 'beta', name: 'Ada Lovelace', email: 'ada@studio.com' },
+      section1: { orgRole: 'ngo' },
+      // The one multi-select in the survey stores an array.
+      section2: { currentTools: ['gis'] },
+      section3: { toolBudget: 'none' },
+    });
+
+    expect(posthog.capture).toHaveBeenCalledWith('survey_submitted', {
+      source: 'practitioners_survey',
+      questions_answered: PRACTITIONER_TOTAL,
+      total_questions: PRACTITIONER_TOTAL,
+      contact_opt_in: 'beta',
+    });
   });
 });

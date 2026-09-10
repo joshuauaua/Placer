@@ -11,6 +11,7 @@ import { CookieBanner } from './components/CookieBanner';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
+const PractitionersSurveyPage = lazy(() => import('./components/PractitionersSurveyPage'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const MapContainer = lazy(() => import('./components/MapContainer'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
@@ -324,6 +325,7 @@ function App() {
       <ErrorBoundary>
         <Switch>
           <Route path="/survey"><Suspense fallback={<LoadingFallback />}><SurveyPage t={t} /></Suspense></Route>
+          <Route path="/practitioners-survey"><Suspense fallback={<LoadingFallback />}><PractitionersSurveyPage t={t} /></Suspense></Route>
           <Route path="/admin/imaginations"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminImaginations t={t} /></AdminGate></Suspense></Route>
           <Route path="/admin"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminDashboard t={t} /></AdminGate></Suspense></Route>
           <Route path="/privacy"><MainApp initialView="privacy" /></Route>
