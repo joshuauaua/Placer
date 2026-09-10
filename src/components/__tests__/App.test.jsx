@@ -34,8 +34,11 @@ describe('App', () => {
     renderAt('/');
 
     expect(screen.getByRole('heading', { level: 1, name: 'PLACER' })).toBeInTheDocument();
-    expect(screen.getByText('a tool for participatory placemaking')).toBeInTheDocument();
-    expect(screen.getByText(/strengthen participatory placemaking and democratic urban/i)).toBeInTheDocument();
+    expect(screen.getByText('a toolkit for participatory placemaking')).toBeInTheDocument();
+    expect(screen.getByText(/empowers citizens, design practitioners, and municipal stakeholders/i)).toBeInTheDocument();
+    expect(screen.getByText(/bridging community vision with urban design/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'About the Initiative' })).toBeInTheDocument();
+    expect(screen.getByText(/international collaboration between STPLN and Aks Ankara/i)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Aks Creative Hub' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'STPLN' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Funded by Swedish Institute' })).toBeInTheDocument();
