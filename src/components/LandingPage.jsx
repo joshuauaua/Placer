@@ -34,34 +34,24 @@ export function LandingPage({ t }) {
           a toolkit for participatory placemaking
         </p>
 
-        <p style={{ fontSize: 17, color: t.ink, lineHeight: 1.7, marginBottom: 20 }}>
+        <p style={{ fontSize: 17, color: t.ink, lineHeight: 1.7, marginBottom: 56 }}>
           PLACER is an interactive platform that empowers citizens, design
           practitioners, and municipal stakeholders to co-create more inclusive,
-          democratic public spaces.
+          democratic public spaces. By bridging community vision with urban design,
+          PLACER provides tools and shared resources to make citymaking
+          collaborative, accessible, and transparent.
         </p>
 
-        <p style={{ fontSize: 17, color: t.ink, lineHeight: 1.7, marginBottom: 56 }}>
-          By bridging community vision with urban design, PLACER provides tools and
-          shared resources to make citymaking collaborative, accessible, and
-          transparent.
-        </p>
-
-        {/* The partner and funder logos below stand as the visual half of this
-          * section, so the heading introduces both the prose and the artwork. */}
-        <h2 className="placer-mono" style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-          color: t.inkFaint,
+        {/* The rule carries the separation the dropped heading used to provide,
+          * setting the funding note and the logos apart from the pitch above. */}
+        <p style={{
+          fontSize: 15.5,
+          color: t.inkDim,
+          lineHeight: 1.7,
           borderTop: `1px solid ${t.line}`,
           paddingTop: 28,
-          marginBottom: 16
+          marginBottom: 48
         }}>
-          About the Initiative
-        </h2>
-
-        <p style={{ fontSize: 15.5, color: t.inkDim, lineHeight: 1.7, marginBottom: 48 }}>
           PLACER is developed through an international collaboration between STPLN and
           Aks Ankara, funded by the Swedish Institute as part of the Participatory
           Urban Design Toolkit for Inclusive and Democratic Citymaking project.
