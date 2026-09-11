@@ -65,11 +65,9 @@ export function LandingPage({ t }) {
         </p>
 
         <p style={{ fontSize: 17, color: t.ink, lineHeight: 1.7, marginBottom: 56 }}>
-          PLACER is an interactive platform that empowers citizens, design
-          practitioners, and municipal stakeholders to co-create more inclusive,
-          democratic public spaces. By bridging community vision with urban design,
-          PLACER provides tools and shared resources to make citymaking
-          collaborative, accessible, and transparent.
+          PLACER is an emerging platform designed to bring citizens, design
+          practitioners, and municipal stakeholders together to collaboratively
+          shape inclusive, democratic public spaces.
         </p>
 
         {/* The rule carries the separation the dropped heading used to provide,

@@ -38,8 +38,9 @@ describe('App', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'PLACER' })).toBeInTheDocument();
     expect(screen.getByText('a toolkit for participatory placemaking')).toBeInTheDocument();
-    expect(screen.getByText(/empowers citizens, design practitioners, and municipal stakeholders/i)).toBeInTheDocument();
-    expect(screen.getByText(/bridging community vision with urban design/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/bring citizens, design practitioners, and municipal stakeholders together/i)
+    ).toBeInTheDocument();
     expect(screen.getByText(/funded by the Swedish Institute/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'STPLN' })).toHaveAttribute('href', 'https://stpln.se/');
     expect(screen.getByRole('link', { name: 'Ankara Aks' })).toHaveAttribute('href', 'https://ankaraaks.com/');
