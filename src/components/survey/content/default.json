@@ -113,6 +113,7 @@
       "key": "featurePriorities",
       "label": "Which features would you test first in PLACER?",
       "multiple": true,
+      "rank": true,
       "options": [
         {
           "value": "participatory-mapping",
@@ -120,7 +121,7 @@
         },
         {
           "value": "spatial-visualization",
-          "label": "Interactive 3D / AR spatial visualizations"
+          "label": "Interactive spatial visualizations"
         },
         {
           "value": "discussion-threads",

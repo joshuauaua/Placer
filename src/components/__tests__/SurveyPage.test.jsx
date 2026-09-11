@@ -258,6 +258,68 @@ describe('SurveyPage', () => {
       expect(button(content.steps.submitLabel)).not.toBeDisabled();
     });
 
+    it('numbers the ranked question in the order answers are picked', () => {
+      cleanup();
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.hero.startLabel));
+      // Question 4 is the ranked one, so stop one short of the last.
+      for (let i = 0; i < TOTAL - 2; i++) answerAndAdvance(content.steps);
+
+      expect(screen.getByText('Choose in order of priority, most important first.'))
+        .toBeInTheDocument();
+
+      fireEvent.click(options()[2]);
+      fireEvent.click(options()[0]);
+
+      // Picked second and first: the badge is the position, not a tick.
+      expect(options()[2]).toHaveTextContent('1');
+      expect(options()[0]).toHaveTextContent('2');
+      // And the position is said out loud, since the badge is decorative.
+      expect(options()[2]).toHaveAccessibleName(
+        `${content.section3[0].options[2].label}, priority 1`,
+      );
+    });
+
+    it('closes the ranking up again when an answer is dropped', () => {
+      cleanup();
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.hero.startLabel));
+      for (let i = 0; i < TOTAL - 2; i++) answerAndAdvance(content.steps);
+
+      fireEvent.click(options()[0]);
+      fireEvent.click(options()[1]);
+      fireEvent.click(options()[3]);
+      expect(options()[3]).toHaveTextContent('3');
+
+      // Dropping the first promotes the two behind it.
+      fireEvent.click(options()[0]);
+
+      expect(options()[1]).toHaveTextContent('1');
+      expect(options()[3]).toHaveTextContent('2');
+      expect(options()[0]).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('stores the ranking as an ordered list', async () => {
+      cleanup();
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.hero.startLabel));
+      for (let i = 0; i < TOTAL - 2; i++) answerAndAdvance(content.steps);
+
+      fireEvent.click(options()[3]);
+      fireEvent.click(options()[1]);
+      fireEvent.click(button(content.steps.nextLabel));
+      answerAndAdvance(content.steps);
+      fireEvent.click(button(content.steps.submitLabel));
+
+      expect(await screen.findByRole('heading', { name: content.success.title })).toBeInTheDocument();
+
+      const stored = JSON.parse(localStorage.getItem('placemaking_survey_responses'));
+      expect(stored[0].section3[content.section3[0].key]).toEqual([
+        content.section3[0].options[3].value,
+        content.section3[0].options[1].value,
+      ]);
+    });
+
     it('takes several answers to the closing question', () => {
       cleanup();
       render(<SurveyPage t={THEME} />);

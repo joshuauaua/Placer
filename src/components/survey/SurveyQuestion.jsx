@@ -20,6 +20,10 @@ const inputStyle = (t) => ({
  * rating strip; everything else stacks them full width. `multiple` questions
  * take a square indicator and toggle, single-choice ones a round one and replace.
  *
+ * `rank` questions are `multiple` ones read as an ordering: answers are stored in
+ * the order they were picked, so the indicator shows each one's position instead
+ * of a tick. Picking again drops it and the rest close up.
+ *
  * An option flagged `other` opens a text field below the list once it is picked:
  * the option on its own says nothing, so the hook holds Next until it is filled.
  */
@@ -36,6 +40,11 @@ export function SurveyQuestion({
 }) {
   const labelId = `survey-question-${question.key}`;
   const otherId = `${labelId}-other`;
+  const { rank } = question;
+
+  /** 1-based position of an answer in the picking order, or 0 when unpicked. */
+  const rankOf = (optionValue) =>
+    Array.isArray(value) ? value.indexOf(optionValue) + 1 : 0;
   const { multiple, scale } = question;
 
   const isSelected = (optionValue) =>
@@ -48,7 +57,9 @@ export function SurveyQuestion({
       </h1>
 
       {multiple && (
-        <div style={{ fontSize: 14, color: t.inkDim, marginBottom: 32 }}>Select all that apply.</div>
+        <div style={{ fontSize: 14, color: t.inkDim, marginBottom: 32 }}>
+          {rank ? 'Choose in order of priority, most important first.' : 'Select all that apply.'}
+        </div>
       )}
 
       <div
@@ -68,6 +79,11 @@ export function SurveyQuestion({
               key={option.value}
               type="button"
               aria-pressed={selected}
+              // The position is shown in a decorative badge, so it is said here
+              // instead: "selected" alone would lose the ordering.
+              aria-label={
+                rank && selected ? `${option.label}, priority ${rankOf(option.value)}` : undefined
+              }
               onClick={() => onToggle(option.value)}
               style={{
                 padding: scale ? '16px 20px' : '20px 24px',
@@ -102,17 +118,23 @@ export function SurveyQuestion({
                   style={{
                     width: 24,
                     height: 24,
-                    borderRadius: multiple ? 7 : '50%',
+                    // A ranked answer shows a number, which wants a round badge.
+                    borderRadius: multiple && !rank ? 7 : '50%',
                     border: `2px solid ${selected ? t.accent : t.lineStrong}`,
                     background: selected ? t.accent : 'transparent',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flex: '0 0 auto',
+                    fontSize: 13,
+                    fontWeight: 800,
+                    color: t.accentInk,
                   }}
                 >
                   {selected &&
-                    (multiple ? (
+                    (rank ? (
+                      rankOf(option.value)
+                    ) : multiple ? (
                       <Icon name="check" size={15} stroke={3} style={{ color: t.accentInk }} />
                     ) : (
                       <span

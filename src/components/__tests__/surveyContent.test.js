@@ -63,6 +63,13 @@ describe('survey content', () => {
     expect(() => validateSurveyContent(content)).toThrow(/more than one `other` option/);
   });
 
+  it('rejects a ranked question that cannot store an order', () => {
+    const content = clone();
+    delete content.section3[0].multiple;
+
+    expect(() => validateSurveyContent(content)).toThrow(/needs `multiple` alongside it/);
+  });
+
   it('accepts the same key in two different sections', () => {
     const content = clone();
     content.section2[0].key = content.section1[0].key;

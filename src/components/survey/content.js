@@ -72,6 +72,11 @@ function question(value, path) {
   text(value.label, `${path}.label`);
   flag(value.multiple, `${path}.multiple`);
   flag(value.scale, `${path}.scale`);
+  flag(value.rank, `${path}.rank`);
+
+  // Ranking is an ordering of several answers, so it needs `multiple` to store
+  // one: on its own it would rank a single choice against nothing.
+  if (value.rank && !value.multiple) fail(`${path}.rank`, 'needs `multiple` alongside it');
 
   if (!Array.isArray(value.options) || value.options.length === 0) {
     fail(`${path}.options`, 'must be a non-empty array');
