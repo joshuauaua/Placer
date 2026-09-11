@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, cleanup } from '@testing-library/react';
 import { THEME } from '../../theme';
 
 vi.mock('posthog-js', () => ({
@@ -20,16 +20,15 @@ const fixture = {
   hero: { title: 'Fixture survey', subtitle: 'A short one.', startLabel: 'Begin' },
   steps: {
     section1Title: 'Section A',
-    section1Description: 'The first one.',
     section2Title: 'Section B',
-    section2Description: 'The second one.',
     section3Title: 'Section C',
-    section3Description: 'The third one.',
     emailTitle: 'Your email',
     emailDescription: 'So we can write back.',
-    consentLabel: 'Send me the report',
+    emailRequiredDescription: 'We need an address for this.',
     emailLabel: 'Email',
     emailPlaceholder: 'you@example.com',
+    otherLabel: 'Which one?',
+    otherPlaceholder: 'Name it',
     nextLabel: 'Next',
     backLabel: 'Back',
     submitLabel: 'Send',
@@ -44,6 +43,7 @@ const fixture = {
         { value: 'trees', label: 'Trees' },
         { value: 'benches', label: 'Benches' },
         { value: 'lights', label: 'Lights' },
+        { value: 'other', label: 'Something else', other: true },
       ],
     },
   ],
@@ -64,7 +64,8 @@ const fixture = {
       key: 'last',
       label: 'One last thing',
       options: [
-        { value: 'yes', label: 'Yes' },
+        // The answer that leaves the email step optional.
+        { value: 'yes', label: 'Yes', noCommitment: true },
         { value: 'no', label: 'No' },
       ],
     },
@@ -74,7 +75,7 @@ const fixture = {
 };
 
 const options = () => within(screen.getByRole('group')).getAllByRole('button');
-const optIn = (labels) => screen.getByRole('checkbox', { name: labels.consentLabel });
+const emailField = (labels) => screen.getByLabelText(new RegExp(`^${labels.emailLabel}`));
 const button = (name) => screen.getByRole('button', { name });
 const heading = (name) => screen.getByRole('heading', { name });
 
@@ -84,10 +85,17 @@ function answerAndAdvance(labels, optionIndex = 0) {
   fireEvent.click(button(labels.nextLabel));
 }
 
-/** Walks from the intro to the email step, taking the first option each time. */
-function walkToEmail(surveyContent, questionCount) {
+/**
+ * Walks from the intro to the email step, taking the first option each time.
+ * `lastOptionIndex` answers the closing question differently, which is what
+ * decides whether an address is required: its first option is the one flagged
+ * `noCommitment`, so the default walk leaves the email step optional.
+ */
+function walkToEmail(surveyContent, questionCount, lastOptionIndex = 0) {
   fireEvent.click(button(surveyContent.hero.startLabel));
-  for (let i = 0; i < questionCount; i++) answerAndAdvance(surveyContent.steps);
+  for (let i = 0; i < questionCount; i++) {
+    answerAndAdvance(surveyContent.steps, i === questionCount - 1 ? lastOptionIndex : 0);
+  }
 }
 
 describe('SurveyPage', () => {
@@ -105,14 +113,34 @@ describe('SurveyPage', () => {
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     });
 
+    it('opens with a street drawing as its only picture', () => {
+      const { container } = render(<SurveyPage t={THEME} />);
+
+      const images = container.querySelectorAll('img');
+      expect(images).toHaveLength(1);
+      expect(images[0].getAttribute('src')).toMatch(/street-/);
+      // Decoration: the hero title beside it already says what this screen is.
+      expect(images[0]).toHaveAttribute('alt', '');
+      expect(images[0]).toHaveAttribute('aria-hidden', 'true');
+    });
+
     it('shows the first question of section 1 once started', () => {
       render(<SurveyPage t={THEME} />);
       fireEvent.click(button(content.hero.startLabel));
 
       expect(heading(content.steps.section1Title)).toBeInTheDocument();
-      expect(screen.getByText(content.steps.section1Description)).toBeInTheDocument();
       expect(heading(content.section1[0].label)).toBeInTheDocument();
       expect(screen.getByText(`1 / ${TOTAL}`)).toBeInTheDocument();
+    });
+
+    it('puts no blurb above the question, only its own heading', () => {
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.hero.startLabel));
+
+      // The closing step explains itself; a question does not need to.
+      expect(screen.queryByText(content.steps.emailDescription)).not.toBeInTheDocument();
+      const paragraphs = document.querySelectorAll('p');
+      expect(paragraphs).toHaveLength(0);
     });
 
     it('goes back to the hero from the first question', () => {
@@ -155,7 +183,8 @@ describe('SurveyPage', () => {
       answerAndAdvance(content.steps);
 
       expect(screen.getByText(`2 / ${TOTAL}`)).toBeInTheDocument();
-      expect(heading(content.section1[1].label)).toBeInTheDocument();
+      // section 1 holds a single question, so the second is the first of section 2.
+      expect(heading(content.section2[0].label)).toBeInTheDocument();
     });
 
     it('preserves the answer when stepping back', () => {
@@ -206,36 +235,71 @@ describe('SurveyPage', () => {
       expect(heading(content.steps.emailTitle)).toBeInTheDocument();
     });
 
-    it('offers Submit right away, with no email asked for', () => {
-      expect(button(content.steps.submitLabel)).not.toBeDisabled();
-      expect(optIn(content.steps)).not.toBeChecked();
-      expect(screen.queryByLabelText(content.steps.emailLabel)).not.toBeInTheDocument();
+    it('asks for an address, and nothing else', () => {
+      expect(emailField(content.steps)).toHaveValue('');
+      // The updates opt-in is gone: question 5 already covers involvement.
+      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     });
 
-    it('asks for an address only once the report is opted into', () => {
-      fireEvent.click(optIn(content.steps));
-
-      const field = screen.getByLabelText(content.steps.emailLabel);
-      expect(button(content.steps.submitLabel)).toBeDisabled();
-
-      fireEvent.change(field, { target: { value: 'not-an-email' } });
-      expect(button(content.steps.submitLabel)).toBeDisabled();
-
-      fireEvent.change(field, { target: { value: 'resident@example.com' } });
+    it('offers Submit right away when nothing further was asked for', () => {
+      // The walk answered the closing question with its no-commitment option, so
+      // there is nothing to follow up and no address needed.
+      expect(screen.getByText(content.steps.emailDescription)).toBeInTheDocument();
+      expect(emailField(content.steps)).not.toBeRequired();
       expect(button(content.steps.submitLabel)).not.toBeDisabled();
     });
 
-    it('frees Submit again when the opt-in is cleared', () => {
-      fireEvent.click(optIn(content.steps));
-      fireEvent.change(screen.getByLabelText(content.steps.emailLabel), {
-        target: { value: 'still-typing' },
-      });
+    it('still rejects a half-typed address when one is optional', () => {
+      fireEvent.change(emailField(content.steps), { target: { value: 'not-an-email' } });
       expect(button(content.steps.submitLabel)).toBeDisabled();
 
-      fireEvent.click(optIn(content.steps));
-
+      // Clearing it is enough: an empty optional field is not an error.
+      fireEvent.change(emailField(content.steps), { target: { value: '' } });
       expect(button(content.steps.submitLabel)).not.toBeDisabled();
-      expect(screen.queryByLabelText(content.steps.emailLabel)).not.toBeInTheDocument();
+    });
+
+    it('takes several answers to the closing question', () => {
+      cleanup();
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.hero.startLabel));
+      for (let i = 0; i < TOTAL - 1; i++) answerAndAdvance(content.steps);
+
+      // Question 5 is select-all-that-apply, so it says so and keeps both.
+      expect(screen.getByText('Select all that apply.')).toBeInTheDocument();
+      fireEvent.click(options()[0]);
+      fireEvent.click(options()[2]);
+      expect(options()[0]).toHaveAttribute('aria-pressed', 'true');
+      expect(options()[2]).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('requires an address when a commitment sits alongside the no-commitment answer', () => {
+      cleanup();
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.hero.startLabel));
+      for (let i = 0; i < TOTAL - 1; i++) answerAndAdvance(content.steps);
+
+      // Both ticked: asking for an interview is still asking, so the address is
+      // needed whether or not "no further commitment" is ticked too.
+      fireEvent.click(options()[0]);
+      fireEvent.click(options()[2]);
+      fireEvent.click(button(content.steps.nextLabel));
+
+      expect(screen.getByText(content.steps.emailRequiredDescription)).toBeInTheDocument();
+      expect(button(content.steps.submitLabel)).toBeDisabled();
+    });
+
+    it('requires an address once the visitor asks to be involved further', () => {
+      // Rewalked, this time answering the closing question with a commitment.
+      cleanup();
+      render(<SurveyPage t={THEME} />);
+      walkToEmail(content, TOTAL, 1);
+
+      expect(screen.getByText(content.steps.emailRequiredDescription)).toBeInTheDocument();
+      expect(emailField(content.steps)).toBeRequired();
+      expect(button(content.steps.submitLabel)).toBeDisabled();
+
+      fireEvent.change(emailField(content.steps), { target: { value: 'planner@example.com' } });
+      expect(button(content.steps.submitLabel)).not.toBeDisabled();
     });
 
     it('steps back into the last question of section 3', () => {
@@ -252,14 +316,18 @@ describe('SurveyPage', () => {
       render(<SurveyPage t={THEME} />);
       walkToEmail(content, TOTAL);
 
-      fireEvent.click(optIn(content.steps));
-      fireEvent.change(screen.getByLabelText(content.steps.emailLabel), {
+      fireEvent.change(emailField(content.steps), {
         target: { value: 'resident@example.com' },
       });
       fireEvent.click(button(content.steps.submitLabel));
 
       expect(await screen.findByRole('heading', { name: content.success.title })).toBeInTheDocument();
       expect(screen.getByText(content.success.body)).toBeInTheDocument();
+
+      // The thank-you screen closes on a drawing, the same way the intro opened.
+      const images = document.querySelectorAll('img');
+      expect(images).toHaveLength(1);
+      expect(images[0].getAttribute('src')).toMatch(/street-/);
 
       const stored = JSON.parse(localStorage.getItem('placemaking_survey_responses'));
       expect(stored).toHaveLength(1);
@@ -277,7 +345,7 @@ describe('SurveyPage', () => {
       });
     });
 
-    it('stores a response with no address when the report is declined', async () => {
+    it('stores a response with no address when the field is left empty', async () => {
       render(<SurveyPage t={THEME} />);
       walkToEmail(content, TOTAL);
 
@@ -288,20 +356,19 @@ describe('SurveyPage', () => {
       const stored = JSON.parse(localStorage.getItem('placemaking_survey_responses'));
       expect(stored).toHaveLength(1);
       expect(stored[0].email).toBeNull();
-      expect(stored[0].section3[content.section3[0].key]).toBe(
+      expect(stored[0].section3[content.section3[0].key]).toEqual([
         content.section3[0].options[0].value,
-      );
+      ]);
     });
 
-    it('drops an address typed before the opt-in was cleared', async () => {
+    it('drops an address that was typed and then cleared', async () => {
       render(<SurveyPage t={THEME} />);
       walkToEmail(content, TOTAL);
 
-      fireEvent.click(optIn(content.steps));
-      fireEvent.change(screen.getByLabelText(content.steps.emailLabel), {
+      fireEvent.change(emailField(content.steps), {
         target: { value: 'resident@example.com' },
       });
-      fireEvent.click(optIn(content.steps));
+      fireEvent.change(emailField(content.steps), { target: { value: '' } });
       fireEvent.click(button(content.steps.submitLabel));
 
       expect(await screen.findByRole('heading', { name: content.success.title })).toBeInTheDocument();
@@ -383,8 +450,7 @@ describe('SurveyForm', () => {
     answerAndAdvance(fixture.steps, 2);
     answerAndAdvance(fixture.steps, 0);
 
-    fireEvent.click(optIn(fixture.steps));
-    fireEvent.change(screen.getByLabelText(fixture.steps.emailLabel), {
+    fireEvent.change(emailField(fixture.steps), {
       target: { value: '  resident@example.com  ' },
     });
     fireEvent.click(button(fixture.steps.submitLabel));
@@ -395,17 +461,72 @@ describe('SurveyForm', () => {
       section2: { rating: '3' },
       section3: { last: 'yes' },
       email: 'resident@example.com',
+      // Nothing was typed against a free-text option.
+      otherText: {},
       source: 'fixture_survey',
     });
   });
 
-  it('submits a null email when the report is not opted into', async () => {
+  it('holds Next until a picked free-text option is filled in', () => {
+    renderFixture(vi.fn());
+    fireEvent.click(button(fixture.hero.startLabel));
+
+    // The last option of the fixture's first question is the free-text one.
+    const other = options()[options().length - 1];
+    fireEvent.click(other);
+
+    const field = screen.getByLabelText(fixture.steps.otherLabel);
+    expect(button(fixture.steps.nextLabel)).toBeDisabled();
+
+    // Whitespace is not an answer.
+    fireEvent.change(field, { target: { value: '   ' } });
+    expect(button(fixture.steps.nextLabel)).toBeDisabled();
+
+    fireEvent.change(field, { target: { value: 'A shade structure' } });
+    expect(button(fixture.steps.nextLabel)).not.toBeDisabled();
+  });
+
+  it('hides the free-text field again when its option is deselected', () => {
+    renderFixture(vi.fn());
+    fireEvent.click(button(fixture.hero.startLabel));
+
+    const other = () => options()[options().length - 1];
+    fireEvent.click(other());
+    expect(screen.getByLabelText(fixture.steps.otherLabel)).toBeInTheDocument();
+
+    fireEvent.click(other());
+    expect(screen.queryByLabelText(fixture.steps.otherLabel)).not.toBeInTheDocument();
+  });
+
+  it('sends the free text for a picked option, and drops it once deselected', async () => {
+    const submit = vi.fn().mockResolvedValue({ id: 'saved' });
+    renderFixture(submit);
+
+    fireEvent.click(button(fixture.hero.startLabel));
+    const other = () => options()[options().length - 1];
+    fireEvent.click(other());
+    fireEvent.change(screen.getByLabelText(fixture.steps.otherLabel), {
+      target: { value: '  A shade structure  ' },
+    });
+    fireEvent.click(button(fixture.steps.nextLabel));
+    answerAndAdvance(fixture.steps);
+    answerAndAdvance(fixture.steps);
+    fireEvent.click(button(fixture.steps.submitLabel));
+
+    expect(await screen.findByRole('heading', { name: fixture.success.title })).toBeInTheDocument();
+    expect(submit).toHaveBeenCalledWith(
+      expect.objectContaining({ otherText: { picks: 'A shade structure' } }),
+    );
+  });
+
+  it('submits a null email when nothing further is asked for', async () => {
     const submit = vi.fn().mockResolvedValue({ id: 'saved' });
     renderFixture(submit);
 
     fireEvent.click(button(fixture.hero.startLabel));
     answerAndAdvance(fixture.steps);
     answerAndAdvance(fixture.steps);
+    // The closing question's first option is the no-commitment one.
     answerAndAdvance(fixture.steps);
     fireEvent.click(button(fixture.steps.submitLabel));
 
@@ -424,8 +545,7 @@ describe('SurveyForm', () => {
     answerAndAdvance(fixture.steps);
     answerAndAdvance(fixture.steps);
 
-    fireEvent.click(optIn(fixture.steps));
-    const field = screen.getByLabelText(fixture.steps.emailLabel);
+    const field = emailField(fixture.steps);
     fireEvent.change(field, { target: { value: 'resident@example.com' } });
     fireEvent.keyDown(field, { key: 'Enter' });
 
@@ -446,6 +566,6 @@ describe('SurveyForm', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(fixture.errorMessage);
     expect(screen.queryByRole('heading', { name: fixture.success.title })).not.toBeInTheDocument();
     expect(button(fixture.steps.submitLabel)).not.toBeDisabled();
-    expect(optIn(fixture.steps)).toBeInTheDocument();
+    expect(emailField(fixture.steps)).toBeInTheDocument();
   });
 });

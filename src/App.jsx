@@ -263,7 +263,7 @@ function MainApp({ initialView = 'welcome' }) {
       {/* Footer */}
       <div style={{ height: 44, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 18,
         padding: '0 22px', background: t.chrome, borderTop: `1px solid ${t.line}`, fontSize: 13, zIndex: 60 }}>
-        <span style={{ color: t.inkFaint }}>© 2026 PLACER</span>
+        <span style={{ color: t.inkFaint }}>2026 PLACER</span>
         <div style={{ flex: 1 }} />
         <FooterLink t={t} active={view === 'privacy'} onClick={() => show('privacy')}>
           Privacy Policy

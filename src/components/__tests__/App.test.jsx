@@ -3,6 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import App from '../../App';
+import { resolveSurveyContent } from '../survey/content';
+
+const surveyContent = resolveSurveyContent();
 
 vi.mock('../MapContainer', () => ({
   default: () => {
@@ -41,7 +44,26 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: 'STPLN' })).toHaveAttribute('href', 'https://stpln.se/');
     expect(screen.getByRole('link', { name: 'Ankara Aks' })).toHaveAttribute('href', 'https://ankaraaks.com/');
     expect(screen.getByRole('img', { name: 'Funded by Swedish Institute' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Share Your Thoughts' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+  });
+
+  it('frames the landing copy with the two street drawings, as decoration', () => {
+    const { container } = renderAt('/');
+
+    const frames = container.querySelectorAll('.placer-landing-frame');
+    expect(frames).toHaveLength(2);
+    frames.forEach((frame) => {
+      // Decorative: no accessible name to read out, and not in the way of a click.
+      expect(frame).toHaveAttribute('aria-hidden', 'true');
+      expect(frame.querySelector('img')).toHaveAttribute('alt', '');
+    });
+
+    // One drawing per side, each clipped to its own edge.
+    expect(container.querySelector('.placer-landing-frame-left')).toBeInTheDocument();
+    expect(container.querySelector('.placer-landing-frame-right')).toBeInTheDocument();
+    // Nothing decorative should reach the accessibility tree as an image.
+    expect(screen.queryAllByRole('img', { name: '' })).toHaveLength(0);
   });
 
   it('shows the nav bar when it is switched on', () => {
@@ -54,9 +76,9 @@ describe('App', () => {
 
   it('renders SurveyPage at /survey', async () => {
     renderAt('/survey');
-    expect(
-      await screen.findByText(/tell us how your neighborhood should change/i)
-    ).toBeInTheDocument();
+    // Taken from the content rather than quoted, so rewording the survey's
+    // opening line is not a failing test in a file about routing.
+    expect(await screen.findByText(surveyContent.hero.subtitle)).toBeInTheDocument();
   });
 
   it('renders AdminGate restricted view at /admin when admin is disabled', () => {

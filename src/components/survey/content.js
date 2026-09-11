@@ -18,12 +18,16 @@ export const STEPS = ['intro', ...SECTIONS, 'email', 'success'];
 const HERO_FIELDS = ['title', 'subtitle', 'startLabel'];
 
 const STEP_FIELDS = [
-  ...SECTIONS.flatMap((section) => [`${section}Title`, `${section}Description`]),
+  // A title each. The question on screen is its own heading, so sections carry
+  // no blurb above it.
+  ...SECTIONS.map((section) => `${section}Title`),
   'emailTitle',
   'emailDescription',
-  'consentLabel',
+  'emailRequiredDescription',
   'emailLabel',
   'emailPlaceholder',
+  'otherLabel',
+  'otherPlaceholder',
   'nextLabel',
   'backLabel',
   'submitLabel',
@@ -74,15 +78,24 @@ function question(value, path) {
   }
 
   const seen = new Set();
+  let others = 0;
   value.options.forEach((option, index) => {
     const optionPath = `${path}.options[${index}]`;
     object(option, optionPath);
     text(option.value, `${optionPath}.value`);
     text(option.label, `${optionPath}.label`);
+    // `other` opens a free-text field; `noCommitment` marks the answer that
+    // leaves the closing email step optional.
+    flag(option.other, `${optionPath}.other`);
+    flag(option.noCommitment, `${optionPath}.noCommitment`);
+    if (option.other) others += 1;
     // A repeated value would make two buttons select as one.
     if (seen.has(option.value)) fail(`${optionPath}.value`, `repeats "${option.value}"`);
     seen.add(option.value);
   });
+
+  // One free-text field per question: a second would have nowhere to be stored.
+  if (others > 1) fail(`${path}.options`, 'has more than one `other` option');
 }
 
 /**

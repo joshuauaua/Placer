@@ -4,7 +4,8 @@
  * different JSON file rather than a different component.
  */
 
-import { Icon } from '../Icon';
+import markIntro from '../../assets/street-bench.png';
+import markSuccess from '../../assets/street-planter-cube.png';
 import { Btn } from '../UI';
 import { SurveyQuestion } from './SurveyQuestion';
 import { useSurveyForm } from './useSurveyForm';
@@ -25,13 +26,39 @@ const inputStyle = (t) => ({
 // The alert red used across the app.
 const DANGER = '#D6452F';
 
+/* The drawings that open and close the survey. They are the only pictures in the
+ * flow; the glyphs on Back, Next and the selected options are controls, not
+ * illustration. Line art on a light ground, so they are shown as they are rather
+ * than reversed out of an accent badge, and sized to be legible — the detail in
+ * them is lost at icon size. The headings beside them carry the meaning, so they
+ * are decoration as far as a screen reader is concerned. */
+const MARK_HEIGHT = 132;
+
+function Mark({ t, src }) {
+  return (
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      style={{
+        height: MARK_HEIGHT,
+        width: 'auto',
+        display: 'block',
+        margin: '0 auto 24px',
+        // Black ink on a dark page is no drawing at all: reverse it instead.
+        filter: t.mapMode === 'dark' ? 'invert(1)' : undefined,
+      }}
+    />
+  );
+}
+
 /** A centred card on the gradient, shared by the intro and thank-you screens. */
-function FullScreen({ t, children }) {
+function FullScreen({ t, height, children }) {
   return (
     <div
       style={{
         width: '100%',
-        height: '100vh',
+        height,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -49,28 +76,26 @@ function FullScreen({ t, children }) {
  * @param submit   persists the finished response; rejects if it could not
  * @param source   tag recorded with the response, e.g. `community_survey`
  * @param idPrefix namespaces the email field's ids, so two surveys never collide
+ * @param height   what the survey fills; '100vh' as a route, '100%' in a dialog
+ * @param onClose  replaces the default "leave the survey" behaviour, which is a
+ *                 navigation to / and no use to a caller already showing /
  */
-export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) {
+export function SurveyForm({
+  t,
+  content,
+  submit,
+  source,
+  idPrefix = 'survey',
+  height = '100vh',
+  onClose,
+}) {
   const survey = useSurveyForm({ content, submit, source });
   const { step } = survey;
 
   if (step === 'intro') {
     return (
-      <FullScreen t={t}>
-        <div
-          style={{
-            width: 80,
-            height: 80,
-            background: t.accent,
-            borderRadius: 16,
-            margin: '0 auto 20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Icon name="comment" size={44} stroke={2.2} style={{ color: t.accentInk }} />
-        </div>
+      <FullScreen t={t} height={height}>
+        <Mark t={t} src={markIntro} />
 
         <h1
           className="placer-disp"
@@ -98,81 +123,63 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
 
   if (step === 'success') {
     return (
-      <FullScreen t={t}>
-        <div
+      // No card: the thank-you screen is the whole surface it is shown on, the
+      // same as the intro. Inside the dialog a bordered card would read as a
+      // second panel within the panel.
+      <FullScreen t={t} height={height}>
+        <Mark t={t} src={markSuccess} />
+
+        <h1
+          className="placer-disp"
           style={{
-            padding: 60,
-            background: t.surface,
-            borderRadius: 16,
-            border: `1px solid ${t.line}`,
-            boxShadow: t.shadow,
+            fontSize: 36,
+            fontWeight: 900,
+            color: t.ink,
+            letterSpacing: '-0.02em',
+            marginBottom: 16,
           }}
         >
-          <div
-            style={{
-              width: 80,
-              height: 80,
-              background: t.accent,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 24px',
-            }}
-          >
-            <Icon name="check" size={44} stroke={3} style={{ color: t.accentInk }} />
-          </div>
+          {content.success.title}
+        </h1>
 
-          <h1
-            className="placer-disp"
-            style={{
-              fontSize: 36,
-              fontWeight: 900,
-              color: t.ink,
-              letterSpacing: '-0.02em',
-              marginBottom: 16,
-            }}
-          >
-            {content.success.title}
-          </h1>
+        <p
+          style={{
+            fontSize: 18,
+            color: t.inkDim,
+            lineHeight: 1.6,
+            marginBottom: 32,
+            whiteSpace: 'pre-line',
+          }}
+        >
+          {content.success.body}
+        </p>
 
-          <p
-            style={{
-              fontSize: 18,
-              color: t.inkDim,
-              lineHeight: 1.6,
-              marginBottom: 32,
-              whiteSpace: 'pre-line',
-            }}
-          >
-            {content.success.body}
-          </p>
-
-          <Btn t={t} variant="accent" size="lg" onClick={survey.reset}>
-            {content.success.closeLabel}
-          </Btn>
-        </div>
+        <Btn t={t} variant="accent" size="lg" onClick={onClose ?? survey.reset}>
+          {content.success.closeLabel}
+        </Btn>
       </FullScreen>
     );
   }
 
   const onEmailStep = step === 'email';
   const heading = onEmailStep ? content.steps.emailTitle : content.steps[`${step}Title`];
+  // Only the closing step explains itself; a question is its own heading.
   const description = onEmailStep
-    ? content.steps.emailDescription
-    : content.steps[`${step}Description`];
+    ? (survey.emailRequired
+        ? content.steps.emailRequiredDescription
+        : content.steps.emailDescription)
+    : null;
   const counterText = onEmailStep
     ? 'Final step'
     : `${survey.currentQuestionNumber} / ${survey.totalQuestions}`;
 
   const emailId = `${idPrefix}-email`;
-  const consentId = `${idPrefix}-consent`;
 
   return (
     <div
       style={{
         width: '100%',
-        height: '100vh',
+        height,
         display: 'flex',
         flexDirection: 'column',
         background: t.page,
@@ -249,74 +256,48 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
         style={{ flex: 1, overflowY: 'auto', padding: '48px 32px' }}
       >
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 32 }}>
-            {description}
-          </p>
+          {description && (
+            <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 32 }}>
+              {description}
+            </p>
+          )}
 
           {onEmailStep ? (
             <div>
-              {/* The opt-in gates the field: without it there is nothing to
-                  validate and Submit stays available. */}
-              <label
-                htmlFor={consentId}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '16px 20px',
-                  borderRadius: 12,
-                  border: `2px solid ${survey.wantsReport ? t.accent : t.line}`,
-                  background: survey.wantsReport
-                    ? t.accent + (t.mapMode === 'dark' ? '14' : '22')
-                    : t.surface,
-                  cursor: 'pointer',
-                }}
-              >
+              <div>
+                <label
+                  htmlFor={emailId}
+                  style={{
+                    display: 'block',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: t.ink,
+                    marginBottom: 8,
+                  }}
+                >
+                  {content.steps.emailLabel}
+                  {survey.emailRequired && <span aria-hidden="true"> *</span>}
+                </label>
                 <input
-                  id={consentId}
-                  type="checkbox"
-                  checked={survey.wantsReport}
-                  onChange={(e) => survey.setWantsReport(e.target.checked)}
-                  style={{ width: 20, height: 20, accentColor: t.accent, cursor: 'pointer', flex: '0 0 auto' }}
+                  id={emailId}
+                  type="email"
+                  autoComplete="email"
+                  required={survey.emailRequired}
+                  aria-required={survey.emailRequired}
+                  value={survey.email}
+                  placeholder={content.steps.emailPlaceholder}
+                  onChange={(e) => survey.setEmail(e.target.value)}
+                  // There is no <form> around this — the shared Btn renders a
+                  // submit button, which would make Back and Next submit too.
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      survey.onSubmit();
+                    }
+                  }}
+                  style={inputStyle(t)}
                 />
-                <span style={{ fontSize: 16, fontWeight: survey.wantsReport ? 600 : 500, color: t.ink }}>
-                  {content.steps.consentLabel}
-                </span>
-              </label>
-
-              {survey.wantsReport && (
-                <div style={{ marginTop: 24 }}>
-                  <label
-                    htmlFor={emailId}
-                    style={{
-                      display: 'block',
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: t.ink,
-                      marginBottom: 8,
-                    }}
-                  >
-                    {content.steps.emailLabel}
-                  </label>
-                  <input
-                    id={emailId}
-                    type="email"
-                    autoComplete="email"
-                    value={survey.email}
-                    placeholder={content.steps.emailPlaceholder}
-                    onChange={(e) => survey.setEmail(e.target.value)}
-                    // There is no <form> around this — the shared Btn renders a
-                    // submit button, which would make Back and Next submit too.
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        survey.onSubmit();
-                      }
-                    }}
-                    style={inputStyle(t)}
-                  />
-                </div>
-              )}
+              </div>
 
               {/* A failed save, not a rejected address — so it sits outside the
                   field group and shows whether or not the field is here. */}
@@ -346,6 +327,11 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
                 question={survey.currentQuestion}
                 value={survey.currentAnswer}
                 onToggle={survey.toggleOption}
+                otherPicked={survey.currentOtherPicked}
+                otherText={survey.currentOtherText}
+                onOtherTextChange={survey.setCurrentOtherText}
+                otherLabel={content.steps.otherLabel}
+                otherPlaceholder={content.steps.otherPlaceholder}
               />
             )
           )}

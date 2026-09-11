@@ -19,6 +19,13 @@ const emptyAnswers = () => Object.fromEntries(SECTIONS.map((section) => [section
 
 const isSectionStep = (step) => SECTIONS.includes(step);
 
+/** The option a question marks as free text, if it has one. */
+const otherOption = (question) => question?.options.find((option) => option.other);
+
+/** Whether `value` holds `option`, for both single and multiple questions. */
+const holds = (value, option) =>
+  Array.isArray(value) ? value.includes(option.value) : value === option.value;
+
 function isAnswered(question, value) {
   if (question.multiple) return Array.isArray(value) && value.length > 0;
   return value !== undefined && value !== '';
@@ -34,9 +41,8 @@ export function useSurveyForm({ content, submit, source }) {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState(emptyAnswers);
   const [email, setEmail] = useState('');
-  // The report is an opt-in. Leaving it off is a complete submission with no
-  // address attached, so the survey never withholds Submit over an empty field.
-  const [wantsReport, setWantsReport] = useState(false);
+  // What was typed against a question's `other` option, keyed by question.
+  const [otherText, setOtherText] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
 
@@ -54,9 +60,21 @@ export function useSurveyForm({ content, submit, source }) {
   const currentQuestions = isSectionStep(step) ? content[step] : [];
   const currentQuestion = currentQuestions[questionIndex];
   const currentAnswer = currentQuestion ? answers[step][currentQuestion.key] : undefined;
+
+  // Picking the free-text option without saying what it is answers nothing, so
+  // it holds Next the same way an unanswered question does.
+  const currentOther = otherOption(currentQuestion);
+  const currentOtherText = currentQuestion ? (otherText[currentQuestion.key] ?? '') : '';
+  const currentOtherPicked = Boolean(currentOther) && holds(currentAnswer, currentOther);
   const currentQuestionValid = currentQuestion
-    ? isAnswered(currentQuestion, currentAnswer)
+    ? isAnswered(currentQuestion, currentAnswer) &&
+      (!currentOtherPicked || currentOtherText.trim() !== '')
     : true;
+
+  const setCurrentOtherText = (typed) => {
+    if (!currentQuestion) return;
+    setOtherText((current) => ({ ...current, [currentQuestion.key]: typed }));
+  };
 
   const sectionLengths = SECTIONS.map((section) => content[section].length);
   const totalQuestions = sectionLengths.reduce((sum, n) => sum + n, 0);
@@ -81,8 +99,22 @@ export function useSurveyForm({ content, submit, source }) {
 
   const trimmedEmail = email.trim();
   const emailValid = EMAIL_PATTERN.test(trimmedEmail);
-  // An address is only required by the visitor asking for the report.
-  const canSubmit = !wantsReport || emailValid;
+
+  // Only questions that offer a `noCommitment` answer bear on this. Within one,
+  // anything picked that is *not* that answer is a request to come back to
+  // someone, which we cannot honour without an address — so it makes the closing
+  // step required. Picking the no-commitment answer as well does not undo that:
+  // on a multiple-choice question the two can both be ticked. A survey that
+  // flags nothing leaves the step optional throughout.
+  const askedForSomething = SECTIONS.some((section) =>
+    content[section].some((question) => {
+      if (!question.options.some((option) => option.noCommitment)) return false;
+      const value = answers[section][question.key];
+      return question.options.some((option) => !option.noCommitment && holds(value, option));
+    }),
+  );
+  const emailRequired = askedForSomething;
+  const canSubmit = emailRequired ? emailValid : trimmedEmail === '' || emailValid;
 
   /**
    * Records the current question's answer. Single-choice questions replace it;
@@ -153,6 +185,23 @@ export function useSurveyForm({ content, submit, source }) {
     scrollToTop();
   };
 
+  /**
+   * The free text for every `other` option that is actually selected, keyed by
+   * question. Text typed and then deselected is left behind rather than sent.
+   */
+  const pickedOtherText = () => {
+    const picked = {};
+    SECTIONS.forEach((section) => {
+      content[section].forEach((question) => {
+        const option = otherOption(question);
+        if (!option || !holds(answers[section][question.key], option)) return;
+        const typed = (otherText[question.key] ?? '').trim();
+        if (typed !== '') picked[question.key] = typed;
+      });
+    });
+    return picked;
+  };
+
   const onSubmit = async () => {
     if (!canSubmit || isSubmitting) return;
 
@@ -161,7 +210,14 @@ export function useSurveyForm({ content, submit, source }) {
 
     try {
       // Nothing typed before the box was cleared is kept: no opt-in, no address.
-      await submit({ ...answers, email: wantsReport ? trimmedEmail : null, source });
+      await submit({
+        ...answers,
+        email: trimmedEmail === '' ? null : trimmedEmail,
+        // Only the free text for options actually picked, so a typed-then-
+        // deselected answer is not carried along with the rest.
+        otherText: pickedOtherText(),
+        source,
+      });
       posthog.capture('survey_submitted', {
         source,
         questions_answered: answeredCount,
@@ -187,14 +243,16 @@ export function useSurveyForm({ content, submit, source }) {
     currentQuestion,
     currentAnswer,
     currentQuestionValid,
+    currentOtherPicked,
+    currentOtherText,
+    setCurrentOtherText,
     toggleOption,
     currentQuestionNumber,
     totalQuestions,
     progressValue,
     email,
     setEmail,
-    wantsReport,
-    setWantsReport,
+    emailRequired,
     canSubmit,
     isSubmitting,
     errorMessage,

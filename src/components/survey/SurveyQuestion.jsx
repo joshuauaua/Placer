@@ -2,13 +2,40 @@
 
 import { Icon } from '../Icon';
 
+// Matches the inputs in SurveyForm, and on Describe and the admin dashboard.
+const inputStyle = (t) => ({
+  width: '100%',
+  padding: '12px 16px',
+  fontSize: 15,
+  border: `1.5px solid ${t.line}`,
+  borderRadius: 8,
+  background: t.chrome,
+  color: t.ink,
+  fontFamily: "'Archivo', sans-serif",
+  outline: 'none',
+});
+
 /**
  * `scale` questions lay their options out in a wrapping row, which suits a short
  * rating strip; everything else stacks them full width. `multiple` questions
  * take a square indicator and toggle, single-choice ones a round one and replace.
+ *
+ * An option flagged `other` opens a text field below the list once it is picked:
+ * the option on its own says nothing, so the hook holds Next until it is filled.
  */
-export function SurveyQuestion({ t, question, value, onToggle }) {
+export function SurveyQuestion({
+  t,
+  question,
+  value,
+  onToggle,
+  otherPicked,
+  otherText = '',
+  onOtherTextChange,
+  otherLabel,
+  otherPlaceholder,
+}) {
   const labelId = `survey-question-${question.key}`;
+  const otherId = `${labelId}-other`;
   const { multiple, scale } = question;
 
   const isSelected = (optionValue) =>
@@ -109,6 +136,25 @@ export function SurveyQuestion({ t, question, value, onToggle }) {
           );
         })}
       </div>
+
+      {otherPicked && (
+        <div style={{ marginTop: 16 }}>
+          <label
+            htmlFor={otherId}
+            style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}
+          >
+            {otherLabel}
+          </label>
+          <input
+            id={otherId}
+            type="text"
+            value={otherText}
+            placeholder={otherPlaceholder}
+            onChange={(event) => onOtherTextChange(event.target.value)}
+            style={inputStyle(t)}
+          />
+        </div>
+      )}
     </div>
   );
 }

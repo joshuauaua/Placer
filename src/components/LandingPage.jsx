@@ -4,19 +4,51 @@
  * funds it. Shown as the home view only, with the nav bar hidden (see App.jsx).
  */
 
+import frameLeft from '../assets/frame-street-left.png';
+import frameRight from '../assets/frame-street-right.png';
 import logoSwedishInstitute from '../assets/logo-swedish-institute.png';
+import { HaveYourSay } from './HaveYourSay';
 import { ExternalLink } from './LegalLayout';
 
 // Trimmed to its artwork and stored at 160px tall, so a height here is enough
 // to size it and the width stays in proportion.
 const FUNDER_HEIGHT = 52;
 
+/* The two halves of the street-furniture border. Decorative: they carry no
+ * meaning the copy does not, so they are hidden from assistive tech and cannot
+ * be clicked. Layout and clipping live in index.css, which needs a media query
+ * to drop them on a narrow viewport. */
+function StreetFrame({ side, src }) {
+  return (
+    <div className={`placer-landing-frame placer-landing-frame-${side}`} aria-hidden="true">
+      <img src={src} alt="" />
+    </div>
+  );
+}
+
 export function LandingPage({ t }) {
   return (
     // margin:auto on the child rather than justify-content, so content taller
     // than the viewport scrolls from the top instead of being clipped there.
-    <div style={{ width: '100%', height: '100%', overflowY: 'auto', display: 'flex', background: t.page }}>
-      <div style={{ margin: 'auto', maxWidth: 620, padding: '64px 24px', textAlign: 'center' }}>
+    <div style={{
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      overflowY: 'auto',
+      display: 'flex',
+      background: t.page,
+    }}>
+      <StreetFrame side="left" src={frameLeft} />
+      <StreetFrame side="right" src={frameRight} />
+
+      {/* position:relative to lift the copy above the border behind it. */}
+      <div style={{
+        position: 'relative',
+        margin: 'auto',
+        maxWidth: 620,
+        padding: '64px 24px',
+        textAlign: 'center',
+      }}>
         <h1 className="placer-disp" style={{
           fontSize: 64,
           fontWeight: 900,
@@ -62,7 +94,15 @@ export function LandingPage({ t }) {
           alt="Funded by Swedish Institute"
           style={{ height: FUNDER_HEIGHT, width: 'auto' }}
         />
+
+        {/* On a phone the trigger is a bar across the foot of the screen, so the
+          * column ends with the room it takes up and nothing sits under it.
+          * Empty on a wide screen, where the trigger is a circle off to the side. */}
+        <div className="placer-feedback-spacer" aria-hidden="true" />
       </div>
+
+      {/* Fixed to the viewport, so it sits outside the scrolling column. */}
+      <HaveYourSay t={t} />
     </div>
   );
 }

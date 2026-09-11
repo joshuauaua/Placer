@@ -45,6 +45,163 @@ body {
   overflow: hidden;
 }
 
+/* PLACER — the landing page's isometric border.
+ *
+ * Two complementary frames: one carries the street furniture down the left, the
+ * other down the right, and each shares half of the top and bottom rows. Each is
+ * clipped to its own outer edge so the pair reads as a single border around the
+ * copy rather than two separate drawings.
+ *
+ * Decoration only. Below the breakpoint there is no room for it beside the text,
+ * so it goes rather than crowding the words.
+ */
+.placer-landing-frame {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* The copy needs 668px clear (a 620px column plus its padding), so the pair
+     may never take more than the viewport minus that: 22% capped at 300px keeps
+     them clear from the breakpoint upwards. */
+  width: 22%;
+  max-width: 300px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.placer-landing-frame img {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 100%;
+  width: auto;
+  /* Wider than its container on purpose — the clip is what makes it a border. */
+  max-width: none;
+}
+
+.placer-landing-frame-left {
+  left: 0;
+}
+
+.placer-landing-frame-left img {
+  left: 0;
+}
+
+.placer-landing-frame-right {
+  right: 0;
+}
+
+.placer-landing-frame-right img {
+  right: 0;
+}
+
+@media (max-width: 1199px) {
+  .placer-landing-frame {
+    display: none;
+  }
+}
+
+/* PLACER — the landing page's feedback trigger.
+ *
+ * Two shapes. On a wide screen it is a circle parked off the bottom-right corner
+ * with the label wrapped inside it. On a phone a circle that size would sit on
+ * top of the page, so it becomes a bar across the foot of the screen instead,
+ * and .placer-feedback-spacer reserves the room it occupies so it covers nothing.
+ *
+ * The geometry lives here rather than inline because an inline style cannot be
+ * overridden by a media query. Only the colours are set in the component.
+ *
+ * 108px = the 44px app footer (see App.jsx) plus a 64px gap matching the one to
+ * the right edge; the consent inset lifts it further while the cookie banner is
+ * up (see CookieBanner).
+ */
+.placer-feedback-trigger {
+  position: fixed;
+  right: 64px;
+  bottom: calc(108px + var(--placer-consent-inset, 0px));
+  z-index: 150;
+  width: 156px;
+  height: 156px;
+  border: none;
+  border-radius: 50%;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: 'Archivo', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-align: center;
+  transition: bottom 0.2s ease, transform 0.2s ease;
+}
+
+.placer-feedback-trigger:hover,
+.placer-feedback-trigger:focus-visible {
+  transform: scale(1.06);
+}
+
+/* The turning part. A solid disc rotating is indistinguishable from a still one,
+   so the turn is carried by a dashed ring: its dashes are what you see move.
+   Reuses the placer-spin keyframes below. */
+.placer-feedback-ring {
+  position: absolute;
+  inset: 11px;
+  border-radius: 50%;
+  border-style: dashed;
+  border-width: 2px;
+  opacity: 0.5;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  animation: placer-spin 28s linear infinite;
+}
+
+.placer-feedback-label {
+  position: relative;
+}
+
+/* Room set aside at the foot of the page for the mobile bar. Nothing on desktop,
+   where the circle sits clear of the copy on its own. */
+.placer-feedback-spacer {
+  height: 0;
+}
+
+@media (max-width: 640px) {
+  /* A bar across the foot of the screen: full width, one line, and short enough
+     to leave the page readable above it. 60px = the footer plus a 16px gap. */
+  .placer-feedback-trigger {
+    left: 16px;
+    right: 16px;
+    bottom: calc(60px + var(--placer-consent-inset, 0px));
+    width: auto;
+    height: 56px;
+    padding: 0 20px;
+    border-radius: 999px;
+  }
+
+  /* The ring would crowd a single line of text at this size. */
+  .placer-feedback-ring {
+    display: none;
+  }
+
+  .placer-feedback-spacer {
+    height: 88px;
+  }
+}
+
+/* A perpetual animation is exactly what this setting is for. */
+@media (prefers-reduced-motion: reduce) {
+  .placer-feedback-ring {
+    animation: none;
+  }
+
+  .placer-feedback-trigger:hover,
+  .placer-feedback-trigger:focus-visible {
+    transform: none;
+  }
+}
+
 @keyframes placer-spin {
   to {
     transform: rotate(360deg);
