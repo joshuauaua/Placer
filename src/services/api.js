@@ -6,6 +6,8 @@
  * in a real backend without changing UI components.
  */
 
+import { getSupabase, SURVEY_TABLE } from './supabase';
+
 const STORAGE_KEYS = {
   IMAGINATIONS: 'placemaking_imaginations',
   ASSETS_LIBRARY: 'placemaking_assets',
@@ -210,10 +212,40 @@ export const fetchSurveyResponses = async () => {
 };
 
 /**
+ * Shapes a finished survey for the `survey_responses` table: the per-section
+ * answers go into one jsonb column, so rewording or reordering the survey needs
+ * no migration, and the fields worth querying directly get their own columns.
+ */
+const asSurveyRow = ({ email, otherText, source, ...answers }) => ({
+  source,
+  // An empty address is no address; the column is nullable.
+  email: email || null,
+  answers,
+  other_text: otherText ?? {}
+});
+
+/**
  * Save a completed survey response. Throws if it could not be stored, so the
  * survey can tell the visitor rather than showing a thank-you for nothing.
+ *
+ * Goes to Supabase when a project is configured, and otherwise stays in this
+ * browser — which is what makes the survey work with no backend at all, and what
+ * keeps the tests off the network.
  */
 export const saveSurveyResponse = async (response) => {
+  const supabase = getSupabase();
+
+  if (supabase) {
+    const row = asSurveyRow(response);
+    // Deliberately no .select(): the anon role may insert but not read, so
+    // asking for the row back would fail the insert it just made.
+    const { error } = await supabase.from(SURVEY_TABLE).insert(row);
+    if (error) {
+      throw new Error(`Could not save the survey response: ${error.message}`);
+    }
+    return { ...row, submittedAt: new Date().toISOString() };
+  }
+
   await simulateDelay();
 
   const responses = await fetchSurveyResponses();

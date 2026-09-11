@@ -8,6 +8,11 @@ import { beforeEach, afterEach, vi } from 'vite-plus/test'
 beforeEach(() => {
   vi.stubEnv('VITE_POSTHOG_KEY', '')
   vi.stubEnv('VITE_POSTHOG_HOST', '')
+  // Same reason, and it matters more here: with these set, saveSurveyResponse
+  // would insert every test submission into the real survey_responses table.
+  // Unset, it falls back to localStorage. Tests about Supabase stub them back on.
+  vi.stubEnv('VITE_SUPABASE_URL', '')
+  vi.stubEnv('VITE_SUPABASE_ANON_KEY', '')
 })
 
 afterEach(() => {
