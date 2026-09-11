@@ -39,7 +39,7 @@ describe('App', () => {
     expect(screen.getByText(/bridging community vision with urban design/i)).toBeInTheDocument();
     expect(screen.getByText(/funded by the Swedish Institute/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'STPLN' })).toHaveAttribute('href', 'https://stpln.se/');
-    expect(screen.getByRole('link', { name: 'Aks Ankara' })).toHaveAttribute('href', 'https://ankaraaks.com/');
+    expect(screen.getByRole('link', { name: 'Ankara Aks' })).toHaveAttribute('href', 'https://ankaraaks.com/');
     expect(screen.getByRole('img', { name: 'Funded by Swedish Institute' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });

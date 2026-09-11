@@ -52,7 +52,7 @@ export function LandingPage({ t }) {
           marginBottom: 48
         }}>
           PLACER is developed by <ExternalLink t={t} href="https://stpln.se/">STPLN</ExternalLink>{' '}
-          and <ExternalLink t={t} href="https://ankaraaks.com/">Aks Ankara</ExternalLink>, funded
+          and <ExternalLink t={t} href="https://ankaraaks.com/">Ankara Aks</ExternalLink>, funded
           by the Swedish Institute.
         </p>
 
