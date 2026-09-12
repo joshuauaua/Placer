@@ -3,7 +3,13 @@
 import { useState } from 'react';
 import { LegalPage, Section, P, Bullets, Callout, Table, ExternalLink, PageLink } from './LegalLayout';
 import { Btn } from './UI';
-import { OPERATOR, GOOGLE_PRIVACY_URL, POSTHOG_PRIVACY_URL, EDPB_AUTHORITIES_URL } from '../legal';
+import {
+  OPERATOR,
+  GOOGLE_PRIVACY_URL,
+  POSTHOG_PRIVACY_URL,
+  SUPABASE_PRIVACY_URL,
+  EDPB_AUTHORITIES_URL,
+} from '../legal';
 import { exportAllData, eraseAllData } from '../services/api';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
 import posthog from 'posthog-js';
@@ -44,7 +50,11 @@ function DataControls({ t }) {
 
   const handleErase = async () => {
     if (!confirmErase) {
-      setStatus('This permanently deletes every idea saved in this browser. Press Erase again to confirm.');
+      setStatus(
+        'This permanently deletes every idea saved in this browser. It does not reach survey '
+        + 'answers you have already submitted, which are held in our database — email us to have '
+        + 'those removed. Press Erase again to confirm.'
+      );
       setConfirmErase(true);
       return;
     }
@@ -52,7 +62,10 @@ function DataControls({ t }) {
     try {
       await eraseAllData();
       posthog.capture('data_erased');
-      setStatus('Everything PLACER stored in this browser has been deleted.');
+      setStatus(
+        'Everything PLACER stored in this browser has been deleted. Survey answers already '
+        + 'submitted are unaffected; email us to have those removed too.'
+      );
     } catch {
       setStatus('The data could not be erased. Try clearing site data in your browser settings.');
     } finally {
@@ -74,8 +87,10 @@ function DataControls({ t }) {
         Exercise your rights on this device
       </div>
       <P t={t} style={{ fontSize: 15, marginBottom: 20 }}>
-        Because PLACER keeps your work in your own browser rather than on a server, you can act
-        on access, portability and erasure yourself, immediately — no request needed.
+        PLACER keeps the ideas you make in your own browser, so access, portability and erasure of
+        those you can act on yourself, immediately — no request needed. Survey answers you have
+        already submitted are held in our database instead, and are not covered by these two
+        buttons; the section below says how to reach them.
       </P>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <Btn t={t} variant="primary" icon="share" onClick={handleExport} disabled={busy === 'export'}>
@@ -153,9 +168,10 @@ export function GdprPage({ t, onNavigate }) {
     >
       <Callout t={t} icon="check" title="Where your data actually sits">
         The ideas you make stay with you: assets, comments and upvotes are written to your
-        browser&rsquo;s local storage, not to a PLACER server, so most of what follows is something
-        you can do yourself in a couple of clicks rather than a request you have to send us. The
-        one exception is usage analytics, which go to PostHog &mdash; and only if you accept them.
+        browser&rsquo;s local storage, not to a PLACER server, so those you can act on yourself in a
+        couple of clicks rather than by sending us a request. Two things do leave your browser:
+        the answers you submit in the survey, which are stored in our database, and usage
+        analytics, which go to PostHog &mdash; and only if you accept them.
       </Callout>
 
       <Section t={t} title="Data controller">
@@ -178,10 +194,22 @@ export function GdprPage({ t, onNavigate }) {
               'Until you delete it or clear site data',
             ],
             [
-              'Survey answers',
-              'Understanding what communities want from public space',
-              'Consent (Art. 6(1)(a))',
-              'Held in the page only; discarded on close or reload',
+              'Survey answers — the options you choose, and anything you type into a free-text field',
+              'Understanding how community engagement works today, and deciding what to build next',
+              'Consent (Art. 6(1)(a)) — you choose to submit, and can stop at any point before you do',
+              'Kept while this research runs. Answers submitted without an email address carry no identifier and are analysed in aggregate',
+            ],
+            [
+              'Your email address, if you choose to give one on the last step of the survey',
+              'Replying to you about the closed beta, and about anything you offered to help with',
+              'Consent (Art. 6(1)(a)) — optional, and only asked for when you have said you want to be involved further',
+              'Until you ask us to remove it, or the closed beta programme ends',
+            ],
+            [
+              'Sandbox room contributions — what you allocate in a shared Sandbox experiment, and the name your browser is set to display, if any',
+              'Letting a roomful of people work through the same experiment together and see the result combined',
+              'Consent (Art. 6(1)(a)) — you choose to join a room, and only what you allocate is sent',
+              'Two hours from the room being opened, or sooner if the facilitator closes it. After that it cannot be reached at all, and it is deleted within a day',
             ],
             [
               'Usage analytics sent to PostHog: the features you use, the events PLACER emits (for example posting an imagination), a session recording of your visit, error reports, and the device, browser and IP-derived approximate location behind them',
@@ -200,8 +228,13 @@ export function GdprPage({ t, onNavigate }) {
         <P t={t}>
           PLACER does not process special category data and makes no automated decisions about you
           within the meaning of Article 22. Analytics are used in aggregate: PostHog gives your
-          browser an anonymous identifier so that repeat visits can be counted, but PLACER never
-          links it to a name, an email address or an account, because it holds none.
+          browser an anonymous identifier so that repeat visits can be counted, and PLACER never
+          joins that identifier to a survey answer or to an email address.
+        </P>
+        <P t={t}>
+          One thing worth knowing before you type: the survey&rsquo;s free-text fields are stored as
+          you write them, so please leave out names, addresses and anything else you would not want
+          kept. Everything else in the survey is a fixed choice from a list.
         </P>
       </Section>
 
@@ -221,9 +254,12 @@ export function GdprPage({ t, onNavigate }) {
           to extend that by up to two further months for a complex request. There is no charge.
         </P>
         <P t={t}>
-          One practical limit worth stating plainly: since PLACER holds no account or identifier
-          for you, we usually have no way to look up &ldquo;your&rdquo; data on our side — which
-          is also why we cannot restore anything you erase.
+          Two practical limits worth stating plainly. If you gave us your email address in the
+          survey, that is what we look you up by, so write from that address and we can find,
+          send or delete what is held against it. If you submitted the survey without an address,
+          the answers carry nothing that identifies you and we genuinely cannot pick them out of
+          the others — which is the point of collecting them that way, but it does mean there is
+          nothing for us to act on. Nothing you erase in your browser can be restored either.
         </P>
       </Section>
 
@@ -239,9 +275,16 @@ export function GdprPage({ t, onNavigate }) {
           the Standard Contractual Clauses in its data processing agreement.
         </P>
         <P t={t}>
+          Survey answers are stored in a Postgres database hosted by Supabase in the EU, acting as
+          our processor. Supabase Inc. is a US company, so support access from outside the EEA is
+          likewise covered by the Standard Contractual Clauses in its data processing agreement.
+        </P>
+        <P t={t}>
           <ExternalLink t={t} href={GOOGLE_PRIVACY_URL}>Google&rsquo;s privacy policy</ExternalLink>
           {' · '}
           <ExternalLink t={t} href={POSTHOG_PRIVACY_URL}>PostHog&rsquo;s privacy policy</ExternalLink>
+          {' · '}
+          <ExternalLink t={t} href={SUPABASE_PRIVACY_URL}>Supabase&rsquo;s privacy policy</ExternalLink>
         </P>
       </Section>
 
@@ -256,14 +299,20 @@ export function GdprPage({ t, onNavigate }) {
         ]} />
         <P t={t}>
           Google may also set cookies of its own when serving map and Street View imagery.
+          Submitting the survey sets nothing: there is no sign-in, so no session is kept in your
+          browser afterwards. Joining a Sandbox room does store two random identifiers in local
+          storage — one so that editing your answer revises it rather than adding a second, one so
+          that a room you opened is a room you can close. Neither is tied to you, both are covered
+          by the export and erasure controls above, and neither is a sign-in.
         </P>
       </Section>
 
       <Section t={t} title="Data protection by design">
         <Bullets t={t} items={[
-          'Data minimisation — no accounts, no email addresses, no passwords. The only persistent identifier is the anonymous one PostHog assigns, and only once you have accepted analytics.',
+          'Data minimisation — no accounts and no passwords. The survey asks for an email address only when you have said you want to be involved beyond it, and works perfectly well without one.',
           'Consent before capture — the analytics SDK is not even loaded until consent exists, so a visitor who rejects the banner, or never answers it, is never contacted or measured.',
-          'Storage limitation — your ideas are never retained centrally, so there is no store of them to breach.',
+          'Storage limitation — the ideas you make are never retained centrally, so there is no store of them to breach. What is stored centrally is the survey, and only what the survey asked you.',
+          'Write-only submission — the key in your browser can add a survey response and cannot read, change or delete any response, including its own. Reading them needs a separate credential that never leaves our side.',
           'Local processing — Street View frames are analysed in your browser, not uploaded.',
           'Transparency — every third party that receives data is named on this page.',
         ]} />

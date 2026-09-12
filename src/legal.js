@@ -16,6 +16,12 @@ export const GOOGLE_PRIVACY_URL = 'https://policies.google.com/privacy';
 // Who processes the usage analytics, once the visitor has consented to them.
 export const POSTHOG_PRIVACY_URL = 'https://posthog.com/privacy';
 
+// Where survey answers are stored, once a Supabase project is configured.
+// NOTE: the transfers section of the GDPR page states the project is hosted in
+// the EU. Confirm that matches your project's region before publishing — a
+// US-hosted project needs the wording there changed.
+export const SUPABASE_PRIVACY_URL = 'https://supabase.com/privacy';
+
 // Directory of EU/EEA supervisory authorities, for complaints.
 export const EDPB_AUTHORITIES_URL =
   'https://www.edpb.europa.eu/about-edpb/about-edpb/members_en';

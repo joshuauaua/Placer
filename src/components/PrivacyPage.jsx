@@ -1,7 +1,7 @@
 /* PLACER — Privacy Policy */
 
 import { LegalPage, Section, P, Bullets, Callout, ExternalLink, PageLink } from './LegalLayout';
-import { OPERATOR, GOOGLE_PRIVACY_URL, POSTHOG_PRIVACY_URL } from '../legal';
+import { OPERATOR, GOOGLE_PRIVACY_URL, POSTHOG_PRIVACY_URL, SUPABASE_PRIVACY_URL } from '../legal';
 
 export function PrivacyPage({ t, onNavigate }) {
   return (
@@ -12,9 +12,11 @@ export function PrivacyPage({ t, onNavigate }) {
     >
       <Callout t={t} icon="check" title="The short version">
         PLACER has no user accounts. The ideas you build stay in your own browser, on the device
-        you built them on. Two things do leave your device: the map and Street View imagery
-        request PLACER makes to Google on your behalf, and &mdash; only if you accept the cookie
-        banner &mdash; usage analytics sent to PostHog. Reject it and nothing is measured.
+        you built them on. Three things do leave your device: the survey, if you choose to submit
+        it, which is stored in our database along with an email address only if you give one; the
+        map and Street View imagery request PLACER makes to Google on your behalf; and &mdash; only
+        if you accept the cookie banner &mdash; usage analytics sent to PostHog. Reject it and
+        nothing is measured.
       </Callout>
 
       <Section t={t} title="Who this policy applies to">
@@ -34,9 +36,27 @@ export function PrivacyPage({ t, onNavigate }) {
           It is not uploaded to a server.
         </P>
         <P t={t}>
-          <strong style={{ color: t.ink }}>Survey answers.</strong> If you fill in the survey,
-          your answers are held in the page while you are answering and are discarded when you
-          close or reload it. Nothing is submitted anywhere.
+          <strong style={{ color: t.ink }}>Survey answers.</strong> While you are answering, your
+          answers are held in the page; nothing is sent until you press Submit. When you do, they
+          are stored in our database so we can read them: the options you chose, anything you typed
+          into a free-text field, and which survey it was. Please keep names and other personal
+          details out of the free-text boxes, since they are stored exactly as written.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Your email address, if you give one.</strong> The last
+          step of the survey asks for an address, and only asks because you have said you would
+          like to be involved beyond the survey — testing a prototype, a short interview, or a
+          project as a case study. It is optional, it is stored alongside your answers, and it is
+          used to reply to you about that and nothing else. You can leave it blank and still submit.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Sandbox rooms, if you join one.</strong> The Sandbox
+          experiments run entirely in your browser and save nothing — unless somebody opens a room
+          and you join it with a PIN or a QR code. Then what you allocate in that experiment is
+          stored in our database so the room can show everybody&rsquo;s answers combined, along with
+          the display name your browser is set to, if you have set one. A room lasts two hours from
+          being opened, and whoever opened it can end it sooner. After that nobody can reach it,
+          and it is deleted within a day.
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Imagery you work with.</strong> Street View frames
@@ -51,7 +71,8 @@ export function PrivacyPage({ t, onNavigate }) {
           device, browser and IP-derived approximate location behind them. It is off until you
           accept: PLACER does not contact PostHog at all &mdash; no request, no cookie, no
           recording &mdash; until you do, and rejecting the banner keeps it that way. Analytics
-          never carry your name or email address, because PLACER has neither.
+          never carry your name or your email address: an address you give in the survey stays with
+          your answers and is never sent to PostHog.
         </P>
         <P t={t}>
           You can change that answer whenever you like, and see what is currently set, in the{' '}
@@ -59,13 +80,19 @@ export function PrivacyPage({ t, onNavigate }) {
           <ExternalLink t={t} href={POSTHOG_PRIVACY_URL}>Read PostHog&rsquo;s privacy policy</ExternalLink>
         </P>
         <P t={t}>
+          <strong style={{ color: t.ink }}>Who else sees the survey answers.</strong> They are
+          stored for us by Supabase, which hosts the database in the EU and processes them only on
+          our instructions.{' '}
+          <ExternalLink t={t} href={SUPABASE_PRIVACY_URL}>Read Supabase&rsquo;s privacy policy</ExternalLink>
+        </P>
+        <P t={t}>
           <strong style={{ color: t.ink }}>What PLACER does not collect.</strong>
         </P>
         <Bullets t={t} items={[
-          'No account, name, email address or password — there is nothing to sign up for.',
+          'No account and no password — there is nothing to sign up for. The survey asks for an email address only if you have said you want to be involved further, and takes no for an answer.',
           'No advertising, no ad cookies, no data sold or shared with brokers.',
           'No analytics at all unless you accept them, and none for anyone who rejects.',
-          'No server-side log of the places you look at, because there is no PLACER server.',
+          'No server-side log of the places you look at, and no upload of the ideas you build — those stay in your browser.',
         ]} />
       </Section>
 
@@ -112,16 +139,17 @@ export function PrivacyPage({ t, onNavigate }) {
       <Section t={t} title="Children">
         <P t={t}>
           PLACER is intended for general community use and is not directed at children under 13.
-          We do not knowingly collect information from them — and, as above, PLACER collects no
-          identifying information from anyone.
+          We do not knowingly collect information from them, and the only identifying information
+          PLACER ever asks for is an optional email address at the end of the survey. If you
+          believe a child has given us theirs, email us and we will delete it.
         </P>
       </Section>
 
       <Section t={t} title="Changes to this policy">
         <P t={t}>
-          If PLACER starts storing ideas on a server, adds accounts, or sends data anywhere it does
-          not already, this policy will be updated before that happens and the date at the top of
-          the page will change. Anything that would widen what we collect will be asked for, not
+          If PLACER starts storing the ideas you build on a server, adds accounts, or sends data
+          anywhere it does not already, this policy will be updated before that happens and the
+          date at the top of the page will change. Anything that would widen what we collect will be asked for, not
           assumed. Significant changes will be announced in the app.
         </P>
       </Section>
