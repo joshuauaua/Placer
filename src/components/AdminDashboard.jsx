@@ -620,7 +620,7 @@ export function AdminDashboard({ t }) {
                         borderRadius: 8,
                         background: t.chrome,
                         color: t.ink,
-                        fontFamily: "'Archivo', sans-serif",
+                        fontFamily: 'var(--placer-font)',
                         outline: 'none'
                       }}
                     />
@@ -645,7 +645,7 @@ export function AdminDashboard({ t }) {
                         borderRadius: 8,
                         background: t.chrome,
                         color: t.ink,
-                        fontFamily: "'Archivo', sans-serif",
+                        fontFamily: 'var(--placer-font)',
                         outline: 'none',
                         resize: 'vertical'
                       }}
@@ -784,7 +784,7 @@ export function AdminDashboard({ t }) {
                         borderRadius: 8,
                         background: t.chrome,
                         color: t.ink,
-                        fontFamily: "'Archivo', sans-serif",
+                        fontFamily: 'var(--placer-font)',
                         outline: 'none'
                       }}
                     />

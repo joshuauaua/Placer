@@ -56,7 +56,7 @@ export function SurveyQuestion({ t, question, value, onToggle }) {
                 alignItems: 'center',
                 justifyContent: scale ? 'center' : 'flex-start',
                 gap: 16,
-                fontFamily: "'Archivo', sans-serif",
+                fontFamily: 'var(--placer-font)',
               }}
               onMouseEnter={(e) => {
                 if (selected) return;

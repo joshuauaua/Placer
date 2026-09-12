@@ -80,7 +80,7 @@ const Asset = ({ asset, isSelected, onSelect, onChange }) => {
         y={asset.y - 8}
         text={asset.label}
         fontSize={14}
-        fontFamily="Archivo"
+        fontFamily="Helvetica"
         fill="#ffffff"
         align="center"
         width={60}

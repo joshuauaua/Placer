@@ -18,7 +18,7 @@ const inputStyle = (t) => ({
   borderRadius: 8,
   background: t.chrome,
   color: t.ink,
-  fontFamily: "'Archivo', sans-serif",
+  fontFamily: 'var(--placer-font)',
   outline: 'none',
 });
 

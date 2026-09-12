@@ -1,5 +1,20 @@
 /* PLACER — design system base */
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+/* PLACER — the site typeface.
+ *
+ * Helvetica everywhere. It ships with the OS, so there is no webfont to load and
+ * no flash of unstyled text; Arial is the metric-compatible stand-in on Windows,
+ * where Helvetica is usually absent. Only .placer-mono still loads a webfont,
+ * because nothing on the system is a dependable substitute for it.
+ *
+ * Held as a custom property because the font is named in inline styles and SVG
+ * attributes as well as in this file, and those cannot read a JS constant
+ * without threading an import through every component.
+ */
+:root {
+  --placer-font: Helvetica, 'Helvetica Neue', Arial, sans-serif;
+}
 
 * {
   box-sizing: border-box;
@@ -15,8 +30,7 @@ html, body {
 }
 
 body {
-  font-family: 'Archivo', system-ui, sans-serif;
-  font-feature-settings: 'ss01';
+  font-family: var(--placer-font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -27,7 +41,7 @@ body {
 }
 
 .placer-disp {
-  font-family: 'Archivo Expanded', 'Archivo', sans-serif;
+  font-family: var(--placer-font);
 }
 
 .placer-scroll {
