@@ -11,9 +11,11 @@
     "preview": "vp preview",
     "test": "vp test",
     "test:run": "vp test run",
-    "deps:check": "node scripts/check-deps.mjs"
+    "deps:check": "node scripts/check-deps.mjs",
+    "sandbox:scope": "node scripts/check-sandbox-scope.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "@techstark/opencv-js": "^5.0.0-release.1",
     "html-to-image": "^1.11.13",
     "konva": "^10.3.0",
@@ -21,6 +23,7 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-konva": "^19.2.5",
+    "react-qr-code": "^2.2.0",
     "use-image": "^1.1.4",
     "wouter": "^3.10.0"
   },
