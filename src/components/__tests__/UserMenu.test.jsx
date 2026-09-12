@@ -120,6 +120,15 @@ describe('UserMenu', () => {
       expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
     });
 
+    it('shows no avatar at all', () => {
+      setup({ profile: null });
+
+      // Avatar renders initials, so their absence is the avatar's absence. A greyed
+      // one for nobody only invited a click that went nowhere.
+      expect(screen.queryByText('G')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+    });
+
     it('signs in', () => {
       const { onSignIn } = setup({ profile: null });
 

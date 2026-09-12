@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Btn } from './UI';
-import { saveProfile } from '../services/profile';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
 
 // Copied from DescribePage rather than shared, matching how the form styling is
@@ -15,7 +14,7 @@ const inputStyle = (t) => ({
   borderRadius: 8,
   background: t.chrome,
   color: t.ink,
-  fontFamily: "'Archivo', sans-serif",
+  fontFamily: 'var(--placer-font)',
   outline: 'none',
 });
 
@@ -29,16 +28,25 @@ function Card({ t, title, children }) {
   );
 }
 
-function DisplayName({ t, profile, onProfileChange }) {
+function DisplayName({ t, profile, onSaveProfile }) {
   const [name, setName] = useState(profile?.name ?? '');
-  const [saved, setSaved] = useState(false);
+  const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
 
   const trimmed = name.trim();
   const unchanged = trimmed === (profile?.name ?? '');
 
-  const handleSave = () => {
-    onProfileChange(saveProfile({ name: trimmed }));
-    setSaved(true);
+  // Saving is a request now, not a localStorage write, so it can be slow and it can
+  // fail. Both states are shown rather than swallowed: a name that silently did not
+  // save is worse than one that says so.
+  const handleSave = async () => {
+    setStatus('saving');
+    try {
+      await onSaveProfile({ name: trimmed });
+      setStatus('saved');
+    } catch (err) {
+      console.error('Could not save your name:', err);
+      setStatus('error');
+    }
   };
 
   return (
@@ -55,16 +63,22 @@ function DisplayName({ t, profile, onProfileChange }) {
         id="settings-display-name"
         type="text"
         value={name}
-        onChange={(e) => { setName(e.target.value); setSaved(false); }}
+        onChange={(e) => { setName(e.target.value); setStatus('idle'); }}
         style={{ ...inputStyle(t), maxWidth: 380, marginBottom: 20 }}
       />
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Btn t={t} variant="primary" icon="check" onClick={handleSave} disabled={!trimmed || unchanged}>
-          Save name
+        <Btn t={t} variant="primary" icon="check" onClick={handleSave}
+          disabled={!trimmed || unchanged || status === 'saving'}>
+          {status === 'saving' ? 'Saving…' : 'Save name'}
         </Btn>
-        {saved && (
+        {status === 'saved' && (
           <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
             Saved.
+          </span>
+        )}
+        {status === 'error' && (
+          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 600 }}>
+            Could not save that. Try again.
           </span>
         )}
       </div>
@@ -143,7 +157,7 @@ function YourData({ t, onNavigate }) {
   );
 }
 
-export function SettingsPage({ t, profile, onProfileChange, onNavigate }) {
+export function SettingsPage({ t, profile, onSaveProfile, onNavigate }) {
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '48px 40px' }} className="placer-scroll">
@@ -158,7 +172,7 @@ export function SettingsPage({ t, profile, onProfileChange, onNavigate }) {
           </p>
         </div>
 
-        <DisplayName t={t} profile={profile} onProfileChange={onProfileChange} />
+        <DisplayName t={t} profile={profile} onSaveProfile={onSaveProfile} />
         <Analytics t={t} onNavigate={onNavigate} />
         <YourData t={t} onNavigate={onNavigate} />
       </div>

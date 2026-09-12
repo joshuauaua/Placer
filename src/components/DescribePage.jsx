@@ -13,7 +13,7 @@ const inputStyle = (t) => ({
   borderRadius: 8,
   background: t.chrome,
   color: t.ink,
-  fontFamily: "'Archivo', sans-serif",
+  fontFamily: 'var(--placer-font)',
   outline: 'none',
 });
 
@@ -40,7 +40,8 @@ function Field({ t, label, htmlFor, hint, children }) {
  * `onDraftChange` receives a partial patch ({ title }, { cat }, …) for the parent to
  * merge, so each field only states what it changed.
  */
-export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview }) {
+export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview,
+  needsAccount = false }) {
   const complete = !!(draft.title.trim() && draft.cat && draft.blurb.trim());
 
   return (
@@ -98,6 +99,7 @@ export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview 
                   active={draft.cat === c.key}
                   color={c.color}
                   icon={c.icon}
+                  dot
                   onClick={() => onDraftChange({ cat: c.key })}>
                   {c.label}
                 </Chip>
@@ -119,6 +121,16 @@ export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview 
           {!complete && (
             <div style={{ fontSize: 13.5, color: t.inkDim, fontWeight: 600 }}>
               Fill in the title, category, and description to continue.
+            </div>
+          )}
+
+          {/* Said here rather than only at the last step, so that needing an account is
+              not a surprise sprung on somebody who has already finished. Deliberately
+              not a gate: this step, and the drawing before it, stay open to everybody. */}
+          {needsAccount && (
+            <div style={{ marginTop: 20, fontSize: 13.5, color: t.inkDim, lineHeight: 1.55 }}>
+              You will need an account to post this. You can sign in on the next step —
+              nothing you have made will be lost.
             </div>
           )}
         </div>

@@ -91,3 +91,24 @@ describe('DescribePage', () => {
     expect(screen.queryByAltText('Your imagination')).not.toBeInTheDocument();
   });
 });
+
+describe('DescribePage, when posting will need an account', () => {
+  it('warns a step early rather than at the last moment', () => {
+    setup({ draft: FILLED, needsAccount: true });
+
+    expect(screen.getByText(/You will need an account to post this/)).toBeInTheDocument();
+  });
+
+  it('still lets anybody describe what they made', () => {
+    setup({ draft: FILLED, needsAccount: true });
+
+    // Not a gate. Drawing and describing stay open; only posting is gated.
+    expect(screen.getByRole('button', { name: /Next: Post/ })).toBeEnabled();
+  });
+
+  it('says nothing where there are no accounts to need', () => {
+    setup({ draft: FILLED });
+
+    expect(screen.queryByText(/You will need an account/)).not.toBeInTheDocument();
+  });
+});

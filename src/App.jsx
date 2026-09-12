@@ -1,6 +1,6 @@
 /* PLACER — Reimagine Your City */
 
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
 import { Switch, Route, useLocation } from 'wouter';
 import { THEME } from './theme';
@@ -10,7 +10,9 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieBanner } from './components/CookieBanner';
 // Not lazy: the nav bar renders it on every view, so there is nothing to defer.
 import { UserMenu } from './components/UserMenu';
-import { readProfile, signIn, signOut, DEFAULT_NAME } from './services/profile';
+import { DEFAULT_NAME } from './services/profile';
+import { clearPendingImagination, readPendingImagination, savePendingImagination } from './services/api';
+import { useIdentity } from './components/useIdentity';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -24,8 +26,12 @@ const DescribePage = lazy(() => import('./components/DescribePage'));
 const PostPage = lazy(() => import('./components/PostPage'));
 const AdminImaginations = lazy(() => import('./components/AdminImaginations'));
 const SandboxPage = lazy(() => import('./components/SandboxPage'));
+const JoinPage = lazy(() => import('./components/JoinPage'));
 const ProfilePage = lazy(() => import('./components/ProfilePage'));
 const SettingsPage = lazy(() => import('./components/SettingsPage'));
+const AuthPage = lazy(() => import('./components/AuthPage'));
+const AuthCallback = lazy(() => import('./components/AuthCallback'));
+const ResetPasswordPage = lazy(() => import('./components/ResetPasswordPage'));
 
 const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
 
@@ -35,8 +41,24 @@ const FLOW_VIEWS = ['street', 'describe', 'post'];
 
 // The account views live in the URL, for the same reason the Sandbox does: a
 // settings page you cannot bookmark or refresh into is a worse settings page.
-const ACCOUNT_PATHS = { profile: '/profile', settings: '/settings' };
-const ACCOUNT_VIEWS = { '/profile': 'profile', '/settings': 'settings' };
+//
+// Sign in and sign up are in here rather than being routes of their own, and that is
+// load-bearing rather than tidy: every one of these paths is matched by the catch-all
+// Route below, so moving between them never unmounts MainApp. Somebody who reaches the
+// Post step signed out can therefore sign in and come back to the capture, the drawing
+// and the draft they left in MainApp's state. A sibling Route would throw all of it away.
+const ACCOUNT_PATHS = {
+  profile: '/profile',
+  settings: '/settings',
+  signin: '/signin',
+  signup: '/signup',
+};
+const ACCOUNT_VIEWS = {
+  '/profile': 'profile',
+  '/settings': 'settings',
+  '/signin': 'signin',
+  '/signup': 'signup',
+};
 
 function LoadingFallback() {
   return (
@@ -95,9 +117,15 @@ function MainApp({ initialView = 'welcome' }) {
   // back centred on the new pin instead of the default location.
   const [mapFocus, setMapFocus] = useState(null);
 
-  // Held in state rather than read on each render so that logging out, or renaming
-  // yourself in Settings, updates the nav bar immediately. Null means logged out.
-  const [profile, setProfile] = useState(readProfile);
+  // Who is signed in, and how that question is being answered — a real Supabase account
+  // where a project is configured, the localStorage record from before accounts existed
+  // where there is none. useIdentity is the only thing that knows the difference; here
+  // `profile` is { name, bio } or null either way. `status` is 'loading' until a session
+  // has been read once, which is a state worth waiting out rather than rendering as
+  // signed out.
+  const { profile, status: identityStatus, accountId, signIn: handleSignIn,
+    signOut: signOutOfPlacer, saveProfile: handleSaveProfile } = useIdentity();
+  const identityLoading = identityStatus === 'loading';
 
   // The Sandbox is the one view that lives in the URL, because every experiment has a
   // link worth sharing. So it is read off the location rather than held in state, and
@@ -109,8 +137,8 @@ function MainApp({ initialView = 'welcome' }) {
   // never remounted when the matched Route changes and an initialView prop only ever
   // applies on first mount — which works for a URL that is only an entry point, and
   // silently does nothing for one you can navigate to from inside the app.
-  // Profile and Settings are read off the location the same way, and for the same
-  // reason: they are reachable both from a link and from the account menu.
+  // The four account views are read off the location the same way, and for the same
+  // reason: every one of them is reachable both from a link and from inside the app.
   const [location, navigate] = useLocation();
   const inSandbox = location.startsWith('/sandbox');
   const accountView = ACCOUNT_VIEWS[location];
@@ -152,7 +180,40 @@ function MainApp({ initialView = 'welcome' }) {
     setDraft((current) => ({ ...current, ...patch }));
   };
 
+  // Written down before somebody is sent off to Google or to their email, and picked up
+  // again on the way back — both of those reload the page, and everything above is React
+  // state. See PostPage's SignInToPost, which calls this before it navigates.
+  const stashDraft = () => savePendingImagination({
+    capturedView, canvasAssets, lines, draft, preview,
+  });
+
+  useEffect(() => {
+    // Only once there is an account to post under, and only when this tab is not already
+    // in the middle of something — signing in with a password never leaves the page, so
+    // in that case what is in memory is already the right thing and is newer than any
+    // parked copy.
+    if (identityStatus !== 'signedIn' || capturedView) return undefined;
+
+    let cancelled = false;
+
+    readPendingImagination().then((pending) => {
+      if (cancelled || !pending) return;
+      setCapturedView(pending.capturedView ?? null);
+      setCanvasAssets(pending.canvasAssets ?? []);
+      setLines(pending.lines ?? []);
+      setDraft(pending.draft ?? EMPTY_DRAFT);
+      setPreview(pending.preview ?? null);
+      clearPendingImagination();
+      // Back where they left off, which is the whole point of having parked it.
+      setCurrentView('post');
+    });
+
+    return () => { cancelled = true; };
+  }, [identityStatus, capturedView]);
+
   const handlePosted = () => {
+    // Posted, so there is nothing left to come back to.
+    clearPendingImagination();
     setMapFocus(capturedView?.position ?? null);
     setCapturedView(null);
     setCanvasAssets([]);
@@ -167,14 +228,16 @@ function MainApp({ initialView = 'welcome' }) {
     show('map');
   };
 
-  const handleSignIn = () => {
-    setProfile(signIn());
-  };
-
   // Back to the welcome view, because the account views have nothing to show
   // someone who has just left them.
-  const handleSignOut = () => {
-    setProfile(signOut());
+  const handleSignOut = async () => {
+    try {
+      await signOutOfPlacer();
+    } catch (err) {
+      // Nothing useful to offer somebody who cannot sign out, and leaving them on the
+      // account page would be worse than sending them home with the session intact.
+      console.error('Could not sign out:', err);
+    }
     show('welcome');
   };
 
@@ -205,6 +268,7 @@ function MainApp({ initialView = 'welcome' }) {
             onBack={() => show('street')}
             onNext={() => show('post')}
             preview={preview}
+            needsAccount={identityStatus === 'signedOut'}
           />
         )}
         {view === 'post' && (
@@ -218,6 +282,13 @@ function MainApp({ initialView = 'welcome' }) {
             onBack={() => show('describe')}
             onPosted={handlePosted}
             authorName={profile?.name ?? DEFAULT_NAME}
+            accountId={accountId}
+            // Posting is the one thing an account is required for. Where there is no
+            // project configured there are no accounts either, so identityStatus is
+            // 'local' and this stays false — the flow works exactly as it always did.
+            needsAccount={identityStatus === 'signedOut'}
+            checkingAccount={identityLoading}
+            onStashDraft={stashDraft}
           />
         )}
       </Suspense>
@@ -319,24 +390,36 @@ function MainApp({ initialView = 'welcome' }) {
 
         {view === 'sandbox' && (
           <Suspense fallback={<LoadingFallback />}>
-            <SandboxPage t={t} />
+            {/* Passed down rather than read from services/profile inside SandboxPage: with
+                accounts the name is behind a request, and a component cannot await one in
+                its render body. */}
+            <SandboxPage t={t} displayName={profile?.name ?? null} />
           </Suspense>
         )}
 
-        {/* Reachable by URL, so both have to cope with arriving logged out. */}
-        {(view === 'profile' || view === 'settings') && !profile && (
+        {(view === 'signin' || view === 'signup') && (
+          <Suspense fallback={<LoadingFallback />}>
+            <AuthPage t={t} mode={view} onNavigate={show} />
+          </Suspense>
+        )}
+
+        {/* Reachable by URL, so both have to cope with arriving before the session has
+            been read, and with arriving logged out. */}
+        {(view === 'profile' || view === 'settings') && identityLoading && <LoadingFallback />}
+
+        {(view === 'profile' || view === 'settings') && !identityLoading && !profile && (
           <SignedOutNotice t={t} onSignIn={handleSignIn} />
         )}
 
         {view === 'profile' && profile && (
           <Suspense fallback={<LoadingFallback />}>
-            <ProfilePage t={t} profile={profile} onNavigate={show} />
+            <ProfilePage t={t} profile={profile} accountId={accountId} onNavigate={show} />
           </Suspense>
         )}
 
         {view === 'settings' && profile && (
           <Suspense fallback={<LoadingFallback />}>
-            <SettingsPage t={t} profile={profile} onProfileChange={setProfile} onNavigate={show} />
+            <SettingsPage t={t} profile={profile} onSaveProfile={handleSaveProfile} onNavigate={show} />
           </Suspense>
         )}
 
@@ -402,6 +485,14 @@ function App() {
           <Route path="/survey"><Suspense fallback={<LoadingFallback />}><SurveyPage t={t} /></Suspense></Route>
           <Route path="/admin/imaginations"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminImaginations t={t} /></AdminGate></Suspense></Route>
           <Route path="/admin"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminDashboard t={t} /></AdminGate></Suspense></Route>
+          {/* An entry point only — a scanned QR code or a typed PIN — so it is its
+              own route rather than a view inside MainApp. */}
+          <Route path="/join"><Suspense fallback={<LoadingFallback />}><JoinPage t={t} /></Suspense></Route>
+          {/* Where every link Supabase mails out comes back to, and the screen that
+              link leads to. Both are only ever arrived at cold, from another
+              application, so unlike /signin they are routes rather than MainApp views. */}
+          <Route path="/auth/callback"><Suspense fallback={<LoadingFallback />}><AuthCallback t={t} /></Suspense></Route>
+          <Route path="/reset"><Suspense fallback={<LoadingFallback />}><ResetPasswordPage t={t} /></Suspense></Route>
           <Route path="/privacy"><MainApp initialView="privacy" /></Route>
           <Route path="/gdpr"><MainApp initialView="gdpr" /></Route>
           {/* Everything else, /sandbox and /sandbox/<experiment> included — MainApp

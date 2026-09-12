@@ -171,4 +171,61 @@ describe('App', () => {
       expect(screen.queryByRole('heading', { level: 1, name: 'Profile' })).not.toBeInTheDocument();
     });
   });
+
+  /*
+   * These run with no Supabase project, like everything else in the suite (see
+   * src/test/setup.js), so signing in here would go nowhere — what is under test is that
+   * the routes exist and land on the right screen. The forms themselves are covered in
+   * AuthPage.test.jsx and the branch between a real account and the browser record in
+   * useIdentity.test.jsx.
+   */
+  describe('the account routes', () => {
+    const renderRecording = (path = '/') => {
+      const location = memoryLocation({ path, record: true });
+      render(
+        <Router hook={location.hook}>
+          <App />
+        </Router>
+      );
+      return location;
+    };
+
+    afterEach(() => {
+      localStorage.clear();
+    });
+
+    it('renders the sign-in form at /signin', async () => {
+      renderAt('/signin');
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Sign in' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Email address')).toBeInTheDocument();
+    });
+
+    it('renders the sign-up form at /signup, which asks for a name as well', async () => {
+      renderAt('/signup');
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Create an account' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Your name')).toBeInTheDocument();
+    });
+
+    it('keeps the nav bar on the auth views, so signing in is not a dead end', async () => {
+      renderAt('/signin');
+      await screen.findByRole('heading', { level: 1, name: 'Sign in' });
+
+      // The same nav every other view inside MainApp gets. It is what makes it possible
+      // to change your mind and go back to the map without using the browser's back
+      // button, and it is a consequence of these being views rather than routes.
+      expect(screen.getByText('Resources')).toBeInTheDocument();
+    });
+
+    it('moves between the two forms without leaving MainApp', async () => {
+      const location = renderRecording('/signin');
+      await screen.findByRole('heading', { level: 1, name: 'Sign in' });
+
+      fireEvent.click(screen.getByRole('link', { name: 'Create an account' }));
+
+      expect(await screen.findByLabelText('Your name')).toBeInTheDocument();
+      expect(location.history.at(-1)).toBe('/signup');
+    });
+  });
 });

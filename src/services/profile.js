@@ -20,9 +20,6 @@ export const PROFILE_KEY = 'placemaking_profile';
 /** What an imagination is credited to before anyone renames themselves. */
 export const DEFAULT_NAME = 'You There';
 
-/** Shown in place of a name once someone logs out. */
-export const GUEST_NAME = 'Guest';
-
 const DEFAULT_PROFILE = { name: DEFAULT_NAME, bio: '' };
 
 // A visitor who has never touched the account menu is treated as signed in under

@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Avatar, Btn } from './UI';
 import { Icon } from './Icon';
-import { GUEST_NAME } from '../services/profile';
 
 function MenuItem({ t, icon, label, onClick, divided }) {
   return (
@@ -13,7 +12,7 @@ function MenuItem({ t, icon, label, onClick, divided }) {
       style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%',
         padding: '10px 14px', background: 'transparent', color: t.ink, cursor: 'pointer',
         border: 'none', borderTop: divided ? `1px solid ${t.line}` : 'none',
-        fontFamily: "'Archivo', sans-serif", fontWeight: 600, fontSize: 14.5,
+        fontFamily: 'var(--placer-font)', fontWeight: 600, fontSize: 14.5,
         letterSpacing: '-0.01em', textAlign: 'left' }}
       onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
@@ -25,7 +24,8 @@ function MenuItem({ t, icon, label, onClick, divided }) {
 
 /**
  * The avatar, the display name, and a dropdown holding Profile, Settings and
- * Log out. Logged out, it collapses to a Sign in button and a greyed avatar.
+ * Log out. Logged out, it is a Sign in button and nothing else: an avatar with
+ * nobody behind it invited a click that went nowhere.
  *
  * This is the app's first dropdown, so the dismissal it uses is the same shape as
  * the Escape handling around the map preview (MapContainer): a guarded effect that
@@ -54,14 +54,7 @@ export function UserMenu({ t, profile, onNavigate, onSignIn, onSignOut }) {
   }, [open]);
 
   if (!profile) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Btn t={t} variant="outline" onClick={onSignIn}>Sign in</Btn>
-        {/* A non-empty name on purpose: Avatar colours itself from the first
-            character, which is NaN on an empty string. */}
-        <Avatar name={GUEST_NAME} size={40} ring={t.line} />
-      </div>
-    );
+    return <Btn t={t} variant="outline" onClick={onSignIn}>Sign in</Btn>;
   }
 
   const go = (view) => () => {
@@ -79,7 +72,7 @@ export function UserMenu({ t, profile, onNavigate, onSignIn, onSignOut }) {
         onClick={() => setOpen((wasOpen) => !wasOpen)}
         style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 8px 4px 4px',
           background: 'transparent', border: 'none', borderRadius: 999, cursor: 'pointer',
-          color: t.ink, fontFamily: "'Archivo', sans-serif", fontWeight: 600, fontSize: 14.5,
+          color: t.ink, fontFamily: 'var(--placer-font)', fontWeight: 600, fontSize: 14.5,
           letterSpacing: '-0.01em' }}
         onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
