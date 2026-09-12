@@ -4,16 +4,27 @@
  * nothing saved, and something moving within a second of arriving. The register of
  * experiments is src/sandbox/experiments.js.
  *
+ * The exception to "nothing saved" is a room: an experiment whose register entry has
+ * a `room` can be opened up to a roomful of people, who join it with a PIN or a QR
+ * code and whose answers are held in Supabase until the facilitator closes it. This
+ * page owns the room the way it owns the experiment — off the URL, in ?room= — and
+ * hands it to the experiment as a prop.
+ *
  * The page owns the /sandbox part of the URL itself rather than taking the selected
  * experiment as a prop, so every experiment has a link that can be shared.
  */
 
 import { useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, useSearch } from 'wouter';
 import posthog from 'posthog-js';
 import { Icon } from './Icon';
+import { Btn } from './UI';
 import { SandboxLayout } from './SandboxLayout';
+import { RoomBar } from './sandbox/RoomBar';
+import { useRoom } from './sandbox/useRoom';
 import { EXPERIMENTS, findExperiment } from '../sandbox/experiments';
+import { roomIdFrom, roomPath } from '../sandbox/rooms';
+import { isSupabaseConfigured } from '../services/rooms';
 
 /** The experiment id in a path like /sandbox/street-mixer, if there is one. */
 export function experimentIdFrom(path) {
@@ -34,7 +45,7 @@ function Tile({ t, experiment, onOpen }) {
         border: 'none', borderRadius: 14, padding: '26px 24px 24px', minHeight: 220,
         background: `linear-gradient(150deg, ${experiment.color} 0%, ${experiment.color}D9 100%)`,
         color: '#fff', display: 'flex', flexDirection: 'column', gap: 10,
-        fontFamily: "'Archivo', sans-serif", boxShadow: t.shadow,
+        fontFamily: 'var(--placer-font)', boxShadow: t.shadow,
         transition: 'transform 0.2s, box-shadow 0.2s' }}
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = 'translateY(-4px)';
@@ -65,11 +76,41 @@ function Tile({ t, experiment, onOpen }) {
   );
 }
 
-export function SandboxPage({ t }) {
+/** Offered on an experiment that can host a room, when there is a database to host it in. */
+function StartRoom({ t, experiment, onStart, busy }) {
+  return (
+    <Btn
+      t={t}
+      size="sm"
+      icon="user"
+      onClick={onStart}
+      disabled={busy}
+      style={{ background: experiment.color, color: '#fff' }}>
+      {busy ? 'Opening…' : 'Start a room'}
+    </Btn>
+  );
+}
+
+export function SandboxPage({ t, displayName = null }) {
   const [location, navigate] = useLocation();
+  const search = useSearch();
   const requestedId = experimentIdFrom(location);
   const experiment = requestedId ? findExperiment(requestedId) : null;
   const missing = requestedId && !experiment ? requestedId : null;
+
+  const room = useRoom({
+    experiment,
+    roomId: roomIdFrom(search),
+    // Whatever the person calls themselves, so a facilitator can see who has answered.
+    // Passed in from App rather than read here: with accounts the name comes from a
+    // request, and this is a render body. It is still a label rather than proof of
+    // identity — a room is joined with its PIN, not with an account.
+    displayName,
+    onOpened: (id) => {
+      posthog.capture('sandbox_room_opened', { experiment: experiment.id });
+      navigate(roomPath(experiment.id, id));
+    },
+  });
 
   useEffect(() => {
     if (!experiment) return;
@@ -77,13 +118,23 @@ export function SandboxPage({ t }) {
   }, [experiment]);
 
   const Experiment = experiment?.component;
+  // Offered only where a room would mean something, and only with a database behind it.
+  const canStartRoom =
+    Boolean(experiment?.room) && isSupabaseConfigured() && room.status === 'none';
 
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page, padding: '48px 40px 80px' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         {experiment && Experiment ? (
-          <SandboxLayout t={t} experiment={experiment} onBack={() => navigate('/sandbox')}>
-            <Experiment t={t} experiment={experiment} />
+          <SandboxLayout
+            t={t}
+            experiment={experiment}
+            onBack={() => navigate('/sandbox')}
+            actions={canStartRoom ? (
+              <StartRoom t={t} experiment={experiment} onStart={room.start} busy={room.status === 'opening'} />
+            ) : null}>
+            <RoomBar t={t} experiment={experiment} room={room} />
+            <Experiment t={t} experiment={experiment} room={room} />
           </SandboxLayout>
         ) : (
           <>
@@ -100,7 +151,9 @@ export function SandboxPage({ t }) {
               <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, maxWidth: 680 }}>
                 Small tools for the arguments participatory design keeps having. Each one takes a few
                 seconds to understand and makes one point that is hard to make with a drawing. Nothing
-                is saved, and nothing here is a proposal — it is somewhere to find out what you think.
+                here is a proposal — it is somewhere to find out what you think. Nothing is saved
+                either, unless you open a room for other people to join, and a room lasts until you
+                close it.
               </p>
             </div>
 

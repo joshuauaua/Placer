@@ -10,8 +10,8 @@
  */
 
 import { useMemo, useState } from 'react';
-import { Icon } from '../Icon';
 import { Meter, Panel, PresetRow, Readout } from '../SandboxLayout';
+import { Chip } from '../UI';
 import {
   AMENITY_LIST,
   AMENITY_TYPES,
@@ -103,23 +103,18 @@ export function FifteenMinute({ t, experiment }) {
         </span>
       }>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-          {AMENITY_LIST.map((amenity) => {
-            const on = amenity.key === selected;
-            return (
-              <button
-                key={amenity.key}
-                onClick={() => setSelected(amenity.key)}
-                aria-pressed={on}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 36, padding: '0 13px',
-                  borderRadius: 999, cursor: 'pointer', fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 13.5,
-                  border: `1.5px solid ${on ? amenity.color : t.line}`,
-                  background: on ? `${amenity.color}18` : 'transparent',
-                  color: on ? amenity.color : t.inkDim }}>
-                <Icon name={amenity.icon} size={15} stroke={2.1} />
-                {amenity.label}
-              </button>
-            );
-          })}
+          {AMENITY_LIST.map((amenity) => (
+            <Chip
+              key={amenity.key}
+              t={t}
+              color={amenity.color}
+              icon={amenity.icon}
+              active={amenity.key === selected}
+              ariaPressed={amenity.key === selected}
+              onClick={() => setSelected(amenity.key)}>
+              {amenity.label}
+            </Chip>
+          ))}
         </div>
 
         {/* Roving cursor rather than 256 tab stops: arrows move, Enter places. */}
@@ -179,7 +174,7 @@ export function FifteenMinute({ t, experiment }) {
                 <g key={placement.id}>
                   <circle cx={x + 0.5} cy={y + 0.5} r={0.42} fill={amenity.color} stroke={t.surface} strokeWidth={0.1} />
                   <text x={x + 0.5} y={y + 0.68} textAnchor="middle" fontSize={0.55} fontWeight={800}
-                    fontFamily="'Archivo', sans-serif" fill="#fff">
+                    style={{ fontFamily: 'var(--placer-font)' }} fill="#fff">
                     {amenity.label[0]}
                   </text>
                 </g>

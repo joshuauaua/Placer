@@ -8,8 +8,8 @@
  */
 
 import { useMemo, useRef, useState } from 'react';
-import { Icon } from '../Icon';
 import { Meter, Panel, Readout } from '../SandboxLayout';
+import { Btn } from '../UI';
 import {
   DESTINATIONS,
   PAVING,
@@ -177,7 +177,7 @@ export function DesireLines({ t, experiment }) {
                   y={destination.y + 1.2}
                   textAnchor={destination.x < PLAZA.width / 2 ? 'start' : 'end'}
                   fontSize={3.2}
-                  fontFamily="'Archivo', sans-serif"
+                  style={{ fontFamily: 'var(--placer-font)' }}
                   fontWeight={700}
                   fill={t.ink}>
                   {destination.label}
@@ -188,26 +188,29 @@ export function DesireLines({ t, experiment }) {
         </svg>
 
         <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button onClick={addNeighbours} style={buttonStyle(t)}>
-            <Icon name="user" size={15} stroke={2.1} />
+          <Btn t={t} variant="quiet" size="sm" icon="user" onClick={addNeighbours}>
             Add ten neighbours
-          </button>
-          <button
+          </Btn>
+          <Btn
+            t={t}
+            variant="quiet"
+            size="sm"
+            icon={showSuggestions ? 'check' : 'grid'}
+            ariaPressed={showSuggestions}
             onClick={() => setShowSuggestions((shown) => !shown)}
-            aria-pressed={showSuggestions}
-            style={{ ...buttonStyle(t), borderColor: showSuggestions ? experiment.color : t.line,
-              color: showSuggestions ? experiment.color : t.inkDim }}>
-            <Icon name={showSuggestions ? 'check' : 'grid'} size={15} stroke={2.1} />
+            style={showSuggestions ? { borderColor: experiment.color, color: experiment.color } : undefined}>
             Show where to pave
-          </button>
+          </Btn>
           <div style={{ flex: 1 }} />
-          <button
-            onClick={() => { setLines([]); setPending(null); setDragTo(null); }}
+          <Btn
+            t={t}
+            variant="quiet"
+            size="sm"
+            icon="rotate"
             disabled={lines.length === 0}
-            style={{ ...buttonStyle(t), opacity: lines.length === 0 ? 0.45 : 1 }}>
-            <Icon name="rotate" size={15} stroke={2.1} />
+            onClick={() => { setLines([]); setPending(null); setDragTo(null); }}>
             Clear
-          </button>
+          </Btn>
         </div>
         <p style={{ marginTop: 10, fontSize: 12.5, color: t.inkDim, lineHeight: 1.6 }}>
           Drag anywhere across the plaza to draw a walk, or click one marker and then another.
@@ -260,14 +263,6 @@ export function DesireLines({ t, experiment }) {
       </div>
     </div>
   );
-}
-
-function buttonStyle(t) {
-  return {
-    display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 12px', borderRadius: 8,
-    border: `1.5px solid ${t.line}`, background: 'transparent', cursor: 'pointer', color: t.inkDim,
-    fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 13,
-  };
 }
 
 export default DesireLines;
