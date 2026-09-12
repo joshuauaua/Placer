@@ -75,3 +75,58 @@ body {
     opacity: 1;
   }
 }
+
+/* PLACER — the landing page's street-furniture border.
+ *
+ * Two complementary frames: one carries the street furniture down the left, the
+ * other down the right, and each shares half of the top and bottom rows. Each is
+ * clipped to its own outer edge so the pair reads as a single border around the
+ * copy rather than two separate drawings.
+ *
+ * Decoration only. Below the breakpoint there is no room for it beside the text,
+ * so it goes rather than crowding the words.
+ */
+.placer-landing-frame {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* The copy needs 668px clear (a 620px column plus its padding), so the pair
+     may never take more than the viewport minus that: 22% capped at 300px keeps
+     them clear from the breakpoint upwards. */
+  width: 22%;
+  max-width: 300px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.placer-landing-frame img {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 100%;
+  width: auto;
+  /* Wider than its container on purpose — the clip is what makes it a border. */
+  max-width: none;
+}
+
+.placer-landing-frame-left {
+  left: 0;
+}
+
+.placer-landing-frame-left img {
+  left: 0;
+}
+
+.placer-landing-frame-right {
+  right: 0;
+}
+
+.placer-landing-frame-right img {
+  right: 0;
+}
+
+@media (max-width: 1199px) {
+  .placer-landing-frame {
+    display: none;
+  }
+}

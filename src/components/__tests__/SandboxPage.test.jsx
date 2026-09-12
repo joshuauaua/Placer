@@ -196,6 +196,6 @@ describe('inside the app', () => {
     renderAt('/sandbox');
     await screen.findByRole('heading', { level: 1, name: 'Sandbox' });
 
-    expect(screen.queryByText('Reimagine Your City')).not.toBeInTheDocument();
+    expect(screen.queryByText('a toolkit for participatory placemaking')).not.toBeInTheDocument();
   });
 });

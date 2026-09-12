@@ -32,7 +32,7 @@ describe('App', () => {
 
   it('renders MainApp welcome view at root path', () => {
     renderAt('/');
-    expect(screen.getByText('Reimagine Your City')).toBeInTheDocument();
+    expect(screen.getByText('a toolkit for participatory placemaking')).toBeInTheDocument();
   });
 
   it('renders SurveyPage at /survey', async () => {
@@ -50,7 +50,7 @@ describe('App', () => {
   it('ErrorBoundary catches errors thrown by route content instead of crashing the app', async () => {
     renderAt('/');
 
-    fireEvent.click(screen.getByText('Start imagining'));
+    fireEvent.click(screen.getByRole('button', { name: 'Explore' }));
 
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
   });

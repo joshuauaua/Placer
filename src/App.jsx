@@ -8,6 +8,8 @@ import { Logo, Btn } from './components/UI';
 import { Icon } from './components/Icon';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieBanner } from './components/CookieBanner';
+// Not lazy: the home view, so there is nothing to defer.
+import { LandingPage } from './components/LandingPage';
 // Not lazy: the nav bar renders it on every view, so there is nothing to defer.
 import { UserMenu } from './components/UserMenu';
 import { DEFAULT_NAME } from './services/profile';
@@ -337,34 +339,7 @@ function MainApp({ initialView = 'welcome' }) {
 
       {/* Main Content */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-        {view === 'welcome' && (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: `linear-gradient(135deg, ${t.page} 0%, ${t.chrome} 100%)` }}>
-            <div style={{ maxWidth: 600, textAlign: 'center', padding: 40 }}>
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ width: 80, height: 80, background: t.accent, borderRadius: 16, margin: '0 auto 20px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon name="pin" size={44} stroke={2.4} style={{ color: t.accentInk }} />
-                </div>
-                <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink, letterSpacing: '-0.03em', marginBottom: 16 }}>
-                  Reimagine Your City
-                </h1>
-                <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, marginBottom: 32 }}>
-                  PLACER is a community platform for visualizing public space improvements.
-                  Place assets, share your vision, and bring better spaces to life.
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                <Btn t={t} variant="accent" size="lg" icon="sparkle" onClick={handleExplore}>
-                  Start imagining
-                </Btn>
-                <Btn t={t} variant="outline" size="lg">
-                  Explore ideas
-                </Btn>
-              </div>
-            </div>
-          </div>
-        )}
+        {view === 'welcome' && <LandingPage t={t} />}
 
         {view === 'map' && (
           <Suspense fallback={<LoadingFallback />}>

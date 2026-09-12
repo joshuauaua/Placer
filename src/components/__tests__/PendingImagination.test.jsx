@@ -122,7 +122,7 @@ describe('an imagination parked while signing in', () => {
 
     renderApp();
 
-    expect(await screen.findByText('Reimagine Your City')).toBeInTheDocument();
+    expect(await screen.findByText('a toolkit for participatory placemaking')).toBeInTheDocument();
     // Still theirs to come back to, rather than thrown away on the way past.
     expect(localStorage.getItem(PENDING_KEY)).not.toBeNull();
   });
@@ -133,14 +133,14 @@ describe('an imagination parked while signing in', () => {
 
     renderApp();
 
-    expect(await screen.findByText('Reimagine Your City')).toBeInTheDocument();
+    expect(await screen.findByText('a toolkit for participatory placemaking')).toBeInTheDocument();
     expect(localStorage.getItem(PENDING_KEY)).not.toBeNull();
   });
 
   it('stays out of the way when nothing was parked', async () => {
     renderApp();
 
-    expect(await screen.findByText('Reimagine Your City')).toBeInTheDocument();
+    expect(await screen.findByText('a toolkit for participatory placemaking')).toBeInTheDocument();
   });
 
   it('ignores a stale parked imagination rather than resurrecting it', async () => {
@@ -148,7 +148,7 @@ describe('an imagination parked while signing in', () => {
 
     renderApp();
 
-    expect(await screen.findByText('Reimagine Your City')).toBeInTheDocument();
+    expect(await screen.findByText('a toolkit for participatory placemaking')).toBeInTheDocument();
     expect(localStorage.getItem(PENDING_KEY)).toBeNull();
   });
 });
