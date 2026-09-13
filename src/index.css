@@ -122,6 +122,53 @@ body {
   }
 }
 
+/* PLACER — the landing copy.
+ *
+ * The spacing lives here rather than inline because a phone rearranges it and an
+ * inline style cannot be overridden by a media query. Only the colours are set in
+ * the component, the rule's through --placer-landing-line.
+ *
+ * On a phone the strapline goes, the pitch and the credit close up into a single
+ * block, and the rule that used to divide them moves below to carry the funder
+ * lockup instead.
+ */
+.placer-landing-tagline {
+  margin-bottom: 40px;
+}
+
+.placer-landing-pitch {
+  margin-bottom: 56px;
+}
+
+.placer-landing-credit {
+  border-top: 1px solid var(--placer-landing-line);
+  padding-top: 28px;
+  margin-bottom: 48px;
+}
+
+@media (max-width: 640px) {
+  .placer-landing-tagline {
+    display: none;
+  }
+
+  /* One paragraph's gap, so the credit reads as the end of the pitch. */
+  .placer-landing-pitch {
+    margin-bottom: 16px;
+  }
+
+  .placer-landing-credit {
+    border-top: none;
+    padding-top: 0;
+    margin-bottom: 0;
+  }
+
+  .placer-landing-funder {
+    border-top: 1px solid var(--placer-landing-line);
+    padding-top: 28px;
+    margin-top: 40px;
+  }
+}
+
 /* PLACER — the landing page's feedback trigger.
  *
  * Two shapes. On a wide screen it is a circle parked off the bottom-right corner

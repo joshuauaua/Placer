@@ -41,13 +41,17 @@ export function LandingPage({ t }) {
       <StreetFrame side="left" src={frameLeft} />
       <StreetFrame side="right" src={frameRight} />
 
-      {/* position:relative to lift the copy above the border behind it. */}
+      {/* position:relative to lift the copy above the border behind it. The rule
+        * between the pitch and the credit moves to the foot of the copy on a
+        * phone (see index.css), so its colour is published as a custom property
+        * both sides can read. */}
       <div style={{
         position: 'relative',
         margin: 'auto',
         maxWidth: 620,
         padding: '64px 24px',
         textAlign: 'center',
+        '--placer-landing-line': t.line,
       }}>
         <h1 className="placer-disp" style={{
           fontSize: 64,
@@ -60,11 +64,13 @@ export function LandingPage({ t }) {
           PLACER
         </h1>
 
-        <p style={{ fontSize: 19, color: t.inkDim, marginBottom: 40 }}>
+        {/* Dropped on a phone, where the pitch below says the same thing in a
+          * sentence and the screen has no room to spare for a second strapline. */}
+        <p className="placer-landing-tagline" style={{ fontSize: 19, color: t.inkDim }}>
           a toolkit for participatory placemaking
         </p>
 
-        <p style={{ fontSize: 17, color: t.ink, lineHeight: 1.7, marginBottom: 56 }}>
+        <p className="placer-landing-pitch" style={{ fontSize: 17, color: t.ink, lineHeight: 1.7 }}>
           PLACER is an emerging platform designed to bring citizens, design
           practitioners, and municipal stakeholders together to collaboratively
           shape inclusive, democratic public spaces.
@@ -72,26 +78,22 @@ export function LandingPage({ t }) {
 
         {/* The rule carries the separation the dropped heading used to provide,
           * setting the credit line apart from the pitch above. The two partners
-          * are links rather than logos. */}
-        <p style={{
-          fontSize: 15.5,
-          color: t.inkDim,
-          lineHeight: 1.7,
-          borderTop: `1px solid ${t.line}`,
-          paddingTop: 28,
-          marginBottom: 48
-        }}>
+          * are links rather than logos. On a phone the credit reads on from the
+          * pitch as one block instead, and the rule sits under it. */}
+        <p className="placer-landing-credit" style={{ fontSize: 15.5, color: t.inkDim, lineHeight: 1.7 }}>
           PLACER is developed by <ExternalLink t={t} href="https://stpln.se/">STPLN</ExternalLink>{' '}
           and <ExternalLink t={t} href="https://ankaraaks.com/">Ankara Aks</ExternalLink>, funded
           by the Swedish Institute.
         </p>
 
         {/* The lockup reads "Funded by Swedish Institute" as part of the artwork. */}
-        <img
-          src={logoSwedishInstitute}
-          alt="Funded by Swedish Institute"
-          style={{ height: FUNDER_HEIGHT, width: 'auto' }}
-        />
+        <div className="placer-landing-funder">
+          <img
+            src={logoSwedishInstitute}
+            alt="Funded by Swedish Institute"
+            style={{ height: FUNDER_HEIGHT, width: 'auto' }}
+          />
+        </div>
 
         {/* On a phone the trigger is a bar across the foot of the screen, so the
           * column ends with the room it takes up and nothing sits under it.
