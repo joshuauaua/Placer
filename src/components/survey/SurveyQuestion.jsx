@@ -45,20 +45,36 @@ export function SurveyQuestion({
   /** 1-based position of an answer in the picking order, or 0 when unpicked. */
   const rankOf = (optionValue) =>
     Array.isArray(value) ? value.indexOf(optionValue) + 1 : 0;
-  const { multiple, scale } = question;
+  const { multiple, scale, maxChoices } = question;
 
   const isSelected = (optionValue) =>
     multiple ? Array.isArray(value) && value.includes(optionValue) : value === optionValue;
 
+  /* At the ceiling every unpicked option goes inert, so the only move left is to let
+   * one go. The hook refuses the pick as well; this is what makes the refusal visible
+   * rather than a tap that quietly does nothing. */
+  const pickedCount = Array.isArray(value) ? value.length : 0;
+  const atLimit = multiple && maxChoices !== undefined && pickedCount >= maxChoices;
+
   return (
     <div>
-      <h1 id={labelId} style={{ fontSize: 28, fontWeight: 700, color: t.ink, lineHeight: 1.4, marginBottom: multiple ? 8 : 40 }}>
+      <h1 id={labelId} className="placer-survey-question" style={{ fontWeight: 700, color: t.ink, lineHeight: 1.4, marginBottom: multiple ? 8 : 40 }}>
         {question.label}
       </h1>
 
       {multiple && (
         <div style={{ fontSize: 14, color: t.inkDim, marginBottom: 32 }}>
           {rank ? 'Choose in order of priority, most important first.' : 'Select all that apply.'}
+          {atLimit && (
+            <span
+              // Announced when it appears: the buttons going quiet is otherwise
+              // invisible to anyone not looking at them.
+              role="status"
+              style={{ display: 'block', marginTop: 6, fontWeight: 600, color: t.ink }}
+            >
+              {`${maxChoices} chosen — deselect one to change the ranking.`}
+            </span>
+          )}
         </div>
       )}
 
@@ -74,10 +90,12 @@ export function SurveyQuestion({
       >
         {question.options.map((option) => {
           const selected = isSelected(option.value);
+          const blocked = atLimit && !selected;
           return (
             <button
               key={option.value}
               type="button"
+              disabled={blocked}
               aria-pressed={selected}
               // The position is shown in a decorative badge, so it is said here
               // instead: "selected" alone would lose the ordering.
@@ -93,7 +111,8 @@ export function SurveyQuestion({
                 border: `2px solid ${selected ? t.accent : t.line}`,
                 background: selected ? t.accent + (t.mapMode === 'dark' ? '14' : '22') : t.surface,
                 textAlign: scale ? 'center' : 'left',
-                cursor: 'pointer',
+                cursor: blocked ? 'not-allowed' : 'pointer',
+                opacity: blocked ? 0.45 : 1,
                 transition: 'all 0.2s',
                 display: 'flex',
                 alignItems: 'center',
@@ -102,12 +121,12 @@ export function SurveyQuestion({
                 fontFamily: "'Archivo', sans-serif",
               }}
               onMouseEnter={(e) => {
-                if (selected) return;
+                if (selected || blocked) return;
                 e.currentTarget.style.borderColor = t.lineStrong;
                 e.currentTarget.style.background = t.surfaceAlt;
               }}
               onMouseLeave={(e) => {
-                if (selected) return;
+                if (selected || blocked) return;
                 e.currentTarget.style.borderColor = t.line;
                 e.currentTarget.style.background = t.surface;
               }}
@@ -152,7 +171,17 @@ export function SurveyQuestion({
                   whiteSpace: scale ? 'nowrap' : 'normal',
                 }}
               >
-                {option.label}
+                {/* With a description the label becomes a title: emboldened, and the
+                    description runs on after it rather than onto its own line, so the
+                    pair reads as one sentence at desktop width. */}
+                {option.description ? (
+                  <>
+                    <strong style={{ fontWeight: 700 }}>{option.label}:</strong>{' '}
+                    {option.description}
+                  </>
+                ) : (
+                  option.label
+                )}
               </span>
             </button>
           );

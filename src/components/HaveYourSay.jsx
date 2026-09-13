@@ -129,12 +129,14 @@ export function HaveYourSay({ t }) {
             aria-modal="true"
             aria-label={LABEL}
             tabIndex={-1}
+            // A definite height, because the survey fills what it is given. It is in
+            // index.css rather than here because it needs the vh/dvh fallback pair,
+            // which one style object cannot hold.
+            className="placer-survey-dialog"
             style={{
               position: 'relative',
               width: '100%',
               maxWidth: 900,
-              // A definite height, because the survey fills what it is given.
-              height: 'min(880px, calc(100vh - 48px))',
               background: t.page,
               border: `1px solid ${t.line}`,
               borderRadius: 16,

@@ -299,6 +299,33 @@ describe('SurveyPage', () => {
       expect(options()[0]).toHaveAttribute('aria-pressed', 'false');
     });
 
+    it('holds the ranking at its ceiling until an answer is let go', () => {
+      cleanup();
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.hero.startLabel));
+      for (let i = 0; i < TOTAL - 2; i++) answerAndAdvance(content.steps);
+
+      const max = content.section3[0].maxChoices;
+      for (let i = 0; i < max; i++) fireEvent.click(options()[i]);
+
+      // Full: everything unpicked goes inert, and the count says why rather than
+      // leaving a tap that appears to do nothing.
+      expect(options()[max]).toBeDisabled();
+      expect(screen.getByRole('status')).toHaveTextContent(`${max} chosen`);
+
+      // Clicking one changes nothing, and the ranking behind it is undisturbed.
+      fireEvent.click(options()[max]);
+      expect(options()[max]).toHaveAttribute('aria-pressed', 'false');
+      expect(options()[max - 1]).toHaveTextContent(String(max));
+
+      // The ceiling is not a requirement: one pick is still enough to move on.
+      expect(button(content.steps.nextLabel)).not.toBeDisabled();
+
+      // Letting one go opens the rest back up.
+      fireEvent.click(options()[0]);
+      expect(options()[max]).not.toBeDisabled();
+    });
+
     it('stores the ranking as an ordered list', async () => {
       cleanup();
       render(<SurveyPage t={THEME} />);

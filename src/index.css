@@ -39,9 +39,31 @@ body {
   display: none;
 }
 
+/* Fills the visible viewport height.
+ *
+ * Why dvh and not vh: `100vh` on iOS Safari is the *large* viewport, measured as
+ * though the browser toolbars were hidden. An element sized by it stands taller than
+ * what is on screen, and because the shell clips its overflow (see #root) the excess
+ * becomes unreachable rather than merely scrolled past. That is what cropped the
+ * survey's Back/Next footer on a phone. `100dvh` is the viewport actually visible.
+ *
+ * The fallback is an @supports block rather than a second `height` declaration above
+ * this one. The usual duplicate-property trick does not survive the build: no
+ * build.target or browserslist is configured, so lightningcss assumes current
+ * browsers and strips the earlier declaration as redundant. @supports cannot be
+ * collapsed that way, so this is the form that actually ships.
+ *
+ * It also has to be a class rather than an inline style twice over — a React style
+ * object cannot hold one key twice, and a media query cannot override an inline
+ * style.
+ */
+.placer-viewport {
+  height: 100dvh;
+}
+
 #root {
   width: 100%;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -199,6 +221,95 @@ body {
   .placer-feedback-trigger:hover,
   .placer-feedback-trigger:focus-visible {
     transform: none;
+  }
+}
+
+/* PLACER — the survey on a narrow screen.
+ *
+ * The survey is the one thing on the holding page a visitor can complete, so it has
+ * to work on a phone. Its geometry lives here rather than inline for the same reason
+ * the feedback trigger's does: a media query cannot override an inline style. Colours
+ * stay in the component.
+ *
+ * The sizes scale with clamp() rather than switching at a breakpoint. Nothing in the
+ * survey needs to rearrange below a certain width — the measurements simply need to
+ * shrink — and one declaration per property is easier to keep honest than a second
+ * copy of it inside a media query. In each clamp the minimum is the phone value and
+ * the maximum is what the property was before this change, so a desktop is unaffected.
+ */
+
+/* The intro and thank-you surface.
+ *
+ * Centred with `margin: auto` on the child rather than `align-items: center`, and that
+ * is what makes it scrollable. A centred flex item taller than its container cannot be
+ * scrolled back up to; auto margins collapse to zero once the content overflows, so it
+ * starts at the top and scrolls instead. The intro does overflow a short viewport, once
+ * a drawing, a heading wrapped over three lines and the copy are stacked. */
+.placer-survey-screen {
+  display: flex;
+  overflow-y: auto;
+  padding: clamp(16px, 4vw, 20px);
+}
+
+.placer-survey-screen > * {
+  margin: auto;
+}
+
+/* The drawings were drawn for 132px. Below roughly 92 their detail stops reading, so
+   that is the floor rather than something proportional. */
+.placer-survey-mark {
+  height: clamp(92px, 20vw, 132px);
+  width: auto;
+  display: block;
+  margin: 0 auto 24px;
+}
+
+/* 32px of side padding costs 64px of a 375px screen. */
+.placer-survey-head,
+.placer-survey-foot {
+  padding: clamp(16px, 3vw, 24px) clamp(16px, 5vw, 32px);
+}
+
+.placer-survey-body {
+  padding: clamp(28px, 6vw, 48px) clamp(16px, 5vw, 32px);
+}
+
+/* 40px -> 28px. A fixed 40px heading wraps to three lines at 375px. */
+.placer-survey-title {
+  font-size: clamp(1.75rem, 6vw, 2.5rem);
+}
+
+/* 36px -> 26px. */
+.placer-survey-title-success {
+  font-size: clamp(1.625rem, 5.5vw, 2.25rem);
+}
+
+/* 28px -> 21px. The question is the longest text in the flow. */
+.placer-survey-question {
+  font-size: clamp(1.3125rem, 4.5vw, 1.75rem);
+}
+
+/* The panel the survey sits in inside the landing page's dialog. Same reasoning as
+   .placer-viewport, but the height is computed, so it cannot reuse that class. */
+.placer-survey-dialog {
+  height: min(880px, calc(100dvh - 48px));
+}
+
+/* Everything sized by dvh, restated for browsers that lack it: Safari before 15.4,
+   Chrome before 108, Firefox before 101. Without this they would compute no height at
+   all and the flex shells would collapse to `auto`, which breaks the layout far worse
+   than a toolbar-sized crop. */
+@supports not (height: 100dvh) {
+  .placer-viewport {
+    height: 100vh;
+  }
+
+  #root {
+    height: 100vh;
+  }
+
+  .placer-survey-dialog {
+    height: min(880px, calc(100vh - 48px));
   }
 }
 

@@ -180,7 +180,7 @@ function MainApp({ initialView = 'welcome' }) {
   }
 
   return (
-    <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', background: t.page, color: t.ink }}>
+    <div className="placer-viewport" style={{ width: '100%', display: 'flex', flexDirection: 'column', background: t.page, color: t.ink }}>
       {/* Navigation Bar */}
       {showNav && (
         <div style={{ height: 66, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 20,

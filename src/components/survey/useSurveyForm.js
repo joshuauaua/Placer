@@ -122,7 +122,7 @@ export function useSurveyForm({ content, submit, source }) {
    */
   const toggleOption = (optionValue) => {
     if (!currentQuestion) return;
-    const { key, multiple } = currentQuestion;
+    const { key, multiple, maxChoices } = currentQuestion;
 
     setAnswers((current) => {
       const section = current[step];
@@ -130,7 +130,13 @@ export function useSurveyForm({ content, submit, source }) {
 
       if (multiple) {
         const selected = Array.isArray(section[key]) ? section[key] : [];
-        next = selected.includes(optionValue)
+        const alreadyPicked = selected.includes(optionValue);
+        // At the ceiling, only letting go is allowed. Enforced here as well as in
+        // the disabled buttons, so the limit holds however the toggle is reached.
+        if (!alreadyPicked && maxChoices !== undefined && selected.length >= maxChoices) {
+          return current;
+        }
+        next = alreadyPicked
           ? selected.filter((value) => value !== optionValue)
           : [...selected, optionValue];
       } else {

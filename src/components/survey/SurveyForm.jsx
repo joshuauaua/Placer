@@ -31,39 +31,35 @@ const DANGER = '#D6452F';
  * illustration. Line art on a light ground, so they are shown as they are rather
  * than reversed out of an accent badge, and sized to be legible — the detail in
  * them is lost at icon size. The headings beside them carry the meaning, so they
- * are decoration as far as a screen reader is concerned. */
-const MARK_HEIGHT = 132;
-
+ * are decoration as far as a screen reader is concerned.
+ *
+ * The height scales with the screen: see .placer-survey-mark in index.css. */
 function Mark({ t, src }) {
   return (
     <img
       src={src}
       alt=""
       aria-hidden="true"
-      style={{
-        height: MARK_HEIGHT,
-        width: 'auto',
-        display: 'block',
-        margin: '0 auto 24px',
-        // Black ink on a dark page is no drawing at all: reverse it instead.
-        filter: t.mapMode === 'dark' ? 'invert(1)' : undefined,
-      }}
+      className="placer-survey-mark"
+      // Black ink on a dark page is no drawing at all: reverse it instead.
+      style={{ filter: t.mapMode === 'dark' ? 'invert(1)' : undefined }}
     />
   );
 }
 
-/** A centred card on the gradient, shared by the intro and thank-you screens. */
+/** A centred card on the gradient, shared by the intro and thank-you screens.
+ *
+ * The layout, the padding and the centring that survives an overflow all live in
+ * .placer-survey-screen. Given no height it fills the visible viewport itself, which
+ * is what the /survey route wants; the dialog passes '100%' and keeps its own. */
 function FullScreen({ t, height, children }) {
   return (
     <div
+      className={`placer-survey-screen${height ? '' : ' placer-viewport'}`}
       style={{
         width: '100%',
         height,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         background: `linear-gradient(135deg, ${t.page} 0%, ${t.chrome} 100%)`,
-        padding: 20,
       }}
     >
       <div style={{ maxWidth: 600, textAlign: 'center' }}>{children}</div>
@@ -76,7 +72,9 @@ function FullScreen({ t, height, children }) {
  * @param submit   persists the finished response; rejects if it could not
  * @param source   tag recorded with the response, e.g. `community_survey`
  * @param idPrefix namespaces the email field's ids, so two surveys never collide
- * @param height   what the survey fills; '100vh' as a route, '100%' in a dialog
+ * @param height   what the survey fills. Omitted as a route, where it takes the
+ *                 visible viewport via .placer-viewport; '100%' in a dialog, which
+ *                 has a definite height of its own
  * @param onClose  replaces the default "leave the survey" behaviour, which is a
  *                 navigation to / and no use to a caller already showing /
  */
@@ -86,7 +84,7 @@ export function SurveyForm({
   submit,
   source,
   idPrefix = 'survey',
-  height = '100vh',
+  height,
   onClose,
 }) {
   const survey = useSurveyForm({ content, submit, source });
@@ -98,9 +96,8 @@ export function SurveyForm({
         <Mark t={t} src={markIntro} />
 
         <h1
-          className="placer-disp"
+          className="placer-disp placer-survey-title"
           style={{
-            fontSize: 40,
             fontWeight: 900,
             color: t.ink,
             letterSpacing: '-0.03em',
@@ -130,9 +127,8 @@ export function SurveyForm({
         <Mark t={t} src={markSuccess} />
 
         <h1
-          className="placer-disp"
+          className="placer-disp placer-survey-title-success"
           style={{
-            fontSize: 36,
             fontWeight: 900,
             color: t.ink,
             letterSpacing: '-0.02em',
@@ -177,6 +173,7 @@ export function SurveyForm({
 
   return (
     <div
+      className={height ? undefined : 'placer-viewport'}
       style={{
         width: '100%',
         height,
@@ -187,9 +184,9 @@ export function SurveyForm({
     >
       {/* Section heading, position in the survey, and progress */}
       <div
+        className="placer-survey-head"
         style={{
           flex: '0 0 auto',
-          padding: '24px 32px',
           borderBottom: `1px solid ${t.line}`,
           background: t.surface,
         }}
@@ -252,8 +249,8 @@ export function SurveyForm({
       {/* The current question, or the email field */}
       <div
         ref={survey.scrollRef}
-        className="placer-scroll"
-        style={{ flex: 1, overflowY: 'auto', padding: '48px 32px' }}
+        className="placer-scroll placer-survey-body"
+        style={{ flex: 1, overflowY: 'auto' }}
       >
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           {description && (
@@ -340,9 +337,9 @@ export function SurveyForm({
 
       {/* Navigation */}
       <div
+        className="placer-survey-foot"
         style={{
           flex: '0 0 auto',
-          padding: '24px 32px',
           borderTop: `1px solid ${t.line}`,
           background: t.surface,
         }}

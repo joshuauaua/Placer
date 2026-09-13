@@ -54,6 +54,21 @@ function text(value, path) {
   return value;
 }
 
+/** A count that may be absent, but must be a positive whole number when present. */
+function optionalCount(value, path) {
+  if (value === undefined) return value;
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
+    fail(path, 'must be a positive whole number when present');
+  }
+  return value;
+}
+
+/** Text that may be absent altogether, but must be real text when it is there. */
+function optionalText(value, path) {
+  if (value === undefined) return value;
+  return text(value, path);
+}
+
 function flag(value, path) {
   if (value !== undefined && typeof value !== 'boolean') {
     fail(path, 'must be a boolean when present');
@@ -78,6 +93,13 @@ function question(value, path) {
   // one: on its own it would rank a single choice against nothing.
   if (value.rank && !value.multiple) fail(`${path}.rank`, 'needs `multiple` alongside it');
 
+  // A ceiling on how many answers may be picked. Single-choice questions already
+  // hold exactly one, so a limit there would mean nothing.
+  optionalCount(value.maxChoices, `${path}.maxChoices`);
+  if (value.maxChoices !== undefined && !value.multiple) {
+    fail(`${path}.maxChoices`, 'needs `multiple` alongside it');
+  }
+
   if (!Array.isArray(value.options) || value.options.length === 0) {
     fail(`${path}.options`, 'must be a non-empty array');
   }
@@ -89,6 +111,10 @@ function question(value, path) {
     object(option, optionPath);
     text(option.value, `${optionPath}.value`);
     text(option.label, `${optionPath}.label`);
+    // An optional trailing clause, shown after the label on the same line with the
+    // label emboldened ahead of it. Splitting the two is what lets the title be
+    // picked out; an option with no description renders as a plain label.
+    optionalText(option.description, `${optionPath}.description`);
     // `other` opens a free-text field; `noCommitment` marks the answer that
     // leaves the closing email step optional.
     flag(option.other, `${optionPath}.other`);
@@ -101,6 +127,12 @@ function question(value, path) {
 
   // One free-text field per question: a second would have nowhere to be stored.
   if (others > 1) fail(`${path}.options`, 'has more than one `other` option');
+
+  // A limit above the number of options could never be reached, so it is a mistake
+  // rather than a permissive setting.
+  if (value.maxChoices !== undefined && value.maxChoices > value.options.length) {
+    fail(`${path}.maxChoices`, 'is larger than the number of options');
+  }
 }
 
 /**

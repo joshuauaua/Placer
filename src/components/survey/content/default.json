@@ -79,31 +79,38 @@
       "options": [
         {
           "value": "demographic-reach",
-          "label": "Demographic Reach: Reaching diverse age groups and bridging digital vs. physical participation"
+          "label": "Demographic Reach",
+          "description": "Reaching diverse ages, online and in person"
         },
         {
           "value": "data-structuring",
-          "label": "Data Structuring: Converting qualitative feedback (sticky notes, comments) into actionable GIS data"
+          "label": "Data Structuring",
+          "description": "Turning sticky notes and comments into GIS data"
         },
         {
           "value": "visual-communication",
-          "label": "Visual Communication: Helping non-experts understand complex 2D/3D spatial plans"
+          "label": "Visual Communication",
+          "description": "Helping non-experts read complex 2D and 3D plans"
         },
         {
           "value": "conflict-resolution",
-          "label": "Conflict Resolution: Navigating opposing views between different stakeholder groups"
+          "label": "Conflict Resolution",
+          "description": "Navigating opposing views between stakeholder groups"
         },
         {
           "value": "sustaining-momentum",
-          "label": "Sustaining Momentum: Keeping residents engaged across long planning and approval timelines"
+          "label": "Sustaining Momentum",
+          "description": "Keeping residents engaged over long timelines"
         },
         {
           "value": "executive-buy-in",
-          "label": "Executive Buy-in: Creating clear, data-driven reports that convince city councils and decision-makers"
+          "label": "Executive Buy-in",
+          "description": "Reports that convince councils and decision-makers"
         },
         {
           "value": "resource-limits",
-          "label": "Resource Limits: Lacking the budget or technical setup to launch custom engagement tools"
+          "label": "Resource Limits",
+          "description": "No budget or technical setup for custom tools"
         }
       ]
     }
@@ -111,9 +118,10 @@
   "section3": [
     {
       "key": "featurePriorities",
-      "label": "Which features would you test first in PLACER?",
+      "label": "Which features would you test first in PLACER? (in order of priority, select 3)",
       "multiple": true,
       "rank": true,
+      "maxChoices": 3,
       "options": [
         {
           "value": "participatory-mapping",
