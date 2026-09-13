@@ -64,7 +64,10 @@ describe('survey content', () => {
   });
 
   it('rejects a ranked question that cannot store an order', () => {
+    // The shipped survey no longer ranks anything, so the ranking is put on
+    // question 4 here before its `multiple` is taken away.
     const content = clone();
+    content.section3[0].rank = true;
     delete content.section3[0].multiple;
 
     expect(() => validateSurveyContent(content)).toThrow(/needs `multiple` alongside it/);

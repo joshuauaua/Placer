@@ -74,6 +74,31 @@ const fixture = {
   errorMessage: 'Could not save your answers.',
 };
 
+/* A ranking: a `multiple` question read as an ordering, with a ceiling on how many
+ * answers it takes. The shipped survey asks its feature question as a plain
+ * select-multiple, so this variant lives here rather than in the content file.
+ * Four options against a ceiling of three, so there is always one left over to
+ * check the ceiling holds. */
+const RANK_MAX = 3;
+const rankedFixture = {
+  ...fixture,
+  section1: [
+    {
+      key: 'picks',
+      label: 'Pick these in order',
+      multiple: true,
+      rank: true,
+      maxChoices: RANK_MAX,
+      options: [
+        { value: 'trees', label: 'Trees' },
+        { value: 'benches', label: 'Benches' },
+        { value: 'lights', label: 'Lights' },
+        { value: 'planters', label: 'Planters' },
+      ],
+    },
+  ],
+};
+
 const options = () => within(screen.getByRole('group')).getAllByRole('button');
 const emailField = (labels) => screen.getByLabelText(new RegExp(`^${labels.emailLabel}`));
 const button = (name) => screen.getByRole('button', { name });
@@ -258,79 +283,14 @@ describe('SurveyPage', () => {
       expect(button(content.steps.submitLabel)).not.toBeDisabled();
     });
 
-    it('numbers the ranked question in the order answers are picked', () => {
+    it('stores question 4 as a list in the order its answers are picked', async () => {
       cleanup();
       render(<SurveyPage t={THEME} />);
       fireEvent.click(button(content.hero.startLabel));
-      // Question 4 is the ranked one, so stop one short of the last.
+      // Question 4 takes several answers, so stop one short of the last.
       for (let i = 0; i < TOTAL - 2; i++) answerAndAdvance(content.steps);
 
-      expect(screen.getByText('Choose in order of priority, most important first.'))
-        .toBeInTheDocument();
-
-      fireEvent.click(options()[2]);
-      fireEvent.click(options()[0]);
-
-      // Picked second and first: the badge is the position, not a tick.
-      expect(options()[2]).toHaveTextContent('1');
-      expect(options()[0]).toHaveTextContent('2');
-      // And the position is said out loud, since the badge is decorative.
-      expect(options()[2]).toHaveAccessibleName(
-        `${content.section3[0].options[2].label}, priority 1`,
-      );
-    });
-
-    it('closes the ranking up again when an answer is dropped', () => {
-      cleanup();
-      render(<SurveyPage t={THEME} />);
-      fireEvent.click(button(content.hero.startLabel));
-      for (let i = 0; i < TOTAL - 2; i++) answerAndAdvance(content.steps);
-
-      fireEvent.click(options()[0]);
-      fireEvent.click(options()[1]);
-      fireEvent.click(options()[3]);
-      expect(options()[3]).toHaveTextContent('3');
-
-      // Dropping the first promotes the two behind it.
-      fireEvent.click(options()[0]);
-
-      expect(options()[1]).toHaveTextContent('1');
-      expect(options()[3]).toHaveTextContent('2');
-      expect(options()[0]).toHaveAttribute('aria-pressed', 'false');
-    });
-
-    it('holds the ranking at its ceiling until an answer is let go', () => {
-      cleanup();
-      render(<SurveyPage t={THEME} />);
-      fireEvent.click(button(content.hero.startLabel));
-      for (let i = 0; i < TOTAL - 2; i++) answerAndAdvance(content.steps);
-
-      const max = content.section3[0].maxChoices;
-      for (let i = 0; i < max; i++) fireEvent.click(options()[i]);
-
-      // Full: everything unpicked goes inert, and the count says why rather than
-      // leaving a tap that appears to do nothing.
-      expect(options()[max]).toBeDisabled();
-      expect(screen.getByRole('status')).toHaveTextContent(`${max} chosen`);
-
-      // Clicking one changes nothing, and the ranking behind it is undisturbed.
-      fireEvent.click(options()[max]);
-      expect(options()[max]).toHaveAttribute('aria-pressed', 'false');
-      expect(options()[max - 1]).toHaveTextContent(String(max));
-
-      // The ceiling is not a requirement: one pick is still enough to move on.
-      expect(button(content.steps.nextLabel)).not.toBeDisabled();
-
-      // Letting one go opens the rest back up.
-      fireEvent.click(options()[0]);
-      expect(options()[max]).not.toBeDisabled();
-    });
-
-    it('stores the ranking as an ordered list', async () => {
-      cleanup();
-      render(<SurveyPage t={THEME} />);
-      fireEvent.click(button(content.hero.startLabel));
-      for (let i = 0; i < TOTAL - 2; i++) answerAndAdvance(content.steps);
+      expect(screen.getByText('Select all that apply.')).toBeInTheDocument();
 
       fireEvent.click(options()[3]);
       fireEvent.click(options()[1]);
@@ -639,6 +599,72 @@ describe('SurveyForm', () => {
     fireEvent.keyDown(field, { key: 'Enter' });
 
     expect(await screen.findByRole('heading', { name: fixture.success.title })).toBeInTheDocument();
+  });
+
+  describe('a ranked question', () => {
+    beforeEach(() => {
+      render(
+        <SurveyForm
+          t={THEME}
+          content={rankedFixture}
+          submit={vi.fn()}
+          source="ranked_survey"
+          idPrefix="ranked"
+        />,
+      );
+      fireEvent.click(button(rankedFixture.hero.startLabel));
+    });
+
+    it('numbers the answers in the order they are picked', () => {
+      expect(screen.getByText('Choose in order of priority, most important first.'))
+        .toBeInTheDocument();
+
+      fireEvent.click(options()[2]);
+      fireEvent.click(options()[0]);
+
+      // Picked second and first: the badge is the position, not a tick.
+      expect(options()[2]).toHaveTextContent('1');
+      expect(options()[0]).toHaveTextContent('2');
+      // And the position is said out loud, since the badge is decorative.
+      expect(options()[2]).toHaveAccessibleName(
+        `${rankedFixture.section1[0].options[2].label}, priority 1`,
+      );
+    });
+
+    it('closes the ranking up again when an answer is dropped', () => {
+      fireEvent.click(options()[0]);
+      fireEvent.click(options()[1]);
+      fireEvent.click(options()[3]);
+      expect(options()[3]).toHaveTextContent('3');
+
+      // Dropping the first promotes the two behind it.
+      fireEvent.click(options()[0]);
+
+      expect(options()[1]).toHaveTextContent('1');
+      expect(options()[3]).toHaveTextContent('2');
+      expect(options()[0]).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('holds the ranking at its ceiling until an answer is let go', () => {
+      for (let i = 0; i < RANK_MAX; i++) fireEvent.click(options()[i]);
+
+      // Full: everything unpicked goes inert, and the count says why rather than
+      // leaving a tap that appears to do nothing.
+      expect(options()[RANK_MAX]).toBeDisabled();
+      expect(screen.getByRole('status')).toHaveTextContent(`${RANK_MAX} chosen`);
+
+      // Clicking one changes nothing, and the ranking behind it is undisturbed.
+      fireEvent.click(options()[RANK_MAX]);
+      expect(options()[RANK_MAX]).toHaveAttribute('aria-pressed', 'false');
+      expect(options()[RANK_MAX - 1]).toHaveTextContent(String(RANK_MAX));
+
+      // The ceiling is not a requirement: one pick is still enough to move on.
+      expect(button(rankedFixture.steps.nextLabel)).not.toBeDisabled();
+
+      // Letting one go opens the rest back up.
+      fireEvent.click(options()[0]);
+      expect(options()[RANK_MAX]).not.toBeDisabled();
+    });
   });
 
   it('keeps the visitor on the email step and explains a failed save', async () => {

@@ -14,7 +14,7 @@
     "emailLabel": "Email Address",
     "emailPlaceholder": "Enter your email address",
     "otherLabel": "Tell us which",
-    "otherPlaceholder": "The feature you would test first",
+    "otherPlaceholder": "The feature you would love to see",
     "nextLabel": "Next",
     "backLabel": "Back",
     "submitLabel": "Submit & Complete",
@@ -74,7 +74,7 @@
     },
     {
       "key": "frictionPoints",
-      "label": "What are your biggest challenges in community engagement?",
+      "label": "What are your biggest challenges in placemaking?",
       "multiple": true,
       "options": [
         {
@@ -118,10 +118,8 @@
   "section3": [
     {
       "key": "featurePriorities",
-      "label": "Which features would you test first in PLACER? (in order of priority, select 3)",
+      "label": "What would you love to see in PLACER?",
       "multiple": true,
-      "rank": true,
-      "maxChoices": 3,
       "options": [
         {
           "value": "participatory-mapping",
@@ -142,6 +140,10 @@
         {
           "value": "voting",
           "label": "Community voting & project prioritization modules"
+        },
+        {
+          "value": "cobudgeting",
+          "label": "Cobudgeting: allocating a real budget together"
         },
         {
           "value": "other",
