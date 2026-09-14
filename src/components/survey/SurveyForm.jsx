@@ -4,7 +4,7 @@
  * different JSON file rather than a different component.
  */
 
-import coverArt from '../../assets/hero.png';
+import coverArt from '../../assets/cover-bench.png';
 import { Icon } from '../Icon';
 import { Btn } from '../UI';
 import { SurveyQuestion } from './SurveyQuestion';
@@ -154,7 +154,10 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
             gap: 40,
-            alignItems: 'start',
+            // Centered rather than top-aligned: the glossary card is shorter than
+            // the description column next to it, and pinning it to the top left
+            // an awkward gap of its own underneath.
+            alignItems: 'center',
             textAlign: 'left',
             marginBottom: 40,
           }}
@@ -189,7 +192,9 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
               <h2
                 className="placer-disp"
                 style={{
-                  fontSize: 15,
+                  // A step above the 15px terms below it, so the heading still
+                  // reads as a heading over the rows it introduces.
+                  fontSize: 18,
                   fontWeight: 800,
                   color: t.ink,
                   letterSpacing: '-0.01em',
