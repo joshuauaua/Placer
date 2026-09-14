@@ -29,7 +29,7 @@ export const SCALE_MAX = 10;
 const COVER_FIELDS = ['title', 'startLabel'];
 
 const STEP_FIELDS = [
-  ...MODULES.flatMap((module) => [`${module}Title`, `${module}Description`]),
+  ...MODULES.map((module) => `${module}Title`),
   'optInTitle',
   'optInDescription',
   // Shown against an `other` option and an `optional` question respectively, so
@@ -37,6 +37,13 @@ const STEP_FIELDS = [
   'otherLabel',
   'otherPlaceholder',
   'optionalHint',
+  // The Enter-to-continue hint. Read by the cover as well as the question steps,
+  // because it is chrome the whole survey shares rather than cover copy.
+  'enterKeyLabel',
+  'enterHintStart',
+  'enterHint',
+  'enterHintSubmit',
+  'newLineHint',
   'nextLabel',
   'backLabel',
   'submitLabel',

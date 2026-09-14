@@ -4,6 +4,7 @@
  * different JSON file rather than a different component.
  */
 
+import coverArt from '../../assets/hero.png';
 import { Icon } from '../Icon';
 import { Btn } from '../UI';
 import { SurveyQuestion } from './SurveyQuestion';
@@ -32,7 +33,7 @@ const selectedFill = (t) => t.accent + (t.mapMode === 'dark' ? '14' : '22');
  * cover runs to several paragraphs and a glossary, so the pane scrolls rather
  * than clipping on a short window.
  */
-function FullScreen({ t, children }) {
+function FullScreen({ t, children, maxWidth = 640 }) {
   return (
     <div
       className="placer-scroll"
@@ -47,10 +48,43 @@ function FullScreen({ t, children }) {
         padding: 20,
       }}
     >
-      <div style={{ maxWidth: 640, width: '100%', margin: 'auto', textAlign: 'center' }}>
-        {children}
-      </div>
+      <div style={{ maxWidth, width: '100%', margin: 'auto', textAlign: 'center' }}>{children}</div>
     </div>
+  );
+}
+
+/**
+ * "Enter ↵ to continue", shown wherever Enter will actually do something — the
+ * listener in useSurveyForm ignores a step that is not ready, so promising it on
+ * one would be a lie.
+ */
+function EnterHint({ t, labels, phrase }) {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        fontSize: 13,
+        color: t.inkDim,
+      }}
+    >
+      <kbd
+        className="placer-mono"
+        style={{
+          padding: '4px 8px',
+          borderRadius: 6,
+          border: `1px solid ${t.line}`,
+          background: t.chrome,
+          color: t.ink,
+          fontSize: 12,
+          fontWeight: 600,
+        }}
+      >
+        {labels.enterKeyLabel}
+      </kbd>
+      {phrase}
+    </span>
   );
 }
 
@@ -96,106 +130,115 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
 
   if (step === 'cover') {
     return (
-      <FullScreen t={t}>
-        <div
-          style={{
-            width: 80,
-            height: 80,
-            background: t.accent,
-            borderRadius: 16,
-            margin: '0 auto 20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Icon name="comment" size={44} stroke={2.2} style={{ color: t.accentInk }} />
-        </div>
-
+      <FullScreen t={t} maxWidth={1040}>
+        {/* Across the top, over both columns. */}
         <h1
           className="placer-disp"
           style={{
-            fontSize: 40,
+            fontSize: 44,
             fontWeight: 900,
             color: t.ink,
             letterSpacing: '-0.03em',
-            marginBottom: 24,
+            lineHeight: 1.1,
+            marginBottom: 40,
           }}
         >
           {content.cover.title}
         </h1>
 
-        {/* Left-aligned: three justified paragraphs of centred text are hard work. */}
-        <div style={{ textAlign: 'left', marginBottom: 32 }}>
-          {content.cover.body.map((paragraph) => (
-            <p
-              key={paragraph.slice(0, 48)}
-              style={{ fontSize: 17, color: t.inkDim, lineHeight: 1.7, marginBottom: 16 }}
-            >
-              {paragraph}
-            </p>
-          ))}
-        </div>
+        {/* Two columns where there is room for them, one where there is not:
+            auto-fit collapses the grid on a narrow window without a media query,
+            which inline styles cannot express. */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 40,
+            alignItems: 'start',
+            textAlign: 'left',
+            marginBottom: 40,
+          }}
+        >
+          <div>
+            {/* Decorative: it says nothing the title and copy do not. */}
+            <img
+              src={coverArt}
+              alt=""
+              style={{ width: 168, height: 'auto', display: 'block', marginBottom: 24 }}
+            />
 
-        {content.cover.glossary && (
-          <div
-            style={{
-              textAlign: 'left',
-              padding: '20px 28px 6px',
-              marginBottom: 32,
-              background: t.surface,
-              border: `1px solid ${t.line}`,
-              borderRadius: 16,
-            }}
-          >
-            <h2
-              className="placer-disp"
-              style={{
-                fontSize: 15,
-                fontWeight: 800,
-                color: t.ink,
-                letterSpacing: '-0.01em',
-                marginBottom: 4,
-              }}
-            >
-              {content.cover.glossaryTitle}
-            </h2>
-
-            {content.cover.glossary.map((entry, index) => (
-              <details
-                key={entry.term}
-                className="placer-disclosure"
-                style={{ borderTop: index === 0 ? 'none' : `1px solid ${t.line}` }}
+            {content.cover.body.map((paragraph) => (
+              <p
+                key={paragraph.slice(0, 48)}
+                style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.7, marginBottom: 16 }}
               >
-                <summary
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    padding: '14px 0',
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: t.ink,
-                  }}
-                >
-                  {entry.term}
-                  <span className="placer-disclosure-chev" aria-hidden="true">
-                    <Icon name="chevDown" size={18} stroke={2.4} style={{ color: t.inkDim }} />
-                  </span>
-                </summary>
-
-                <p style={{ margin: '0 0 16px', fontSize: 14, color: t.inkDim, lineHeight: 1.6 }}>
-                  {entry.definition}
-                </p>
-              </details>
+                {paragraph}
+              </p>
             ))}
           </div>
-        )}
+
+          {content.cover.glossary && (
+            <div
+              style={{
+                padding: '20px 28px 6px',
+                background: t.surface,
+                border: `1px solid ${t.line}`,
+                borderRadius: 16,
+              }}
+            >
+              <h2
+                className="placer-disp"
+                style={{
+                  fontSize: 15,
+                  fontWeight: 800,
+                  color: t.ink,
+                  letterSpacing: '-0.01em',
+                  marginBottom: 4,
+                }}
+              >
+                {content.cover.glossaryTitle}
+              </h2>
+
+              {content.cover.glossary.map((entry, index) => (
+                <details
+                  key={entry.term}
+                  className="placer-disclosure"
+                  style={{ borderTop: index === 0 ? 'none' : `1px solid ${t.line}` }}
+                >
+                  <summary
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      padding: '14px 0',
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: t.ink,
+                    }}
+                  >
+                    {entry.term}
+                    <span className="placer-disclosure-chev" aria-hidden="true">
+                      <Icon name="chevDown" size={18} stroke={2.4} style={{ color: t.inkDim }} />
+                    </span>
+                  </summary>
+
+                  <p style={{ margin: '0 0 16px', fontSize: 14, color: t.inkDim, lineHeight: 1.6 }}>
+                    {entry.definition}
+                  </p>
+                </details>
+              ))}
+            </div>
+          )}
+        </div>
 
         <Btn t={t} variant="accent" size="lg" icon="arrowRight" onClick={survey.handleNext}>
           {content.cover.startLabel}
         </Btn>
+
+        <div style={{ marginTop: 16 }}>
+          <EnterHint t={t} labels={content.steps} phrase={content.steps.enterHintStart} />
+        </div>
       </FullScreen>
     );
   }
@@ -262,12 +305,18 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
 
   const onOptInStep = step === 'optIn';
   const heading = onOptInStep ? content.steps.optInTitle : content.steps[`${step}Title`];
-  const description = onOptInStep
-    ? content.steps.optInDescription
-    : content.steps[`${step}Description`];
   const counterText = onOptInStep
     ? 'Final step'
     : `${survey.currentQuestionNumber} / ${survey.totalQuestions}`;
+
+  // Whether Enter would do anything here, which is what the hint promises.
+  const enterWorks = onOptInStep
+    ? survey.canSubmit && !survey.isSubmitting
+    : survey.currentQuestionValid;
+
+  // A paragraph is the one place Enter is not free: it says how to get a newline.
+  const showNewLineHint =
+    !onOptInStep && survey.currentQuestion && survey.currentQuestion.type === 'paragraph';
 
   return (
     <div
@@ -350,9 +399,11 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
         style={{ flex: 1, overflowY: 'auto', padding: '48px 32px' }}
       >
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 32 }}>
-            {description}
-          </p>
+          {onOptInStep && (
+            <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 32 }}>
+              {content.steps.optInDescription}
+            </p>
+          )}
 
           {onOptInStep ? (
             <div>
@@ -421,14 +472,6 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
                             value={survey.contact[field.key]}
                             placeholder={field.placeholder}
                             onChange={(e) => survey.setContactField(field.key, e.target.value)}
-                            // There is no <form> around this — the shared Btn renders
-                            // a submit button, which would make Back and Next submit too.
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                survey.onSubmit();
-                              }
-                            }}
                             style={inputStyle(t)}
                           />
                         </div>
@@ -460,17 +503,25 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
             </div>
           ) : (
             survey.currentQuestion && (
-              <SurveyQuestion
-                key={survey.currentQuestion.key}
-                t={t}
-                labels={content.steps}
-                question={survey.currentQuestion}
-                value={survey.currentAnswer}
-                otherText={survey.currentOtherText}
-                onToggle={survey.toggleOption}
-                onText={survey.setWrittenAnswer}
-                onOtherText={survey.setOtherAnswer}
-              />
+              <>
+                <SurveyQuestion
+                  key={survey.currentQuestion.key}
+                  t={t}
+                  labels={content.steps}
+                  question={survey.currentQuestion}
+                  value={survey.currentAnswer}
+                  otherText={survey.currentOtherText}
+                  onToggle={survey.toggleOption}
+                  onText={survey.setWrittenAnswer}
+                  onOtherText={survey.setOtherAnswer}
+                />
+
+                {showNewLineHint && (
+                  <p style={{ marginTop: 12, fontSize: 13, color: t.inkDim }}>
+                    {content.steps.newLineHint}
+                  </p>
+                )}
+              </>
             )
           )}
         </div>
@@ -504,27 +555,37 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
             {content.steps.backLabel}
           </Btn>
 
-          {onOptInStep ? (
-            <Btn
-              t={t}
-              variant="accent"
-              icon="check"
-              onClick={survey.onSubmit}
-              disabled={!survey.canSubmit || survey.isSubmitting}
-            >
-              {survey.isSubmitting ? content.steps.submittingLabel : content.steps.submitLabel}
-            </Btn>
-          ) : (
-            <Btn
-              t={t}
-              variant="accent"
-              icon="arrowRight"
-              onClick={survey.handleNext}
-              disabled={!survey.currentQuestionValid}
-            >
-              {content.steps.nextLabel}
-            </Btn>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {enterWorks && (
+              <EnterHint
+                t={t}
+                labels={content.steps}
+                phrase={onOptInStep ? content.steps.enterHintSubmit : content.steps.enterHint}
+              />
+            )}
+
+            {onOptInStep ? (
+              <Btn
+                t={t}
+                variant="accent"
+                icon="check"
+                onClick={survey.onSubmit}
+                disabled={!survey.canSubmit || survey.isSubmitting}
+              >
+                {survey.isSubmitting ? content.steps.submittingLabel : content.steps.submitLabel}
+              </Btn>
+            ) : (
+              <Btn
+                t={t}
+                variant="accent"
+                icon="arrowRight"
+                onClick={survey.handleNext}
+                disabled={!survey.currentQuestionValid}
+              >
+                {content.steps.nextLabel}
+              </Btn>
+            )}
+          </div>
         </div>
       </div>
     </div>

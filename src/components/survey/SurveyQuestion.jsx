@@ -75,6 +75,8 @@ function ChoiceQuestion({ t, labels, question, value, otherText, onToggle, onOth
               key={option.value}
               type="button"
               aria-pressed={selected}
+              // Enter on a chosen option continues; see the listener in useSurveyForm.
+              data-survey-option=""
               onClick={() => onToggle(option.value)}
               style={{
                 padding: scale ? '16px 20px' : '20px 24px',
@@ -167,13 +169,29 @@ function ChoiceQuestion({ t, labels, question, value, otherText, onToggle, onOth
 }
 
 /**
- * A 1-10 strip. The ends are labelled underneath rather than inside the buttons,
- * which keeps ten of them legible on a phone.
+ * A 1-10 slider. There is no rating until one is given: the thumb rests in the
+ * middle but reads as unset, because a slider that arrives pre-answered collects
+ * whatever value it happened to start on.
  */
 function ScaleQuestion({ t, question, value, onToggle }) {
   const labelId = `survey-question-${question.key}`;
+  const fieldId = `survey-slider-${question.key}`;
   const [min, max] = scaleRange(question);
-  const points = Array.from({ length: max - min + 1 }, (_, i) => String(min + i));
+
+  const chosen = value !== undefined && value !== '';
+  // Where the thumb sits while nothing has been chosen. The midpoint reads as
+  // "somewhere in the middle" rather than as an answer at either end.
+  const resting = Math.round((min + max) / 2);
+  const current = chosen ? Number(value) : resting;
+  const fill = chosen ? ((current - min) / (max - min)) * 100 : 0;
+
+  const commit = (next) => onToggle(String(next));
+
+  // A press that never moves the thumb is still an answer — otherwise the one
+  // rating nobody could give would be the midpoint the slider already rests on.
+  const commitResting = () => {
+    if (!chosen) commit(resting);
+  };
 
   return (
     <div>
@@ -181,61 +199,58 @@ function ScaleQuestion({ t, question, value, onToggle }) {
         {question.label}
       </Heading>
 
-      <Hint t={t}>
-        {question.minLabel} · {question.maxLabel}
-      </Hint>
-
       <div
-        role="group"
-        aria-labelledby={labelId}
-        style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'center',
+          gap: 6,
+          margin: '24px 0 8px',
+        }}
       >
-        {points.map((point) => {
-          const selected = value === point;
-          return (
-            <button
-              key={point}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => onToggle(point)}
-              style={{
-                padding: '16px 0',
-                flex: '1 1 56px',
-                minWidth: 56,
-                borderRadius: 12,
-                border: `2px solid ${selected ? t.accent : t.line}`,
-                background: selected ? selectedFill(t) : t.surface,
-                color: t.ink,
-                fontSize: 17,
-                fontWeight: selected ? 700 : 500,
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                fontFamily: 'var(--placer-font)',
-              }}
-              onMouseEnter={(e) => {
-                if (selected) return;
-                e.currentTarget.style.borderColor = t.lineStrong;
-                e.currentTarget.style.background = t.surfaceAlt;
-              }}
-              onMouseLeave={(e) => {
-                if (selected) return;
-                e.currentTarget.style.borderColor = t.line;
-                e.currentTarget.style.background = t.surface;
-              }}
-            >
-              {point}
-            </button>
-          );
-        })}
+        <span
+          className="placer-disp"
+          style={{
+            fontSize: 48,
+            fontWeight: 900,
+            letterSpacing: '-0.03em',
+            color: chosen ? t.accent : t.inkDim,
+            lineHeight: 1,
+          }}
+        >
+          {chosen ? current : '—'}
+        </span>
+        <span style={{ fontSize: 15, fontWeight: 600, color: t.inkDim }}>/ {max}</span>
       </div>
+
+      <input
+        id={fieldId}
+        type="range"
+        className="placer-slider"
+        min={min}
+        max={max}
+        step={1}
+        value={current}
+        aria-labelledby={labelId}
+        aria-valuetext={chosen ? `${current} out of ${max}` : 'No rating chosen yet'}
+        onChange={(e) => commit(e.target.value)}
+        onMouseDown={commitResting}
+        onTouchStart={commitResting}
+        style={{
+          '--placer-slider-fill': `${fill}%`,
+          '--placer-slider-accent': t.accent,
+          '--placer-slider-track': t.chrome,
+          '--placer-slider-thumb': chosen ? t.accent : t.surface,
+          '--placer-slider-thumb-border': chosen ? t.accent : t.lineStrong,
+        }}
+      />
 
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           gap: 16,
-          marginTop: 12,
+          marginTop: 8,
           fontSize: 13,
           color: t.inkDim,
         }}

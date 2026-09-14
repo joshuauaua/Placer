@@ -25,18 +25,19 @@ const fixture = {
   },
   steps: {
     module1Title: 'Module A',
-    module1Description: 'The first one.',
     module2Title: 'Module B',
-    module2Description: 'The second one.',
     module3Title: 'Module C',
-    module3Description: 'The third one.',
     module4Title: 'Module D',
-    module4Description: 'The fourth one.',
     optInTitle: 'Stay in touch',
     optInDescription: 'Only if you want to.',
     otherLabel: 'Please specify',
     otherPlaceholder: 'Tell us which',
     optionalHint: 'Optional — you can continue without answering.',
+    enterKeyLabel: 'Enter ↵',
+    enterHintStart: 'to begin',
+    enterHint: 'to continue',
+    enterHintSubmit: 'to submit',
+    newLineHint: 'Shift + Enter adds a new line',
     nextLabel: 'Next',
     backLabel: 'Back',
     submitLabel: 'Send',
@@ -99,6 +100,7 @@ const fixture = {
 };
 
 const options = () => within(screen.getByRole('group')).getAllByRole('button');
+const slider = () => screen.getByRole('slider');
 const optIn = (label) => screen.getByRole('checkbox', { name: label });
 const button = (name) => screen.getByRole('button', { name });
 const heading = (name) => screen.getByRole('heading', { name });
@@ -110,6 +112,12 @@ function answerCurrent(question, optionIndex = 0) {
 
   if (type === 'text' || type === 'paragraph') {
     fireEvent.change(field(question.label), { target: { value: 'An answer' } });
+    return;
+  }
+
+  if (type === 'scale') {
+    // The low end, so a walked-through survey has a predictable rating in it.
+    fireEvent.change(slider(), { target: { value: String(question.scaleMin ?? 1) } });
     return;
   }
 
@@ -174,12 +182,21 @@ describe('SurveyPage', () => {
       expect(screen.getByText(second.definition)).not.toBeVisible();
     });
 
+    it('carries a decorative image, named by nothing', () => {
+      const { container } = render(<SurveyPage t={THEME} />);
+      const art = container.querySelector('img');
+
+      // Empty alt on purpose: the artwork repeats what the title already says, so
+      // a screen reader should skip it rather than describe it.
+      expect(art).toBeInTheDocument();
+      expect(art).toHaveAttribute('alt', '');
+    });
+
     it('shows the first question of module 1 once started', () => {
       render(<SurveyPage t={THEME} />);
       fireEvent.click(button(content.cover.startLabel));
 
       expect(heading(content.steps.module1Title)).toBeInTheDocument();
-      expect(screen.getByText(content.steps.module1Description)).toBeInTheDocument();
       expect(heading(firstQuestion.label)).toBeInTheDocument();
       expect(screen.getByText(`1 / ${TOTAL}`)).toBeInTheDocument();
     });
@@ -335,6 +352,99 @@ describe('SurveyPage', () => {
     });
   });
 
+  describe('pressing Enter', () => {
+    const enter = (target = document.body, init = {}) =>
+      fireEvent.keyDown(target, { key: 'Enter', ...init });
+
+    it('starts the survey from the cover', () => {
+      render(<SurveyPage t={THEME} />);
+      enter();
+
+      expect(heading(firstQuestion.label)).toBeInTheDocument();
+    });
+
+    it('is left to the glossary while a term has focus', () => {
+      render(<SurveyPage t={THEME} />);
+      enter(screen.getByText(content.cover.glossary[0].term));
+
+      expect(heading(content.cover.title)).toBeInTheDocument();
+    });
+
+    it('says so on the cover, and on a question once it can be left', () => {
+      render(<SurveyPage t={THEME} />);
+      expect(screen.getByText(content.steps.enterHintStart)).toBeInTheDocument();
+
+      fireEvent.click(button(content.cover.startLabel));
+      expect(screen.queryByText(content.steps.enterHint)).not.toBeInTheDocument();
+
+      fireEvent.click(options()[0]);
+      expect(screen.getByText(content.steps.enterHint)).toBeInTheDocument();
+    });
+
+    it('waits for an answer before it moves on', () => {
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.cover.startLabel));
+
+      enter();
+      expect(heading(firstQuestion.label)).toBeInTheDocument();
+
+      fireEvent.click(options()[0]);
+      enter();
+      expect(heading(content.module1[1].label)).toBeInTheDocument();
+    });
+
+    it('continues from the option just chosen rather than unchoosing it', () => {
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.cover.startLabel));
+
+      const chosen = options()[0];
+      fireEvent.click(chosen);
+      enter(chosen);
+
+      expect(heading(content.module1[1].label)).toBeInTheDocument();
+    });
+
+    it('is left to the Back button while it has focus', () => {
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.cover.startLabel));
+      fireEvent.click(options()[0]);
+      enter(button(content.steps.backLabel));
+
+      expect(heading(firstQuestion.label)).toBeInTheDocument();
+    });
+
+    it('moves on from a typed line of text', () => {
+      render(<SurveyPage t={THEME} />);
+      fireEvent.click(button(content.cover.startLabel));
+      fireEvent.click(options()[0]);
+      fireEvent.click(button(content.steps.nextLabel));
+
+      const typed = content.module1[1];
+      fireEvent.change(field(typed.label), { target: { value: 'Area Planner' } });
+      enter(field(typed.label));
+
+      expect(heading(content.module1[2].label)).toBeInTheDocument();
+    });
+
+    it('submits from the closing step', async () => {
+      render(<SurveyPage t={THEME} />);
+      walkToOptIn(content);
+      enter();
+
+      expect(await screen.findByRole('heading', { name: content.success.title })).toBeInTheDocument();
+    });
+
+    it('will not submit while opted-in details are missing', () => {
+      render(<SurveyPage t={THEME} />);
+      walkToOptIn(content);
+      fireEvent.click(optIn(content.optIns[0].label));
+      enter();
+
+      expect(heading(content.steps.optInTitle)).toBeInTheDocument();
+      expect(screen.queryByText(content.steps.enterHintSubmit)).not.toBeInTheDocument();
+    });
+  });
+
   describe('submitting', () => {
     it('stores the response, reports it, and shows the thank you screen', async () => {
       render(<SurveyPage t={THEME} />);
@@ -438,6 +548,18 @@ describe('SurveyForm', () => {
     return submit;
   };
 
+  /**
+   * Answers the fixture's scale question, which is a slider rather than buttons.
+   * Asking for the rating the thumb already rests on changes no value and so fires
+   * no event — that rating arrives by pressing the slider instead, which is the
+   * same path a respondent takes to it.
+   */
+  const rate = (value = '3') => {
+    const input = slider();
+    if (input.value === value) fireEvent.mouseDown(input);
+    else fireEvent.change(input, { target: { value } });
+  };
+
   it('lets a multiple-choice question hold several answers', () => {
     start();
 
@@ -488,7 +610,7 @@ describe('SurveyForm', () => {
       fireEvent.click(options()[0]);
       fireEvent.click(button(fixture.steps.nextLabel));
 
-      fireEvent.click(options()[0]);
+      rate();
       fireEvent.click(button(fixture.steps.nextLabel));
       fireEvent.change(field(fixture.module3[0].label), { target: { value: 'Area Planner' } });
       fireEvent.click(button(fixture.steps.nextLabel));
@@ -522,33 +644,51 @@ describe('SurveyForm', () => {
       fireEvent.click(button(fixture.steps.nextLabel));
     };
 
-    it('offers one button per point, labelled at both ends', () => {
+    it('offers a slider over the range, labelled at both ends', () => {
       toScale();
 
-      expect(options()).toHaveLength(5);
-      expect(options()[0]).toHaveTextContent('1');
-      expect(options()[4]).toHaveTextContent('5');
-      expect(screen.getAllByText(fixture.module2[0].minLabel).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(fixture.module2[0].maxLabel).length).toBeGreaterThan(0);
+      expect(slider()).toHaveAttribute('min', '1');
+      expect(slider()).toHaveAttribute('max', '5');
+      expect(slider()).toHaveAccessibleName(fixture.module2[0].label);
+      expect(screen.getByText(fixture.module2[0].minLabel)).toBeInTheDocument();
+      expect(screen.getByText(fixture.module2[0].maxLabel)).toBeInTheDocument();
     });
 
-    it('lays the points out in a row, unlike a stacked choice', () => {
-      start();
-      expect(screen.getByRole('group')).toHaveStyle({ flexDirection: 'column' });
+    it('holds no rating until the slider is used', () => {
+      toScale();
 
-      fireEvent.click(options()[0]);
-      fireEvent.click(button(fixture.steps.nextLabel));
+      expect(screen.getByText('—')).toBeInTheDocument();
+      expect(slider()).toHaveAttribute('aria-valuetext', 'No rating chosen yet');
+      expect(button(fixture.steps.nextLabel)).toBeDisabled();
+    });
 
-      expect(screen.getByRole('group')).toHaveStyle({ flexDirection: 'row' });
+    it('takes the rating the slider is moved to', () => {
+      toScale();
+      fireEvent.change(slider(), { target: { value: '4' } });
+
+      expect(slider()).toHaveValue('4');
+      expect(slider()).toHaveAttribute('aria-valuetext', '4 out of 5');
+      expect(screen.getByText('4')).toBeInTheDocument();
+      expect(button(fixture.steps.nextLabel)).not.toBeDisabled();
+    });
+
+    it('counts a press that never moves the thumb as the middle rating', () => {
+      toScale();
+      fireEvent.mouseDown(slider());
+
+      // The midpoint of 1-5, which is the one rating a drag could not produce
+      // from a resting thumb.
+      expect(slider()).toHaveValue('3');
+      expect(button(fixture.steps.nextLabel)).not.toBeDisabled();
     });
 
     it('replaces the rating rather than collecting several', () => {
       toScale();
-      fireEvent.click(options()[2]);
-      fireEvent.click(options()[4]);
+      fireEvent.change(slider(), { target: { value: '2' } });
+      fireEvent.change(slider(), { target: { value: '5' } });
 
-      expect(options()[2]).toHaveAttribute('aria-pressed', 'false');
-      expect(options()[4]).toHaveAttribute('aria-pressed', 'true');
+      expect(slider()).toHaveValue('5');
+      expect(screen.queryByText('2')).not.toBeInTheDocument();
     });
   });
 
@@ -557,7 +697,7 @@ describe('SurveyForm', () => {
       start();
       fireEvent.click(options()[0]);
       fireEvent.click(button(fixture.steps.nextLabel));
-      fireEvent.click(options()[0]);
+      rate();
       fireEvent.click(button(fixture.steps.nextLabel));
     };
 
@@ -590,6 +730,35 @@ describe('SurveyForm', () => {
     });
   });
 
+  describe('Enter in a paragraph', () => {
+    const toParagraph = () => {
+      start();
+      fireEvent.click(options()[0]);
+      fireEvent.click(button(fixture.steps.nextLabel));
+      rate();
+      fireEvent.click(button(fixture.steps.nextLabel));
+      fireEvent.change(field(fixture.module3[0].label), { target: { value: 'Area Planner' } });
+      fireEvent.click(button(fixture.steps.nextLabel));
+    };
+
+    it('says how to get a new line', () => {
+      toParagraph();
+
+      expect(screen.getByText(fixture.steps.newLineHint)).toBeInTheDocument();
+    });
+
+    it('stays put on Shift + Enter and moves on without it', () => {
+      toParagraph();
+      const box = field(fixture.module4[0].label);
+
+      fireEvent.keyDown(box, { key: 'Enter', shiftKey: true });
+      expect(heading(fixture.module4[0].label)).toBeInTheDocument();
+
+      fireEvent.keyDown(box, { key: 'Enter' });
+      expect(heading(fixture.steps.optInTitle)).toBeInTheDocument();
+    });
+  });
+
   it('hands the grouped answers, the free text and the contact details to submit', async () => {
     const submit = start(vi.fn().mockResolvedValue({ id: 'saved' }));
 
@@ -600,7 +769,7 @@ describe('SurveyForm', () => {
     });
     fireEvent.click(button(fixture.steps.nextLabel));
 
-    fireEvent.click(options()[2]);
+    rate('3');
     fireEvent.click(button(fixture.steps.nextLabel));
 
     fireEvent.change(field(fixture.module3[0].label), { target: { value: '  Area Planner  ' } });
@@ -633,7 +802,7 @@ describe('SurveyForm', () => {
 
     fireEvent.click(options()[0]);
     fireEvent.click(button(fixture.steps.nextLabel));
-    fireEvent.click(options()[0]);
+    rate();
     fireEvent.click(button(fixture.steps.nextLabel));
     fireEvent.change(field(fixture.module3[0].label), { target: { value: 'Area Planner' } });
     fireEvent.click(button(fixture.steps.nextLabel));
@@ -651,7 +820,7 @@ describe('SurveyForm', () => {
 
     fireEvent.click(options()[0]);
     fireEvent.click(button(fixture.steps.nextLabel));
-    fireEvent.click(options()[0]);
+    rate();
     fireEvent.click(button(fixture.steps.nextLabel));
     fireEvent.change(field(fixture.module3[0].label), { target: { value: 'Area Planner' } });
     fireEvent.click(button(fixture.steps.nextLabel));
@@ -672,7 +841,7 @@ describe('SurveyForm', () => {
 
     fireEvent.click(options()[0]);
     fireEvent.click(button(fixture.steps.nextLabel));
-    fireEvent.click(options()[0]);
+    rate();
     fireEvent.click(button(fixture.steps.nextLabel));
     fireEvent.change(field(fixture.module3[0].label), { target: { value: 'Area Planner' } });
     fireEvent.click(button(fixture.steps.nextLabel));
