@@ -38,3 +38,7 @@ __pycache__
 # Contact exports: personal data (names, emails, phone numbers) must not be
 # committed. Kept as an explicit rule so the scraped CSV cannot return.
 european_planning_contacts.csv
+
+# Supabase CLI local state: written by `supabase link` and specific to one machine
+# and one linked project. The schema itself is versioned in supabase/*.sql.
+supabase/.temp
