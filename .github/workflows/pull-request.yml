@@ -1,7 +1,9 @@
 # PLACER — what runs on a pull request.
 #
 # There was no CI here before this file, so nothing checked a pull request at all:
-# not the tests, not the lint, not the lockfile. Two jobs now do.
+# not the tests, not the lint, not the lockfile. Three jobs now do: one refuses a
+# pull request that would merge the `landingpage` holding page into the app, one
+# keeps contributed changes inside the Sandbox, and one runs the tests and build.
 #
 # `pull_request`, never `pull_request_target`. This workflow checks out and runs code
 # from the pull request, and pull_request_target would hand that code the repository's
@@ -23,6 +25,58 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  landingpage:
+    name: landingpage is not merged
+    runs-on: ubuntu-latest
+    # As with `scope` below, no `if:` on the job — a job skipped by `if:` reports no
+    # check, and a required check that never reports blocks every pull request forever.
+    # The branch test therefore sits on the steps, and the job always reports.
+    #
+    # `landingpage` is a deliberate divergence: it serves the apex domain with the
+    # holding page while `main` serves the beta app. It is retired by deletion, never
+    # by merging, so a pull request that carries it is a mistake every time.
+    steps:
+      - name: Refuse a pull request opened from the holding-page branch
+        if: github.head_ref == 'landingpage' || startsWith(github.head_ref, 'landingpage/')
+        run: |
+          {
+            echo "### Blocked: \`${{ github.head_ref }}\` is the holding-page branch"
+            echo
+            echo "It serves the apex domain and is retired by deletion, not by merging."
+            echo "To move one change off it, cherry-pick that commit onto \`Development\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      # Only reached when the branch is not named after the holding page. What is left
+      # to catch is a branch cut off it, which needs the history to see.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refuse a branch that still carries holding-page commits
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # Once landingpage is retired and deleted there is nothing left to guard,
+          # and this job should go green rather than start failing on a missing ref.
+          if ! git rev-parse --verify --quiet origin/landingpage >/dev/null; then
+            echo "landingpage: no such branch in this repository — nothing to guard."
+            exit 0
+          fi
+
+          if git merge-base --is-ancestor origin/landingpage "$HEAD_SHA"; then
+            {
+              echo "### Blocked: \`${{ github.head_ref }}\` contains the holding-page branch"
+              echo
+              echo "Every commit on \`landingpage\` is reachable from this branch, so it was"
+              echo "branched off the holding page or has merged it. Rebase the work you want"
+              echo "onto \`Development\`, or cherry-pick the individual commits."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "landingpage: clear — this branch does not carry it."
+
   scope:
     name: sandbox scope
     runs-on: ubuntu-latest

@@ -44,13 +44,15 @@ reads the lockfile, not `node_modules`, so it reports a clean tree even while an
 (and possibly vulnerable) build stays installed. Run `npm run deps:check` at any time to
 confirm `node_modules` matches the lockfile.
 
-Optionally, opt in to a warn-only post-merge hook that runs this check automatically after
-every `git pull`/`git merge`:
+Opt in to the repository's git hooks, which do nothing at all until you run this:
 ```bash
 git config core.hooksPath .githooks
 ```
-The hook only prints a warning if drift is detected — it never blocks a merge, and does
-nothing until you run the command above.
+That enables four hooks. `post-merge` runs the check above after every `git pull`/`git
+merge` and only ever prints a warning. `pre-commit`, `pre-merge-commit` and `pre-push` do
+block, and only ever for one thing: keeping the `landingpage` holding page out of the app
+branches (see [Branches](#branches)). Nothing else in `.githooks/` stops a commit, a
+merge or a push.
 
 3. Set up environment variables:
 ```bash
@@ -195,6 +197,39 @@ For better performance with many assets:
 - Load the Maps API script only once
 - Use appropriate zoom levels to reduce API calls
 - Consider implementing Street View panorama caching
+
+## Branches
+
+Three branches are long-lived, and two of them are deliberately not the same code:
+
+| Branch | Serves | Role |
+| --- | --- | --- |
+| `landingpage` | the apex domain | the PLACER holding page, shown while the app is in beta |
+| `main` | the `beta.` subdomain | production — the app itself |
+| `Development` | — | staging and the working branch; promoted to `main` |
+
+`landingpage` is temporary and **must never be merged**. It exists so the public domain
+can show a holding page while the app stays reachable for testing, and it ends by being
+deleted once the app is stable enough to serve the apex itself — not by being merged
+back. Merging it would replace the app's home view with the holding page. To move a
+single change off it, cherry-pick that commit onto `Development`.
+
+Four guards enforce that, because no one of them is sufficient:
+
+- **`pre-commit`** refuses the commit that concludes a merge of the branch. This is the
+  one that fires in practice: `landingpage` and `Development` always conflict, and git
+  skips `pre-merge-commit` on the conflicting path.
+- **`pre-merge-commit`** covers the same merge in the case where it applies cleanly.
+- **`pre-push`** refuses a push that would put its commits on `main` or `Development`,
+  whatever route they took to get there.
+- **the `landingpage is not merged` CI job** fails any pull request opened from the
+  branch, or from a branch cut off it.
+
+The hooks need `core.hooksPath` set (see [Installation](#installation)). The CI job is
+the only guard that works in a fresh clone, and the hooks are the only guards the
+repository owner cannot bypass — the rulesets on `main` and `Development` exempt the
+admin role unconditionally, so a required status check is a red light the owner can still
+drive through.
 
 ## Building for Production
 

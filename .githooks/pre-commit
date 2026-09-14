@@ -1,0 +1,4 @@
+#!/bin/sh
+# Only guards the commit that concludes a conflicted merge — git skips pre-merge-commit
+# there and runs this instead. An ordinary commit is not inspected and is never blocked.
+exec "$(git rev-parse --show-toplevel)/.githooks/guard-landingpage.sh"

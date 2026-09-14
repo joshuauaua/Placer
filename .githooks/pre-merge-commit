@@ -1,0 +1,3 @@
+#!/bin/sh
+# Runs when a merge completes without conflicts. The conflicting case is pre-commit's.
+exec "$(git rev-parse --show-toplevel)/.githooks/guard-landingpage.sh"

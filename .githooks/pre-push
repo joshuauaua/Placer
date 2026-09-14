@@ -1,0 +1,36 @@
+#!/bin/sh
+# Refuses a push that would put holding-page commits on main or Development.
+#
+# The widest net of the guards, and the only one that does not care how the commits got
+# there. That covers what the merge hooks cannot see — a merge made with --no-verify, a
+# rebase, or a direct `git push origin landingpage:main`.
+#
+# Pushing landingpage to landingpage is untouched; that is the branch doing its job.
+
+landingpage="$(git rev-parse --verify --quiet refs/heads/landingpage \
+  || git rev-parse --verify --quiet refs/remotes/origin/landingpage)" || exit 0
+
+status=0
+
+# Each line is: <local ref> <local sha> <remote ref> <remote sha>
+while read -r _local_ref local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/Development) ;;
+    *) continue ;;
+  esac
+
+  # A deletion pushes the all-zero sha, and has nothing to inspect.
+  case "$local_sha" in *[!0]*) ;; *) continue ;; esac
+
+  if git merge-base --is-ancestor "$landingpage" "$local_sha"; then
+    echo "refusing to push landingpage commits to ${remote_ref#refs/heads/}." >&2
+    echo >&2
+    echo "  $local_sha contains every commit on landingpage. The holding page must" >&2
+    echo "  never reach the app branches — it is retired by deletion, not by merging." >&2
+    echo >&2
+    echo "  Undo a local merge with:  git reset --hard @{u}" >&2
+    status=1
+  fi
+done
+
+exit "$status"
