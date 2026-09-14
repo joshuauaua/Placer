@@ -53,6 +53,28 @@ body {
   display: none;
 }
 
+/* An expandable row, used for the glossary on the survey cover. Built on <details>
+ * so the keyboard and screen-reader behaviour is the browser's rather than ours;
+ * only the default marker and the chevron's direction need CSS, because the rest
+ * is styled inline like everything else in the survey. */
+.placer-disclosure summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.placer-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.placer-disclosure-chev {
+  display: flex;
+  transition: transform 0.2s ease;
+}
+
+.placer-disclosure[open] .placer-disclosure-chev {
+  transform: rotate(180deg);
+}
+
 #root {
   width: 100%;
   height: 100vh;

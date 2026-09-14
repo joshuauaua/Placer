@@ -1,169 +1,283 @@
 {
-  "hero": {
-    "title": "Tell us how your neighborhood should change",
-    "subtitle": "Twelve questions about the public space around you. It takes about three minutes, and it shapes what we build next.",
+  "cover": {
+    "title": "Citizen Engagement in Public Space Development",
+    "body": [
+      "We are inviting city officials and municipal planning professionals worldwide to share their experience with citizen engagement in public space development. Your answers will shape both the tool we are building and the upcoming Placemaking Trends 2026–2027 Report.",
+      "It takes about 7 minutes. All responses are confidential and reported only in aggregate. At the end you can opt in to receive the report, or to become an early adopter of the platform.",
+      "Thank you for contributing your expertise to building more inclusive, collaborative cities."
+    ],
+    "glossaryTitle": "You might need to know these words",
+    "glossary": [
+      {
+        "term": "Participatory urban design",
+        "definition": "An approach to shaping the built environment in which residents, officials, and professionals jointly make decisions, rather than planning being done solely by experts on behalf of the public."
+      },
+      {
+        "term": "Community engagement",
+        "definition": "The ongoing process of informing, consulting, and involving local residents in decisions that affect their neighborhood or city."
+      },
+      {
+        "term": "Co-design",
+        "definition": "A collaborative design method where end users actively help create a solution (a space, tool, or service) alongside designers, rather than simply being consulted or tested afterward."
+      },
+      {
+        "term": "GIS (Geographic Information System)",
+        "definition": "Software that captures, stores, and visualizes spatial data on maps, allowing planners to analyze and layer information like land use, demographics, or infrastructure."
+      }
+    ],
     "startLabel": "Start the survey"
   },
   "steps": {
-    "section1Title": "Section 1: You and your neighborhood",
-    "section1Description": "A little context, so we can group answers fairly.",
-    "section2Title": "Section 2: What you'd change",
-    "section2Description": "Where the public space around you falls short today.",
-    "section3Title": "Section 3: Getting involved",
-    "section3Description": "How planning decisions reach you now, and what would help.",
-    "emailTitle": "That's everything",
-    "emailDescription": "Your answers are ready to submit. If you'd like the community report when it is published, tick the box and leave your email \u2014 that part is optional.",
-    "consentLabel": "Email me the community report when it is published",
-    "emailLabel": "Email",
-    "emailPlaceholder": "you@example.com",
+    "module1Title": "Module 1: Contextualising the respondent",
+    "module1Description": "A little context about you and your department, so answers can be grouped fairly.",
+    "module2Title": "Module 2: Existing methodology and toolbox",
+    "module2Description": "What your municipality uses today to run public participation.",
+    "module3Title": "Module 3: Friction and gaps",
+    "module3Description": "Where participation breaks down in practice.",
+    "module4Title": "Module 4: Product concept and feature validation",
+    "module4Description": "Three ideas we are weighing up. Rate how useful each would be to your team.",
+    "optInTitle": "That's everything",
+    "optInDescription": "Your answers are ready to submit. If you would like the report, beta access or a demonstration, tick what applies and leave your details — all of it is optional, and Submit works without any of it.",
+    "otherLabel": "Please specify",
+    "otherPlaceholder": "Tell us which",
+    "optionalHint": "Optional — you can continue without answering.",
     "nextLabel": "Next",
     "backLabel": "Back",
     "submitLabel": "Submit survey",
     "submittingLabel": "Sending…"
   },
-  "section1": [
+  "module1": [
     {
-      "key": "ageGroup",
-      "label": "What age group do you belong to?",
+      "key": "role",
+      "label": "What best describes your primary role in the department?",
       "options": [
-        { "value": "under-18", "label": "Under 18" },
-        { "value": "18-24", "label": "18-24" },
-        { "value": "25-34", "label": "25-34" },
-        { "value": "35-44", "label": "35-44" },
-        { "value": "45-54", "label": "45-54" },
-        { "value": "55-64", "label": "55-64" },
-        { "value": "65-plus", "label": "65 or older" }
+        { "value": "area-district-planner", "label": "Area / District Planner" },
+        { "value": "community-planning-specialist", "label": "Community Planning Specialist" },
+        {
+          "value": "strategic-planning-director",
+          "label": "Strategic Planning Director / Planning Manager"
+        },
+        {
+          "value": "urban-innovation-specialist",
+          "label": "Urban Innovation / Special Projects Specialist"
+        },
+        {
+          "value": "public-engagement-specialist",
+          "label": "Public Engagement Specialist / Coordinator"
+        },
+        { "value": "planning-technician", "label": "Planning Technician / Assistant Planner" },
+        { "value": "other", "label": "Other", "other": true }
       ]
     },
     {
-      "key": "neighborhoodType",
-      "label": "How would you describe your neighborhood?",
+      "key": "roleName",
+      "label": "What is the specific name of your role?",
+      "type": "text",
+      "placeholder": "e.g. Senior Placemaking Officer"
+    },
+    {
+      "key": "tenure",
+      "label": "How long have you been working in that role?",
       "options": [
-        { "value": "urban-center", "label": "Urban downtown/city center" },
-        { "value": "urban-residential", "label": "Urban residential" },
-        { "value": "suburban", "label": "Suburban" },
-        { "value": "rural", "label": "Rural" },
-        { "value": "mixed-use", "label": "Mixed-use area" }
+        { "value": "0-5", "label": "0–5 years" },
+        { "value": "5-10", "label": "5–10 years" },
+        { "value": "10-15", "label": "10–15 years" },
+        { "value": "15-plus", "label": "15+ years" }
       ]
     },
     {
-      "key": "visitFrequency",
-      "label": "How often do you visit public spaces in your neighborhood?",
+      "key": "location",
+      "label": "Which municipality, city or country do you work in?",
+      "type": "text",
+      "placeholder": "e.g. Rotterdam, Netherlands"
+    },
+    {
+      "key": "operationArea",
+      "label": "Which topic is your main operation area?",
+      "multiple": true,
       "options": [
-        { "value": "daily", "label": "Daily" },
-        { "value": "several-weekly", "label": "Several times a week" },
-        { "value": "weekly", "label": "Once a week" },
-        { "value": "monthly", "label": "Once a month" },
-        { "value": "rarely", "label": "Rarely or never" }
+        { "value": "financial-services", "label": "Financial Services" },
+        { "value": "strategy-rnd", "label": "Strategy Development / R&D" },
+        { "value": "zoning-urban-planning", "label": "Zoning and Urban Planning" },
+        { "value": "parks-gardens", "label": "Parks and Gardens" },
+        { "value": "culture-social-affairs", "label": "Culture and Social Affairs" },
+        { "value": "other", "label": "Other", "other": true }
+      ]
+    },
+    {
+      "key": "strategicPriority",
+      "label": "How high of a strategic priority is participatory urban design within your municipality's current long-term plan?",
+      "options": [
+        { "value": "no-plan", "label": "We don't have a long-term plan" },
+        {
+          "value": "plan-not-operational",
+          "label": "We have a long-term plan, but it is not operational or not our sole focus"
+        },
+        { "value": "plan-operational", "label": "We have a long-term plan and it is operational" }
+      ]
+    },
+    {
+      "key": "budgetAdequacy",
+      "label": "How adequate is your department's annual budget allocation for civic engagement and public space co-design?",
+      "options": [
+        { "value": "none", "label": "We don't have a budget" },
+        { "value": "insufficient", "label": "We have a budget, but it is not enough" },
+        {
+          "value": "workable",
+          "label": "We have a budget to work with, but more money would be better"
+        },
+        { "value": "sufficient", "label": "We have enough budget" }
       ]
     }
   ],
-  "section2": [
+  "module2": [
     {
-      "key": "improvementPriority",
-      "label": "What type of public space improvement would benefit your community most?",
+      "key": "participationSoftware",
+      "label": "Do you have public participation software in your municipality?",
       "options": [
-        { "value": "green", "label": "More green spaces and parks" },
-        { "value": "pedestrian", "label": "Better pedestrian infrastructure" },
-        { "value": "art", "label": "Public art and cultural spaces" },
-        { "value": "safety", "label": "Improved lighting and safety" },
-        { "value": "gathering", "label": "Community gathering spaces" }
+        { "value": "none", "label": "We don't have one" },
+        { "value": "physical", "label": "We have one, but it is physical" },
+        { "value": "hybrid", "label": "We have one, and it is half physical, half digital" },
+        { "value": "digital", "label": "We have one, and it is fully digital" }
       ]
     },
     {
-      "key": "urbanElement",
-      "label": "Which urban element would you most like to see more of?",
+      "key": "digitalTools",
+      "label": "Which digital tools do you currently rely on most for community engagement?",
+      "multiple": true,
       "options": [
-        { "value": "trees", "label": "Street trees and vegetation" },
-        { "value": "seating", "label": "Seating areas and benches" },
-        { "value": "bike", "label": "Bike lanes and cycling infrastructure" },
-        { "value": "transit", "label": "Public transit stops and shelters" },
-        { "value": "water", "label": "Water features and fountains" }
+        { "value": "spatial-gis", "label": "Spatial & GIS platforms: Maptionnaire, Felt, ArcGIS, etc." },
+        { "value": "visual-boards", "label": "Visual collaboration boards: Miro, Mural, Figma, etc." },
+        {
+          "value": "survey-tools",
+          "label": "Standard survey tools: Typeform, Google Forms, SurveyMonkey, etc."
+        },
+        {
+          "value": "social-messaging",
+          "label": "Social & messaging channels: WhatsApp, Instagram, Facebook Groups, etc."
+        },
+        {
+          "value": "custom-proprietary",
+          "label": "Custom / proprietary software: in-house or specialised municipal platforms"
+        },
+        { "value": "none", "label": "None of these" }
       ]
     },
     {
-      "key": "motivation",
-      "label": "What's your primary motivation for wanting to improve public spaces?",
-      "options": [
-        { "value": "environment", "label": "Environmental sustainability" },
-        { "value": "community", "label": "Community building and social connection" },
-        { "value": "safety", "label": "Safety and accessibility" },
-        { "value": "economy", "label": "Economic development" },
-        { "value": "enjoyment", "label": "Personal enjoyment and quality of life" }
-      ]
+      "key": "toolEffectiveness",
+      "label": "How effectively do your existing digital tools meet your needs with regard to participatory urban design?",
+      "type": "scale",
+      "minLabel": "1 = Ineffective",
+      "maxLabel": "10 = Highly effective"
     },
     {
-      "key": "visualImportance",
-      "label": "How important is visual representation when proposing changes?",
-      "options": [
-        { "value": "extremely", "label": "Extremely important" },
-        { "value": "very", "label": "Very important" },
-        { "value": "moderately", "label": "Moderately important" },
-        { "value": "slightly", "label": "Slightly important" },
-        { "value": "not", "label": "Not important" }
-      ]
+      "key": "toolAccessibility",
+      "label": "How accessible and intuitive is your city's current public participation software for non-technical citizens?",
+      "type": "scale",
+      "minLabel": "1 = Highly complex / difficult",
+      "maxLabel": "10 = Effortless / intuitive"
     }
   ],
-  "section3": [
+  "module3": [
     {
-      "key": "planningComfort",
-      "label": "How comfortable are you with current urban planning processes?",
+      "key": "challenges",
+      "label": "What are your biggest challenges in placemaking?",
+      "multiple": true,
       "options": [
-        { "value": "very-comfortable", "label": "Very comfortable - I understand how to participate" },
-        { "value": "comfortable", "label": "Somewhat comfortable" },
-        { "value": "neutral", "label": "Neutral" },
-        { "value": "uncomfortable", "label": "Somewhat uncomfortable" },
-        { "value": "very-uncomfortable", "label": "Very uncomfortable - I don't know where to start" }
+        {
+          "value": "demographic-reach",
+          "label": "Demographic reach: reaching diverse ages, online and in person"
+        },
+        {
+          "value": "data-structuring",
+          "label": "Data structuring: turning sticky notes and comments into GIS data"
+        },
+        {
+          "value": "visual-communication",
+          "label": "Visual communication: helping non-experts read complex 2D and 3D plans"
+        },
+        {
+          "value": "conflict-resolution",
+          "label": "Conflict resolution: navigating opposing views between stakeholder groups"
+        },
+        {
+          "value": "sustaining-momentum",
+          "label": "Sustaining momentum: keeping residents engaged over long timelines"
+        },
+        {
+          "value": "executive-buy-in",
+          "label": "Executive buy-in: reports that convince councils and decision-makers"
+        },
+        {
+          "value": "resource-limits",
+          "label": "Resource limits: no budget or technical setup for custom tools"
+        },
+        { "value": "software-costs", "label": "Software costs" },
+        { "value": "case-studies", "label": "No case studies from other global cities" },
+        { "value": "visual-asset-manipulation", "label": "No interactive visual asset manipulation" },
+        { "value": "other", "label": "Other", "other": true }
       ]
     },
     {
-      "key": "sharingChannel",
-      "label": "How do you currently share ideas about community improvements?",
-      "options": [
-        { "value": "social", "label": "Social media and online forums" },
-        { "value": "meetings", "label": "Community meetings and town halls" },
-        { "value": "officials", "label": "Direct contact with local officials" },
-        { "value": "associations", "label": "Neighborhood associations" },
-        { "value": "none", "label": "I don't currently share ideas" }
-      ]
+      "key": "feedbackConversion",
+      "label": "How difficult is it for your department to convert qualitative citizen feedback into actionable steps?",
+      "type": "scale",
+      "minLabel": "1 = Very easy",
+      "maxLabel": "10 = Major bottleneck"
     },
     {
-      "key": "engagementBarrier",
-      "label": "What's the biggest barrier to community engagement in planning?",
-      "options": [
-        { "value": "time", "label": "Lack of time" },
-        { "value": "jargon", "label": "Complex processes and jargon" },
-        { "value": "unclear-how", "label": "Not knowing how to get involved" },
-        { "value": "voice", "label": "Feeling like my voice won't matter" },
-        { "value": "none", "label": "No barriers - I'm actively engaged" }
-      ]
-    },
-    {
-      "key": "supportLikelihood",
-      "label": "How likely are you to support a community-proposed project?",
-      "options": [
-        { "value": "very-likely", "label": "Very likely - I actively support local initiatives" },
-        { "value": "likely", "label": "Somewhat likely" },
-        { "value": "neutral", "label": "Neutral - depends on the project" },
-        { "value": "unlikely", "label": "Somewhat unlikely" },
-        { "value": "very-unlikely", "label": "Very unlikely" }
-      ]
-    },
-    {
-      "key": "desiredFeature",
-      "label": "What feature would make you use an urban planning tool like PLACER?",
-      "options": [
-        { "value": "interface", "label": "Easy-to-use interface" },
-        { "value": "visuals", "label": "Ability to see realistic visualizations" },
-        { "value": "voting", "label": "Community voting and feedback" },
-        { "value": "government", "label": "Connection to local government" },
-        { "value": "mobile", "label": "Mobile app accessibility" }
-      ]
+      "key": "biggestChallenge",
+      "label": "What is, according to your opinion, the biggest challenge in participatory urban design processes?",
+      "type": "paragraph",
+      "optional": true,
+      "placeholder": "Take as much space as you need.",
+      "maxLength": 2000
     }
   ],
+  "module4": [
+    {
+      "key": "interactiveMapValue",
+      "label": "How valuable would a tool be that enables citizens and city staff to add, remove and filter visual ideas on an interactive map?",
+      "type": "scale",
+      "minLabel": "1 = No value",
+      "maxLabel": "10 = High institutional value"
+    },
+    {
+      "key": "caseStudyRepositoryValue",
+      "label": "How useful would a searchable, peer-to-peer global repository of community-driven participatory urban design case studies be for your planning team?",
+      "type": "scale",
+      "minLabel": "1 = Not useful",
+      "maxLabel": "10 = Extremely useful"
+    },
+    {
+      "key": "publishLikelihood",
+      "label": "How likely is your municipality to publish local case studies to an international digital participatory urban design network?",
+      "type": "scale",
+      "minLabel": "1 = Highly unlikely",
+      "maxLabel": "10 = Highly likely"
+    }
+  ],
+  "optIns": [
+    {
+      "key": "report",
+      "label": "Send me the full Placemaking Trends 2026/2027 Report upon release in May 2027."
+    },
+    { "key": "beta", "label": "Register our municipality for early beta-testing access." },
+    { "key": "demo", "label": "Book a 1-on-1 enterprise tool demonstration." }
+  ],
+  "contact": {
+    "title": "Contact information",
+    "description": "So we know where to send it, and who to address.",
+    "fields": [
+      { "key": "name", "label": "Name", "placeholder": "Your full name" },
+      { "key": "city", "label": "City", "placeholder": "The city you work for" },
+      { "key": "department", "label": "Department", "placeholder": "e.g. Zoning and Urban Planning" },
+      { "key": "email", "label": "Work email address", "placeholder": "you@city.gov", "type": "email" }
+    ]
+  },
   "success": {
     "title": "Thank You!",
-    "body": "Your answers are in. We'll send the community report to your inbox as soon as it is published.",
+    "body": "Your answers are in. If you asked for the report, beta access or a demonstration, we will be in touch at the address you left.",
     "closeLabel": "Return to Home"
   },
   "errorMessage": "Something went wrong saving your answers. Please try again."

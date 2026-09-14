@@ -20,9 +20,11 @@ create table if not exists public.survey_responses (
   source       text        not null,
   -- Optional: only present when the visitor asked to be contacted.
   email        text,
-  -- { section1: {...}, section2: {...}, section3: {...} }
+  -- { module1: {...}, module2: {...}, module3: {...}, module4: {...} } plus the
+  -- closing step: `optIns` (the keys ticked) and `contact` (name, city,
+  -- department, email) or null when nothing was opted into.
   answers      jsonb       not null,
-  -- Free text typed against an `other` option, keyed by question.
+  -- Free text typed against an `other` option, keyed by module then question.
   other_text   jsonb       not null    default '{}'::jsonb
 );
 
