@@ -1,3 +1,11 @@
 #!/bin/sh
-# Runs when a merge completes without conflicts. The conflicting case is pre-commit's.
-exec "$(git rev-parse --show-toplevel)/.githooks/guard-landingpage.sh"
+# Runs when a merge applies cleanly. The conflicting case is pre-commit's — see the
+# comments in guard-landingpage.sh for why one merge needs two hooks.
+guard="$(git rev-parse --show-toplevel)/.githooks/guard-landingpage.sh"
+if [ ! -x "$guard" ]; then
+  # Fail open rather than blocking every merge in the repository over a missing file.
+  # pre-push and the CI job both still refuse the holding page.
+  echo "warning: $guard is missing — the landingpage merge guard did not run." >&2
+  exit 0
+fi
+exec "$guard"
