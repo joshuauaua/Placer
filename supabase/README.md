@@ -95,6 +95,14 @@ their answers are combined live. Without this the Sandbox still works — every
 experiment runs on its own in the browser, and the "Start a room" button simply
 never appears.
 
+**Opening a room takes an account. Joining one never does.** Opening creates
+something other people are invited into, so it needs somebody accountable for it;
+joining is what a participant does with a QR code in a workshop, and asking them to
+make an account at that moment would cost the room the people it was opened for. This
+means step 9 as well, if you want the "Start a room" button to work at all — without
+accounts configured, a signed-out facilitator gets "Sign in to start a room" and no
+further.
+
 Run `rooms.sql` in the SQL editor, the same way as `schema.sql`. It is
 re-runnable. Only Budget Ballot can host a room today; the experiments allowed to
 are enumerated in a CHECK constraint in that file, and adding a second one means
@@ -104,7 +112,15 @@ The access rules are deliberately unlike the survey's. Joining a room needs a
 *read*, which nothing else here has, so instead of a select policy on the rooms
 table — which would make every PIN enumerable — all of it goes through
 `security definer` functions, and the anon role is granted nothing at all on
-`sandbox_rooms`. Verify with:
+`sandbox_rooms`.
+
+Of those functions, `sandbox_room_create` is the only one the anon role may not
+execute — that grant is where "opening takes an account" is actually enforced, rather
+than in the button. `sandbox_rooms.created_by` records which account opened each room,
+and is nulled rather than cascaded if that account is later deleted: a room holds other
+people's contributions, and those are not the facilitator's to take with them.
+
+Verify with:
 
 ```bash
 # No rows, and no error: there is no select policy on this table at all.
@@ -112,12 +128,21 @@ curl -s "$VITE_SUPABASE_URL/rest/v1/sandbox_rooms?select=id" \
   -H "apikey: $VITE_SUPABASE_ANON_KEY" \
   -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY"
 
-# An unknown PIN is an empty result, not an error.
+# An unknown PIN is an empty result, not an error. Joining needs no account, so this
+# works with nothing but the anon key.
 curl -s "$VITE_SUPABASE_URL/rest/v1/rpc/sandbox_room_join" \
   -H "apikey: $VITE_SUPABASE_ANON_KEY" \
   -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
   -H "Content-Type: application/json" \
   -d '{"p_pin":"000000"}'
+
+# Opening one does need an account, so the same key alone must be refused here —
+# expect a 403 and "permission denied for function sandbox_room_create".
+curl -s "$VITE_SUPABASE_URL/rest/v1/rpc/sandbox_room_create" \
+  -H "apikey: $VITE_SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"p_experiment":"budget-ballot"}'
 ```
 
 Live updates need the `supabase_realtime` publication, which `rooms.sql` adds the

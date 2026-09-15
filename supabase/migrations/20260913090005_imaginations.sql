@@ -1,3 +1,7 @@
+-- Generated from supabase/imaginations.sql -- keep the two in step.
+-- That file remains the documented Dashboard -> SQL Editor path
+-- (see supabase/README.md); this is the same SQL under CLI control.
+
 -- PLACER — posted imaginations.
 --
 -- The shape: one row per imagination somebody has posted, owned by the account that

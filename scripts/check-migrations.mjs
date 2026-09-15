@@ -1,0 +1,119 @@
+#!/usr/bin/env node
+// Fails if a migration has drifted from the SQL file it was generated from.
+//
+// supabase/*.sql are the documented Dashboard -> SQL Editor path, and they are what
+// supabase/README.md walks a new operator through. supabase/migrations/*.sql are the
+// same SQL under `supabase db push`. Both have to exist: the dashboard path is the
+// fallback when nobody has the CLI, and the migrations are what makes the schema
+// reviewable and repeatable. What must never happen is the two saying different
+// things about a table whose only protection is row-level security.
+//
+// So this file owns the relationship in one place. It generates the migrations and
+// it checks them, which is why there is no second copy of the mapping to keep in
+// step:
+//
+//   node scripts/check-migrations.mjs           # verify, exit 1 on drift
+//   node scripts/check-migrations.mjs --write   # regenerate after editing a source
+//
+// An absent supabase/migrations passes. The landingpage branch has no migrations at
+// all, and a branch that has not adopted them is not this script's problem.
+//
+// hardening.sql is deliberately absent from the mapping. Every constraint and grant
+// in it is already in schema.sql -- it exists to retrofit a table that predates
+// them -- and it opens by requiring a DELETE be run first, which would fail a push
+// against a table holding a setup_check row.
+
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
+
+const DIR = 'supabase'
+const OUT = `${DIR}/migrations`
+
+/*
+ * Which migration comes from which file, in apply order.
+ *
+ * `slice` names the part of a source that is schema. Only rooms-cleanup.sql needs
+ * one: its first three steps are an interactive count and a by-hand DELETE, which
+ * are operational commands and would be wrong to replay on every push.
+ */
+const PLAN = [
+  { name: '20260913090001_survey_responses.sql', src: 'schema.sql' },
+  { name: '20260913090002_profiles_and_accounts.sql', src: 'auth.sql' },
+  { name: '20260913090003_sandbox_rooms.sql', src: 'rooms.sql' },
+  {
+    name: '20260913090004_sandbox_rooms_sweep.sql',
+    src: 'rooms-cleanup.sql',
+    slice: { from: 'create extension if not exists pg_cron;', to: '-- To see it, or stop it again:' },
+    note:
+      'Only step 4 of that file. Steps 1-3 are an interactive count and a manual\n' +
+      '-- DELETE -- operational commands, not schema, so they stay out of migrations.',
+  },
+  { name: '20260913090005_imaginations.sql', src: 'imaginations.sql' },
+]
+
+export function render({ src, slice, note }, read = (f) => readFileSync(`${DIR}/${f}`, 'utf8')) {
+  let body = read(src)
+
+  if (slice) {
+    const from = body.indexOf(slice.from)
+    const to = body.indexOf(slice.to)
+    if (from === -1 || to === -1 || to < from) {
+      throw new Error(`${src}: slice markers not found -- the source was restructured`)
+    }
+    body = `${body.slice(from, to).trimEnd()}\n`
+  }
+
+  const header =
+    `-- Generated from supabase/${src} -- keep the two in step.\n` +
+    '-- That file remains the documented Dashboard -> SQL Editor path\n' +
+    '-- (see supabase/README.md); this is the same SQL under CLI control.\n' +
+    (note ? `--\n-- ${note}\n` : '')
+
+  return `${header}\n${body}`
+}
+
+export function check({ write = false } = {}) {
+  if (!existsSync(OUT)) return { drifted: [], orphans: [], skipped: true }
+
+  const drifted = []
+  for (const entry of PLAN) {
+    const expected = render(entry)
+    const path = `${OUT}/${entry.name}`
+    const actual = existsSync(path) ? readFileSync(path, 'utf8') : null
+
+    if (actual === expected) continue
+    if (write) writeFileSync(path, expected)
+    else drifted.push({ ...entry, reason: actual === null ? 'missing' : 'differs from source' })
+  }
+
+  // A migration nobody generated is worse than a stale one: it will be pushed and
+  // never checked. Name it rather than quietly ignoring it.
+  const known = new Set(PLAN.map((e) => e.name))
+  const orphans = readdirSync(OUT).filter((f) => f.endsWith('.sql') && !known.has(f))
+
+  return { drifted, orphans, skipped: false }
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const write = process.argv.includes('--write')
+  const { drifted, orphans, skipped } = check({ write })
+
+  if (skipped) {
+    console.log('no supabase/migrations on this branch — nothing to check')
+    process.exit(0)
+  }
+  if (write) {
+    console.log(`regenerated ${PLAN.length} migrations from supabase/*.sql`)
+  }
+  for (const d of drifted) {
+    console.error(`drift: ${OUT}/${d.name} ${d.reason} (source: ${DIR}/${d.src})`)
+  }
+  for (const o of orphans) {
+    console.error(`orphan: ${OUT}/${o} has no source in PLAN`)
+  }
+  if (drifted.length || orphans.length) {
+    console.error('\nRun `node scripts/check-migrations.mjs --write` if the source is correct.')
+    process.exit(1)
+  }
+  if (!write) console.log(`${PLAN.length} migrations match their sources`)
+}

@@ -4,29 +4,27 @@ import { useState } from 'react';
 import { Icon } from './Icon';
 import { copyText } from '../lib/clipboard';
 import { CAT } from '../theme';
+import benchMark from '../assets/cover-bench.png';
 
 /**
- * The bench is the mark, matching the favicon (see index.html). A bench is the
- * smallest thing that turns a space into a place, which is the whole argument of
- * the app — and unlike a map pin it says somewhere to be rather than somewhere to
- * look at.
+ * The bench is the mark, and now literally the same drawing as the favicon (see
+ * index.html) rather than a separate icon that merely matched it — one piece of
+ * line art, reused everywhere it stands for PLACER. A bench is the smallest thing
+ * that turns a space into a place, which is the whole argument of the app — and
+ * unlike a map pin it says somewhere to be rather than somewhere to look at.
  *
- * It is set larger in its badge than the pin was. The pin drawing is tall and
- * narrow and the bench is wide and low — 18 by 12 of the 24 viewBox against 14 by
- * 18 — so at the same nominal size it carries visibly less weight and floats in the
- * middle of the square. Sizing to the badge's width instead of its height gives it
- * back the mass, and the stroke stays heavy for the reason the small favicons are
- * drawn heavy: the detail is what goes first when a line drawing is scaled down.
+ * The source PNG is black lines on a transparent ground, so inverting it turns
+ * those lines white against the badge's own dark fill instead of baking in a
+ * fixed background — the same trick the favicon uses, minus a hardcoded square.
+ * That invert assumes a light `accentInk` on a dark `accent`, true of every theme
+ * this app currently ships; a theme that flips that would need this revisited.
  */
 export function Logo({ t, size = 22 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
       <div style={{ width: size * 1.25, height: size * 1.25, background: t.accent, borderRadius: 6,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.accentInk }}>
-        {/* The drawing sits a unit low in its own box — it spans 7 to 19 of the 24,
-            so its centre is 13 — and in a badge that reads as off-centre. A twenty-
-            fourth of the height puts it back. */}
-        <Icon name="bench" size={size} stroke={2.2} style={{ transform: 'translateY(-4.2%)' }} />
+        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <img src={benchMark} alt="" style={{ width: size, height: 'auto', filter: 'invert(1)' }} />
       </div>
       <span className="placer-disp" style={{ fontSize: size * 1.15, fontWeight: 800, letterSpacing: '-0.02em', color: t.ink }}>PLACER</span>
     </div>

@@ -1,3 +1,7 @@
+-- Generated from supabase/rooms.sql -- keep the two in step.
+-- That file remains the documented Dashboard -> SQL Editor path
+-- (see supabase/README.md); this is the same SQL under CLI control.
+
 -- PLACER — sandbox rooms.
 --
 -- A facilitator opens a room on a sandbox experiment. People join it with a

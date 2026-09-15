@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import { Btn } from './UI';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
+import { updatePassword } from '../services/auth';
+
+// The same floor AuthPage and ResetPasswordPage ask for.
+const MIN_PASSWORD = 8;
 
 // Copied from DescribePage rather than shared, matching how the form styling is
 // already duplicated across the pages that need it.
@@ -86,6 +90,78 @@ function DisplayName({ t, profile, onSaveProfile }) {
   );
 }
 
+// Only reachable on the account path — a local-only visitor has no password to
+// change, and no `email` is what tells this apart from that world (see useIdentity.js).
+function ChangePassword({ t }) {
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [done, setDone] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (password.length < MIN_PASSWORD || busy) return;
+
+    setBusy(true);
+    setError(null);
+    try {
+      await updatePassword(password);
+      setPassword('');
+      setDone(true);
+    } catch (err) {
+      console.error('Could not change your password:', err);
+      setError(err?.message ?? 'Could not change your password. Try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card t={t} title="Password">
+      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
+        Change the password you sign in with.
+      </p>
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="settings-new-password"
+          style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+          New password
+        </label>
+        <input
+          id="settings-new-password"
+          type="password"
+          value={password}
+          autoComplete="new-password"
+          onChange={(e) => { setPassword(e.target.value); setDone(false); }}
+          style={{ ...inputStyle(t), maxWidth: 380, marginBottom: 8 }}
+        />
+        <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 20 }}>
+          At least {MIN_PASSWORD} characters.
+        </div>
+
+        {error && (
+          <div role="alert" style={{ marginBottom: 18, padding: 14, borderRadius: 8,
+            background: '#D6452F22', borderLeft: '4px solid #D6452F', fontSize: 14,
+            color: t.ink, fontWeight: 600, lineHeight: 1.5, maxWidth: 380 }}>
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Btn t={t} variant="primary" icon="check" type="submit"
+            disabled={password.length < MIN_PASSWORD || busy}>
+            {busy ? 'Saving…' : 'Save new password'}
+          </Btn>
+          {done && (
+            <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
+              Changed.
+            </span>
+          )}
+        </div>
+      </form>
+    </Card>
+  );
+}
+
 // The same two calls the GDPR page makes, so the two screens cannot drift apart.
 // The wording stays short here on purpose: the full Article 13 text, and the export
 // and erasure controls, live on the GDPR page rather than being restated.
@@ -157,7 +233,7 @@ function YourData({ t, onNavigate }) {
   );
 }
 
-export function SettingsPage({ t, profile, onSaveProfile, onNavigate }) {
+export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate }) {
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '48px 40px' }} className="placer-scroll">
@@ -173,6 +249,7 @@ export function SettingsPage({ t, profile, onSaveProfile, onNavigate }) {
         </div>
 
         <DisplayName t={t} profile={profile} onSaveProfile={onSaveProfile} />
+        {email && <ChangePassword t={t} />}
         <Analytics t={t} onNavigate={onNavigate} />
         <YourData t={t} onNavigate={onNavigate} />
       </div>

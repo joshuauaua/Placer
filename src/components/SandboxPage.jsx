@@ -76,7 +76,10 @@ function Tile({ t, experiment, onOpen }) {
   );
 }
 
-/** Offered on an experiment that can host a room, when there is a database to host it in. */
+/**
+ * Offered on an experiment that can host a room, when there is a database to host it in
+ * and somebody with an account to open it.
+ */
 function StartRoom({ t, experiment, onStart, busy }) {
   return (
     <Btn
@@ -91,7 +94,26 @@ function StartRoom({ t, experiment, onStart, busy }) {
   );
 }
 
-export function SandboxPage({ t, displayName = null }) {
+/**
+ * What stands in for the button when nobody is signed in.
+ *
+ * Shown rather than hiding the control, because a feature that silently is not there
+ * reads as a feature that is broken. Opening a room is the one thing in the Sandbox that
+ * takes an account — it creates something other people join, and it is enforced in
+ * supabase/rooms.sql, where sandbox_room_create is the only function the anon role may
+ * not call. Joining a room needs nothing, which is the point: a participant scans a code
+ * and starts, and being asked to make an account at that moment would cost the room the
+ * people it was opened for.
+ */
+function StartRoomSignedOut({ t, onSignIn }) {
+  return (
+    <Btn t={t} size="sm" variant="outline" icon="user" onClick={onSignIn}>
+      Sign in to start a room
+    </Btn>
+  );
+}
+
+export function SandboxPage({ t, displayName = null, needsAccount = false, onSignIn }) {
   const [location, navigate] = useLocation();
   const search = useSearch();
   const requestedId = experimentIdFrom(location);
@@ -119,8 +141,11 @@ export function SandboxPage({ t, displayName = null }) {
 
   const Experiment = experiment?.component;
   // Offered only where a room would mean something, and only with a database behind it.
-  const canStartRoom =
+  const roomIsPossible =
     Boolean(experiment?.room) && isSupabaseConfigured() && room.status === 'none';
+  // Opening one also takes an account. Joining one does not — nothing on this page is
+  // gated for a participant who arrived with a PIN or a QR code.
+  const canStartRoom = roomIsPossible && !needsAccount;
 
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page, padding: '48px 40px 80px' }}>
@@ -132,6 +157,8 @@ export function SandboxPage({ t, displayName = null }) {
             onBack={() => navigate('/sandbox')}
             actions={canStartRoom ? (
               <StartRoom t={t} experiment={experiment} onStart={room.start} busy={room.status === 'opening'} />
+            ) : roomIsPossible ? (
+              <StartRoomSignedOut t={t} onSignIn={onSignIn} />
             ) : null}>
             <RoomBar t={t} experiment={experiment} room={room} />
             <Experiment t={t} experiment={experiment} room={room} />
@@ -153,7 +180,7 @@ export function SandboxPage({ t, displayName = null }) {
                 seconds to understand and makes one point that is hard to make with a drawing. Nothing
                 here is a proposal — it is somewhere to find out what you think. Nothing is saved
                 either, unless you open a room for other people to join, and a room lasts until you
-                close it.
+                close it. Opening one takes an account; joining one never does.
               </p>
             </div>
 

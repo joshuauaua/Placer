@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SettingsPage } from '../SettingsPage';
 import { saveProfile } from '../../services/profile';
+import { updatePassword } from '../../services/auth';
 import { THEME } from '../../theme';
+
+vi.mock('../../services/auth', () => ({
+  updatePassword: vi.fn(() => Promise.resolve()),
+}));
 
 const PROFILE_KEY = 'placemaking_profile';
 const CONSENT_KEY = 'placer_analytics_consent';
@@ -29,6 +34,7 @@ const saveButton = () => screen.getByRole('button', { name: /Save name/ });
 describe('SettingsPage', () => {
   afterEach(() => {
     localStorage.clear();
+    vi.clearAllMocks();
   });
 
   it('shows the current display name', () => {
@@ -96,5 +102,54 @@ describe('SettingsPage', () => {
     fireEvent.click(screen.getByRole('link', { name: 'GDPR page' }));
 
     expect(onNavigate).toHaveBeenCalledWith('gdpr');
+  });
+
+  it('has no password to change for a local-only profile', () => {
+    setup();
+
+    expect(screen.queryByLabelText('New password')).not.toBeInTheDocument();
+  });
+});
+
+describe('SettingsPage, changing a password', () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  const newPassword = () => screen.getByLabelText('New password');
+  const saveNewPassword = () => screen.getByRole('button', { name: /Save new password/ });
+
+  it('cannot be submitted until the password is long enough', () => {
+    setup({ email: 'mara@example.com' });
+
+    expect(saveNewPassword()).toBeDisabled();
+
+    fireEvent.change(newPassword(), { target: { value: 'short' } });
+
+    expect(saveNewPassword()).toBeDisabled();
+  });
+
+  it('changes the password', async () => {
+    setup({ email: 'mara@example.com' });
+
+    fireEvent.change(newPassword(), { target: { value: 'longenough' } });
+    fireEvent.click(saveNewPassword());
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Changed.');
+    expect(updatePassword).toHaveBeenCalledWith('longenough');
+  });
+
+  it('says so when the change fails instead of pretending it worked', async () => {
+    vi.mocked(updatePassword).mockRejectedValue(new Error('Could not change your password: nope'));
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    setup({ email: 'mara@example.com' });
+
+    fireEvent.change(newPassword(), { target: { value: 'longenough' } });
+    fireEvent.click(saveNewPassword());
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/nope/);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    consoleError.mockRestore();
   });
 });

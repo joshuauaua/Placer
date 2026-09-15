@@ -5,14 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vp dev",
-    "prebuild": "npm run deps:check",
+    "prebuild": "npm run deps:check && npm run migrations:check",
     "build": "vp build",
     "lint": "vp lint",
     "preview": "vp preview",
     "test": "vp test",
     "test:run": "vp test run",
     "deps:check": "node scripts/check-deps.mjs",
-    "sandbox:scope": "node scripts/check-sandbox-scope.mjs"
+    "sandbox:scope": "node scripts/check-sandbox-scope.mjs",
+    "migrations:check": "node scripts/check-migrations.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

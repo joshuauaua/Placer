@@ -124,7 +124,7 @@ function MainApp({ initialView = 'welcome' }) {
   // `profile` is { name, bio } or null either way. `status` is 'loading' until a session
   // has been read once, which is a state worth waiting out rather than rendering as
   // signed out.
-  const { profile, status: identityStatus, accountId, signIn: handleSignIn,
+  const { profile, status: identityStatus, accountId, email: accountEmail, signIn: handleSignIn,
     signOut: signOutOfPlacer, saveProfile: handleSaveProfile } = useIdentity();
   const identityLoading = identityStatus === 'loading';
 
@@ -360,7 +360,13 @@ function MainApp({ initialView = 'welcome' }) {
             {/* Passed down rather than read from services/profile inside SandboxPage: with
                 accounts the name is behind a request, and a component cannot await one in
                 its render body. */}
-            <SandboxPage t={t} displayName={profile?.name ?? null} />
+            <SandboxPage
+              t={t}
+              displayName={profile?.name ?? null}
+              // Only opening a room is gated. Joining, contributing and reading are not.
+              needsAccount={identityStatus === 'signedOut'}
+              onSignIn={handleSignIn}
+            />
           </Suspense>
         )}
 
@@ -386,7 +392,8 @@ function MainApp({ initialView = 'welcome' }) {
 
         {view === 'settings' && profile && (
           <Suspense fallback={<LoadingFallback />}>
-            <SettingsPage t={t} profile={profile} onSaveProfile={handleSaveProfile} onNavigate={show} />
+            <SettingsPage t={t} profile={profile} email={accountEmail}
+              onSaveProfile={handleSaveProfile} onNavigate={show} />
           </Suspense>
         )}
 

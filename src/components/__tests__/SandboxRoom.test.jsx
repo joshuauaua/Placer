@@ -34,11 +34,11 @@ const hours = (n) => new Date(Date.now() + n * 3600000 + (n > 0 ? 30000 : 0)).to
 /** A room that is live, with the full two hours ahead of it. */
 const openRoom = () => ({ experiment: 'budget-ballot', status: 'open', expiresAt: hours(2) });
 
-function renderAt(path, searchPath = '') {
+function renderAt(path, searchPath = '', props = {}) {
   const location = memoryLocation({ path, searchPath, record: true });
   render(
     <Router hook={location.hook}>
-      <SandboxPage t={THEME} />
+      <SandboxPage t={THEME} {...props} />
     </Router>
   );
   return location;
@@ -321,5 +321,95 @@ describe('a room that has gone', () => {
     await screen.findByRole('status');
     expect(screen.getByRole('heading', { level: 1, name: 'Budget Ballot' })).toBeInTheDocument();
     expect(screen.getByLabelText('Benches with backs')).toBeInTheDocument();
+  });
+});
+
+/*
+ * Opening a room creates something other people join, so it takes an account. Joining one
+ * takes nothing at all — a participant scans a QR code or types a PIN, and stopping to
+ * make an account at that moment would cost the room the people it was opened for.
+ *
+ * The boundary that actually matters is in supabase/rooms.sql, where sandbox_room_create
+ * is the only function the anon role may not execute. These cover the half of it a person
+ * can see.
+ */
+describe('opening a room takes an account', () => {
+  it('asks for a sign in instead of offering the button', () => {
+    renderAt('/sandbox/budget-ballot', '', { needsAccount: true });
+
+    expect(screen.queryByRole('button', { name: /^start a room$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in to start a room/i })).toBeInTheDocument();
+  });
+
+  it('says so rather than hiding the feature, which would look broken', () => {
+    renderAt('/sandbox/budget-ballot', '', { needsAccount: true });
+
+    // The control is still where it was; only what it does has changed.
+    expect(screen.getByRole('button', { name: /sign in to start a room/i })).toBeInTheDocument();
+  });
+
+  it('sends somebody to sign in when they ask to', () => {
+    const onSignIn = vi.fn();
+    renderAt('/sandbox/budget-ballot', '', { needsAccount: true, onSignIn });
+
+    fireEvent.click(screen.getByRole('button', { name: /sign in to start a room/i }));
+
+    expect(onSignIn).toHaveBeenCalled();
+    expect(createRoom).not.toHaveBeenCalled();
+  });
+
+  it('offers the real button once there is an account', () => {
+    renderAt('/sandbox/budget-ballot', '', { needsAccount: false });
+
+    expect(screen.getByRole('button', { name: /^start a room$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /sign in to start a room/i })).not.toBeInTheDocument();
+  });
+
+  it('offers neither where a room was never possible', () => {
+    isSupabaseConfigured.mockReturnValue(false);
+
+    renderAt('/sandbox/budget-ballot', '', { needsAccount: true });
+
+    // Nothing to sign in for: there is no database to host a room in either way.
+    expect(screen.queryByRole('button', { name: /sign in to start a room/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^start a room$/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('joining a room takes no account', () => {
+  it('lets a signed-out participant into a room that is open', async () => {
+    readRoom.mockResolvedValue(openRoom());
+
+    renderAt('/sandbox/budget-ballot', 'room=room-1', { needsAccount: true });
+
+    expect(await screen.findByText(/2h left/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Benches with backs')).toBeInTheDocument();
+  });
+
+  it('lets a signed-out participant contribute', async () => {
+    readRoom.mockResolvedValue(openRoom());
+
+    renderAt('/sandbox/budget-ballot', 'room=room-1', { needsAccount: true });
+    await screen.findByText(/2h left/);
+
+    fireEvent.change(screen.getByLabelText('Benches with backs'), { target: { value: '3' } });
+
+    await waitFor(
+      () => {
+        expect(saveContribution).toHaveBeenCalledWith(
+          expect.objectContaining({ roomId: 'room-1' })
+        );
+      },
+      { timeout: 2000 }
+    );
+  });
+
+  it('does not put a sign-in in front of somebody who is already in a room', async () => {
+    readRoom.mockResolvedValue(openRoom());
+
+    renderAt('/sandbox/budget-ballot', 'room=room-1', { needsAccount: true });
+    await screen.findByText(/2h left/);
+
+    expect(screen.queryByRole('button', { name: /sign in to start a room/i })).not.toBeInTheDocument();
   });
 });

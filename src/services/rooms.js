@@ -35,6 +35,12 @@ async function client() {
  * database can say so, and the same goes for the deadline: the browser's clock is
  * not to be trusted with when a room ends. Returns the facilitator token, which is
  * the one secret in this feature: whoever holds it can close the room early.
+ *
+ * Needs an account. sandbox_room_create is the one function in supabase/rooms.sql that
+ * the anon role may not execute, so a signed-out caller is refused by Postgres rather
+ * than by anything here — and what comes back is a message about function privileges,
+ * which is true and no use to anybody. The Sandbox asks for a sign-in before it offers
+ * the button; this is for the case where something got past that.
  */
 export async function createRoom(experimentId) {
   const supabase = await client();
@@ -42,7 +48,13 @@ export async function createRoom(experimentId) {
     .rpc('sandbox_room_create', { p_experiment: experimentId })
     .single();
 
-  if (error) throw new Error(`Could not open a room: ${error.message}`);
+  if (error) {
+    // 42501 is insufficient_privilege, which PostgREST also reports as a 403.
+    if (error.code === '42501' || /permission denied for function/i.test(error.message ?? '')) {
+      throw new Error('Opening a room needs an account. Joining one does not.');
+    }
+    throw new Error(`Could not open a room: ${error.message}`);
+  }
 
   return {
     id: data.room_id,
