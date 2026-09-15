@@ -12,7 +12,6 @@ export function ImaginationPreview({ t, imagination, onClose }) {
     preview,
     author,
     canvasAssets = [],
-    lines = [],
   } = imagination;
 
   return (
@@ -64,8 +63,6 @@ export function ImaginationPreview({ t, imagination, onClose }) {
           {loc && <div>{loc}</div>}
           <div>
             <span className="placer-disp" style={{ color: t.ink, fontWeight: 700 }}>{canvasAssets.length}</span> assets
-            <span style={{ margin: '0 6px', color: t.inkFaint }}>·</span>
-            <span className="placer-disp" style={{ color: t.ink, fontWeight: 700 }}>{lines.length}</span> lines
             {author && <> <span style={{ margin: '0 6px', color: t.inkFaint }}>·</span> {author}</>}
           </div>
         </div>

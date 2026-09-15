@@ -12,7 +12,6 @@ const IMAGINATION = {
   author: 'You There',
   preview: 'data:image/jpeg;base64,mockPreview',
   canvasAssets: [{ id: 'a1' }, { id: 'a2' }, { id: 'a3' }],
-  lines: [{ id: 'l1' }],
 };
 
 const setup = (imagination = IMAGINATION) => {
@@ -40,11 +39,10 @@ describe('ImaginationPreview', () => {
     );
   });
 
-  it('shows the asset and line counts and the author', () => {
+  it('shows the asset count and the author', () => {
     setup();
 
     expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
     expect(screen.getByText(/You There/)).toBeInTheDocument();
   });
 
@@ -72,12 +70,12 @@ describe('ImaginationPreview', () => {
     expect(screen.getByText('Untitled imagination')).toBeInTheDocument();
   });
 
-  it('survives a sparse record with no assets, lines, category, or location', () => {
+  it('survives a sparse record with no assets, category, or location', () => {
     setup({ id: 'img-2', title: 'Bare', preview: null });
 
     expect(screen.getByText('Bare')).toBeInTheDocument();
-    // Both counts render as zero rather than crashing on the missing arrays.
-    expect(screen.getAllByText('0')).toHaveLength(2);
+    // Count renders as zero rather than crashing on the missing array.
+    expect(screen.getByText('0')).toBeInTheDocument();
   });
 
   it('renders user text as text, never as markup', () => {

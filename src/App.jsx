@@ -111,7 +111,6 @@ function MainApp({ initialView = 'welcome' }) {
   // The imagination being built. Held here rather than in StreetScreen so that
   // stepping forward to Describe and back again does not throw the drawing away.
   const [canvasAssets, setCanvasAssets] = useState([]);
-  const [lines, setLines] = useState([]);
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   // Composite of the photo plus everything drawn on it, exported when leaving step 1.
   const [preview, setPreview] = useState(null);
@@ -163,7 +162,6 @@ function MainApp({ initialView = 'welcome' }) {
     setCapturedView(viewData);
     // A new capture starts a new imagination.
     setCanvasAssets([]);
-    setLines([]);
     setDraft(EMPTY_DRAFT);
     setPreview(null);
     show('street');
@@ -186,7 +184,7 @@ function MainApp({ initialView = 'welcome' }) {
   // again on the way back — both of those reload the page, and everything above is React
   // state. See PostPage's SignInToPost, which calls this before it navigates.
   const stashDraft = () => savePendingImagination({
-    capturedView, canvasAssets, lines, draft, preview,
+    capturedView, canvasAssets, draft, preview,
   });
 
   useEffect(() => {
@@ -202,7 +200,6 @@ function MainApp({ initialView = 'welcome' }) {
       if (cancelled || !pending) return;
       setCapturedView(pending.capturedView ?? null);
       setCanvasAssets(pending.canvasAssets ?? []);
-      setLines(pending.lines ?? []);
       setDraft(pending.draft ?? EMPTY_DRAFT);
       setPreview(pending.preview ?? null);
       clearPendingImagination();
@@ -219,7 +216,6 @@ function MainApp({ initialView = 'welcome' }) {
     setMapFocus(capturedView?.position ?? null);
     setCapturedView(null);
     setCanvasAssets([]);
-    setLines([]);
     setDraft(EMPTY_DRAFT);
     setPreview(null);
     show('map');
@@ -255,11 +251,8 @@ function MainApp({ initialView = 'welcome' }) {
             onBack={handleBackToMap}
             onNext={handleNextStep}
             capturedView={capturedView}
-            apiKey={GOOGLE_MAPS_API_KEY}
             canvasAssets={canvasAssets}
             onCanvasAssetsChange={setCanvasAssets}
-            lines={lines}
-            onLinesChange={setLines}
           />
         )}
         {view === 'describe' && (
@@ -280,7 +273,6 @@ function MainApp({ initialView = 'welcome' }) {
             preview={preview}
             capturedView={capturedView}
             canvasAssets={canvasAssets}
-            lines={lines}
             onBack={() => show('describe')}
             onPosted={handlePosted}
             authorName={profile?.name ?? DEFAULT_NAME}

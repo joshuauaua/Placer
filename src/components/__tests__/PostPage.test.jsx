@@ -40,7 +40,6 @@ const setup = (props = {}) => {
       preview="data:image/jpeg;base64,mockPreview"
       capturedView={CAPTURED}
       canvasAssets={[{ id: 'a1' }, { id: 'a2' }]}
-      lines={[{ id: 'l1' }]}
       onPosted={onPosted}
       onBack={onBack}
       {...props}
@@ -71,12 +70,11 @@ describe('PostPage', () => {
     expect(screen.getByText('Green space')).toBeInTheDocument();
   });
 
-  it('shows the asset and line counts', () => {
+  it('shows the asset count', () => {
     setup();
 
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText(/assets placed/)).toBeInTheDocument();
-    expect(screen.getByText(/lines/)).toBeInTheDocument();
   });
 
   it('formats the captured coordinates as the location', () => {
@@ -112,8 +110,6 @@ describe('PostPage', () => {
 
     await waitFor(() => expect(onPosted).toHaveBeenCalledTimes(1));
     expect(postImagination).toHaveBeenCalledWith({
-      // Null because no account was passed: on a checkout with no Supabase project there
-      // are no accounts, and postImagination writes to localStorage instead.
       userId: null,
       title: 'Pocket park',
       cat: 'green',
@@ -125,7 +121,6 @@ describe('PostPage', () => {
       pov: CAPTURED.pov,
       fov: 90,
       canvasAssets: [{ id: 'a1' }, { id: 'a2' }],
-      lines: [{ id: 'l1' }],
       preview: 'data:image/jpeg;base64,mockPreview',
     });
   });

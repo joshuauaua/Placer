@@ -69,7 +69,7 @@ function SignInToPost({ t, mode, onModeChange, onLeaving }) {
   );
 }
 
-export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], lines = [],
+export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
   onBack, onPosted, authorName = DEFAULT_NAME, accountId = null,
   needsAccount = false, checkingAccount = false, onStashDraft }) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'error'
@@ -91,22 +91,17 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], l
         blurb: draft.blurb,
         loc,
         author: authorName,
-        // Who it belongs to, as opposed to whose name is on it. Null where there are no
-        // accounts, which is the only case postImagination will accept without one.
         userId: accountId,
         source: capturedView?.source ?? null,
         position: capturedView?.position ?? null,
         pov: capturedView?.pov ?? null,
         fov: capturedView?.fov ?? null,
-        // Kept so the imagination can be reopened on the canvas later.
         canvasAssets,
-        lines,
         preview: preview ?? capturedView?.screenshot ?? null,
       });
       posthog.capture('imagination_posted', {
         category: draft.cat,
         assets_count: canvasAssets.length,
-        lines_count: lines.length,
         source: capturedView?.source ?? null,
       });
       onPosted();
@@ -181,8 +176,6 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], l
           </Row>
           <Row t={t} label="On the canvas">
             <span className="placer-disp" style={{ fontWeight: 700 }}>{canvasAssets.length}</span> assets placed
-            <span style={{ margin: '0 8px', color: t.inkFaint }}>·</span>
-            <span className="placer-disp" style={{ fontWeight: 700 }}>{lines.length}</span> lines
           </Row>
 
           {error && (

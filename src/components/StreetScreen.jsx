@@ -15,11 +15,8 @@ export function StreetScreen({
   onBack,
   onNext,
   capturedView,
-  apiKey = '',
   canvasAssets = [],
   onCanvasAssetsChange = noop,
-  lines = [],
-  onLinesChange = noop,
 }) {
   const stageRef = useRef();
   const backgroundImage = capturedView?.screenshot || null;
@@ -51,7 +48,6 @@ export function StreetScreen({
     }
     posthog.capture('imagination_description_started', {
       assets_count: canvasAssets.length,
-      lines_count: lines.length,
       has_background: !!backgroundImage,
     });
     onNext(preview);
@@ -77,13 +73,9 @@ export function StreetScreen({
         </div>
       }>
         <ImaginationCanvas
-          capturedView={capturedView || {}}
           availableAssets={ASSET_LIB}
           canvasAssets={canvasAssets}
           onCanvasAssetsChange={onCanvasAssetsChange}
-          lines={lines}
-          onLinesChange={onLinesChange}
-          apiKey={apiKey}
           stageRef={stageRef}
           width={1000}
           height={700}

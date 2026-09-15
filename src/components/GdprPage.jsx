@@ -51,9 +51,11 @@ function DataControls({ t }) {
   const handleErase = async () => {
     if (!confirmErase) {
       setStatus(
-        'This permanently deletes every idea saved in this browser. It does not reach survey '
-        + 'answers you have already submitted, which are held in our database — email us to have '
-        + 'those removed. Press Erase again to confirm.'
+        'This permanently deletes everything PLACER has saved in this browser, including work '
+        + 'you have not posted. It reaches nothing held on our server: not your account or '
+        + 'profile, not the imaginations you have posted, and it does not reach survey answers '
+        + 'you have already submitted — the section below says how to reach those. '
+        + 'Press Erase again to confirm.'
       );
       setConfirmErase(true);
       return;
@@ -63,8 +65,9 @@ function DataControls({ t }) {
       await eraseAllData();
       posthog.capture('data_erased');
       setStatus(
-        'Everything PLACER stored in this browser has been deleted. Survey answers already '
-        + 'submitted are unaffected; email us to have those removed too.'
+        'Everything PLACER stored in this browser has been deleted. Your account, your profile, '
+        + 'anything you posted and any survey answers already submitted are unaffected; delete a '
+        + 'posted imagination from your profile, and email us for the rest.'
       );
     } catch {
       setStatus('The data could not be erased. Try clearing site data in your browser settings.');
@@ -87,10 +90,11 @@ function DataControls({ t }) {
         Exercise your rights on this device
       </div>
       <P t={t} style={{ fontSize: 15, marginBottom: 20 }}>
-        PLACER keeps the ideas you make in your own browser, so access, portability and erasure of
-        those you can act on yourself, immediately — no request needed. Survey answers you have
-        already submitted are held in our database instead, and are not covered by these two
-        buttons; the section below says how to reach them.
+        These two buttons cover what is stored in this browser — unposted work, comments, your
+        analytics choice — and you can act on it yourself, immediately, with no request to us.
+        They do not reach our server. An imagination you have posted you delete from your profile,
+        which removes its picture too; your account, your profile and any survey answers you have
+        submitted need a request, and the section below says how to make one.
       </P>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <Btn t={t} variant="primary" icon="share" onClick={handleExport} disabled={busy === 'export'}>
@@ -167,11 +171,12 @@ export function GdprPage({ t, onNavigate }) {
       intro="Your rights under the EU General Data Protection Regulation and the UK GDPR, and how PLACER meets them."
     >
       <Callout t={t} icon="check" title="Where your data actually sits">
-        The ideas you make stay with you: assets, comments and upvotes are written to your
-        browser&rsquo;s local storage, not to a PLACER server, so those you can act on yourself in a
-        couple of clicks rather than by sending us a request. Two things do leave your browser:
-        the answers you submit in the survey, which are stored in our database, and usage
-        analytics, which go to PostHog &mdash; and only if you accept them.
+        Two places, and the line between them is the Post button. Until you press it, your work is
+        in your browser&rsquo;s local storage and you can export or erase it yourself in a couple of
+        clicks. Once you post, the imagination and its picture are on our server and on a public
+        map: readable by anyone, changeable and deletable only by you. Your account and profile
+        live there too, as do survey answers you submit and Sandbox rooms you join. Usage
+        analytics go to PostHog, and only if you accept them.
       </Callout>
 
       <Section t={t} title="Data controller">
@@ -188,10 +193,34 @@ export function GdprPage({ t, onNavigate }) {
           columns={['Data', 'Purpose', 'Legal basis', 'Retention']}
           rows={[
             [
-              'Ideas you save (location, placed assets, text, comments, upvotes)',
-              'Letting you build, revisit and share a proposal for a public space',
-              'Consent (Art. 6(1)(a)) — you choose to save; stored only on your device',
-              'Until you delete it or clear site data',
+              'Account credentials — your email address, a hash of your password, whether the address is confirmed, and the link to your Google identity if you sign in that way',
+              'Letting you have an account, so that what you post is yours and only you can change it',
+              'Contract (Art. 6(1)(b)) — an account is what posting to a shared map requires',
+              'Until you ask us to delete the account',
+            ],
+            [
+              'Profile — your display name, which is public, and a bio if you write one',
+              'Crediting an imagination to somebody, so a map of proposals has authors rather than anonymous pins',
+              'Contract (Art. 6(1)(b)) — part of having an account. The name need not be your real one',
+              'Until you change it, or the account is deleted. A name already copied onto a posted imagination stays as it was',
+            ],
+            [
+              'Imaginations you post — location and coordinates, the assets you placed, title, category, description, upvote count, timestamps, your account id and your display name at the time',
+              'Publishing a proposal for a public space on a map the community can read',
+              'Consent (Art. 6(1)(a)) — you choose to post, and posting is publishing. Anyone can read it; only you can change or delete it',
+              'Until you delete it, or delete your account, which deletes everything posted under it',
+            ],
+            [
+              'The preview picture of a posted imagination — your scene composited onto the Street View frame, stored under a folder named after your account',
+              'Showing the imagination on the map and on its own page',
+              'Consent (Art. 6(1)(a)) — uploaded when you post. It is served from a public web address that needs no account to open, and search engines may reach it',
+              'Deleted when the imagination is deleted, or with the account',
+            ],
+            [
+              'Work you have not posted — an imagination in progress, comments, the asset library, your analytics choice, and your sign-in session token',
+              'Letting you build, revisit and revise before deciding whether to publish',
+              'Consent (Art. 6(1)(a)) for what you save; the session token is strictly necessary to keep you signed in',
+              'Stored in your browser only, until you delete it or clear site data. Never uploaded unless you post it',
             ],
             [
               'Survey answers — the options you choose, and anything you type into a free-text field',
@@ -229,7 +258,15 @@ export function GdprPage({ t, onNavigate }) {
           PLACER does not process special category data and makes no automated decisions about you
           within the meaning of Article 22. Analytics are used in aggregate: PostHog gives your
           browser an anonymous identifier so that repeat visits can be counted, and PLACER never
-          joins that identifier to a survey answer or to an email address.
+          joins that identifier to your account, to a survey answer or to an email address.
+        </P>
+        <P t={t}>
+          Posting is publication, so it is worth being blunt about what that means. An imagination
+          you post is readable by anyone who opens the map, signed in or not, together with the
+          display name you posted it under; its picture is readable by anyone who has the address
+          it is served from, with no sign-in at all. So put nothing in a title, description or
+          scene that you would not put on a public website, and choose a display name you are
+          content to publish.
         </P>
         <P t={t}>
           One thing worth knowing before you type: the survey&rsquo;s free-text fields are stored as
@@ -254,12 +291,20 @@ export function GdprPage({ t, onNavigate }) {
           to extend that by up to two further months for a complex request. There is no charge.
         </P>
         <P t={t}>
-          Two practical limits worth stating plainly. If you gave us your email address in the
-          survey, that is what we look you up by, so write from that address and we can find,
-          send or delete what is held against it. If you submitted the survey without an address,
-          the answers carry nothing that identifies you and we genuinely cannot pick them out of
-          the others — which is the point of collecting them that way, but it does mean there is
-          nothing for us to act on. Nothing you erase in your browser can be restored either.
+          <strong style={{ color: t.ink }}>Deleting your account.</strong> There is no button for
+          this yet, so email us and we will do it. It removes the login, the profile, every
+          imagination posted under the account and every picture belonging to those imaginations.
+          It cannot be undone, and an imagination somebody has already seen or screenshotted is
+          beyond anyone&rsquo;s reach — deletion stops us serving it, which is all deletion can ever do.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>How we identify you.</strong> If you have an account,
+          write from its email address and we can find everything held against it. If you gave an
+          address in the survey, that is what we look those answers up by. If you submitted the
+          survey without an address, the answers carry nothing that identifies you and we genuinely
+          cannot pick them out of the others — which is the point of collecting them that way, but
+          it does mean there is nothing for us to act on. Nothing you erase in your browser can be
+          restored either.
         </P>
       </Section>
 
@@ -275,9 +320,13 @@ export function GdprPage({ t, onNavigate }) {
           the Standard Contractual Clauses in its data processing agreement.
         </P>
         <P t={t}>
-          Survey answers are stored in a Postgres database hosted by Supabase in the EU, acting as
-          our processor. Supabase Inc. is a US company, so support access from outside the EEA is
-          likewise covered by the Standard Contractual Clauses in its data processing agreement.
+          Everything we store — accounts and profiles, the imaginations you post, the pictures of
+          them, survey answers and Sandbox rooms — is held in a Postgres database and file storage
+          hosted by Supabase in the EU, acting as our processor. Supabase Inc. is a US company, so
+          support access from outside the EEA is likewise covered by the Standard Contractual
+          Clauses in its data processing agreement. The pictures are served from a public address
+          on that storage, which means they may be fetched from wherever the person looking at the
+          map happens to be.
         </P>
         <P t={t}>
           <ExternalLink t={t} href={GOOGLE_PRIVACY_URL}>Google&rsquo;s privacy policy</ExternalLink>
@@ -294,27 +343,31 @@ export function GdprPage({ t, onNavigate }) {
           storage are in play:
         </P>
         <Bullets t={t} items={[
-          'Strictly necessary — your saved ideas, and the record of your analytics choice, are kept in local storage. This is what makes the feature you asked for work, and needs no consent.',
+          'Strictly necessary — your unposted work, the record of your analytics choice, and, once you sign in, the session token that keeps you signed in across reloads, are kept in local storage. This is what makes the feature you asked for work, and needs no consent.',
           'Analytics — PostHog sets a cookie and local storage entries to recognise your browser across visits, and records your session. PostHog is not loaded at all until you accept: no request leaves your browser, nothing is written and nothing is recorded, and rejecting keeps it that way. The analytics controls above change your answer.',
         ]} />
         <P t={t}>
           Google may also set cookies of its own when serving map and Street View imagery.
-          Submitting the survey sets nothing: there is no sign-in, so no session is kept in your
-          browser afterwards. Joining a Sandbox room does store two random identifiers in local
-          storage — one so that editing your answer revises it rather than adding a second, one so
-          that a room you opened is a room you can close. Neither is tied to you, both are covered
-          by the export and erasure controls above, and neither is a sign-in.
+          Submitting the survey sets nothing. Signing out clears the session token; the Erase
+          button above clears PLACER&rsquo;s own keys and leaves you signed in, so use both if you want
+          the browser left with neither. Joining a Sandbox room stores two random identifiers in
+          local storage — one so that editing your answer revises it rather than adding a second,
+          one so that a room you opened is a room you can close. Neither is tied to you, both are
+          covered by the export and erasure controls above, and neither is a sign-in.
         </P>
       </Section>
 
       <Section t={t} title="Data protection by design">
         <Bullets t={t} items={[
-          'Data minimisation — no accounts and no passwords. The survey asks for an email address only when you have said you want to be involved beyond it, and works perfectly well without one.',
+          'Data minimisation — an account needs an email address and nothing else: no real name, no phone number, no date of birth. Reading the map, building on the canvas, answering the survey and joining a room all work with no account at all. The survey asks for an address only when you have said you want to be involved beyond it.',
+          'Nothing uploaded by default — the upload happens when you press Post, and until then the work is on your device. Imaginations saved before accounts existed are left there rather than migrated, because they were saved under a policy that promised they would not leave.',
+          'Ownership enforced in the database — row-level security, not app code, is what makes a posted imagination readable by everyone and writable only by the account that posted it. A stolen or inspected browser key cannot change or delete somebody else’s work.',
           'Consent before capture — the analytics SDK is not even loaded until consent exists, so a visitor who rejects the banner, or never answers it, is never contacted or measured.',
-          'Storage limitation — the ideas you make are never retained centrally, so there is no store of them to breach. What is stored centrally is the survey, and only what the survey asked you.',
+          'Storage limitation — deleting an imagination deletes its picture; deleting an account cascades to the profile and to everything posted under it; Sandbox rooms expire after two hours and are deleted within a day.',
+          'No passwords of ours to lose — the login is held by Supabase Auth and we never see or store a password.',
           'Write-only submission — the key in your browser can add a survey response and cannot read, change or delete any response, including its own. Reading them needs a separate credential that never leaves our side.',
-          'Local processing — Street View frames are analysed in your browser, not uploaded.',
-          'Transparency — every third party that receives data is named on this page.',
+          'Local processing — Street View frames are analysed in your browser, not uploaded. The only image that reaches us is the one you post.',
+          'Transparency — every third party that receives data is named on this page, and the fact that a posted picture is public is stated rather than buried.',
         ]} />
       </Section>
 

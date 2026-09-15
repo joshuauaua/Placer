@@ -86,7 +86,6 @@ const PENDING_KEY = 'placemaking_pending_imagination';
 const PENDING = {
   capturedView: { position: { lat: 51.5, lng: -0.12 }, screenshot: 'data:image/jpeg;base64,x' },
   canvasAssets: [{ id: 'a1' }],
-  lines: [{ id: 'l1' }],
   draft: { title: 'Pocket park', cat: 'green', blurb: 'Trees instead of asphalt.' },
   preview: 'data:image/jpeg;base64,y',
 };

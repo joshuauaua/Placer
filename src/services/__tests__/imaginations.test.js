@@ -75,7 +75,6 @@ const ROW = {
   pov: { heading: 90, pitch: 0, zoom: 1 },
   fov: 90,
   canvas_assets: [{ id: 'a1' }],
-  lines: [{ id: 'l1' }],
   preview_path: 'user-1/img-1.jpg',
   upvotes: 12,
   created_at: '2026-09-01T10:00:00.000Z',
@@ -98,7 +97,6 @@ const DRAFT = {
   pov: { heading: 90, pitch: 0, zoom: 1 },
   fov: 90,
   canvasAssets: [{ id: 'a1' }],
-  lines: [{ id: 'l1' }],
   preview: JPEG,
 };
 

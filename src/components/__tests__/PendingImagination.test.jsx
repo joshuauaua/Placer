@@ -30,7 +30,6 @@ const PENDING = {
     screenshot: 'data:image/jpeg;base64,mockScreenshot',
   },
   canvasAssets: [{ id: 'a1' }, { id: 'a2' }],
-  lines: [{ id: 'l1' }],
   draft: { title: 'Pocket park', cat: 'green', blurb: 'Swap the asphalt for trees.' },
   preview: 'data:image/jpeg;base64,mockPreview',
 };
@@ -96,7 +95,6 @@ describe('an imagination parked while signing in', () => {
     expect(screen.getByAltText('Your imagination'))
       .toHaveAttribute('src', 'data:image/jpeg;base64,mockPreview');
     expect(screen.getByText(/assets placed/)).toHaveTextContent('2 assets placed');
-    expect(screen.getByText(/lines$/)).toHaveTextContent('1 lines');
   });
 
   it('offers the Post button, now that there is an account behind it', async () => {

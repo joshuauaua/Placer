@@ -22,7 +22,7 @@ function Dot({ t }) {
 
 function Row({ t, imagination, confirming, busy, onAskDelete, onCancelDelete, onConfirmDelete }) {
   const { title, cat, blurb, loc, preview, author, createdAt, upvotes = 0,
-    canvasAssets = [], lines = [] } = imagination;
+    canvasAssets = [] } = imagination;
   const name = title || 'Untitled imagination';
 
   return (
@@ -68,8 +68,6 @@ function Row({ t, imagination, confirming, busy, onAskDelete, onCancelDelete, on
           {loc && <><Dot t={t} /><Meta t={t}>{loc}</Meta></>}
           <Dot t={t} />
           <Meta t={t}>{canvasAssets.length} assets</Meta>
-          <Dot t={t} />
-          <Meta t={t}>{lines.length} lines</Meta>
           <Dot t={t} />
           <Meta t={t}>{upvotes} votes</Meta>
         </div>

@@ -50,7 +50,6 @@ create table if not exists public.imaginations (
   pov           jsonb,
   fov           double precision,
   canvas_assets jsonb            not null    default '[]'::jsonb,
-  lines         jsonb            not null    default '[]'::jsonb,
   -- Path within the imagination-previews bucket, '<user_id>/<id>.jpg' or '.png'. Null
   -- means the upload failed or was never attempted; the imagination is still readable,
   -- it simply has no picture.
@@ -119,9 +118,9 @@ create policy "an owner can remove their imagination"
 revoke all on public.imaginations from anon, authenticated;
 grant select on public.imaginations to anon, authenticated;
 grant insert (id, user_id, author_name, title, category, blurb, loc, lat, lng,
-              source, pov, fov, canvas_assets, lines, preview_path)
+              source, pov, fov, canvas_assets, preview_path)
   on public.imaginations to authenticated;
-grant update (title, category, blurb, canvas_assets, lines, preview_path)
+grant update (title, category, blurb, canvas_assets, preview_path)
   on public.imaginations to authenticated;
 grant delete on public.imaginations to authenticated;
 
@@ -166,10 +165,6 @@ alter table public.imaginations add constraint imaginations_source_known
 alter table public.imaginations drop constraint if exists imaginations_canvas_assets_size;
 alter table public.imaginations add constraint imaginations_canvas_assets_size
   check (length(canvas_assets::text) <= 200000);
-
-alter table public.imaginations drop constraint if exists imaginations_lines_size;
-alter table public.imaginations add constraint imaginations_lines_size
-  check (length(lines::text) <= 200000);
 
 alter table public.imaginations drop constraint if exists imaginations_preview_path_size;
 alter table public.imaginations add constraint imaginations_preview_path_size

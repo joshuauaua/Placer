@@ -198,7 +198,6 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
           imagination_id: imagination.id,
           category: imagination.cat,
           assets_count: imagination.canvasAssets?.length ?? 0,
-          lines_count: imagination.lines?.length ?? 0,
         });
         setSelected(imagination);
         // Bring the pin into view so it is obvious which one the card describes.

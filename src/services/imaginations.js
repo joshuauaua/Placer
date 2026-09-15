@@ -58,7 +58,7 @@ async function client() {
 // Every column, named rather than '*', so that adding one to the table does not silently
 // change what the app downloads on every read of the map.
 const COLUMNS = 'id, user_id, author_name, title, category, blurb, loc, lat, lng, source,'
-  + ' pov, fov, canvas_assets, lines, preview_path, upvotes, created_at, updated_at';
+  + ' pov, fov, canvas_assets, preview_path, upvotes, created_at, updated_at';
 
 /**
  * The mime type and file extension of a preview, or null for anything that is not one.
@@ -108,7 +108,6 @@ function fromRow(supabase, row) {
     pov: row.pov ?? null,
     fov: row.fov ?? null,
     canvasAssets: row.canvas_assets ?? [],
-    lines: row.lines ?? [],
     preview: publicPreviewUrl(supabase, row.preview_path),
     upvotes: row.upvotes ?? 0,
     // No comments table yet. An empty array rather than undefined, so the shape matches
@@ -196,7 +195,7 @@ export async function postImagination(imagination) {
 
   const supabase = await client();
   const { userId, author, title, cat, blurb, loc, position, source, pov, fov,
-    canvasAssets = [], lines = [], preview } = imagination;
+    canvasAssets = [], preview } = imagination;
 
   if (!userId) throw new Error('Posting an imagination needs an account.');
 
@@ -234,7 +233,6 @@ export async function postImagination(imagination) {
       pov: pov ?? null,
       fov: fov ?? null,
       canvas_assets: canvasAssets,
-      lines,
       preview_path: previewPath,
     })
     .select(COLUMNS)
