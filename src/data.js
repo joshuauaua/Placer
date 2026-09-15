@@ -1,5 +1,13 @@
 /* PLACER — sample content */
 
+import benchIcon from './assets/imagination/bench.png';
+import planterBoxIcon from './assets/imagination/planter-box.png';
+import planterPotIcon from './assets/imagination/planter-pot.png';
+import bikeIcon from './assets/imagination/bike.png';
+import trafficLightIcon from './assets/imagination/traffic-light.png';
+import bollardIcon from './assets/imagination/bollard.png';
+import barrierIcon from './assets/imagination/barrier.png';
+
 export const IMAGINATIONS = [
   { id: 'i1', cat: 'green',   title: 'Pocket park on the old Lot 7 parking', author: 'Mara Quinn',   when: '2d', votes: 342, comments: 28, x: 31, y: 57, loc: 'Riverside Blvd & 8th', blurb: 'Three rows of parking nobody uses. Swap the asphalt for trees, a lawn, and a few benches.' },
   { id: 'i2', cat: 'seating', title: 'Shade + seating along 8th Street',      author: 'Devon Park',   when: '5h', votes: 218, comments: 14, x: 47, y: 39, loc: '8th St, Midtown',     blurb: 'The walk to the transit stop is brutal in summer. Street trees and benches every block.' },
@@ -27,10 +35,12 @@ export const PLACED_FEATURED = [
 ];
 
 export const ASSET_LIB = [
-  { type: 'bench',   label: 'Bench',      cat: 'seating' },
-  { type: 'planter', label: 'Planter',    cat: 'green' },
-  { type: 'tree',    label: 'Tree',       cat: 'green' },
-  { type: 'bike',    label: 'Bike rack',  cat: 'seating' },
-  { type: 'light',   label: 'Lighting',   cat: 'safety' },
+  { type: 'bench',   label: 'Bench',      cat: 'seating', icon: benchIcon },
+  { type: 'planter', label: 'Planter',    cat: 'green',   icon: planterBoxIcon },
+  { type: 'tree',    label: 'Tree',       cat: 'green',   icon: planterPotIcon },
+  { type: 'bike',    label: 'Bike rack',  cat: 'seating', icon: bikeIcon },
+  { type: 'light',   label: 'Lighting',   cat: 'safety',  icon: trafficLightIcon },
+  { type: 'bollard', label: 'Bollard',    cat: 'safety',  icon: bollardIcon },
+  { type: 'barrier', label: 'Barrier',    cat: 'safety',  icon: barrierIcon },
   { type: 'play',    label: 'Play',       cat: 'play' },
 ];

@@ -11,10 +11,35 @@ import useImage from 'use-image';
 import { THEME } from '../theme';
 import { CAT } from '../theme';
 
+const AssetIcon = ({ src, x, y, radius }) => {
+  const [image] = useImage(src);
+
+  if (!image) return null;
+
+  const diameter = radius * 2;
+  const fit = Math.min(diameter / image.width, diameter / image.height);
+  const width = image.width * fit;
+  const height = image.height * fit;
+
+  return (
+    <KonvaImage
+      image={image}
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      offsetX={width / 2}
+      offsetY={height / 2}
+      listening={false}
+    />
+  );
+};
+
 const Asset = ({ asset, isSelected, onSelect, onChange }) => {
   const shapeRef = useRef();
   const trRef = useRef();
   const cat = CAT[asset.cat] || CAT.green;
+  const radius = asset.scale * 40;
 
   useEffect(() => {
     if (isSelected && trRef.current && shapeRef.current) {
@@ -29,7 +54,7 @@ const Asset = ({ asset, isSelected, onSelect, onChange }) => {
         ref={shapeRef}
         x={asset.x}
         y={asset.y}
-        radius={asset.scale * 40}
+        radius={radius}
         fill={cat.color}
         opacity={0.8}
         draggable
@@ -57,13 +82,16 @@ const Asset = ({ asset, isSelected, onSelect, onChange }) => {
           node.scaleY(1);
         }}
       />
+      {asset.icon && (
+        <AssetIcon src={asset.icon} x={asset.x} y={asset.y} radius={radius} />
+      )}
       <Text
         x={asset.x - 30}
-        y={asset.y - 8}
+        y={asset.y + radius + 6}
         text={asset.label}
         fontSize={14}
         fontFamily="Helvetica"
-        fill="#ffffff"
+        fill={cat.color}
         align="center"
         width={60}
         listening={false}
@@ -119,6 +147,7 @@ const ImaginationCanvas = ({
       type: libraryAsset.type,
       label: libraryAsset.label,
       cat: libraryAsset.cat,
+      icon: libraryAsset.icon,
       x: width / 2,
       y: height / 2,
       scale: 1
@@ -252,8 +281,12 @@ const ImaginationCanvas = ({
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                   <div style={{ width: 60, height: 60, borderRadius: 8, background: cat.color + '22',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
-                    {cat.icon === 'tree' ? '🌳' : cat.icon === 'bench' ? '🪑' : cat.icon === 'light' ? '💡' :
-                     cat.icon === 'play' ? '🎪' : cat.icon === 'cart' ? '🛒' : cat.icon === 'bike' ? '🚲' : '📦'}
+                    {asset.icon ? (
+                      <img src={asset.icon} alt="" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+                    ) : (
+                      cat.icon === 'tree' ? '🌳' : cat.icon === 'bench' ? '🪑' : cat.icon === 'light' ? '💡' :
+                      cat.icon === 'play' ? '🎪' : cat.icon === 'cart' ? '🛒' : cat.icon === 'bike' ? '🚲' : '📦'
+                    )}
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: t.ink, textAlign: 'center' }}>
                     {asset.label}
