@@ -11,80 +11,92 @@ import useImage from 'use-image';
 import { THEME } from '../theme';
 import { CAT } from '../theme';
 
-const AssetIcon = ({ src, x, y, radius }) => {
-  const [image] = useImage(src);
-
-  if (!image) return null;
-
-  const diameter = radius * 2;
-  const fit = Math.min(diameter / image.width, diameter / image.height);
-  const width = image.width * fit;
-  const height = image.height * fit;
-
-  return (
-    <KonvaImage
-      image={image}
-      x={x}
-      y={y}
-      width={width}
-      height={height}
-      offsetX={width / 2}
-      offsetY={height / 2}
-      listening={false}
-    />
-  );
-};
-
 const Asset = ({ asset, isSelected, onSelect, onChange }) => {
   const shapeRef = useRef();
   const trRef = useRef();
   const cat = CAT[asset.cat] || CAT.green;
   const radius = asset.scale * 40;
+  const rotation = asset.rotation || 0;
+  const [image] = useImage(asset.icon || '');
 
   useEffect(() => {
     if (isSelected && trRef.current && shapeRef.current) {
       trRef.current.nodes([shapeRef.current]);
       trRef.current.getLayer().batchDraw();
     }
-  }, [isSelected]);
+    // Re-attach whenever the icon finishes loading too: that swaps the rendered
+    // node from the fallback Circle to the Image (see `shape` below), and without
+    // this the Transformer keeps pointing at the now-detached old node.
+  }, [isSelected, Boolean(image)]);
+
+  const handleDragEnd = (e) => {
+    onChange({
+      ...asset,
+      x: e.target.x(),
+      y: e.target.y()
+    });
+  };
+
+  // Resize and rotate both land here: the Transformer only ever moves the node's
+  // own scaleX/scaleY/rotation, so this reads those back into the asset (folding
+  // scale into our own radius-driven `scale` field) and resets the node's scale to
+  // 1 so next render's radius-derived width/height is the only source of size.
+  const handleTransformEnd = () => {
+    const node = shapeRef.current;
+    const scaleX = node.scaleX();
+
+    onChange({
+      ...asset,
+      x: node.x(),
+      y: node.y(),
+      rotation: node.rotation(),
+      scale: asset.scale * scaleX
+    });
+
+    node.scaleX(1);
+    node.scaleY(1);
+  };
+
+  const commonProps = {
+    ref: shapeRef,
+    x: asset.x,
+    y: asset.y,
+    rotation,
+    draggable: true,
+    onClick: onSelect,
+    onTap: onSelect,
+    onDragEnd: handleDragEnd,
+    onTransformEnd: handleTransformEnd
+  };
+
+  let shape;
+  if (image) {
+    // Fit the artwork inside the same diameter the old color circle used, so
+    // resizing/rotating feels the same as before — just without the swatch.
+    const diameter = radius * 2;
+    const fit = Math.min(diameter / image.width, diameter / image.height);
+    const iconWidth = image.width * fit;
+    const iconHeight = image.height * fit;
+
+    shape = (
+      <KonvaImage
+        {...commonProps}
+        image={image}
+        width={iconWidth}
+        height={iconHeight}
+        offsetX={iconWidth / 2}
+        offsetY={iconHeight / 2}
+      />
+    );
+  } else {
+    // No artwork for this asset type (e.g. Play) — fall back to the color
+    // swatch so it stays visible and selectable on the canvas.
+    shape = <Circle {...commonProps} radius={radius} fill={cat.color} opacity={0.8} />;
+  }
 
   return (
     <>
-      <Circle
-        ref={shapeRef}
-        x={asset.x}
-        y={asset.y}
-        radius={radius}
-        fill={cat.color}
-        opacity={0.8}
-        draggable
-        onClick={onSelect}
-        onTap={onSelect}
-        onDragEnd={(e) => {
-          onChange({
-            ...asset,
-            x: e.target.x(),
-            y: e.target.y()
-          });
-        }}
-        onTransformEnd={() => {
-          const node = shapeRef.current;
-          const scaleX = node.scaleX();
-
-          onChange({
-            ...asset,
-            x: node.x(),
-            y: node.y(),
-            scale: asset.scale * scaleX
-          });
-
-          node.scaleX(1);
-          node.scaleY(1);
-        }}
-      />
-      {asset.icon && (
-        <AssetIcon src={asset.icon} x={asset.x} y={asset.y} radius={radius} />
-      )}
+      {shape}
       <Text
         x={asset.x - 30}
         y={asset.y + radius + 6}
@@ -99,7 +111,7 @@ const Asset = ({ asset, isSelected, onSelect, onChange }) => {
       {isSelected && (
         <Transformer
           ref={trRef}
-          rotateEnabled={false}
+          rotateEnabled
           enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
         />
       )}
@@ -112,11 +124,22 @@ const BackgroundImage = ({ src, width, height }) => {
 
   if (!image) return null;
 
+  // Cover-fit: scale uniformly to fill the stage and crop whatever overflows,
+  // rather than stretching to width/height. A capture's aspect ratio doesn't
+  // always match the stage's (the plain-map toPng fallback in MapContainer
+  // takes on the map div's on-screen size, not a fixed ratio), and stretching
+  // it to fit would skew the photo instead of just cropping it.
+  const scale = Math.max(width / image.width, height / image.height);
+  const drawWidth = image.width * scale;
+  const drawHeight = image.height * scale;
+
   return (
     <KonvaImage
       image={image}
-      width={width}
-      height={height}
+      x={(width - drawWidth) / 2}
+      y={(height - drawHeight) / 2}
+      width={drawWidth}
+      height={drawHeight}
       listening={false}
     />
   );
@@ -150,7 +173,8 @@ const ImaginationCanvas = ({
       icon: libraryAsset.icon,
       x: width / 2,
       y: height / 2,
-      scale: 1
+      scale: 1,
+      rotation: 0
     };
 
     posthog.capture('canvas_asset_added', {
@@ -260,7 +284,7 @@ const ImaginationCanvas = ({
         <div style={{ marginTop: 16, padding: 12, background: t.accent + '22', borderRadius: 8,
           borderLeft: `4px solid ${t.accent}`, fontSize: 13, color: t.ink }}>
           <strong>Tip:</strong> Click assets from the library to add them. Drag to move, use corner
-          handles to resize. Press Delete to remove the selection.
+          handles to resize, and the top handle to rotate. Press Delete to remove the selection.
         </div>
       </div>
 
