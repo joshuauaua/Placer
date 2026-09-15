@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { Btn, CatTag } from './UI';
 import { FlowScreen } from './FlowLayout';
-import { saveImagination } from '../services/api';
+import { AuthForm } from './AuthPage';
+import { postImagination, postsAreShared } from '../services/imaginations';
+import { DEFAULT_NAME } from '../services/profile';
 import posthog from 'posthog-js';
 
 // Human-readable stand-in until reverse geocoding exists; the raw coordinates are
@@ -25,49 +27,97 @@ function Row({ t, label, children }) {
   );
 }
 
-export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], lines = [], onBack, onPosted }) {
+/**
+ * The gate, for somebody who has reached the last step without an account.
+ *
+ * Deliberately inline rather than a redirect. Everything that has been made so far —
+ * the capture, the assets, the lines, the description — lives in MainApp's state, and
+ * sending somebody to /signin and back would be the one thing this screen must not do.
+ * Signing in with a password happens here without the page moving at all.
+ *
+ * The other two ways in cannot be kept on the page: Google redirects, and a confirmation
+ * link is opened from a mail client. onLeaving is what parks the imagination before
+ * either of those happens, so it is still here on the way back.
+ */
+function SignInToPost({ t, mode, onModeChange, onLeaving }) {
+  const [awaiting, setAwaiting] = useState(null);
+
+  return (
+    <section style={{ marginTop: 32, padding: 24, background: t.surface, borderRadius: 12,
+      border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
+      <h2 className="placer-disp" style={{ fontSize: 20, fontWeight: 800, color: t.ink,
+        letterSpacing: '-0.02em', marginBottom: 8 }}>
+        {awaiting ? 'Check your inbox' : 'Sign in to post this'}
+      </h2>
+      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 22 }}>
+        {awaiting
+          ? 'Your imagination is saved on this device and will be waiting when you come back.'
+          : 'A posted imagination belongs to an account, so it is yours wherever you sign in next. '
+            + 'Nothing you have made is lost by signing in here.'}
+      </p>
+      <AuthForm
+        t={t}
+        mode={mode}
+        onModeChange={onModeChange}
+        onLeaving={onLeaving}
+        onAwaitingConfirmation={setAwaiting}
+        // Nothing to do on success: the account arrives through useIdentity, this panel
+        // goes away, and the Post button takes its place.
+        onSignedIn={() => {}}
+      />
+    </section>
+  );
+}
+
+export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
+  onBack, onPosted, authorName = DEFAULT_NAME, accountId = null,
+  needsAccount = false, checkingAccount = false, onStashDraft }) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'error'
   const [error, setError] = useState(null);
+  const [authMode, setAuthMode] = useState('signin');
 
   const loc = formatLoc(capturedView?.position);
+  // Whether posting means anything to anybody else. The button has always said "Post to
+  // community"; this is the first version where that is true.
+  const shared = postsAreShared();
 
   const handlePost = async () => {
     setStatus('saving');
     setError(null);
     try {
-      await saveImagination({
+      await postImagination({
         title: draft.title,
         cat: draft.cat,
         blurb: draft.blurb,
         loc,
-        author: 'You There',
+        author: authorName,
+        userId: accountId,
         source: capturedView?.source ?? null,
         position: capturedView?.position ?? null,
         pov: capturedView?.pov ?? null,
         fov: capturedView?.fov ?? null,
-        // Kept so the imagination can be reopened on the canvas later.
         canvasAssets,
-        lines,
         preview: preview ?? capturedView?.screenshot ?? null,
       });
       posthog.capture('imagination_posted', {
         category: draft.cat,
         assets_count: canvasAssets.length,
-        lines_count: lines.length,
         source: capturedView?.source ?? null,
       });
       onPosted();
     } catch (err) {
-      // Realistically a QuotaExceededError: every record carries a preview image and
-      // localStorage only has a few megabytes.
       console.error('Could not post imagination:', err);
       posthog.capture('imagination_post_failed', {
         error_name: err?.name ?? 'unknown',
       });
       setError(
+        // Only reachable on the localStorage path, where every record carries its own
+        // preview image against a budget of a few megabytes.
         err?.name === 'QuotaExceededError'
           ? 'Out of local storage space. Delete an older imagination and try again.'
-          : 'Could not save your imagination. See the console for details.'
+          : shared
+            ? 'Could not post your imagination. Check your connection and try again.'
+            : 'Could not save your imagination. See the console for details.'
       );
       setStatus('error');
     }
@@ -80,9 +130,16 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], l
       onBack={onBack}
       backLabel="Back to describe"
       actions={
-        <Btn t={t} variant="primary" size="sm" icon="share" onClick={handlePost} disabled={status === 'saving'}>
-          {status === 'saving' ? 'Posting…' : 'Post to community'}
-        </Btn>
+        needsAccount ? (
+          <span style={{ fontSize: 13.5, color: t.inkDim, fontWeight: 600 }}>
+            Sign in below to post
+          </span>
+        ) : (
+          <Btn t={t} variant="primary" size="sm" icon="share" onClick={handlePost}
+            disabled={status === 'saving' || checkingAccount}>
+            {status === 'saving' ? 'Posting…' : 'Post to community'}
+          </Btn>
+        )
       }
     >
       <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page, padding: '40px 40px 96px' }}
@@ -119,8 +176,6 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], l
           </Row>
           <Row t={t} label="On the canvas">
             <span className="placer-disp" style={{ fontWeight: 700 }}>{canvasAssets.length}</span> assets placed
-            <span style={{ margin: '0 8px', color: t.inkFaint }}>·</span>
-            <span className="placer-disp" style={{ fontWeight: 700 }}>{lines.length}</span> lines
           </Row>
 
           {error && (
@@ -130,11 +185,29 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], l
             </div>
           )}
 
-          <div style={{ marginTop: 32, padding: 14, background: t.surfaceAlt, borderRadius: 8,
-            fontSize: 13.5, color: t.inkDim, lineHeight: 1.55 }}>
-            Posting saves this imagination to your browser. Nothing is uploaded to a
-            server yet.
-          </div>
+          {needsAccount ? (
+            <SignInToPost
+              t={t}
+              mode={authMode}
+              onModeChange={setAuthMode}
+              onLeaving={onStashDraft}
+            />
+          ) : (
+            <div style={{ marginTop: 32, padding: 14, background: t.surfaceAlt, borderRadius: 8,
+              fontSize: 13.5, color: t.inkDim, lineHeight: 1.55 }}>
+              {shared ? (
+                <>
+                  Posting puts this on the community map, where anyone can see it, credited
+                  to {authorName}. You can remove it again from your profile at any time.
+                </>
+              ) : (
+                <>
+                  Posting saves this imagination to your browser. Nothing is uploaded to a
+                  server yet.
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </FlowScreen>

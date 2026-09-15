@@ -45,6 +45,32 @@ describe('legal pages', () => {
     expect(await screen.findByText('Your rights')).toBeInTheDocument();
   });
 
+  it('says on the privacy page that the survey is submitted and stored', async () => {
+    renderAt('/privacy');
+
+    expect(await screen.findByText(/stored in our database so we can read them/i)).toBeInTheDocument();
+    expect(screen.getByText(/keep names and other personal details out of the free-text boxes/i))
+      .toBeInTheDocument();
+    // The old copy promised the opposite, and would be a false statement now.
+    expect(screen.queryByText(/nothing is submitted anywhere/i)).not.toBeInTheDocument();
+  });
+
+  it('names the database processor and its region on the GDPR page', async () => {
+    renderAt('/gdpr');
+
+    expect(await screen.findByText(/hosted by Supabase in the EU/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Supabase.s privacy policy/i })).toBeInTheDocument();
+  });
+
+  it('warns that erasing this browser does not reach a submitted survey', async () => {
+    renderAt('/gdpr');
+
+    fireEvent.click(await screen.findByRole('button', { name: /erase my data/i }));
+
+    expect(await screen.findByText(/does not reach survey answers you have already submitted/i))
+      .toBeInTheDocument();
+  });
+
   it('cross-links from the privacy page to the GDPR page', async () => {
     renderAt('/privacy');
     await screen.findByRole('heading', { level: 1, name: 'Privacy Policy' });

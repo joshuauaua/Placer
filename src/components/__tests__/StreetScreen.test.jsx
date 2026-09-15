@@ -15,8 +15,7 @@ vi.mock('../ImaginationCanvas', () => ({
       <div
         data-testid="imagination-canvas"
         data-background={props.backgroundImage}
-        data-assets={props.canvasAssets?.length}
-        data-lines={props.lines?.length}>
+        data-assets={props.canvasAssets?.length}>
         Canvas Mock
       </div>
     );
@@ -115,8 +114,6 @@ describe('StreetScreen', () => {
         onNext={vi.fn()}
         canvasAssets={[{ id: 'a1' }]}
         onCanvasAssetsChange={onCanvasAssetsChange}
-        lines={[{ id: 'l1' }]}
-        onLinesChange={vi.fn()}
       />
     );
 

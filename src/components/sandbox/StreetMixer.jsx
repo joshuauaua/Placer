@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { Meter, Panel, PresetRow, Readout } from '../SandboxLayout';
+import { Btn } from '../UI';
 import {
   DEFAULT_STREET_WIDTH,
   MAX_STREET_WIDTH,
@@ -224,11 +225,10 @@ export function StreetMixer({ t, experiment }) {
             />
             <span className="placer-mono" style={{ fontSize: 13, color: t.inkDim, minWidth: 58 }}>{formatMetres(streetWidth)}</span>
             {current.unallocated > 0 && (
-              <button
-                onClick={() => apply(distributeSlack(segments, streetWidth))}
-                style={buttonStyle(t)}>
+              <Btn t={t} variant="quiet" size="sm"
+                onClick={() => apply(distributeSlack(segments, streetWidth))}>
                 Fill the street
-              </button>
+              </Btn>
             )}
           </div>
           {streetWidth <= widthFloor && streetWidth > MIN_STREET_WIDTH && (
@@ -277,10 +277,11 @@ export function StreetMixer({ t, experiment }) {
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {SEGMENT_LIST.map((type) => (
-                <button key={type.key} onClick={() => add(type.key)} style={{ ...buttonStyle(t), borderColor: `${type.color}66`, color: type.color }}>
-                  <Icon name={iconFor(type.key)} size={15} stroke={2.1} />
+                <Btn key={type.key} t={t} variant="quiet" size="sm" icon={iconFor(type.key)}
+                  onClick={() => add(type.key)}
+                  style={{ borderColor: `${type.color}66`, color: type.color }}>
                   {type.label}
-                </button>
+                </Btn>
               ))}
             </div>
             {notice && (
@@ -352,14 +353,6 @@ function iconFor(key) {
     traffic: 'move',
     parking: 'grid',
   }[key] ?? 'layers';
-}
-
-function buttonStyle(t) {
-  return {
-    display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 11px', borderRadius: 8,
-    border: `1.5px solid ${t.line}`, background: 'transparent', cursor: 'pointer', color: t.inkDim,
-    fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 13,
-  };
 }
 
 function stepStyle(t) {

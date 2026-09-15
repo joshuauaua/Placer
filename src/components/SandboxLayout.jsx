@@ -2,9 +2,8 @@
    the experiments build their panels from. Named after FlowLayout.jsx, which does
    the same job for the three steps of making an imagination. */
 
-import { useState } from 'react';
 import { Icon } from './Icon';
-import { copyText } from '../lib/clipboard';
+import { Btn, Chip, CopyButton } from './UI';
 
 /** The permanent link to an experiment, for the copy button. */
 export function experimentUrl(id) {
@@ -12,50 +11,21 @@ export function experimentUrl(id) {
   return `${origin}/sandbox/${id}`;
 }
 
-function CopyLink({ t, experiment }) {
-  // null → untouched, true → copied, false → the browser refused, so show the URL.
-  const [copied, setCopied] = useState(null);
-  const url = experimentUrl(experiment.id);
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-      {copied === false && (
-        <input
-          readOnly
-          value={url}
-          aria-label="Link to this experiment"
-          onFocus={(event) => event.target.select()}
-          style={{ width: 260, height: 36, padding: '0 10px', borderRadius: 8, border: `1.5px solid ${t.line}`,
-            background: t.chrome, color: t.inkDim, fontFamily: "'Space Mono', monospace", fontSize: 12 }}
-        />
-      )}
-      <button
-        onClick={async () => setCopied(await copyText(url))}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 36, padding: '0 13px', borderRadius: 9,
-          border: `1.5px solid ${t.line}`, background: 'transparent', cursor: 'pointer', color: t.inkDim,
-          fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 13.5 }}>
-        <Icon name={copied ? 'check' : 'link'} size={16} stroke={2.2} />
-        {copied ? 'Link copied' : 'Copy link'}
-      </button>
-    </div>
-  );
-}
-
 /**
  * An experiment's header and body. The scrolling container is the Sandbox page's,
  * not this one's, so a tool can put a sticky panel inside itself if it wants to.
+ *
+ * `actions` sits beside the copy-link button, for anything the page wants to offer
+ * about this experiment rather than inside it — starting a room, so far. Named
+ * after the same slot on FlowScreen.
  */
-export function SandboxLayout({ t, experiment, onBack, children }) {
+export function SandboxLayout({ t, experiment, onBack, actions, children }) {
   return (
     <div>
-      <button
-        onClick={onBack}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 12px 0 6px',
-          marginBottom: 18, borderRadius: 9, border: 'none', background: 'transparent', cursor: 'pointer',
-          color: t.inkDim, fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 13.5 }}>
-        <Icon name="chevLeft" size={18} stroke={2.2} />
+      <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack}
+        style={{ padding: '0 12px 0 6px', marginBottom: 18, color: t.inkDim }}>
         All experiments
-      </button>
+      </Btn>
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, flexWrap: 'wrap', marginBottom: 28 }}>
         <div style={{ flex: '1 1 420px', minWidth: 0 }}>
@@ -73,7 +43,12 @@ export function SandboxLayout({ t, experiment, onBack, children }) {
             Try this — {experiment.hint}
           </p>
         </div>
-        <CopyLink t={t} experiment={experiment} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {actions}
+          <CopyButton t={t} value={experimentUrl(experiment.id)}
+            fieldLabel="Link to this experiment" fieldWidth={260}
+            style={{ alignItems: 'flex-end' }} />
+        </div>
       </div>
 
       {children}
@@ -148,23 +123,18 @@ export function PresetRow({ t, presets, active, onPick, color, label = 'Presets'
     // Grouped and named, because a preset can share a name with something in the
     // experiment's own palette — "Play street" is both a preset and a segment type.
     <div role="group" aria-label={label} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-      {presets.map((preset) => {
-        const on = preset.key === active;
-        return (
-          <button
-            key={preset.key}
-            onClick={() => onPick(preset.key)}
-            aria-pressed={on}
-            title={preset.note}
-            style={{ height: 36, padding: '0 14px', borderRadius: 999, cursor: 'pointer', whiteSpace: 'nowrap',
-              fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 13.5,
-              border: `1.5px solid ${on ? color : t.line}`,
-              background: on ? `${color}18` : 'transparent',
-              color: on ? color : t.inkDim }}>
-            {preset.label}
-          </button>
-        );
-      })}
+      {presets.map((preset) => (
+        <Chip
+          key={preset.key}
+          t={t}
+          color={color}
+          active={preset.key === active}
+          ariaPressed={preset.key === active}
+          title={preset.note}
+          onClick={() => onPick(preset.key)}>
+          {preset.label}
+        </Chip>
+      ))}
     </div>
   );
 }

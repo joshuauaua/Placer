@@ -659,7 +659,6 @@ describe('MapContainer', () => {
         blurb: 'Swap the asphalt for trees.',
         position: { lat: 55.61, lng: 12.99 },
         canvasAssets: [],
-        lines: [],
       },
       {
         id: 'img-2',
@@ -668,7 +667,6 @@ describe('MapContainer', () => {
         blurb: 'Street trees every block.',
         position: { lat: 55.62, lng: 13.01 },
         canvasAssets: [],
-        lines: [],
       },
     ];
 

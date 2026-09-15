@@ -1,14 +1,32 @@
 /* PLACER — shared UI primitives */
 
+import { useState } from 'react';
 import { Icon } from './Icon';
+import { copyText } from '../lib/clipboard';
 import { CAT } from '../theme';
 
+/**
+ * The bench is the mark, matching the favicon (see index.html). A bench is the
+ * smallest thing that turns a space into a place, which is the whole argument of
+ * the app — and unlike a map pin it says somewhere to be rather than somewhere to
+ * look at.
+ *
+ * It is set larger in its badge than the pin was. The pin drawing is tall and
+ * narrow and the bench is wide and low — 18 by 12 of the 24 viewBox against 14 by
+ * 18 — so at the same nominal size it carries visibly less weight and floats in the
+ * middle of the square. Sizing to the badge's width instead of its height gives it
+ * back the mass, and the stroke stays heavy for the reason the small favicons are
+ * drawn heavy: the detail is what goes first when a line drawing is scaled down.
+ */
 export function Logo({ t, size = 22 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
       <div style={{ width: size * 1.25, height: size * 1.25, background: t.accent, borderRadius: 6,
         display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.accentInk }}>
-        <Icon name="pin" size={size * 0.82} stroke={2.2} />
+        {/* The drawing sits a unit low in its own box — it spans 7 to 19 of the 24,
+            so its centre is 13 — and in a badge that reads as off-centre. A twenty-
+            fourth of the height puts it back. */}
+        <Icon name="bench" size={size} stroke={2.2} style={{ transform: 'translateY(-4.2%)' }} />
       </div>
       <span className="placer-disp" style={{ fontSize: size * 1.15, fontWeight: 800, letterSpacing: '-0.02em', color: t.ink }}>PLACER</span>
     </div>
@@ -23,30 +41,84 @@ export function Avatar({ name = '', size = 34, ring }) {
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', background: color, color: '#fff',
       display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto',
-      fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: size * 0.4,
+      fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: size * 0.4,
       boxShadow: ring ? `0 0 0 2px ${ring}` : 'none' }}>{initials}</div>
   );
 }
 
-export function Btn({ t, children, variant = 'primary', icon, size = 'md', style, full, onClick, disabled, ariaLabel, title, iconStyle }) {
-  const sizes = { sm: { h: 34, px: 14, fs: 13.5 }, md: { h: 42, px: 18, fs: 15 }, lg: { h: 50, px: 24, fs: 16.5 } };
-  const z = sizes[size];
+export const BTN_SIZES = {
+  sm: { h: 34, px: 14, fs: 13.5 },
+  md: { h: 42, px: 18, fs: 15 },
+  lg: { h: 50, px: 24, fs: 16.5 },
+};
+
+export function Btn({ t, children, variant = 'primary', icon, size = 'md', style, full, onClick, onBlur,
+  disabled, type, ariaLabel, ariaPressed, title, iconStyle }) {
+  const z = BTN_SIZES[size];
   const variants = {
     primary: { background: t.primaryBg, color: t.primaryFg, border: '1px solid transparent' },
     accent:  { background: t.accent, color: t.accentInk, border: '1px solid transparent' },
     outline: { background: 'transparent', color: t.ink, border: `1.5px solid ${t.lineStrong}` },
+    // The quieter outline the sandbox tools use: a button that has to sit beside a
+    // diagram without competing with it.
+    quiet:   { background: 'transparent', color: t.inkDim, border: `1.5px solid ${t.line}` },
     ghost:   { background: 'transparent', color: t.ink, border: '1px solid transparent' },
   };
   return (
-    <button disabled={disabled} onClick={onClick} aria-label={ariaLabel} title={title ?? ariaLabel}
+    <button disabled={disabled} onClick={onClick} onBlur={onBlur} type={type}
+      aria-label={ariaLabel} aria-pressed={ariaPressed} title={title ?? ariaLabel}
       style={{ height: z.h, padding: `0 ${z.px}px`, borderRadius: 9, cursor: disabled ? 'not-allowed' : 'pointer',
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: full ? '100%' : 'auto',
-      fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: z.fs, letterSpacing: '-0.01em',
+      fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: z.fs, letterSpacing: '-0.01em',
       opacity: disabled ? 0.5 : 1,
       ...variants[variant], ...style }}>
       {icon && <Icon name={icon} size={z.fs + 3} stroke={2.1} style={iconStyle} />}
       {children}
     </button>
+  );
+}
+
+/**
+ * Copy something to the clipboard, and show it if the browser will not.
+ *
+ * The three-state `copied` is the whole point of this component: null before anybody
+ * has pressed it, true once the text is on the clipboard, and false when the browser
+ * refused — in which case the honest thing is to reveal the text and let somebody
+ * copy it by hand. It resets itself whenever `value` changes, so a button cannot go
+ * on claiming it copied something that has since been edited.
+ *
+ * `actions` sits beside the button, for anything belonging to the same row, matching
+ * the slot of the same name on SandboxLayout.
+ */
+export function CopyButton({ t, value, label = 'Copy link', copiedLabel = 'Link copied', icon = 'link',
+  variant = 'quiet', size = 'sm', fieldLabel, fieldWidth = '100%', multiline, actions, disabled, style }) {
+  const [result, setResult] = useState({ value: null, copied: null });
+  const copied = result.value === value ? result.copied : null;
+  const field = {
+    borderRadius: 8, border: `1.5px solid ${t.line}`, background: t.chrome, color: t.inkDim,
+    fontFamily: "'Space Mono', monospace", fontSize: multiline ? 11.5 : 12,
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0, ...style }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <Btn t={t} variant={variant} size={size} disabled={disabled}
+          icon={copied ? 'check' : icon}
+          onClick={async () => setResult({ value, copied: await copyText(value) })}>
+          {copied ? copiedLabel : label}
+        </Btn>
+        {actions}
+      </div>
+
+      {copied === false && (multiline ? (
+        <textarea readOnly value={value} aria-label={fieldLabel} rows={8}
+          style={{ ...field, width: '100%', padding: 10, resize: 'vertical' }} />
+      ) : (
+        <input readOnly value={value} aria-label={fieldLabel}
+          onFocus={(event) => event.target.select()}
+          style={{ ...field, width: fieldWidth, maxWidth: '100%', height: BTN_SIZES[size].h, padding: '0 10px' }} />
+      ))}
+    </div>
   );
 }
 
@@ -56,7 +128,7 @@ export function CatTag({ cat, t, size = 'md', solid }) {
   const z = size === 'sm' ? { fs: 11, py: 3, px: 8, ic: 12 } : { fs: 12.5, py: 5, px: 11, ic: 14 };
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: `${z.py}px ${z.px}px`,
-      borderRadius: 999, fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: z.fs, letterSpacing: '-0.01em',
+      borderRadius: 999, fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: z.fs, letterSpacing: '-0.01em',
       background: solid ? c.color : (t.mapMode === 'dark' ? 'rgba(255,255,255,.08)' : c.color + '1A'),
       color: solid ? '#fff' : c.color }}>
       <Icon name={c.icon} size={z.ic} stroke={2.2} />
@@ -65,15 +137,18 @@ export function CatTag({ cat, t, size = 'md', solid }) {
   );
 }
 
-export function Chip({ t, children, active, color, icon, onClick }) {
+export function Chip({ t, children, active, color, icon, dot, onClick, ariaPressed, title }) {
   return (
-    <button onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 36, padding: '0 14px',
+    <button onClick={onClick} aria-pressed={ariaPressed} title={title}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 36, padding: '0 14px',
       borderRadius: 999, cursor: 'pointer', whiteSpace: 'nowrap',
-      fontFamily: "'Archivo', sans-serif", fontWeight: 600, fontSize: 13.5, letterSpacing: '-0.01em',
+      fontFamily: 'var(--placer-font)', fontWeight: 600, fontSize: 13.5, letterSpacing: '-0.01em',
       border: active ? `1.5px solid ${color || t.ink}` : `1.5px solid ${t.line}`,
       background: active ? (color ? color + '18' : t.surfaceAlt) : 'transparent',
       color: active ? (color || t.ink) : t.inkDim }}>
-      {icon && (color
+      {/* `dot` asks for the colour as a swatch instead of the icon — what the category
+          picker wants, where the colour is the thing being chosen. */}
+      {icon && (dot && color
         ? <span style={{ width: 9, height: 9, borderRadius: '50%', background: color }} />
         : <Icon name={icon} size={15} stroke={2} />)}
       {children}
@@ -100,7 +175,7 @@ export function SearchBar({ t, value, placeholder, width = '100%' }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 44, width, padding: '0 14px',
       borderRadius: 10, border: `1.5px solid ${t.line}`, background: t.surface, color: t.ink }}>
       <Icon name="search" size={19} stroke={2} style={{ color: t.inkDim }} />
-      <span style={{ flex: 1, fontFamily: "'Archivo', sans-serif", fontSize: 15, fontWeight: value ? 600 : 400,
+      <span style={{ flex: 1, fontFamily: 'var(--placer-font)', fontSize: 15, fontWeight: value ? 600 : 400,
         color: value ? t.ink : t.inkDim, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
         {value || placeholder}
       </span>

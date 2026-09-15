@@ -20,7 +20,6 @@ const OLDER = {
   createdAt: '2026-08-20T10:00:00.000Z',
   upvotes: 4,
   canvasAssets: [{ id: 'a1' }, { id: 'a2' }],
-  lines: [{ id: 'l1' }],
 };
 
 const NEWER = {
@@ -31,7 +30,6 @@ const NEWER = {
   createdAt: '2026-08-26T10:00:00.000Z',
   upvotes: 0,
   canvasAssets: [],
-  lines: [],
 };
 
 const setup = (saved = [OLDER, NEWER]) => {

@@ -6,12 +6,24 @@
  *
  * `hint` is the one thing worth trying first, shown under the title. It should send
  * somebody straight at the point of the experiment rather than describe the controls.
+ *
+ * `room` is optional, and its presence is what lets an experiment be played by a
+ * roomful of people at once rather than one person. Two functions:
+ *
+ *   empty()          — the state a participant starts from
+ *   combine(states)  — everybody's state folded into one, in whatever way actually
+ *                      means something for this experiment
+ *
+ * The experiment also has to be in the enumerated list in supabase/rooms.sql, which
+ * is the other half of the pair: the database will not host a room for an experiment
+ * it has not been told about.
  */
 
 import { BudgetBallot } from '../components/sandbox/BudgetBallot';
 import { DesireLines } from '../components/sandbox/DesireLines';
 import { FifteenMinute } from '../components/sandbox/FifteenMinute';
 import { StreetMixer } from '../components/sandbox/StreetMixer';
+import { emptyBallot, normalise } from '../lib/budgetBallot';
 
 export const EXPERIMENTS = [
   {
@@ -53,6 +65,29 @@ export const EXPERIMENTS = [
     color: '#E08A2B',
     icon: 'coins',
     component: BudgetBallot,
+    room: {
+      empty: emptyBallot,
+      /*
+       * The room's ballot is the average of everybody's, not the total.
+       *
+       * A ballot is one fixed budget spent one way, so adding twenty of them
+       * together gives a five-million-euro wishlist and throws away the only thing
+       * the experiment is about. The mean is itself a ballot somebody could have
+       * cast: it says what the room would fund, and it still has to fit in €250,000.
+       */
+      combine: (states) => {
+        if (states.length === 0) return emptyBallot();
+
+        const total = emptyBallot();
+        for (const state of states) {
+          for (const key of Object.keys(total)) total[key] += Number(state?.[key]) || 0;
+        }
+        for (const key of Object.keys(total)) {
+          total[key] = Math.round(total[key] / states.length);
+        }
+        return normalise(total);
+      },
+    },
   },
 ];
 

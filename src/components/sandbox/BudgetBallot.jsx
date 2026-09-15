@@ -5,12 +5,17 @@
  * wishlist — and the "who gains" panel keeps score of who each choice is for.
  *
  * Costs, effects and the tally are in src/lib/budgetBallot.js.
+ *
+ * In a room (the optional `room` prop, from SandboxPage) the sliders are still only
+ * this person's own ballot. What changes is that it is published to everybody else,
+ * and that a second panel appears showing what the room as a whole would fund — the
+ * average of every ballot cast, which is itself a ballot that fits the budget.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { Meter, Panel, PresetRow, Readout } from '../SandboxLayout';
-import { copyText } from '../../lib/clipboard';
+import { CopyButton } from '../UI';
 import {
   BUDGET,
   COUNCIL_DRAFT,
@@ -31,25 +36,46 @@ const PRESETS = [
   { key: 'draft', label: "The council's draft", note: 'Footway, crossings and lighting — three quarters of the money already committed.' },
 ];
 
-export function BudgetBallot({ t, experiment }) {
+export function BudgetBallot({ t, experiment, room }) {
   const [quantities, setQuantities] = useState(() => emptyBallot());
   const [preset, setPreset] = useState('empty');
-  const [copied, setCopied] = useState(null);
+  // Until somebody has actually allocated something there is nothing worth sending:
+  // a room full of all-zero ballots would count people who have not chosen yet and
+  // drag the average down with them.
+  const [touched, setTouched] = useState(false);
 
   const result = useMemo(() => tally(quantities), [quantities]);
   const draft = useMemo(() => tally(COUNCIL_DRAFT), []);
   const spentShare = result.spent / BUDGET;
 
+  // Held in a ref rather than an effect dependency: the room object is rebuilt on
+  // every render, so depending on it would republish on every incoming change and
+  // the two would chase each other round for ever.
+  const roomRef = useRef(room);
+  roomRef.current = room;
+
+  useEffect(() => {
+    if (!touched) return;
+    const current = roomRef.current;
+    if (current?.status === 'open') current.publish(quantities);
+  }, [quantities, touched]);
+
+  const inRoom = room?.status === 'open';
+  const roomResult = useMemo(
+    () => (room?.combined ? tally(room.combined) : null),
+    [room?.combined]
+  );
+
   function setQuantity(key, quantity) {
     setPreset(null);
-    setCopied(null);
+    setTouched(true);
     setQuantities((current) => normalise({ ...current, [key]: quantity }));
   }
 
   function pickPreset(key) {
     setQuantities(key === 'draft' ? normalise(COUNCIL_DRAFT) : emptyBallot());
     setPreset(key);
-    setCopied(null);
+    setTouched(true);
   }
 
   const summary = summaryText(result);
@@ -132,6 +158,42 @@ export function BudgetBallot({ t, experiment }) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+        {inRoom && (
+          <Panel t={t} title="The room's ballot" aside={
+            <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
+              {room.participantCount} cast
+            </span>
+          }>
+            {roomResult ? (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 16 }}>
+                  <Readout t={t} label="The room commits" value={formatEuros(roomResult.spent)}
+                    tone={experiment.color} />
+                  <Readout t={t} label="You commit" value={formatEuros(result.spent)} />
+                </div>
+                {OUTCOME_LIST.map((outcome) => (
+                  <Meter
+                    key={outcome.key}
+                    t={t}
+                    label={outcome.label}
+                    value={roomResult.outcomes[outcome.key] / 100}
+                    color={outcome.color}
+                    caption={`${roomResult.outcomes[outcome.key]} · you ${result.outcomes[outcome.key]}`}
+                  />
+                ))}
+                <p style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.6, marginTop: 12 }}>
+                  The average of every ballot in the room, which is why it still fits inside
+                  &euro;250,000. Where it differs from yours is the argument worth having.
+                </p>
+              </>
+            ) : (
+              <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
+                Nobody has cast a ballot yet. Yours will show up here as soon as you move a slider.
+              </p>
+            )}
+          </Panel>
+        )}
+
         <Panel t={t} title="What it achieves" aside={
           <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>vs the draft</span>
         }>
@@ -187,27 +249,19 @@ export function BudgetBallot({ t, experiment }) {
             </ul>
           )}
 
-          <button
-            onClick={async () => setCopied(await copyText(summary))}
+          <CopyButton
+            t={t}
+            value={summary}
+            variant="primary"
+            size="sm"
+            icon="send"
+            label="Copy my ballot"
+            copiedLabel="Copied"
+            fieldLabel="Your ballot as text"
+            multiline
             disabled={result.items.length === 0}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 14px',
-              borderRadius: 9, border: 'none', background: t.primaryBg, color: t.primaryFg, cursor: 'pointer',
-              fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 14,
-              opacity: result.items.length === 0 ? 0.45 : 1 }}>
-            <Icon name={copied ? 'check' : 'send'} size={16} stroke={2.2} />
-            {copied ? 'Copied' : 'Copy my ballot'}
-          </button>
-
-          {copied === false && (
-            <textarea
-              readOnly
-              value={summary}
-              aria-label="Your ballot as text"
-              rows={8}
-              style={{ width: '100%', marginTop: 12, padding: 10, borderRadius: 8, border: `1.5px solid ${t.line}`,
-                background: t.chrome, color: t.inkDim, fontFamily: "'Space Mono', monospace", fontSize: 11.5, resize: 'vertical' }}
-            />
-          )}
+            style={{ alignItems: 'flex-start' }}
+          />
         </Panel>
       </div>
     </div>

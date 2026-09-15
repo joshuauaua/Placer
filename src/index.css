@@ -1,5 +1,20 @@
 /* PLACER — design system base */
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+/* PLACER — the site typeface.
+ *
+ * Helvetica everywhere. It ships with the OS, so there is no webfont to load and
+ * no flash of unstyled text; Arial is the metric-compatible stand-in on Windows,
+ * where Helvetica is usually absent. Only .placer-mono still loads a webfont,
+ * because nothing on the system is a dependable substitute for it.
+ *
+ * Held as a custom property because the font is named in inline styles and SVG
+ * attributes as well as in this file, and those cannot read a JS constant
+ * without threading an import through every component.
+ */
+:root {
+  --placer-font: Helvetica, 'Helvetica Neue', Arial, sans-serif;
+}
 
 * {
   box-sizing: border-box;
@@ -15,8 +30,7 @@ html, body {
 }
 
 body {
-  font-family: 'Archivo', system-ui, sans-serif;
-  font-feature-settings: 'ss01';
+  font-family: var(--placer-font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -27,7 +41,7 @@ body {
 }
 
 .placer-disp {
-  font-family: 'Archivo Expanded', 'Archivo', sans-serif;
+  font-family: var(--placer-font);
 }
 
 .placer-scroll {
@@ -37,6 +51,107 @@ body {
 
 .placer-scroll::-webkit-scrollbar {
   display: none;
+}
+
+/* An expandable row, used for the glossary on the survey cover. Built on <details>
+ * so the keyboard and screen-reader behaviour is the browser's rather than ours;
+ * only the default marker and the chevron's direction need CSS, because the rest
+ * is styled inline like everything else in the survey. */
+.placer-disclosure summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.placer-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.placer-disclosure-chev {
+  display: flex;
+  transition: transform 0.2s ease;
+}
+
+.placer-disclosure[open] .placer-disclosure-chev {
+  transform: rotate(180deg);
+}
+
+/* The survey's 1-10 slider. A range input can only be styled through vendor
+ * pseudo-elements, which inline styles cannot reach — so the shape lives here and
+ * the colours arrive as custom properties, since they come from the theme the
+ * component is handed. --placer-slider-fill is how far along the thumb sits, and
+ * is 0 until a rating is actually given. */
+.placer-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.placer-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--placer-slider-accent) 0%,
+    var(--placer-slider-accent) var(--placer-slider-fill),
+    var(--placer-slider-track) var(--placer-slider-fill),
+    var(--placer-slider-track) 100%
+  );
+}
+
+.placer-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--placer-slider-accent) 0%,
+    var(--placer-slider-accent) var(--placer-slider-fill),
+    var(--placer-slider-track) var(--placer-slider-fill),
+    var(--placer-slider-track) 100%
+  );
+}
+
+.placer-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
+  border-radius: 50%;
+  background: var(--placer-slider-thumb);
+  border: 2.5px solid var(--placer-slider-thumb-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s ease;
+}
+
+.placer-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--placer-slider-thumb);
+  border: 2.5px solid var(--placer-slider-thumb-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s ease;
+}
+
+.placer-slider:active::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+
+.placer-slider:active::-moz-range-thumb {
+  transform: scale(1.12);
+}
+
+.placer-slider:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--placer-slider-accent);
+  outline-offset: 2px;
+}
+
+.placer-slider:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--placer-slider-accent);
+  outline-offset: 2px;
 }
 
 #root {
@@ -59,5 +174,60 @@ body {
   100% {
     transform: translateY(0) scale(1);
     opacity: 1;
+  }
+}
+
+/* PLACER — the landing page's street-furniture border.
+ *
+ * Two complementary frames: one carries the street furniture down the left, the
+ * other down the right, and each shares half of the top and bottom rows. Each is
+ * clipped to its own outer edge so the pair reads as a single border around the
+ * copy rather than two separate drawings.
+ *
+ * Decoration only. Below the breakpoint there is no room for it beside the text,
+ * so it goes rather than crowding the words.
+ */
+.placer-landing-frame {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* The copy needs 668px clear (a 620px column plus its padding), so the pair
+     may never take more than the viewport minus that: 22% capped at 300px keeps
+     them clear from the breakpoint upwards. */
+  width: 22%;
+  max-width: 300px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.placer-landing-frame img {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 100%;
+  width: auto;
+  /* Wider than its container on purpose — the clip is what makes it a border. */
+  max-width: none;
+}
+
+.placer-landing-frame-left {
+  left: 0;
+}
+
+.placer-landing-frame-left img {
+  left: 0;
+}
+
+.placer-landing-frame-right {
+  right: 0;
+}
+
+.placer-landing-frame-right img {
+  right: 0;
+}
+
+@media (max-width: 1199px) {
+  .placer-landing-frame {
+    display: none;
   }
 }

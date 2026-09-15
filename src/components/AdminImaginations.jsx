@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Icon } from './Icon';
 import { Btn, CatTag } from './UI';
-import { fetchImaginations, deleteImagination } from '../services/api';
+import { postsAreShared, readImaginations, removeImagination } from '../services/imaginations';
 
 // ISO slice rather than toLocaleDateString, so the output does not shift with the
 // machine's locale.
@@ -22,7 +22,7 @@ function Dot({ t }) {
 
 function Row({ t, imagination, confirming, busy, onAskDelete, onCancelDelete, onConfirmDelete }) {
   const { title, cat, blurb, loc, preview, author, createdAt, upvotes = 0,
-    canvasAssets = [], lines = [] } = imagination;
+    canvasAssets = [] } = imagination;
   const name = title || 'Untitled imagination';
 
   return (
@@ -68,8 +68,6 @@ function Row({ t, imagination, confirming, busy, onAskDelete, onCancelDelete, on
           {loc && <><Dot t={t} /><Meta t={t}>{loc}</Meta></>}
           <Dot t={t} />
           <Meta t={t}>{canvasAssets.length} assets</Meta>
-          <Dot t={t} />
-          <Meta t={t}>{lines.length} lines</Meta>
           <Dot t={t} />
           <Meta t={t}>{upvotes} votes</Meta>
         </div>
@@ -118,7 +116,7 @@ export function AdminImaginations({ t }) {
   useEffect(() => {
     let cancelled = false;
 
-    fetchImaginations()
+    readImaginations()
       .then((saved) => {
         if (cancelled) return;
         setImaginations(sortNewestFirst(saved));
@@ -137,12 +135,22 @@ export function AdminImaginations({ t }) {
     setDeletingId(id);
     setError(null);
     try {
-      await deleteImagination(id);
+      await removeImagination(id);
       setImaginations((current) => current.filter((imagination) => imagination.id !== id));
       setConfirmingId(null);
     } catch (err) {
       console.error('Could not delete imagination:', err);
-      setError('Could not delete that imagination. See the console for details.');
+      setError(
+        // Once imaginations are in Supabase, the rules in supabase/imaginations.sql let an
+        // account delete its own and nothing else — the key in this browser is the same
+        // anon key everybody has. So this screen can moderate what the signed-in account
+        // posted and no more, and says so rather than looking broken.
+        postsAreShared()
+          ? 'Could not delete that imagination. The key in this browser can only remove '
+            + 'imaginations posted by the account signed in here — moderating anybody '
+            + 'else\'s needs a service_role key, from the SQL editor or a server.'
+          : 'Could not delete that imagination. See the console for details.'
+      );
     } finally {
       setDeletingId(null);
     }

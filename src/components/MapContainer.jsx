@@ -7,7 +7,7 @@ import { Icon } from './Icon';
 import { Btn } from './UI';
 import { ImaginationPreview } from './ImaginationPreview';
 import { CAT, THEME } from '../theme';
-import { fetchImaginations } from '../services/api';
+import { readImaginations } from '../services/imaginations';
 import {
   DEFAULT_SIZE,
   fetchAsDataUrl,
@@ -151,11 +151,12 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
     }
   }, [googleLoaded]);
 
-  // Load the saved imaginations to pin on the map.
+  // Load the imaginations to pin on the map. With a Supabase project configured this is
+  // everybody's, not just this browser's — the map is the community's.
   useEffect(() => {
     let cancelled = false;
 
-    fetchImaginations()
+    readImaginations()
       .then((saved) => {
         if (!cancelled) setImaginations(saved);
       })
@@ -197,7 +198,6 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
           imagination_id: imagination.id,
           category: imagination.cat,
           assets_count: imagination.canvasAssets?.length ?? 0,
-          lines_count: imagination.lines?.length ?? 0,
         });
         setSelected(imagination);
         // Bring the pin into view so it is obvious which one the card describes.
@@ -469,7 +469,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
                   border: 'none',
                   background: 'transparent',
                   outline: 'none',
-                  fontFamily: "'Archivo', sans-serif",
+                  fontFamily: 'var(--placer-font)',
                   fontSize: 15,
                   fontWeight: 500,
                   color: t.ink,

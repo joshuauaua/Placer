@@ -1,9 +1,10 @@
-/* PLACER — the survey shell: intro, one question per screen, email, thank you.
+/* PLACER — the survey shell: cover, one question per screen, opt-ins, thank you.
  *
  * Everything shown comes from the content passed in, so a different survey is a
  * different JSON file rather than a different component.
  */
 
+import coverArt from '../../assets/cover-bench.png';
 import { Icon } from '../Icon';
 import { Btn } from '../UI';
 import { SurveyQuestion } from './SurveyQuestion';
@@ -18,7 +19,7 @@ const inputStyle = (t) => ({
   borderRadius: 8,
   background: t.chrome,
   color: t.ink,
-  fontFamily: "'Archivo', sans-serif",
+  fontFamily: 'var(--placer-font)',
   outline: 'none',
 });
 
@@ -42,13 +43,21 @@ const AUTOCOMPLETE = {
 // The alert red used across the app.
 const DANGER = '#D6452F';
 
-/** A centred card on the gradient, shared by the intro and thank-you screens. */
-function FullScreen({ t, children }) {
+const selectedFill = (t) => t.accent + (t.mapMode === 'dark' ? '14' : '22');
+
+/**
+ * A centred card on the gradient, shared by the cover and thank-you screens. The
+ * cover runs to several paragraphs and a glossary, so the pane scrolls rather
+ * than clipping on a short window.
+ */
+function FullScreen({ t, children, maxWidth = 640 }) {
   return (
     <div
+      className="placer-scroll"
       style={{
         width: '100%',
         height: '100vh',
+        overflowY: 'auto',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -56,108 +65,73 @@ function FullScreen({ t, children }) {
         padding: 20,
       }}
     >
-      <div style={{ maxWidth: 600, textAlign: 'center' }}>{children}</div>
+      <div style={{ maxWidth, width: '100%', margin: 'auto', textAlign: 'center' }}>{children}</div>
     </div>
   );
 }
 
 /**
- * The default final step: a consent box that gates one address field. Without
- * the box ticked there is nothing to validate and Submit stays available.
+ * "Enter ↵ to continue", shown wherever Enter will actually do something — the
+ * listener in useSurveyForm ignores a step that is not ready, so promising it on
+ * one would be a lie.
  */
-function ConsentStep({ t, content, survey, consentId, emailId, onEnter }) {
+function EnterHint({ t, labels, phrase }) {
   return (
-    <>
-      <label
-        htmlFor={consentId}
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        fontSize: 13,
+        color: t.inkDim,
+      }}
+    >
+      <kbd
+        className="placer-mono"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: '16px 20px',
-          borderRadius: 12,
-          border: `2px solid ${survey.wantsReport ? t.accent : t.line}`,
-          background: survey.wantsReport
-            ? t.accent + (t.mapMode === 'dark' ? '14' : '22')
-            : t.surface,
-          cursor: 'pointer',
+          padding: '4px 8px',
+          borderRadius: 6,
+          border: `1px solid ${t.line}`,
+          background: t.chrome,
+          color: t.ink,
+          fontSize: 12,
+          fontWeight: 600,
         }}
       >
-        <input
-          id={consentId}
-          type="checkbox"
-          checked={survey.wantsReport}
-          onChange={(e) => survey.setWantsReport(e.target.checked)}
-          style={{ width: 20, height: 20, accentColor: t.accent, cursor: 'pointer', flex: '0 0 auto' }}
-        />
-        <span style={{ fontSize: 16, fontWeight: survey.wantsReport ? 600 : 500, color: t.ink }}>
-          {content.steps.consentLabel}
-        </span>
-      </label>
-
-      {survey.wantsReport && (
-        <div style={{ marginTop: 24 }}>
-          <label htmlFor={emailId} style={fieldLabelStyle(t)}>
-            {content.steps.emailLabel}
-          </label>
-          <input
-            id={emailId}
-            type="email"
-            autoComplete="email"
-            value={survey.email}
-            placeholder={content.steps.emailPlaceholder}
-            onChange={(e) => survey.setEmail(e.target.value)}
-            onKeyDown={onEnter}
-            style={inputStyle(t)}
-          />
-        </div>
-      )}
-    </>
+        {labels.enterKeyLabel}
+      </kbd>
+      {phrase}
+    </span>
   );
 }
 
-/**
- * The lead-capture final step, for content carrying a `contact` block: the
- * opt-in asked as a normal question, and the fields the chosen answer reveals.
- */
-function ContactStep({ t, survey, idPrefix, onEnter }) {
-  const { contact } = survey;
-
+/** A tickable row, used for both the opt-ins and (once) the old single consent. */
+function CheckRow({ t, id, checked, label, onChange }) {
   return (
-    <>
-      <SurveyQuestion
-        t={t}
-        question={contact.question}
-        value={survey.contactChoice}
-        onToggle={survey.setContactChoice}
+    <label
+      htmlFor={id}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '16px 20px',
+        borderRadius: 12,
+        border: `2px solid ${checked ? t.accent : t.line}`,
+        background: checked ? selectedFill(t) : t.surface,
+        cursor: 'pointer',
+      }}
+    >
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        style={{ width: 20, height: 20, accentColor: t.accent, cursor: 'pointer', flex: '0 0 auto' }}
       />
-
-      {survey.contactRevealed && (
-        <div style={{ marginTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {contact.fields.map((field) => {
-            const fieldId = `${idPrefix}-${field.key}`;
-            return (
-              <div key={field.key}>
-                <label htmlFor={fieldId} style={fieldLabelStyle(t)}>
-                  {field.label}
-                </label>
-                <input
-                  id={fieldId}
-                  type={field.type ?? 'text'}
-                  autoComplete={AUTOCOMPLETE[field.key]}
-                  required={field.required}
-                  value={survey.contactValues[field.key] ?? ''}
-                  placeholder={field.placeholder}
-                  onChange={(e) => survey.setContactField(field.key, e.target.value)}
-                  onKeyDown={onEnter}
-                  style={inputStyle(t)}
-                />
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </>
+      <span style={{ fontSize: 16, fontWeight: checked ? 600 : 500, color: t.ink, lineHeight: 1.5 }}>
+        {label}
+      </span>
+    </label>
   );
 }
 
@@ -165,50 +139,128 @@ function ContactStep({ t, survey, idPrefix, onEnter }) {
  * @param content  a validated survey, from `resolveSurveyContent`
  * @param submit   persists the finished response; rejects if it could not
  * @param source   tag recorded with the response, e.g. `community_survey`
- * @param idPrefix namespaces the final step's field ids, so two surveys never collide
+ * @param idPrefix namespaces the closing step's ids, so two surveys never collide
  */
 export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) {
   const survey = useSurveyForm({ content, submit, source });
   const { step } = survey;
 
-  if (step === 'intro') {
+  if (step === 'cover') {
     return (
-      <FullScreen t={t}>
-        <div
-          style={{
-            width: 80,
-            height: 80,
-            background: t.accent,
-            borderRadius: 16,
-            margin: '0 auto 20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Icon name="comment" size={44} stroke={2.2} style={{ color: t.accentInk }} />
-        </div>
-
+      <FullScreen t={t} maxWidth={1040}>
+        {/* Across the top, over both columns. */}
         <h1
           className="placer-disp"
           style={{
-            fontSize: 40,
+            fontSize: 44,
             fontWeight: 900,
             color: t.ink,
             letterSpacing: '-0.03em',
-            marginBottom: 16,
+            lineHeight: 1.1,
+            marginBottom: 40,
           }}
         >
-          {content.hero.title}
+          {content.cover.title}
         </h1>
 
-        <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, marginBottom: 32 }}>
-          {content.hero.subtitle}
-        </p>
+        {/* Two columns where there is room for them, one where there is not:
+            auto-fit collapses the grid on a narrow window without a media query,
+            which inline styles cannot express. */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 40,
+            // Centered rather than top-aligned: the glossary card is shorter than
+            // the description column next to it, and pinning it to the top left
+            // an awkward gap of its own underneath.
+            alignItems: 'center',
+            textAlign: 'left',
+            marginBottom: 40,
+          }}
+        >
+          <div>
+            {/* Decorative: it says nothing the title and copy do not. */}
+            <img
+              src={coverArt}
+              alt=""
+              style={{ width: 168, height: 'auto', display: 'block', marginBottom: 24 }}
+            />
+
+            {content.cover.body.map((paragraph) => (
+              <p
+                key={paragraph.slice(0, 48)}
+                style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.7, marginBottom: 16 }}
+              >
+                {paragraph}
+              </p>
+            ))}
+          </div>
+
+          {content.cover.glossary && (
+            <div
+              style={{
+                padding: '20px 28px 6px',
+                background: t.surface,
+                border: `1px solid ${t.line}`,
+                borderRadius: 16,
+              }}
+            >
+              <h2
+                className="placer-disp"
+                style={{
+                  // A step above the 15px terms below it, so the heading still
+                  // reads as a heading over the rows it introduces.
+                  fontSize: 18,
+                  fontWeight: 800,
+                  color: t.ink,
+                  letterSpacing: '-0.01em',
+                  marginBottom: 4,
+                }}
+              >
+                {content.cover.glossaryTitle}
+              </h2>
+
+              {content.cover.glossary.map((entry, index) => (
+                <details
+                  key={entry.term}
+                  className="placer-disclosure"
+                  style={{ borderTop: index === 0 ? 'none' : `1px solid ${t.line}` }}
+                >
+                  <summary
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      padding: '14px 0',
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: t.ink,
+                    }}
+                  >
+                    {entry.term}
+                    <span className="placer-disclosure-chev" aria-hidden="true">
+                      <Icon name="chevDown" size={18} stroke={2.4} style={{ color: t.inkDim }} />
+                    </span>
+                  </summary>
+
+                  <p style={{ margin: '0 0 16px', fontSize: 14, color: t.inkDim, lineHeight: 1.6 }}>
+                    {entry.definition}
+                  </p>
+                </details>
+              ))}
+            </div>
+          )}
+        </div>
 
         <Btn t={t} variant="accent" size="lg" icon="arrowRight" onClick={survey.handleNext}>
-          {content.hero.startLabel}
+          {content.cover.startLabel}
         </Btn>
+
+        <div style={{ marginTop: 16 }}>
+          <EnterHint t={t} labels={content.steps} phrase={content.steps.enterHintStart} />
+        </div>
       </FullScreen>
     );
   }
@@ -273,17 +325,20 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
     );
   }
 
-  const onEmailStep = step === 'email';
-  const heading = onEmailStep ? content.steps.emailTitle : content.steps[`${step}Title`];
-  const description = onEmailStep
-    ? content.steps.emailDescription
-    : content.steps[`${step}Description`];
-  const counterText = onEmailStep
+  const onOptInStep = step === 'optIn';
+  const heading = onOptInStep ? content.steps.optInTitle : content.steps[`${step}Title`];
+  const counterText = onOptInStep
     ? 'Final step'
     : `${survey.currentQuestionNumber} / ${survey.totalQuestions}`;
 
-  const emailId = `${idPrefix}-email`;
-  const consentId = `${idPrefix}-consent`;
+  // Whether Enter would do anything here, which is what the hint promises.
+  const enterWorks = onOptInStep
+    ? survey.canSubmit && !survey.isSubmitting
+    : survey.currentQuestionValid;
+
+  // A paragraph is the one place Enter is not free: it says how to get a newline.
+  const showNewLineHint =
+    !onOptInStep && survey.currentQuestion && survey.currentQuestion.type === 'paragraph';
 
   // There is no <form> around the final step's fields — the shared Btn renders a
   // submit button, which would make Back and Next submit too.
@@ -303,7 +358,7 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
         background: t.page,
       }}
     >
-      {/* Section heading, position in the survey, and progress */}
+      {/* Module heading, position in the survey, and progress */}
       <div
         style={{
           flex: '0 0 auto',
@@ -367,34 +422,97 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
         </div>
       </div>
 
-      {/* The current question, or the email field */}
+      {/* The current question, or the closing opt-ins */}
       <div
         ref={survey.scrollRef}
         className="placer-scroll"
         style={{ flex: 1, overflowY: 'auto', padding: '48px 32px' }}
       >
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 32 }}>
-            {description}
-          </p>
+          {onOptInStep && (
+            <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 32 }}>
+              {content.steps.optInDescription}
+            </p>
+          )}
 
-          {onEmailStep ? (
+          {onOptInStep ? (
             <div>
-              {survey.contact ? (
-                <ContactStep t={t} survey={survey} idPrefix={idPrefix} onEnter={submitOnEnter} />
-              ) : (
-                <ConsentStep
-                  t={t}
-                  content={content}
-                  survey={survey}
-                  consentId={consentId}
-                  emailId={emailId}
-                  onEnter={submitOnEnter}
-                />
+              {/* The opt-ins gate the contact fields: with none ticked there is
+                  nothing to validate and Submit stays available. */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {content.optIns.map((entry) => (
+                  <CheckRow
+                    key={entry.key}
+                    t={t}
+                    id={`${idPrefix}-optin-${entry.key}`}
+                    checked={survey.optIns[entry.key]}
+                    label={entry.label}
+                    onChange={() => survey.toggleOptIn(entry.key)}
+                  />
+                ))}
+              </div>
+
+              {survey.wantsContact && (
+                <div style={{ marginTop: 32 }}>
+                  <h3
+                    className="placer-disp"
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 800,
+                      color: t.ink,
+                      letterSpacing: '-0.01em',
+                      marginBottom: 4,
+                    }}
+                  >
+                    {content.contact.title}
+                  </h3>
+                  {content.contact.description && (
+                    <p style={{ fontSize: 14, color: t.inkDim, marginBottom: 20 }}>
+                      {content.contact.description}
+                    </p>
+                  )}
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                      gap: 16,
+                    }}
+                  >
+                    {content.contact.fields.map((field) => {
+                      const fieldId = `${idPrefix}-${field.key}`;
+                      return (
+                        <div key={field.key}>
+                          <label
+                            htmlFor={fieldId}
+                            style={{
+                              display: 'block',
+                              fontSize: 14,
+                              fontWeight: 700,
+                              color: t.ink,
+                              marginBottom: 8,
+                            }}
+                          >
+                            {field.label}
+                          </label>
+                          <input
+                            id={fieldId}
+                            type={field.type === 'email' ? 'email' : 'text'}
+                            autoComplete={field.type === 'email' ? 'email' : 'off'}
+                            value={survey.contact[field.key]}
+                            placeholder={field.placeholder}
+                            onChange={(e) => survey.setContactField(field.key, e.target.value)}
+                            style={inputStyle(t)}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
 
               {/* A failed save, not a rejected address — so it sits outside the
-                  field group and shows whether or not the field is here. */}
+                  field group and shows whether or not the fields are here. */}
               {survey.errorMessage && (
                 <div
                   role="alert"
@@ -415,13 +533,25 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
             </div>
           ) : (
             survey.currentQuestion && (
-              <SurveyQuestion
-                key={survey.currentQuestion.key}
-                t={t}
-                question={survey.currentQuestion}
-                value={survey.currentAnswer}
-                onToggle={survey.toggleOption}
-              />
+              <>
+                <SurveyQuestion
+                  key={survey.currentQuestion.key}
+                  t={t}
+                  labels={content.steps}
+                  question={survey.currentQuestion}
+                  value={survey.currentAnswer}
+                  otherText={survey.currentOtherText}
+                  onToggle={survey.toggleOption}
+                  onText={survey.setWrittenAnswer}
+                  onOtherText={survey.setOtherAnswer}
+                />
+
+                {showNewLineHint && (
+                  <p style={{ marginTop: 12, fontSize: 13, color: t.inkDim }}>
+                    {content.steps.newLineHint}
+                  </p>
+                )}
+              </>
             )
           )}
         </div>
@@ -455,27 +585,37 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
             {content.steps.backLabel}
           </Btn>
 
-          {onEmailStep ? (
-            <Btn
-              t={t}
-              variant="accent"
-              icon="check"
-              onClick={survey.onSubmit}
-              disabled={!survey.canSubmit || survey.isSubmitting}
-            >
-              {survey.isSubmitting ? content.steps.submittingLabel : content.steps.submitLabel}
-            </Btn>
-          ) : (
-            <Btn
-              t={t}
-              variant="accent"
-              icon="arrowRight"
-              onClick={survey.handleNext}
-              disabled={!survey.currentQuestionValid}
-            >
-              {content.steps.nextLabel}
-            </Btn>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {enterWorks && (
+              <EnterHint
+                t={t}
+                labels={content.steps}
+                phrase={onOptInStep ? content.steps.enterHintSubmit : content.steps.enterHint}
+              />
+            )}
+
+            {onOptInStep ? (
+              <Btn
+                t={t}
+                variant="accent"
+                icon="check"
+                onClick={survey.onSubmit}
+                disabled={!survey.canSubmit || survey.isSubmitting}
+              >
+                {survey.isSubmitting ? content.steps.submittingLabel : content.steps.submitLabel}
+              </Btn>
+            ) : (
+              <Btn
+                t={t}
+                variant="accent"
+                icon="arrowRight"
+                onClick={survey.handleNext}
+                disabled={!survey.currentQuestionValid}
+              >
+                {content.steps.nextLabel}
+              </Btn>
+            )}
+          </div>
         </div>
       </div>
     </div>
