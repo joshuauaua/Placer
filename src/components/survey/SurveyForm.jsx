@@ -23,6 +23,23 @@ const inputStyle = (t) => ({
   outline: 'none',
 });
 
+// The label above any text field on the final step.
+const fieldLabelStyle = (t) => ({
+  display: 'block',
+  fontSize: 14,
+  fontWeight: 700,
+  color: t.ink,
+  marginBottom: 8,
+});
+
+// The browser's own hint for the contact fields a survey can ask for. Anything
+// not listed is left for the browser to guess.
+const AUTOCOMPLETE = {
+  name: 'name',
+  organization: 'organization',
+  email: 'email',
+};
+
 // The alert red used across the app.
 const DANGER = '#D6452F';
 
@@ -322,6 +339,14 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
   // A paragraph is the one place Enter is not free: it says how to get a newline.
   const showNewLineHint =
     !onOptInStep && survey.currentQuestion && survey.currentQuestion.type === 'paragraph';
+
+  // There is no <form> around the final step's fields — the shared Btn renders a
+  // submit button, which would make Back and Next submit too.
+  const submitOnEnter = (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    survey.onSubmit();
+  };
 
   return (
     <div

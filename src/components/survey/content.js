@@ -50,6 +50,14 @@ const STEP_FIELDS = [
   'submittingLabel',
 ];
 
+// The consent checkbox and its single address field are the final step only when
+// there is no `contact` block; a survey that has one labels its own fields and
+// would otherwise have to carry three strings it never renders.
+const CONSENT_FIELDS = ['consentLabel', 'emailLabel', 'emailPlaceholder'];
+
+/** Field types a `contact` text input may declare. */
+const FIELD_TYPES = ['text', 'email'];
+
 const SUCCESS_FIELDS = ['title', 'body', 'closeLabel'];
 
 const CONTACT_FIELD_TYPES = ['text', 'email'];
@@ -215,6 +223,51 @@ export function scaleRange(question) {
 export function otherOption(question) {
   if (questionType(question) !== 'choice') return undefined;
   return question.options.find((option) => option.other);
+}
+
+/**
+ * The optional lead-capture block on the final step: one opt-in question, the
+ * answers that reveal the fields, and the fields themselves. A survey without
+ * one gets the consent checkbox and single address field instead.
+ */
+function contactBlock(value, path) {
+  object(value, path);
+  question(value.question, `${path}.question`);
+
+  if (!Array.isArray(value.revealOn) || value.revealOn.length === 0) {
+    fail(`${path}.revealOn`, 'must be a non-empty array');
+  }
+
+  const optionValues = new Set(value.question.options.map((option) => option.value));
+  value.revealOn.forEach((answer, index) => {
+    const answerPath = `${path}.revealOn[${index}]`;
+    text(answer, answerPath);
+    // An answer that is not on offer would never reveal the fields, so the
+    // survey would silently collect nothing.
+    if (!optionValues.has(answer)) {
+      fail(answerPath, `is not one of ${path}.question.options`);
+    }
+  });
+
+  if (!Array.isArray(value.fields) || value.fields.length === 0) {
+    fail(`${path}.fields`, 'must be a non-empty array');
+  }
+
+  const seen = new Set();
+  value.fields.forEach((field, index) => {
+    const fieldPath = `${path}.fields[${index}]`;
+    object(field, fieldPath);
+    text(field.key, `${fieldPath}.key`);
+    text(field.label, `${fieldPath}.label`);
+    flag(field.required, `${fieldPath}.required`);
+    if (field.placeholder !== undefined) text(field.placeholder, `${fieldPath}.placeholder`);
+    if (field.type !== undefined && !FIELD_TYPES.includes(field.type)) {
+      fail(`${fieldPath}.type`, `must be one of ${FIELD_TYPES.join(', ')} when present`);
+    }
+    // Values are stored per field key, so a repeat would overwrite an entry.
+    if (seen.has(field.key)) fail(`${fieldPath}.key`, `repeats "${field.key}"`);
+    seen.add(field.key);
+  });
 }
 
 /**

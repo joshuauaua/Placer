@@ -1,0 +1,145 @@
+{
+  "hero": {
+    "title": "How does your practice run participatory design?",
+    "subtitle": "Six questions for the NGOs, studios, consultancies and collectives doing this work. It takes about four minutes, and we share the benchmark findings back with you.",
+    "startLabel": "Start the survey"
+  },
+  "steps": {
+    "section1Title": "Section 1: Context and organization profile",
+    "section1Description": "A little about your practice, so we can group answers by organization type and scale.",
+    "section2Title": "Section 2: Current tooling and pain points",
+    "section2Description": "Where your participatory process slows down today, and what you reach for when it does.",
+    "section3Title": "Section 3: What would help most",
+    "section3Description": "We are building a dedicated digital platform to streamline participatory design. These two answers tell us what to build first.",
+    "emailTitle": "Shape what we build",
+    "emailDescription": "That is everything we wanted to ask. If you would like a hand in what comes next, tell us where to reach you — that part is optional.",
+    "nextLabel": "Next",
+    "backLabel": "Back",
+    "submitLabel": "Submit survey",
+    "submittingLabel": "Sending…"
+  },
+  "section1": [
+    {
+      "key": "orgRole",
+      "label": "What best describes your organization's primary role?",
+      "options": [
+        { "value": "ngo", "label": "NGO / Non-Profit" },
+        { "value": "design-studio", "label": "Design Studio / Architecture Firm" },
+        { "value": "consultancy", "label": "Urban Consultancy / Strategic Agency" },
+        { "value": "collective", "label": "Hybrid / Citizen Collective" }
+      ]
+    },
+    {
+      "key": "projectScale",
+      "label": "What primary scale do your placemaking/participatory projects operate at?",
+      "options": [
+        { "value": "hyper-local", "label": "Hyper-local (parks, pop-up interventions, single streets)" },
+        { "value": "neighborhood", "label": "Neighborhood / Ward scale" },
+        { "value": "city-wide", "label": "City-wide / Strategic framework scale" },
+        { "value": "multi-city", "label": "Multi-city / International programs" }
+      ]
+    }
+  ],
+  "section2": [
+    {
+      "key": "bottleneck",
+      "label": "What is the single biggest bottleneck in your current participatory process?",
+      "options": [
+        {
+          "value": "digital-physical",
+          "label": "Bridging digital & physical: Reaching diverse demographics (e.g., elderly vs. youth) across both on-site and online channels."
+        },
+        {
+          "value": "data-conversion",
+          "label": "Data conversion: Turning qualitative community stories and sticky notes into GIS-ready spatial data or technical design specs."
+        },
+        {
+          "value": "sustaining-engagement",
+          "label": "Sustaining engagement: Keeping citizens updated and active during long municipal approval cycles."
+        },
+        {
+          "value": "reporting-buy-in",
+          "label": "Reporting & buy-in: Synthesizing complex inputs into compelling, data-driven reports that convince local government decision-makers."
+        },
+        {
+          "value": "resource-constraints",
+          "label": "Resource constraints: Lacking the budget or time to build custom digital tools for every new project."
+        }
+      ]
+    },
+    {
+      "key": "currentTools",
+      "label": "Which digital tools do you currently rely on most for community engagement?",
+      "multiple": true,
+      "options": [
+        { "value": "gis", "label": "Digital mapping/GIS tools (e.g., Maptionnaire, Felt, ArcGIS)" },
+        { "value": "collaboration-boards", "label": "Online collaboration boards (e.g., Miro, Mural, Figma)" },
+        { "value": "survey-tools", "label": "General survey tools (e.g., Typeform, Google Forms)" },
+        { "value": "social-messaging", "label": "Social media & community messaging (e.g., WhatsApp groups, Instagram)" },
+        { "value": "proprietary", "label": "Proprietary / custom-built platforms" }
+      ]
+    }
+  ],
+  "section3": [
+    {
+      "key": "valuedFeature",
+      "label": "Which feature would add the most immediate value to your practice?",
+      "options": [
+        {
+          "value": "ai-analysis",
+          "label": "AI-powered analysis: Automatic clustering of community feedback into spatial themes and actionable design requirements."
+        },
+        {
+          "value": "hybrid-sync",
+          "label": "Hybrid sync: A mobile-friendly interface for field facilitators that instantly digitizes paper surveys and workshop maps."
+        },
+        {
+          "value": "spatial-feedback",
+          "label": "Interactive spatial feedback: Intuitive, map-based engagement tools built specifically for non-technical residents."
+        },
+        {
+          "value": "municipal-reporting",
+          "label": "Municipal reporting suite: One-click generation of policy-ready and technical design briefs for city officials."
+        },
+        {
+          "value": "project-tracker",
+          "label": "Transparent project tracker: A public-facing dashboard showing citizens how their input directly shaped final designs."
+        }
+      ]
+    },
+    {
+      "key": "toolBudget",
+      "label": "What is your organization's typical software/tool budget per project?",
+      "options": [
+        { "value": "none", "label": "$0 (We strictly use free/open-source tools)" },
+        { "value": "under-500", "label": "Under $500 per project" },
+        { "value": "500-2000", "label": "$500 – $2,000 per project" },
+        { "value": "annual-license", "label": "We subscribe to annual agency software licenses ($2,000+)" }
+      ]
+    }
+  ],
+  "contact": {
+    "question": {
+      "key": "betaInterest",
+      "label": "Would you be interested in shaping or testing this tool before launch?",
+      "options": [
+        { "value": "beta", "label": "Yes! I'd like early beta access and the opportunity to give feedback." },
+        { "value": "updates", "label": "Yes, keep me updated on the launch and share the benchmark findings from this survey." },
+        { "value": "no", "label": "No, thanks." }
+      ]
+    },
+    "revealOn": ["beta", "updates"],
+    "fields": [
+      { "key": "name", "label": "Name", "placeholder": "Your name", "required": true },
+      { "key": "organization", "label": "Organization / Studio", "placeholder": "Where you work" },
+      { "key": "email", "label": "Work Email", "type": "email", "placeholder": "you@studio.com", "required": true },
+      { "key": "location", "label": "City / Country", "placeholder": "Berlin, Germany" }
+    ]
+  },
+  "success": {
+    "title": "Thank You!",
+    "body": "Your answers are in. We will be in touch with the benchmark findings once the responses are compiled.",
+    "closeLabel": "Return to Home"
+  },
+  "errorMessage": "Something went wrong saving your answers. Please try again."
+}

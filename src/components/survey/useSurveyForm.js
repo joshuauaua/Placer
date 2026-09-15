@@ -252,6 +252,32 @@ export function useSurveyForm({ content, submit, source }) {
     scrollToTop();
   };
 
+  /**
+   * The opt-in answer, plus the fields if it asked for them. Values are trimmed,
+   * and an empty optional field is left out rather than stored as ''.
+   */
+  const contactResponse = () => {
+    if (!contactRevealed) return { choice: contactChoice };
+
+    const filled = contact.fields
+      .map((field) => [field.key, contactField(field.key)])
+      .filter(([, value]) => value !== '');
+
+    return { choice: contactChoice, ...Object.fromEntries(filled) };
+  };
+
+  const contactEmailKey = contact?.fields.find((field) => field.type === 'email')?.key;
+
+  /**
+   * The captured address, repeated at the top level of the response so anything
+   * reading a response's `email` — the shape every response has had so far —
+   * still finds one. Null unless the opt-in asked for contact details.
+   */
+  const contactEmail = () => {
+    if (!contactRevealed || !contactEmailKey) return null;
+    return contactField(contactEmailKey) || null;
+  };
+
   const onSubmit = async () => {
     if (!canSubmit || isSubmitting) return;
 
