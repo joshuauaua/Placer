@@ -1,0 +1,8 @@
+# This is the landingpage branch, served at the public production apex plcr.org.
+# Unlike Development (staging.plcr.org) and main (beta.plcr.org), this host is
+# meant to be indexed, so it permits crawling.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://plcr.org/sitemap.xml
