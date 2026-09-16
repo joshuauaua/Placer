@@ -34,6 +34,7 @@ export const EXPERIMENTS = [
     hint: 'drag a divider, and see what the metre you just moved was doing before.',
     color: '#2F7BD6',
     icon: 'section',
+    submittedBy: 'PLACER',
     component: StreetMixer,
   },
   {
@@ -44,6 +45,7 @@ export const EXPERIMENTS = [
     hint: 'walk from the metro to the tram stop, then look at the grass in between.',
     color: '#D4407E',
     icon: 'path',
+    submittedBy: 'PLACER',
     component: DesireLines,
   },
   {
@@ -54,6 +56,7 @@ export const EXPERIMENTS = [
     hint: "load the council's draft, then look at who lives south of the tracks.",
     color: '#3E9D4E',
     icon: 'walk',
+    submittedBy: 'PLACER',
     component: FifteenMinute,
   },
   {
@@ -64,6 +67,7 @@ export const EXPERIMENTS = [
     hint: 'fund the parklets, then watch the shopkeepers’ bar go the other way.',
     color: '#E08A2B',
     icon: 'coins',
+    submittedBy: 'PLACER',
     component: BudgetBallot,
     room: {
       empty: emptyBallot,

@@ -69,6 +69,11 @@ function Tile({ t, experiment, onOpen }) {
       <span style={{ fontSize: 15, fontWeight: 600, opacity: 0.92, lineHeight: 1.45, position: 'relative', maxWidth: 320 }}>
         {experiment.tagline}
       </span>
+      {experiment.submittedBy && (
+        <span className="placer-mono" style={{ fontSize: 11, opacity: 0.7, letterSpacing: '0.04em', textTransform: 'uppercase', position: 'relative' }}>
+          Submitted by {experiment.submittedBy}
+        </span>
+      )}
       <div style={{ flex: 1 }} />
       <span className="placer-mono" style={{ fontSize: 11.5, letterSpacing: '0.06em', textTransform: 'uppercase',
         display: 'inline-flex', alignItems: 'center', gap: 6, position: 'relative' }}>
@@ -297,10 +302,6 @@ export function SandboxPage({ t, displayName = null, needsAccount = false, onSig
               ))}
             </div>
 
-            <p style={{ marginTop: 32, fontSize: 13.5, color: t.inkFaint, lineHeight: 1.65, maxWidth: 680 }}>
-              The figures behind these are deliberately rough — calibrated so the trade-offs behave the
-              way real ones do, not so they can size a real scheme.
-            </p>
           </>
         )}
       </div>

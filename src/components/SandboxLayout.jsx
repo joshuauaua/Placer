@@ -42,6 +42,11 @@ export function SandboxLayout({ t, experiment, onBack, actions, children }) {
           <p className="placer-mono" style={{ marginTop: 12, fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: experiment.color }}>
             Try this — {experiment.hint}
           </p>
+          {experiment.submittedBy && (
+            <p className="placer-mono" style={{ marginTop: 8, fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: t.inkFaint }}>
+              Submitted by {experiment.submittedBy}
+            </p>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {actions}

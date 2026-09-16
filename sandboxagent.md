@@ -35,6 +35,7 @@ Add an entry to the `EXPERIMENTS` array in `src/sandbox/experiments.js`:
   hint: 'Try this — drag the slider to see what happens.',
   color: '#5A3ED6',
   icon: 'flask',
+  submittedBy: 'your-username',
   component: MyExperiment,
 }
 ```
@@ -50,6 +51,7 @@ Add an entry to the `EXPERIMENTS` array in `src/sandbox/experiments.js`:
 | `hint` | string | Instruction under the title: "Try this — ..." |
 | `color` | string | Accent hex colour. Used for the tile gradient, slider tracks, meter fills. |
 | `icon` | string | Icon name from the `Icon` component (see `src/components/Icon.jsx`). |
+| `submittedBy` | string | Username or team name of who built the experiment. Shown on the tile and header. |
 | `component` | Component | The React component that renders the experiment. |
 
 ### Choosing a colour
@@ -221,6 +223,7 @@ export const EXPERIMENTS = [
     hint: '...',
     color: '#5A3ED6',
     icon: 'flask',
+    submittedBy: 'your-username',
     component: MyExperiment,
   },
 ];
