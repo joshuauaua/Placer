@@ -1,17 +1,9 @@
-/* PLACER — About Page
- *
- * The page is the project poster and nothing else. The wordmark, the description
- * and the credit line are all part of the artwork, so the alt text carries the
- * illustration.
- */
+/* PLACER — About Page */
 
-import aboutPoster from '../assets/about-placer.jpg';
+import aboutPhoto from '../assets/about-team.jpg';
 
 export function AboutPage({ t }) {
   return (
-    // Scrolls from the top rather than centring vertically: the poster is taller
-    // than most viewports, and a centred flex child overflows past the top edge
-    // where it cannot be scrolled back into view.
     <div style={{
       width: '100%',
       height: '100%',
@@ -19,18 +11,27 @@ export function AboutPage({ t }) {
       background: t.page,
       padding: '40px 20px'
     }}>
-      <img
-        src={aboutPoster}
-        alt="PLACER — a tool for participatory placemaking. An isometric line drawing of a street: crowd barriers, a bench, a person carrying a planter beside a dog, potted plants, a bicycle, a bollard and a traffic light, laid over a faint plan grid."
-        style={{
-          display: 'block',
-          width: '100%',
-          maxWidth: 800,
-          height: 'auto',
-          margin: '0 auto',
-          borderRadius: 12
-        }}
-      />
+      <div style={{ maxWidth: 480, margin: '0 auto' }}>
+        <img
+          src={aboutPhoto}
+          alt="A Polaroid-style photo of the people behind PLACER gathered around a table at a restaurant, smiling towards the camera."
+          style={{
+            display: 'block',
+            width: '100%',
+            height: 'auto',
+            borderRadius: 12
+          }}
+        />
+        <p style={{
+          marginTop: 24,
+          fontSize: 18,
+          lineHeight: 1.6,
+          color: t.inkDim,
+          textAlign: 'center'
+        }}>
+          Placer is developed by STPLN and Ankara Aks, funded by the Swedish Institute
+        </p>
+      </div>
     </div>
   );
 }
