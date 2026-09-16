@@ -19,7 +19,7 @@ import { useLocation, useSearch } from 'wouter';
 import posthog from 'posthog-js';
 import { Icon } from './Icon';
 import { Btn } from './UI';
-import { SandboxLayout } from './SandboxLayout';
+import { SandboxLayout, Panel } from './SandboxLayout';
 import { RoomBar } from './sandbox/RoomBar';
 import { useRoom } from './sandbox/useRoom';
 import { EXPERIMENTS, findExperiment } from '../sandbox/experiments';
@@ -36,6 +36,8 @@ export function experimentIdFrom(path) {
     return match[1];
   }
 }
+
+const isContributePath = (path) => /^\/sandbox\/contribute\/?$/.test(path);
 
 function Tile({ t, experiment, onOpen }) {
   return (
@@ -113,6 +115,99 @@ function StartRoomSignedOut({ t, onSignIn }) {
   );
 }
 
+function ContributePage({ t, onBack }) {
+  return (
+    <>
+      <div style={{ marginBottom: 40 }}>
+        <div className="placer-mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 11.5,
+          letterSpacing: '0.08em', textTransform: 'uppercase', color: t.inkDim, marginBottom: 14 }}>
+          <Icon name="flask" size={15} stroke={2.1} />
+          Sandbox
+        </div>
+        <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink,
+          letterSpacing: '-0.03em', marginBottom: 16, lineHeight: 1.05 }}>
+          Contribute
+        </h1>
+        <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, maxWidth: 680 }}>
+          The Sandbox is open to new experiments. If you have an idea for a quick,
+          interactive tool that explores a question about public space, here is how to
+          build it and get it into the gallery.
+        </p>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 680 }}>
+        <Panel t={t} title="1. Clone and branch">
+          <pre style={{ margin: 0, padding: 16, background: t.surfaceAlt, borderRadius: 8,
+            fontSize: 13.5, lineHeight: 1.6, overflow: 'auto', fontFamily: 'var(--placer-font)',
+            color: t.ink, border: `1px solid ${t.line}` }}>
+{`git clone https://github.com/joshuauaua/Placer.git
+cd Placer
+git checkout -b my-experiment`}
+          </pre>
+        </Panel>
+
+        <Panel t={t} title="2. Read the agent">
+          <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 12 }}>
+            Open <code style={{ padding: '2px 6px', borderRadius: 4, background: t.surfaceAlt,
+              fontSize: 13, color: t.ink, border: `1px solid ${t.line}` }}>sandboxagent.md</code> in
+            the repo root. It covers the experiment registry, component structure,
+            styling conventions, file layout, and scope rules.
+          </p>
+          <Btn t={t} size="sm" variant="outline" icon="arrowRight"
+            onClick={() => window.open('https://github.com/joshuauaua/Placer/blob/Development/sandboxagent.md', '_blank')}>
+            Open sandboxagent.md
+          </Btn>
+        </Panel>
+
+        <Panel t={t} title="3. Create your experiment">
+          <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6 }}>
+            Prompt your coding assistant with:{" "}
+            <em>"Create a new sandbox experiment referencing sandboxagent.md for
+            instructions"</em>, or follow the guide manually. Your experiment needs a
+            registry entry, a component, and a logic module.
+          </p>
+        </Panel>
+
+        <Panel t={t} title="4. Test locally">
+          <pre style={{ margin: 0, padding: 16, background: t.surfaceAlt, borderRadius: 8,
+            fontSize: 13.5, lineHeight: 1.6, overflow: 'auto', fontFamily: 'var(--placer-font)',
+            color: t.ink, border: `1px solid ${t.line}` }}>
+{`npm run dev`}
+          </pre>
+          <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginTop: 12 }}>
+            Visit <code style={{ padding: '2px 6px', borderRadius: 4, background: t.surfaceAlt,
+              fontSize: 13, color: t.ink, border: `1px solid ${t.line}` }}>/sandbox/your-experiment</code> to
+            see it in the gallery. Make sure it renders, responds to interaction, and
+            passes the existing tests:
+          </p>
+          <pre style={{ margin: '12px 0 0', padding: 16, background: t.surfaceAlt, borderRadius: 8,
+            fontSize: 13.5, lineHeight: 1.6, overflow: 'auto', fontFamily: 'var(--placer-font)',
+            color: t.ink, border: `1px solid ${t.line}` }}>
+{`npm run test:run`}
+          </pre>
+        </Panel>
+
+        <Panel t={t} title="5. Open a pull request">
+          <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6 }}>
+            Commit your changes, push to your branch, and open a PR against{" "}
+            <code style={{ padding: '2px 6px', borderRadius: 4, background: t.surfaceAlt,
+              fontSize: 13, color: t.ink, border: `1px solid ${t.line}` }}>Development</code>.
+            The CI scope checker will verify your files stay within sandbox boundaries.
+            Describe what the experiment explores and include a screenshot or GIF if
+            the UI is visual.
+          </p>
+        </Panel>
+      </div>
+
+      <div style={{ marginTop: 32 }}>
+        <Btn t={t} variant="ghost" icon="arrowLeft" onClick={onBack}>
+          Back to Sandbox
+        </Btn>
+      </div>
+    </>
+  );
+}
+
 export function SandboxPage({ t, displayName = null, needsAccount = false, onSignIn }) {
   const [location, navigate] = useLocation();
   const search = useSearch();
@@ -163,25 +258,30 @@ export function SandboxPage({ t, displayName = null, needsAccount = false, onSig
             <RoomBar t={t} experiment={experiment} room={room} />
             <Experiment t={t} experiment={experiment} room={room} />
           </SandboxLayout>
+        ) : isContributePath(location) ? (
+          <ContributePage t={t} onBack={() => navigate('/sandbox')} />
         ) : (
           <>
-            <div style={{ marginBottom: 40 }}>
-              <div className="placer-mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 11.5,
-                letterSpacing: '0.08em', textTransform: 'uppercase', color: t.inkDim, marginBottom: 14 }}>
-                <Icon name="flask" size={15} stroke={2.1} />
-                Experiments
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 40, gap: 20 }}>
+              <div>
+                <div className="placer-mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 11.5,
+                  letterSpacing: '0.08em', textTransform: 'uppercase', color: t.inkDim, marginBottom: 14 }}>
+                  <Icon name="flask" size={15} stroke={2.1} />
+                  Experiments
+                </div>
+                <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink,
+                  letterSpacing: '-0.03em', marginBottom: 16, lineHeight: 1.05 }}>
+                  Sandbox
+                </h1>
+                <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, maxWidth: 680 }}>
+                  An experimental space for digital versions of placemaking and participatory
+                  urban design tools and methods.
+                </p>
               </div>
-              <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink,
-                letterSpacing: '-0.03em', marginBottom: 16, lineHeight: 1.05 }}>
-                Sandbox
-              </h1>
-              <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, maxWidth: 680 }}>
-                Small tools for the arguments participatory design keeps having. Each one takes a few
-                seconds to understand and makes one point that is hard to make with a drawing. Nothing
-                here is a proposal — it is somewhere to find out what you think. Nothing is saved
-                either, unless you open a room for other people to join, and a room lasts until you
-                close it. Opening one takes an account; joining one never does.
-              </p>
+              <Btn t={t} variant="outline" icon="arrowRight"
+                onClick={() => navigate('/sandbox/contribute')}>
+                Contribute
+              </Btn>
             </div>
 
             {missing && (
