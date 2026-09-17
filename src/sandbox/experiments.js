@@ -1,6 +1,6 @@
 /* PLACER — the Sandbox register.
  *
- * One entry per experiment. Adding a fifth means adding one object here and one
+ * One entry per experiment. Adding a fourth means adding one object here and one
  * component under src/components/sandbox — the gallery, the routing and the copyable
  * link all read from this list.
  *
@@ -22,6 +22,7 @@
 import { BudgetBallot } from '../components/sandbox/BudgetBallot';
 import { DesireLines } from '../components/sandbox/DesireLines';
 import { FifteenMinute } from '../components/sandbox/FifteenMinute';
+import { StationaryActivityMap } from '../components/sandbox/StationaryActivityMap';
 import { StreetMixer } from '../components/sandbox/StreetMixer';
 import { emptyBallot, normalise } from '../lib/budgetBallot';
 
@@ -64,7 +65,7 @@ export const EXPERIMENTS = [
     name: 'Budget Ballot',
     tagline: 'Two hundred and fifty thousand euros. Nine things. Choose.',
     blurb: 'Every line has a real price and a real effect, and the money runs out well before the street is finished. Spending it is easy; explaining who ended up better off is the hard part.',
-    hint: 'fund the parklets, then watch the shopkeepers’ bar go the other way.',
+    hint: "fund the parklets, then watch the shopkeepers' bar go the other way.",
     color: '#E08A2B',
     icon: 'coins',
     submittedBy: 'PLACER',
@@ -92,6 +93,17 @@ export const EXPERIMENTS = [
         return normalise(total);
       },
     },
+  },
+  {
+    id: 'stationary-activity-mapping',
+    name: 'Stationary Activity Mapping',
+    tagline: 'Posture and activity, one person at a time, plotted on the map.',
+    blurb: 'A map-based field observation tool. Record each person as a posture and the activity or activities they are doing while holding it, and watch the map fill with points and the tally table take shape. The map is the canvas; the recording card floats over its left half.',
+    hint: 'click the map to pick a spot, then pick a posture and activities, then record.',
+    color: '#D6452F',
+    icon: 'grid',
+    submittedBy: 'PLACER',
+    component: StationaryActivityMap,
   },
 ];
 

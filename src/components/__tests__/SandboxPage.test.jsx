@@ -57,7 +57,7 @@ describe('the gallery', () => {
     for (const experiment of EXPERIMENTS) {
       expect(screen.getByRole('button', { name: new RegExp(experiment.name, 'i') })).toBeInTheDocument();
     }
-    expect(EXPERIMENTS).toHaveLength(4);
+    expect(EXPERIMENTS).toHaveLength(5);
   });
 
   it('opens an experiment, and puts it in the URL', async () => {
