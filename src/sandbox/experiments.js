@@ -22,6 +22,8 @@
 import { BudgetBallot } from '../components/sandbox/BudgetBallot';
 import { DesireLines } from '../components/sandbox/DesireLines';
 import { FifteenMinute } from '../components/sandbox/FifteenMinute';
+import { SiteMapping } from '../components/sandbox/SiteMapping';
+import { SocialSpaceSurvey } from '../components/sandbox/SocialSpaceSurvey';
 import { StreetMixer } from '../components/sandbox/StreetMixer';
 import { emptyBallot, normalise } from '../lib/budgetBallot';
 
@@ -92,6 +94,28 @@ export const EXPERIMENTS = [
         return normalise(total);
       },
     },
+  },
+  {
+    id: 'social-space-survey',
+    name: 'The Social Space Survey',
+    tagline: 'Eighteen checks that read a space for strangers.',
+    blurb: 'A field tool from the Gehl Institute: tick what invites and what blocks, map the spatial patterns that bring strangers together, and judge how well different people could share the place. Walk it in five minutes — take the data with you.',
+    hint: 'watch for five minutes first, then complete step 1 and see the optional steps open up.',
+    color: '#7A52E0',
+    icon: 'bench',
+    submittedBy: 'PLACER',
+    component: SocialSpaceSurvey,
+  },
+  {
+    id: 'site-spatial-mapping',
+    name: 'Site-Specific Spatial Mapping Tool',
+    tagline: 'Pin a site on the map, answer eighteen cards, stay in touch.',
+    blurb: 'Pick a specific site on a Google Map with your location, tell us your age range and gender, work through the eighteen-question survey as a stack of cards, then optionally map markers, reflect in words, and leave contact details for follow-ups.',
+    hint: 'pin Lindenplatz on the map, answer the card stack, then leave a contact.',
+    color: '#16766B',
+    icon: 'pin',
+    submittedBy: 'PLACER',
+    component: SiteMapping,
   },
 ];
 
