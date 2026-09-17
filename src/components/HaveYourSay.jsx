@@ -8,13 +8,26 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 
 import { Icon } from './Icon';
+import defaultSurveyContent from './survey/content/default.json';
 
 // The survey drags in the whole flow, its content and the api layer. Most
 // visitors to a holding page never open it, so it is fetched on the click
 // rather than bundled with the page.
 const SurveyPage = lazy(() => import('./SurveyPage'));
 
-const LABEL = 'Share Your Thoughts';
+const LABEL = 'Follow the Project';
+
+// Same survey as /survey, but opened from a "follow the project" button rather
+// than found on its own page, so the cover page greets that intent instead of
+// the generic one.
+export const LANDING_SURVEY_CONTENT = {
+  ...defaultSurveyContent,
+  hero: {
+    ...defaultSurveyContent.hero,
+    title: 'Thanks for wanting to follow the project',
+    subtitle: 'First, can you answer a few questions to help us understand how you’d use PLACER? It takes about three minutes, and it shapes what we build next.',
+  },
+};
 
 // Deliberately off-palette: the theme is black and white, and this one call to
 // action is the exception rather than an accent drawn from it.
@@ -163,6 +176,7 @@ export function HaveYourSay({ t }) {
             <Suspense fallback={<Fallback t={t} />}>
               <SurveyPage
                 t={t}
+                content={LANDING_SURVEY_CONTENT}
                 height="100%"
                 // Distinguishes a response left here from one left on /survey.
                 source="landing_survey"

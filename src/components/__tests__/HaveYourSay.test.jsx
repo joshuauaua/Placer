@@ -6,12 +6,12 @@ vi.mock('posthog-js', () => ({
   default: { capture: vi.fn() },
 }));
 
-const { HaveYourSay } = await import('../HaveYourSay');
+const { HaveYourSay, LANDING_SURVEY_CONTENT } = await import('../HaveYourSay');
 const { resolveSurveyContent } = await import('../survey/content');
 
-const content = resolveSurveyContent();
+const content = resolveSurveyContent(LANDING_SURVEY_CONTENT);
 
-const LABEL = 'Share Your Thoughts';
+const LABEL = 'Follow the Project';
 
 const trigger = () => screen.getByRole('button', { name: LABEL });
 const dialog = () => screen.queryByRole('dialog', { name: LABEL });
