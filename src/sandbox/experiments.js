@@ -1,6 +1,6 @@
 /* PLACER — the Sandbox register.
  *
- * One entry per experiment. Adding a fifth means adding one object here and one
+ * One entry per experiment. Adding a fourth means adding one object here and one
  * component under src/components/sandbox — the gallery, the routing and the copyable
  * link all read from this list.
  *
@@ -66,7 +66,7 @@ export const EXPERIMENTS = [
     name: 'Budget Ballot',
     tagline: 'Two hundred and fifty thousand euros. Nine things. Choose.',
     blurb: 'Every line has a real price and a real effect, and the money runs out well before the street is finished. Spending it is easy; explaining who ended up better off is the hard part.',
-    hint: 'fund the parklets, then watch the shopkeepers’ bar go the other way.',
+    hint: "fund the parklets, then watch the shopkeepers' bar go the other way.",
     color: '#E08A2B',
     icon: 'coins',
     submittedBy: 'PLACER',
