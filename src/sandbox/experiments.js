@@ -1,6 +1,6 @@
 /* PLACER — the Sandbox register.
  *
- * One entry per experiment. Adding a fifth means adding one object here and one
+ * One entry per experiment. Adding a fourth means adding one object here and one
  * component under src/components/sandbox — the gallery, the routing and the copyable
  * link all read from this list.
  *
@@ -22,7 +22,6 @@
 import { BudgetBallot } from '../components/sandbox/BudgetBallot';
 import { DesireLines } from '../components/sandbox/DesireLines';
 import { FifteenMinute } from '../components/sandbox/FifteenMinute';
-import { PublicLifeTally } from '../components/sandbox/PublicLifeTally';
 import { StationaryActivityMap } from '../components/sandbox/StationaryActivityMap';
 import { StreetMixer } from '../components/sandbox/StreetMixer';
 import { emptyBallot, normalise } from '../lib/budgetBallot';
@@ -66,7 +65,7 @@ export const EXPERIMENTS = [
     name: 'Budget Ballot',
     tagline: 'Two hundred and fifty thousand euros. Nine things. Choose.',
     blurb: 'Every line has a real price and a real effect, and the money runs out well before the street is finished. Spending it is easy; explaining who ended up better off is the hard part.',
-    hint: 'fund the parklets, then watch the shopkeepers’ bar go the other way.',
+    hint: "fund the parklets, then watch the shopkeepers' bar go the other way.",
     color: '#E08A2B',
     icon: 'coins',
     submittedBy: 'PLACER',
@@ -95,23 +94,12 @@ export const EXPERIMENTS = [
       },
     },
   },
- {
-    id: 'life-tally',
-    name: 'Public Life Tally',
-    tagline: 'One person at a time: their posture, what they do, where they are.',
-    blurb: 'A field sheet for watching how a public space is actually used. Each observation is one person — a posture, the activity or activities that go with it, and the spot of the square they were in. Record a busy hour, and the tally and the map start to show who the place really belongs to.',
-    hint: 'watch somebody for a moment, tap their posture and what they are doing, then record.',
-    color: '#7A52E0',
-    icon: 'crosshair',
-    submittedBy: 'PLACER',
-    component: PublicLifeTally,
-  },
   {
     id: 'stationary-activity-mapping',
     name: 'Stationary Activity Mapping',
     tagline: 'Posture and activity, one person at a time, plotted on the map.',
     blurb: 'A map-based field observation tool. Record each person as a posture and the activity or activities they are doing while holding it, and watch the map fill with points and the tally table take shape. The map is the canvas; the recording card floats over its left half.',
-    hint: 'pick a posture, then tap the activities, then record — watch the map grow.',
+    hint: 'click the map to pick a spot, then pick a posture and activities, then record.',
     color: '#D6452F',
     icon: 'grid',
     submittedBy: 'PLACER',

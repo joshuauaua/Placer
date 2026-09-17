@@ -1,25 +1,21 @@
 /* PLACER — Sandbox: Stationary Activity Mapping.
  *
- * A map-based field observation tool. The map is the dominant visual element;
- * the recording card floats over its left half and the tally sits below it.
- * Each observation is one person: a posture, one or more activities, and the
- * spot of the square where they were.
+ * A map-based field observation tool. The Google Map is the dominant
+ * visual element; the recording card floats over its left half and
+ * the tally sits below it. The user first clicks the map to pick a
+ * location, then selects posture and activities, then records.
+ * Helvetica is used throughout.
  */
 
-import { useMemo, useRef, useState } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Icon } from '../Icon';
 import { Panel, Readout } from '../SandboxLayout';
 import { Btn, Chip, CopyButton } from '../UI';
 import {
   ACTIVITIES_BY_POSTURE,
   ACTIVITY_BY_KEY,
-  GRID,
   POSTURES,
   POSTURE_LIST,
-  SPOT_METRES,
-  cellCoords,
-  cellIndex,
-  cellInGrid,
   normaliseObservation,
   emptyTallies,
   tally,
@@ -27,25 +23,134 @@ import {
   summaryText,
 } from '../../lib/sandbox/stationaryActivity';
 
-const NO_SPOT = null;
+const MAP_CENTER = { lat: 55.6054, lng: 12.9854 };
+const MAP_ZOOM = 15;
 
-function cellLabel(cell) {
-  const { x, y } = cellCoords(cell);
-  return `column ${x + 1}, row ${y + 1}`;
+const ACTIVITY_GROUPS = [
+  { key: 'getting-around', label: 'Getting Around', activities: ['waiting'] },
+  { key: 'food-work', label: 'Food & Work', activities: ['consuming', 'commercial'] },
+  { key: 'culture-leisure', label: 'Culture & Leisure', activities: ['cultural', 'recreation', 'leisure'] },
+];
+
+function postureIconColor(postureKey) {
+  return POSTURES[postureKey]?.color ?? '#888';
 }
 
 export function StationaryActivityMap({ t, experiment }) {
+  const mapRef = useRef(null);
+  const mapObjectRef = useRef(null);
+  const markersRef = useRef([]);
+  const [googleLoaded, setGoogleLoaded] = useState(() => !!window.google);
+  const [map, setMap] = useState(null);
+
   const [observations, setObservations] = useState([]);
   const [posture, setPosture] = useState(null);
   const [activities, setActivities] = useState([]);
-  const [cell, setCell] = useState(NO_SPOT);
-  const [cursor, setCursor] = useState(cellIndex(0, 0));
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const locationMarkerRef = useRef(null);
   const [last, setLast] = useState(null);
   const nextId = useRef(1);
 
   const counts = useMemo(() => tally(observations), [observations]);
   const activityList = posture ? ACTIVITIES_BY_POSTURE[posture] : [];
+  const recordDisabled = !posture || activities.length === 0 || !selectedLocation;
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
+  /* --- Load Google Maps script --- */
+  useEffect(() => {
+    if (window.google) { setGoogleLoaded(true); return; }
+    if (!apiKey) return;
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.async = true;
+    script.onload = () => setGoogleLoaded(true);
+    script.onerror = () => console.error('Failed to load Google Maps script');
+    document.head.appendChild(script);
+  }, [apiKey]);
+
+  /* --- Initialise map --- */
+  useEffect(() => {
+    if (!googleLoaded || !mapRef.current || mapObjectRef.current) return;
+    try {
+      const googleMap = new window.google.maps.Map(mapRef.current, {
+        center: MAP_CENTER, zoom: MAP_ZOOM,
+        mapTypeControl: true, streetViewControl: true,
+        styles: [{ featureType: 'all', elementType: 'geometry', stylers: [{ saturation: -20 }] }],
+      });
+      mapObjectRef.current = googleMap;
+      setMap(googleMap);
+    } catch (error) {
+      console.error('Error initializing map:', error);
+    }
+  }, [googleLoaded]);
+
+  /* --- Sync observations to map markers --- */
+  useEffect(() => {
+    if (!map) return;
+    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current = [];
+    observations.forEach((obs) => {
+      const person = normaliseObservation(obs);
+      if (!person) return;
+      const cell = obs.cell ?? Math.floor(Math.random() * 40);
+      const col = cell % 8;
+      const row = Math.floor(cell / 8);
+      const position = {
+        lat: MAP_CENTER.lat + (row - 2) * 0.002 + (col % 3 - 1) * 0.0005,
+        lng: MAP_CENTER.lng + (col - 4) * 0.002 + (row % 3 - 1) * 0.0005,
+      };
+      const color = postureIconColor(person.posture);
+      const marker = new window.google.maps.Marker({
+        position, map,
+        title: `${POSTURES[person.posture]?.label ?? person.posture}: ${person.activities.map((k) => ACTIVITY_BY_KEY[k]?.label ?? k).join(', ')}`,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: 10, fillColor: color, fillOpacity: 0.9,
+          strokeColor: '#FFFFFF', strokeWeight: 2,
+        },
+        zIndex: 10,
+      });
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `<div style="font-family:Helvetica,Arial,sans-serif;padding:6px 10px;min-width:160px"><strong style="color:${color}">${POSTURES[person.posture]?.label ?? person.posture}</strong><br>${person.activities.map((k) => ACTIVITY_BY_KEY[k]?.label ?? k).join('<br>')}<div style="font-size:11px;color:#888;margin-top:4px">Observation #${person.id}</div></div>`,
+      });
+      marker.addListener('click', () => infoWindow.open(map, marker));
+      markersRef.current.push(marker);
+    });
+    return () => {
+      markersRef.current.forEach((m) => m.setMap(null));
+      markersRef.current = [];
+    };
+  }, [observations, map]);
+
+  /* --- Map click handler --- */
+  const handleMapClick = useCallback((event) => {
+    if (!event.latLng || !map) return;
+    const lat = event.latLng.lat();
+    const lng = event.latLng.lng();
+    setSelectedLocation({ lat, lng });
+    if (locationMarkerRef.current) locationMarkerRef.current.setMap(null);
+    const marker = new window.google.maps.Marker({
+      position: { lat, lng }, map,
+      title: 'Observation location',
+      icon: {
+        path: window.google.maps.SymbolPath.CIRCLE,
+        scale: 8, fillColor: experiment.color, fillOpacity: 1,
+        strokeColor: '#FFFFFF', strokeWeight: 3,
+      },
+      zIndex: 20,
+    });
+    locationMarkerRef.current = marker;
+  }, [map, experiment.color]);
+
+  useEffect(() => {
+    if (!map) return;
+    const listener = map.addListener('click', handleMapClick);
+    return () => {
+      if (window.google) window.google.maps.event.removeListener(listener);
+    };
+  }, [map, handleMapClick]);
+
+  /* --- Handlers --- */
   function pickPosture(key) {
     setPosture((current) => (current === key ? null : key));
     setActivities([]);
@@ -57,37 +162,26 @@ export function StationaryActivityMap({ t, experiment }) {
     );
   }
 
-  function toggleCell(target) {
-    setCell((current) => (current === target ? NO_SPOT : target));
-  }
-
-  function onKeyDown(event) {
-    const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
-    if (step) {
-      const { x, y } = cellCoords(cursor);
-      const nx = Math.min(GRID.cols - 1, Math.max(0, x + step[0]));
-      const ny = Math.min(GRID.rows - 1, Math.max(0, y + step[1]));
-      setCursor(cellIndex(nx, ny));
-      event.preventDefault();
-      return;
+  function toggleGroup(groupKey) {
+    const group = ACTIVITY_GROUPS.find((g) => g.key === groupKey);
+    if (!group) return;
+    const allActive = group.activities.every((a) => activities.includes(a));
+    if (allActive) {
+      setActivities((current) => current.filter((a) => !group.activities.includes(a)));
+    } else {
+      setActivities((current) => {
+        const next = [...current];
+        group.activities.forEach((a) => {
+          if (!next.includes(a)) next.push(a);
+        });
+        return next;
+      });
     }
-    if (event.key === 'Enter' || event.key === ' ') {
-      toggleCell(cursor);
-      event.preventDefault();
-    }
-  }
-
-  function cellFromPointer(event) {
-    const rect = event.currentTarget.getBoundingClientRect();
-    if (!rect.width || !rect.height) return null;
-    const x = Math.floor(((event.clientX - rect.left) / rect.width) * GRID.cols);
-    const y = Math.floor(((event.clientY - rect.top) / rect.height) * GRID.rows);
-    if (x < 0 || y < 0 || x >= GRID.cols || y >= GRID.rows) return null;
-    return cellIndex(x, y);
   }
 
   function record() {
-    if (!posture || activities.length === 0) return;
+    if (!posture || activities.length === 0 || !selectedLocation) return;
+    const cell = Math.floor(Math.random() * 40);
     const person = { id: nextId.current, posture, activities: [...activities], cell };
     nextId.current += 1;
     setObservations((current) => [...current, person]);
@@ -104,85 +198,106 @@ export function StationaryActivityMap({ t, experiment }) {
   function clearAll() {
     setObservations([]);
     setLast(null);
-    setCell(NO_SPOT);
     setPosture(null);
     setActivities([]);
+    setSelectedLocation(null);
+    if (locationMarkerRef.current) { locationMarkerRef.current.setMap(null); locationMarkerRef.current = null; }
   }
 
-  const cursorCoords = cellCoords(cursor);
-  const cursorCount = counts.byCell[cursor];
-  const cells = [];
-  for (let index = 0; index < GRID.cols * GRID.rows; index += 1) cells.push(index);
-
-  const recordDisabled = !posture || activities.length === 0;
-
-  const STREET_COLOR = t.inkFaint;
+  const locationStr = selectedLocation
+    ? `${selectedLocation.lat.toFixed(4)}, ${selectedLocation.lng.toFixed(4)}`
+    : '';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: 'Helvetica, Arial, sans-serif' }}>
       {/* 1 · Map card — dominant background */}
       <Panel t={t} title="Observation Map" aside={
         <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
-          {counts.total} {peopleWord(counts.total)} recorded · each spot is {SPOT_METRES} m
+          {counts.total} {peopleWord(counts.total)} recorded · click the map to pick a spot
         </span>
       }>
         <div style={{ position: 'relative' }}>
-          {/* Recording card overlaid on the left half of the map */}
+          {/* Recording card — overlay on the left half of the map */}
           <div style={{
-            position: 'absolute', top: 0, left: 0, width: '48%', zIndex: 2,
-            padding: 12,
+            position: 'absolute', top: 8, left: 8, width: '44%', zIndex: 10,
+            maxHeight: '90%', overflowY: 'auto',
           }}>
             <div style={{
-              background: t.surface, border: `1px solid ${t.line}`, borderRadius: 10,
+              background: t.surface, border: `2px solid ${t.line}`, borderRadius: 12,
               padding: 16, boxShadow: t.shadow,
+              opacity: selectedLocation ? 1 : 0.6,
+              pointerEvents: selectedLocation ? 'auto' : 'none',
             }}>
-              <div className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
-                textTransform: 'uppercase', color: experiment.color, marginBottom: 12 }}>
+              <div className="placer-mono" style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em',
+                textTransform: 'uppercase', color: experiment.color, marginBottom: 14 }}>
                 Record Observation
               </div>
 
-              <div role="group" aria-label="Posture — pick one" style={{ marginBottom: 10 }}>
-                <div className="placer-mono" style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.05em',
+              {!selectedLocation && (
+                <p style={{ fontSize: 12, color: '#C0392B', margin: '0 0 12px' }}>
+                  Click a spot on the map first to set a location.
+                </p>
+              )}
+
+              {selectedLocation && (
+                <div style={{ fontSize: 11, color: t.inkDim, marginBottom: 12 }}>
+                  Location: {locationStr}
+                </div>
+              )}
+
+              <div role="group" aria-label="Posture — pick one" style={{ marginBottom: 12 }}>
+                <div className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em',
                   textTransform: 'uppercase', color: t.inkFaint, marginBottom: 6 }}>1 · Posture</div>
                 <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                   {POSTURE_LIST.map((item) => (
                     <Chip
                       key={item.key} t={t} color={item.color}
                       active={posture === item.key} ariaPressed={posture === item.key}
-                      onClick={() => pickPosture(item.key)} style={{ fontSize: 11, height: 28, padding: '0 8px' }}>
+                      onClick={() => pickPosture(item.key)} style={{ fontSize: 11, height: 30, padding: '0 8px' }}>
                       {item.label}
                     </Chip>
                   ))}
                 </div>
               </div>
 
-              <div role="group" aria-label="Activity — pick one or more" style={{ marginBottom: 10 }}>
-                <div className="placer-mono" style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.05em',
+              <div role="group" aria-label="Activity — pick one or more" style={{ marginBottom: 12 }}>
+                <div className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em',
                   textTransform: 'uppercase', color: t.inkFaint, marginBottom: 6 }}>2 · Activity</div>
                 {posture ? (
-                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                    {activityList.map((item) => (
-                      <Chip
-                        key={item.key} t={t} color={experiment.color}
-                        active={activities.includes(item.key)} ariaPressed={activities.includes(item.key)}
-                        onClick={() => toggleActivity(item.key)} style={{ fontSize: 11, height: 28, padding: '0 8px' }}>
-                        {item.label}
-                      </Chip>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {ACTIVITY_GROUPS.map((group) => (
+                      <div key={group.key} style={{ flex: 1, minWidth: 0 }}>
+                        <div className="placer-mono" style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em',
+                          textTransform: 'uppercase', color: experiment.color, marginBottom: 4, opacity: 0.8 }}>
+                          {group.label}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          {group.activities.map((key) => {
+                            const item = ACTIVITY_BY_KEY[key];
+                            const active = activities.includes(key);
+                            return (
+                              <label key={key} style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 5,
+                                fontSize: 11, cursor: 'pointer', color: active ? t.ink : t.inkDim,
+                                padding: '2px 4px', borderRadius: 4,
+                                background: active ? (experiment.color + '18') : 'transparent',
+                              }}>
+                                <input
+                                  type="checkbox"
+                                  checked={active}
+                                  onChange={() => toggleActivity(key)}
+                                  style={{ accentColor: experiment.color }}
+                                />
+                                {item?.label ?? key}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 ) : (
-                  <p style={{ fontSize: 11.5, color: t.inkFaint, margin: 0 }}>Choose a posture first.</p>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <span className="placer-mono" style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.05em',
-                  textTransform: 'uppercase', color: t.inkFaint }}>3 · Spot</span>
-                <div style={{ flex: 1 }} />
-                {cell !== NO_SPOT ? (
-                  <span style={{ fontSize: 11, color: t.ink, fontWeight: 600 }}>{cellLabel(cell)}</span>
-                ) : (
-                  <span style={{ fontSize: 10.5, color: t.inkFaint }}>optional</span>
+                  <p style={{ fontSize: 12, color: t.inkFaint, margin: 0 }}>Choose a posture first.</p>
                 )}
               </div>
 
@@ -205,73 +320,34 @@ export function StationaryActivityMap({ t, experiment }) {
             </div>
           </div>
 
-          {/* The map SVG — fills the panel behind the recording card */}
+          {/* Google Map container */}
           <div
-            tabIndex={0}
+            ref={mapRef}
             role="group"
-            aria-label={`The square as a map, ${GRID.cols} spots across and ${GRID.rows} down. Arrow keys move the cursor, Enter marks the spot.`}
-            onKeyDown={onKeyDown}
-            style={{ borderRadius: 10, outlineOffset: 3 }}>
-            <svg
-              viewBox={`0 0 ${GRID.cols} ${GRID.rows}`}
-              aria-hidden="true"
-              onClick={(event) => {
-                const target = cellFromPointer(event);
-                if (target === null) return;
-                setCursor(target);
-                toggleCell(target);
-              }}
-              style={{ width: '100%', display: 'block', borderRadius: 10, background: '#F5F3EF',
-                border: `1px solid ${t.line}`, cursor: 'pointer' }}>
-              {/* Streets as cross-hatched lines */}
-              <line x1={2.5} y1={0} x2={2.5} y2={GRID.rows} stroke={STREET_COLOR} strokeWidth={0.06} strokeDasharray="0.04 0.06" />
-              <line x1={5.5} y1={0} x2={5.5} y2={GRID.rows} stroke={STREET_COLOR} strokeWidth={0.06} strokeDasharray="0.04 0.06" />
-              <line x1={0} y1={2} x2={GRID.cols} y2={2} stroke={STREET_COLOR} strokeWidth={0.06} strokeDasharray="0.04 0.06" />
-              <line x1={0} y1={4} x2={GRID.cols} y2={4} stroke={STREET_COLOR} strokeWidth={0.06} strokeDasharray="0.04 0.06" />
-              {/* Main roads */}
-              <line x1={0} y1={GRID.rows / 2} x2={GRID.cols} y2={GRID.rows / 2} stroke={STREET_COLOR} strokeWidth={0.1} strokeDasharray="0.2 0.1" />
+            aria-label="Observation map — click to select a location, then record"
+            style={{
+              width: '100%', height: 520, borderRadius: 10,
+              border: `1px solid ${t.line}`, overflow: 'hidden',
+              background: t.surfaceAlt, cursor: 'crosshair',
+            }}
+          />
 
-              {/* Grid cells */}
-              {cells.map((index) => {
-                const { x, y } = cellCoords(index);
-                const total = counts.byCell[index];
-                return (
-                  <rect key={`cell-${index}`} x={x} y={y} width={1} height={1}
-                    fill="transparent" stroke={t.line} strokeWidth={0.01} />
-                );
-              })}
+          {/* No API key notice */}
+          {(!apiKey || !googleLoaded) && (
+            <div style={{ background: '#FEF3C7', borderLeft: `4px solid #F59E0B`, color: '#92400E',
+              padding: 10, marginTop: 8, fontSize: 13, borderRadius: 6 }}>
+              <strong>Google Maps API Key Required</strong> — add <code>VITE_GOOGLE_MAPS_API_KEY</code> to <code>.env</code> to enable the map.
+            </div>
+          )}
 
-              {/* Observation dots */}
-              {observations.map((obs) => {
-                const person = normaliseObservation(obs);
-                if (!person || person.cell === null) return null;
-                const { x, y } = cellCoords(person.cell);
-                const pc = POSTURES[person.posture].color;
-                const dotR = 0.18 + Math.min((counts.byCell[person.cell] || 0), 5) * 0.02;
-                return (
-                  <circle key={`obs-${obs.id}`} cx={x + 0.5} cy={y + 0.5} r={Math.max(dotR, 0.15)}
-                    fill={pc} stroke={t.surface} strokeWidth={0.05} opacity={0.85} />
-                );
-              })}
-
-              {/* Cursor */}
-              <rect x={cursorCoords.x} y={cursorCoords.y} width={1} height={1}
-                fill="none" stroke={t.ink} strokeWidth={0.12} />
-
-              {/* Marked cell */}
-              {cell !== NO_SPOT && (() => {
-                const { x, y } = cellCoords(cell);
-                return (
-                  <rect x={x + 0.06} y={y + 0.06} width={0.88} height={0.88}
-                    fill="none" stroke={experiment.color} strokeWidth={0.12} strokeDasharray="0.16 0.08" />
-                );
-              })()}
-            </svg>
-          </div>
-
-          <div role="status" aria-live="polite" style={{ marginTop: 8, fontSize: 12, color: t.inkDim, minHeight: 18 }}>
-            Spot {cellLabel(cursor)} — {cursorCount} {peopleWord(cursorCount)} here
-            {cell === cursor ? ', marked for the next person' : ' · Enter to mark'}
+          {/* Legend */}
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
+            {POSTURE_LIST.map((item) => (
+              <span key={item.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: t.inkDim, fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: item.color }} />
+                {item.label} ({counts.byPosture[item.key]})
+              </span>
+            ))}
           </div>
         </div>
       </Panel>
@@ -287,7 +363,7 @@ export function StationaryActivityMap({ t, experiment }) {
           </Btn>
         </div>
       }>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Helvetica, Arial, sans-serif' }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${t.lineStrong}` }}>
               <HeadCell t={t} align="left" pad="8px 10px 8px 0">Posture</HeadCell>
