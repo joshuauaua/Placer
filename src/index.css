@@ -171,7 +171,7 @@ body {
 
 /* PLACER — the landing page's feedback trigger.
  *
- * Two shapes. On a wide screen it is a circle parked off the bottom-right corner
+ * Two shapes. On a wide screen it is a circle parked off the top-right corner
  * with the label wrapped inside it. On a phone a circle that size would sit on
  * top of the page, so it becomes a bar across the foot of the screen instead,
  * and .placer-feedback-spacer reserves the room it occupies so it covers nothing.
@@ -179,14 +179,14 @@ body {
  * The geometry lives here rather than inline because an inline style cannot be
  * overridden by a media query. Only the colours are set in the component.
  *
- * 108px = the 44px app footer (see App.jsx) plus a 64px gap matching the one to
- * the right edge; the consent inset lifts it further while the cookie banner is
- * up (see CookieBanner).
+ * 64px matches the gap to the right edge, keeping the circle symmetrically
+ * clear of the corner. Sitting at the top, it never overlaps the cookie
+ * banner (see CookieBanner), which stays anchored to the bottom.
  */
 .placer-feedback-trigger {
   position: fixed;
   right: 64px;
-  bottom: calc(108px + var(--placer-consent-inset, 0px));
+  top: 64px;
   z-index: 150;
   width: 156px;
   height: 156px;
@@ -203,7 +203,7 @@ body {
   line-height: 1.25;
   letter-spacing: -0.01em;
   text-align: center;
-  transition: bottom 0.2s ease, transform 0.2s ease;
+  transition: transform 0.2s ease;
 }
 
 .placer-feedback-trigger:hover,
@@ -242,11 +242,13 @@ body {
   .placer-feedback-trigger {
     left: 16px;
     right: 16px;
+    top: auto;
     bottom: calc(60px + var(--placer-consent-inset, 0px));
     width: auto;
     height: 56px;
     padding: 0 20px;
     border-radius: 999px;
+    transition: bottom 0.2s ease, transform 0.2s ease;
   }
 
   /* The ring would crowd a single line of text at this size. */

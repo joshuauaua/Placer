@@ -1,7 +1,7 @@
 /* PLACER — "Have your say": a floating trigger, and the survey it opens.
  *
  * The landing page is a holding page, so the survey is offered rather than
- * imposed: a button parked in the bottom right corner, and the same flow that
+ * imposed: a button parked in the top right corner, and the same flow that
  * /survey renders lifted into a dialog over the page instead of replacing it.
  */
 
