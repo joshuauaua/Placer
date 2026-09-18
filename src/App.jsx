@@ -9,12 +9,14 @@ import { Icon } from './components/Icon';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieBanner } from './components/CookieBanner';
 import { LandingPage } from './components/LandingPage';
+import { HamburgerMenu } from './components/HamburgerMenu';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const MapContainer = lazy(() => import('./components/MapContainer'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
+const ContactPage = lazy(() => import('./components/ContactPage'));
 const ResourcesPage = lazy(() => import('./components/ResourcesPage'));
 const PrivacyPage = lazy(() => import('./components/PrivacyPage'));
 const GdprPage = lazy(() => import('./components/GdprPage'));
@@ -57,7 +59,7 @@ function FooterLink({ t, active, onClick, children }) {
 
 function MainApp({ initialView = 'welcome' }) {
   const t = THEME;
-  // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'resources', 'sandbox', 'privacy', 'gdpr'
+  // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'contact', 'resources', 'sandbox', 'privacy', 'gdpr'
   const [currentView, setCurrentView] = useState(initialView);
   const [capturedView, setCapturedView] = useState(null);
   // The imagination being built. Held here rather than in StreetScreen so that
@@ -181,6 +183,10 @@ function MainApp({ initialView = 'welcome' }) {
 
   return (
     <div className="placer-viewport" style={{ width: '100%', display: 'flex', flexDirection: 'column', background: t.page, color: t.ink }}>
+      {/* With the full nav bar off, this is the only way to reach About or
+          Contact, and the only way back once there. */}
+      {!showNav && <HamburgerMenu t={t} view={view} onNavigate={show} />}
+
       {/* Navigation Bar */}
       {showNav && (
         <div style={{ height: 66, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 20,
@@ -196,6 +202,12 @@ function MainApp({ initialView = 'welcome' }) {
               color: view === 'about' ? t.ink : t.inkDim,
               background: view === 'about' ? t.surfaceAlt : 'transparent',
               cursor: 'pointer' }}>About</span>
+            <span
+              onClick={() => show('contact')}
+              style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
+              color: view === 'contact' ? t.ink : t.inkDim,
+              background: view === 'contact' ? t.surfaceAlt : 'transparent',
+              cursor: 'pointer' }}>Contact</span>
             <span
               onClick={() => show('resources')}
               style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
@@ -232,6 +244,12 @@ function MainApp({ initialView = 'welcome' }) {
         {view === 'about' && (
           <Suspense fallback={<LoadingFallback />}>
             <AboutPage t={t} />
+          </Suspense>
+        )}
+
+        {view === 'contact' && (
+          <Suspense fallback={<LoadingFallback />}>
+            <ContactPage t={t} />
           </Suspense>
         )}
 

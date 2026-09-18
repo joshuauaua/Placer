@@ -273,6 +273,70 @@ body {
   }
 }
 
+/* PLACER — the holding page's site menu (see HamburgerMenu.jsx).
+ *
+ * Parked in the top-left corner, clear of the feedback trigger opposite it.
+ * The panel is a small dropdown rather than a full-screen dialog, positioned
+ * relative to the trigger so it never needs its own fixed coordinates.
+ */
+.placer-menu-root {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  z-index: 160;
+}
+
+.placer-menu-trigger {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.placer-menu-trigger:hover,
+.placer-menu-trigger:focus-visible {
+  transform: scale(1.06);
+}
+
+.placer-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 168px;
+  border-radius: 12px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.placer-menu-link {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-family: 'Archivo', sans-serif;
+  font-size: 14.5px;
+}
+
+.placer-menu-link:hover,
+.placer-menu-link:focus-visible {
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-menu-trigger:hover,
+  .placer-menu-trigger:focus-visible {
+    transform: none;
+  }
+}
+
 /* PLACER — the survey on a narrow screen.
  *
  * The survey is the one thing on the holding page a visitor can complete, so it has

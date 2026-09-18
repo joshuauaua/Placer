@@ -187,6 +187,7 @@ const ICON_ELEMENTS = {
       <path d="M12 7.2V12l3.2 2.1" />
     </>
   ),
+  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
 };
 
 export function Icon({ name, size = 22, stroke = 1.7, fill = 'none', style, color }) {
