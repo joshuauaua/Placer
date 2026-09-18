@@ -144,17 +144,13 @@ body {
   margin-bottom: 48px;
 }
 
-/* Straddles the rule, centred, so the trigger reads as breaking the line
- * rather than sitting beside it. Flex centring rather than absolute+transform,
- * so the trigger can become `position: fixed` on a phone (see the media query
- * below) without a transformed ancestor pulling it out of the viewport. */
+/* Centres the trigger between the pitch and the credit, without a rule to
+ * mark the seam. Flex centring rather than absolute+transform, so the trigger
+ * can become `position: fixed` on a phone (see the media query below) without
+ * a transformed ancestor pulling it out of the viewport. */
 .placer-landing-divider {
   height: 1px;
-  background: var(--placer-landing-line);
-  /* The trigger is taller than the line and centred on it, so it overflows
-     roughly 28px either side (half its height) — this leaves the credit text
-     below clear of it rather than measuring from the line itself. */
-  margin-bottom: 52px;
+  margin-bottom: 96px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -174,11 +170,10 @@ body {
     margin-bottom: 0;
   }
 
-  /* No rule between the pitch and credit at this width — see .placer-landing-divider. */
+  /* No gap to hold open between the pitch and credit at this width. */
   .placer-landing-divider {
     height: 0;
     margin-bottom: 0;
-    background: none;
   }
 
   .placer-landing-funder {

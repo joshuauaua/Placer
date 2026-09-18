@@ -41,10 +41,9 @@ export function LandingPage({ t }) {
       <StreetFrame side="left" src={frameLeft} />
       <StreetFrame side="right" src={frameRight} />
 
-      {/* position:relative to lift the copy above the border behind it. The rule
-        * between the pitch and the credit moves to the foot of the copy on a
-        * phone (see index.css), so its colour is published as a custom property
-        * both sides can read. */}
+      {/* position:relative to lift the copy above the border behind it. On a
+        * phone a rule appears above the funder lockup instead (see index.css),
+        * so its colour is published as a custom property that side can read. */}
       <div style={{
         position: 'relative',
         margin: 'auto',
@@ -76,12 +75,11 @@ export function LandingPage({ t }) {
           shape inclusive, democratic public spaces.
         </p>
 
-        {/* The rule carries the separation the dropped heading used to provide,
-          * setting the credit line apart from the pitch above, and the feedback
-          * trigger sits on top of it rather than floating over a corner of the
-          * page. On a phone the rule (and the trigger riding it) drops, the
-          * credit reads on from the pitch as one block, and the trigger becomes
-          * a fixed bar across the foot of the screen instead (see index.css). */}
+        {/* The feedback trigger sits centred here, in the gap that separates
+          * the pitch from the credit, rather than floating over a corner of
+          * the page. On a phone that gap closes, the credit reads on from the
+          * pitch as one block, and the trigger becomes a fixed bar across the
+          * foot of the screen instead (see index.css). */}
         <div className="placer-landing-divider">
           <HaveYourSay t={t} />
         </div>
