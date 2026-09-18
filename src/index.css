@@ -141,9 +141,23 @@ body {
 }
 
 .placer-landing-credit {
-  border-top: 1px solid var(--placer-landing-line);
-  padding-top: 28px;
   margin-bottom: 48px;
+}
+
+/* Straddles the rule, centred, so the trigger reads as breaking the line
+ * rather than sitting beside it. Flex centring rather than absolute+transform,
+ * so the trigger can become `position: fixed` on a phone (see the media query
+ * below) without a transformed ancestor pulling it out of the viewport. */
+.placer-landing-divider {
+  height: 1px;
+  background: var(--placer-landing-line);
+  /* The trigger is taller than the line and centred on it, so it overflows
+     roughly 28px either side (half its height) — this leaves the credit text
+     below clear of it rather than measuring from the line itself. */
+  margin-bottom: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (max-width: 640px) {
@@ -157,9 +171,14 @@ body {
   }
 
   .placer-landing-credit {
-    border-top: none;
-    padding-top: 0;
     margin-bottom: 0;
+  }
+
+  /* No rule between the pitch and credit at this width — see .placer-landing-divider. */
+  .placer-landing-divider {
+    height: 0;
+    margin-bottom: 0;
+    background: none;
   }
 
   .placer-landing-funder {
@@ -171,28 +190,21 @@ body {
 
 /* PLACER — the landing page's feedback trigger.
  *
- * Two shapes. On a wide screen it is a circle parked off the top-right corner
- * with the label wrapped inside it. On a phone a circle that size would sit on
- * top of the page, so it becomes a bar across the foot of the screen instead,
+ * Two shapes. On a wide screen it is a pill centred on the rule between the
+ * pitch and the credit (see .placer-landing-divider). On a phone that rule is
+ * dropped and the trigger becomes a bar across the foot of the screen instead,
  * and .placer-feedback-spacer reserves the room it occupies so it covers nothing.
  *
  * The geometry lives here rather than inline because an inline style cannot be
  * overridden by a media query. Only the colours are set in the component.
- *
- * 64px matches the gap to the right edge, keeping the circle symmetrically
- * clear of the corner. Sitting at the top, it never overlaps the cookie
- * banner (see CookieBanner), which stays anchored to the bottom.
  */
 .placer-feedback-trigger {
-  position: fixed;
-  right: 64px;
-  top: 64px;
   z-index: 150;
-  width: 156px;
-  height: 156px;
+  width: auto;
+  height: 56px;
+  padding: 0 24px;
   border: none;
-  border-radius: 50%;
-  padding: 18px;
+  border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -211,27 +223,8 @@ body {
   transform: scale(1.06);
 }
 
-/* The turning part. A solid disc rotating is indistinguishable from a still one,
-   so the turn is carried by a dashed ring: its dashes are what you see move.
-   Reuses the placer-spin keyframes below. */
-.placer-feedback-ring {
-  position: absolute;
-  inset: 11px;
-  border-radius: 50%;
-  border-style: dashed;
-  border-width: 2px;
-  opacity: 0.5;
-  pointer-events: none;
-  transform-origin: 50% 50%;
-  animation: placer-spin 28s linear infinite;
-}
-
-.placer-feedback-label {
-  position: relative;
-}
-
 /* Room set aside at the foot of the page for the mobile bar. Nothing on desktop,
-   where the circle sits clear of the copy on its own. */
+   where the trigger sits clear of the copy on its own. */
 .placer-feedback-spacer {
   height: 0;
 }
@@ -240,20 +233,13 @@ body {
   /* A bar across the foot of the screen: full width, one line, and short enough
      to leave the page readable above it. 60px = the footer plus a 16px gap. */
   .placer-feedback-trigger {
+    position: fixed;
     left: 16px;
     right: 16px;
-    top: auto;
     bottom: calc(60px + var(--placer-consent-inset, 0px));
     width: auto;
-    height: 56px;
     padding: 0 20px;
-    border-radius: 999px;
     transition: bottom 0.2s ease, transform 0.2s ease;
-  }
-
-  /* The ring would crowd a single line of text at this size. */
-  .placer-feedback-ring {
-    display: none;
   }
 
   .placer-feedback-spacer {
@@ -261,12 +247,7 @@ body {
   }
 }
 
-/* A perpetual animation is exactly what this setting is for. */
 @media (prefers-reduced-motion: reduce) {
-  .placer-feedback-ring {
-    animation: none;
-  }
-
   .placer-feedback-trigger:hover,
   .placer-feedback-trigger:focus-visible {
     transform: none;
@@ -275,14 +256,14 @@ body {
 
 /* PLACER — the holding page's site menu (see HamburgerMenu.jsx).
  *
- * Parked in the top-left corner, clear of the feedback trigger opposite it.
- * The panel is a small dropdown rather than a full-screen dialog, positioned
- * relative to the trigger so it never needs its own fixed coordinates.
+ * Parked in the top-right corner. The panel is a small dropdown rather than a
+ * full-screen dialog, positioned relative to the trigger so it never needs
+ * its own fixed coordinates.
  */
 .placer-menu-root {
   position: fixed;
   top: 24px;
-  left: 24px;
+  right: 24px;
   z-index: 160;
 }
 
@@ -305,7 +286,7 @@ body {
 .placer-menu-panel {
   position: absolute;
   top: calc(100% + 8px);
-  left: 0;
+  right: 0;
   min-width: 168px;
   border-radius: 12px;
   padding: 6px;

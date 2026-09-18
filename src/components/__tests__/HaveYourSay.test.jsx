@@ -43,21 +43,12 @@ describe('HaveYourSay', () => {
     expect(trigger().style.width).toBe('');
   });
 
-  it('turns a ring, not the label, and grows on hover', () => {
+  it('grows on hover, via a stylesheet rule rather than an inline style', () => {
     render(<HaveYourSay t={THEME} />);
-
-    // The moving part is the ring: a turning disc would look no different from a
-    // still one, and the label has to stay upright to be read.
-    const ring = trigger().querySelector('.placer-feedback-ring');
-    expect(ring).toBeInTheDocument();
-    expect(ring).toHaveAttribute('aria-hidden', 'true');
-
-    // The label is a sibling of the ring, so nothing turns it.
-    expect(trigger()).toHaveTextContent(LABEL);
-    expect(ring).not.toHaveTextContent(LABEL);
 
     // The hover scale is a stylesheet rule; the class is what wires it up.
     expect(trigger()).toHaveClass('placer-feedback-trigger');
+    expect(trigger().style.transform).toBe('');
   });
 
   it('carries its label as text, in the colours the component sets', () => {

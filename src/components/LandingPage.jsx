@@ -77,9 +77,15 @@ export function LandingPage({ t }) {
         </p>
 
         {/* The rule carries the separation the dropped heading used to provide,
-          * setting the credit line apart from the pitch above. The two partners
-          * are links rather than logos. On a phone the credit reads on from the
-          * pitch as one block instead, and the rule sits under it. */}
+          * setting the credit line apart from the pitch above, and the feedback
+          * trigger sits on top of it rather than floating over a corner of the
+          * page. On a phone the rule (and the trigger riding it) drops, the
+          * credit reads on from the pitch as one block, and the trigger becomes
+          * a fixed bar across the foot of the screen instead (see index.css). */}
+        <div className="placer-landing-divider">
+          <HaveYourSay t={t} />
+        </div>
+
         <p className="placer-landing-credit" style={{ fontSize: 15.5, color: t.inkDim, lineHeight: 1.7 }}>
           PLACER is developed by <ExternalLink t={t} href="https://stpln.se/">STPLN</ExternalLink>{' '}
           and <ExternalLink t={t} href="https://ankaraaks.com/">Ankara Aks</ExternalLink>, funded
@@ -97,12 +103,9 @@ export function LandingPage({ t }) {
 
         {/* On a phone the trigger is a bar across the foot of the screen, so the
           * column ends with the room it takes up and nothing sits under it.
-          * Empty on a wide screen, where the trigger is a circle off to the side. */}
+          * Empty on a wide screen, where the trigger rides the rule above instead. */}
         <div className="placer-feedback-spacer" aria-hidden="true" />
       </div>
-
-      {/* Fixed to the viewport, so it sits outside the scrolling column. */}
-      <HaveYourSay t={t} />
     </div>
   );
 }

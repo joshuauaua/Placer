@@ -1,8 +1,9 @@
 /* PLACER — "Have your say": a floating trigger, and the survey it opens.
  *
  * The landing page is a holding page, so the survey is offered rather than
- * imposed: a button parked in the top right corner, and the same flow that
- * /survey renders lifted into a dialog over the page instead of replacing it.
+ * imposed: a button straddling the rule between the pitch and the credit
+ * (see LandingPage), and the same flow that /survey renders lifted into a
+ * dialog over the page instead of replacing it.
  */
 
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
@@ -111,18 +112,11 @@ export function HaveYourSay({ t }) {
         ref={triggerRef}
         className="placer-feedback-trigger"
         onClick={() => setOpen(true)}
-        // Shape, place and type live in index.css: a phone gets a bar instead of
-        // a circle, and a media query cannot override an inline style.
+        // Shape and place live in index.css: a phone gets a bar instead of a
+        // pill, and a media query cannot override an inline style.
         style={{ background: TRIGGER_BG, color: TRIGGER_FG, boxShadow: t.shadow }}
       >
-        {/* Decoration: the moving part. Nothing to announce, nothing to click. */}
-        <span
-          aria-hidden="true"
-          className="placer-feedback-ring"
-          style={{ borderColor: TRIGGER_FG }}
-        />
-
-        <span className="placer-feedback-label">{LABEL}</span>
+        {LABEL}
       </button>
 
       {open && (
