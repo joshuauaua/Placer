@@ -1,6 +1,6 @@
 /* PLACER — the Sandbox register.
  *
- * One entry per experiment. Adding a fourth means adding one object here and one
+ * One entry per experiment. Adding another means adding one object here and one
  * component under src/components/sandbox — the gallery, the routing and the copyable
  * link all read from this list.
  *
@@ -24,6 +24,7 @@ import { DesireLines } from '../components/sandbox/DesireLines';
 import { FifteenMinute } from '../components/sandbox/FifteenMinute';
 import { SiteMapping } from '../components/sandbox/SiteMapping';
 import { SocialSpaceSurvey } from '../components/sandbox/SocialSpaceSurvey';
+import { StationaryActivityMap } from '../components/sandbox/StationaryActivityMap';
 import { StreetMixer } from '../components/sandbox/StreetMixer';
 import { emptyBallot, normalise } from '../lib/budgetBallot';
 
@@ -116,6 +117,17 @@ export const EXPERIMENTS = [
     icon: 'pin',
     submittedBy: 'PLACER',
     component: SiteMapping,
+  },
+  {
+    id: 'stationary-activity-mapping',
+    name: 'Stationary Activity Mapping',
+    tagline: 'Posture and activity, one person at a time, plotted on the map.',
+    blurb: 'A map-based field observation tool. Record each person as a posture and the activity or activities they are doing while holding it, and watch the map fill with points and the tally table take shape. The map is the canvas; the recording card floats over its left half.',
+    hint: 'click the map to pick a spot, then pick a posture and activities, then record.',
+    color: '#D6452F',
+    icon: 'grid',
+    submittedBy: 'PLACER',
+    component: StationaryActivityMap,
   },
 ];
 
