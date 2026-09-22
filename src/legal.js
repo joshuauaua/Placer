@@ -1,13 +1,16 @@
-/* PLACER — details shared by the legal pages (privacy, GDPR) */
+/* PLACER — details shared by the legal page (terms, privacy, GDPR) */
 
-// TODO: replace with the real operating entity before publishing these pages.
+// TODO: replace with the real operating entity before publishing this page.
 export const OPERATOR = {
   name: '[Organisation name]',
   address: '[Registered address, country]',
   email: 'privacy@placer.example',
 };
 
-// Shown as "Last updated" on every legal page.
+// TODO: replace with the jurisdiction whose law should govern the Terms of Service.
+export const GOVERNING_LAW = '[Governing law / jurisdiction]';
+
+// Shown as "Last updated" at the top of the legal page.
 export const LAST_UPDATED = '27 August 2026';
 
 // Where map and Street View imagery comes from.

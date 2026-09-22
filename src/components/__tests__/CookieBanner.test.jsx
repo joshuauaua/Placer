@@ -56,9 +56,9 @@ describe('CookieBanner', () => {
     expect(posthog.init).not.toHaveBeenCalled();
   });
 
-  it('links to the privacy policy', () => {
+  it('links to the terms and privacy page', () => {
     renderBanner();
-    expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy');
+    expect(screen.getByRole('link', { name: 'Terms and Privacy' })).toHaveAttribute('href', '/terms-and-privacy');
   });
 
   it('stays hidden once a decision is stored', () => {

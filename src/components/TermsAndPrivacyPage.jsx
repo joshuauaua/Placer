@@ -1,9 +1,10 @@
-/* PLACER — GDPR / data rights */
+/* PLACER — Terms and Privacy (Terms of Service, Privacy Policy and GDPR rights,
+ * combined onto one page rather than split across three). */
 
 import { useState } from 'react';
-import { LegalPage, Section, P, Bullets, Callout, Table, ExternalLink, PageLink } from './LegalLayout';
+import { LegalPage, Chapter, Section, P, Bullets, Callout, Table, ExternalLink } from './LegalLayout';
 import { Btn } from './UI';
-import { OPERATOR, GOOGLE_PRIVACY_URL, POSTHOG_PRIVACY_URL, EDPB_AUTHORITIES_URL } from '../legal';
+import { OPERATOR, GOVERNING_LAW, GOOGLE_PRIVACY_URL, POSTHOG_PRIVACY_URL, EDPB_AUTHORITIES_URL } from '../legal';
 import { exportAllData, eraseAllData } from '../services/api';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
 import posthog from 'posthog-js';
@@ -144,13 +145,237 @@ function ConsentControls({ t }) {
   );
 }
 
-export function GdprPage({ t, onNavigate }) {
+export function TermsAndPrivacyPage({ t }) {
   return (
     <LegalPage
       t={t}
-      title="GDPR"
-      intro="Your rights under the EU General Data Protection Regulation and the UK GDPR, and how PLACER meets them."
+      title="Terms and Privacy"
+      intro="The rules for using PLACER, how it handles your information, and your rights under the GDPR — in one place instead of three."
     >
+      <Chapter t={t} title="Terms of Service" />
+
+      <Callout t={t} icon="check" title="The short version">
+        Use PLACER like a decent neighbour: nothing illegal, nothing meant to break the map or
+        the tool for anyone else. PLACER has no accounts and keeps your work in your own
+        browser, so there is nothing to sign up for and nothing of yours for us to hold or take
+        away.
+      </Callout>
+
+      <Section t={t} title="Agreement to these terms">
+        <P t={t}>
+          These terms govern your use of PLACER, the web application operated by {OPERATOR.name}.
+          By opening PLACER, exploring the map, building on the canvas or answering the survey,
+          you agree to them. If you do not agree, do not use PLACER.
+        </P>
+        <P t={t}>
+          The Privacy Policy and GDPR sections below are part of these terms, not a separate
+          document — they describe what PLACER does with information, which is itself something
+          you are agreeing to by using it.
+        </P>
+      </Section>
+
+      <Section t={t} title="Who can use PLACER">
+        <P t={t}>
+          PLACER is intended for general community use. It is not directed at children under 13,
+          and by using it you confirm you are 13 or older. See Children, under the Privacy Policy
+          below, for how this is handled in practice.
+        </P>
+      </Section>
+
+      <Section t={t} title="Acceptable use">
+        <P t={t}>
+          You agree not to, and not to help anyone else:
+        </P>
+        <Bullets t={t} items={[
+          'Build or share anything illegal, infringing, defamatory or harassing using PLACER.',
+          'Scrape, mine or bulk-download the map, its assets or survey data.',
+          'Probe, disable or bypass PLACER’s security or rate limits.',
+          'Interfere with the map, Street View integration, or another visitor’s ability to use them.',
+          'Automate requests to PLACER or to the third-party services it relies on.',
+        ]} />
+        <P t={t}>
+          We can restrict access for anyone who breaks these rules.
+        </P>
+      </Section>
+
+      <Section t={t} title="Content you create">
+        <P t={t}>
+          Ideas you build in PLACER are yours. Since PLACER stores them only in your own
+          browser rather than on our server, we hold no copy and claim no rights over them. You
+          are responsible for what you build, and for not using PLACER to create or store anything
+          illegal or infringing.
+        </P>
+      </Section>
+
+      <Section t={t} title="Third-party services">
+        <P t={t}>
+          PLACER shows map tiles and Street View imagery from Google Maps Platform, subject to
+          Google&rsquo;s own terms, and sends usage analytics to PostHog, if you accept them,
+          subject to PostHog&rsquo;s own terms. We are not responsible for the availability,
+          accuracy or content of either.
+        </P>
+      </Section>
+
+      <Section t={t} title="Disclaimers">
+        <P t={t}>
+          PLACER is provided &ldquo;as is&rdquo;, without warranty of any kind. It is a tool for
+          sketching a proposal for a public space, not professional planning, engineering or
+          legal advice, and nothing on PLACER should be treated as such. We do not guarantee
+          PLACER, or the third-party map and imagery services it relies on, will be available,
+          uninterrupted, or free of errors.
+        </P>
+      </Section>
+
+      <Section t={t} title="Limitation of liability">
+        <P t={t}>
+          To the extent the law allows, {OPERATOR.name} is not liable for indirect, incidental or
+          consequential damages arising from your use of PLACER. Nothing in these terms limits
+          liability that cannot lawfully be limited.
+        </P>
+      </Section>
+
+      <Section t={t} title="Termination">
+        <P t={t}>
+          You can stop using PLACER at any time — there is no account to close, and clearing your
+          browser&rsquo;s site data removes everything PLACER has stored. We can restrict access
+          for anyone who breaks these terms.
+        </P>
+      </Section>
+
+      <Section t={t} title="Governing law">
+        <P t={t}>
+          These terms are governed by the laws of {GOVERNING_LAW}, without regard to its conflict
+          of law principles.
+        </P>
+      </Section>
+
+      <Section t={t} title="Changes to these terms">
+        <P t={t}>
+          If we change these terms in a way that meaningfully affects your rights, we will update
+          the date at the top of this page and, where the change is significant, announce it in
+          the app. Continuing to use PLACER after a change takes effect means you accept it.
+        </P>
+      </Section>
+
+      <Chapter t={t} title="Privacy Policy" />
+
+      <Callout t={t} icon="check" title="The short version">
+        PLACER has no user accounts. The ideas you build stay in your own browser, on the device
+        you built them on. Two things do leave your device: the map and Street View imagery
+        request PLACER makes to Google on your behalf, and &mdash; only if you accept the cookie
+        banner &mdash; usage analytics sent to PostHog. Reject it and nothing is measured.
+      </Callout>
+
+      <Section t={t} title="Who this policy applies to">
+        <P t={t}>
+          This policy covers the PLACER web application, operated by {OPERATOR.name}. It applies
+          to everyone who uses PLACER, whether or not you save anything.
+        </P>
+      </Section>
+
+      <Section t={t} title="Information PLACER holds">
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Ideas you create.</strong> When you save an
+          imagination, PLACER stores the location you chose, the assets you placed and their
+          positions, any title or description you wrote, plus comments and upvotes. This is
+          written to your browser&rsquo;s local storage, under keys beginning{' '}
+          <code className="placer-mono" style={{ fontSize: 13, color: t.ink }}>placemaking_</code>.
+          It is not uploaded to a server.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Survey answers.</strong> If you fill in the survey,
+          your answers are held in the page while you are answering and are discarded when you
+          close or reload it. Nothing is submitted anywhere.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Imagery you work with.</strong> Street View frames
+          are analysed in your browser to detect the lines and surfaces of the scene. The
+          image processing runs locally on your device; the frames are not sent to us.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Usage analytics, if you accept them.</strong> PLACER can
+          send usage data to PostHog, an analytics provider, to see how the app is actually used
+          and where it breaks. That covers the features you open, the events PLACER emits (such as
+          posting an imagination), a recording of your session in the app, errors it hits, and the
+          device, browser and IP-derived approximate location behind them. It is off until you
+          accept: PLACER does not contact PostHog at all &mdash; no request, no cookie, no
+          recording &mdash; until you do, and rejecting the banner keeps it that way. Analytics
+          never carry your name or email address, because PLACER has neither.
+        </P>
+        <P t={t}>
+          You can change that answer whenever you like, and see what is currently set, in the
+          analytics controls further down this page, under GDPR.{' '}
+          <ExternalLink t={t} href={POSTHOG_PRIVACY_URL}>Read PostHog&rsquo;s privacy policy</ExternalLink>
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>What PLACER does not collect.</strong>
+        </P>
+        <Bullets t={t} items={[
+          'No account, name, email address or password — there is nothing to sign up for.',
+          'No advertising, no ad cookies, no data sold or shared with brokers.',
+          'No analytics at all unless you accept them, and none for anyone who rejects.',
+          'No server-side log of the places you look at, because there is no PLACER server.',
+        ]} />
+      </Section>
+
+      <Section t={t} title="Google Maps and Street View">
+        <P t={t}>
+          PLACER loads map tiles and Street View imagery directly from Google Maps Platform. To
+          serve those images, Google receives the coordinates you are viewing, your IP address
+          and standard request details such as your browser and operating system. That
+          processing is governed by Google&rsquo;s own privacy policy, not this one.
+        </P>
+        <P t={t}>
+          <ExternalLink t={t} href={GOOGLE_PRIVACY_URL}>Read Google&rsquo;s privacy policy</ExternalLink>
+        </P>
+      </Section>
+
+      <Section t={t} title="How long it is kept">
+        <P t={t}>
+          Saved ideas stay in your browser until you delete them or clear your browsing data
+          for this site — PLACER sets no expiry. Because storage is per-browser and per-device,
+          your work does not follow you to another computer, and anyone else using the same
+          browser profile can see it.
+        </P>
+        <P t={t}>
+          Analytics you have consented to are held for as long as our PostHog project is
+          configured to keep them, and withdrawing consent stops anything further being collected.
+        </P>
+      </Section>
+
+      <Section t={t} title="Your choices">
+        <Bullets t={t} items={[
+          'Accept or reject analytics on the banner, and change that answer later further down this page, under GDPR.',
+          'Delete a single idea from the dashboard where it is listed.',
+          'Download everything PLACER holds on this device, or erase all of it at once, further down this page, under GDPR.',
+          'Clear site data in your browser settings to remove everything PLACER has stored, including the seeded asset library.',
+          'Use a private or incognito window if you would rather nothing persisted at all.',
+        ]} />
+        <P t={t}>
+          If you are in the EU or UK, the GDPR section below sets out your legal rights and how
+          to exercise them.
+        </P>
+      </Section>
+
+      <Section t={t} title="Children">
+        <P t={t}>
+          PLACER is intended for general community use and is not directed at children under 13.
+          We do not knowingly collect information from them — and, as above, PLACER collects no
+          identifying information from anyone.
+        </P>
+      </Section>
+
+      <Section t={t} title="Changes to this policy">
+        <P t={t}>
+          If PLACER starts storing ideas on a server, adds accounts, or sends data anywhere it does
+          not already, this policy will be updated before that happens and the date at the top of
+          the page will change. Anything that would widen what we collect will be asked for, not
+          assumed. Significant changes will be announced in the app.
+        </P>
+      </Section>
+
+      <Chapter t={t} title="GDPR" />
+
       <Callout t={t} icon="check" title="Where your data actually sits">
         The ideas you make stay with you: assets, comments and upvotes are written to your
         browser&rsquo;s local storage, not to a PLACER server, so most of what follows is something
@@ -281,15 +506,15 @@ export function GdprPage({ t, onNavigate }) {
         </P>
       </Section>
 
-      <Section t={t} title="Related">
+      <Section t={t} title="Contact">
         <P t={t}>
-          The{' '}
-          <PageLink t={t} onClick={() => onNavigate('privacy')}>Privacy Policy</PageLink>{' '}
-          describes in plain language what PLACER does with information.
+          Questions about these terms, this policy, or your data can go to{' '}
+          <ExternalLink t={t} href={`mailto:${OPERATOR.email}`}>{OPERATOR.email}</ExternalLink>,
+          or by post to {OPERATOR.name}, {OPERATOR.address}.
         </P>
       </Section>
     </LegalPage>
   );
 }
 
-export default GdprPage;
+export default TermsAndPrivacyPage;

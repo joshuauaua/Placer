@@ -18,8 +18,7 @@ const MapContainer = lazy(() => import('./components/MapContainer'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
 const ContactPage = lazy(() => import('./components/ContactPage'));
 const ResourcesPage = lazy(() => import('./components/ResourcesPage'));
-const PrivacyPage = lazy(() => import('./components/PrivacyPage'));
-const GdprPage = lazy(() => import('./components/GdprPage'));
+const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const DescribePage = lazy(() => import('./components/DescribePage'));
 const PostPage = lazy(() => import('./components/PostPage'));
 const AdminImaginations = lazy(() => import('./components/AdminImaginations'));
@@ -59,7 +58,7 @@ function FooterLink({ t, active, onClick, children }) {
 
 function MainApp({ initialView = 'welcome' }) {
   const t = THEME;
-  // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'contact', 'resources', 'sandbox', 'privacy', 'gdpr'
+  // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'contact', 'resources', 'sandbox', 'terms'
   const [currentView, setCurrentView] = useState(initialView);
   const [capturedView, setCapturedView] = useState(null);
   // The imagination being built. Held here rather than in StreetScreen so that
@@ -80,7 +79,7 @@ function MainApp({ initialView = 'welcome' }) {
   // `show` keeps the two in step: going to the Sandbox writes the URL, and leaving it
   // writes the URL back.
   //
-  // It is deliberately not its own <Route> with an initialView, the way /privacy is.
+  // It is deliberately not its own <Route> with an initialView, the way /terms-and-privacy is.
   // Switch reconciles two sibling Routes as the same component instance, so MainApp is
   // never remounted when the matched Route changes and an initialView prop only ever
   // applies on first mount — which works for a URL that is only an entry point, and
@@ -265,15 +264,9 @@ function MainApp({ initialView = 'welcome' }) {
           </Suspense>
         )}
 
-        {view === 'privacy' && (
+        {view === 'terms' && (
           <Suspense fallback={<LoadingFallback />}>
-            <PrivacyPage t={t} onNavigate={show} />
-          </Suspense>
-        )}
-
-        {view === 'gdpr' && (
-          <Suspense fallback={<LoadingFallback />}>
-            <GdprPage t={t} onNavigate={show} />
+            <TermsAndPrivacyPage t={t} />
           </Suspense>
         )}
       </div>
@@ -286,11 +279,8 @@ function MainApp({ initialView = 'welcome' }) {
           info@plcr.org
         </a>
         <div style={{ flex: 1 }} />
-        <FooterLink t={t} active={view === 'privacy'} onClick={() => show('privacy')}>
-          Privacy Policy
-        </FooterLink>
-        <FooterLink t={t} active={view === 'gdpr'} onClick={() => show('gdpr')}>
-          GDPR
+        <FooterLink t={t} active={view === 'terms'} onClick={() => show('terms')}>
+          Terms and Privacy
         </FooterLink>
       </div>
     </div>
@@ -330,8 +320,7 @@ function App() {
           <Route path="/survey"><Suspense fallback={<LoadingFallback />}><SurveyPage t={t} /></Suspense></Route>
           <Route path="/admin/imaginations"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminImaginations t={t} /></AdminGate></Suspense></Route>
           <Route path="/admin"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminDashboard t={t} /></AdminGate></Suspense></Route>
-          <Route path="/privacy"><MainApp initialView="privacy" /></Route>
-          <Route path="/gdpr"><MainApp initialView="gdpr" /></Route>
+          <Route path="/terms-and-privacy"><MainApp initialView="terms" /></Route>
           {/* Everything else, /sandbox and /sandbox/<experiment> included — MainApp
               reads those off the location itself. */}
           <Route><MainApp /></Route>

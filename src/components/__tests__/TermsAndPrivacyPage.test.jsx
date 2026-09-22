@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import App from '../../App';
-import { GdprPage } from '../GdprPage';
+import { TermsAndPrivacyPage } from '../TermsAndPrivacyPage';
 import { THEME } from '../../theme';
 
 function renderAt(path) {
@@ -15,46 +15,33 @@ function renderAt(path) {
   );
 }
 
-describe('legal pages', () => {
+describe('terms and privacy page', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     localStorage.clear();
   });
 
-  it('renders PrivacyPage at /privacy', async () => {
-    renderAt('/privacy');
+  it('renders at /terms-and-privacy', async () => {
+    renderAt('/terms-and-privacy');
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Privacy Policy' })
+      await screen.findByRole('heading', { level: 1, name: 'Terms and Privacy' })
     ).toBeInTheDocument();
-    expect(screen.getByText('The short version')).toBeInTheDocument();
+    expect(screen.getByText('Terms of Service')).toBeInTheDocument();
+    expect(screen.getByText('Privacy Policy')).toBeInTheDocument();
+    expect(screen.getByText('GDPR')).toBeInTheDocument();
   });
 
-  it('renders GdprPage at /gdpr', async () => {
-    renderAt('/gdpr');
-    expect(await screen.findByRole('heading', { level: 1, name: 'GDPR' })).toBeInTheDocument();
-    expect(screen.getByText('Data controller')).toBeInTheDocument();
-  });
-
-  it('reaches both pages from the footer links', async () => {
+  it('reaches the page from the footer link', async () => {
     renderAt('/');
 
-    fireEvent.click(screen.getByRole('link', { name: 'Privacy Policy' }));
-    expect(await screen.findByText('Who this policy applies to')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('link', { name: 'GDPR' }));
-    expect(await screen.findByText('Your rights')).toBeInTheDocument();
-  });
-
-  it('cross-links from the privacy page to the GDPR page', async () => {
-    renderAt('/privacy');
-    await screen.findByRole('heading', { level: 1, name: 'Privacy Policy' });
-
-    fireEvent.click(screen.getByRole('link', { name: 'GDPR page' }));
-    expect(await screen.findByText('International transfers')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: 'Terms and Privacy' }));
+    expect(await screen.findByText('Agreement to these terms')).toBeInTheDocument();
+    expect(screen.getByText('Who this policy applies to')).toBeInTheDocument();
+    expect(screen.getByText('Your rights')).toBeInTheDocument();
   });
 });
 
-describe('GdprPage data controls', () => {
+describe('TermsAndPrivacyPage data controls', () => {
   beforeEach(() => {
     localStorage.setItem('placemaking_imaginations', JSON.stringify([{ id: 'img-1' }]));
   });
@@ -72,7 +59,7 @@ describe('GdprPage data controls', () => {
         expect(decodeURIComponent(this.href)).toContain('placemaking_imaginations');
       });
 
-    render(<GdprPage t={THEME} onNavigate={() => {}} />);
+    render(<TermsAndPrivacyPage t={THEME} />);
     fireEvent.click(screen.getByRole('button', { name: /download my data/i }));
 
     await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(1));
@@ -80,7 +67,7 @@ describe('GdprPage data controls', () => {
   });
 
   it('records an analytics decision and lets it be withdrawn again', async () => {
-    render(<GdprPage t={THEME} onNavigate={() => {}} />);
+    render(<TermsAndPrivacyPage t={THEME} />);
 
     expect(screen.getByText(/no choice recorded yet/i)).toBeInTheDocument();
 
@@ -99,7 +86,7 @@ describe('GdprPage data controls', () => {
   });
 
   it('requires a second click before erasing, then clears PLACER storage', async () => {
-    render(<GdprPage t={THEME} onNavigate={() => {}} />);
+    render(<TermsAndPrivacyPage t={THEME} />);
 
     fireEvent.click(screen.getByRole('button', { name: /erase my data/i }));
     expect(await screen.findByText(/press erase again to confirm/i)).toBeInTheDocument();
