@@ -31,7 +31,7 @@ import * as roomService from '../../services/rooms';
 /** How long to sit on a change before publishing it. A slider fires far too often. */
 const PUBLISH_DELAY = 500;
 
-export function useRoom({ experiment, roomId, displayName, onOpened, service = roomService }) {
+export function useRoom({ experiment, roomId, displayName, onOpened, projectId = null, service = roomService }) {
   const capable = Boolean(experiment?.room) && service.isSupabaseConfigured();
 
   const [status, setStatus] = useState('none');
@@ -151,7 +151,7 @@ export function useRoom({ experiment, roomId, displayName, onOpened, service = r
     setStatus('opening');
     setError(null);
     try {
-      const room = await service.createRoom(experiment.id);
+      const room = await service.createRoom(experiment.id, projectId);
       rememberHostedRoom(room.id, { pin: room.pin, token: room.facilitatorToken });
       setPin(room.pin);
       setIsHost(true);
@@ -163,7 +163,7 @@ export function useRoom({ experiment, roomId, displayName, onOpened, service = r
       setStatus('error');
       return null;
     }
-  }, [experiment?.id, onOpened, service]);
+  }, [experiment?.id, onOpened, projectId, service]);
 
   /**
    * Publish this browser's state, no more than once every PUBLISH_DELAY. The last

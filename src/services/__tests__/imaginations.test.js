@@ -17,7 +17,9 @@ import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 const order = vi.fn();
 const maybeSingle = vi.fn();
 const single = vi.fn();
-const eqSelect = vi.fn(() => ({ maybeSingle }));
+// eq() after select() serves two shapes: readImaginationById chains .maybeSingle(),
+// readImaginationsByProject chains .order(...) — both live on what it returns.
+const eqSelect = vi.fn(() => ({ maybeSingle, order }));
 const select = vi.fn(() => ({ order, eq: eqSelect }));
 const selectAfterInsert = vi.fn(() => ({ single }));
 const insert = vi.fn(() => ({ select: selectAfterInsert }));
@@ -155,6 +157,13 @@ describe('with no project configured', () => {
     expect(deleteLocal).toHaveBeenCalledWith('local-1');
     expect(count).toBe(4);
   });
+
+  it('has no project\'s imaginations to read, since a project cannot exist here either', async () => {
+    await load({ configured: false });
+
+    await expect(imaginations.readImaginationsByProject('proj-1')).resolves.toEqual([]);
+    expect(createClient).not.toHaveBeenCalled();
+  });
 });
 
 describe('reading the community', () => {
@@ -171,6 +180,17 @@ describe('reading the community', () => {
 
     expect(from).toHaveBeenCalledWith('imaginations');
     expect(order).toHaveBeenCalledWith('created_at', { ascending: false });
+  });
+
+  it('reads a project\'s imaginations, newest first, needing no account', async () => {
+    await load();
+    order.mockResolvedValue({ data: [ROW], error: null });
+
+    const all = await imaginations.readImaginationsByProject('proj-1');
+
+    expect(eqSelect).toHaveBeenCalledWith('project_id', 'proj-1');
+    expect(order).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(all[0]).toMatchObject({ id: 'img-1', shared: true });
   });
 
   it('names its columns rather than asking for everything', async () => {
@@ -332,6 +352,22 @@ describe('posting', () => {
     expect(row).not.toHaveProperty('created_at');
     expect(row).not.toHaveProperty('updated_at');
     expect(row).not.toHaveProperty('upvotes');
+  });
+
+  it('posts with no project attached by default', async () => {
+    await load();
+
+    await imaginations.postImagination(DRAFT);
+
+    expect(insert.mock.calls[0][0]).toMatchObject({ project_id: null });
+  });
+
+  it('attaches a project when one is given', async () => {
+    await load();
+
+    await imaginations.postImagination({ ...DRAFT, projectId: 'proj-1' });
+
+    expect(insert.mock.calls[0][0]).toMatchObject({ project_id: 'proj-1' });
   });
 
   it('turns an unchosen category into null, which is what the column accepts', async () => {

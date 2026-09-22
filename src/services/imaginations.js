@@ -58,7 +58,7 @@ async function client() {
 // Every column, named rather than '*', so that adding one to the table does not silently
 // change what the app downloads on every read of the map.
 const COLUMNS = 'id, user_id, author_name, title, category, blurb, loc, lat, lng, source,'
-  + ' pov, fov, canvas_assets, preview_path, upvotes, created_at, updated_at';
+  + ' pov, fov, canvas_assets, preview_path, upvotes, project_id, created_at, updated_at';
 
 /**
  * The mime type and file extension of a preview, or null for anything that is not one.
@@ -110,6 +110,8 @@ function fromRow(supabase, row) {
     canvasAssets: row.canvas_assets ?? [],
     preview: publicPreviewUrl(supabase, row.preview_path),
     upvotes: row.upvotes ?? 0,
+    // Null for the ordinary case — an imagination posted without a project open.
+    projectId: row.project_id ?? null,
     // No comments table yet. An empty array rather than undefined, so the shape matches
     // what saveImagination writes locally and nothing downstream has to special-case it.
     comments: [],
@@ -195,7 +197,7 @@ export async function postImagination(imagination) {
 
   const supabase = await client();
   const { userId, author, title, cat, blurb, loc, position, source, pov, fov,
-    canvasAssets = [], preview } = imagination;
+    canvasAssets = [], preview, projectId = null } = imagination;
 
   if (!userId) throw new Error('Posting an imagination needs an account.');
 
@@ -234,12 +236,32 @@ export async function postImagination(imagination) {
       fov: fov ?? null,
       canvas_assets: canvasAssets,
       preview_path: previewPath,
+      project_id: projectId,
     })
     .select(COLUMNS)
     .single();
 
   if (error) throw new Error(`Could not post your imagination: ${error.message}`);
   return fromRow(supabase, data);
+}
+
+/**
+ * Every imagination posted to a project, newest first. Public — the same read
+ * policy as readImaginations, just filtered — so this needs no account. Empty
+ * without a Supabase project, the same as a project itself not existing there.
+ */
+export async function readImaginationsByProject(projectId) {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(IMAGINATIONS_TABLE)
+    .select(COLUMNS)
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(`Could not load this project's imaginations: ${error.message}`);
+  return (data ?? []).map((row) => fromRow(supabase, row));
 }
 
 /**

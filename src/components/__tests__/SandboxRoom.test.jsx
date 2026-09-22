@@ -103,7 +103,20 @@ describe('opening a room', () => {
     await waitFor(() => {
       expect(location.history.at(-1)).toBe('/sandbox/budget-ballot?room=room-1');
     });
-    expect(createRoom).toHaveBeenCalledWith('budget-ballot');
+    expect(createRoom).toHaveBeenCalledWith('budget-ballot', null);
+  });
+
+  it('attaches the room to a project named in the URL', async () => {
+    createRoom.mockResolvedValue({
+      id: 'room-1', pin: '839201', facilitatorToken: 'facilitator-1', expiresAt: hours(2),
+    });
+    readRoom.mockResolvedValue(openRoom());
+
+    renderAt('/sandbox/budget-ballot', 'project=proj-1');
+
+    fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
+
+    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('budget-ballot', 'proj-1'));
   });
 });
 

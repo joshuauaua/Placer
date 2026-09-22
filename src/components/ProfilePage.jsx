@@ -5,6 +5,7 @@ import { Icon } from './Icon';
 import { Avatar, Btn, CatTag, Vote } from './UI';
 import { postsAreShared, readImaginations, readLocalImaginations } from '../services/imaginations';
 import { FOLLOW_TYPES, readFollows, unfollow } from '../services/follows';
+import { isSupabaseConfigured as projectsAvailable, readMyProjects } from '../services/projects';
 
 // What each of the four followed sections is called and what it says when there is
 // nothing in it. 'imagination' is resolved against the imaginations already loaded
@@ -18,7 +19,7 @@ const FOLLOWED_SECTIONS = [
   { type: 'user', title: 'Followed users',
     empty: 'Nothing yet — there is nowhere in PLACER to follow another person from yet.' },
   { type: 'project', title: 'Followed projects',
-    empty: 'Nothing yet — PLACER has no project pages to follow from yet.' },
+    empty: 'Nothing yet — follow a project from its public page to keep track of it here.' },
   { type: 'city', title: 'Followed cities',
     empty: 'Nothing yet — PLACER has no city pages to follow from yet.' },
 ];
@@ -113,6 +114,22 @@ function FollowedRow({ t, item, onUnfollow }) {
   );
 }
 
+function ProjectCard({ t, project, onOpen }) {
+  return (
+    <button onClick={() => onOpen(project.id)} style={{ textAlign: 'left', padding: 20,
+      background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, boxShadow: t.shadow,
+      cursor: 'pointer', fontFamily: 'var(--placer-font)' }}>
+      <h3 style={{ fontSize: 17, fontWeight: 800, color: t.ink, marginBottom: 6 }}>{project.name}</h3>
+      {project.description && (
+        <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.5,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {project.description}
+        </p>
+      )}
+    </button>
+  );
+}
+
 function FollowedSection({ t, title, empty, items, status, render }) {
   return (
     <>
@@ -137,7 +154,7 @@ function FollowedSection({ t, title, empty, items, status, render }) {
   );
 }
 
-export function ProfilePage({ t, profile, accountId = null, onNavigate }) {
+export function ProfilePage({ t, profile, accountId = null, onNavigate, onNewProject, onOpenProjectDashboard }) {
   const [posted, setPosted] = useState([]);
   // Imaginations still only in this browser, kept apart from the posted ones because they
   // are a different thing: nobody else can see them.
@@ -150,6 +167,12 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate }) {
   const [followedByType, setFollowedByType] = useState(() =>
     Object.fromEntries(FOLLOW_TYPES.map((type) => [type, []])));
   const [followedStatus, setFollowedStatus] = useState('loading');
+
+  // Projects need an account and a Supabase project either way — see
+  // services/projects.js's header — so a checkout with neither shows the section
+  // as simply empty rather than spending a request finding that out.
+  const [myProjects, setMyProjects] = useState([]);
+  const [projectsStatus, setProjectsStatus] = useState('loading');
 
   const shared = postsAreShared();
 
@@ -194,6 +217,30 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate }) {
 
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!projectsAvailable() || !accountId) {
+      setMyProjects([]);
+      setProjectsStatus('ready');
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    readMyProjects(accountId)
+      .then((found) => {
+        if (cancelled) return;
+        setMyProjects(found);
+        setProjectsStatus('ready');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('Could not load your projects:', err);
+        setProjectsStatus('error');
+      });
+
+    return () => { cancelled = true; };
+  }, [accountId]);
 
   const handleUnfollow = async (item) => {
     // Optimistic: nothing downstream depends on the request finishing before the
@@ -275,6 +322,46 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate }) {
           <StatCard t={t} icon="arrowUp" label="Votes received" value={sumUpvotes(mine)} />
           <StatCard t={t} icon="comment" label="Comments received" value={countComments(mine)} />
         </div>
+
+        {projectsAvailable() && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginBottom: 20 }}>
+              <h2 className="placer-disp" style={{ fontSize: 28, fontWeight: 900, color: t.ink,
+                letterSpacing: '-0.02em' }}>
+                Your projects
+              </h2>
+              {onNewProject && (
+                <Btn t={t} variant="outline" size="sm" icon="plus" onClick={onNewProject}>
+                  Start a project
+                </Btn>
+              )}
+            </div>
+
+            {projectsStatus === 'error' && (
+              <div role="alert" style={{ padding: 16, borderRadius: 8, background: '#D6452F22',
+                borderLeft: '4px solid #D6452F', fontSize: 14, fontWeight: 600, color: t.ink, marginBottom: 40 }}>
+                Could not load your projects. See the console for details.
+              </div>
+            )}
+
+            {projectsStatus === 'ready' && myProjects.length === 0 && (
+              <p style={{ fontSize: 14, color: t.inkFaint, marginBottom: 40 }}>
+                Nothing yet. A project gets a dashboard, a public page, and lets people
+                collaborate with you on it.
+              </p>
+            )}
+
+            {projectsStatus === 'ready' && myProjects.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+                gap: 20, marginBottom: 40 }}>
+                {myProjects.map((project) => (
+                  <ProjectCard key={project.id} t={t} project={project} onOpen={onOpenProjectDashboard} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
 
         <h2 className="placer-disp" style={{ fontSize: 28, fontWeight: 900, color: t.ink,
           letterSpacing: '-0.02em', marginBottom: 20 }}>

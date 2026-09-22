@@ -33,6 +33,9 @@ const SettingsPage = lazy(() => import('./components/SettingsPage'));
 const AuthPage = lazy(() => import('./components/AuthPage'));
 const AuthCallback = lazy(() => import('./components/AuthCallback'));
 const ResetPasswordPage = lazy(() => import('./components/ResetPasswordPage'));
+const ProjectSetupPage = lazy(() => import('./components/ProjectSetupPage'));
+const ProjectDashboardPage = lazy(() => import('./components/ProjectDashboardPage'));
+const PublicProjectPage = lazy(() => import('./components/PublicProjectPage'));
 
 const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
 
@@ -60,6 +63,20 @@ const ACCOUNT_VIEWS = {
   '/signin': 'signin',
   '/signup': 'signup',
 };
+
+/**
+ * `/projects/new`, `/projects/<id>` (the public page) or `/projects/<id>/dashboard`,
+ * read off the location the same way the Sandbox is — a project's dashboard and its
+ * public page both need a link worth bookmarking or sharing. Null for anything else,
+ * including a bare `/projects` with nothing after it.
+ */
+function projectRouteFrom(path) {
+  if (!path.startsWith('/projects/')) return null;
+  if (path === '/projects/new') return { mode: 'new' };
+  const match = /^\/projects\/([^/]+)(\/dashboard)?$/.exec(path);
+  if (!match) return null;
+  return { mode: match[2] ? 'dashboard' : 'public', id: match[1] };
+}
 
 function LoadingFallback() {
   return (
@@ -116,6 +133,11 @@ function MainApp({ initialView = 'welcome' }) {
   // Where the map should open. Set when an imagination is posted, so the map comes
   // back centred on the new pin instead of the default location.
   const [mapFocus, setMapFocus] = useState(null);
+  // Set by a project's public page's "Imagine something for this project" button, so
+  // the imagination that comes out the other end of the capture flow is attached to
+  // it. Cleared by posting, and by starting a capture any other way (handleExplore) —
+  // otherwise a project visited earlier in the session could tag something unrelated.
+  const [activeProjectId, setActiveProjectId] = useState(null);
 
   // Who is signed in, and how that question is being answered — a real Supabase account
   // where a project is configured, the localStorage record from before accounts existed
@@ -142,7 +164,18 @@ function MainApp({ initialView = 'welcome' }) {
   const [location, navigate] = useLocation();
   const inSandbox = location.startsWith('/sandbox');
   const accountView = ACCOUNT_VIEWS[location];
-  const view = accountView ?? (inSandbox ? 'sandbox' : currentView);
+  const projectRoute = projectRouteFrom(location);
+  const projectView = projectRoute && { new: 'projectNew', public: 'projectPublic', dashboard: 'projectDashboard' }[projectRoute.mode];
+  const view = accountView ?? (inSandbox ? 'sandbox' : projectView ?? currentView);
+
+  const showNewProject = () => navigate('/projects/new');
+  const showProjectDashboard = (id) => navigate(`/projects/${id}/dashboard`);
+  const showProjectPublic = (id) => navigate(`/projects/${id}`);
+  // The one experiment rooms currently support — see supabase/rooms.sql's
+  // sandbox_rooms_experiment_known constraint. Sent straight there with the
+  // project attached, rather than to the gallery, because the gallery has nowhere
+  // to carry ?project= through into picking an experiment.
+  const showProjectSandbox = (id) => navigate(`/sandbox/budget-ballot?project=${encodeURIComponent(id)}`);
 
   const show = (next) => {
     if (next === 'sandbox') {
@@ -155,6 +188,11 @@ function MainApp({ initialView = 'welcome' }) {
     }
     if (inSandbox || accountView) navigate('/');
     setCurrentView(next);
+  };
+
+  const handleImagineForProject = (id) => {
+    setActiveProjectId(id);
+    show('map');
   };
 
   const handleCaptureView = (viewData) => {
@@ -217,11 +255,15 @@ function MainApp({ initialView = 'welcome' }) {
     setCanvasAssets([]);
     setDraft(EMPTY_DRAFT);
     setPreview(null);
+    setActiveProjectId(null);
     show('map');
   };
 
   const handleExplore = () => {
     posthog.capture('explore_started');
+    // The ordinary way onto the map, as opposed to arriving through a project's
+    // public page — see activeProjectId's own comment.
+    setActiveProjectId(null);
     show('map');
   };
 
@@ -282,6 +324,7 @@ function MainApp({ initialView = 'welcome' }) {
             needsAccount={identityStatus === 'signedOut'}
             checkingAccount={identityLoading}
             onStashDraft={stashDraft}
+            projectId={activeProjectId}
           />
         )}
       </Suspense>
@@ -385,7 +428,8 @@ function MainApp({ initialView = 'welcome' }) {
 
         {view === 'profile' && profile && (
           <Suspense fallback={<LoadingFallback />}>
-            <ProfilePage t={t} profile={profile} accountId={accountId} onNavigate={show} />
+            <ProfilePage t={t} profile={profile} accountId={accountId} onNavigate={show}
+              onNewProject={showNewProject} onOpenProjectDashboard={showProjectDashboard} />
           </Suspense>
         )}
 
@@ -399,6 +443,46 @@ function MainApp({ initialView = 'welcome' }) {
         {view === 'terms' && (
           <Suspense fallback={<LoadingFallback />}>
             <TermsAndPrivacyPage t={t} />
+          </Suspense>
+        )}
+
+        {/* projectNew and projectDashboard need an account, the same shape profile and
+            settings are gated — starting or managing a project is not something a
+            signed-out visitor can do. projectPublic needs nothing: a project's public
+            page is exactly the thing anyone should be able to open cold, unsignedin,
+            from a shared link. */}
+        {view === 'projectNew' && identityLoading && <LoadingFallback />}
+
+        {view === 'projectNew' && !identityLoading && !profile && (
+          <SignedOutNotice t={t} onSignIn={handleSignIn} />
+        )}
+
+        {view === 'projectNew' && profile && (
+          <Suspense fallback={<LoadingFallback />}>
+            <ProjectSetupPage t={t} accountId={accountId} accountName={profile.name}
+              onSaved={(project) => showProjectDashboard(project.id)}
+              onCancel={() => show('profile')} />
+          </Suspense>
+        )}
+
+        {view === 'projectDashboard' && identityLoading && <LoadingFallback />}
+
+        {view === 'projectDashboard' && !identityLoading && !profile && (
+          <SignedOutNotice t={t} onSignIn={handleSignIn} />
+        )}
+
+        {view === 'projectDashboard' && profile && (
+          <Suspense fallback={<LoadingFallback />}>
+            <ProjectDashboardPage t={t} accountId={accountId} projectId={projectRoute.id}
+              onOpenSandbox={showProjectSandbox}
+              onNavigateToPublic={showProjectPublic} />
+          </Suspense>
+        )}
+
+        {view === 'projectPublic' && (
+          <Suspense fallback={<LoadingFallback />}>
+            <PublicProjectPage t={t} projectId={projectRoute.id} accountId={accountId}
+              onImagineForProject={handleImagineForProject} />
           </Suspense>
         )}
       </div>

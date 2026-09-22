@@ -71,7 +71,7 @@ function SignInToPost({ t, mode, onModeChange, onLeaving }) {
 
 export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
   onBack, onPosted, authorName = DEFAULT_NAME, accountId = null,
-  needsAccount = false, checkingAccount = false, onStashDraft }) {
+  needsAccount = false, checkingAccount = false, onStashDraft, projectId = null }) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'error'
   const [error, setError] = useState(null);
   const [authMode, setAuthMode] = useState('signin');
@@ -98,6 +98,7 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
         fov: capturedView?.fov ?? null,
         canvasAssets,
         preview: preview ?? capturedView?.screenshot ?? null,
+        projectId,
       });
       posthog.capture('imagination_posted', {
         category: draft.cat,

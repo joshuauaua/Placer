@@ -90,6 +90,19 @@ export function roomIdFrom(search) {
   return value ? value : null;
 }
 
+/**
+ * The project id in ?project=…, or null. How a project's dashboard hands off to the
+ * Sandbox gallery so the room it opens gets attached — see supabase/projects.sql.
+ * Only read when opening a *new* room; a room reached by its own ?room= link is
+ * already attached or not, and re-reading ?project= there would mean nothing.
+ */
+export function projectIdFrom(search) {
+  const query = String(search ?? '').replace(/^\?/, '');
+  if (!query) return null;
+  const value = new URLSearchParams(query).get('project');
+  return value ? value : null;
+}
+
 // Storage is wrapped everywhere: in private mode a read or a write can throw, and
 // the honest fallback is that the value holds for this page load only.
 function readJson(key) {

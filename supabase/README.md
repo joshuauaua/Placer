@@ -316,17 +316,16 @@ Requires step 9 — a follow belongs to an account. Run `follows.sql` in the SQL
 after `auth.sql`. It is re-runnable.
 
 It creates `public.follows`, one generic table for the four things a profile can follow
-— users, imaginations, projects, and cities — rather than four separate ones. Two of
-those four, projects and cities, have no table of their own yet, which is why every row
-carries its own label rather than joining out to one: there is nowhere for 'project' and
-'city' rows to join to, and this way 'user' and 'imagination' rows do not need a
-different shape from the other two. See the comment at the top of `follows.sql` and of
-`src/services/follows.js` for the full reasoning.
+— users, imaginations, projects, and cities — rather than four separate ones. Every row
+carries its own label rather than joining out to one, because cities still have no table
+of their own (and a follow on a stranger's account must not join out to their private
+profile either) — this way 'city' rows do not need a different shape from the other
+three. See the comment at the top of `follows.sql` and of `src/services/follows.js` for
+the full reasoning.
 
-Nowhere in the app yet lets somebody follow a project or a city — neither has a page to
-follow one from — so in practice this table only fills up with `user` and `imagination`
-rows today. The profile page shows all four sections regardless, honestly empty where
-there is nothing yet to follow.
+Projects (step 12) do have a public page to follow one from now. Cities and a way to
+follow another user's profile directly still do not, so those two sections of the
+profile page stay honestly empty until something adds one.
 
 ### Verify
 
@@ -338,8 +337,69 @@ select policyname, cmd, roles from pg_policies where tablename = 'follows';
 Expect `rls` true, and one SELECT, one INSERT and one DELETE policy, all for
 `{authenticated}`.
 
+## 12. Projects
+
+Requires steps 9, 10 and 8 (in that order — it references profiles, imaginations, and
+sandbox rooms) — see `projects.sql`'s own header for why. Run `projects.sql` in the SQL
+editor after all three. It is re-runnable, except for the caveat about `sandbox_rooms`
+just below.
+
+It creates `public.projects`, `public.project_collaborators` and `public.project_links`,
+adds a nullable `project_id` to both `public.imaginations` and `public.sandbox_rooms`,
+and replaces `sandbox_room_create` with a version that takes an optional project id — a
+plain `sandbox_room_create(p_experiment)` call behaves exactly as before, which is what
+keeps the Sandbox gallery's ordinary, unattached rooms unaffected. It also adds
+`project_sandbox_activity`, a narrow public function that hands back a bare session
+count for a project's public page — the one number worth showing from a table
+(`sandbox_rooms`) that otherwise grants nothing to anon or authenticated at all.
+
+Scope choices — the ones worth knowing about before reading the SQL — are in the file's
+own header: locations are free-text place names rather than geocoded points, and
+collaborators are invited by email through `project_add_collaborator` because nothing in
+PLACER lets one account look another up.
+
+**The `sandbox_room_create` re-run is not harmless if a room is open.** Dropping and
+recreating the function does not touch `sandbox_rooms` rows, so nothing already open is
+lost — but a facilitator's browser is holding the *old* function's shape in memory only
+in the sense that it is about to call it; PostgREST resolves the call fresh every time,
+so this is safe to run at any moment, including mid-workshop. Mentioned here because
+`rooms.sql`'s own header raises exactly this caution about the return type changing, and
+it does not apply here — only the parameter list does, and a default-valued extra
+parameter is backwards compatible for every existing caller.
+
+### Verify
+
+```sql
+select relrowsecurity from pg_class where relname in ('projects', 'project_collaborators', 'project_links');
+select policyname, cmd, roles from pg_policies where tablename in ('projects', 'project_collaborators', 'project_links');
+
+select column_name from information_schema.columns
+ where table_name in ('imaginations', 'sandbox_rooms') and column_name = 'project_id';
+```
+
+Expect `rls` true on all three new tables, a public SELECT policy on `projects` and
+`project_links`, and `project_id` present on both `imaginations` and `sandbox_rooms`.
+
+Then, that reading a project really is public — with nothing but the anon key this
+returns rows rather than an empty array:
+
+```sh
+curl -s "https://<project-ref>.supabase.co/rest/v1/projects?select=name,owner_name" \
+  -H "apikey: <anon key>"
+```
+
 ## Still to decide
 
+- **Projects have one role beyond the owner, not several.** A collaborator can edit
+  setup, links and open a Sandbox room; only the owner manages the roster or deletes
+  the project. Fine for a small team, and the schema in `projects.sql` would need
+  widening (a `role` column on `project_collaborators`) before it says more than that.
+- **Deleting a project does not delete what was posted to it.** `project_id` is
+  `on delete set null` on both `imaginations` and `sandbox_rooms`, on purpose — an
+  imagination somebody drew belongs to the person who posted it, not to the project
+  it happened to be attached to, and removing a project should not take their work
+  with it. It does mean a deleted project's imaginations quietly become unattached
+  ones rather than disappearing.
 - **Retention.** The GDPR page says answers are kept "while this research runs"
   and addresses "until you ask us to remove it, or the closed beta programme
   ends". Make that true, or change the page.

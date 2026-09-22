@@ -23,7 +23,7 @@ import { SandboxLayout, Panel } from './SandboxLayout';
 import { RoomBar } from './sandbox/RoomBar';
 import { useRoom } from './sandbox/useRoom';
 import { EXPERIMENTS, findExperiment } from '../sandbox/experiments';
-import { roomIdFrom, roomPath } from '../sandbox/rooms';
+import { projectIdFrom, roomIdFrom, roomPath } from '../sandbox/rooms';
 import { isSupabaseConfigured } from '../services/rooms';
 
 /** The experiment id in a path like /sandbox/street-mixer, if there is one. */
@@ -228,6 +228,9 @@ export function SandboxPage({ t, displayName = null, needsAccount = false, onSig
     // request, and this is a render body. It is still a label rather than proof of
     // identity — a room is joined with its PIN, not with an account.
     displayName,
+    // Only meaningful for a room being opened, not one being joined — see
+    // projectIdFrom's own comment. A ProjectDashboardPage link is what sets this.
+    projectId: projectIdFrom(search),
     onOpened: (id) => {
       posthog.capture('sandbox_room_opened', { experiment: experiment.id });
       navigate(roomPath(experiment.id, id));

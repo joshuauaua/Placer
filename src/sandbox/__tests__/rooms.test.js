@@ -8,6 +8,7 @@ import {
   joinUrl,
   parsePin,
   participantToken,
+  projectIdFrom,
   rememberHostedRoom,
   roomIdFrom,
   roomPath,
@@ -58,6 +59,17 @@ describe('room URLs', () => {
     expect(roomIdFrom('')).toBeNull();
     expect(roomIdFrom('?pin=839201')).toBeNull();
     expect(roomIdFrom(undefined)).toBeNull();
+  });
+
+  it('reads the project a room should attach to out of the query string', () => {
+    expect(projectIdFrom('?project=proj-1')).toBe('proj-1');
+    expect(projectIdFrom('project=proj-1')).toBe('proj-1');
+  });
+
+  it('has no project when the query says nothing about one', () => {
+    expect(projectIdFrom('')).toBeNull();
+    expect(projectIdFrom('?room=abc-123')).toBeNull();
+    expect(projectIdFrom(undefined)).toBeNull();
   });
 });
 

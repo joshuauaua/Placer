@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { ProfilePage } from '../ProfilePage';
 import { postsAreShared, readImaginations, readLocalImaginations } from '../../services/imaginations';
 import { readFollows, unfollow } from '../../services/follows';
+import { isSupabaseConfigured, readMyProjects } from '../../services/projects';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/imaginations', () => ({
@@ -15,6 +16,11 @@ vi.mock('../../services/follows', () => ({
   FOLLOW_TYPES: ['user', 'imagination', 'project', 'city'],
   readFollows: vi.fn(() => Promise.resolve([])),
   unfollow: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('../../services/projects', () => ({
+  isSupabaseConfigured: vi.fn(() => false),
+  readMyProjects: vi.fn(() => Promise.resolve([])),
 }));
 
 /*
@@ -148,7 +154,7 @@ describe('ProfilePage, followed sections', () => {
     expect(screen.getByRole('heading', { name: 'Followed projects' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Followed cities' })).toBeInTheDocument();
     expect(screen.getByText(/nowhere in PLACER to follow another person/)).toBeInTheDocument();
-    expect(screen.getByText(/no project pages to follow/)).toBeInTheDocument();
+    expect(screen.getByText(/follow a project from its public page/)).toBeInTheDocument();
     expect(screen.getByText(/no city pages to follow/)).toBeInTheDocument();
   });
 
@@ -268,5 +274,65 @@ describe('ProfilePage, with imaginations in the database', () => {
     await screen.findByText('Pocket park on Lot 7');
 
     expect(readLocalImaginations).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProfilePage, your projects', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(readImaginations).mockResolvedValue([]);
+    vi.mocked(readLocalImaginations).mockResolvedValue([]);
+    vi.mocked(postsAreShared).mockReturnValue(false);
+    vi.mocked(readFollows).mockResolvedValue([]);
+  });
+
+  it('has no projects section at all with no Supabase project', async () => {
+    vi.mocked(isSupabaseConfigured).mockReturnValue(false);
+
+    render(<ProfilePage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()} />);
+    await screen.findByText('Pocket park on Lot 7').catch(() => {});
+
+    expect(screen.queryByRole('heading', { name: 'Your projects' })).not.toBeInTheDocument();
+    expect(readMyProjects).not.toHaveBeenCalled();
+  });
+
+  it('offers to start a project, and shows an empty state with none yet', async () => {
+    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+    vi.mocked(readMyProjects).mockResolvedValue([]);
+    const onNewProject = vi.fn();
+
+    render(<ProfilePage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()} onNewProject={onNewProject} />);
+
+    expect(await screen.findByRole('heading', { name: 'Your projects' })).toBeInTheDocument();
+    expect(screen.getByText(/Nothing yet\. A project gets a dashboard/)).toBeInTheDocument();
+
+    screen.getByRole('button', { name: /Start a project/ }).click();
+    expect(onNewProject).toHaveBeenCalled();
+  });
+
+  it('lists the projects you own or collaborate on', async () => {
+    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+    vi.mocked(readMyProjects).mockResolvedValue([
+      { id: 'proj-1', name: 'Riverside Greenway', description: 'Turn the old rail corridor into a park.' },
+    ]);
+    const onOpenProjectDashboard = vi.fn();
+
+    render(<ProfilePage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()}
+      onOpenProjectDashboard={onOpenProjectDashboard} />);
+
+    expect(await screen.findByText('Riverside Greenway')).toBeInTheDocument();
+    screen.getByText('Riverside Greenway').closest('button').click();
+    expect(onOpenProjectDashboard).toHaveBeenCalledWith('proj-1');
+  });
+
+  it('says so when your projects cannot be loaded', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+    vi.mocked(readMyProjects).mockRejectedValue(new Error('network down'));
+
+    render(<ProfilePage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()} />);
+
+    expect(await screen.findByText(/Could not load your projects/)).toBeInTheDocument();
+    consoleError.mockRestore();
   });
 });

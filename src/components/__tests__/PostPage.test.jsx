@@ -122,7 +122,17 @@ describe('PostPage', () => {
       fov: 90,
       canvasAssets: [{ id: 'a1' }, { id: 'a2' }],
       preview: 'data:image/jpeg;base64,mockPreview',
+      projectId: null,
     });
+  });
+
+  it('attaches a project when the capture flow was entered for one', async () => {
+    const { onPosted } = setup({ projectId: 'proj-1' });
+
+    fireEvent.click(screen.getByText('Post to community'));
+
+    await waitFor(() => expect(onPosted).toHaveBeenCalledTimes(1));
+    expect(postImagination).toHaveBeenCalledWith(expect.objectContaining({ projectId: 'proj-1' }));
   });
 
   it('shows a saving state while the write is in flight', async () => {

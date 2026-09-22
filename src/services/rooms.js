@@ -41,11 +41,16 @@ async function client() {
  * than by anything here — and what comes back is a message about function privileges,
  * which is true and no use to anybody. The Sandbox asks for a sign-in before it offers
  * the button; this is for the case where something got past that.
+ *
+ * `projectId` is optional and attaches the room to a project — see supabase/projects.sql
+ * — so its dashboard and public page can show the session. Omitting it opens an
+ * ordinary, unattached room exactly as this always has; passing one refuses unless the
+ * caller owns or collaborates on that project, which the database checks, not this.
  */
-export async function createRoom(experimentId) {
+export async function createRoom(experimentId, projectId = null) {
   const supabase = await client();
   const { data, error } = await supabase
-    .rpc('sandbox_room_create', { p_experiment: experimentId })
+    .rpc('sandbox_room_create', { p_experiment: experimentId, p_project_id: projectId })
     .single();
 
   if (error) {

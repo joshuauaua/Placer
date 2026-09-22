@@ -89,7 +89,7 @@ describe('opening a room', () => {
 
     const room = await rooms.createRoom('budget-ballot');
 
-    expect(rpc).toHaveBeenCalledWith('sandbox_room_create', { p_experiment: 'budget-ballot' });
+    expect(rpc).toHaveBeenCalledWith('sandbox_room_create', { p_experiment: 'budget-ballot', p_project_id: null });
     expect(room).toEqual({
       id: 'room-1',
       pin: '839201',
@@ -97,6 +97,18 @@ describe('opening a room', () => {
       // The deadline comes from the database, never from the browser's clock.
       expiresAt: '2026-09-11T12:00:00Z',
     });
+  });
+
+  it('attaches a project when one is given, so its dashboard can see the room', async () => {
+    rpc.mockReturnValue(result({
+      data: { room_id: 'room-1', pin: '839201', facilitator_token: 'facilitator-1',
+        expires_at: '2026-09-11T12:00:00Z' },
+      error: null,
+    }));
+
+    await rooms.createRoom('budget-ballot', 'proj-1');
+
+    expect(rpc).toHaveBeenCalledWith('sandbox_room_create', { p_experiment: 'budget-ballot', p_project_id: 'proj-1' });
   });
 
   it('surfaces a failure as an error rather than a room that is not there', async () => {
