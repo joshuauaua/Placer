@@ -63,9 +63,9 @@ export function CookieBanner({ t }) {
             PLACER uses PostHog to understand how the app is used, including session recordings.
             Nothing is stored on your device and nothing is sent until you accept.{' '}
             <Link
-              href="/privacy"
+              href="/terms-and-privacy"
               style={{ color: t.ink, fontWeight: 600, textDecoration: 'underline' }}>
-              Privacy Policy
+              Terms and Privacy
             </Link>
           </div>
         </div>

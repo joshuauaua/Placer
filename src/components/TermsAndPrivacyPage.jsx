@@ -1,10 +1,12 @@
-/* PLACER — GDPR / data rights */
+/* PLACER — Terms and Privacy (Terms of Service, Privacy Policy and GDPR rights,
+ * combined onto one page rather than split across three). */
 
 import { useState } from 'react';
-import { LegalPage, Section, P, Bullets, Callout, Table, ExternalLink, PageLink } from './LegalLayout';
+import { LegalPage, Chapter, Section, P, Bullets, Callout, Table, ExternalLink } from './LegalLayout';
 import { Btn } from './UI';
 import {
   OPERATOR,
+  GOVERNING_LAW,
   GOOGLE_PRIVACY_URL,
   POSTHOG_PRIVACY_URL,
   SUPABASE_PRIVACY_URL,
@@ -163,13 +165,348 @@ function ConsentControls({ t }) {
   );
 }
 
-export function GdprPage({ t, onNavigate }) {
+export function TermsAndPrivacyPage({ t }) {
   return (
     <LegalPage
       t={t}
-      title="GDPR"
-      intro="Your rights under the EU General Data Protection Regulation and the UK GDPR, and how PLACER meets them."
+      title="Terms and Privacy"
+      intro="The rules for using PLACER, how it handles your information, and your rights under the GDPR — in one place instead of three."
     >
+      <Chapter t={t} title="Terms of Service" />
+
+      <Callout t={t} icon="check" title="The short version">
+        Use PLACER like a decent neighbour: nothing illegal, nothing that isn&rsquo;t yours to
+        post, nothing meant to break the map for anyone else. Posting an imagination publishes
+        it, under your name, on a map anyone can look at. We can remove content that breaks
+        these terms, and you can stop using PLACER, or ask us to delete your account, whenever
+        you like.
+      </Callout>
+
+      <Section t={t} title="Agreement to these terms">
+        <P t={t}>
+          These terms govern your use of PLACER, the web application operated by {OPERATOR.name}.
+          By opening PLACER, building on the canvas, answering a survey, joining a Sandbox room or
+          posting an imagination, you agree to them. If you do not agree, do not use PLACER.
+        </P>
+        <P t={t}>
+          The Privacy Policy and GDPR sections below are part of these terms, not a separate
+          document — they describe what PLACER does with information, which is itself something
+          you are agreeing to by using it.
+        </P>
+      </Section>
+
+      <Section t={t} title="Who can use PLACER">
+        <P t={t}>
+          PLACER is intended for general community use. It is not directed at children under 13,
+          and by using it you confirm you are 13 or older. See Children, under the Privacy Policy
+          below, for how we handle anything posted by someone who should not have been able to.
+        </P>
+      </Section>
+
+      <Section t={t} title="Your account">
+        <P t={t}>
+          Posting an imagination requires an account; reading the map, building on the canvas,
+          answering the survey and joining a Sandbox room do not. You agree to give an accurate
+          email address, to keep your password confidential, and to tell us if you believe your
+          account has been used without your permission. You are responsible for what happens
+          under your account, whether or not you were the one who did it.
+        </P>
+      </Section>
+
+      <Section t={t} title="Acceptable use">
+        <P t={t}>
+          You agree not to, and not to help anyone else:
+        </P>
+        <Bullets t={t} items={[
+          'Post anything illegal, infringing, defamatory, harassing, or that you do not have the rights to post.',
+          'Impersonate another person or organisation, or misrepresent your affiliation with one.',
+          'Scrape, mine or bulk-download imaginations, profiles or survey data.',
+          'Probe, disable or bypass PLACER’s security, rate limits or authentication.',
+          'Interfere with the map, the Sandbox or another user’s ability to use either.',
+          'Automate account creation, posting, upvoting or Sandbox contributions.',
+          'Try to access another account, or data that is not yours, without authorisation.',
+        ]} />
+        <P t={t}>
+          We can remove content, close accounts, or restrict access for anyone who breaks these
+          rules.
+        </P>
+      </Section>
+
+      <Section t={t} title="Content you post">
+        <P t={t}>
+          You keep ownership of what you post. By posting an imagination, you promise you have
+          the right to post it, and you grant PLACER the licence needed to display it on the map,
+          on its own page, and anywhere else the app shows posted imaginations — which is the
+          point of posting, and is described in full under Information PLACER holds, below. You
+          can delete what you posted at any time, from your profile or from the imagination&rsquo;s
+          own page, which removes it and its picture together.
+        </P>
+        <P t={t}>
+          We may remove content that breaks these terms, infringes someone else&rsquo;s rights, or
+          that we are required to remove by law, and we will tell you if we do.
+        </P>
+      </Section>
+
+      <Section t={t} title="Third-party services">
+        <P t={t}>
+          PLACER shows map tiles and Street View imagery from Google Maps Platform, subject to
+          Google&rsquo;s own terms; sends usage analytics to PostHog, if you accept them, subject to
+          PostHog&rsquo;s own terms; and stores accounts, profiles, posted imaginations, survey
+          answers and Sandbox rooms with Supabase. We are not responsible for the availability,
+          accuracy or content of any third-party service PLACER relies on.
+        </P>
+      </Section>
+
+      <Section t={t} title="Disclaimers">
+        <P t={t}>
+          PLACER is provided &ldquo;as is&rdquo;, without warranty of any kind. Imaginations are
+          posted by other users, not vetted by us before they appear on the map, and are proposals,
+          not professional planning, engineering or legal advice — nothing on PLACER should be
+          treated as such. We do not guarantee PLACER will be available, uninterrupted, or free of
+          errors.
+        </P>
+      </Section>
+
+      <Section t={t} title="Limitation of liability">
+        <P t={t}>
+          To the extent the law allows, {OPERATOR.name} is not liable for indirect, incidental or
+          consequential damages arising from your use of PLACER, or from content posted by other
+          users. Nothing in these terms limits liability that cannot lawfully be limited.
+        </P>
+      </Section>
+
+      <Section t={t} title="Termination">
+        <P t={t}>
+          You can stop using PLACER at any time, and can ask us to delete your account as
+          described under Making a request to us, below. We can suspend or terminate an account
+          that breaks these terms. Either way, an imagination someone has already seen or
+          screenshotted is beyond anyone&rsquo;s reach — deletion stops us serving it, which is all
+          deletion can ever do.
+        </P>
+      </Section>
+
+      <Section t={t} title="Governing law">
+        <P t={t}>
+          These terms are governed by the laws of {GOVERNING_LAW}, without regard to its conflict
+          of law principles.
+        </P>
+      </Section>
+
+      <Section t={t} title="Changes to these terms">
+        <P t={t}>
+          If we change these terms in a way that meaningfully affects your rights, we will update
+          the date at the top of this page and, where the change is significant, announce it in
+          the app. Continuing to use PLACER after a change takes effect means you accept it.
+        </P>
+      </Section>
+
+      <Chapter t={t} title="Privacy Policy" />
+
+      <Callout t={t} icon="check" title="The short version">
+        PLACER has accounts, and posting is publishing. When you post an imagination it is
+        stored on our server, not just in your browser, and it goes onto a map that anybody
+        can look at &mdash; with the display name you chose next to it, and its picture at a
+        web address that needs no account to open. What you have not posted stays on your
+        device. The survey is stored when you submit it, along with an email address only if
+        you give one. Usage analytics go to PostHog only if you accept the cookie banner;
+        reject it and nothing is measured.
+      </Callout>
+
+      <Section t={t} title="Who this policy applies to">
+        <P t={t}>
+          This policy covers the PLACER web application, operated by {OPERATOR.name}. It applies
+          to everyone who uses PLACER, whether or not you make an account and whether or not you
+          post anything.
+        </P>
+      </Section>
+
+      <Section t={t} title="Information PLACER holds">
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Your account.</strong> Making an account means giving
+          an email address and either choosing a password or signing in with Google. The login
+          itself is held by Supabase Auth, our authentication provider: your address, a hash of
+          your password &mdash; never the password itself &mdash; whether the address has been
+          confirmed, and, if you use Google, the fact that this account is linked to that Google
+          identity. Choosing Google means Google learns that you signed in to PLACER. An account
+          is needed to post an imagination and for nothing else: you can look at the map, build
+          on the canvas, answer the survey and join a Sandbox room without one.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Your profile.</strong> Alongside the login we store a
+          display name and, if you write one, a short bio. The display name is public: it is
+          copied onto every imagination you post as the author, and it stays as it was on
+          anything already posted if you rename yourself later. Pick a name you are happy to
+          publish &mdash; it does not have to be your real one.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Imaginations you post.</strong> Pressing Post uploads
+          your work to our database, where it becomes part of a shared, public map. The record
+          holds the location you chose and its coordinates, whether the scene came from Street
+          View or a top-down map, where the camera was pointing, every asset you placed and line
+          you drew, the title, category and description you wrote, a running count of upvotes,
+          the times it was created and last changed, your account and the display name you were
+          using when you posted. Anyone can read all of that, signed in or not. Only you can
+          change or delete it, which the database enforces rather than merely the app.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>The picture of it.</strong> Posting also uploads a
+          flattened image of your scene &mdash; the Street View frame with your assets composited
+          onto it &mdash; so the map has something to show. It is stored at a public web address,
+          under a folder named after your account. Anyone who has that address can open it
+          without an account, and search engines may reach it. Deleting the imagination deletes
+          the picture with it.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>What stays in your browser.</strong> Work in progress
+          is yours until you post it: an imagination you are still building, the asset library,
+          comments, and your analytics choice are written to your browser&rsquo;s local storage,
+          under keys beginning{' '}
+          <code className="placer-mono" style={{ fontSize: 13, color: t.ink }}>placemaking_</code>.
+          Signing in also keeps a session token there so you are not signed out on every reload.
+          Anything you made before accounts existed stays where it is: it was saved under a policy
+          that said it would never leave your device, so PLACER will not upload it to a public map
+          without being asked.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Survey answers.</strong> While you are answering, your
+          answers are held in the page; nothing is sent until you press Submit. When you do, they
+          are stored in our database so we can read them: the options you chose, anything you typed
+          into a free-text field, and which survey it was. Please keep names and other personal
+          details out of the free-text boxes, since they are stored exactly as written.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Your email address, if you give one.</strong> The last
+          step of the survey asks for an address, and only asks because you have said you would
+          like to be involved beyond the survey — testing a prototype, a short interview, or a
+          project as a case study. It is optional, it is stored alongside your answers, and it is
+          used to reply to you about that and nothing else. You can leave it blank and still
+          submit. It is separate from any account you may have, and neither is looked up from the
+          other.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Sandbox rooms, if you join one.</strong> The Sandbox
+          experiments run entirely in your browser and save nothing — unless somebody opens a room
+          and you join it with a PIN or a QR code. Then what you allocate in that experiment is
+          stored in our database so the room can show everybody&rsquo;s answers combined, along with
+          the display name your browser is set to, if you have set one. A room lasts two hours from
+          being opened, and whoever opened it can end it sooner. After that nobody can reach it,
+          and it is deleted within a day.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Imagery you work with.</strong> Street View frames
+          are displayed in your browser for you to work with. The images are not sent to us.
+          What does reach us is the picture you post, and only when you post it.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Usage analytics, if you accept them.</strong> PLACER can
+          send usage data to PostHog, an analytics provider, to see how the app is actually used
+          and where it breaks. That covers the features you open, the events PLACER emits (such as
+          posting an imagination), a recording of your session in the app, errors it hits, and the
+          device, browser and IP-derived approximate location behind them. It is off until you
+          accept: PLACER does not contact PostHog at all &mdash; no request, no cookie, no
+          recording &mdash; until you do, and rejecting the banner keeps it that way. Analytics
+          never carry your name or your email address: an address you give in the survey stays with
+          your answers, your account address stays with your account, and neither is sent to
+          PostHog.
+        </P>
+        <P t={t}>
+          You can change that answer whenever you like, and see what is currently set, in the
+          analytics controls further down this page, under GDPR.{' '}
+          <ExternalLink t={t} href={POSTHOG_PRIVACY_URL}>Read PostHog&rsquo;s privacy policy</ExternalLink>
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Who else sees what we store.</strong> Accounts,
+          profiles, posted imaginations, their pictures, survey answers and Sandbox rooms are all
+          stored for us by Supabase, which hosts the database and file storage in the EU and
+          processes them only on our instructions.{' '}
+          <ExternalLink t={t} href={SUPABASE_PRIVACY_URL}>Read Supabase&rsquo;s privacy policy</ExternalLink>
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>What PLACER does not collect.</strong>
+        </P>
+        <Bullets t={t} items={[
+          'No password of yours in readable form — the login is handled by our authentication provider, and we can neither see nor recover it.',
+          'No advertising, no ad cookies, no data sold or shared with brokers.',
+          'No analytics at all unless you accept them, and none for anyone who rejects.',
+          'No record of who upvoted what — a vote adds one to a count and nothing else, which is also why it can be pressed twice.',
+          'No server-side log of the places you look at. Browsing the map is not recorded; only what you post is.',
+          'No account required to read the map, build on the canvas, answer the survey or join a room.',
+        ]} />
+      </Section>
+
+      <Section t={t} title="Google Maps and Street View">
+        <P t={t}>
+          PLACER loads map tiles and Street View imagery directly from Google Maps Platform. To
+          serve those images, Google receives the coordinates you are viewing, your IP address
+          and standard request details such as your browser and operating system. That
+          processing is governed by Google&rsquo;s own privacy policy, not this one.
+        </P>
+        <P t={t}>
+          <ExternalLink t={t} href={GOOGLE_PRIVACY_URL}>Read Google&rsquo;s privacy policy</ExternalLink>
+        </P>
+      </Section>
+
+      <Section t={t} title="How long it is kept">
+        <P t={t}>
+          An imagination you post stays on the map, and its picture stays at its public address,
+          until you delete it or delete your account. Deleting either removes both. Your account
+          and profile are kept until you ask us to delete them; deleting the account takes the
+          profile and everything posted under it with it.
+        </P>
+        <P t={t}>
+          Anything still only in your browser stays there until you delete it or clear your
+          browsing data for this site — PLACER sets no expiry. Because that storage is
+          per-browser and per-device, unposted work does not follow you to another computer, and
+          anyone else using the same browser profile can see it.
+        </P>
+        <P t={t}>
+          Survey answers are kept while this research runs. Sandbox rooms expire two hours after
+          being opened and are deleted within a day. Analytics you have consented to are held for
+          as long as our PostHog project is configured to keep them, and withdrawing consent stops
+          anything further being collected.
+        </P>
+      </Section>
+
+      <Section t={t} title="Your choices">
+        <Bullets t={t} items={[
+          'Use PLACER without an account — everything except posting works without one.',
+          'Delete an imagination you posted, from your profile or the page for that imagination. The record and its picture both go.',
+          'Change your display name or bio at any time in your profile, or sign out to stop being identified as its author on this device.',
+          'Ask us to delete your account, which removes the profile and every imagination posted under it.',
+          'Accept or reject analytics on the banner, and change that answer later further down this page, under GDPR.',
+          'Download everything PLACER holds in this browser, or erase all of it at once, further down this page, under GDPR.',
+          'Clear site data in your browser settings to remove everything PLACER has stored locally, including the seeded asset library.',
+          'Use a private or incognito window, and post nothing, if you would rather nothing persisted at all.',
+        ]} />
+        <P t={t}>
+          If you are in the EU or UK, the GDPR section below sets out your legal rights and how
+          to exercise them.
+        </P>
+      </Section>
+
+      <Section t={t} title="Children">
+        <P t={t}>
+          PLACER is intended for general community use and is not directed at children under 13,
+          and we ask that nobody under 13 make an account or post. We do not knowingly collect
+          information from them. If you believe a child has given us an email address, made an
+          account or posted an imagination, email us and we will delete it.
+        </P>
+      </Section>
+
+      <Section t={t} title="Changes to this policy">
+        <P t={t}>
+          This policy was updated when PLACER moved from keeping your work in your browser to
+          storing what you post on our server. If it starts sending data anywhere it does not
+          already, or collecting anything not described here, this page will be updated before
+          that happens and the date at the top will change. Anything that would widen what we
+          collect will be asked for, not assumed, and nothing you saved under an earlier version
+          of this policy is uploaded without you choosing to post it. Significant changes will be
+          announced in the app.
+        </P>
+      </Section>
+
+      <Chapter t={t} title="GDPR" />
+
       <Callout t={t} icon="check" title="Where your data actually sits">
         Two places, and the line between them is the Post button. Until you press it, your work is
         in your browser&rsquo;s local storage and you can export or erase it yourself in a couple of
@@ -383,15 +720,15 @@ export function GdprPage({ t, onNavigate }) {
         </P>
       </Section>
 
-      <Section t={t} title="Related">
+      <Section t={t} title="Contact">
         <P t={t}>
-          The{' '}
-          <PageLink t={t} onClick={() => onNavigate('privacy')}>Privacy Policy</PageLink>{' '}
-          describes in plain language what PLACER does with information.
+          Questions about these terms, this policy, or your data can go to{' '}
+          <ExternalLink t={t} href={`mailto:${OPERATOR.email}`}>{OPERATOR.email}</ExternalLink>,
+          or by post to {OPERATOR.name}, {OPERATOR.address}.
         </P>
       </Section>
     </LegalPage>
   );
 }
 
-export default GdprPage;
+export default TermsAndPrivacyPage;

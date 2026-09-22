@@ -1,4 +1,4 @@
-/* PLACER — layout primitives shared by the legal pages (privacy, GDPR) */
+/* PLACER — layout primitives shared by the legal page (terms, privacy, GDPR) */
 
 import { Icon } from './Icon';
 import { LAST_UPDATED } from '../legal';
@@ -44,10 +44,30 @@ export function LegalPage({ t, title, intro, children }) {
   );
 }
 
+// A chapter groups several Sections under one of the three bodies of text this
+// page carries (Terms of Service, Privacy Policy, GDPR). It sits above Section
+// in the heading hierarchy, so Section renders an h3 rather than an h2.
+export function Chapter({ t, title }) {
+  return (
+    <h2 className="placer-disp" style={{
+      fontSize: 32,
+      fontWeight: 900,
+      color: t.ink,
+      letterSpacing: '-0.02em',
+      marginTop: 56,
+      marginBottom: 24,
+      paddingTop: 32,
+      borderTop: `1px solid ${t.line}`
+    }}>
+      {title}
+    </h2>
+  );
+}
+
 export function Section({ t, title, children }) {
   return (
     <section style={{ marginBottom: 40 }}>
-      <h2 style={{
+      <h3 style={{
         fontSize: 22,
         fontWeight: 800,
         color: t.ink,
@@ -55,7 +75,7 @@ export function Section({ t, title, children }) {
         marginBottom: 12
       }}>
         {title}
-      </h2>
+      </h3>
       {children}
     </section>
   );
