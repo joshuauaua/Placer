@@ -7,7 +7,8 @@
 -- The shape: Supabase Auth owns the login — the email address, the password hash,
 -- the Google identity, the confirmation state — and none of that is ours to store.
 -- What is ours is the part of a person the app actually shows: the name on their
--- imaginations and the couple of lines about themselves. That is one row per
+-- imaginations, the couple of lines about themselves, where they say they are
+-- based, and which icon they picked instead of their initials. That is one row per
 -- account in public.profiles, keyed to auth.users, created by a trigger the moment
 -- an account exists.
 --
@@ -45,6 +46,14 @@ create table if not exists public.profiles (
   created_at   timestamptz not null    default now(),
   updated_at   timestamptz not null    default now()
 );
+
+-- Added after profiles already existed live, so these are `add column if not
+-- exists` rather than part of the create table above — the same shape
+-- imaginations.sql uses to drop a column from a table that may already be there.
+-- Both optional: location is '' until set, avatar is null until one is chosen,
+-- and null is what tells the app to fall back to initials instead of an icon.
+alter table public.profiles add column if not exists location text not null default '';
+alter table public.profiles add column if not exists avatar text;
 
 -- Row-level security is what protects this table. The browser ships the anon key,
 -- so the key itself is not a secret; the policies below are the boundary.
@@ -92,8 +101,8 @@ create policy "an owner can rename themselves"
 -- Column grants as well as the policies: the client never sets its own timestamps,
 -- and updated_at in particular would be worth nothing if a client could forge it.
 revoke all on public.profiles from anon, authenticated;
-grant select (id, display_name, bio, created_at, updated_at) on public.profiles to authenticated;
-grant update (display_name, bio) on public.profiles to authenticated;
+grant select (id, display_name, bio, location, avatar, created_at, updated_at) on public.profiles to authenticated;
+grant update (display_name, bio, location, avatar) on public.profiles to authenticated;
 
 -- What a profile may contain. These bound what any single update can do; the key in
 -- the browser is public, so anyone with an account can PATCH here.
@@ -104,6 +113,18 @@ alter table public.profiles add constraint profiles_display_name_shape
 alter table public.profiles drop constraint if exists profiles_bio_size;
 alter table public.profiles add constraint profiles_bio_size
   check (length(bio) <= 500);
+
+alter table public.profiles drop constraint if exists profiles_location_size;
+alter table public.profiles add constraint profiles_location_size
+  check (length(location) <= 120);
+
+-- Keep in step with AVATAR_ICONS in src/components/UI.jsx — that list is the
+-- picker's options and this is what stops an update setting anything else.
+alter table public.profiles drop constraint if exists profiles_avatar_known;
+alter table public.profiles add constraint profiles_avatar_known
+  check (avatar is null or avatar in (
+    'user', 'tree', 'bench', 'art', 'play', 'light', 'cart', 'sparkle', 'pin', 'walk', 'bike', 'planter'
+  ));
 
 comment on table public.profiles is
   'One row per account. Created by profile_create_for_new_user(); renamed by its owner.';

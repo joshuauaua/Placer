@@ -3,8 +3,8 @@
  * Supabase Auth owns the login: the email address, the password hash, the Google
  * identity, whether the address has been confirmed. None of that is stored by this
  * app and none of it is ours to read. What this module adds on top is the profile —
- * the display name and bio in public.profiles — because that is the part of a person
- * the app actually renders.
+ * the display name, bio, location and avatar icon in public.profiles — because that
+ * is the part of a person the app actually renders.
  *
  * Unlike services/profile.js, which keeps an identity in localStorage and is
  * therefore synchronous, everything here is a request and everything here is async.
@@ -163,13 +163,19 @@ export async function readOwnProfile() {
   const supabase = await client();
   const { data, error } = await supabase
     .from(PROFILES_TABLE)
-    .select('id, display_name, bio')
+    .select('id, display_name, bio, location, avatar')
     .maybeSingle();
 
   if (error) throw new Error(`Could not read your profile: ${error.message}`);
   if (!data) return null;
 
-  return { id: data.id, name: data.display_name, bio: data.bio ?? '' };
+  return {
+    id: data.id,
+    name: data.display_name,
+    bio: data.bio ?? '',
+    location: data.location ?? '',
+    avatar: data.avatar ?? null,
+  };
 }
 
 /**
@@ -179,23 +185,31 @@ export async function readOwnProfile() {
  * carries no id: the policy scopes it to auth.uid() already, and a client-supplied id
  * would be a way of asking to edit somebody else — refused, but not worth offering.
  */
-export async function saveOwnProfile({ name, bio }) {
+export async function saveOwnProfile({ name, bio, location, avatar }) {
   const supabase = await client();
 
   const patch = {};
   if (name !== undefined) patch.display_name = name;
   if (bio !== undefined) patch.bio = bio;
+  if (location !== undefined) patch.location = location;
+  if (avatar !== undefined) patch.avatar = avatar;
 
   const { data, error } = await supabase
     .from(PROFILES_TABLE)
     .update(patch)
-    .select('id, display_name, bio')
+    .select('id, display_name, bio, location, avatar')
     .maybeSingle();
 
   if (error) throw new Error(`Could not save your profile: ${error.message}`);
   if (!data) return null;
 
-  return { id: data.id, name: data.display_name, bio: data.bio ?? '' };
+  return {
+    id: data.id,
+    name: data.display_name,
+    bio: data.bio ?? '',
+    location: data.location ?? '',
+    avatar: data.avatar ?? null,
+  };
 }
 
 /**

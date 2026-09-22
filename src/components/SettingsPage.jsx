@@ -1,7 +1,8 @@
 /* PLACER — account settings: your name, and what the app is allowed to measure */
 
 import { useState } from 'react';
-import { Btn } from './UI';
+import { Avatar, AVATAR_ICONS, Btn } from './UI';
+import { Icon } from './Icon';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
 import { updatePassword } from '../services/auth';
 
@@ -90,6 +91,141 @@ function DisplayName({ t, profile, onSaveProfile }) {
   );
 }
 
+// Bio and Location share this shape with each other but not with DisplayName: both
+// are optional, so there is no "blank is invalid" rule to encode, and one of them
+// wants a textarea. DisplayName stays its own component rather than becoming a third
+// call to this one — a required field with its own copy is a different enough thing
+// that folding it in would mean threading an "isRequired" branch through a function
+// two of its three uses do not need.
+function ProfileField({ t, profile, onSaveProfile, fieldKey, title, description, label, id, placeholder, multiline }) {
+  const [value, setValue] = useState(profile?.[fieldKey] ?? '');
+  const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+
+  const trimmed = value.trim();
+  const unchanged = trimmed === (profile?.[fieldKey] ?? '');
+
+  const handleSave = async () => {
+    setStatus('saving');
+    try {
+      await onSaveProfile({ [fieldKey]: trimmed });
+      setStatus('saved');
+    } catch (err) {
+      console.error(`Could not save your ${label.toLowerCase()}:`, err);
+      setStatus('error');
+    }
+  };
+
+  const fieldStyle = { ...inputStyle(t), maxWidth: 380, marginBottom: 20,
+    ...(multiline ? { resize: 'vertical', minHeight: 88, fontFamily: 'var(--placer-font)' } : {}) };
+
+  return (
+    <Card t={t} title={title}>
+      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
+        {description}
+      </p>
+      <label htmlFor={id}
+        style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+        {label}
+      </label>
+      {multiline ? (
+        <textarea id={id} rows={4} value={value} placeholder={placeholder}
+          onChange={(e) => { setValue(e.target.value); setStatus('idle'); }}
+          style={fieldStyle} />
+      ) : (
+        <input id={id} type="text" value={value} placeholder={placeholder}
+          onChange={(e) => { setValue(e.target.value); setStatus('idle'); }}
+          style={fieldStyle} />
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <Btn t={t} variant="primary" icon="check" onClick={handleSave}
+          disabled={unchanged || status === 'saving'}>
+          {status === 'saving' ? 'Saving…' : `Save ${label.toLowerCase()}`}
+        </Btn>
+        {status === 'saved' && (
+          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
+            Saved.
+          </span>
+        )}
+        {status === 'error' && (
+          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 600 }}>
+            Could not save that. Try again.
+          </span>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+// Selected and unselected states of one icon choice in the avatar grid.
+const avatarOptionStyle = (t, selected) => ({
+  width: 46, height: 46, borderRadius: '50%', cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  background: selected ? t.accent + '22' : 'transparent',
+  border: `1.5px solid ${selected ? t.accent : t.line}`,
+  color: t.ink,
+});
+
+function AvatarPicker({ t, profile, onSaveProfile }) {
+  const [avatar, setAvatar] = useState(profile?.avatar ?? null);
+  const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+
+  const unchanged = avatar === (profile?.avatar ?? null);
+
+  const choose = (next) => {
+    setAvatar(next);
+    setStatus('idle');
+  };
+
+  const handleSave = async () => {
+    setStatus('saving');
+    try {
+      await onSaveProfile({ avatar });
+      setStatus('saved');
+    } catch (err) {
+      console.error('Could not save your avatar:', err);
+      setStatus('error');
+    }
+  };
+
+  return (
+    <Card t={t} title="Avatar">
+      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
+        An icon shown instead of your initials wherever your avatar appears. Optional.
+      </p>
+      <div role="radiogroup" aria-label="Avatar icon"
+        style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+        <button type="button" role="radio" aria-checked={avatar === null}
+          aria-label="No icon — show my initials instead" onClick={() => choose(null)}
+          style={{ ...avatarOptionStyle(t, avatar === null), padding: 0, background: 'transparent' }}>
+          <Avatar name={profile?.name ?? ''} size={44} ring={avatar === null ? t.accent : 'transparent'} />
+        </button>
+        {AVATAR_ICONS.map(({ key, label }) => (
+          <button key={key} type="button" role="radio" aria-checked={avatar === key}
+            aria-label={label} onClick={() => choose(key)} style={avatarOptionStyle(t, avatar === key)}>
+            <Icon name={key} size={20} stroke={2} />
+          </button>
+        ))}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <Btn t={t} variant="primary" icon="check" onClick={handleSave}
+          disabled={unchanged || status === 'saving'}>
+          {status === 'saving' ? 'Saving…' : 'Save avatar'}
+        </Btn>
+        {status === 'saved' && (
+          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
+            Saved.
+          </span>
+        )}
+        {status === 'error' && (
+          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 600 }}>
+            Could not save that. Try again.
+          </span>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 // Only reachable on the account path — a local-only visitor has no password to
 // change, and no `email` is what tells this apart from that world (see useIdentity.js).
 function ChangePassword({ t }) {
@@ -162,9 +298,9 @@ function ChangePassword({ t }) {
   );
 }
 
-// The same two calls the GDPR page makes, so the two screens cannot drift apart.
-// The wording stays short here on purpose: the full Article 13 text, and the export
-// and erasure controls, live on the GDPR page rather than being restated.
+// The same two calls the Terms and Privacy page makes, so the two screens cannot
+// drift apart. The wording stays short here on purpose: the full Article 13 text,
+// and the export and erasure controls, live on that page rather than being restated.
 function Analytics({ t, onNavigate }) {
   const [decision, setDecision] = useState(() => readConsent());
 
@@ -198,10 +334,10 @@ function Analytics({ t, onNavigate }) {
       <div style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginTop: 16 }}>
         {state}{' '}
         <span
-          onClick={() => onNavigate('gdpr')}
+          onClick={() => onNavigate('terms')}
           role="link"
           tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate('gdpr'); }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate('terms'); }}
           style={{ color: t.ink, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
           What is collected, and your rights
         </span>
@@ -226,8 +362,8 @@ function YourData({ t, onNavigate }) {
     <Card t={t} title="Your data">
       <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6 }}>
         Downloading everything PLACER holds in this browser, and erasing it, are on the{' '}
-        {link('gdpr', 'GDPR page')} — including this profile. The{' '}
-        {link('privacy', 'Privacy Policy')} explains what is kept and why.
+        {link('terms', 'Terms and Privacy page')} — including this profile, and what is kept and
+        why.
       </p>
     </Card>
   );
@@ -249,6 +385,15 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate }) {
         </div>
 
         <DisplayName t={t} profile={profile} onSaveProfile={onSaveProfile} />
+        <AvatarPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />
+        <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="bio"
+          title="Bio" label="Bio" id="settings-bio" multiline
+          description="A couple of lines about you, shown on your profile. Optional."
+          placeholder="What you're into, or what brought you here." />
+        <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="location"
+          title="Location" label="Location" id="settings-location"
+          description="Where you're based, shown on your profile. Optional."
+          placeholder="e.g. Malmö, Sweden" />
         {email && <ChangePassword t={t} />}
         <Analytics t={t} onNavigate={onNavigate} />
         <YourData t={t} onNavigate={onNavigate} />

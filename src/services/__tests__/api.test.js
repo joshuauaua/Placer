@@ -8,6 +8,7 @@ import {
 } from '../api';
 import { saveProfile } from '../profile';
 import { participantToken, rememberHostedRoom } from '../../sandbox/rooms';
+import { follow } from '../follows';
 
 // api.js and profile.js each declare this literal, so that mocking one in a test
 // cannot break the other. These tests are what stops the two from drifting apart:
@@ -72,6 +73,34 @@ describe('the GDPR data rights cover sandbox room tokens', () => {
 
     expect(localStorage.getItem(ROOM_PARTICIPANT_KEY)).toBeNull();
     expect(localStorage.getItem(ROOMS_HOSTED_KEY)).toBeNull();
+  });
+});
+
+// services/follows.js declares this literal the same way and for the same reason.
+// Who and what a browser follows before there are accounts is personal enough to
+// belong in the same export and erasure the profile gets.
+const FOLLOWS_KEY = 'placemaking_follows';
+
+describe('the GDPR data rights cover what this browser follows', () => {
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('includes follows in a data export', async () => {
+    await follow('imagination', 'img-1', 'Pocket park on Lot 7');
+
+    const { data } = await exportAllData();
+
+    expect(data[FOLLOWS_KEY]).toMatchObject([{ type: 'imagination', targetId: 'img-1' }]);
+  });
+
+  it('erases follows along with everything else', async () => {
+    await follow('imagination', 'img-1', 'Pocket park on Lot 7');
+    expect(localStorage.getItem(FOLLOWS_KEY)).not.toBeNull();
+
+    await eraseAllData();
+
+    expect(localStorage.getItem(FOLLOWS_KEY)).toBeNull();
   });
 });
 

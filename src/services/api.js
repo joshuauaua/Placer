@@ -26,6 +26,10 @@ const STORAGE_KEYS = {
   // room they opened.
   ROOM_PARTICIPANT: 'placemaking_room_participant',
   ROOMS_HOSTED: 'placemaking_rooms_hosted',
+  // Owned by services/follows.js, which declares the same literal for the same
+  // reason PROFILE does. Who and what this browser follows before there are
+  // accounts to hold that.
+  FOLLOWS: 'placemaking_follows',
   // One imagination in progress, parked here only while its author goes to sign in.
   // Signing in with Google, or confirming a new account by email, navigates the whole
   // page away and takes the half-finished imagination in React state with it — so it

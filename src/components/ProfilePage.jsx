@@ -4,6 +4,24 @@ import { useEffect, useMemo, useState } from 'react';
 import { Icon } from './Icon';
 import { Avatar, Btn, CatTag, Vote } from './UI';
 import { postsAreShared, readImaginations, readLocalImaginations } from '../services/imaginations';
+import { FOLLOW_TYPES, readFollows, unfollow } from '../services/follows';
+
+// What each of the four followed sections is called and what it says when there is
+// nothing in it. 'imagination' is resolved against the imaginations already loaded
+// for this page rather than fetched again; the other three have no catalog anywhere
+// in the app to follow one *from* yet, so their lists are honestly always empty
+// until that exists — see services/follows.js's header for why the plumbing is
+// still worth having now.
+const FOLLOWED_SECTIONS = [
+  { type: 'imagination', title: 'Followed imaginations',
+    empty: 'Nothing saved yet. Open an imagination and follow it to keep track of it here.' },
+  { type: 'user', title: 'Followed users',
+    empty: 'Nothing yet — there is nowhere in PLACER to follow another person from yet.' },
+  { type: 'project', title: 'Followed projects',
+    empty: 'Nothing yet — PLACER has no project pages to follow from yet.' },
+  { type: 'city', title: 'Followed cities',
+    empty: 'Nothing yet — PLACER has no city pages to follow from yet.' },
+];
 
 const sumUpvotes = (items) => items.reduce((total, item) => total + (item.upvotes || 0), 0);
 
@@ -80,12 +98,58 @@ function ImaginationCard({ t, imagination }) {
   );
 }
 
+// A followed project, city or user: nothing to show but the label captured at
+// follow time — see services/follows.js — plus a way to undo it.
+function FollowedRow({ t, item, onUnfollow }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+      padding: '12px 16px', background: t.surface, border: `1px solid ${t.line}`, borderRadius: 10 }}>
+      <span style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>{item.label}</span>
+      <button onClick={() => onUnfollow(item)} style={{ background: 'none', border: 'none',
+        color: t.inkDim, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+        Unfollow
+      </button>
+    </div>
+  );
+}
+
+function FollowedSection({ t, title, empty, items, status, render }) {
+  return (
+    <>
+      <h2 className="placer-disp" style={{ fontSize: 22, fontWeight: 900, color: t.ink,
+        letterSpacing: '-0.02em', margin: '40px 0 16px' }}>
+        {title}
+      </h2>
+      {status === 'loading' && (
+        <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>Loading…</div>
+      )}
+      {status === 'error' && (
+        <div role="alert" style={{ padding: 16, borderRadius: 8, background: '#D6452F22',
+          borderLeft: '4px solid #D6452F', fontSize: 14, fontWeight: 600, color: t.ink }}>
+          Could not load {title.toLowerCase()}. See the console for details.
+        </div>
+      )}
+      {status === 'ready' && items.length === 0 && (
+        <p style={{ fontSize: 14, color: t.inkFaint }}>{empty}</p>
+      )}
+      {status === 'ready' && items.length > 0 && render()}
+    </>
+  );
+}
+
 export function ProfilePage({ t, profile, accountId = null, onNavigate }) {
   const [posted, setPosted] = useState([]);
   // Imaginations still only in this browser, kept apart from the posted ones because they
   // are a different thing: nobody else can see them.
   const [onlyHere, setOnlyHere] = useState([]);
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
+
+  // One list per followed type, plus one status for all four — they are cheap enough,
+  // and always loaded together, that a status per section would only be more state to
+  // keep in step for no screen anyone would notice.
+  const [followedByType, setFollowedByType] = useState(() =>
+    Object.fromEntries(FOLLOW_TYPES.map((type) => [type, []])));
+  const [followedStatus, setFollowedStatus] = useState('loading');
 
   const shared = postsAreShared();
 
@@ -113,6 +177,39 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate }) {
     return () => { cancelled = true; };
   }, [shared]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all(FOLLOW_TYPES.map((type) => readFollows(type)))
+      .then((lists) => {
+        if (cancelled) return;
+        setFollowedByType(Object.fromEntries(FOLLOW_TYPES.map((type, i) => [type, lists[i]])));
+        setFollowedStatus('ready');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('Could not load what you follow:', err);
+        setFollowedStatus('error');
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleUnfollow = async (item) => {
+    // Optimistic: nothing downstream depends on the request finishing before the
+    // row goes away, and a follow list is low enough stakes that a failed unfollow
+    // reappearing on the next visit is a fine fallback rather than reverting here.
+    setFollowedByType((current) => ({
+      ...current,
+      [item.type]: current[item.type].filter((entry) => entry.targetId !== item.targetId),
+    }));
+    try {
+      await unfollow(item.type, item.targetId);
+    } catch (err) {
+      console.error('Could not unfollow that:', err);
+    }
+  };
+
   const name = profile?.name ?? '';
   // Ownership is the account id now. It used to be a display-name comparison, which meant
   // renaming yourself in Settings orphaned everything you had posted.
@@ -123,12 +220,24 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate }) {
     [posted, shared, accountId, name],
   );
 
+  // The full imaginations a follow points at, in followed order — not just the
+  // ones this account made. Resolved against what the page already loaded rather
+  // than fetched again; an id followed on another device that has not synced here
+  // yet is the one case this quietly drops, which is what readFollows() being
+  // per-account already implies.
+  const followedImaginations = useMemo(() => {
+    const byId = new Map([...posted, ...onlyHere].map((imagination) => [imagination.id, imagination]));
+    return followedByType.imagination
+      .map((entry) => byId.get(entry.targetId))
+      .filter(Boolean);
+  }, [followedByType.imagination, posted, onlyHere]);
+
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '48px 40px' }} className="placer-scroll">
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 48 }}>
-          <Avatar name={name} size={72} ring={t.line} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20, marginBottom: 48 }}>
+          <Avatar name={name} icon={profile?.avatar} size={72} ring={t.line} />
           <div>
             <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink,
               letterSpacing: '-0.03em', marginBottom: 8 }}>
@@ -145,6 +254,18 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate }) {
                 Change your name
               </span>
             </p>
+            {profile?.location && (
+              <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14.5,
+                color: t.inkDim, fontWeight: 600, marginTop: 6 }}>
+                <Icon name="pin" size={15} stroke={2.1} />
+                {profile.location}
+              </p>
+            )}
+            {profile?.bio && (
+              <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginTop: 10, maxWidth: 560 }}>
+                {profile.bio}
+              </p>
+            )}
           </div>
         </div>
 
@@ -157,7 +278,7 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate }) {
 
         <h2 className="placer-disp" style={{ fontSize: 28, fontWeight: 900, color: t.ink,
           letterSpacing: '-0.02em', marginBottom: 20 }}>
-          My imaginations
+          Created imaginations
         </h2>
 
         {status === 'loading' && (
@@ -218,6 +339,28 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate }) {
             </div>
           </>
         )}
+
+        {FOLLOWED_SECTIONS.map(({ type, title, empty }) => (
+          <FollowedSection key={type} t={t} title={title} empty={empty}
+            items={type === 'imagination' ? followedImaginations : followedByType[type]}
+            status={followedStatus}
+            render={() => (
+              type === 'imagination' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                  gap: 24 }}>
+                  {followedImaginations.map((imagination) => (
+                    <ImaginationCard key={imagination.id} t={t} imagination={imagination} />
+                  ))}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {followedByType[type].map((item) => (
+                    <FollowedRow key={item.targetId} t={t} item={item} onUnfollow={handleUnfollow} />
+                  ))}
+                </div>
+              )
+            )} />
+        ))}
       </div>
     </div>
   );

@@ -1,13 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { ProfilePage } from '../ProfilePage';
 import { postsAreShared, readImaginations, readLocalImaginations } from '../../services/imaginations';
+import { readFollows, unfollow } from '../../services/follows';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/imaginations', () => ({
   postsAreShared: vi.fn(() => false),
   readImaginations: vi.fn(() => Promise.resolve([])),
   readLocalImaginations: vi.fn(() => Promise.resolve([])),
+}));
+
+vi.mock('../../services/follows', () => ({
+  FOLLOW_TYPES: ['user', 'imagination', 'project', 'city'],
+  readFollows: vi.fn(() => Promise.resolve([])),
+  unfollow: vi.fn(() => Promise.resolve()),
 }));
 
 /*
@@ -105,6 +112,92 @@ describe('ProfilePage', () => {
     render(<ProfilePage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Could not load your imaginations/);
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('shows the bio and location when they are set', async () => {
+    setup(MINE, { profile: { name: 'Mara Quinn', bio: 'Cyclist and tree enthusiast', location: 'Malmö' } });
+    await screen.findByText('Pocket park on Lot 7');
+
+    expect(screen.getByText('Cyclist and tree enthusiast')).toBeInTheDocument();
+    expect(screen.getByText('Malmö')).toBeInTheDocument();
+  });
+
+  it('shows neither line when the bio and location are blank', async () => {
+    setup(MINE, { profile: PROFILE });
+    await screen.findByText('Pocket park on Lot 7');
+
+    expect(screen.queryByText('Malmö')).not.toBeInTheDocument();
+  });
+});
+
+describe('ProfilePage, followed sections', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(readImaginations).mockResolvedValue([]);
+    vi.mocked(readLocalImaginations).mockResolvedValue([]);
+    vi.mocked(postsAreShared).mockReturnValue(false);
+  });
+
+  it('shows an honest empty state for each of the four kinds of following', async () => {
+    vi.mocked(readFollows).mockResolvedValue([]);
+    render(<ProfilePage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
+
+    expect(await screen.findByRole('heading', { name: 'Followed imaginations' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Followed users' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Followed projects' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Followed cities' })).toBeInTheDocument();
+    expect(screen.getByText(/nowhere in PLACER to follow another person/)).toBeInTheDocument();
+    expect(screen.getByText(/no project pages to follow/)).toBeInTheDocument();
+    expect(screen.getByText(/no city pages to follow/)).toBeInTheDocument();
+  });
+
+  it('resolves a followed imagination against the imaginations already on the page', async () => {
+    vi.mocked(readImaginations).mockResolvedValue([
+      { id: 'img-1', userId: 'user-1', title: 'Mural under the rail bridge', cat: 'art',
+        author: 'Devon Park', upvotes: 5, comments: [] },
+    ]);
+    vi.mocked(readFollows).mockImplementation((type) => Promise.resolve(
+      type === 'imagination' ? [{ id: 'f1', type: 'imagination', targetId: 'img-1', label: 'Mural under the rail bridge' }] : [],
+    ));
+
+    render(<ProfilePage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
+
+    expect(await screen.findAllByText('Mural under the rail bridge')).not.toHaveLength(0);
+  });
+
+  it('lists followed projects and cities by their saved label', async () => {
+    vi.mocked(readFollows).mockImplementation((type) => Promise.resolve(
+      type === 'project' ? [{ id: 'f1', type: 'project', targetId: 'slug-1', label: 'Riverside Greenway' }]
+      : type === 'city' ? [{ id: 'f2', type: 'city', targetId: 'malmo', label: 'Malmö' }]
+      : [],
+    ));
+
+    render(<ProfilePage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
+
+    expect(await screen.findByText('Riverside Greenway')).toBeInTheDocument();
+    expect(screen.getByText('Malmö')).toBeInTheDocument();
+  });
+
+  it('unfollows and removes the row', async () => {
+    vi.mocked(readFollows).mockImplementation((type) => Promise.resolve(
+      type === 'city' ? [{ id: 'f2', type: 'city', targetId: 'malmo', label: 'Malmö' }] : [],
+    ));
+
+    render(<ProfilePage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
+    (await screen.findByText('Malmö')).closest('div').querySelector('button').click();
+
+    await waitFor(() => expect(unfollow).toHaveBeenCalledWith('city', 'malmo'));
+    expect(screen.queryByText('Malmö')).not.toBeInTheDocument();
+  });
+
+  it('says so when following cannot be loaded', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(readFollows).mockRejectedValue(new Error('storage gone'));
+
+    render(<ProfilePage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
+
+    expect(await screen.findAllByText(/Could not load followed/i)).not.toHaveLength(0);
     consoleErrorSpy.mockRestore();
   });
 });

@@ -33,14 +33,42 @@ export function Logo({ t, size = 22 }) {
 
 const AV_COLORS = ['#3E9D4E', '#E08A2B', '#D4407E', '#7A52E0', '#2F7BD6', '#D6452F', '#16766B'];
 
-export function Avatar({ name = '', size = 34, ring }) {
+/**
+ * The predefined avatar library: a fixed set of icon names, already in Icon.jsx,
+ * that a profile may pick instead of the initials Avatar falls back to. Kept as one
+ * list so the picker in SettingsPage and the `avatar` column's check constraint in
+ * supabase/auth.sql cannot drift apart — the SQL comment next to that constraint
+ * says to keep this list in step with it.
+ */
+export const AVATAR_ICONS = [
+  { key: 'user', label: 'Person' },
+  { key: 'tree', label: 'Tree' },
+  { key: 'bench', label: 'Bench' },
+  { key: 'art', label: 'Art' },
+  { key: 'play', label: 'Play' },
+  { key: 'light', label: 'Lighting' },
+  { key: 'cart', label: 'Market' },
+  { key: 'sparkle', label: 'Sparkle' },
+  { key: 'pin', label: 'Pin' },
+  { key: 'walk', label: 'Walking' },
+  { key: 'bike', label: 'Cycling' },
+  { key: 'planter', label: 'Planter' },
+];
+
+export const AVATAR_ICON_KEYS = AVATAR_ICONS.map((option) => option.key);
+
+// `icon` picks one of AVATAR_ICONS over the initials this used to always show. Same
+// coloured circle either way, so switching between the two is a same-size swap.
+export function Avatar({ name = '', size = 34, ring, icon }) {
   const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
   const color = AV_COLORS[(name.charCodeAt(0) + name.length) % AV_COLORS.length];
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', background: color, color: '#fff',
       display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto',
       fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: size * 0.4,
-      boxShadow: ring ? `0 0 0 2px ${ring}` : 'none' }}>{initials}</div>
+      boxShadow: ring ? `0 0 0 2px ${ring}` : 'none' }}>
+      {icon ? <Icon name={icon} size={size * 0.52} stroke={2} /> : initials}
+    </div>
   );
 }
 

@@ -4,6 +4,8 @@ import { readProfile, saveProfile, signIn, signOut, DEFAULT_NAME } from '../prof
 // The literal rather than the import, so renaming the key fails this test.
 const PROFILE_KEY = 'placemaking_profile';
 
+const DEFAULT_PROFILE = { name: DEFAULT_NAME, bio: '', location: '', avatar: null };
+
 describe('profile', () => {
   afterEach(() => {
     // Nothing resets localStorage between tests, so each file clears its own.
@@ -11,7 +13,7 @@ describe('profile', () => {
   });
 
   it('treats a visitor who has never touched it as signed in by default', () => {
-    expect(readProfile()).toEqual({ name: DEFAULT_NAME, bio: '' });
+    expect(readProfile()).toEqual(DEFAULT_PROFILE);
   });
 
   it('keeps the default name that saved imaginations are credited to', () => {
@@ -33,6 +35,12 @@ describe('profile', () => {
     expect(readProfile()).toMatchObject({ name: 'Mara Quinn', bio: 'Tree enthusiast' });
   });
 
+  it('saves a location and an avatar icon alongside the rest', () => {
+    saveProfile({ name: 'Mara Quinn', location: 'Malmö', avatar: 'tree' });
+
+    expect(readProfile()).toMatchObject({ location: 'Malmö', avatar: 'tree' });
+  });
+
   it('reports nobody signed in after logging out', () => {
     saveProfile({ name: 'Mara Quinn' });
     signOut();
@@ -44,7 +52,7 @@ describe('profile', () => {
     signOut();
     signIn();
 
-    expect(readProfile()).toEqual({ name: DEFAULT_NAME, bio: '' });
+    expect(readProfile()).toEqual(DEFAULT_PROFILE);
   });
 
   it('falls back to the default rather than a blank name', () => {
@@ -56,6 +64,12 @@ describe('profile', () => {
   it('survives a stored record it cannot parse', () => {
     localStorage.setItem(PROFILE_KEY, 'not json');
 
-    expect(readProfile()).toEqual({ name: DEFAULT_NAME, bio: '' });
+    expect(readProfile()).toEqual(DEFAULT_PROFILE);
+  });
+
+  it('drops a non-string avatar rather than storing something Avatar cannot render', () => {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: 'Mara Quinn', avatar: 42 }));
+
+    expect(readProfile()).toMatchObject({ avatar: null });
   });
 });

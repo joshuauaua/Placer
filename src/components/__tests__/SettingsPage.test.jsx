@@ -96,18 +96,96 @@ describe('SettingsPage', () => {
     expect(localStorage.getItem(CONSENT_KEY)).toBe('denied');
   });
 
-  it('sends you to the GDPR page for the full data rights', () => {
+  it('sends you to the Terms and Privacy page for the full data rights', () => {
     const { onNavigate } = setup();
 
-    fireEvent.click(screen.getByRole('link', { name: 'GDPR page' }));
+    fireEvent.click(screen.getByRole('link', { name: 'What is collected, and your rights' }));
 
-    expect(onNavigate).toHaveBeenCalledWith('gdpr');
+    expect(onNavigate).toHaveBeenCalledWith('terms');
   });
 
   it('has no password to change for a local-only profile', () => {
     setup();
 
     expect(screen.queryByLabelText('New password')).not.toBeInTheDocument();
+  });
+});
+
+describe('SettingsPage, bio and location', () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('shows the current bio and location', () => {
+    setup({ profile: { name: 'Mara Quinn', bio: 'Cyclist', location: 'Malmö' } });
+
+    expect(screen.getByLabelText('Bio')).toHaveValue('Cyclist');
+    expect(screen.getByLabelText('Location')).toHaveValue('Malmö');
+  });
+
+  it('cannot save a field until it actually changes', () => {
+    setup({ profile: { name: 'Mara Quinn', bio: 'Cyclist', location: '' } });
+
+    expect(screen.getByRole('button', { name: /Save bio/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Save location/ })).toBeDisabled();
+  });
+
+  it('saves a bio, blank being a valid value since it is optional', async () => {
+    const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: 'Cyclist', location: '' } });
+
+    fireEvent.change(screen.getByLabelText('Bio'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save bio/ }));
+
+    await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ bio: '' }));
+  });
+
+  it('saves a location', async () => {
+    const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: '', location: '' } });
+
+    fireEvent.change(screen.getByLabelText('Location'), { target: { value: 'Malmö' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save location/ }));
+
+    expect(await screen.findAllByRole('status')).not.toHaveLength(0);
+    expect(onSaveProfile).toHaveBeenCalledWith({ location: 'Malmö' });
+  });
+});
+
+describe('SettingsPage, avatar', () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('starts on the initials option when no icon is set', () => {
+    setup({ profile: { name: 'Mara Quinn', bio: '', avatar: null } });
+
+    expect(screen.getByRole('radio', { name: /show my initials/i })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('button', { name: /Save avatar/ })).toBeDisabled();
+  });
+
+  it('shows the currently chosen icon as selected', () => {
+    setup({ profile: { name: 'Mara Quinn', bio: '', avatar: 'tree' } });
+
+    expect(screen.getByRole('radio', { name: 'Tree' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('picks an icon and saves it', async () => {
+    const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: '', avatar: null } });
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Tree' }));
+    fireEvent.click(screen.getByRole('button', { name: /Save avatar/ }));
+
+    await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ avatar: 'tree' }));
+  });
+
+  it('can clear a chosen icon back to initials', async () => {
+    const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: '', avatar: 'tree' } });
+
+    fireEvent.click(screen.getByRole('radio', { name: /show my initials/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Save avatar/ }));
+
+    await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ avatar: null }));
   });
 });
 

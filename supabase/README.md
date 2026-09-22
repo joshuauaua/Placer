@@ -175,8 +175,13 @@ still browse, draw, and open Sandbox rooms; what they cannot do is post an
 imagination, because a posted imagination belongs to an account.
 
 Run `auth.sql` in the SQL editor, the same way as `schema.sql`. It is re-runnable.
-It creates `public.profiles` — one row per account, holding the display name and bio
-— and the trigger on `auth.users` that fills it in the moment an account exists.
+It creates `public.profiles` — one row per account, holding the display name, bio,
+location and avatar icon — and the trigger on `auth.users` that fills it in the
+moment an account exists.
+
+If `public.profiles` already exists from before location and avatar were added,
+re-running `auth.sql` is still all that is needed: the two columns are added with
+`add column if not exists`, the same way `imaginations.sql` evolves a live table.
 
 Supabase Auth itself needs no SQL: it owns the email address, the password hash and
 the Google identity, and none of that is ours to store. What it does need is
@@ -305,6 +310,34 @@ bundle, so the button counts every press. Read the number as a rough signal of i
 not a count of people. Fixing it means a votes table with one row per account per
 imagination — which also means signed-out visitors stop being able to vote at all.
 
+## 11. Following
+
+Requires step 9 — a follow belongs to an account. Run `follows.sql` in the SQL editor
+after `auth.sql`. It is re-runnable.
+
+It creates `public.follows`, one generic table for the four things a profile can follow
+— users, imaginations, projects, and cities — rather than four separate ones. Two of
+those four, projects and cities, have no table of their own yet, which is why every row
+carries its own label rather than joining out to one: there is nowhere for 'project' and
+'city' rows to join to, and this way 'user' and 'imagination' rows do not need a
+different shape from the other two. See the comment at the top of `follows.sql` and of
+`src/services/follows.js` for the full reasoning.
+
+Nowhere in the app yet lets somebody follow a project or a city — neither has a page to
+follow one from — so in practice this table only fills up with `user` and `imagination`
+rows today. The profile page shows all four sections regardless, honestly empty where
+there is nothing yet to follow.
+
+### Verify
+
+```sql
+select relrowsecurity from pg_class where relname = 'follows';
+select policyname, cmd, roles from pg_policies where tablename = 'follows';
+```
+
+Expect `rls` true, and one SELECT, one INSERT and one DELETE policy, all for
+`{authenticated}`.
+
 ## Still to decide
 
 - **Retention.** The GDPR page says answers are kept "while this research runs"
@@ -316,6 +349,10 @@ imagination — which also means signed-out visitors stop being able to vote at 
   says so when a delete is refused rather than looking broken. Real moderation needs a
   `service_role` key behind a server, or an admin claim in the JWT and a policy that
   honours it. Until then, moderate from the SQL editor.
+- **Neither are follows, for the same reason.** `public.follows` has the same gap as
+  `public.profiles` below: it is server-side state belonging to an account, and the
+  GDPR controls only reach what is in localStorage. A signed-out visitor's follows are
+  covered — they live under `placemaking_follows`, in `STORAGE_KEYS` — an account's are not.
 - **Accounts are not yet in the export or the erasure.** `exportAllData` and
   `eraseAllData` in `src/services/api.js` walk a registry of localStorage keys, and a
   profile row is not one. Two consequences: the GDPR page's download does not include

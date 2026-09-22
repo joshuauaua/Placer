@@ -186,11 +186,22 @@ describe('the profile', () => {
   it('is shaped like the local one, so nothing downstream can tell them apart', async () => {
     await load();
     maybeSingle.mockResolvedValue({
-      data: { id: 'user-1', display_name: 'Mara Quinn', bio: 'Cyclist' }, error: null,
+      data: { id: 'user-1', display_name: 'Mara Quinn', bio: 'Cyclist', location: 'Malmö', avatar: 'tree' },
+      error: null,
     });
 
     await expect(auth.readOwnProfile())
-      .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: 'Cyclist' });
+      .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: 'Cyclist', location: 'Malmö', avatar: 'tree' });
+  });
+
+  it('defaults location and avatar when the row has none', async () => {
+    await load();
+    maybeSingle.mockResolvedValue({
+      data: { id: 'user-1', display_name: 'Mara Quinn', bio: '', location: null, avatar: null }, error: null,
+    });
+
+    await expect(auth.readOwnProfile())
+      .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: '', location: '', avatar: null });
   });
 
   it('is null when there is no row to read, rather than throwing', async () => {
@@ -209,6 +220,18 @@ describe('the profile', () => {
     await auth.saveOwnProfile({ name: 'Devon Park' });
 
     expect(update).toHaveBeenCalledWith({ display_name: 'Devon Park' });
+  });
+
+  it('sends a location and an avatar icon when they are the fields being changed', async () => {
+    await load();
+    maybeSingle.mockResolvedValue({
+      data: { id: 'user-1', display_name: 'Devon Park', bio: '', location: 'Malmö', avatar: 'tree' },
+      error: null,
+    });
+
+    await auth.saveOwnProfile({ location: 'Malmö', avatar: 'tree' });
+
+    expect(update).toHaveBeenCalledWith({ location: 'Malmö', avatar: 'tree' });
   });
 
   it('carries no id on the update: the policy already scopes it to the caller', async () => {
