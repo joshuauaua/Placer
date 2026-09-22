@@ -49,6 +49,7 @@ const PLAN = [
       '-- DELETE -- operational commands, not schema, so they stay out of migrations.',
   },
   { name: '20260913090005_imaginations.sql', src: 'imaginations.sql' },
+  { name: '20260922090001_follows.sql', src: 'follows.sql' },
 ]
 
 export function render({ src, slice, note }, read = (f) => readFileSync(`${DIR}/${f}`, 'utf8')) {
