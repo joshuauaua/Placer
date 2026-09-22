@@ -38,6 +38,7 @@
     "vite-plus": "^0.2.5"
   },
   "allowScripts": {
-    "fsevents@2.3.3": true
+    "fsevents@2.3.3": true,
+    "core-js@3.50.0": false
   }
 }
