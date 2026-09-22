@@ -1,9 +1,10 @@
 /* PLACER — a project's dashboard: its numbers, its roster, and its documentation */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn } from './UI';
 import { ProjectSetupPage } from './ProjectSetupPage';
+import { EXPERIMENTS } from '../sandbox/experiments';
 import {
   addCollaborator,
   addLink,
@@ -62,6 +63,81 @@ function CollaboratorRow({ t, collaborator, onRemove }) {
         color: t.inkDim, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
         Remove
       </button>
+    </div>
+  );
+}
+
+function ExperimentMenuItem({ t, experiment, onClick }) {
+  return (
+    <button
+      role="menuitem"
+      onClick={onClick}
+      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+        padding: '10px 14px', background: 'transparent', color: t.ink, cursor: 'pointer',
+        border: 'none', fontFamily: 'var(--placer-font)', fontWeight: 600, fontSize: 14.5,
+        letterSpacing: '-0.01em', textAlign: 'left' }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+      <Icon name={experiment.icon} size={17} stroke={2} style={{ color: experiment.color, flex: '0 0 auto' }} />
+      {experiment.name}
+    </button>
+  );
+}
+
+/**
+ * "Open Sandbox for this project" needed to become a choice once the Sandbox held
+ * more than one experiment — same dismissal shape as UserMenu's dropdown, which is
+ * this app's first one.
+ */
+function AddSandboxExperiment({ t, onChoose }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handleKeyDown = (e) => { if (e.key === 'Escape') setOpen(false); };
+    const handlePointerDown = (e) => {
+      if (!wrapRef.current?.contains(e.target)) setOpen(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('mousedown', handlePointerDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [open]);
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative', display: 'inline-block' }}>
+      <button
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((wasOpen) => !wasOpen)}
+        style={{ height: 42, padding: '0 18px', borderRadius: 9, cursor: 'pointer',
+          display: 'inline-flex', alignItems: 'center', gap: 8, background: t.accent,
+          color: t.accentInk, border: '1px solid transparent', fontFamily: 'var(--placer-font)',
+          fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em' }}>
+        <Icon name="sparkle" size={18} stroke={2.1} />
+        Add Sandbox Experiment
+        <Icon name={open ? 'chevUp' : 'chevDown'} size={15} stroke={2.2} />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          aria-label="Sandbox experiments"
+          style={{ position: 'absolute', top: '100%', left: 0, marginTop: 8, zIndex: 10,
+            minWidth: 240, padding: '6px 0', background: t.surface,
+            border: `1px solid ${t.line}`, borderRadius: 12, boxShadow: t.shadow,
+            overflow: 'hidden' }}>
+          {EXPERIMENTS.map((experiment) => (
+            <ExperimentMenuItem key={experiment.id} t={t} experiment={experiment}
+              onClick={() => { setOpen(false); onChoose(experiment.id); }} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -249,12 +325,10 @@ export function ProjectDashboardPage({ t, accountId, projectId,
 
         <Card t={t} title="Sandbox">
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
-            Open the Sandbox with a room attached to this project — it shows up in the
-            count above, and on the public page once it has run.
+            Open an experiment attached to this project — it shows up in the count
+            above, and on the public page once it has run.
           </p>
-          <Btn t={t} variant="accent" icon="sparkle" onClick={() => onOpenSandbox(project.id)}>
-            Open Sandbox for this project
-          </Btn>
+          <AddSandboxExperiment t={t} onChoose={(experimentId) => onOpenSandbox(project.id, experimentId)} />
         </Card>
 
         <Card t={t} title="Documentation">

@@ -111,13 +111,16 @@ describe('ProjectDashboardPage', () => {
     expect(await screen.findByRole('heading', { name: 'Riverside Greenway' })).toBeInTheDocument();
   });
 
-  it('sends you to the Sandbox with the project attached', async () => {
+  it('lists the sandbox experiments and sends you to the one you pick, with the project attached', async () => {
     const { onOpenSandbox } = setup();
     await screen.findByText('Riverside Greenway');
 
-    fireEvent.click(screen.getByRole('button', { name: /Open Sandbox for this project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Add Sandbox Experiment/ }));
+    expect(screen.getByRole('menuitem', { name: 'Budget Ballot' })).toBeInTheDocument();
 
-    expect(onOpenSandbox).toHaveBeenCalledWith('proj-1');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Budget Ballot' }));
+
+    expect(onOpenSandbox).toHaveBeenCalledWith('proj-1', 'budget-ballot');
   });
 
   it('lists collaborators, defaulting to just the owner', async () => {

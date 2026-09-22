@@ -8,6 +8,7 @@ import { Btn } from './UI';
 import { ImaginationPreview } from './ImaginationPreview';
 import { CAT, THEME } from '../theme';
 import { readImaginations } from '../services/imaginations';
+import { isSupabaseConfigured, readProjectLocations } from '../services/projects';
 import {
   DEFAULT_SIZE,
   fetchAsDataUrl,
@@ -17,9 +18,16 @@ import {
   streetViewStaticUrl,
 } from '../lib/staticMaps';
 import { tilingGain } from '../lib/panoGeometry';
+import { loadGoogleMaps } from '../lib/googleMaps';
+import { MAP_STYLE } from '../lib/mapStyle';
 
 // Pin colour for an imagination saved without a recognised category.
 const FALLBACK_PIN_COLOR = THEME.accent;
+
+// A project's drawn outline, the same accent LocationMapPicker and ProjectLocationMap
+// draw it in while it is being set up and shown off — one consistent colour for
+// "this is a project's area" wherever it appears.
+const PROJECT_OUTLINE_COLOR = THEME.accent;
 
 // Below this resolution gain, tiling is not worth its extra requests: the gain
 // comes from spending a whole 640px tile on a slice of the view, so it shrinks as
@@ -39,8 +47,12 @@ const hasCoords = (position) =>
  * `initialCenter` opens the map somewhere other than the default — used after
  * posting, so the imagination that was just saved is on screen rather than a
  * continent away.
+ *
+ * `accountId`, `authorName` and `onSignIn` are passed straight through to the pin
+ * preview modal, which needs them to vote on and comment on whatever pin is open.
  */
-const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
+const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null,
+  accountId = null, authorName, onSignIn, onOpenProject }) => {
   const t = THEME;
   const mapRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -66,6 +78,10 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
   // remounts this component, so a just-posted imagination appears without plumbing.
   const [imaginations, setImaginations] = useState([]);
   const markersRef = useRef([]);
+  // Every project's drawn location outline, so a project's area shows up here too —
+  // not just on its own public page. Loaded once per mount, same as imaginations.
+  const [projectLocations, setProjectLocations] = useState([]);
+  const projectOverlaysRef = useRef([]);
   // The imagination whose preview card is open, if any.
   const [selected, setSelected] = useState(null);
   // Tracks the latest position without making the init effect below re-run on every change —
@@ -75,25 +91,21 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
     currentPositionRef.current = currentPosition;
   }, [currentPosition]);
 
-  // Load Google Maps script
+  // Load Google Maps script, sharing one tag with every other component that needs it —
+  // see src/lib/googleMaps.js for why that has to be shared rather than each component
+  // injecting its own.
   useEffect(() => {
-    if (window.google) {
-      return;
-    }
+    let cancelled = false;
 
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
+    loadGoogleMaps(apiKey)
+      .then(() => {
+        if (!cancelled) setGoogleLoaded(true);
+      })
+      .catch((error) => {
+        console.error('Failed to load Google Maps script', error);
+      });
 
-    script.onload = () => {
-      setGoogleLoaded(true);
-    };
-
-    script.onerror = () => {
-      console.error('Failed to load Google Maps script');
-    };
-
-    document.head.appendChild(script);
+    return () => { cancelled = true; };
   }, [apiKey]);
 
   // Initialize Google Maps
@@ -116,9 +128,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
         zoom: hasCoords(initialCenter) ? 17 : 15,
         mapTypeControl: true,
         streetViewControl: true,
-        styles: [
-          { featureType: 'all', elementType: 'geometry', stylers: [{ saturation: -20 }] }
-        ]
+        styles: MAP_STYLE,
       });
 
 
@@ -163,6 +173,26 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
       .catch((error) => {
         // A pin layer that fails to load must not take the map down with it.
         console.error('Could not load saved imaginations:', error);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  // Load every project's drawn location outline. Unlike readImaginations, there is no
+  // local fallback to fall into with no Supabase project configured — projects need an
+  // account by definition (see services/projects.js's header) — so this is skipped
+  // rather than left to throw and be swallowed.
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return undefined;
+    let cancelled = false;
+
+    readProjectLocations()
+      .then((rows) => {
+        if (!cancelled) setProjectLocations(rows);
+      })
+      .catch((error) => {
+        // A layer that fails to load must not take the map down with it.
+        console.error('Could not load project locations:', error);
       });
 
     return () => { cancelled = true; };
@@ -214,6 +244,39 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
       setSelected(null);
     };
   }, [map, imaginations]);
+
+  // Draw one polygon per shape a project has outlined — the same trace LocationMapPicker
+  // draws while it is being set up and ProjectLocationMap shows on its public page, now
+  // on the map everyone shares. Clicking one goes to that project's public page, the
+  // same destination "View the public page" on its dashboard does.
+  useEffect(() => {
+    if (!map || !window.google) return undefined;
+
+    projectOverlaysRef.current = projectLocations.flatMap((project) =>
+      (project.locationShapes ?? [])
+        .filter((shape) => (shape?.path?.length ?? 0) >= 3)
+        .map((shape) => {
+          const polygon = new window.google.maps.Polygon({
+            paths: shape.path,
+            map,
+            fillColor: PROJECT_OUTLINE_COLOR,
+            fillOpacity: 0.16,
+            strokeColor: PROJECT_OUTLINE_COLOR,
+            strokeWeight: 2,
+            clickable: true,
+          });
+
+          polygon.addListener('click', () => onOpenProject?.(project.id));
+
+          return polygon;
+        })
+    );
+
+    return () => {
+      projectOverlaysRef.current.forEach((polygon) => polygon.setMap(null));
+      projectOverlaysRef.current = [];
+    };
+  }, [map, projectLocations, onOpenProject]);
 
   // Escape closes the preview, matching the canvas's own Escape behaviour.
   useEffect(() => {
@@ -426,7 +489,8 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
           <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
 
           {selected && (
-            <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)} />
+            <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)}
+              accountId={accountId} authorName={authorName} onSignIn={onSignIn} />
           )}
 
           {/* Floating controls — bottom-centered over the map: search + capture */}

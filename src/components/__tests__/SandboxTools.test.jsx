@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { BudgetBallot } from '../sandbox/BudgetBallot';
 import { DesireLines } from '../sandbox/DesireLines';
 import { FifteenMinute } from '../sandbox/FifteenMinute';
+import { OpenVote } from '../sandbox/OpenVote';
 import { StreetMixer } from '../sandbox/StreetMixer';
 import { findExperiment } from '../../sandbox/experiments';
 import { THEME } from '../../theme';
@@ -324,5 +325,32 @@ describe('Budget Ballot', () => {
     const field = await screen.findByLabelText('Your ballot as text');
     expect(field.value).toContain('Benches with backs: 3 benches');
     expect(field.value).toContain('Spent €2,700 of €250,000');
+  });
+});
+
+describe('Open Vote', () => {
+  it('shows the placeholder question and nothing chosen yet', () => {
+    mount(OpenVote, 'open-vote');
+
+    expect(screen.getByPlaceholderText('Yes or No?')).toBeInTheDocument();
+    expect(screen.getByText(/pick yes, no, or undecided to see it here/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Yes' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('picks a vote and shows it in the solo result', () => {
+    mount(OpenVote, 'open-vote');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undecided' }));
+
+    expect(screen.getByRole('button', { name: 'Undecided' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('1 · 100%')).toBeInTheDocument();
+  });
+
+  it('lets someone type their own question, purely for display', () => {
+    mount(OpenVote, 'open-vote');
+
+    fireEvent.change(screen.getByLabelText('The question'), { target: { value: 'Fund the parklets?' } });
+
+    expect(screen.getByLabelText('The question')).toHaveValue('Fund the parklets?');
   });
 });

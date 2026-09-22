@@ -57,7 +57,7 @@ describe('the gallery', () => {
     for (const experiment of EXPERIMENTS) {
       expect(screen.getByRole('button', { name: new RegExp(experiment.name, 'i') })).toBeInTheDocument();
     }
-    expect(EXPERIMENTS).toHaveLength(7);
+    expect(EXPERIMENTS).toHaveLength(8);
   });
 
   it('opens an experiment, and puts it in the URL', async () => {
@@ -154,7 +154,7 @@ describe('inside the app', () => {
     expect(screen.getByText('About')).toBeInTheDocument();
   });
 
-  it('leaves the Sandbox again, and puts the URL back', async () => {
+  it('leaves the Sandbox again, and puts the URL on the new view', async () => {
     // The view is read off the location, so a nav item that only set component state
     // would leave the Sandbox showing over an About URL, or vice versa.
     const { location } = renderAt('/sandbox/street-mixer');
@@ -166,7 +166,7 @@ describe('inside the app', () => {
     expect(
       await screen.findByRole('img', { name: /participatory placemaking/i }),
     ).toBeInTheDocument();
-    expect(location.history.at(-1)).toBe('/');
+    expect(location.history.at(-1)).toBe('/about');
     expect(screen.queryByRole('heading', { level: 1, name: 'Street Section Mixer' })).not.toBeInTheDocument();
   });
 

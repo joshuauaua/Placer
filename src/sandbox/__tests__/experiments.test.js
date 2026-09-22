@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { EXPERIMENTS, findExperiment } from '../experiments';
 import { BUDGET, emptyBallot, tally } from '../../lib/budgetBallot';
+import { emptyVote } from '../../lib/openVote';
 
 describe('the register', () => {
   it('finds an experiment by the id in its URL', () => {
@@ -66,5 +67,36 @@ describe("the Budget Ballot's room", () => {
 
     expect(combined).toEqual(expect.objectContaining({ benches: 1 }));
     expect(combined).not.toHaveProperty('nonsense');
+  });
+});
+
+describe("the Open Vote's room", () => {
+  const { room } = findExperiment('open-vote');
+
+  it('starts a participant with no choice made', () => {
+    expect(room.empty()).toEqual(emptyVote());
+  });
+
+  it('counts every vote by its choice', () => {
+    const combined = room.combine([{ choice: 'yes' }, { choice: 'yes' }, { choice: 'no' }]);
+
+    expect(combined.counts).toEqual({ yes: 2, no: 1, undecided: 0 });
+    expect(combined.total).toBe(3);
+  });
+
+  it('is an empty tally when nobody has voted', () => {
+    expect(room.combine([])).toEqual({
+      counts: { yes: 0, no: 0, undecided: 0 },
+      shares: { yes: 0, no: 0, undecided: 0 },
+      total: 0,
+    });
+  });
+
+  it('ignores a contribution that is missing or malformed', () => {
+    // The state comes back from a database that other browsers wrote to.
+    const combined = room.combine([{ choice: 'yes' }, null, { choice: undefined }, { choice: 'maybe' }]);
+
+    expect(combined.counts).toEqual({ yes: 1, no: 0, undecided: 0 });
+    expect(combined.total).toBe(1);
   });
 });

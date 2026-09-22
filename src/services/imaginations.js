@@ -23,14 +23,19 @@
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
 import {
+  addComment as addCommentLocal,
   deleteImagination as deleteLocal,
   fetchImaginations as fetchLocal,
+  readComments as readCommentsLocal,
+  readMyVote as readMyVoteLocal,
   saveImagination as saveLocal,
-  upvoteImagination as upvoteLocal,
+  voteImagination as voteLocal,
 } from './api';
 
 export const IMAGINATIONS_TABLE = 'imaginations';
 export const PREVIEWS_BUCKET = 'imagination-previews';
+export const COMMENTS_TABLE = 'imagination_comments';
+export const VOTES_TABLE = 'imagination_votes';
 
 export { isSupabaseConfigured };
 
@@ -112,8 +117,10 @@ function fromRow(supabase, row) {
     upvotes: row.upvotes ?? 0,
     // Null for the ordinary case — an imagination posted without a project open.
     projectId: row.project_id ?? null,
-    // No comments table yet. An empty array rather than undefined, so the shape matches
-    // what saveImagination writes locally and nothing downstream has to special-case it.
+    // Comments live in their own table (see readComments) rather than here, so listing
+    // every imagination for the map or a profile never drags every thread behind it.
+    // Empty rather than undefined, so the shape matches what saveImagination writes
+    // locally and nothing downstream has to special-case it.
     comments: [],
     createdAt: row.created_at ?? null,
     updatedAt: row.updated_at ?? null,
@@ -298,21 +305,110 @@ export async function removeImagination(id) {
 }
 
 /**
- * Add a vote. Returns the new count, or null for an imagination that is no longer there.
+ * Cast, change, or withdraw a vote on an imagination. `direction` is the button that
+ * was pressed — 'up' or 'down' — and pressing the one that is already standing
+ * withdraws it, which is decided below rather than by the caller.
  *
- * An RPC rather than an update, because voting is by definition done to somebody else's
- * imagination and the update policy is owner-only. Note that nothing records who voted,
- * so this can be pressed twice — see the comment in supabase/imaginations.sql section 5.
+ * An RPC rather than an update, because voting is by definition done to somebody
+ * else's imagination and the update policy on public.imaginations is owner-only. It
+ * also needs an account, unlike the single-vote-per-browser scheme this replaced:
+ * with nowhere to record who voted, the old imagination_upvote could be pressed
+ * twice by the same visitor — see supabase/imaginations.sql section 5. The account
+ * is what lets a vote be changed instead of only ever added, and it is also what
+ * stops it being repeated.
+ *
+ * Locally there is always an account of a kind — the browser itself — so no account
+ * is asked for there, and every visitor keeps their own vote on their own device the
+ * same way they always could switch or withdraw it.
+ *
+ * Returns { upvotes, myVote }, or null for an imagination that is no longer there.
  */
-export async function upvoteImagination(id) {
-  if (!isSupabaseConfigured()) {
-    const updated = await upvoteLocal(id);
-    return updated?.upvotes ?? null;
-  }
+export async function voteImagination(id, direction, { accountId = null } = {}) {
+  if (!isSupabaseConfigured()) return voteLocal(id, direction);
+
+  if (!accountId) throw new Error('Voting needs an account.');
 
   const supabase = await client();
-  const { data, error } = await supabase.rpc('imagination_upvote', { p_id: id });
+  const { data, error } = await supabase.rpc('imagination_vote', { p_id: id, p_direction: direction });
 
   if (error) throw new Error(`Could not register your vote: ${error.message}`);
-  return typeof data === 'number' ? data : null;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+  return { upvotes: row.upvotes, myVote: row.my_vote === 1 ? 'up' : row.my_vote === -1 ? 'down' : null };
+}
+
+/**
+ * This account's — or, with no project configured, this browser's — standing vote on
+ * an imagination: 'up', 'down', or null. Read separately from the imagination itself
+ * so that loading the map or a profile, which only ever shows the shared count, never
+ * has to fetch a per-viewer answer nobody there asked for.
+ */
+export async function readMyVote(id, { accountId = null } = {}) {
+  if (!isSupabaseConfigured()) return readMyVoteLocal(id);
+  if (!accountId) return null;
+
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(VOTES_TABLE)
+    .select('value')
+    .match({ imagination_id: id, user_id: accountId })
+    .maybeSingle();
+
+  if (error) throw new Error(`Could not read your vote: ${error.message}`);
+  return data?.value === 1 ? 'up' : data?.value === -1 ? 'down' : null;
+}
+
+/**
+ * Every comment on an imagination, oldest first — a thread reads top to bottom, not
+ * newest-first the way the map's pins do.
+ */
+export async function readComments(imaginationId) {
+  if (!isSupabaseConfigured()) return readCommentsLocal(imaginationId);
+
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(COMMENTS_TABLE)
+    .select('id, author_name, body, created_at')
+    .eq('imagination_id', imaginationId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(`Could not load the comments: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    author: row.author_name,
+    text: row.body,
+    createdAt: row.created_at,
+  }));
+}
+
+/**
+ * Post a comment. Needs an account when a project is configured, the same as posting
+ * an imagination itself does — a comment is credited to whoever wrote it, and there
+ * is nowhere to attribute one without a signed-in author.
+ */
+export async function postComment(imaginationId, { authorName, accountId = null, text }) {
+  const body = (text ?? '').trim();
+  if (!body) throw new Error('A comment needs some words in it.');
+
+  if (!isSupabaseConfigured()) {
+    return addCommentLocal(imaginationId, { text: body, author: authorName });
+  }
+
+  if (!accountId) throw new Error('Commenting needs an account.');
+
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(COMMENTS_TABLE)
+    .insert({
+      id: crypto.randomUUID(),
+      imagination_id: imaginationId,
+      user_id: accountId,
+      author_name: authorName,
+      body,
+    })
+    .select('id, author_name, body, created_at')
+    .single();
+
+  if (error) throw new Error(`Could not post your comment: ${error.message}`);
+  return { id: data.id, author: data.author_name, text: data.body, createdAt: data.created_at };
 }

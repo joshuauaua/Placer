@@ -81,6 +81,10 @@ export function streetViewStaticUrl({
   return `${STREET_VIEW_ENDPOINT}?${params.toString()}`
 }
 
+// fillcolor:0x...NN closes a path into a filled polygon (rather than an open
+// line), matching what LocationMapPicker draws live while editing.
+const PATH_FILL_ALPHA = '40'
+
 export function staticMapUrl({
   apiKey,
   center,
@@ -92,11 +96,15 @@ export function staticMapUrl({
   maptype = 'roadmap',
   size = DEFAULT_SIZE,
   scale = MAX_MAP_SCALE,
+  // A project's drawn location outline (locationShapes: [{ path: [{lat,lng},...] }]).
+  // Given instead of center/zoom, Google fits the viewport to the shapes itself, the
+  // same auto-fit ProjectSetupPage's live map gets for free from google.maps.Map —
+  // there is no bounds math to duplicate here.
+  paths,
+  pathColor = '2f91a2',
 }) {
   const { width, height } = clampSize(size)
   const params = new URLSearchParams({
-    center: `${center.lat},${center.lng}`,
-    zoom: String(zoom),
     size: `${width}x${height}`,
     // Requested in CSS-ish pixels: `size` stays inside the 640 cap and scale
     // multiplies the pixels delivered, so this is 1280x896 of image describing
@@ -105,6 +113,19 @@ export function staticMapUrl({
     maptype,
     key: apiKey,
   })
+
+  if (paths?.length) {
+    const color = pathColor.replace('#', '').toLowerCase()
+    for (const shape of paths) {
+      const points = (shape?.path ?? []).map(({ lat, lng }) => `${lat},${lng}`).join('|')
+      if (!points) continue
+      params.append('path', `color:0x${color}ff|weight:2|fillcolor:0x${color}${PATH_FILL_ALPHA}|${points}`)
+    }
+  } else {
+    params.set('center', `${center.lat},${center.lng}`)
+    params.set('zoom', String(zoom))
+  }
+
   return `${STATIC_MAP_ENDPOINT}?${params.toString()}`
 }
 

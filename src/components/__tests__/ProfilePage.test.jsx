@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { ProfilePage } from '../ProfilePage';
 import { postsAreShared, readImaginations, readLocalImaginations } from '../../services/imaginations';
 import { readFollows, unfollow } from '../../services/follows';
@@ -10,6 +10,12 @@ vi.mock('../../services/imaginations', () => ({
   postsAreShared: vi.fn(() => false),
   readImaginations: vi.fn(() => Promise.resolve([])),
   readLocalImaginations: vi.fn(() => Promise.resolve([])),
+  // The modal a card opens (see ImaginationPreview) reaches for these itself; a
+  // wholesale mock of this module has to answer them too or it crashes on open.
+  readComments: vi.fn(() => Promise.resolve([])),
+  readMyVote: vi.fn(() => Promise.resolve(null)),
+  postComment: vi.fn(() => Promise.resolve({ id: 'c1', author: 'You', text: '', createdAt: null })),
+  voteImagination: vi.fn(() => Promise.resolve({ upvotes: 0, myVote: null })),
 }));
 
 vi.mock('../../services/follows', () => ({
@@ -134,6 +140,28 @@ describe('ProfilePage', () => {
     await screen.findByText('Pocket park on Lot 7');
 
     expect(screen.queryByText('Malmö')).not.toBeInTheDocument();
+  });
+
+  it('opens an imagination in a modal when its card is clicked', async () => {
+    setup(MINE);
+    await screen.findByText('Pocket park on Lot 7');
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Pocket park on Lot 7').closest('[role="button"]'));
+
+    expect(await screen.findByRole('dialog', { name: 'Imagination: Pocket park on Lot 7' }))
+      .toBeInTheDocument();
+  });
+
+  it('closes the imagination modal from its close button', async () => {
+    setup(MINE);
+    await screen.findByText('Pocket park on Lot 7');
+    fireEvent.click(screen.getByText('Pocket park on Lot 7').closest('[role="button"]'));
+    await screen.findByRole('dialog');
+
+    fireEvent.click(screen.getByLabelText('Close preview'));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
 

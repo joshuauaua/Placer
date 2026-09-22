@@ -8,6 +8,7 @@ const ICON_ELEMENTS = {
     </>
   ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
+  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
   chevDown: <path d="M5 9l7 7 7-7" />,
@@ -15,6 +16,7 @@ const ICON_ELEMENTS = {
   chevLeft: <path d="M15 5l-7 7 7 7" />,
   chevRight: <path d="M9 5l7 7-7 7" />,
   arrowUp: <path d="M12 19V5M6 11l6-6 6 6" />,
+  arrowDown: <path d="M12 5v14M6 13l6 6 6-6" />,
   arrowRight: <path d="M5 12h14M13 6l6 6-6 6" />,
   heart: (
     <path d="M12 20s-7-4.6-9.2-9C1.4 8.2 2.6 5 6 5c2 0 3.2 1.3 4 2.5C10.8 6.3 12 5 14 5c3.4 0 4.6 3.2 3.2 6-2.2 4.4-9.2 9-9.2 9z" />

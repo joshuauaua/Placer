@@ -22,11 +22,13 @@
 import { BudgetBallot } from '../components/sandbox/BudgetBallot';
 import { DesireLines } from '../components/sandbox/DesireLines';
 import { FifteenMinute } from '../components/sandbox/FifteenMinute';
+import { OpenVote } from '../components/sandbox/OpenVote';
 import { SiteMapping } from '../components/sandbox/SiteMapping';
 import { SocialSpaceSurvey } from '../components/sandbox/SocialSpaceSurvey';
 import { StationaryActivityMap } from '../components/sandbox/StationaryActivityMap';
 import { StreetMixer } from '../components/sandbox/StreetMixer';
 import { emptyBallot, normalise } from '../lib/budgetBallot';
+import { emptyVote, tally as tallyVotes } from '../lib/openVote';
 
 export const EXPERIMENTS = [
   {
@@ -94,6 +96,21 @@ export const EXPERIMENTS = [
         }
         return normalise(total);
       },
+    },
+  },
+  {
+    id: 'open-vote',
+    name: 'Open Vote',
+    tagline: 'Ask anything. Yes, No, or Undecided.',
+    blurb: 'Type whatever you want to put to a room, then let people vote. There is no scale to calibrate and nothing to configure — just a question, three options, and a live tally as people pick.',
+    hint: 'open a room, ask "Yes or No?", and watch the tally fill in as people join.',
+    color: '#EAB308',
+    icon: 'flag',
+    submittedBy: 'PLACER',
+    component: OpenVote,
+    room: {
+      empty: emptyVote,
+      combine: tallyVotes,
     },
   },
   {

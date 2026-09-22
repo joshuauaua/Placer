@@ -3,7 +3,9 @@ import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-libra
 import { toPng } from 'html-to-image';
 import MapContainer from '../MapContainer';
 import { fetchImaginations } from '../../services/api';
+import { isSupabaseConfigured, readProjectLocations } from '../../services/projects';
 import { stitchPanoTiles } from '../../lib/panoStitch';
+import { resetGoogleMapsLoaderForTests } from '../../lib/googleMaps';
 import { CAT, THEME } from '../../theme';
 
 vi.mock('html-to-image', () => ({
@@ -12,6 +14,11 @@ vi.mock('html-to-image', () => ({
 
 vi.mock('../../services/api', () => ({
   fetchImaginations: vi.fn(() => Promise.resolve([])),
+}));
+
+vi.mock('../../services/projects', () => ({
+  isSupabaseConfigured: vi.fn(() => true),
+  readProjectLocations: vi.fn(() => Promise.resolve([])),
 }));
 
 // Stitching is real canvas work, which jsdom has no 2D context for. Mocked so
@@ -71,6 +78,16 @@ function mockGoogleMaps({ getZoom = vi.fn(() => 1), panorama = mockPanorama() } 
           fire: (event) => listeners[event]?.(),
         };
       }),
+      Polygon: vi.fn(function (options) {
+        const listeners = {};
+        return {
+          ...options,
+          setMap: vi.fn(),
+          addListener: vi.fn((event, handler) => { listeners[event] = handler; }),
+          // Test-only hook for firing a polygon click the way Maps would.
+          fire: (event) => listeners[event]?.(),
+        };
+      }),
       SymbolPath: { CIRCLE: 'circle' },
       event: { clearInstanceListeners: vi.fn() },
       places: {
@@ -89,8 +106,14 @@ describe('MapContainer', () => {
   afterEach(() => {
     cleanup();
     delete window.google;
+    // The script-loading promise is cached at module scope (see src/lib/googleMaps.js) so
+    // that two components sharing one Maps session never inject the script twice — but that
+    // means it outlives a single test too, unless cleared here.
+    resetGoogleMapsLoaderForTests();
     vi.restoreAllMocks();
     vi.mocked(fetchImaginations).mockResolvedValue([]);
+    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+    vi.mocked(readProjectLocations).mockResolvedValue([]);
     // restoreAllMocks does not reach the module-level toPng mock, so its call
     // history would otherwise leak between tests.
     vi.clearAllMocks();
@@ -610,6 +633,83 @@ describe('MapContainer', () => {
       unmount();
 
       markers.forEach((marker) => expect(marker.setMap).toHaveBeenCalledWith(null));
+    });
+  });
+
+  describe('project location outlines', () => {
+    const TRIANGLE = [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }];
+    const PROJECT = { id: 'proj-1', name: 'Riverside Greenway', locationShapes: [{ path: TRIANGLE }] };
+
+    it('draws one polygon per shape a project has drawn', async () => {
+      window.google = mockGoogleMaps();
+      vi.mocked(readProjectLocations).mockResolvedValue([PROJECT]);
+
+      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+      await waitFor(() => expect(window.google.maps.Polygon).toHaveBeenCalledTimes(1));
+      expect(window.google.maps.Polygon.mock.calls[0][0].paths).toEqual(TRIANGLE);
+    });
+
+    it('draws a polygon for every shape across every project', async () => {
+      window.google = mockGoogleMaps();
+      vi.mocked(readProjectLocations).mockResolvedValue([
+        PROJECT,
+        { id: 'proj-2', name: 'Second project', locationShapes: [{ path: TRIANGLE }, { path: TRIANGLE }] },
+      ]);
+
+      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+      await waitFor(() => expect(window.google.maps.Polygon).toHaveBeenCalledTimes(3));
+    });
+
+    it('ignores a shape with fewer than 3 points', async () => {
+      window.google = mockGoogleMaps();
+      vi.mocked(readProjectLocations).mockResolvedValue([
+        { id: 'proj-1', name: 'Too small', locationShapes: [{ path: TRIANGLE.slice(0, 2) }] },
+      ]);
+
+      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+      await waitFor(() => expect(readProjectLocations).toHaveBeenCalled());
+      expect(window.google.maps.Polygon).not.toHaveBeenCalled();
+    });
+
+    it('draws no polygons when Supabase is not configured', async () => {
+      window.google = mockGoogleMaps();
+      vi.mocked(isSupabaseConfigured).mockReturnValue(false);
+
+      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+      await waitFor(() => expect(screen.getByPlaceholderText('Search for an address...')).toBeInTheDocument());
+      expect(readProjectLocations).not.toHaveBeenCalled();
+      expect(window.google.maps.Polygon).not.toHaveBeenCalled();
+    });
+
+    it('sends you to the project\'s public page when its outline is clicked', async () => {
+      window.google = mockGoogleMaps();
+      vi.mocked(readProjectLocations).mockResolvedValue([PROJECT]);
+      const onOpenProject = vi.fn();
+
+      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" onOpenProject={onOpenProject} />);
+
+      await waitFor(() => expect(window.google.maps.Polygon).toHaveBeenCalledTimes(1));
+      const polygon = window.google.maps.Polygon.mock.results[0].value;
+      act(() => polygon.fire('click'));
+
+      expect(onOpenProject).toHaveBeenCalledWith('proj-1');
+    });
+
+    it('removes its polygons on unmount', async () => {
+      window.google = mockGoogleMaps();
+      vi.mocked(readProjectLocations).mockResolvedValue([PROJECT]);
+
+      const { unmount } = render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+      await waitFor(() => expect(window.google.maps.Polygon).toHaveBeenCalledTimes(1));
+
+      const polygon = window.google.maps.Polygon.mock.results[0].value;
+      unmount();
+
+      expect(polygon.setMap).toHaveBeenCalledWith(null);
     });
   });
 

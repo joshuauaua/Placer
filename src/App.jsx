@@ -1,6 +1,6 @@
 /* PLACER — Reimagine Your City */
 
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
 import { Switch, Route, useLocation } from 'wouter';
 import { THEME } from './theme';
@@ -64,6 +64,19 @@ const ACCOUNT_VIEWS = {
   '/signup': 'signup',
 };
 
+// About, Resources and Terms and Privacy each get a bookmarkable link of their own,
+// read off the location the same way the account views and the Sandbox are.
+const STATIC_PATHS = {
+  about: '/about',
+  resources: '/resources',
+  terms: '/terms-and-privacy',
+};
+const STATIC_VIEWS = {
+  '/about': 'about',
+  '/resources': 'resources',
+  '/terms-and-privacy': 'terms',
+};
+
 /**
  * `/projects/new`, `/projects/<id>` (the public page) or `/projects/<id>/dashboard`,
  * read off the location the same way the Sandbox is — a project's dashboard and its
@@ -83,6 +96,22 @@ function LoadingFallback() {
     <div style={{ width: '100%', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ fontSize: 14, color: '#888' }}>Loading…</div>
     </div>
+  );
+}
+
+// A nav item as it appears inside the hamburger dropdown — a full-width button
+// rather than the desktop nav's inline span, so it is a comfortable target on a
+// touchscreen and reads as one item per row.
+function MobileNavItem({ t, active, onClick, children }) {
+  return (
+    <button
+      role="menuitem"
+      onClick={onClick}
+      style={{ display: 'block', width: '100%', textAlign: 'left', padding: '12px 14px',
+        borderRadius: 10, border: 'none', cursor: 'pointer', background: active ? t.surfaceAlt : 'transparent',
+        color: active ? t.ink : t.inkDim, fontFamily: 'var(--placer-font)', fontWeight: 600, fontSize: 15.5 }}>
+      {children}
+    </button>
   );
 }
 
@@ -123,6 +152,12 @@ function MainApp({ initialView = 'welcome' }) {
   const t = THEME;
   // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'resources', 'sandbox', 'terms'
   const [currentView, setCurrentView] = useState(initialView);
+  // Below this width the nav bar swaps About/Resources/Sandbox/Explore for a
+  // hamburger button that opens them as a dropdown — there is not room to keep
+  // them inline next to the logo and the account menu.
+  const [isMobileNav, setIsMobileNav] = useState(() => window.innerWidth <= 760);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef(null);
   const [capturedView, setCapturedView] = useState(null);
   // The imagination being built. Held here rather than in StreetScreen so that
   // stepping forward to Describe and back again does not throw the drawing away.
@@ -154,28 +189,32 @@ function MainApp({ initialView = 'welcome' }) {
   // `show` keeps the two in step: going to the Sandbox writes the URL, and leaving it
   // writes the URL back.
   //
-  // It is deliberately not its own <Route> with an initialView, the way /privacy is.
-  // Switch reconciles two sibling Routes as the same component instance, so MainApp is
-  // never remounted when the matched Route changes and an initialView prop only ever
-  // applies on first mount — which works for a URL that is only an entry point, and
-  // silently does nothing for one you can navigate to from inside the app.
-  // The four account views are read off the location the same way, and for the same
-  // reason: every one of them is reachable both from a link and from inside the app.
+  // It is deliberately not its own <Route> with an initialView. Switch reconciles two
+  // sibling Routes as the same component instance, so MainApp is never remounted when
+  // the matched Route changes and an initialView prop only ever applies on first mount
+  // — which works for a URL that is only an entry point, and silently does nothing for
+  // one you can navigate to from inside the app.
+  // The account views, and About, Resources and Terms and Privacy, are read off the
+  // location the same way, and for the same reason: every one of them is reachable
+  // both from a link and from inside the app.
   const [location, navigate] = useLocation();
   const inSandbox = location.startsWith('/sandbox');
   const accountView = ACCOUNT_VIEWS[location];
+  const staticView = STATIC_VIEWS[location];
   const projectRoute = projectRouteFrom(location);
   const projectView = projectRoute && { new: 'projectNew', public: 'projectPublic', dashboard: 'projectDashboard' }[projectRoute.mode];
-  const view = accountView ?? (inSandbox ? 'sandbox' : projectView ?? currentView);
+  const view = accountView ?? staticView ?? (inSandbox ? 'sandbox' : projectView ?? currentView);
 
   const showNewProject = () => navigate('/projects/new');
   const showProjectDashboard = (id) => navigate(`/projects/${id}/dashboard`);
   const showProjectPublic = (id) => navigate(`/projects/${id}`);
-  // The one experiment rooms currently support — see supabase/rooms.sql's
-  // sandbox_rooms_experiment_known constraint. Sent straight there with the
-  // project attached, rather than to the gallery, because the gallery has nowhere
-  // to carry ?project= through into picking an experiment.
-  const showProjectSandbox = (id) => navigate(`/sandbox/budget-ballot?project=${encodeURIComponent(id)}`);
+  // Sent straight to the chosen experiment with the project attached, rather than
+  // to the gallery, because the gallery has nowhere to carry ?project= through into
+  // picking one. Only 'budget-ballot' can actually host a room today — see
+  // supabase/rooms.sql's sandbox_rooms_experiment_known constraint — so ?project=
+  // is inert on any other experiment until it opts in too.
+  const showProjectSandbox = (id, experimentId) =>
+    navigate(`/sandbox/${encodeURIComponent(experimentId)}?project=${encodeURIComponent(id)}`);
 
   const show = (next) => {
     if (next === 'sandbox') {
@@ -186,8 +225,19 @@ function MainApp({ initialView = 'welcome' }) {
       navigate(ACCOUNT_PATHS[next]);
       return;
     }
-    if (inSandbox || accountView) navigate('/');
+    if (STATIC_PATHS[next]) {
+      navigate(STATIC_PATHS[next]);
+      return;
+    }
+    if (inSandbox || accountView || staticView) navigate('/');
     setCurrentView(next);
+  };
+
+  // What the hamburger dropdown's nav items call, so picking one also closes the
+  // dropdown instead of leaving it open over the page it just navigated to.
+  const showFromMobileMenu = (next) => () => {
+    setMobileMenuOpen(false);
+    show(next);
   };
 
   const handleImagineForProject = (id) => {
@@ -246,6 +296,36 @@ function MainApp({ initialView = 'welcome' }) {
 
     return () => { cancelled = true; };
   }, [identityStatus, capturedView]);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileNav(window.innerWidth <= 760);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Closing the dropdown when the viewport widens past mobile covers rotating a
+  // phone or resizing a resized browser window back out, not just the toggle.
+  useEffect(() => {
+    if (!isMobileNav) setMobileMenuOpen(false);
+  }, [isMobileNav]);
+
+  // Same dismissal shape as UserMenu's dropdown: a guarded effect that only listens
+  // while the menu is open, torn down again once it closes.
+  useEffect(() => {
+    if (!mobileMenuOpen) return undefined;
+
+    const handleKeyDown = (e) => { if (e.key === 'Escape') setMobileMenuOpen(false); };
+    const handlePointerDown = (e) => {
+      if (!mobileMenuRef.current?.contains(e.target)) setMobileMenuOpen(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('mousedown', handlePointerDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [mobileMenuOpen]);
 
   const handlePosted = () => {
     // Posted, so there is nothing left to come back to.
@@ -335,33 +415,56 @@ function MainApp({ initialView = 'welcome' }) {
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', background: t.page, color: t.ink }}>
       {/* Navigation Bar */}
       <div style={{ height: 66, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 20,
-        padding: '0 22px', background: t.chrome, borderBottom: `1px solid ${t.line}`, zIndex: 60 }}>
+        padding: '0 22px', background: t.chrome, borderBottom: `1px solid ${t.line}`, zIndex: 60,
+        position: 'relative' }}>
         <div onClick={() => show('welcome')} style={{ cursor: 'pointer' }}>
           <Logo t={t} size={20} />
         </div>
-        <div style={{ width: 1, height: 26, background: t.line }} />
-        <nav style={{ display: 'flex', gap: 4 }}>
-          <span
-            onClick={() => show('about')}
-            style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
-            color: view === 'about' ? t.ink : t.inkDim,
-            background: view === 'about' ? t.surfaceAlt : 'transparent',
-            cursor: 'pointer' }}>About</span>
-          <span
-            onClick={() => show('resources')}
-            style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
-            color: view === 'resources' ? t.ink : t.inkDim,
-            background: view === 'resources' ? t.surfaceAlt : 'transparent',
-            cursor: 'pointer' }}>Resources</span>
-          <span
-            onClick={() => show('sandbox')}
-            style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
-            color: view === 'sandbox' ? t.ink : t.inkDim,
-            background: view === 'sandbox' ? t.surfaceAlt : 'transparent',
-            cursor: 'pointer' }}>Sandbox</span>
-        </nav>
+
+        {!isMobileNav && (
+          <>
+            <div style={{ width: 1, height: 26, background: t.line }} />
+            <nav style={{ display: 'flex', gap: 4 }}>
+              <span
+                onClick={() => show('about')}
+                style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
+                color: view === 'about' ? t.ink : t.inkDim,
+                background: view === 'about' ? t.surfaceAlt : 'transparent',
+                cursor: 'pointer' }}>About</span>
+              <span
+                onClick={() => show('resources')}
+                style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
+                color: view === 'resources' ? t.ink : t.inkDim,
+                background: view === 'resources' ? t.surfaceAlt : 'transparent',
+                cursor: 'pointer' }}>Resources</span>
+              <span
+                onClick={() => show('sandbox')}
+                style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
+                color: view === 'sandbox' ? t.ink : t.inkDim,
+                background: view === 'sandbox' ? t.surfaceAlt : 'transparent',
+                cursor: 'pointer' }}>Sandbox</span>
+            </nav>
+          </>
+        )}
+
         <div style={{ flex: 1 }} />
-        <Btn t={t} variant="accent" icon="sparkle" onClick={handleExplore}>Explore</Btn>
+
+        {isMobileNav ? (
+          <button
+            aria-label="Menu"
+            aria-haspopup="menu"
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen((wasOpen) => !wasOpen)}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40,
+              background: 'transparent', border: 'none', borderRadius: 8, cursor: 'pointer', color: t.ink }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+            <Icon name={mobileMenuOpen ? 'close' : 'menu'} size={22} stroke={2} />
+          </button>
+        ) : (
+          <Btn t={t} variant="accent" icon="sparkle" onClick={handleExplore}>Explore</Btn>
+        )}
+
         <UserMenu
           t={t}
           profile={profile}
@@ -369,6 +472,24 @@ function MainApp({ initialView = 'welcome' }) {
           onSignIn={handleSignIn}
           onSignOut={handleSignOut}
         />
+
+        {isMobileNav && mobileMenuOpen && (
+          <div
+            ref={mobileMenuRef}
+            role="menu"
+            aria-label="Navigation"
+            style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 65,
+              padding: 10, display: 'flex', flexDirection: 'column', gap: 2,
+              background: t.surface, borderBottom: `1px solid ${t.line}`, boxShadow: t.shadow }}>
+            <MobileNavItem t={t} active={view === 'about'} onClick={showFromMobileMenu('about')}>About</MobileNavItem>
+            <MobileNavItem t={t} active={view === 'resources'} onClick={showFromMobileMenu('resources')}>Resources</MobileNavItem>
+            <MobileNavItem t={t} active={view === 'sandbox'} onClick={showFromMobileMenu('sandbox')}>Sandbox</MobileNavItem>
+            <div style={{ padding: '8px 14px 2px' }}>
+              <Btn t={t} variant="accent" icon="sparkle" full
+                onClick={() => { setMobileMenuOpen(false); handleExplore(); }}>Explore</Btn>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main Content */}
@@ -381,6 +502,10 @@ function MainApp({ initialView = 'welcome' }) {
               onCaptureView={handleCaptureView}
               apiKey={GOOGLE_MAPS_API_KEY}
               initialCenter={mapFocus}
+              accountId={accountId}
+              authorName={profile?.name ?? DEFAULT_NAME}
+              onSignIn={handleSignIn}
+              onOpenProject={showProjectPublic}
             />
           </Suspense>
         )}
@@ -429,7 +554,8 @@ function MainApp({ initialView = 'welcome' }) {
         {view === 'profile' && profile && (
           <Suspense fallback={<LoadingFallback />}>
             <ProfilePage t={t} profile={profile} accountId={accountId} onNavigate={show}
-              onNewProject={showNewProject} onOpenProjectDashboard={showProjectDashboard} />
+              onNewProject={showNewProject} onOpenProjectDashboard={showProjectDashboard}
+              onSignIn={handleSignIn} />
           </Suspense>
         )}
 
@@ -492,6 +618,10 @@ function MainApp({ initialView = 'welcome' }) {
         padding: '0 22px', background: t.chrome, borderTop: `1px solid ${t.line}`, fontSize: 13, zIndex: 60 }}>
         <span style={{ color: t.inkFaint }}>© 2026 PLACER</span>
         <div style={{ flex: 1 }} />
+        <a href="https://www.instagram.com/placertool" target="_blank" rel="noopener noreferrer"
+          style={{ color: t.inkDim, fontWeight: 600, textDecoration: 'none' }}>
+          Instagram
+        </a>
         <FooterLink t={t} active={view === 'terms'} onClick={() => show('terms')}>
           Terms and Privacy
         </FooterLink>
@@ -541,9 +671,8 @@ function App() {
               application, so unlike /signin they are routes rather than MainApp views. */}
           <Route path="/auth/callback"><Suspense fallback={<LoadingFallback />}><AuthCallback t={t} /></Suspense></Route>
           <Route path="/reset"><Suspense fallback={<LoadingFallback />}><ResetPasswordPage t={t} /></Suspense></Route>
-          <Route path="/terms-and-privacy"><MainApp initialView="terms" /></Route>
-          {/* Everything else, /sandbox and /sandbox/<experiment> included — MainApp
-              reads those off the location itself. */}
+          {/* Everything else, /sandbox, /about, /resources and /terms-and-privacy
+              included — MainApp reads those off the location itself. */}
           <Route><MainApp /></Route>
         </Switch>
       </ErrorBoundary>

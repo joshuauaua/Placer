@@ -143,14 +143,14 @@ describe('App', () => {
       expect(await screen.findByRole('heading', { level: 1, name: 'Profile' })).toBeInTheDocument();
     });
 
-    it('goes back to the root URL when another nav item is picked', async () => {
+    it('navigates to a nav item\'s own URL when one is picked', async () => {
       const location = renderRecording('/profile');
       await screen.findByRole('heading', { level: 1, name: 'Profile' });
 
       fireEvent.click(screen.getByText('Resources'));
 
       expect(await screen.findByRole('heading', { level: 1, name: 'Resources' })).toBeInTheDocument();
-      expect(location.history.at(-1)).toBe('/');
+      expect(location.history.at(-1)).toBe('/resources');
     });
 
     it('offers a way back in after logging out', () => {

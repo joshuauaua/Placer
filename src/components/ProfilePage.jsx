@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from './Icon';
 import { Avatar, Btn, CatTag, Vote } from './UI';
+import { ImaginationPreview } from './ImaginationPreview';
 import { postsAreShared, readImaginations, readLocalImaginations } from '../services/imaginations';
 import { FOLLOW_TYPES, readFollows, unfollow } from '../services/follows';
 import { isSupabaseConfigured as projectsAvailable, readMyProjects } from '../services/projects';
@@ -53,14 +54,19 @@ function StatCard({ t, icon, label, value }) {
   );
 }
 
-function ImaginationCard({ t, imagination }) {
+function ImaginationCard({ t, imagination, onOpen }) {
   const { title, cat, blurb, loc, preview, upvotes = 0, comments = [] } = imagination;
   const commentCount = Array.isArray(comments) ? comments.length : 0;
 
   return (
     <article
+      onClick={() => onOpen(imagination)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(imagination); } }}
       style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12,
-        overflow: 'hidden', boxShadow: t.shadow, transition: 'transform 0.2s, box-shadow 0.2s' }}
+        overflow: 'hidden', boxShadow: t.shadow, cursor: 'pointer',
+        transition: 'transform 0.2s, box-shadow 0.2s' }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-4px)';
         e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.12)';
@@ -154,7 +160,10 @@ function FollowedSection({ t, title, empty, items, status, render }) {
   );
 }
 
-export function ProfilePage({ t, profile, accountId = null, onNavigate, onNewProject, onOpenProjectDashboard }) {
+export function ProfilePage({ t, profile, accountId = null, onNavigate, onNewProject,
+  onOpenProjectDashboard, onSignIn }) {
+  // The imagination open in the modal, if any — set from any card on this page.
+  const [selected, setSelected] = useState(null);
   const [posted, setPosted] = useState([]);
   // Imaginations still only in this browser, kept apart from the posted ones because they
   // are a different thing: nobody else can see them.
@@ -242,6 +251,18 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate, onNewPro
     return () => { cancelled = true; };
   }, [accountId]);
 
+  // Escape closes the modal, matching the map's own Escape behaviour.
+  useEffect(() => {
+    if (!selected) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setSelected(null);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selected]);
+
   const handleUnfollow = async (item) => {
     // Optimistic: nothing downstream depends on the request finishing before the
     // row goes away, and a follow list is low enough stakes that a failed unfollow
@@ -282,6 +303,10 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate, onNewPro
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '48px 40px' }} className="placer-scroll">
+      {selected && (
+        <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)}
+          accountId={accountId} authorName={name} onSignIn={onSignIn} />
+      )}
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20, marginBottom: 48 }}>
           <Avatar name={name} icon={profile?.avatar} size={72} ring={t.line} />
@@ -399,7 +424,7 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate, onNewPro
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
             gap: 24, paddingBottom: 40 }}>
             {mine.map((imagination) => (
-              <ImaginationCard key={imagination.id} t={t} imagination={imagination} />
+              <ImaginationCard key={imagination.id} t={t} imagination={imagination} onOpen={setSelected} />
             ))}
           </div>
         )}
@@ -421,7 +446,7 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate, onNewPro
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
               gap: 24, paddingBottom: 40 }}>
               {onlyHere.map((imagination) => (
-                <ImaginationCard key={imagination.id} t={t} imagination={imagination} />
+                <ImaginationCard key={imagination.id} t={t} imagination={imagination} onOpen={setSelected} />
               ))}
             </div>
           </>
@@ -436,7 +461,7 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate, onNewPro
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
                   gap: 24 }}>
                   {followedImaginations.map((imagination) => (
-                    <ImaginationCard key={imagination.id} t={t} imagination={imagination} />
+                    <ImaginationCard key={imagination.id} t={t} imagination={imagination} onOpen={setSelected} />
                   ))}
                 </div>
               ) : (

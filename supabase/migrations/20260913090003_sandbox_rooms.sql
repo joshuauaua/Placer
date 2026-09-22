@@ -87,7 +87,7 @@ alter table public.sandbox_rooms add constraint sandbox_rooms_pin_shape
 -- experiment opts in (src/sandbox/experiments.js is the other half of the pair).
 alter table public.sandbox_rooms drop constraint if exists sandbox_rooms_experiment_known;
 alter table public.sandbox_rooms add constraint sandbox_rooms_experiment_known
-  check (experiment in ('budget-ballot'));
+  check (experiment in ('budget-ballot', 'open-vote'));
 
 revoke all on public.sandbox_rooms from anon;
 

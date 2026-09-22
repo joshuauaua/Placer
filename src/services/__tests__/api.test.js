@@ -1,10 +1,15 @@
 import { describe, it, expect, afterEach } from 'vite-plus/test';
 import {
+  addComment,
   clearPendingImagination,
   eraseAllData,
   exportAllData,
+  readComments,
+  readMyVote,
   readPendingImagination,
+  saveImagination,
   savePendingImagination,
+  voteImagination,
 } from '../api';
 import { saveProfile } from '../profile';
 import { participantToken, rememberHostedRoom } from '../../sandbox/rooms';
@@ -101,6 +106,97 @@ describe('the GDPR data rights cover what this browser follows', () => {
     await eraseAllData();
 
     expect(localStorage.getItem(FOLLOWS_KEY)).toBeNull();
+  });
+});
+
+const UPVOTES_KEY = 'placemaking_upvotes';
+
+describe('voting on an imagination', () => {
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('adds an upvote and records the standing vote', async () => {
+    const { id } = await saveImagination({ title: 'Pocket park' });
+
+    const result = await voteImagination(id, 'up');
+
+    expect(result).toEqual({ upvotes: 1, myVote: 'up' });
+    await expect(readMyVote(id)).resolves.toBe('up');
+  });
+
+  it('withdraws a vote when the same direction is pressed again', async () => {
+    const { id } = await saveImagination({ title: 'Pocket park' });
+    await voteImagination(id, 'up');
+
+    const result = await voteImagination(id, 'up');
+
+    expect(result).toEqual({ upvotes: 0, myVote: null });
+    await expect(readMyVote(id)).resolves.toBeNull();
+  });
+
+  it('switches from up to down in one move, a swing of two', async () => {
+    const { id } = await saveImagination({ title: 'Pocket park' });
+    await voteImagination(id, 'up');
+
+    const result = await voteImagination(id, 'down');
+
+    expect(result).toEqual({ upvotes: -1, myVote: 'down' });
+  });
+
+  it('is null for an imagination that is not there', async () => {
+    await expect(voteImagination('missing', 'up')).resolves.toBeNull();
+  });
+
+  it('has no standing vote before one is cast', async () => {
+    const { id } = await saveImagination({ title: 'Pocket park' });
+
+    await expect(readMyVote(id)).resolves.toBeNull();
+  });
+
+  it('is included in a data export, and erased along with everything else', async () => {
+    const { id } = await saveImagination({ title: 'Pocket park' });
+    await voteImagination(id, 'up');
+
+    const { data } = await exportAllData();
+    expect(data[UPVOTES_KEY]).toEqual({ [id]: 'up' });
+
+    await eraseAllData();
+    expect(localStorage.getItem(UPVOTES_KEY)).toBeNull();
+  });
+});
+
+describe('commenting on an imagination', () => {
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('adds a comment and reads it back', async () => {
+    const { id } = await saveImagination({ title: 'Pocket park' });
+
+    const saved = await addComment(id, { text: 'Nice idea', author: 'Mara Quinn' });
+    const all = await readComments(id);
+
+    expect(saved).toMatchObject({ text: 'Nice idea', author: 'Mara Quinn' });
+    expect(all).toEqual([saved]);
+  });
+
+  it('credits an unnamed comment to Anonymous', async () => {
+    const { id } = await saveImagination({ title: 'Pocket park' });
+
+    const saved = await addComment(id, { text: 'Nice idea' });
+
+    expect(saved.author).toBe('Anonymous');
+  });
+
+  it('is nothing for an imagination with no comments yet', async () => {
+    const { id } = await saveImagination({ title: 'Pocket park' });
+
+    await expect(readComments(id)).resolves.toEqual([]);
+  });
+
+  it('is nothing for an imagination that is not there', async () => {
+    await expect(readComments('missing')).resolves.toEqual([]);
   });
 });
 

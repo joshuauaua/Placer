@@ -426,3 +426,51 @@ describe('joining a room takes no account', () => {
     expect(screen.queryByRole('button', { name: /sign in to start a room/i })).not.toBeInTheDocument();
   });
 });
+
+// A second room-capable experiment, exercised through the same machinery as Budget
+// Ballot above — this is what proves the room layer is generic rather than tuned to
+// one experiment's shape.
+describe('Open Vote in a room', () => {
+  const openVoteRoom = () => ({ experiment: 'open-vote', status: 'open', expiresAt: hours(2) });
+
+  it('offers a room, same as any other room-capable experiment', () => {
+    renderAt('/sandbox/open-vote');
+
+    expect(screen.getByRole('button', { name: /start a room/i })).toBeInTheDocument();
+  });
+
+  it("publishes a participant's vote once they pick one", async () => {
+    readRoom.mockResolvedValue(openVoteRoom());
+
+    renderAt('/sandbox/open-vote', 'room=room-1');
+    await screen.findByText(/you are in a room/i);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
+
+    await waitFor(
+      () => {
+        expect(saveContribution).toHaveBeenCalledWith(
+          expect.objectContaining({ roomId: 'room-1', state: { choice: 'yes' } })
+        );
+      },
+      { timeout: 2000 }
+    );
+  });
+
+  it("combines everybody's votes into the room's tally", async () => {
+    rememberHostedRoom('room-1', { pin: '839201', token: 'facilitator-1' });
+    readRoom.mockResolvedValue(openVoteRoom());
+    readContributions.mockResolvedValue([
+      { displayName: 'Mara', state: { choice: 'yes' }, updatedAt: 'a' },
+      { displayName: 'Sam', state: { choice: 'yes' }, updatedAt: 'b' },
+      { displayName: 'Devon', state: { choice: 'no' }, updatedAt: 'c' },
+    ]);
+
+    renderAt('/sandbox/open-vote', 'room=room-1');
+
+    expect(await screen.findByText("The room's vote")).toBeInTheDocument();
+    expect(screen.getByText('3 cast')).toBeInTheDocument();
+    expect(screen.getByText('2 · 67%')).toBeInTheDocument();
+    expect(screen.getByText('1 · 33%')).toBeInTheDocument();
+  });
+});

@@ -247,38 +247,112 @@ create policy "an owner can remove their own preview"
 
 -- 5. Voting.
 --
--- Not an update policy, because the whole point is voting on somebody else's
--- imagination and the update policy above is owner-only. A security definer function
--- can raise the count without handing out write access to the row.
+-- One row per (imagination, account) that voted on it, so a vote can be changed or
+-- withdrawn instead of only ever added, and so the same account cannot double it —
+-- the two things the previous version of this table (a bare upvotes counter raised
+-- by an RPC anybody could call, unlimited times, signed in or not) could not do.
+-- That RPC, imagination_upvote, is dropped below along with it.
 --
--- IT DOES NOT STOP REPEAT VOTING. There is no record of who voted, so pressing the
--- button twice counts twice, and the anon key is in every bundle. That is an accepted
--- limitation of this stage, not an oversight: doing it properly needs a votes table
--- with one row per account per imagination, which also means signed-out visitors stop
--- being able to vote at all. Until then, treat the count as a rough signal of
--- interest rather than a tally of people.
-create or replace function public.imagination_upvote(p_id uuid)
-returns integer
+-- Only reachable through the imagination_vote function beneath it, never through a
+-- grant on the table itself: the same "not an update policy" reasoning as before —
+-- voting is by definition done to somebody else's imagination — plus, now, the
+-- account has to be known, which only the function checks.
+create table if not exists public.imagination_votes (
+  imagination_id uuid      not null references public.imaginations (id) on delete cascade,
+  user_id        uuid      not null references auth.users (id) on delete cascade,
+  -- 1 for up, -1 for down. No 0: a withdrawn vote is a deleted row, not a zero one,
+  -- so summing this column is always the whole answer.
+  value          smallint  not null check (value in (-1, 1)),
+  created_at     timestamptz not null default now(),
+  primary key (imagination_id, user_id)
+);
+
+alter table public.imagination_votes enable row level security;
+
+-- Read access is scoped to a voter's own row, not the whole table: it is what lets
+-- the client ask "did I vote on this, and which way" without a vote count anybody
+-- could scrape becoming a per-account map of who voted for what. The shared count
+-- itself lives on public.imaginations.upvotes, already public.
+drop policy if exists "a voter can read their own vote" on public.imagination_votes;
+create policy "a voter can read their own vote"
+  on public.imagination_votes
+  for select
+  to authenticated
+  using (user_id = auth.uid());
+
+revoke all on public.imagination_votes from anon, authenticated;
+grant select on public.imagination_votes to authenticated;
+
+create index if not exists imagination_votes_imagination_id_idx
+  on public.imagination_votes (imagination_id);
+
+-- Casts, changes, or withdraws the caller's vote, and keeps imaginations.upvotes as
+-- the sum of every vote standing — recomputed rather than incremented, so it can
+-- never drift from what imagination_votes actually holds. Pressing the direction
+-- that is already standing withdraws it, decided here rather than by the client, so
+-- two tabs pressing the same button in different orders still land on one answer.
+--
+-- Existing rows may already carry an upvotes count from the old free-for-all RPC.
+-- The first new-style vote on one of those recomputes it from imagination_votes,
+-- which starts empty — so that count resets to whatever the fresh votes alone add
+-- up to. Disclosed rather than migrated: there was never a record of who cast the
+-- old votes to carry forward.
+create or replace function public.imagination_vote(p_id uuid, p_direction text)
+returns table(upvotes integer, my_vote smallint)
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  v_upvotes integer;
+  v_uid uuid := auth.uid();
+  v_value smallint;
+  v_existing smallint;
 begin
-  update public.imaginations
-     set upvotes = upvotes + 1
-   where id = p_id
-  returning upvotes into v_upvotes;
+  if v_uid is null then
+    raise exception 'Voting needs an account';
+  end if;
+  if p_direction not in ('up', 'down') then
+    raise exception 'p_direction must be ''up'' or ''down''';
+  end if;
 
-  -- Null for an imagination that is not there, rather than raising: it has most likely
-  -- just been deleted by its owner, and that is not an error worth showing anybody.
-  return v_upvotes;
+  v_value := case p_direction when 'up' then 1 else -1 end;
+
+  select v.value into v_existing
+    from public.imagination_votes v
+   where v.imagination_id = p_id and v.user_id = v_uid;
+
+  if v_existing is not distinct from v_value then
+    delete from public.imagination_votes
+     where imagination_id = p_id and user_id = v_uid;
+  else
+    insert into public.imagination_votes (imagination_id, user_id, value)
+    values (p_id, v_uid, v_value)
+    on conflict (imagination_id, user_id) do update set value = excluded.value;
+  end if;
+
+  update public.imaginations i
+     set upvotes = coalesce(
+       (select sum(v.value) from public.imagination_votes v where v.imagination_id = p_id), 0)
+   where i.id = p_id;
+
+  -- Empty for an imagination that is not there, rather than raising: it has most
+  -- likely just been deleted by its owner, and that is not an error worth showing
+  -- anybody. The client reads that the same way it always read a null count.
+  return query
+    select i.upvotes,
+           (select v.value from public.imagination_votes v
+             where v.imagination_id = p_id and v.user_id = v_uid)
+      from public.imaginations i
+     where i.id = p_id;
 end;
 $$;
 
-revoke all on function public.imagination_upvote(uuid) from public;
-grant execute on function public.imagination_upvote(uuid) to anon, authenticated;
+revoke all on function public.imagination_vote(uuid, text) from public;
+grant execute on function public.imagination_vote(uuid, text) to authenticated;
+
+-- The upvote-only RPC this replaced. Anybody, signed in or not, could call it any
+-- number of times on any imagination — see the history of this section.
+drop function if exists public.imagination_upvote(uuid);
 
 
 -- 6. Keeping updated_at honest.
@@ -304,6 +378,67 @@ create trigger imagination_on_update
   for each row execute function public.imagination_touch_updated_at();
 
 
+-- 7. Comments.
+--
+-- One row per comment, public to read the same way an imagination itself is — this
+-- is a community map, and a comment nobody else can read defeats the point of
+-- leaving one. Posting needs an account, the same as posting an imagination does,
+-- so a comment is always credited to somebody. There is no update: a comment posted
+-- here is final, the same as there being no way to edit one elsewhere in the app yet.
+create table if not exists public.imagination_comments (
+  id             uuid        primary key default gen_random_uuid(),
+  imagination_id uuid        not null    references public.imaginations (id) on delete cascade,
+  user_id        uuid        not null    references auth.users (id) on delete cascade,
+  -- Copied onto the row rather than joined from public.profiles, the same choice
+  -- imaginations.author_name makes and for the same reason — see this file's header.
+  author_name    text        not null,
+  body           text        not null,
+  created_at     timestamptz not null    default now()
+);
+
+alter table public.imagination_comments enable row level security;
+
+drop policy if exists "anyone can read a comment" on public.imagination_comments;
+create policy "anyone can read a comment"
+  on public.imagination_comments
+  for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists "an owner can post a comment" on public.imagination_comments;
+create policy "an owner can post a comment"
+  on public.imagination_comments
+  for insert
+  to authenticated
+  with check (user_id = auth.uid());
+
+drop policy if exists "an owner can remove their comment" on public.imagination_comments;
+create policy "an owner can remove their comment"
+  on public.imagination_comments
+  for delete
+  to authenticated
+  using (user_id = auth.uid());
+
+revoke all on public.imagination_comments from anon, authenticated;
+grant select on public.imagination_comments to anon, authenticated;
+grant insert (id, imagination_id, user_id, author_name, body) on public.imagination_comments to authenticated;
+grant delete on public.imagination_comments to authenticated;
+
+alter table public.imagination_comments drop constraint if exists imagination_comments_body_size;
+alter table public.imagination_comments add constraint imagination_comments_body_size
+  check (length(trim(body)) between 1 and 2000);
+
+alter table public.imagination_comments drop constraint if exists imagination_comments_author_name_size;
+alter table public.imagination_comments add constraint imagination_comments_author_name_size
+  check (length(trim(author_name)) between 1 and 50);
+
+create index if not exists imagination_comments_imagination_id_idx
+  on public.imagination_comments (imagination_id, created_at);
+
+comment on table public.imagination_comments is
+  'One row per comment on an imagination. Public to read, owner-only to post or remove.';
+
+
 -- Verify, after running the above:
 --
 --   -- RLS on, one public select and three owner-scoped write policies:
@@ -316,6 +451,16 @@ create trigger imagination_on_update
 --   -- The four storage policies:
 --   select policyname, cmd from pg_policies
 --    where tablename = 'objects' and policyname like '%imagination preview%';
+--
+--   -- Votes: RLS on, one policy scoped to the voter's own row, and the RPC in
+--   -- place of a grant on the table:
+--   select relname, relrowsecurity from pg_class where relname = 'imagination_votes';
+--   select policyname, cmd, roles from pg_policies where tablename = 'imagination_votes';
+--   select proname from pg_proc where proname = 'imagination_vote';
+--
+--   -- Comments: RLS on, one public select and two owner-scoped write policies:
+--   select relname, relrowsecurity from pg_class where relname = 'imagination_comments';
+--   select policyname, cmd, roles from pg_policies where tablename = 'imagination_comments';
 --
 -- Then, that reading really is public — with nothing but the anon key this returns the
 -- rows rather than an empty array, which is the opposite of what profiles does:

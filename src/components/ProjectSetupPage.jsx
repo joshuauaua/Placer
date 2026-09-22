@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Btn } from './UI';
+import { LocationMapPicker } from './LocationMapPicker';
 import { createProject, updateProject } from '../services/projects';
 
 // Matches DescribePage's form styling.
@@ -49,6 +50,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project = null, on
   const [startDate, setStartDate] = useState(project?.startDate ?? '');
   const [endDate, setEndDate] = useState(project?.endDate ?? '');
   const [locationsText, setLocationsText] = useState(locationsToText(project?.locations));
+  const [locationShapes, setLocationShapes] = useState(project?.locationShapes ?? []);
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'error'
   const [error, setError] = useState(null);
 
@@ -67,6 +69,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project = null, on
         startDate: startDate || null,
         endDate: endDate || null,
         locations: textToLocations(locationsText),
+        locationShapes,
       };
 
       const saved = editing
@@ -132,6 +135,11 @@ export function ProjectSetupPage({ t, accountId, accountName, project = null, on
             onChange={(e) => setLocationsText(e.target.value)}
             placeholder={'Malmö\nFolkets Park'}
             style={{ ...inputStyle(t), resize: 'vertical' }} />
+        </Field>
+
+        <Field t={t} label="Location outline"
+          hint="Draw the area this project covers on the map — the polygon tool in its top-center control starts a shape, and clicking its last point closes it. You can draw more than one, and drag a corner afterwards to adjust it.">
+          <LocationMapPicker t={t} initialShapes={project?.locationShapes ?? []} onChange={setLocationShapes} />
         </Field>
 
         {editing && (

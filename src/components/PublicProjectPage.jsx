@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn, CatTag, Vote } from './UI';
+import { ProjectLocationMap } from './ProjectLocationMap';
 import { readImaginationsByProject } from '../services/imaginations';
 import { readLinks, readProject, readPublicSandboxActivity } from '../services/projects';
 import { follow, isFollowing, unfollow } from '../services/follows';
@@ -149,6 +150,8 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '48px 40px 96px' }} className="placer-scroll">
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+        <ProjectLocationMap t={t} project={project} />
+
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
           gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
           <div>

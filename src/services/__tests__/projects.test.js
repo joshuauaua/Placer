@@ -49,6 +49,7 @@ const ROW = {
   start_date: '2026-01-01',
   end_date: '2026-12-31',
   locations: ['Malmö', 'Folkets Park'],
+  location_shapes: [{ path: [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }] }],
   created_at: '2026-09-01T10:00:00.000Z',
   updated_at: '2026-09-01T10:00:00.000Z',
 };
@@ -100,6 +101,7 @@ describe('starting a project', () => {
       ownerId: 'user-1', ownerName: 'Mara Quinn', name: 'Riverside Greenway',
       description: 'Turn the old rail corridor into a park.',
       startDate: '2026-01-01', endDate: '2026-12-31', locations: ['Malmö', 'Folkets Park'],
+      locationShapes: [{ path: [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }] }],
     });
 
     expect(from).toHaveBeenCalledWith('projects');
@@ -108,6 +110,7 @@ describe('starting a project', () => {
       owner_id: 'user-1', owner_name: 'Mara Quinn', name: 'Riverside Greenway',
       description: 'Turn the old rail corridor into a park.',
       start_date: '2026-01-01', end_date: '2026-12-31', locations: ['Malmö', 'Folkets Park'],
+      location_shapes: [{ path: [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }] }],
     }]]);
     expect(saved).toMatchObject({ id: 'proj-1', ownerId: 'user-1', name: 'Riverside Greenway' });
   });
@@ -131,7 +134,17 @@ describe('reading a project', () => {
     expect(found).toMatchObject({
       id: 'proj-1', ownerName: 'Mara Quinn', name: 'Riverside Greenway',
       locations: ['Malmö', 'Folkets Park'], startDate: '2026-01-01', endDate: '2026-12-31',
+      locationShapes: [{ path: [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }] }],
     });
+  });
+
+  it('defaults locationShapes to an empty array for a row saved before the column existed', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: { ...ROW, location_shapes: undefined }, error: null });
+
+    const found = await projects.readProject('proj-1');
+
+    expect(found.locationShapes).toEqual([]);
   });
 
   it('is null for a project that does not exist, rather than throwing', async () => {
@@ -139,6 +152,39 @@ describe('reading a project', () => {
     fromChains.projects = makeChain({ data: null, error: null });
 
     await expect(projects.readProject('nope')).resolves.toBeNull();
+  });
+});
+
+describe('project locations, for the community map', () => {
+  it('reads every project with a drawn shape, leaving the rest out', async () => {
+    await load();
+    fromChains.projects = makeChain({
+      data: [
+        { id: 'proj-1', name: 'Riverside Greenway', location_shapes: ROW.location_shapes },
+        { id: 'proj-2', name: 'No outline yet', location_shapes: [] },
+      ],
+      error: null,
+    });
+
+    const locations = await projects.readProjectLocations();
+
+    expect(locations).toEqual([
+      { id: 'proj-1', name: 'Riverside Greenway', locationShapes: ROW.location_shapes },
+    ]);
+  });
+
+  it('needs no account — the community map is public', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: [], error: null });
+
+    await expect(projects.readProjectLocations()).resolves.toEqual([]);
+  });
+
+  it('surfaces a failure as a readable error', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: null, error: { message: 'network down' } });
+
+    await expect(projects.readProjectLocations()).rejects.toThrow('network down');
   });
 });
 

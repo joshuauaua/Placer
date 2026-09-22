@@ -177,22 +177,52 @@ export const deleteImagination = async (id) => {
   return { success: true };
 };
 
+// A vote's weight, for turning a browser's standing 'up'/'down'/null into the delta
+// it contributes to an imagination's score.
+const VOTE_WEIGHT = { up: 1, down: -1 };
+const weightOf = (direction) => VOTE_WEIGHT[direction] || 0;
+
 /**
- * Upvote an imagination
+ * Cast, change, or withdraw this browser's vote on an imagination.
+ *
+ * `direction` is the button that was pressed — 'up' or 'down'. Pressing the one that
+ * is already standing withdraws it rather than doubling it, which is why the caller
+ * does not have to track what the previous vote was; this reads it back out of
+ * STORAGE_KEYS.UPVOTES itself. There is no per-account tracking to dodge here the
+ * way the Supabase path needs it — this browser only ever has the one vote to cast,
+ * so its own record of what that vote currently is is the whole of the bookkeeping.
+ *
+ * Returns { upvotes, myVote }, or null for an imagination that is no longer there.
  */
-export const upvoteImagination = async (id) => {
+export const voteImagination = async (id, direction) => {
   await simulateDelay();
 
   const imaginations = await fetchImaginations();
   const index = imaginations.findIndex(img => img.id === id);
+  if (index === -1) return null;
 
-  if (index !== -1) {
-    imaginations[index].upvotes = (imaginations[index].upvotes || 0) + 1;
-    localStorage.setItem(STORAGE_KEYS.IMAGINATIONS, JSON.stringify(imaginations));
-    return imaginations[index];
-  }
+  const votes = JSON.parse(localStorage.getItem(STORAGE_KEYS.UPVOTES) || '{}');
+  const before = votes[id] || null;
+  const after = before === direction ? null : direction;
 
-  return null;
+  imaginations[index].upvotes = (imaginations[index].upvotes || 0) - weightOf(before) + weightOf(after);
+
+  if (after) votes[id] = after;
+  else delete votes[id];
+
+  localStorage.setItem(STORAGE_KEYS.UPVOTES, JSON.stringify(votes));
+  localStorage.setItem(STORAGE_KEYS.IMAGINATIONS, JSON.stringify(imaginations));
+
+  return { upvotes: imaginations[index].upvotes, myVote: after };
+};
+
+/**
+ * This browser's standing vote on an imagination — 'up', 'down', or null.
+ */
+export const readMyVote = async (id) => {
+  await simulateDelay();
+  const votes = JSON.parse(localStorage.getItem(STORAGE_KEYS.UPVOTES) || '{}');
+  return votes[id] || null;
 };
 
 /**
@@ -222,6 +252,15 @@ export const addComment = async (imaginationId, commentData) => {
   }
 
   return null;
+};
+
+/**
+ * Every comment on an imagination, in the order they were added.
+ */
+export const readComments = async (imaginationId) => {
+  await simulateDelay();
+  const imagination = await fetchImaginationById(imaginationId);
+  return imagination?.comments || [];
 };
 
 /**

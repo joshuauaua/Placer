@@ -30,7 +30,7 @@ async function client() {
 }
 
 const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, description, start_date, end_date, '
-  + 'locations, created_at, updated_at';
+  + 'locations, location_shapes, created_at, updated_at';
 
 function fromRow(row) {
   return {
@@ -42,6 +42,10 @@ function fromRow(row) {
     startDate: row.start_date ?? null,
     endDate: row.end_date ?? null,
     locations: row.locations ?? [],
+    // Polygons outlining where the project is — see supabase/projects.sql section 1.
+    // Additive to `locations`, not a replacement for it: a place name and its shape
+    // on the map are two different things about the same location.
+    locationShapes: row.location_shapes ?? [],
     createdAt: row.created_at ?? null,
     updatedAt: row.updated_at ?? null,
   };
@@ -53,7 +57,7 @@ function fromRow(row) {
  * refused write here rather than a policy violation there.
  */
 export async function createProject({ ownerId, ownerName, name, description = '',
-  startDate = null, endDate = null, locations = [] }) {
+  startDate = null, endDate = null, locations = [], locationShapes = [] }) {
   if (!ownerId) throw new Error('Starting a project needs an account.');
 
   const supabase = await client();
@@ -67,6 +71,7 @@ export async function createProject({ ownerId, ownerName, name, description = ''
       start_date: startDate,
       end_date: endDate,
       locations,
+      location_shapes: locationShapes,
     })
     .select(PROJECT_COLUMNS)
     .single();
@@ -86,6 +91,24 @@ export async function readProject(id) {
 
   if (error) throw new Error(`Could not load that project: ${error.message}`);
   return data ? fromRow(data) : null;
+}
+
+/**
+ * Every project's drawn location outline, for the community map — id and name (so a
+ * click can be attributed and can navigate) plus whatever shapes it has. Public, no
+ * account needed, the same as readProject; projects with no drawn shape are left out
+ * since there is nothing for the map to draw.
+ */
+export async function readProjectLocations() {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECTS_TABLE)
+    .select('id, name, location_shapes');
+
+  if (error) throw new Error(`Could not load project locations: ${error.message}`);
+  return (data ?? [])
+    .map((row) => ({ id: row.id, name: row.name, locationShapes: row.location_shapes ?? [] }))
+    .filter((project) => project.locationShapes.length > 0);
 }
 
 /**
@@ -141,6 +164,7 @@ export async function updateProject(id, patch) {
   const columns = {
     ownerName: 'owner_name', name: 'name', description: 'description',
     startDate: 'start_date', endDate: 'end_date', locations: 'locations',
+    locationShapes: 'location_shapes',
   };
   const row = {};
   for (const [key, column] of Object.entries(columns)) {

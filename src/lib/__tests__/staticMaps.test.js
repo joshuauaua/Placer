@@ -135,6 +135,31 @@ describe('staticMapUrl', () => {
   it('still accepts scale 1 for callers that want the smaller payload', () => {
     expect(paramsOf(staticMapUrl({ apiKey: KEY, center: LOCATION, scale: 1 })).scale).toBe('1');
   });
+
+  it('draws a filled polygon per path and lets Google fit the viewport, given paths instead of center/zoom', () => {
+    const shapes = [{ path: [{ lat: 1, lng: 2 }, { lat: 1, lng: 3 }, { lat: 2, lng: 3 }] }];
+    const url = staticMapUrl({ apiKey: KEY, paths: shapes, pathColor: '#2f91a2' });
+
+    const params = new URL(url).searchParams;
+    expect(params.getAll('path')).toEqual(['color:0x2f91a2ff|weight:2|fillcolor:0x2f91a240|1,2|1,3|2,3']);
+    expect(params.has('center')).toBe(false);
+    expect(params.has('zoom')).toBe(false);
+  });
+
+  it('draws one path per shape, in order', () => {
+    const shapes = [
+      { path: [{ lat: 1, lng: 2 }, { lat: 1, lng: 3 }, { lat: 2, lng: 3 }] },
+      { path: [{ lat: 5, lng: 6 }, { lat: 5, lng: 7 }, { lat: 6, lng: 7 }] },
+    ];
+    const url = staticMapUrl({ apiKey: KEY, paths: shapes });
+
+    expect(new URL(url).searchParams.getAll('path')).toHaveLength(2);
+  });
+
+  it('skips a shape with no points rather than emitting an empty path', () => {
+    const url = staticMapUrl({ apiKey: KEY, paths: [{ path: [] }] });
+    expect(new URL(url).searchParams.getAll('path')).toHaveLength(0);
+  });
 });
 
 describe('streetViewBackgroundTiles', () => {

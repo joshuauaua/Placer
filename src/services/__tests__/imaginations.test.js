@@ -18,9 +18,12 @@ const order = vi.fn();
 const maybeSingle = vi.fn();
 const single = vi.fn();
 // eq() after select() serves two shapes: readImaginationById chains .maybeSingle(),
-// readImaginationsByProject chains .order(...) — both live on what it returns.
+// readImaginationsByProject and readComments chain .order(...) — both live on what
+// it returns. match() is readMyVote's own way in, filtering on two columns in one
+// call rather than chaining .eq() twice.
 const eqSelect = vi.fn(() => ({ maybeSingle, order }));
-const select = vi.fn(() => ({ order, eq: eqSelect }));
+const matchSelect = vi.fn(() => ({ maybeSingle }));
+const select = vi.fn(() => ({ order, eq: eqSelect, match: matchSelect }));
 const selectAfterInsert = vi.fn(() => ({ single }));
 const insert = vi.fn(() => ({ select: selectAfterInsert }));
 const eqDelete = vi.fn();
@@ -43,13 +46,19 @@ vi.mock('@supabase/supabase-js', () => ({ createClient }));
 const fetchLocal = vi.fn(() => Promise.resolve([]));
 const saveLocal = vi.fn((record) => Promise.resolve({ ...record, id: 'local-1' }));
 const deleteLocal = vi.fn(() => Promise.resolve({ success: true }));
-const upvoteLocal = vi.fn(() => Promise.resolve({ id: 'local-1', upvotes: 4 }));
+const voteLocal = vi.fn(() => Promise.resolve({ upvotes: 4, myVote: 'up' }));
+const readMyVoteLocal = vi.fn(() => Promise.resolve(null));
+const addCommentLocal = vi.fn(() => Promise.resolve({ id: 'c1', text: 'Nice idea', author: 'Mara Quinn', createdAt: '2026-09-01T10:00:00.000Z' }));
+const readCommentsLocal = vi.fn(() => Promise.resolve([]));
 
 vi.mock('../api', () => ({
   fetchImaginations: (...a) => fetchLocal(...a),
   saveImagination: (...a) => saveLocal(...a),
   deleteImagination: (...a) => deleteLocal(...a),
-  upvoteImagination: (...a) => upvoteLocal(...a),
+  voteImagination: (...a) => voteLocal(...a),
+  readMyVote: (...a) => readMyVoteLocal(...a),
+  addComment: (...a) => addCommentLocal(...a),
+  readComments: (...a) => readCommentsLocal(...a),
 }));
 
 let imaginations;
@@ -103,9 +112,9 @@ const DRAFT = {
 };
 
 beforeEach(() => {
-  for (const spy of [order, maybeSingle, single, eqSelect, select, selectAfterInsert, insert,
-    eqDelete, del, update, from, rpc, upload, remove, getPublicUrl, storageFrom, createClient,
-    fetchLocal, saveLocal, deleteLocal, upvoteLocal]) {
+  for (const spy of [order, maybeSingle, single, eqSelect, matchSelect, select, selectAfterInsert,
+    insert, eqDelete, del, update, from, rpc, upload, remove, getPublicUrl, storageFrom, createClient,
+    fetchLocal, saveLocal, deleteLocal, voteLocal, readMyVoteLocal, addCommentLocal, readCommentsLocal]) {
     spy.mockClear();
   }
   order.mockResolvedValue({ data: [], error: null });
@@ -114,7 +123,9 @@ beforeEach(() => {
   eqDelete.mockResolvedValue({ error: null });
   upload.mockResolvedValue({ data: { path: 'user-1/img-1.jpg' }, error: null });
   remove.mockResolvedValue({ data: [], error: null });
-  rpc.mockResolvedValue({ data: 13, error: null });
+  // imagination_vote returns a one-row table, unlike the old imagination_upvote's
+  // bare integer — see the "voting" describe block below.
+  rpc.mockResolvedValue({ data: [{ upvotes: 13, my_vote: 1 }], error: null });
   getPublicUrl.mockImplementation((path) => ({
     data: { publicUrl: `https://example.supabase.co/storage/v1/object/public/imagination-previews/${path}` },
   }));
@@ -148,14 +159,27 @@ describe('with no project configured', () => {
     expect(saved).toMatchObject({ shared: false });
   });
 
-  it('deletes and votes locally', async () => {
+  it('deletes and votes locally, asking for no account to do either', async () => {
     await load({ configured: false });
 
     await imaginations.removeImagination('local-1');
-    const count = await imaginations.upvoteImagination('local-1');
+    const result = await imaginations.voteImagination('local-1', 'up');
 
     expect(deleteLocal).toHaveBeenCalledWith('local-1');
-    expect(count).toBe(4);
+    expect(voteLocal).toHaveBeenCalledWith('local-1', 'up');
+    expect(result).toEqual({ upvotes: 4, myVote: 'up' });
+  });
+
+  it('reads and posts comments locally', async () => {
+    await load({ configured: false });
+
+    const posted = await imaginations.postComment('local-1', { authorName: 'Mara Quinn', text: 'Nice idea' });
+    const all = await imaginations.readComments('local-1');
+
+    expect(addCommentLocal).toHaveBeenCalledWith('local-1', { text: 'Nice idea', author: 'Mara Quinn' });
+    expect(posted).toMatchObject({ text: 'Nice idea', author: 'Mara Quinn' });
+    expect(readCommentsLocal).toHaveBeenCalledWith('local-1');
+    expect(all).toEqual([]);
   });
 
   it('has no project\'s imaginations to read, since a project cannot exist here either', async () => {
@@ -439,26 +463,142 @@ describe('voting', () => {
   it('goes through the function, not the table', async () => {
     await load();
 
-    const count = await imaginations.upvoteImagination('img-1');
+    const result = await imaginations.voteImagination('img-1', 'up', { accountId: 'user-1' });
 
     // The update policy is owner-only, and voting is by definition done to somebody
     // else's imagination.
-    expect(rpc).toHaveBeenCalledWith('imagination_upvote', { p_id: 'img-1' });
+    expect(rpc).toHaveBeenCalledWith('imagination_vote', { p_id: 'img-1', p_direction: 'up' });
     expect(update).not.toHaveBeenCalled();
-    expect(count).toBe(13);
+    expect(result).toEqual({ upvotes: 13, myVote: 'up' });
+  });
+
+  it('reads the standing vote back as down, not just up', async () => {
+    await load();
+    rpc.mockResolvedValue({ data: [{ upvotes: 2, my_vote: -1 }], error: null });
+
+    await expect(imaginations.voteImagination('img-1', 'down', { accountId: 'user-1' }))
+      .resolves.toEqual({ upvotes: 2, myVote: 'down' });
+  });
+
+  it('reads a withdrawn vote back as null', async () => {
+    await load();
+    rpc.mockResolvedValue({ data: [{ upvotes: 0, my_vote: null }], error: null });
+
+    await expect(imaginations.voteImagination('img-1', 'up', { accountId: 'user-1' }))
+      .resolves.toEqual({ upvotes: 0, myVote: null });
+  });
+
+  it('refuses without an account, rather than letting the RPC refuse it', async () => {
+    await load();
+
+    await expect(imaginations.voteImagination('img-1', 'up')).rejects.toThrow(/needs an account/);
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it('is null for an imagination that has since been deleted', async () => {
     await load();
-    rpc.mockResolvedValue({ data: null, error: null });
+    rpc.mockResolvedValue({ data: [], error: null });
 
-    await expect(imaginations.upvoteImagination('img-1')).resolves.toBeNull();
+    await expect(imaginations.voteImagination('img-1', 'up', { accountId: 'user-1' })).resolves.toBeNull();
   });
 
   it('explains a failed vote', async () => {
     await load();
     rpc.mockResolvedValue({ data: null, error: { message: 'timeout' } });
 
-    await expect(imaginations.upvoteImagination('img-1')).rejects.toThrow(/timeout/);
+    await expect(imaginations.voteImagination('img-1', 'up', { accountId: 'user-1' })).rejects.toThrow(/timeout/);
+  });
+
+  it('reads back this account\'s own vote, filtered to their row', async () => {
+    await load();
+    maybeSingle.mockResolvedValue({ data: { value: -1 }, error: null });
+
+    const vote = await imaginations.readMyVote('img-1', { accountId: 'user-1' });
+
+    expect(matchSelect).toHaveBeenCalledWith({ imagination_id: 'img-1', user_id: 'user-1' });
+    expect(vote).toBe('down');
+  });
+
+  it('has no vote to read for a signed-out visitor', async () => {
+    await load();
+
+    await expect(imaginations.readMyVote('img-1')).resolves.toBeNull();
+    expect(from).not.toHaveBeenCalledWith('imagination_votes');
+  });
+});
+
+describe('commenting', () => {
+  it('posts a comment credited to the signed-in account', async () => {
+    await load();
+    single.mockResolvedValue({
+      data: { id: 'c1', author_name: 'Mara Quinn', body: 'Nice idea', created_at: '2026-09-01T10:00:00.000Z' },
+      error: null,
+    });
+
+    const saved = await imaginations.postComment('img-1', {
+      authorName: 'Mara Quinn', accountId: 'user-1', text: 'Nice idea',
+    });
+
+    expect(insert.mock.calls[0][0]).toMatchObject({
+      imagination_id: 'img-1', user_id: 'user-1', author_name: 'Mara Quinn', body: 'Nice idea',
+    });
+    expect(saved).toEqual({
+      id: 'c1', author: 'Mara Quinn', text: 'Nice idea', createdAt: '2026-09-01T10:00:00.000Z',
+    });
+  });
+
+  it('trims the comment before posting it', async () => {
+    await load();
+
+    await imaginations.postComment('img-1', { authorName: 'Mara Quinn', accountId: 'user-1', text: '  Nice idea  ' });
+
+    expect(insert.mock.calls[0][0]).toMatchObject({ body: 'Nice idea' });
+  });
+
+  it('refuses a blank comment before it ever reaches the table', async () => {
+    await load();
+
+    await expect(imaginations.postComment('img-1', { authorName: 'Mara Quinn', accountId: 'user-1', text: '   ' }))
+      .rejects.toThrow(/needs some words/);
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it('refuses without an account, rather than letting the policy refuse it', async () => {
+    await load();
+
+    await expect(imaginations.postComment('img-1', { authorName: 'Mara Quinn', text: 'Nice idea' }))
+      .rejects.toThrow(/needs an account/);
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it('explains a refused comment', async () => {
+    await load();
+    single.mockResolvedValue({ data: null, error: { message: 'violates row-level security' } });
+
+    await expect(imaginations.postComment('img-1', { authorName: 'Mara Quinn', accountId: 'user-1', text: 'Nice idea' }))
+      .rejects.toThrow(/row-level security/);
+  });
+
+  it('reads comments oldest first', async () => {
+    await load();
+    order.mockResolvedValue({
+      data: [{ id: 'c1', author_name: 'Mara Quinn', body: 'Nice idea', created_at: '2026-09-01T10:00:00.000Z' }],
+      error: null,
+    });
+
+    const all = await imaginations.readComments('img-1');
+
+    expect(eqSelect).toHaveBeenCalledWith('imagination_id', 'img-1');
+    expect(order).toHaveBeenCalledWith('created_at', { ascending: true });
+    expect(all).toEqual([
+      { id: 'c1', author: 'Mara Quinn', text: 'Nice idea', createdAt: '2026-09-01T10:00:00.000Z' },
+    ]);
+  });
+
+  it('explains a failed read', async () => {
+    await load();
+    order.mockResolvedValue({ data: null, error: { message: 'connection reset' } });
+
+    await expect(imaginations.readComments('img-1')).rejects.toThrow(/connection reset/);
   });
 });

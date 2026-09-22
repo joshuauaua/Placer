@@ -153,4 +153,27 @@ describe('PublicProjectPage', () => {
 
     expect(onImagineForProject).toHaveBeenCalledWith('proj-1');
   });
+
+  it('shows a map of the drawn location outline at the top, when the project has one', async () => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
+    vi.mocked(readProject).mockResolvedValue({
+      ...PROJECT,
+      locationShapes: [{ path: [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }] }],
+    });
+
+    setup();
+
+    const img = await screen.findByRole('img', { name: /Riverside Greenway/ });
+    expect(img.src).toContain('https://maps.googleapis.com/maps/api/staticmap?');
+    vi.unstubAllEnvs();
+  });
+
+  it('has no map when the project has no drawn location outline', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+
+    setup();
+
+    await screen.findByRole('heading', { name: 'Riverside Greenway' });
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
 });

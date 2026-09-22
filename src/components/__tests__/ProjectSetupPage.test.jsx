@@ -9,6 +9,18 @@ vi.mock('../../services/projects', () => ({
   updateProject: vi.fn(),
 }));
 
+// LocationMapPicker needs a real Google Maps script this suite has no business loading —
+// its own tests cover it. Stubbed to a stand-in that just proves ProjectSetupPage wires
+// its onChange through to the saved patch, the same way MapContainer's tests are stubbed
+// out wherever they are not the thing under test.
+vi.mock('../LocationMapPicker', () => ({
+  LocationMapPicker: ({ onChange }) => (
+    <button type="button" onClick={() => onChange([{ path: [{ lat: 1, lng: 2 }, { lat: 1, lng: 3 }, { lat: 2, lng: 3 }] }])}>
+      Draw shape
+    </button>
+  ),
+}));
+
 const setup = (overrides = {}) => {
   const props = {
     t: THEME,
@@ -46,7 +58,22 @@ describe('ProjectSetupPage, starting a project', () => {
       ownerId: 'user-1', ownerName: 'Mara Quinn', name: 'Riverside Greenway',
       description: 'Turn the old rail corridor into a park.',
       startDate: null, endDate: null, locations: ['Malmö', 'Folkets Park'],
+      locationShapes: [],
     });
+  });
+
+  it('includes a shape drawn on the map', async () => {
+    createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    setup();
+
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Draw shape' }));
+    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+
+    await waitFor(() => expect(createProject).toHaveBeenCalled());
+    expect(createProject.mock.calls[0][0].locationShapes).toEqual([
+      { path: [{ lat: 1, lng: 2 }, { lat: 1, lng: 3 }, { lat: 2, lng: 3 }] },
+    ]);
   });
 
   it('says so when starting the project fails', async () => {

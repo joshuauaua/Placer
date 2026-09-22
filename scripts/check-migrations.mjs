@@ -22,6 +22,16 @@
 // in it is already in schema.sql -- it exists to retrofit a table that predates
 // them -- and it opens by requiring a DELETE be run first, which would fail a push
 // against a table holding a setup_check row.
+//
+// HAND_WRITTEN below is the migrations-directory equivalent of that: a one-off
+// catch-up migration for a master file that was edited after its own migration had
+// already been pushed and recorded as applied. Supabase tracks migrations by version,
+// not content, so `db push` never replays an edited one -- these re-issue just the
+// part that never ran. There is no single current source to render them from (the
+// master file has since moved on), so PLAN's generate-and-diff machinery does not fit
+// them; they are only ever checked for presence, the same as hardening.sql is exempt
+// outright. Add a new one here, by name, whenever this drift happens again -- each
+// file's own header explains which migration it is catching up.
 
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
@@ -51,6 +61,13 @@ const PLAN = [
   { name: '20260913090005_imaginations.sql', src: 'imaginations.sql' },
   { name: '20260922090001_follows.sql', src: 'follows.sql' },
   { name: '20260922100001_projects.sql', src: 'projects.sql' },
+]
+
+const HAND_WRITTEN = [
+  '20260922110001_profiles_location_avatar_backfill.sql',
+  '20260922120001_project_collaborators_no_recursion.sql',
+  '20260922130001_imagination_votes_and_comments.sql',
+  '20260922130002_sandbox_rooms_open_vote.sql',
 ]
 
 export function render({ src, slice, note }, read = (f) => readFileSync(`${DIR}/${f}`, 'utf8')) {
@@ -89,8 +106,9 @@ export function check({ write = false } = {}) {
   }
 
   // A migration nobody generated is worse than a stale one: it will be pushed and
-  // never checked. Name it rather than quietly ignoring it.
-  const known = new Set(PLAN.map((e) => e.name))
+  // never checked. Name it rather than quietly ignoring it -- HAND_WRITTEN is that
+  // naming, for the ones that are supposed to exist without a generated source.
+  const known = new Set([...PLAN.map((e) => e.name), ...HAND_WRITTEN])
   const orphans = readdirSync(OUT).filter((f) => f.endsWith('.sql') && !known.has(f))
 
   return { drifted, orphans, skipped: false }
