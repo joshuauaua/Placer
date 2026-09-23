@@ -1,28 +1,27 @@
 /* PLACER — the site footer */
 
-import { Logo } from './UI';
 import { Icon } from './Icon';
 
-// Each column's entries. One with a `view` opens that MainApp view; one without is
-// a placeholder for a page that does not exist yet, and renders as plain text so it
-// cannot be mistaken for a link that goes nowhere.
+// Each column's entries. One with a `view` opens that MainApp view, one with an
+// `href` opens outside the app, and one with neither is a placeholder for a page
+// that does not exist yet — rendered as plain text so it cannot be mistaken for a
+// link that goes nowhere.
 const COLUMNS = [
   {
-    heading: 'Product',
+    heading: 'Project',
     links: [
-      { label: 'Explore the map', view: 'map' },
-      { label: 'Sandbox', view: 'sandbox' },
-      { label: 'Projects' },
-      { label: 'Pricing' },
+      { label: 'Project Concept' },
+      { label: 'Follow the Project' },
+      {
+        label: 'Swedish Institute Project',
+        href: 'https://si.se/en/projects-granted-funding/designing-participatory-spaces-innovation-in-placemaking-and-capacity-building/',
+      },
     ],
   },
   {
     heading: 'Resources',
     links: [
-      { label: 'Resources', view: 'resources' },
-      { label: 'FAQs' },
-      { label: 'Guides' },
-      { label: 'Community' },
+      { label: 'Placemaking Trends Survey 2026/2027' },
     ],
   },
   {
@@ -36,12 +35,13 @@ const COLUMNS = [
   },
 ];
 
-// Only Instagram has an account behind it so far; the rest are placeholders.
+// The same address ContactPage.jsx shows.
+const CONTACT_EMAIL = 'info@plcr.org';
+
+// Only Instagram and email are live so far.
 const SOCIALS = [
-  { icon: 'facebook', label: 'Facebook' },
-  { icon: 'x', label: 'X' },
   { icon: 'instagram', label: 'Instagram', href: 'https://www.instagram.com/placertool' },
-  { icon: 'linkedin', label: 'LinkedIn' },
+  { icon: 'mail', label: 'Email', href: `mailto:${CONTACT_EMAIL}` },
 ];
 
 function FooterLink({ t, active, onClick, children }) {
@@ -71,9 +71,16 @@ export function SiteFooter({ t, view, onNavigate }) {
       <div className="placer-footer" style={{ maxWidth: 1400, margin: '0 auto', padding: '48px 22px 28px' }}>
         <div className="placer-footer-grid">
           <div>
-            <div onClick={() => onNavigate('welcome')} style={{ cursor: 'pointer', display: 'inline-block' }}>
-              <Logo t={t} size={22} />
-            </div>
+            {/* Wordmark only — no pin badge — the same choice Development's shared
+                Logo makes, just kept local to the footer rather than changed for the
+                nav bar too, which nobody asked to change. */}
+            <span
+              className="placer-disp"
+              onClick={() => onNavigate('welcome')}
+              style={{ cursor: 'pointer', display: 'inline-block', fontSize: 25.3, fontWeight: 800,
+                letterSpacing: '-0.02em', color: t.ink }}>
+              PLACER
+            </span>
             <p style={{ marginTop: 16, maxWidth: 360, fontSize: 15, lineHeight: 1.55, color: t.inkDim }}>
               Reimagine your city. Sketch, share and vote on ideas for the streets and
               places around you.
@@ -99,10 +106,12 @@ export function SiteFooter({ t, view, onNavigate }) {
                 {heading}
               </div>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 15 }}>
-                {links.map(({ label, view: target }) => (
+                {links.map(({ label, view: target, href }) => (
                   <li key={label}>
                     {target ? (
                       <FooterLink t={t} active={view === target} onClick={() => onNavigate(target)}>{label}</FooterLink>
+                    ) : href ? (
+                      <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: t.inkDim }}>{label}</a>
                     ) : (
                       <Placeholder t={t}>{label}</Placeholder>
                     )}
@@ -120,7 +129,6 @@ export function SiteFooter({ t, view, onNavigate }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
             <FooterLink t={t} active={view === 'terms'} onClick={() => onNavigate('terms')}>Privacy Policy</FooterLink>
             <FooterLink t={t} active={view === 'terms'} onClick={() => onNavigate('terms')}>Terms of Service</FooterLink>
-            <Placeholder t={t}>Security</Placeholder>
           </div>
         </div>
       </div>
