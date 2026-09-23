@@ -235,7 +235,15 @@ body {
  */
 /* More room above than below, so the column sits lower than centred. */
 .placer-landing-column {
-  padding: 240px 24px 64px;
+  padding: 160px 24px 64px;
+}
+
+.placer-landing-title {
+  font-size: 64px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 32px;
 }
 
 .placer-landing-pitch {
@@ -263,7 +271,12 @@ body {
 
 @media (max-width: 640px) {
   .placer-landing-column {
-    padding-top: 160px;
+    padding-top: 112px;
+  }
+
+  .placer-landing-title {
+    font-size: 48px;
+    margin-bottom: 24px;
   }
 
   /* Room for the credit to sit apart from the pitch, well down the page. */
@@ -291,7 +304,7 @@ body {
 
 /* PLACER — the landing page's feedback trigger.
  *
- * Two shapes. On a wide screen it is a pill centred on the rule between the
+ * Two shapes. On a wide screen it is a rectangle centred on the rule between the
  * pitch and the credit (see .placer-landing-divider). On a phone that rule is
  * dropped and the trigger becomes a bar across the foot of the screen instead,
  * and .placer-feedback-spacer reserves the room it occupies so it covers nothing.
@@ -303,9 +316,9 @@ body {
   z-index: 150;
   width: auto;
   height: 56px;
-  padding: 0 24px;
+  padding: 0 32px;
   border: none;
-  border-radius: 999px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -371,8 +384,8 @@ body {
   height: 56px;
   box-sizing: border-box;
   padding: 0 14px 0 22px;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   z-index: 160;
   background: rgba(255, 255, 255, 0.42);

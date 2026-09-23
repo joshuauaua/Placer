@@ -39,7 +39,7 @@ describe('App', () => {
     renderAt('/');
 
     expect(
-      screen.getByText(/PLACER is the digital toolkit for participatory placemaking/i)
+      screen.getByText(/PLACER aims to be the definitive digital toolkit for participatory placemaking/i)
     ).toBeInTheDocument();
     expect(screen.queryByText('a toolkit for participatory placemaking')).not.toBeInTheDocument();
     expect(screen.getByText(/funded by the Swedish Institute/i)).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('App', () => {
     renderAt('/');
 
     expect(screen.getByRole('navigation')).toBeInTheDocument();
-    expect(screen.getByText(/PLACER is the digital toolkit/i)).toBeInTheDocument();
+    expect(screen.getByText(/PLACER aims to be the definitive digital toolkit/i)).toBeInTheDocument();
   });
 
   it('renders SurveyPage at /survey', async () => {
@@ -90,6 +90,22 @@ describe('App', () => {
       await screen.findByRole('heading', { name: placemakingTrendsSurveyContent.cover.title })
     ).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
+  });
+
+  it('opens the User Labs page from the footer', async () => {
+    renderAt('/');
+
+    fireEvent.click(screen.getByRole('link', { name: 'User Labs' }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'User Labs' })).toBeInTheDocument();
+  });
+
+  it('opens Project Concept on the STPLN site in a new tab', () => {
+    renderAt('/');
+
+    const link = screen.getByRole('link', { name: 'Project Concept' });
+    expect(link).toHaveAttribute('href', 'https://www.stpln.se/participatory-toolkit');
+    expect(link).toHaveAttribute('target', '_blank');
   });
 
   it('renders AdminGate restricted view at /admin when admin is disabled', () => {

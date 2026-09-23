@@ -18,8 +18,8 @@ const SurveyPage = lazy(() => import('./SurveyPage'));
 
 const LABEL = 'Follow the Project';
 
-// Same survey as /survey, but opened from a "follow the project" button rather
-// than found on its own page, so the cover page greets that intent instead of
+// Same survey as /survey, but opened from the landing page's Follow the Project button
+// rather than found on its own page, so the cover page greets that intent instead of
 // the generic one.
 export const LANDING_SURVEY_CONTENT = {
   ...defaultSurveyContent,
@@ -112,8 +112,8 @@ export function HaveYourSay({ t }) {
         ref={triggerRef}
         className="placer-feedback-trigger"
         onClick={() => setOpen(true)}
-        // Shape and place live in index.css: a phone gets a bar instead of a
-        // pill, and a media query cannot override an inline style.
+        // Shape and place live in index.css: a phone gets a full-width bar, and
+        // a media query cannot override an inline style.
         style={{ background: TRIGGER_BG, color: TRIGGER_FG, boxShadow: t.shadow }}
       >
         {LABEL}

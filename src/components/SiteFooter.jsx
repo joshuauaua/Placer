@@ -11,10 +11,10 @@ const COLUMNS = [
   {
     heading: 'Project',
     links: [
-      { label: 'Project Concept' },
-      { label: 'Follow the Project' },
+      { label: 'Project Concept', href: 'https://www.stpln.se/participatory-toolkit' },
+      { label: 'User Labs', view: 'userLabs' },
       {
-        label: 'Swedish Institute Project',
+        label: 'Swedish Institute',
         href: 'https://si.se/en/projects-granted-funding/designing-participatory-spaces-innovation-in-placemaking-and-capacity-building/',
       },
     ],
@@ -31,7 +31,6 @@ const COLUMNS = [
       { label: 'About', view: 'about' },
       // Unlike Development, this branch has a real Contact page (ContactPage.jsx).
       { label: 'Contact Us', view: 'contact' },
-      { label: 'Careers' },
     ],
   },
 ];

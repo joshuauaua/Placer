@@ -51,13 +51,15 @@ export function LandingPage({ t }) {
         textAlign: 'center',
         '--placer-landing-line': t.line,
       }}>
-        {/* The pitch leads the page on its own; the wordmark is in the nav bar
-          * above it. Its size is set in index.css so a phone can scale it down. */}
+        {/* The wordmark, then the pitch. Their sizes are set in index.css so a
+          * phone can scale them down. */}
+        <h1 className="placer-disp placer-landing-title" style={{ color: t.ink }}>PLACER</h1>
+
         <p className="placer-landing-pitch" style={{ color: t.ink }}>
-          PLACER is the digital toolkit for participatory placemaking. We believe
-          that everyone has a role to play in shaping the city, and we aim to bring
-          citizens, design practitioners, and municipal stakeholders together to
-          collaboratively shape inclusive, democratic public spaces.
+          PLACER aims to be the definitive digital toolkit for participatory
+          placemaking. We believe that everyone has the potential to play a role in
+          shaping the city. We bridge the gap between everyday folks, designers, and
+          local leaders to build lively public spaces where everyone feels welcome.
         </p>
 
         {/* The feedback trigger sits centred here, in the gap that separates

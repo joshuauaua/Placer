@@ -19,6 +19,7 @@ const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const MapContainer = lazy(() => import('./components/MapContainer'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
 const ContactPage = lazy(() => import('./components/ContactPage'));
+const UserLabsPage = lazy(() => import('./components/UserLabsPage'));
 const ResourcesPage = lazy(() => import('./components/ResourcesPage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const DescribePage = lazy(() => import('./components/DescribePage'));
@@ -52,7 +53,7 @@ function LoadingFallback() {
 function MainApp({ initialView = 'welcome' }) {
   const t = THEME;
   // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'contact', 'resources', 'sandbox', 'terms',
-  // 'placemakingTrendsSurvey'
+  // 'placemakingTrendsSurvey', 'userLabs'
   const [currentView, setCurrentView] = useState(initialView);
   const [capturedView, setCapturedView] = useState(null);
   // The imagination being built. Held here rather than in StreetScreen so that
@@ -256,6 +257,12 @@ function MainApp({ initialView = 'welcome' }) {
         {view === 'contact' && (
           <Suspense fallback={<LoadingFallback />}>
             <ContactPage t={t} />
+          </Suspense>
+        )}
+
+        {view === 'userLabs' && (
+          <Suspense fallback={<LoadingFallback />}>
+            <UserLabsPage t={t} />
           </Suspense>
         )}
 
