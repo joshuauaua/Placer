@@ -1,18 +1,17 @@
 /* PLACER — Reimagine Your City */
 
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
 import { Switch, Route, useLocation } from 'wouter';
 import { THEME } from './theme';
-import { Logo, Btn } from './components/UI';
+import { Btn } from './components/UI';
 import { Icon } from './components/Icon';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieBanner } from './components/CookieBanner';
 // Not lazy: the home view, so there is nothing to defer.
 import { LandingPage } from './components/LandingPage';
 // Not lazy: the nav bar renders it on every view, so there is nothing to defer.
-import { UserMenu } from './components/UserMenu';
-import { NotificationBell } from './components/NotificationBell';
+import { GlassNavbar } from './components/GlassNavbar';
 import { SiteFooter } from './components/SiteFooter';
 import { DEFAULT_NAME } from './services/profile';
 import { clearPendingImagination, readPendingImagination, savePendingImagination } from './services/api';
@@ -101,22 +100,6 @@ function LoadingFallback() {
   );
 }
 
-// A nav item as it appears inside the hamburger dropdown — a full-width button
-// rather than the desktop nav's inline span, so it is a comfortable target on a
-// touchscreen and reads as one item per row.
-function MobileNavItem({ t, active, onClick, children }) {
-  return (
-    <button
-      role="menuitem"
-      onClick={onClick}
-      style={{ display: 'block', width: '100%', textAlign: 'left', padding: '12px 14px',
-        borderRadius: 10, border: 'none', cursor: 'pointer', background: active ? t.surfaceAlt : 'transparent',
-        color: active ? t.ink : t.inkDim, fontFamily: 'var(--placer-font)', fontWeight: 600, fontSize: 15.5 }}>
-      {children}
-    </button>
-  );
-}
-
 // What /profile and /settings show to someone who has logged out. Not a redirect,
 // so the URL still works once they log back in.
 function SignedOutNotice({ t, onSignIn }) {
@@ -141,12 +124,6 @@ function MainApp({ initialView = 'welcome' }) {
   const t = THEME;
   // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'resources', 'sandbox', 'terms'
   const [currentView, setCurrentView] = useState(initialView);
-  // Below this width the nav bar swaps About/Resources/Sandbox/Explore for a
-  // hamburger button that opens them as a dropdown — there is not room to keep
-  // them inline next to the logo and the account menu.
-  const [isMobileNav, setIsMobileNav] = useState(() => window.innerWidth <= 760);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const mobileMenuRef = useRef(null);
   const [capturedView, setCapturedView] = useState(null);
   // The imagination being built. Held here rather than in StreetScreen so that
   // stepping forward to Describe and back again does not throw the drawing away.
@@ -222,13 +199,6 @@ function MainApp({ initialView = 'welcome' }) {
     setCurrentView(next);
   };
 
-  // What the hamburger dropdown's nav items call, so picking one also closes the
-  // dropdown instead of leaving it open over the page it just navigated to.
-  const showFromMobileMenu = (next) => () => {
-    setMobileMenuOpen(false);
-    show(next);
-  };
-
   const handleImagineForProject = (id) => {
     setActiveProjectId(id);
     show('map');
@@ -286,36 +256,6 @@ function MainApp({ initialView = 'welcome' }) {
     return () => { cancelled = true; };
   }, [identityStatus, capturedView]);
 
-  useEffect(() => {
-    const handleResize = () => setIsMobileNav(window.innerWidth <= 760);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Closing the dropdown when the viewport widens past mobile covers rotating a
-  // phone or resizing a resized browser window back out, not just the toggle.
-  useEffect(() => {
-    if (!isMobileNav) setMobileMenuOpen(false);
-  }, [isMobileNav]);
-
-  // Same dismissal shape as UserMenu's dropdown: a guarded effect that only listens
-  // while the menu is open, torn down again once it closes.
-  useEffect(() => {
-    if (!mobileMenuOpen) return undefined;
-
-    const handleKeyDown = (e) => { if (e.key === 'Escape') setMobileMenuOpen(false); };
-    const handlePointerDown = (e) => {
-      if (!mobileMenuRef.current?.contains(e.target)) setMobileMenuOpen(false);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('mousedown', handlePointerDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('mousedown', handlePointerDown);
-    };
-  }, [mobileMenuOpen]);
-
   const handlePosted = () => {
     // Posted, so there is nothing left to come back to.
     clearPendingImagination();
@@ -334,6 +274,13 @@ function MainApp({ initialView = 'welcome' }) {
     // public page — see activeProjectId's own comment.
     setActiveProjectId(null);
     show('map');
+  };
+
+  // With no project there are no accounts to create, so Create Account does
+  // what Log In does there: the instant local sign-in. Otherwise, the sign-up form.
+  const handleCreateAccount = () => {
+    if (identityStatus === 'local') handleSignIn();
+    else show('signup');
   };
 
   // Back to the welcome view, because the account views have nothing to show
@@ -402,90 +349,22 @@ function MainApp({ initialView = 'welcome' }) {
 
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', background: t.page, color: t.ink }}>
-      {/* Navigation Bar */}
-      <div style={{ height: 66, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 20,
-        padding: '0 22px', background: t.chrome, borderBottom: `1px solid ${t.line}`, zIndex: 60,
-        position: 'relative' }}>
-        <div onClick={() => show('welcome')} style={{ cursor: 'pointer' }}>
-          <Logo t={t} size={20} />
-        </div>
-
-        {!isMobileNav && (
-          <>
-            <div style={{ width: 1, height: 26, background: t.line }} />
-            <nav style={{ display: 'flex', gap: 4 }}>
-              <span
-                onClick={() => show('about')}
-                style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
-                color: view === 'about' ? t.ink : t.inkDim,
-                background: view === 'about' ? t.surfaceAlt : 'transparent',
-                cursor: 'pointer' }}>About</span>
-              <span
-                onClick={() => show('resources')}
-                style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
-                color: view === 'resources' ? t.ink : t.inkDim,
-                background: view === 'resources' ? t.surfaceAlt : 'transparent',
-                cursor: 'pointer' }}>Resources</span>
-              <span
-                onClick={() => show('sandbox')}
-                style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
-                color: view === 'sandbox' ? t.ink : t.inkDim,
-                background: view === 'sandbox' ? t.surfaceAlt : 'transparent',
-                cursor: 'pointer' }}>Sandbox</span>
-            </nav>
-          </>
-        )}
-
-        <div style={{ flex: 1 }} />
-
-        {isMobileNav ? (
-          <button
-            aria-label="Menu"
-            aria-haspopup="menu"
-            aria-expanded={mobileMenuOpen}
-            onClick={() => setMobileMenuOpen((wasOpen) => !wasOpen)}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40,
-              background: 'transparent', border: 'none', borderRadius: 8, cursor: 'pointer', color: t.ink }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-            <Icon name={mobileMenuOpen ? 'close' : 'menu'} size={22} stroke={2} />
-          </button>
-        ) : (
-          <Btn t={t} variant="accent" icon="sparkle" onClick={handleExplore}>Explore</Btn>
-        )}
-
-        <NotificationBell t={t} enabled={Boolean(profile)} onOpenProject={showProjectPublic} />
-
-        <UserMenu
-          t={t}
-          profile={profile}
-          onNavigate={show}
-          onSignIn={handleSignIn}
-          onSignOut={handleSignOut}
-        />
-
-        {isMobileNav && mobileMenuOpen && (
-          <div
-            ref={mobileMenuRef}
-            role="menu"
-            aria-label="Navigation"
-            style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 65,
-              padding: 10, display: 'flex', flexDirection: 'column', gap: 2,
-              background: t.surface, borderBottom: `1px solid ${t.line}`, boxShadow: t.shadow }}>
-            <MobileNavItem t={t} active={view === 'about'} onClick={showFromMobileMenu('about')}>About</MobileNavItem>
-            <MobileNavItem t={t} active={view === 'resources'} onClick={showFromMobileMenu('resources')}>Resources</MobileNavItem>
-            <MobileNavItem t={t} active={view === 'sandbox'} onClick={showFromMobileMenu('sandbox')}>Sandbox</MobileNavItem>
-            <div style={{ padding: '8px 14px 2px' }}>
-              <Btn t={t} variant="accent" icon="sparkle" full
-                onClick={() => { setMobileMenuOpen(false); handleExplore(); }}>Explore</Btn>
-            </div>
-          </div>
-        )}
-      </div>
+      <GlassNavbar
+        t={t}
+        view={view}
+        profile={profile}
+        loading={identityLoading}
+        onNavigate={show}
+        onExplore={handleExplore}
+        onSignIn={handleSignIn}
+        onCreateAccount={handleCreateAccount}
+        onSignOut={handleSignOut}
+        onOpenProject={showProjectPublic}
+      />
 
       {/* Main Content. The map fills it and has no footer. Every other view scrolls
           here, with the footer after it — see .placer-scroll-view in index.css. */}
-      <div className={view === 'map' ? undefined : 'placer-scroll-view'}
+      <div className={`placer-under-glass-nav${view === 'map' ? '' : ' placer-scroll-view'}`}
         style={{ flex: 1, minHeight: 0, position: 'relative', overflow: view === 'map' ? 'hidden' : undefined }}>
         {view === 'welcome' && <LandingPage t={t} />}
 

@@ -131,10 +131,18 @@ describe('the copy link button', () => {
 });
 
 describe('inside the app', () => {
+  // The site links live in the nav bar's hamburger menu, so reaching one means
+  // opening it first. Returns the open menu, scoped so "Sandbox" is not also the
+  // page heading.
+  const siteMenu = () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+    return within(screen.getByRole('navigation', { name: 'Site' }));
+  };
+
   it('reaches the Sandbox from the nav bar', async () => {
     const { location } = renderAt('/');
 
-    fireEvent.click(within(screen.getByRole('navigation')).getByText('Sandbox'));
+    fireEvent.click(siteMenu().getByText('Sandbox'));
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Sandbox' })).toBeInTheDocument();
     expect(location.history.at(-1)).toBe('/sandbox');
@@ -144,14 +152,14 @@ describe('inside the app', () => {
     renderAt('/sandbox/street-mixer');
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' })).toBeInTheDocument();
-    expect(within(screen.getByRole('navigation')).getByText('About')).toBeInTheDocument();
+    expect(siteMenu().getByText('About')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Terms of Service' })).toBeInTheDocument();
   });
 
   it('serves the gallery and an experiment from the one route', async () => {
     renderAt('/sandbox');
     expect(await screen.findByRole('heading', { level: 1, name: 'Sandbox' })).toBeInTheDocument();
-    expect(within(screen.getByRole('navigation')).getByText('About')).toBeInTheDocument();
+    expect(siteMenu().getByText('About')).toBeInTheDocument();
   });
 
   it('leaves the Sandbox again, and puts the URL on the new view', async () => {
@@ -160,7 +168,7 @@ describe('inside the app', () => {
     const { location } = renderAt('/sandbox/street-mixer');
     await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' });
 
-    fireEvent.click(within(screen.getByRole('navigation')).getByText('About'));
+    fireEvent.click(siteMenu().getByText('About'));
 
     // The About page is the project poster alone, so its alt text is what marks it.
     expect(
@@ -173,9 +181,9 @@ describe('inside the app', () => {
   it('goes back into the Sandbox from another view', async () => {
     const { location } = renderAt('/');
 
-    fireEvent.click(within(screen.getByRole('navigation')).getByText('Resources'));
+    fireEvent.click(siteMenu().getByText('Resources'));
     await screen.findByRole('heading', { level: 1, name: 'Resources' });
-    fireEvent.click(within(screen.getByRole('navigation')).getByText('Sandbox'));
+    fireEvent.click(siteMenu().getByText('Sandbox'));
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Sandbox' })).toBeInTheDocument();
     expect(location.history.at(-1)).toBe('/sandbox');
@@ -185,11 +193,10 @@ describe('inside the app', () => {
     renderAt('/sandbox');
     await screen.findByRole('heading', { level: 1, name: 'Sandbox' });
 
-    // Scoped to the nav, since "Sandbox" is also the page heading. The active item is
-    // the one carrying the panel background rather than nothing.
-    const nav = within(screen.getByRole('navigation'));
-    expect(nav.getByText('Sandbox')).not.toHaveStyle({ background: 'transparent' });
-    expect(nav.getByText('About')).toHaveStyle({ background: 'transparent' });
+    // The active item is the one set in bold.
+    const nav = siteMenu();
+    expect(nav.getByText('Sandbox')).toHaveStyle({ fontWeight: 700 });
+    expect(nav.getByText('About')).toHaveStyle({ fontWeight: 600 });
   });
 
   it('does not fall through to the welcome view', async () => {

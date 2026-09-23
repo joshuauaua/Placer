@@ -50,6 +50,7 @@ describe('App', () => {
   it('ErrorBoundary catches errors thrown by route content instead of crashing the app', async () => {
     renderAt('/');
 
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
     fireEvent.click(screen.getByRole('button', { name: 'Explore' }));
 
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
@@ -147,20 +148,33 @@ describe('App', () => {
       const location = renderRecording('/profile');
       await screen.findByRole('heading', { level: 1, name: 'Profile' });
 
+      fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
       fireEvent.click(within(screen.getByRole('navigation')).getByText('Resources'));
 
       expect(await screen.findByRole('heading', { level: 1, name: 'Resources' })).toBeInTheDocument();
       expect(location.history.at(-1)).toBe('/resources');
     });
 
-    it('offers a way back in after logging out', () => {
+    it('offers Create Account and Log In after logging out, and nothing else', () => {
       renderRecording();
 
       fireEvent.click(trigger());
       fireEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));
 
-      expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Create Account' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Log In' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /^Account menu/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Open menu' })).not.toBeInTheDocument();
+    });
+
+    it('logs back in from the nav bar', () => {
+      localStorage.setItem('placemaking_profile', JSON.stringify({ signedIn: false }));
+      renderRecording();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Log In' }));
+
+      // No project in the suite, so Log In is the instant local sign-in.
+      expect(trigger()).toBeInTheDocument();
     });
 
     it('says so when /profile is reached while logged out', () => {
@@ -215,6 +229,7 @@ describe('App', () => {
       // The same nav every other view inside MainApp gets. It is what makes it possible
       // to change your mind and go back to the map without using the browser's back
       // button, and it is a consequence of these being views rather than routes.
+      fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
       expect(within(screen.getByRole('navigation')).getByText('Resources')).toBeInTheDocument();
     });
 
