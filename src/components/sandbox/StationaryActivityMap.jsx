@@ -4,7 +4,7 @@
  * visual element; the recording card floats over its left half and
  * the tally sits below it. The user first clicks the map to pick a
  * location, then selects posture and activities, then records.
- * Helvetica is used throughout.
+ * The site's text face (--placer-font) is used throughout.
  */
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
@@ -111,7 +111,7 @@ export function StationaryActivityMap({ t, experiment }) {
         zIndex: 10,
       });
       const infoWindow = new window.google.maps.InfoWindow({
-        content: `<div style="font-family:Helvetica,Arial,sans-serif;padding:6px 10px;min-width:160px"><strong style="color:${color}">${POSTURES[person.posture]?.label ?? person.posture}</strong><br>${person.activities.map((k) => ACTIVITY_BY_KEY[k]?.label ?? k).join('<br>')}<div style="font-size:11px;color:#888;margin-top:4px">Observation #${person.id}</div></div>`,
+        content: `<div style="font-family:var(--placer-font);padding:6px 10px;min-width:160px"><strong style="color:${color}">${POSTURES[person.posture]?.label ?? person.posture}</strong><br>${person.activities.map((k) => ACTIVITY_BY_KEY[k]?.label ?? k).join('<br>')}<div style="font-size:11px;color:#888;margin-top:4px">Observation #${person.id}</div></div>`,
       });
       marker.addListener('click', () => infoWindow.open(map, marker));
       markersRef.current.push(marker);
@@ -209,7 +209,7 @@ export function StationaryActivityMap({ t, experiment }) {
     : '';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: 'Helvetica, Arial, sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: 'var(--placer-font)' }}>
       {/* 1 · Map card — dominant background */}
       <Panel t={t} title="Observation Map" aside={
         <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
@@ -343,7 +343,7 @@ export function StationaryActivityMap({ t, experiment }) {
           {/* Legend */}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
             {POSTURE_LIST.map((item) => (
-              <span key={item.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: t.inkDim, fontFamily: 'Helvetica, Arial, sans-serif' }}>
+              <span key={item.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: t.inkDim, fontFamily: 'var(--placer-font)' }}>
                 <span style={{ width: 10, height: 10, borderRadius: '50%', background: item.color }} />
                 {item.label} ({counts.byPosture[item.key]})
               </span>
@@ -363,7 +363,7 @@ export function StationaryActivityMap({ t, experiment }) {
           </Btn>
         </div>
       }>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--placer-font)' }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${t.lineStrong}` }}>
               <HeadCell t={t} align="left" pad="8px 10px 8px 0">Posture</HeadCell>

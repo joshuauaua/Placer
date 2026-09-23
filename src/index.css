@@ -1,19 +1,19 @@
 /* PLACER — design system base */
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
 
-/* PLACER — the site typeface.
+/* PLACER — the site typefaces, matching the landingpage branch.
  *
- * Helvetica everywhere. It ships with the OS, so there is no webfont to load and
- * no flash of unstyled text; Arial is the metric-compatible stand-in on Windows,
- * where Helvetica is usually absent. Only .placer-mono still loads a webfont,
- * because nothing on the system is a dependable substitute for it.
+ * Archivo for text, and Archivo Expanded for display type (.placer-disp): the
+ * wordmark, the hero and headings. Both load every weight the app uses, up to
+ * 900, which the hero relies on.
  *
- * Held as a custom property because the font is named in inline styles and SVG
- * attributes as well as in this file, and those cannot read a JS constant
- * without threading an import through every component.
+ * The text face is held as a custom property because it is named in inline
+ * styles and SVG attributes as well as in this file, and those cannot read a JS
+ * constant without threading an import through every component.
  */
 :root {
-  --placer-font: Helvetica, 'Helvetica Neue', Arial, sans-serif;
+  --placer-font: 'Archivo', system-ui, sans-serif;
+  --placer-font-display: 'Archivo Expanded', 'Archivo', sans-serif;
 }
 
 * {
@@ -31,6 +31,7 @@ html, body {
 
 body {
   font-family: var(--placer-font);
+  font-feature-settings: 'ss01';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -41,7 +42,7 @@ body {
 }
 
 .placer-disp {
-  font-family: var(--placer-font);
+  font-family: var(--placer-font-display);
 }
 
 .placer-scroll {
@@ -322,7 +323,7 @@ body {
   cursor: pointer;
   padding: 6px 10px;
   border-radius: 999px;
-  font-family: var(--placer-font);
+  font-family: var(--placer-font-display);
   font-size: 19px;
   font-weight: 800;
   letter-spacing: 0.08em;

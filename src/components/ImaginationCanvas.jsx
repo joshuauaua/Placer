@@ -102,7 +102,7 @@ const Asset = ({ asset, isSelected, onSelect, onChange }) => {
         y={asset.y + radius + 6}
         text={asset.label}
         fontSize={14}
-        fontFamily="Helvetica"
+        fontFamily="Archivo"
         fill={cat.color}
         align="center"
         width={60}
