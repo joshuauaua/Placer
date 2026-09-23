@@ -44,35 +44,20 @@ export function LandingPage({ t }) {
       {/* position:relative to lift the copy above the border behind it. On a
         * phone a rule appears above the funder lockup instead (see index.css),
         * so its colour is published as a custom property that side can read. */}
-      <div style={{
+      <div className="placer-landing-column" style={{
         position: 'relative',
         margin: 'auto',
         maxWidth: 620,
-        padding: '64px 24px',
         textAlign: 'center',
         '--placer-landing-line': t.line,
       }}>
-        <h1 className="placer-disp" style={{
-          fontSize: 64,
-          fontWeight: 900,
-          color: t.ink,
-          letterSpacing: '-0.03em',
-          lineHeight: 1,
-          marginBottom: 14
-        }}>
-          PLACER
-        </h1>
-
-        {/* Dropped on a phone, where the pitch below says the same thing in a
-          * sentence and the screen has no room to spare for a second strapline. */}
-        <p className="placer-landing-tagline" style={{ fontSize: 19, color: t.inkDim }}>
-          a toolkit for participatory placemaking
-        </p>
-
-        <p className="placer-landing-pitch" style={{ fontSize: 17, color: t.ink, lineHeight: 1.7 }}>
-          PLACER is an emerging platform designed to bring citizens, design
-          practitioners, and municipal stakeholders together to collaboratively
-          shape inclusive, democratic public spaces.
+        {/* The pitch leads the page on its own; the wordmark is in the nav bar
+          * above it. Its size is set in index.css so a phone can scale it down. */}
+        <p className="placer-landing-pitch" style={{ color: t.ink }}>
+          PLACER is the digital toolkit for participatory placemaking. We believe
+          that everyone has a role to play in shaping the city, and we aim to bring
+          citizens, design practitioners, and municipal stakeholders together to
+          collaboratively shape inclusive, democratic public spaces.
         </p>
 
         {/* The feedback trigger sits centred here, in the gap that separates

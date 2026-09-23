@@ -1,7 +1,8 @@
 /* PLACER — the holding page's site menu.
  *
- * With the full nav bar off (see App.jsx), this is the only way to reach About
- * or Contact — and, once there, the only way back. A trigger that flips
+ * Sits at the right end of GlassNavbar. With the full nav bar off (see App.jsx),
+ * this is the only way to reach About or Contact — and, once there, the only
+ * way back. A trigger that flips
  * between the hamburger and close glyphs, and a small dropdown under it
  * rather than a full-screen dialog, since the list of links is short enough
  * to read at a glance.
@@ -53,13 +54,13 @@ export function HamburgerMenu({ t, view, onNavigate }) {
         aria-expanded={open}
         aria-label={open ? 'Close menu' : 'Open menu'}
         className="placer-menu-trigger"
-        style={{ background: t.chrome, color: t.ink, border: `1px solid ${t.line}`, boxShadow: t.shadow }}
+        style={{ color: t.ink }}
       >
         <Icon name={open ? 'close' : 'menu'} size={20} stroke={2} />
       </button>
 
       {open && (
-        <nav aria-label="Site" className="placer-menu-panel" style={{ background: t.chrome, border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
+        <nav aria-label="Site" className="placer-menu-panel">
           {LINKS.map((link) => (
             <button
               key={link.key}

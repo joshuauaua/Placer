@@ -38,11 +38,10 @@ describe('App', () => {
   it('renders the landing page at root path, with no nav bar', () => {
     renderAt('/');
 
-    expect(screen.getByRole('heading', { level: 1, name: 'PLACER' })).toBeInTheDocument();
-    expect(screen.getByText('a toolkit for participatory placemaking')).toBeInTheDocument();
     expect(
-      screen.getByText(/bring citizens, design practitioners, and municipal stakeholders together/i)
+      screen.getByText(/PLACER is the digital toolkit for participatory placemaking/i)
     ).toBeInTheDocument();
+    expect(screen.queryByText('a toolkit for participatory placemaking')).not.toBeInTheDocument();
     expect(screen.getByText(/funded by the Swedish Institute/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'STPLN' })).toHaveAttribute('href', 'https://stpln.se/');
     expect(screen.getByRole('link', { name: 'Ankara Aks' })).toHaveAttribute('href', 'https://ankaraaks.com/');
@@ -74,7 +73,7 @@ describe('App', () => {
     renderAt('/');
 
     expect(screen.getByRole('navigation')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 1, name: 'PLACER' })).toBeInTheDocument();
+    expect(screen.getByText(/PLACER is the digital toolkit/i)).toBeInTheDocument();
   });
 
   it('renders SurveyPage at /survey', async () => {
@@ -84,12 +83,13 @@ describe('App', () => {
     expect(await screen.findByText(surveyContent.hero.subtitle)).toBeInTheDocument();
   });
 
-  it('renders PlacemakingTrendsSurveyPage at /placemaking-trends-survey', async () => {
+  it('renders PlacemakingTrendsSurveyPage at /placemaking-trends-survey, with the footer under it', async () => {
     renderAt('/placemaking-trends-survey');
 
     expect(
       await screen.findByRole('heading', { name: placemakingTrendsSurveyContent.cover.title })
     ).toBeInTheDocument();
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   });
 
   it('renders AdminGate restricted view at /admin when admin is disabled', () => {

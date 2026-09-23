@@ -9,7 +9,7 @@ import { Icon } from './components/Icon';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieBanner } from './components/CookieBanner';
 import { LandingPage } from './components/LandingPage';
-import { HamburgerMenu } from './components/HamburgerMenu';
+import { GlassNavbar } from './components/GlassNavbar';
 import { SiteFooter } from './components/SiteFooter';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
@@ -27,6 +27,10 @@ const AdminImaginations = lazy(() => import('./components/AdminImaginations'));
 const SandboxPage = lazy(() => import('./components/SandboxPage'));
 
 const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
+
+// The longer, five-module municipal-practitioner survey, ported from Development —
+// see PlacemakingTrendsSurveyPage's own header. Linked from the footer's Resources.
+const PLACEMAKING_TRENDS_SURVEY_PATH = '/placemaking-trends-survey';
 
 // The site is a landing page for now, so the nav bar is off unless asked for.
 // Read at render time rather than module load, the same way AdminGate reads its
@@ -47,7 +51,8 @@ function LoadingFallback() {
 
 function MainApp({ initialView = 'welcome' }) {
   const t = THEME;
-  // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'contact', 'resources', 'sandbox', 'terms'
+  // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'contact', 'resources', 'sandbox', 'terms',
+  // 'placemakingTrendsSurvey'
   const [currentView, setCurrentView] = useState(initialView);
   const [capturedView, setCapturedView] = useState(null);
   // The imagination being built. Held here rather than in StreetScreen so that
@@ -73,16 +78,27 @@ function MainApp({ initialView = 'welcome' }) {
   // never remounted when the matched Route changes and an initialView prop only ever
   // applies on first mount — which works for a URL that is only an entry point, and
   // silently does nothing for one you can navigate to from inside the app.
+  //
+  // The Placemaking Trends survey lives in the URL for the same reason: its link is
+  // what gets sent to city officials. It is a view rather than a Route of its own so
+  // it sits inside the same nav and footer as every other page.
   const [location, navigate] = useLocation();
   const inSandbox = location.startsWith('/sandbox');
-  const view = inSandbox ? 'sandbox' : currentView;
+  const inPlacemakingTrendsSurvey = location === PLACEMAKING_TRENDS_SURVEY_PATH;
+  const view = inSandbox ? 'sandbox'
+    : inPlacemakingTrendsSurvey ? 'placemakingTrendsSurvey'
+    : currentView;
 
   const show = (next) => {
     if (next === 'sandbox') {
       navigate('/sandbox');
       return;
     }
-    if (inSandbox) navigate('/');
+    if (next === 'placemakingTrendsSurvey') {
+      navigate(PLACEMAKING_TRENDS_SURVEY_PATH);
+      return;
+    }
+    if (inSandbox || inPlacemakingTrendsSurvey) navigate('/');
     setCurrentView(next);
   };
 
@@ -173,7 +189,7 @@ function MainApp({ initialView = 'welcome' }) {
     <div className="placer-viewport" style={{ width: '100%', display: 'flex', flexDirection: 'column', background: t.page, color: t.ink }}>
       {/* With the full nav bar off, this is the only way to reach About or
           Contact, and the only way back once there. */}
-      {!showNav && <HamburgerMenu t={t} view={view} onNavigate={show} />}
+      {!showNav && <GlassNavbar t={t} view={view} onNavigate={show} />}
 
       {/* Navigation Bar */}
       {showNav && (
@@ -255,14 +271,22 @@ function MainApp({ initialView = 'welcome' }) {
           </Suspense>
         )}
 
+        {view === 'placemakingTrendsSurvey' && (
+          <Suspense fallback={<LoadingFallback />}>
+            <PlacemakingTrendsSurveyPage t={t} />
+          </Suspense>
+        )}
+
         {view === 'terms' && (
           <Suspense fallback={<LoadingFallback />}>
             <TermsAndPrivacyPage t={t} />
           </Suspense>
         )}
-      </div>
 
-      {view !== 'map' && <SiteFooter t={t} view={view} onNavigate={show} />}
+        {/* Inside the scrolling area, after the page, so it scrolls with it rather
+            than staying pinned to the bottom of the window. */}
+        {view !== 'map' && <SiteFooter t={t} view={view} onNavigate={show} />}
+      </div>
     </div>
   );
 }
@@ -298,16 +322,12 @@ function App() {
       <ErrorBoundary>
         <Switch>
           <Route path="/survey"><Suspense fallback={<LoadingFallback />}><SurveyPage t={t} /></Suspense></Route>
-          {/* The longer, five-module municipal-practitioner survey, ported from
-              Development — see PlacemakingTrendsSurveyPage's own header. */}
-          <Route path="/placemaking-trends-survey">
-            <Suspense fallback={<LoadingFallback />}><PlacemakingTrendsSurveyPage t={t} /></Suspense>
-          </Route>
           <Route path="/admin/imaginations"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminImaginations t={t} /></AdminGate></Suspense></Route>
           <Route path="/admin"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminDashboard t={t} /></AdminGate></Suspense></Route>
           <Route path="/terms-and-privacy"><MainApp initialView="terms" /></Route>
-          {/* Everything else, /sandbox and /sandbox/<experiment> included — MainApp
-              reads those off the location itself. */}
+          {/* Everything else, /sandbox, /sandbox/<experiment> and
+              /placemaking-trends-survey included — MainApp reads those off the
+              location itself. */}
           <Route><MainApp /></Route>
         </Switch>
       </ErrorBoundary>

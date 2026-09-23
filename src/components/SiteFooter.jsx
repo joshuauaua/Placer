@@ -1,6 +1,7 @@
 /* PLACER — the site footer */
 
 import { Icon } from './Icon';
+import { THEME_INK } from '../theme';
 
 // Each column's entries. One with a `view` opens that MainApp view, one with an
 // `href` opens outside the app, and one with neither is a placeholder for a page
@@ -21,7 +22,7 @@ const COLUMNS = [
   {
     heading: 'Resources',
     links: [
-      { label: 'Placemaking Trends Survey 2026/2027' },
+      { label: 'Placemaking Trends Survey 2026/2027', view: 'placemakingTrendsSurvey' },
     ],
   },
   {
@@ -37,6 +38,16 @@ const COLUMNS = [
 
 // The same address ContactPage.jsx shows.
 const CONTACT_EMAIL = 'info@plcr.org';
+
+// The footer is dark whatever the page is: black, with the night theme's light
+// ink for its text, rules and icons.
+const FOOTER_COLORS = {
+  chrome: '#000000',
+  ink: THEME_INK.ink,
+  inkDim: THEME_INK.inkDim,
+  inkFaint: THEME_INK.inkFaint,
+  line: THEME_INK.line,
+};
 
 // Only Instagram and email are live so far.
 const SOCIALS = [
@@ -65,7 +76,8 @@ function Placeholder({ t, children }) {
  * The footer under every MainApp view except the map. `view` is the one showing, so
  * its link can read as the current page; `onNavigate` is MainApp's `show`.
  */
-export function SiteFooter({ t, view, onNavigate }) {
+export function SiteFooter({ t: pageTheme, view, onNavigate }) {
+  const t = { ...pageTheme, ...FOOTER_COLORS };
   return (
     <footer style={{ background: t.chrome, borderTop: `1px solid ${t.line}`, color: t.ink }}>
       <div className="placer-footer" style={{ maxWidth: 1400, margin: '0 auto', padding: '48px 22px 28px' }}>
