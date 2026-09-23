@@ -4,8 +4,10 @@ import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import App from '../../App';
 import { resolveSurveyContent } from '../survey/content';
+import { resolveSurveyContent as resolvePlacemakingTrendsSurveyContent } from '../placemakingSurvey/content';
 
 const surveyContent = resolveSurveyContent();
+const placemakingTrendsSurveyContent = resolvePlacemakingTrendsSurveyContent();
 
 vi.mock('../MapContainer', () => ({
   default: () => {
@@ -80,6 +82,14 @@ describe('App', () => {
     // Taken from the content rather than quoted, so rewording the survey's
     // opening line is not a failing test in a file about routing.
     expect(await screen.findByText(surveyContent.hero.subtitle)).toBeInTheDocument();
+  });
+
+  it('renders PlacemakingTrendsSurveyPage at /placemaking-trends-survey', async () => {
+    renderAt('/placemaking-trends-survey');
+
+    expect(
+      await screen.findByRole('heading', { name: placemakingTrendsSurveyContent.cover.title })
+    ).toBeInTheDocument();
   });
 
   it('renders AdminGate restricted view at /admin when admin is disabled', () => {

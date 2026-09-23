@@ -1,0 +1,205 @@
+{
+  "cover": {
+    "title": "Citizen Engagement in Public Space Development",
+    "body": [
+      "We are inviting city officials and municipal planning professionals worldwide to share their experience with citizen engagement in public space development. Your answers will shape both the tool we are building and the upcoming Placemaking Trends 2026–2027 Report.",
+      "It takes about 7 minutes. All responses are confidential and reported only in aggregate. At the end you can opt in to receive the report, or to become an early adopter of the platform.",
+      "Thank you for contributing your expertise to building more inclusive, collaborative cities."
+    ],
+    "glossaryTitle": "You might need to know these words",
+    "glossary": [
+      {
+        "term": "Participatory urban design",
+        "definition": "An approach to shaping the built environment in which residents, officials, and professionals jointly make decisions, rather than planning being done solely by experts on behalf of the public."
+      },
+      {
+        "term": "Community engagement",
+        "definition": "The ongoing process of informing, consulting, and involving local residents in decisions that affect their neighborhood or city."
+      },
+      {
+        "term": "Co-design",
+        "definition": "A collaborative design method where end users actively help create a solution (a space, tool, or service) alongside designers, rather than simply being consulted or tested afterward."
+      },
+      {
+        "term": "GIS (Geographic Information System)",
+        "definition": "Software that captures, stores, and visualizes spatial data on maps, allowing planners to analyze and layer information like land use, demographics, or infrastructure."
+      }
+    ],
+    "startLabel": "Start the survey"
+  },
+  "steps": {
+    "module1Title": "Module 1: Profile & Strategic Alignment",
+    "module2Title": "Module 2: Current Tool Stack & Digital Maturity",
+    "module3Title": "Module 3: Key Challenges & Operational Bottlenecks",
+    "module4Title": "Module 4: Future Solution & Feature Validation",
+    "optInTitle": "Module 5: Lead Magnet & Opt-In",
+    "optInDescription": "Where should we send your copy of the Placemaking Trends 2026/2027 Report? Leave your details below, and tick anything else you'd like — all of it is optional, and Submit works without any of it.",
+    "optInChecklistTitle": "Next steps & beta access",
+    "otherLabel": "Please specify",
+    "otherPlaceholder": "Tell us which",
+    "optionalHint": "Optional — you can continue without answering.",
+    "enterKeyLabel": "Enter ↵",
+    "enterHintStart": "to begin",
+    "enterHint": "to continue",
+    "enterHintSubmit": "to submit",
+    "newLineHint": "Shift + Enter adds a new line",
+    "nextLabel": "Next",
+    "backLabel": "Back",
+    "submitLabel": "Submit survey",
+    "submittingLabel": "Sending…"
+  },
+  "module1": [
+    {
+      "key": "role",
+      "label": "Which best describes your primary role?",
+      "options": [
+        { "value": "strategic-planning-director", "label": "Strategic Planning Director / Manager" },
+        { "value": "area-district-urban-planner", "label": "Area / District / Urban Planner" },
+        { "value": "community-engagement-specialist", "label": "Community Engagement Specialist" },
+        { "value": "urban-innovation-special-projects", "label": "Urban Innovation / Special Projects" },
+        { "value": "gis-planning-technician", "label": "GIS / Planning Technician" },
+        { "value": "other", "label": "Other", "other": true }
+      ]
+    },
+    {
+      "key": "tenure",
+      "label": "How long have you served in municipal planning/engagement?",
+      "options": [
+        { "value": "under-2", "label": "< 2 years" },
+        { "value": "2-5", "label": "2–5 years" },
+        { "value": "6-10", "label": "6–10 years" },
+        { "value": "10-plus", "label": "10+ years" }
+      ]
+    },
+    {
+      "key": "strategicAlignment",
+      "label": "How is civic participation integrated into your municipality's strategy and budget?",
+      "options": [
+        { "value": "high-priority-dedicated-budget", "label": "High strategic priority with dedicated budget" },
+        { "value": "high-priority-limited-budget", "label": "High priority, but budget/resources are limited" },
+        { "value": "moderate-priority-case-by-case", "label": "Moderate priority; addressed case-by-case" },
+        { "value": "low-priority-no-budget", "label": "Low priority / No dedicated budget" }
+      ]
+    }
+  ],
+  "module2": [
+    {
+      "key": "engagementDelivery",
+      "label": "How do you currently deliver public engagement processes?",
+      "options": [
+        { "value": "fully-digital", "label": "Fully digital software platforms" },
+        { "value": "hybrid", "label": "Hybrid (digital tools + in-person workshops)" },
+        { "value": "primarily-analog", "label": "Primarily in-person / analog methods" },
+        { "value": "no-formal-tools", "label": "No formalized civic engagement tools" }
+      ]
+    },
+    {
+      "key": "toolTypes",
+      "label": "Which tool types do you regularly rely on?",
+      "multiple": true,
+      "options": [
+        { "value": "spatial-gis", "label": "Spatial & GIS Platforms (e.g., Maptionnaire, Felt, ArcGIS)" },
+        { "value": "visual-boards", "label": "Visual Collaboration Boards (e.g., Miro, Figma)" },
+        {
+          "value": "survey-tools",
+          "label": "Standard Survey Tools (e.g., Typeform, SurveyMonkey, Google Forms)"
+        },
+        {
+          "value": "social-messaging",
+          "label": "Social Media & Messaging Channels (e.g., Facebook, WhatsApp)"
+        },
+        { "value": "custom-inhouse", "label": "Custom / In-house Municipal Platforms" }
+      ]
+    },
+    {
+      "key": "toolAccessibility",
+      "label": "How well do your current digital tools serve non-technical citizens?",
+      "type": "scale",
+      "scaleMax": 5,
+      "minLabel": "1 = Highly complex / inaccessible",
+      "maxLabel": "5 = Effortless / intuitive for everyone"
+    }
+  ],
+  "module3": [
+    {
+      "key": "frictionPoints",
+      "label": "What are your top 3 friction points in placemaking and civic design? (Select up to 3)",
+      "multiple": true,
+      "options": [
+        { "value": "demographic-reach", "label": "Reaching diverse demographics (ages, hard-to-reach groups)" },
+        {
+          "value": "data-structuring",
+          "label": "Structuring qualitative citizen feedback into usable GIS data"
+        },
+        { "value": "visual-communication", "label": "Helping non-experts visualize complex 2D/3D plans" },
+        { "value": "conflict-resolution", "label": "Resolving conflicting stakeholder opinions" },
+        { "value": "sustaining-momentum", "label": "Maintaining resident momentum over long timelines" },
+        { "value": "executive-buy-in", "label": "Convincing council / leadership with actionable reports" },
+        { "value": "software-costs", "label": "High software costs or lack of technical budget" }
+      ]
+    },
+    {
+      "key": "feedbackConversion",
+      "label": "How difficult is it to convert qualitative feedback into actionable design steps?",
+      "type": "scale",
+      "scaleMax": 5,
+      "minLabel": "1 = Very easy / automated",
+      "maxLabel": "5 = Major bottleneck"
+    }
+  ],
+  "module4": [
+    {
+      "key": "spatialFilteringValue",
+      "label": "How valuable would Interactive Spatial Filtering be to your department? Enabling citizens and staff to add, remove and filter design ideas on a live map.",
+      "type": "scale",
+      "scaleMax": 5,
+      "minLabel": "1 = Not valuable",
+      "maxLabel": "5 = Extremely valuable"
+    },
+    {
+      "key": "caseStudyHubValue",
+      "label": "How valuable would a Global Case Study Hub be to your department? A searchable, peer-to-peer repository of community-driven placemaking projects.",
+      "type": "scale",
+      "scaleMax": 5,
+      "minLabel": "1 = Not valuable",
+      "maxLabel": "5 = Extremely valuable"
+    },
+    {
+      "key": "publishingNetworkValue",
+      "label": "How valuable would a Publishing Network be to your department? The ability to benchmark and share your local municipal projects with international peers.",
+      "type": "scale",
+      "scaleMax": 5,
+      "minLabel": "1 = Not valuable",
+      "maxLabel": "5 = Extremely valuable"
+    }
+  ],
+  "optIns": [
+    {
+      "key": "beta",
+      "label": "Sign up our municipality for early beta access & product testing"
+    },
+    {
+      "key": "userLab",
+      "label": "Invite me to join user lab wireframe testing sessions"
+    }
+  ],
+  "contact": {
+    "title": "Your details",
+    "fields": [
+      { "key": "name", "label": "Full Name", "placeholder": "Your full name" },
+      { "key": "email", "label": "Work Email Address", "placeholder": "you@city.gov", "type": "email" },
+      {
+        "key": "municipality",
+        "label": "Municipality / City & Country",
+        "placeholder": "e.g. Rotterdam, Netherlands"
+      },
+      { "key": "department", "label": "Department", "placeholder": "e.g. Zoning and Urban Planning" }
+    ]
+  },
+  "success": {
+    "title": "Thank You!",
+    "body": "Your answers are in. If you asked for the report, beta access or a demonstration, we will be in touch at the address you left.",
+    "closeLabel": "Return to Home"
+  },
+  "errorMessage": "Something went wrong saving your answers. Please try again."
+}

@@ -14,6 +14,7 @@ import { SiteFooter } from './components/SiteFooter';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
+const PlacemakingTrendsSurveyPage = lazy(() => import('./components/PlacemakingTrendsSurveyPage'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const MapContainer = lazy(() => import('./components/MapContainer'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
@@ -297,6 +298,11 @@ function App() {
       <ErrorBoundary>
         <Switch>
           <Route path="/survey"><Suspense fallback={<LoadingFallback />}><SurveyPage t={t} /></Suspense></Route>
+          {/* The longer, five-module municipal-practitioner survey, ported from
+              Development — see PlacemakingTrendsSurveyPage's own header. */}
+          <Route path="/placemaking-trends-survey">
+            <Suspense fallback={<LoadingFallback />}><PlacemakingTrendsSurveyPage t={t} /></Suspense>
+          </Route>
           <Route path="/admin/imaginations"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminImaginations t={t} /></AdminGate></Suspense></Route>
           <Route path="/admin"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminDashboard t={t} /></AdminGate></Suspense></Route>
           <Route path="/terms-and-privacy"><MainApp initialView="terms" /></Route>
