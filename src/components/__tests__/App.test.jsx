@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import App from '../../App';
@@ -104,17 +104,17 @@ describe('App', () => {
       return location;
     };
 
-    const trigger = () => screen.getByRole('button', { name: 'Account menu' });
+    const trigger = () => screen.getByRole('button', { name: /^Account menu/ });
 
     afterEach(() => {
       // The profile lives in localStorage, which nothing else resets.
       localStorage.clear();
     });
 
-    it('shows the display name in the nav bar', () => {
+    it('shows the display name on the account menu button, for assistive tech', () => {
       renderRecording();
 
-      expect(trigger()).toHaveTextContent('You There');
+      expect(trigger()).toHaveAccessibleName('Account menu — You There');
     });
 
     it('opens the profile from the menu and puts it in the URL', async () => {
@@ -147,7 +147,7 @@ describe('App', () => {
       const location = renderRecording('/profile');
       await screen.findByRole('heading', { level: 1, name: 'Profile' });
 
-      fireEvent.click(screen.getByText('Resources'));
+      fireEvent.click(within(screen.getByRole('navigation')).getByText('Resources'));
 
       expect(await screen.findByRole('heading', { level: 1, name: 'Resources' })).toBeInTheDocument();
       expect(location.history.at(-1)).toBe('/resources');
@@ -160,7 +160,7 @@ describe('App', () => {
       fireEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));
 
       expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Account menu' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Account menu/ })).not.toBeInTheDocument();
     });
 
     it('says so when /profile is reached while logged out', () => {
@@ -215,7 +215,7 @@ describe('App', () => {
       // The same nav every other view inside MainApp gets. It is what makes it possible
       // to change your mind and go back to the map without using the browser's back
       // button, and it is a consequence of these being views rather than routes.
-      expect(screen.getByText('Resources')).toBeInTheDocument();
+      expect(within(screen.getByRole('navigation')).getByText('Resources')).toBeInTheDocument();
     });
 
     it('moves between the two forms without leaving MainApp', async () => {

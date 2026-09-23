@@ -66,18 +66,17 @@ export function UserMenu({ t, profile, onNavigate, onSignIn, onSignOut }) {
     // The nav row itself is not positioned, so the panel is anchored here.
     <div ref={wrapRef} style={{ position: 'relative' }}>
       <button
-        aria-label="Account menu"
+        aria-label={`Account menu — ${profile.name}`}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
-        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 8px 4px 4px',
+        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px 4px 4px',
           background: 'transparent', border: 'none', borderRadius: 999, cursor: 'pointer',
           color: t.ink, fontFamily: 'var(--placer-font)', fontWeight: 600, fontSize: 14.5,
           letterSpacing: '-0.01em' }}
         onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
         <Avatar name={profile.name} icon={profile.avatar} size={40} ring={t.line} />
-        <span>{profile.name}</span>
         <Icon name={open ? 'chevUp' : 'chevDown'} size={16} stroke={2.2} style={{ color: t.inkDim }} />
       </button>
 

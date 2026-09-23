@@ -26,15 +26,16 @@ describe('terms and privacy page', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Terms and Privacy' })
     ).toBeInTheDocument();
-    expect(screen.getByText('Terms of Service')).toBeInTheDocument();
-    expect(screen.getByText('Privacy Policy')).toBeInTheDocument();
+    // As headings, because the footer's legal links carry the same names.
+    expect(screen.getByRole('heading', { name: 'Terms of Service' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Privacy Policy' })).toBeInTheDocument();
     expect(screen.getByText('GDPR')).toBeInTheDocument();
   });
 
   it('reaches the page from the footer link', async () => {
     renderAt('/');
 
-    fireEvent.click(screen.getByRole('link', { name: 'Terms and Privacy' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Terms of Service' }));
     expect(await screen.findByText('Agreement to these terms')).toBeInTheDocument();
     expect(screen.getByText('Who this policy applies to')).toBeInTheDocument();
     expect(screen.getByText('Your rights')).toBeInTheDocument();

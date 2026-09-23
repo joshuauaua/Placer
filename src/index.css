@@ -231,3 +231,46 @@ body {
     display: none;
   }
 }
+
+/* MainApp's content area, for every view but the map. Each page is built as its own
+ * full-height scroll container (height: 100%; overflow-y: auto), which would leave the
+ * site footer stranded below it behind a second scrollbar. Here the area itself scrolls
+ * instead, and the page just grows to its content, at least one screen tall. */
+.placer-scroll-view {
+  overflow-y: auto;
+}
+
+.placer-scroll-view > :first-child {
+  height: auto !important;
+  min-height: 100%;
+  overflow-y: visible !important;
+}
+
+.placer-footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 40px;
+}
+
+.placer-footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+@media (max-width: 760px) {
+  .placer-footer {
+    padding: 36px 20px 24px !important;
+  }
+
+  .placer-footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px 20px;
+  }
+
+  .placer-footer-grid > :first-child {
+    grid-column: 1 / -1;
+  }
+}

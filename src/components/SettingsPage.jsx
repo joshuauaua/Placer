@@ -1,10 +1,11 @@
 /* PLACER — account settings: your name, and what the app is allowed to measure */
 
-import { useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Avatar, AVATAR_ICONS, Btn } from './UI';
 import { Icon } from './Icon';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
 import { updatePassword } from '../services/auth';
+import { isSupabaseConfigured, readPreferences, savePreferences } from '../services/notifications';
 
 // The same floor AuthPage and ResetPasswordPage ask for.
 const MIN_PASSWORD = 8;
@@ -346,6 +347,118 @@ function Analytics({ t, onNavigate }) {
   );
 }
 
+// One row per category the pasted feature list describes, in that order. `inapp`
+// and `email` are the notification_preferences columns this row's two checkboxes
+// read and write.
+const NOTIFICATION_KINDS = [
+  { inapp: 'engagement_inapp', email: 'engagement_email', title: 'Engagement',
+    description: 'When someone comments on or votes for your imaginations.' },
+  { inapp: 'activity_inapp', email: 'activity_email', title: 'Activity',
+    description: 'When a Project, City or User you follow posts news or new Sandbox results.' },
+  { inapp: 'follower_inapp', email: 'follower_email', title: 'Followers',
+    description: 'When someone follows your profile.' },
+  { inapp: 'system_inapp', email: 'system_email', title: 'System',
+    description: 'Platform announcements and account maintenance.' },
+];
+
+const checkboxLabelStyle = { display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 };
+
+function NotificationPreferences({ t }) {
+  const [prefs, setPrefs] = useState(null); // null while loading
+  const [error, setError] = useState(null);
+  const [savingKey, setSavingKey] = useState(null);
+
+  useEffect(() => {
+    // Preferences live in Supabase — see services/notifications.js's header. Nothing
+    // to load or save without a project configured, so this card renders nothing
+    // rather than a permanent "could not load" for a deployment that has no backend.
+    if (!isSupabaseConfigured()) return undefined;
+
+    let cancelled = false;
+    readPreferences()
+      .then((loaded) => { if (!cancelled) setPrefs(loaded); })
+      .catch((err) => {
+        console.error('Could not load your notification settings:', err);
+        if (!cancelled) setError('Could not load your notification settings.');
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (!isSupabaseConfigured()) return null;
+
+  const toggle = (key) => async (e) => {
+    const value = e.target.checked;
+    setPrefs((current) => ({ ...current, [key]: value }));
+    setSavingKey(key);
+    setError(null);
+    try {
+      await savePreferences({ [key]: value });
+    } catch (err) {
+      console.error('Could not save your notification settings:', err);
+      setError('Could not save that. Try again.');
+      // Roll the checkbox back — a toggle that silently did not save is worse
+      // than one that visibly reverts.
+      setPrefs((current) => ({ ...current, [key]: !value }));
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
+  return (
+    <Card t={t} title="Notifications">
+      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
+        What you hear about, and where. Email is sent through Resend, which is not wired
+        up yet — the Email choice below is saved for when it is, but nothing is emailed
+        in the meantime.
+      </p>
+
+      {prefs === null && !error && (
+        <p style={{ fontSize: 14, color: t.inkDim }}>Loading…</p>
+      )}
+
+      {error && (
+        <div role="alert" style={{ marginBottom: 18, padding: 14, borderRadius: 8,
+          background: '#D6452F22', borderLeft: '4px solid #D6452F', fontSize: 14,
+          color: t.ink, fontWeight: 600, lineHeight: 1.5 }}>
+          {error}
+        </div>
+      )}
+
+      {prefs && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 20px',
+            alignItems: 'center' }}>
+            <span />
+            <span style={{ fontSize: 12, fontWeight: 700, color: t.inkFaint, textTransform: 'uppercase',
+              letterSpacing: '0.04em' }}>In-app</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: t.inkFaint, textTransform: 'uppercase',
+              letterSpacing: '0.04em' }}>Email</span>
+
+            {NOTIFICATION_KINDS.map(({ inapp, email, title, description }) => (
+              <Fragment key={inapp}>
+                <div style={{ padding: '10px 0' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>{title}</div>
+                  <div style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.4, marginTop: 2 }}>
+                    {description}
+                  </div>
+                </div>
+                <label style={checkboxLabelStyle}>
+                  <input type="checkbox" checked={Boolean(prefs[inapp])}
+                    disabled={savingKey === inapp} onChange={toggle(inapp)} />
+                </label>
+                <label style={checkboxLabelStyle}>
+                  <input type="checkbox" checked={Boolean(prefs[email])}
+                    disabled={savingKey === email} onChange={toggle(email)} />
+                </label>
+              </Fragment>
+            ))}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function YourData({ t, onNavigate }) {
   const link = (view, label) => (
     <span
@@ -395,6 +508,7 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate }) {
           description="Where you're based, shown on your profile. Optional."
           placeholder="e.g. Malmö, Sweden" />
         {email && <ChangePassword t={t} />}
+        {email && <NotificationPreferences t={t} />}
         <Analytics t={t} onNavigate={onNavigate} />
         <YourData t={t} onNavigate={onNavigate} />
       </div>

@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { UserMenu } from '../UserMenu';
 import { THEME } from '../../theme';
 
-const trigger = () => screen.getByRole('button', { name: 'Account menu' });
+const trigger = () => screen.getByRole('button', { name: /^Account menu/ });
 const menu = () => screen.queryByRole('menu');
 const item = (name) => screen.getByRole('menuitem', { name });
 
@@ -21,10 +21,13 @@ const setup = (overrides = {}) => {
 };
 
 describe('UserMenu', () => {
-  it('shows the display name next to the avatar', () => {
+  it('shows the avatar alone, not the full display name', () => {
     setup();
 
-    expect(trigger()).toHaveTextContent('Mara Quinn');
+    // The name is still there for assistive tech, on the button's accessible name...
+    expect(trigger()).toHaveAccessibleName('Account menu — Mara Quinn');
+    // ...but not as visible text, and not spelled out next to the avatar.
+    expect(screen.queryByText('Mara Quinn')).not.toBeInTheDocument();
     // Avatar renders initials rather than the name.
     expect(screen.getByText('MQ')).toBeInTheDocument();
   });

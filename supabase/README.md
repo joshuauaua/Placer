@@ -388,6 +388,44 @@ curl -s "https://<project-ref>.supabase.co/rest/v1/projects?select=name,owner_na
   -H "apikey: <anon key>"
 ```
 
+## 13. Notifications
+
+Requires steps 9, 10, 11 and 12 (in that order — it references profiles, imaginations,
+follows, projects and sandbox rooms). Run `notifications.sql` in the SQL editor after
+all four. It is re-runnable.
+
+It creates `public.notifications` and `public.notification_preferences`, and five
+trigger functions that write a notification the moment the thing it is about happens: a
+comment or an upvote on your own imagination (Engagement), somebody following your
+profile (Follower), and a followed user or project posting a new imagination or closing
+a Sandbox room (Activity). Nothing writes to `notifications` directly — like
+`sandbox_rooms`, it has row-level security on and no INSERT policy at all, so the
+triggers, running security definer, are the only door in. System alerts have no trigger
+yet; the category exists in the check constraint for when something calls for one.
+
+Every trigger checks `notification_wants()` first, so a category switched off in
+`notification_preferences` is never written, not just hidden after the fact. A missing
+preferences row (nobody has opened Settings) defaults every category on, matching the
+column defaults.
+
+**Email is not sent.** `notification_preferences` has an `_email` column next to every
+`_inapp` one so Settings has somewhere to save the choice, but nothing in this file, or
+in `src/services/notifications.js`, sends mail. Resend is wired up later against these
+same columns.
+
+### Verify
+
+```sql
+select relrowsecurity from pg_class where relname in ('notifications', 'notification_preferences');
+select policyname, cmd, roles from pg_policies where tablename in ('notifications', 'notification_preferences');
+select tgname from pg_trigger where tgrelid = 'public.notifications'::regclass and not tgisinternal;
+```
+
+Expect `rls` true on both tables; `notifications` with one SELECT, one UPDATE and one
+DELETE policy and no INSERT; `notification_preferences` with SELECT, INSERT and UPDATE;
+and no triggers listed on `notifications` itself — they live on the five tables that
+cause a notification, not on the table that receives one.
+
 ## Still to decide
 
 - **Projects have one role beyond the owner, not several.** A collaborator can edit
@@ -413,6 +451,13 @@ curl -s "https://<project-ref>.supabase.co/rest/v1/projects?select=name,owner_na
   `public.profiles` below: it is server-side state belonging to an account, and the
   GDPR controls only reach what is in localStorage. A signed-out visitor's follows are
   covered — they live under `placemaking_follows`, in `STORAGE_KEYS` — an account's are not.
+- **Nor are notifications or notification preferences**, for the same reason again —
+  both are rows in Supabase, and neither is in `exportAllData` or `eraseAllData`.
+- **Activity alerts do not cover cities.** `follows.followed_type` includes `'city'`,
+  but nothing in `notifications.sql` posts to a city yet — there is nowhere in the app
+  that publishes news for one, the same gap `follows.sql`'s header notes. The trigger
+  for a followed user or project is the pattern to extend once a city has something to
+  post.
 - **Accounts are not yet in the export or the erasure.** `exportAllData` and
   `eraseAllData` in `src/services/api.js` walk a registry of localStorage keys, and a
   profile row is not one. Two consequences: the GDPR page's download does not include

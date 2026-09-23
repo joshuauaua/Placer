@@ -12,6 +12,8 @@ import { CookieBanner } from './components/CookieBanner';
 import { LandingPage } from './components/LandingPage';
 // Not lazy: the nav bar renders it on every view, so there is nothing to defer.
 import { UserMenu } from './components/UserMenu';
+import { NotificationBell } from './components/NotificationBell';
+import { SiteFooter } from './components/SiteFooter';
 import { DEFAULT_NAME } from './services/profile';
 import { clearPendingImagination, readPendingImagination, savePendingImagination } from './services/api';
 import { useIdentity } from './components/useIdentity';
@@ -112,19 +114,6 @@ function MobileNavItem({ t, active, onClick, children }) {
         color: active ? t.ink : t.inkDim, fontFamily: 'var(--placer-font)', fontWeight: 600, fontSize: 15.5 }}>
       {children}
     </button>
-  );
-}
-
-function FooterLink({ t, active, onClick, children }) {
-  return (
-    <span
-      onClick={onClick}
-      role="link"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
-      style={{ color: active ? t.ink : t.inkDim, fontWeight: 600, cursor: 'pointer' }}>
-      {children}
-    </span>
   );
 }
 
@@ -465,6 +454,8 @@ function MainApp({ initialView = 'welcome' }) {
           <Btn t={t} variant="accent" icon="sparkle" onClick={handleExplore}>Explore</Btn>
         )}
 
+        <NotificationBell t={t} enabled={Boolean(profile)} onOpenProject={showProjectPublic} />
+
         <UserMenu
           t={t}
           profile={profile}
@@ -492,8 +483,10 @@ function MainApp({ initialView = 'welcome' }) {
         )}
       </div>
 
-      {/* Main Content */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+      {/* Main Content. The map fills it and has no footer. Every other view scrolls
+          here, with the footer after it — see .placer-scroll-view in index.css. */}
+      <div className={view === 'map' ? undefined : 'placer-scroll-view'}
+        style={{ flex: 1, minHeight: 0, position: 'relative', overflow: view === 'map' ? 'hidden' : undefined }}>
         {view === 'welcome' && <LandingPage t={t} />}
 
         {view === 'map' && (
@@ -611,20 +604,10 @@ function MainApp({ initialView = 'welcome' }) {
               onImagineForProject={handleImagineForProject} />
           </Suspense>
         )}
-      </div>
-
-      {/* Footer */}
-      <div style={{ height: 44, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 18,
-        padding: '0 22px', background: t.chrome, borderTop: `1px solid ${t.line}`, fontSize: 13, zIndex: 60 }}>
-        <span style={{ color: t.inkFaint }}>© 2026 PLACER</span>
-        <div style={{ flex: 1 }} />
-        <a href="https://www.instagram.com/placertool" target="_blank" rel="noopener noreferrer"
-          style={{ color: t.inkDim, fontWeight: 600, textDecoration: 'none' }}>
-          Instagram
-        </a>
-        <FooterLink t={t} active={view === 'terms'} onClick={() => show('terms')}>
-          Terms and Privacy
-        </FooterLink>
+        {view !== 'map' && (
+          <SiteFooter t={t} view={view}
+            onNavigate={(next) => (next === 'map' ? handleExplore() : show(next))} />
+        )}
       </div>
     </div>
   );

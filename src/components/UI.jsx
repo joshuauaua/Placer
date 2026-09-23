@@ -4,30 +4,15 @@ import { useState } from 'react';
 import { Icon } from './Icon';
 import { copyText } from '../lib/clipboard';
 import { CAT } from '../theme';
-import benchMark from '../assets/cover-bench.png';
 
 /**
- * The bench is the mark, and now literally the same drawing as the favicon (see
- * index.html) rather than a separate icon that merely matched it — one piece of
- * line art, reused everywhere it stands for PLACER. A bench is the smallest thing
- * that turns a space into a place, which is the whole argument of the app — and
- * unlike a map pin it says somewhere to be rather than somewhere to look at.
- *
- * The source PNG is black lines on a transparent ground, so inverting it turns
- * those lines white against the badge's own dark fill instead of baking in a
- * fixed background — the same trick the favicon uses, minus a hardcoded square.
- * That invert assumes a light `accentInk` on a dark `accent`, true of every theme
- * this app currently ships; a theme that flips that would need this revisited.
+ * Wordmark only — no bench badge. The favicon (see index.html) still carries the
+ * bench drawing on its own; this is just the type everywhere PLACER's name is set
+ * in the nav bar, the footer and JoinPage.
  */
 export function Logo({ t, size = 22 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-      <div style={{ width: size * 1.25, height: size * 1.25, background: t.accent, borderRadius: 6,
-        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <img src={benchMark} alt="" style={{ width: size, height: 'auto', filter: 'invert(1)' }} />
-      </div>
-      <span className="placer-disp" style={{ fontSize: size * 1.15, fontWeight: 800, letterSpacing: '-0.02em', color: t.ink }}>PLACER</span>
-    </div>
+    <span className="placer-disp" style={{ fontSize: size * 1.15, fontWeight: 800, letterSpacing: '-0.02em', color: t.ink }}>PLACER</span>
   );
 }
 
