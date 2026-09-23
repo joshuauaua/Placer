@@ -188,6 +188,24 @@ const ICON_ELEMENTS = {
     </>
   ),
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  // Social marks, drawn as outlines so they sit with the rest of the set rather
+  // than as the networks' filled logos.
+  instagram: (
+    <>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+      <circle cx="12" cy="12" r="3.9" />
+      <path d="M17 7h.01" />
+    </>
+  ),
+  facebook: <path d="M17 3.5h-2.8a4.2 4.2 0 00-4.2 4.2v2.8H7.2v3.8H10v6.2h3.8v-6.2h2.8l.9-3.8h-3.7V8a.9.9 0 01.9-.9H17V3.5z" />,
+  x: <path d="M4.5 4.5h4.2l10.8 15h-4.2L4.5 4.5zM19.3 4.5l-6.1 6.6M4.7 19.5l6.1-6.6" />,
+  linkedin: (
+    <>
+      <rect x="3.5" y="9.5" width="3.8" height="11" />
+      <circle cx="5.4" cy="5.4" r="1.9" />
+      <path d="M11 20.5v-11h3.6v1.6a4 4 0 016.9 2.8v6.6h-3.8v-6a1.9 1.9 0 00-3.8 0v6" />
+    </>
+  ),
 };
 
 export function Icon({ name, size = 22, stroke = 1.7, fill = 'none', style, color }) {

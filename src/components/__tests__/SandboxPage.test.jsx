@@ -140,7 +140,7 @@ describe('inside the app', () => {
   it('reaches the Sandbox from the nav bar', async () => {
     const { location } = renderAt('/');
 
-    fireEvent.click(screen.getByText('Sandbox'));
+    fireEvent.click(within(screen.getByRole('navigation')).getByText('Sandbox'));
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Sandbox' })).toBeInTheDocument();
     expect(location.history.at(-1)).toBe('/sandbox');
@@ -150,14 +150,14 @@ describe('inside the app', () => {
     renderAt('/sandbox/street-mixer');
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' })).toBeInTheDocument();
-    expect(screen.getByText('About')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Terms and Privacy' })).toBeInTheDocument();
+    expect(within(screen.getByRole('navigation')).getByText('About')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Terms of Service' })).toBeInTheDocument();
   });
 
   it('serves the gallery and an experiment from the one route', async () => {
     renderAt('/sandbox');
     expect(await screen.findByRole('heading', { level: 1, name: 'Sandbox' })).toBeInTheDocument();
-    expect(screen.getByText('About')).toBeInTheDocument();
+    expect(within(screen.getByRole('navigation')).getByText('About')).toBeInTheDocument();
   });
 
   it('leaves the Sandbox again, and puts the URL back', async () => {
@@ -166,7 +166,7 @@ describe('inside the app', () => {
     const { location } = renderAt('/sandbox/street-mixer');
     await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' });
 
-    fireEvent.click(screen.getByText('About'));
+    fireEvent.click(within(screen.getByRole('navigation')).getByText('About'));
 
     // The About page is the project poster alone, so its alt text is what marks it.
     expect(
@@ -179,9 +179,9 @@ describe('inside the app', () => {
   it('goes back into the Sandbox from another view', async () => {
     const { location } = renderAt('/');
 
-    fireEvent.click(screen.getByText('Resources'));
+    fireEvent.click(within(screen.getByRole('navigation')).getByText('Resources'));
     await screen.findByRole('heading', { level: 1, name: 'Resources' });
-    fireEvent.click(screen.getByText('Sandbox'));
+    fireEvent.click(within(screen.getByRole('navigation')).getByText('Sandbox'));
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Sandbox' })).toBeInTheDocument();
     expect(location.history.at(-1)).toBe('/sandbox');

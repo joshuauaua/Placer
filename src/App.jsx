@@ -10,6 +10,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieBanner } from './components/CookieBanner';
 import { LandingPage } from './components/LandingPage';
 import { HamburgerMenu } from './components/HamburgerMenu';
+import { SiteFooter } from './components/SiteFooter';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -40,19 +41,6 @@ function LoadingFallback() {
     <div style={{ width: '100%', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ fontSize: 14, color: '#888' }}>Loading…</div>
     </div>
-  );
-}
-
-function FooterLink({ t, active, onClick, children }) {
-  return (
-    <span
-      onClick={onClick}
-      role="link"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
-      style={{ color: active ? t.ink : t.inkDim, fontWeight: 600, cursor: 'pointer' }}>
-      {children}
-    </span>
   );
 }
 
@@ -271,18 +259,7 @@ function MainApp({ initialView = 'welcome' }) {
         )}
       </div>
 
-      {/* Footer */}
-      <div style={{ height: 44, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 18,
-        padding: '0 22px', background: t.chrome, borderTop: `1px solid ${t.line}`, fontSize: 13, zIndex: 60 }}>
-        <span style={{ color: t.inkFaint }}>2026 PLACER</span>
-        <a href="mailto:info@plcr.org" style={{ color: t.inkFaint, textDecoration: 'none' }}>
-          info@plcr.org
-        </a>
-        <div style={{ flex: 1 }} />
-        <FooterLink t={t} active={view === 'terms'} onClick={() => show('terms')}>
-          Terms and Privacy
-        </FooterLink>
-      </div>
+      {view !== 'map' && <SiteFooter t={t} view={view} onNavigate={show} />}
     </div>
   );
 }
