@@ -61,14 +61,8 @@ describe('PlacemakingTrendsSurveyPage', () => {
     render(<PlacemakingTrendsSurveyPage t={THEME} />);
 
     expect(heading(content.cover.title)).toBeInTheDocument();
+    expect(screen.getByText(content.cover.subtitle)).toBeInTheDocument();
     expect(screen.getByText(content.cover.body[0])).toBeInTheDocument();
-  });
-
-  it('explains the words the survey uses', () => {
-    render(<PlacemakingTrendsSurveyPage t={THEME} />);
-
-    expect(heading(content.cover.glossaryTitle)).toBeInTheDocument();
-    content.cover.glossary.forEach((entry) => expect(screen.getByText(entry.term)).toBeInTheDocument());
   });
 
   it('shows the first question of module 1 once started', () => {

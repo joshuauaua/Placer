@@ -157,26 +157,13 @@ describe('placemaking trends survey content', () => {
       expect(() => validateSurveyContent(content)).toThrow(/cover\.body/);
     });
 
-    it('rejects a glossary entry with no definition', () => {
+    it('accepts a cover with no subtitle, but not an empty one', () => {
       const content = clone();
-      delete content.cover.glossary[0].definition;
-
-      expect(() => validateSurveyContent(content)).toThrow(/cover\.glossary\[0\]\.definition/);
-    });
-
-    it('rejects a glossary with no title above it', () => {
-      const content = clone();
-      delete content.cover.glossaryTitle;
-
-      expect(() => validateSurveyContent(content)).toThrow(/cover\.glossaryTitle/);
-    });
-
-    it('accepts a survey with no glossary at all', () => {
-      const content = clone();
-      delete content.cover.glossary;
-      delete content.cover.glossaryTitle;
-
+      delete content.cover.subtitle;
       expect(() => validateSurveyContent(content)).not.toThrow();
+
+      content.cover.subtitle = ' ';
+      expect(() => validateSurveyContent(content)).toThrow(/cover\.subtitle/);
     });
   });
 

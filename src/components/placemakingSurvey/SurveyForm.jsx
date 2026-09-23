@@ -4,12 +4,9 @@
  * different JSON file rather than a different component.
  */
 
-// This branch has no cover-bench.png (Development's wordmark badge, dropped from
-// the nav bar and footer here) — street-bench.png is the nearest existing asset
-// with the same motif, and it's what this branch's own shorter survey already
-// uses for its intro art.
-import coverArt from '../../assets/street-bench.png';
+import coverPhoto from '../../assets/placemaking-trends-cover.webp';
 import { Icon } from '../Icon';
+import { PhotoSplit, PhotoSplitHeading } from '../PhotoSplit';
 import { Btn } from '../UI';
 import { SurveyQuestion } from './SurveyQuestion';
 import { useSurveyForm } from './useSurveyForm';
@@ -33,9 +30,8 @@ const DANGER = '#D6452F';
 const selectedFill = (t) => t.accent + (t.mapMode === 'dark' ? '14' : '22');
 
 /**
- * A centred card on the gradient, shared by the cover and thank-you screens. The
- * cover runs to several paragraphs and a glossary, so the pane scrolls rather
- * than clipping on a short window.
+ * A centred card on the gradient, for the thank-you screen. The pane scrolls
+ * rather than clipping on a short window.
  */
 function FullScreen({ t, children, maxWidth = 640 }) {
   return (
@@ -133,122 +129,38 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
   const { step } = survey;
 
   if (step === 'cover') {
+    // The User Labs layout (see PhotoSplit): a photo from a lab on the left, the
+    // title, copy and start button on the right.
     return (
-      <FullScreen t={t} maxWidth={1040}>
-        {/* Across the top, over both columns. */}
-        <h1
-          className="placer-disp"
-          style={{
-            fontSize: 44,
-            fontWeight: 900,
-            color: t.ink,
-            letterSpacing: '-0.03em',
-            lineHeight: 1.1,
-            marginBottom: 40,
-          }}
-        >
-          {content.cover.title}
-        </h1>
+      <PhotoSplit
+        t={t}
+        src={coverPhoto}
+        alt="A deck of Dream It cards clipped to a plywood board beside a street map dotted with pins, from a participatory placemaking workshop."
+      >
+        <PhotoSplitHeading t={t} title={content.cover.title} subtitle={content.cover.subtitle} />
 
-        {/* Two columns where there is room for them, one where there is not:
-            auto-fit collapses the grid on a narrow window without a media query,
-            which inline styles cannot express. */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: 40,
-            // Centered rather than top-aligned: the glossary card is shorter than
-            // the description column next to it, and pinning it to the top left
-            // an awkward gap of its own underneath.
-            alignItems: 'center',
-            textAlign: 'left',
-            marginBottom: 40,
-          }}
-        >
-          <div>
-            {/* Decorative: it says nothing the title and copy do not. */}
-            <img
-              src={coverArt}
-              alt=""
-              style={{ width: 168, height: 'auto', display: 'block', marginBottom: 24 }}
-            />
-
-            {content.cover.body.map((paragraph) => (
-              <p
-                key={paragraph.slice(0, 48)}
-                style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.7, marginBottom: 16 }}
-              >
-                {paragraph}
-              </p>
-            ))}
-          </div>
-
-          {content.cover.glossary && (
-            <div
-              style={{
-                padding: '20px 28px 6px',
-                background: t.surface,
-                border: `1px solid ${t.line}`,
-                borderRadius: 16,
-              }}
+        <div style={{ marginTop: 20 }}>
+          {content.cover.body.map((paragraph) => (
+            <p
+              key={paragraph.slice(0, 48)}
+              style={{ fontSize: 17, color: t.inkDim, lineHeight: 1.65, marginBottom: 14 }}
             >
-              <h2
-                className="placer-disp"
-                style={{
-                  // A step above the 15px terms below it, so the heading still
-                  // reads as a heading over the rows it introduces.
-                  fontSize: 18,
-                  fontWeight: 800,
-                  color: t.ink,
-                  letterSpacing: '-0.01em',
-                  marginBottom: 4,
-                }}
-              >
-                {content.cover.glossaryTitle}
-              </h2>
-
-              {content.cover.glossary.map((entry, index) => (
-                <details
-                  key={entry.term}
-                  className="placer-disclosure"
-                  style={{ borderTop: index === 0 ? 'none' : `1px solid ${t.line}` }}
-                >
-                  <summary
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      padding: '14px 0',
-                      fontSize: 15,
-                      fontWeight: 700,
-                      color: t.ink,
-                    }}
-                  >
-                    {entry.term}
-                    <span className="placer-disclosure-chev" aria-hidden="true">
-                      <Icon name="chevDown" size={18} stroke={2.4} style={{ color: t.inkDim }} />
-                    </span>
-                  </summary>
-
-                  <p style={{ margin: '0 0 16px', fontSize: 14, color: t.inkDim, lineHeight: 1.6 }}>
-                    {entry.definition}
-                  </p>
-                </details>
-              ))}
-            </div>
-          )}
+              {paragraph}
+            </p>
+          ))}
         </div>
 
-        <Btn t={t} variant="accent" size="lg" icon="arrowRight" onClick={survey.handleNext}>
-          {content.cover.startLabel}
-        </Btn>
-
-        <div style={{ marginTop: 16 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px 20px', marginTop: 20 }}>
+          <button
+            onClick={survey.handleNext}
+            className="placer-split-action"
+            style={{ marginTop: 0, background: t.primaryBg, color: t.primaryFg }}
+          >
+            {content.cover.startLabel}
+          </button>
           <EnterHint t={t} labels={content.steps} phrase={content.steps.enterHintStart} />
         </div>
-      </FullScreen>
+      </PhotoSplit>
     );
   }
 

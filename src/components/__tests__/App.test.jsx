@@ -98,6 +98,20 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('link', { name: 'User Labs' }));
 
     expect(await screen.findByRole('heading', { level: 1, name: 'User Labs' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Apply' })).toHaveAttribute(
+      'href', expect.stringMatching(/^mailto:info@plcr\.org/)
+    );
+  });
+
+  it('opens a page from the footer at its top, not scrolled down to the footer', async () => {
+    const { container } = renderAt('/');
+    const scrollArea = container.querySelector('.placer-scroll-view');
+    scrollArea.scrollTop = 600;
+
+    fireEvent.click(screen.getByRole('link', { name: 'User Labs' }));
+    await screen.findByRole('heading', { level: 1, name: 'User Labs' });
+
+    expect(scrollArea.scrollTop).toBe(0);
   });
 
   it('opens Project Concept on the STPLN site in a new tab', () => {

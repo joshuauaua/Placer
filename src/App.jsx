@@ -1,6 +1,6 @@
 /* PLACER — Reimagine Your City */
 
-import { useState, lazy, Suspense } from 'react';
+import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
 import { Switch, Route, useLocation } from 'wouter';
 import { THEME } from './theme';
@@ -89,6 +89,14 @@ function MainApp({ initialView = 'welcome' }) {
   const view = inSandbox ? 'sandbox'
     : inPlacemakingTrendsSurvey ? 'placemakingTrendsSurvey'
     : currentView;
+
+  // Every view shares one scrolling area, so without this a page opened from the
+  // footer would open scrolled down to where the footer was. Reset on each change
+  // of view, so every page opens at its top.
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [view]);
 
   const show = (next) => {
     if (next === 'sandbox') {
@@ -234,7 +242,7 @@ function MainApp({ initialView = 'welcome' }) {
 
       {/* Main Content. The map fills it and has no footer. Every other view scrolls
           here, with the footer after it — see .placer-scroll-view in index.css. */}
-      <div className={view === 'map' ? undefined : 'placer-scroll-view'}
+      <div ref={scrollRef} className={view === 'map' ? undefined : 'placer-scroll-view'}
         style={{ flex: 1, minHeight: 0, position: 'relative', overflow: view === 'map' ? 'hidden' : undefined }}>
         {view === 'welcome' && <LandingPage t={t} />}
 

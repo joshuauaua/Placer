@@ -39,28 +39,6 @@ body {
   display: none;
 }
 
-/* An expandable row, used for the glossary on the Placemaking Trends survey's
- * cover. Built on <details> so the keyboard and screen-reader behaviour is the
- * browser's rather than ours; only the default marker and the chevron's direction
- * need CSS, because the rest is styled inline like everything else in the survey. */
-.placer-disclosure summary {
-  list-style: none;
-  cursor: pointer;
-}
-
-.placer-disclosure summary::-webkit-details-marker {
-  display: none;
-}
-
-.placer-disclosure-chev {
-  display: flex;
-  transition: transform 0.2s ease;
-}
-
-.placer-disclosure[open] .placer-disclosure-chev {
-  transform: rotate(180deg);
-}
-
 /* The Placemaking Trends survey's 1-5 sliders. A range input can only be styled
  * through vendor pseudo-elements, which inline styles cannot reach — so the shape
  * lives here and the colours arrive as custom properties, since they come from
@@ -672,5 +650,84 @@ body {
 
   .placer-footer-grid > :first-child {
     grid-column: 1 / -1;
+  }
+}
+
+/* PLACER — a photo beside a block of copy (see PhotoSplit.jsx).
+ *
+ * Used by User Labs and the survey cover. The photo fills the left, running up
+ * under the glass nav bar, and the copy sits centred on the right. On a phone
+ * they stack, photo first.
+ */
+.placer-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100%;
+}
+
+.placer-split-photo {
+  position: relative;
+  min-height: 420px;
+}
+
+.placer-split-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.placer-split-copy {
+  align-self: center;
+  max-width: 560px;
+  padding: 120px 56px 64px;
+}
+
+.placer-split-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 32px;
+  height: 52px;
+  padding: 0 40px;
+  font-family: 'Archivo', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.placer-split-action:hover,
+.placer-split-action:focus-visible {
+  transform: scale(1.04);
+}
+
+@media (max-width: 800px) {
+  .placer-split {
+    grid-template-columns: 1fr;
+  }
+
+  .placer-split-photo {
+    min-height: 0;
+    aspect-ratio: 3 / 2;
+  }
+
+  .placer-split-copy {
+    padding: 32px 24px 56px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-split-action {
+    transition: none;
+  }
+
+  .placer-split-action:hover,
+  .placer-split-action:focus-visible {
+    transform: none;
   }
 }

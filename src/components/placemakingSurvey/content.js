@@ -122,31 +122,13 @@ function keyedList(value, path, each) {
 
 function cover(value, path) {
   fields(value, COVER_FIELDS, path);
+  // A line under the title. Optional, so a cover without one still validates.
+  optionalText(value.subtitle, `${path}.subtitle`);
 
   if (!Array.isArray(value.body) || value.body.length === 0) {
     fail(`${path}.body`, 'must be a non-empty array of paragraphs');
   }
   value.body.forEach((paragraph, index) => text(paragraph, `${path}.body[${index}]`));
-
-  // The glossary is optional: a survey whose words need no explaining leaves it
-  // out and the cover simply does not render the block. Present, it must be
-  // complete — a term with no definition is worse than no glossary at all.
-  if (value.glossary === undefined) return;
-
-  if (!Array.isArray(value.glossary) || value.glossary.length === 0) {
-    fail(`${path}.glossary`, 'must be a non-empty array when present');
-  }
-  text(value.glossaryTitle, `${path}.glossaryTitle`);
-
-  const seen = new Set();
-  value.glossary.forEach((entry, index) => {
-    const entryPath = `${path}.glossary[${index}]`;
-    object(entry, entryPath);
-    text(entry.term, `${entryPath}.term`);
-    text(entry.definition, `${entryPath}.definition`);
-    if (seen.has(entry.term)) fail(`${entryPath}.term`, `repeats "${entry.term}"`);
-    seen.add(entry.term);
-  });
 }
 
 function choiceOptions(value, path) {

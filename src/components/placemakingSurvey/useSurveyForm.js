@@ -314,10 +314,9 @@ export function useSurveyForm({ content, submit, source }) {
    * respondent has just clicked an option, or read the cover and not touched
    * anything.
    *
-   * Everything that already treats Enter as its own is left alone: the glossary's
-   * disclosures open with it, links follow, and Back and Submit are buttons the
-   * browser activates without help. An option button is the exception — Enter on
-   * one continues rather than toggling the option off again, which is what a
+   * Everything that already treats Enter as its own is left alone: links
+   * follow, and Back and Submit are buttons the browser activates without help.
+   * An option button is the exception — Enter on one continues rather than toggling the option off again, which is what a
    * respondent who has just chosen it means by it.
    */
   useEffect(() => {

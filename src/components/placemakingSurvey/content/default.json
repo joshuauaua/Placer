@@ -1,29 +1,11 @@
 {
   "cover": {
     "title": "Citizen Engagement in Public Space Development",
+    "subtitle": "Placemaking Trends Survey 2026/2027",
     "body": [
       "We are inviting city officials and municipal planning professionals worldwide to share their experience with citizen engagement in public space development. Your answers will shape both the tool we are building and the upcoming Placemaking Trends 2026–2027 Report.",
       "It takes about 7 minutes. All responses are confidential and reported only in aggregate. At the end you can opt in to receive the report, or to become an early adopter of the platform.",
       "Thank you for contributing your expertise to building more inclusive, collaborative cities."
-    ],
-    "glossaryTitle": "You might need to know these words",
-    "glossary": [
-      {
-        "term": "Participatory urban design",
-        "definition": "An approach to shaping the built environment in which residents, officials, and professionals jointly make decisions, rather than planning being done solely by experts on behalf of the public."
-      },
-      {
-        "term": "Community engagement",
-        "definition": "The ongoing process of informing, consulting, and involving local residents in decisions that affect their neighborhood or city."
-      },
-      {
-        "term": "Co-design",
-        "definition": "A collaborative design method where end users actively help create a solution (a space, tool, or service) alongside designers, rather than simply being consulted or tested afterward."
-      },
-      {
-        "term": "GIS (Geographic Information System)",
-        "definition": "Software that captures, stores, and visualizes spatial data on maps, allowing planners to analyze and layer information like land use, demographics, or infrastructure."
-      }
     ],
     "startLabel": "Start the survey"
   },
