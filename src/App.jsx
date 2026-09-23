@@ -214,8 +214,10 @@ function MainApp({ initialView = 'welcome' }) {
         </div>
       )}
 
-      {/* Main Content */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+      {/* Main Content. The map fills it and has no footer. Every other view scrolls
+          here, with the footer after it — see .placer-scroll-view in index.css. */}
+      <div className={view === 'map' ? undefined : 'placer-scroll-view'}
+        style={{ flex: 1, minHeight: 0, position: 'relative', overflow: view === 'map' ? 'hidden' : undefined }}>
         {view === 'welcome' && <LandingPage t={t} />}
 
         {view === 'map' && (

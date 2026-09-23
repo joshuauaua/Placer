@@ -419,6 +419,21 @@ body {
   }
 }
 
+/* MainApp's content area, for every view but the map. Each page is built to fill
+ * the space it is given (height: 100%), which is fine on its own but would leave
+ * the footer clipped below it behind #root's overflow: hidden once the footer grew
+ * past a single thin row. Here the area itself scrolls instead, and the page's own
+ * root element is allowed to grow taller than 100% rather than clip its content. */
+.placer-scroll-view {
+  overflow-y: auto;
+}
+
+.placer-scroll-view > :first-child {
+  height: auto !important;
+  min-height: 100%;
+  overflow-y: visible !important;
+}
+
 .placer-footer-grid {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr;
