@@ -98,9 +98,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('link', { name: 'User Labs' }));
 
     expect(await screen.findByRole('heading', { level: 1, name: 'User Labs' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Apply' })).toHaveAttribute(
-      'href', expect.stringMatching(/^mailto:info@plcr\.org/)
-    );
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument();
   });
 
   it('opens a page from the footer at its top, not scrolled down to the footer', async () => {
