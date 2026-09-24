@@ -218,6 +218,8 @@ function ApplicationForm({ t, onCancel, onSubmitted }) {
 
       <p style={{ marginTop: 20, fontSize: 13.5, lineHeight: 1.6, color: t.inkDim }}>
         We only use these details to organise the User Lab and get in touch with you about it.
+        Food allergies and preferences are used only to cater for you, and deleted after the
+        session.
       </p>
     </form>
   );

@@ -157,15 +157,15 @@ export function TermsAndPrivacyPage({ t }) {
       <Callout t={t} icon="check" title="The short version">
         Use PLACER like a decent neighbour: nothing illegal, nothing meant to break the map or
         the tool for anyone else. PLACER has no accounts and keeps your work in your own
-        browser, so there is nothing to sign up for and nothing of yours for us to hold or take
-        away.
+        browser, so there is nothing to sign up for. The only things of yours we hold are the
+        survey answers and User Lab applications you choose to send us.
       </Callout>
 
       <Section t={t} title="Agreement to these terms">
         <P t={t}>
           These terms govern your use of PLACER, the web application operated by {OPERATOR.name}.
-          By opening PLACER, exploring the map, building on the canvas or answering the survey,
-          you agree to them. If you do not agree, do not use PLACER.
+          By opening PLACER, exploring the map, building on the canvas, answering a survey or
+          applying for a User Lab, you agree to them. If you do not agree, do not use PLACER.
         </P>
         <P t={t}>
           The Privacy Policy and GDPR sections below are part of these terms, not a separate
@@ -210,9 +210,10 @@ export function TermsAndPrivacyPage({ t }) {
       <Section t={t} title="Third-party services">
         <P t={t}>
           PLACER shows map tiles and Street View imagery from Google Maps Platform, subject to
-          Google&rsquo;s own terms, and sends usage analytics to PostHog, if you accept them,
-          subject to PostHog&rsquo;s own terms. We are not responsible for the availability,
-          accuracy or content of either.
+          Google&rsquo;s own terms, sends usage analytics to PostHog, if you accept them,
+          subject to PostHog&rsquo;s own terms, and stores survey answers and User Lab
+          applications with Supabase, our database provider. We are not responsible for the
+          availability, accuracy or content of any of them.
         </P>
       </Section>
 
@@ -237,7 +238,7 @@ export function TermsAndPrivacyPage({ t }) {
       <Section t={t} title="Termination">
         <P t={t}>
           You can stop using PLACER at any time — there is no account to close, and clearing your
-          browser&rsquo;s site data removes everything PLACER has stored. We can restrict access
+          browser&rsquo;s site data removes everything PLACER has stored in your browser. We can restrict access
           for anyone who breaks these terms.
         </P>
       </Section>
@@ -261,9 +262,10 @@ export function TermsAndPrivacyPage({ t }) {
 
       <Callout t={t} icon="check" title="The short version">
         PLACER has no user accounts. The ideas you build stay in your own browser, on the device
-        you built them on. Two things do leave your device: the map and Street View imagery
-        request PLACER makes to Google on your behalf, and &mdash; only if you accept the cookie
-        banner &mdash; usage analytics sent to PostHog. Reject it and nothing is measured.
+        you built them on. Three things do leave your device: the map and Street View imagery
+        requests PLACER makes to Google on your behalf; the survey answers and User Lab
+        applications you choose to send us, which we store; and &mdash; only if you accept the
+        cookie banner &mdash; usage analytics sent to PostHog. Reject it and nothing is measured.
       </Callout>
 
       <Section t={t} title="Who this policy applies to">
@@ -283,9 +285,25 @@ export function TermsAndPrivacyPage({ t }) {
           It is not uploaded to a server.
         </P>
         <P t={t}>
-          <strong style={{ color: t.ink }}>Survey answers.</strong> If you fill in the survey,
-          your answers are held in the page while you are answering and are discarded when you
-          close or reload it. Nothing is submitted anywhere.
+          <strong style={{ color: t.ink }}>Survey answers.</strong> When you submit a survey, your
+          answers are sent to our database, hosted by Supabase. They are anonymous unless you add
+          contact details, which are always optional: the short survey asks for an email address
+          only if you want to follow the project, and the Placemaking Trends survey can take your
+          name, work email, municipality and department, and whether you would like beta access or
+          an invitation to a User Lab.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>User Lab applications.</strong> When you apply for a User
+          Lab, we store which lab you chose, your name, email address, phone number if you give
+          one, what you do, what you hope to get out of the session, any food allergies or dietary
+          preferences you tell us, and whether you would like our newsletter. We use it to select
+          participants, organise the lab and contact you about it, and we only send you the
+          newsletter if you ticked the box for it.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Food allergies and dietary preferences.</strong> These
+          can reveal information about your health, so we treat them with extra care. They are
+          optional, used only to cater for you at the session, and deleted after it.
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Imagery you work with.</strong> Street View frames
@@ -300,7 +318,7 @@ export function TermsAndPrivacyPage({ t }) {
           device, browser and IP-derived approximate location behind them. It is off until you
           accept: PLACER does not contact PostHog at all &mdash; no request, no cookie, no
           recording &mdash; until you do, and rejecting the banner keeps it that way. Analytics
-          never carry your name or email address, because PLACER has neither.
+          are never linked to a name or email address you give us in a survey or application.
         </P>
         <P t={t}>
           You can change that answer whenever you like, and see what is currently set, in the
@@ -311,10 +329,10 @@ export function TermsAndPrivacyPage({ t }) {
           <strong style={{ color: t.ink }}>What PLACER does not collect.</strong>
         </P>
         <Bullets t={t} items={[
-          'No account, name, email address or password — there is nothing to sign up for.',
+          'No account or password — there is nothing to sign up for. We only have your name or contact details if you give them to us in a survey or a User Lab application.',
           'No advertising, no ad cookies, no data sold or shared with brokers.',
           'No analytics at all unless you accept them, and none for anyone who rejects.',
-          'No server-side log of the places you look at, because there is no PLACER server.',
+          'No record of the places you look at or the ideas you build — those never leave your browser.',
         ]} />
       </Section>
 
@@ -330,12 +348,29 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
       </Section>
 
+      <Section t={t} title="Where survey answers and applications are stored">
+        <P t={t}>
+          Survey answers and User Lab applications are stored in a database hosted by Supabase,
+          which processes them on our behalf under its data processing agreement. Your browser can
+          send an answer or application to it but cannot read anything back: only the PLACER team
+          can see what has been submitted.
+        </P>
+      </Section>
+
       <Section t={t} title="How long it is kept">
         <P t={t}>
           Saved ideas stay in your browser until you delete them or clear your browsing data
           for this site — PLACER sets no expiry. Because storage is per-browser and per-device,
           your work does not follow you to another computer, and anyone else using the same
           browser profile can see it.
+        </P>
+        <P t={t}>
+          User Lab applications are deleted within 12 months of the lab they were for, and food
+          allergies and dietary preferences are deleted once the session has taken place. Survey
+          answers are kept for the research and the Placemaking Trends 2026/2027 Report; contact
+          details given with them are deleted within 12 months of the report&rsquo;s publication.
+          A newsletter sign-up lasts until you unsubscribe. You can ask us to delete any of these
+          sooner.
         </P>
         <P t={t}>
           Analytics you have consented to are held for as long as our PostHog project is
@@ -346,6 +381,8 @@ export function TermsAndPrivacyPage({ t }) {
       <Section t={t} title="Your choices">
         <Bullets t={t} items={[
           'Accept or reject analytics on the banner, and change that answer later further down this page, under GDPR.',
+          'Leave out the optional contact details in the surveys and the phone number and food fields in the User Lab form.',
+          'Ask us to see, correct or delete a survey answer or User Lab application, or to take you off the newsletter, by emailing us.',
           'Delete a single idea from the dashboard where it is listed.',
           'Download everything PLACER holds on this device, or erase all of it at once, further down this page, under GDPR.',
           'Clear site data in your browser settings to remove everything PLACER has stored, including the seeded asset library.',
@@ -360,8 +397,8 @@ export function TermsAndPrivacyPage({ t }) {
       <Section t={t} title="Children">
         <P t={t}>
           PLACER is intended for general community use and is not directed at children under 13.
-          We do not knowingly collect information from them — and, as above, PLACER collects no
-          identifying information from anyone.
+          We do not knowingly collect information from them, and the surveys and User Lab
+          applications are meant for adults.
         </P>
       </Section>
 
@@ -380,7 +417,9 @@ export function TermsAndPrivacyPage({ t }) {
         The ideas you make stay with you: assets, comments and upvotes are written to your
         browser&rsquo;s local storage, not to a PLACER server, so most of what follows is something
         you can do yourself in a couple of clicks rather than a request you have to send us. The
-        one exception is usage analytics, which go to PostHog &mdash; and only if you accept them.
+        exceptions are the survey answers and User Lab applications you choose to send us, which
+        we hold and you can ask us about, and usage analytics, which go to PostHog &mdash; and
+        only if you accept them.
       </Callout>
 
       <Section t={t} title="Data controller">
@@ -403,10 +442,28 @@ export function TermsAndPrivacyPage({ t }) {
               'Until you delete it or clear site data',
             ],
             [
-              'Survey answers',
-              'Understanding what communities want from public space',
-              'Consent (Art. 6(1)(a))',
-              'Held in the page only; discarded on close or reload',
+              'Survey answers, and any contact details you add (name, email, municipality, department, opt-ins)',
+              'Research on citizen engagement in public space, the Placemaking Trends 2026/2027 Report, and contacting you if you asked us to',
+              'Consent (Art. 6(1)(a)) — you choose to submit; contact details are optional',
+              'Answers for the research; contact details deleted within 12 months of the report’s publication, or on request',
+            ],
+            [
+              'User Lab applications: the lab you chose, name, email, phone (optional), what you do and why you are interested',
+              'Selecting participants, organising the User Lab and contacting you about it',
+              'Consent (Art. 6(1)(a)) — you choose to apply',
+              'Deleted within 12 months of the lab, or on request',
+            ],
+            [
+              'Food allergies or dietary preferences (optional, in a User Lab application)',
+              'Catering for you at the session',
+              'Explicit consent (Art. 9(2)(a)) — you choose to tell us',
+              'Deleted after the session',
+            ],
+            [
+              'Newsletter sign-up (the email address on your application)',
+              'Sending you PLACER news and the newsletter',
+              'Consent (Art. 6(1)(a)) — only if you tick the box; withdrawable at any time',
+              'Until you unsubscribe',
             ],
             [
               'Usage analytics sent to PostHog: the features you use, the events PLACER emits (for example posting an imagination), a session recording of your visit, error reports, and the device, browser and IP-derived approximate location behind them',
@@ -423,10 +480,12 @@ export function TermsAndPrivacyPage({ t }) {
           ]}
         />
         <P t={t}>
-          PLACER does not process special category data and makes no automated decisions about you
-          within the meaning of Article 22. Analytics are used in aggregate: PostHog gives your
-          browser an anonymous identifier so that repeat visits can be counted, but PLACER never
-          links it to a name, an email address or an account, because it holds none.
+          The only special category data PLACER may process is the food allergies you choose to
+          give in a User Lab application, which can reveal health information; it is optional,
+          used only for catering and deleted after the session. PLACER makes no automated
+          decisions about you within the meaning of Article 22. Analytics are used in aggregate:
+          PostHog gives your browser an anonymous identifier so that repeat visits can be counted,
+          but PLACER never links it to a name or email address you give us.
         </P>
       </Section>
 
@@ -446,9 +505,10 @@ export function TermsAndPrivacyPage({ t }) {
           to extend that by up to two further months for a complex request. There is no charge.
         </P>
         <P t={t}>
-          One practical limit worth stating plainly: since PLACER holds no account or identifier
-          for you, we usually have no way to look up &ldquo;your&rdquo; data on our side — which
-          is also why we cannot restore anything you erase.
+          For survey answers and User Lab applications, tell us the email address you used and we
+          will find them. The ideas you build are different: they stay in your browser and we
+          hold no copy, so we have no way to look them up on our side &mdash; which is also why
+          we cannot restore anything you erase.
         </P>
       </Section>
 
@@ -457,6 +517,11 @@ export function TermsAndPrivacyPage({ t }) {
           Requests for map and Street View imagery go to Google, which processes them outside the
           EEA, including in the United States, relying on Standard Contractual Clauses and the EU-US
           Data Privacy Framework.
+        </P>
+        <P t={t}>
+          Survey answers and User Lab applications are stored with Supabase. Supabase, Inc. is a
+          US company, so any processing outside the EEA is covered by the Standard Contractual
+          Clauses in its data processing agreement.
         </P>
         <P t={t}>
           Analytics, if you accept them, go to PostHog&rsquo;s EU Cloud and are stored in the EU.
@@ -486,9 +551,10 @@ export function TermsAndPrivacyPage({ t }) {
 
       <Section t={t} title="Data protection by design">
         <Bullets t={t} items={[
-          'Data minimisation — no accounts, no email addresses, no passwords. The only persistent identifier is the anonymous one PostHog assigns, and only once you have accepted analytics.',
+          'Data minimisation — no accounts and no passwords. Contact details are asked for only where we need to reach you, and are optional in the surveys. The only identifier PLACER sets is the anonymous one PostHog assigns, and only once you have accepted analytics.',
           'Consent before capture — the analytics SDK is not even loaded until consent exists, so a visitor who rejects the banner, or never answers it, is never contacted or measured.',
-          'Storage limitation — your ideas are never retained centrally, so there is no store of them to breach.',
+          'Storage limitation — your ideas are never retained centrally, and survey answers and applications are deleted on the schedule above.',
+          'Write-only submissions — the browser can send a survey answer or application to our database but cannot read any back.',
           'Local processing — Street View frames are analysed in your browser, not uploaded.',
           'Transparency — every third party that receives data is named on this page.',
         ]} />
