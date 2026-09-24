@@ -6,8 +6,9 @@ import { THEME_INK } from '../theme';
 // Each column's entries. One with a `view` opens that MainApp view, one with an
 // `href` opens outside the app, and one with neither is a placeholder for a page
 // that does not exist yet — rendered as plain text so it cannot be mistaken for a
-// link that goes nowhere.
-const COLUMNS = [
+// link that goes nowhere. Exported because HamburgerMenu lists the same sections,
+// so the menu and the footer cannot drift apart.
+export const FOOTER_COLUMNS = [
   {
     heading: 'Project',
     links: [
@@ -110,7 +111,7 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
             </div>
           </div>
 
-          {COLUMNS.map(({ heading, links }) => (
+          {FOOTER_COLUMNS.map(({ heading, links }) => (
             <div key={heading}>
               <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
                 marginBottom: 16 }}>

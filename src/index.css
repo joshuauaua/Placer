@@ -420,9 +420,9 @@ body {
 
 /* PLACER — the site menu inside the nav bar (see HamburgerMenu.jsx).
  *
- * The panel is a small dropdown rather than a full-screen dialog, positioned
- * relative to the trigger so it never needs its own fixed coordinates. It is
- * glass too, so it reads as part of the bar it drops out of.
+ * The panel fills the viewport under the bar (top matches .placer-glass-nav's
+ * height) in the bar's own glass, so opening the menu reads as the bar pulling
+ * down over the page. It scrolls on its own if the sections outgrow the screen.
  */
 .placer-menu-root {
   position: relative;
@@ -449,22 +449,41 @@ body {
 }
 
 .placer-menu-panel {
-  position: absolute;
-  top: calc(100% + 14px);
+  position: fixed;
+  top: 56px;
+  left: 0;
   right: 0;
-  min-width: 180px;
-  border-radius: 20px;
-  padding: 6px;
+  bottom: 0;
+  z-index: 159;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  padding: 28px 12px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  background: rgba(255, 255, 255, 0.42);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.placer-menu-section {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  background: rgba(255, 255, 255, 0.55);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 10px 36px rgba(0, 0, 0, 0.14);
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.placer-menu-heading {
+  padding: 0 14px 8px;
+  font-family: 'Archivo', sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .placer-menu-link {
@@ -472,10 +491,10 @@ body {
   box-sizing: border-box;
   width: 100%;
   cursor: pointer;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border-radius: 14px;
   font-family: 'Archivo', sans-serif;
-  font-size: 14.5px;
+  font-size: 17px;
   transition: background 0.15s ease;
 }
 
@@ -486,7 +505,7 @@ body {
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .placer-menu-panel {
-    background: rgba(255, 255, 255, 0.96);
+    background: rgba(255, 255, 255, 0.92);
   }
 }
 

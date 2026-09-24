@@ -1,25 +1,27 @@
 /* PLACER — the holding page's site menu.
  *
  * Sits at the right end of GlassNavbar. With the full nav bar off (see App.jsx),
- * this is the only way to reach About or Contact — and, once there, the only
- * way back. A trigger that flips
- * between the hamburger and close glyphs, and a small dropdown under it
- * rather than a full-screen dialog, since the list of links is short enough
- * to read at a glance.
+ * this is the only way to reach the pages behind it — and, once there, the only
+ * way back. A trigger that flips between the hamburger and close glyphs, and a
+ * panel that covers everything under the bar, down to the bottom of the viewport,
+ * in the bar's own glass. It lists the footer's sections (FOOTER_COLUMNS), so the
+ * two always offer the same pages.
+ *
+ * The panel is portalled to <body> rather than rendered inside the bar. The bar has
+ * a backdrop-filter, which makes it the containing block for a fixed descendant —
+ * the panel would be clipped to the bar's 56px — and a backdrop-filter nested in
+ * another only blurs what is inside the outer one, not the page.
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
-
-const LINKS = [
-  { key: 'welcome', label: 'Home' },
-  { key: 'about', label: 'About' },
-  { key: 'contact', label: 'Contact' },
-];
+import { FOOTER_COLUMNS } from './SiteFooter';
 
 export function HamburgerMenu({ t, view, onNavigate }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
+  const panelRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -27,10 +29,12 @@ export function HamburgerMenu({ t, view, onNavigate }) {
     const onKeyDown = (event) => {
       if (event.key === 'Escape') setOpen(false);
     };
-    // A dropdown, not a modal: a click anywhere outside it closes it, the way
-    // a native <select> or menu button behaves.
+    // The panel covers the page, so the only thing left outside both it and the
+    // trigger is the rest of the bar — the wordmark — and pressing that closes it.
     const onPointerDown = (event) => {
-      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+      if (rootRef.current?.contains(event.target)) return;
+      if (panelRef.current?.contains(event.target)) return;
+      setOpen(false);
     };
 
     document.addEventListener('keydown', onKeyDown);
@@ -50,7 +54,7 @@ export function HamburgerMenu({ t, view, onNavigate }) {
     <div ref={rootRef} className="placer-menu-root">
       <button
         onClick={() => setOpen((current) => !current)}
-        aria-haspopup="true"
+        aria-controls="placer-menu-panel"
         aria-expanded={open}
         aria-label={open ? 'Close menu' : 'Open menu'}
         className="placer-menu-trigger"
@@ -59,19 +63,36 @@ export function HamburgerMenu({ t, view, onNavigate }) {
         <Icon name={open ? 'close' : 'menu'} size={20} stroke={2} />
       </button>
 
-      {open && (
-        <nav aria-label="Site" className="placer-menu-panel">
-          {LINKS.map((link) => (
-            <button
-              key={link.key}
-              onClick={() => go(link.key)}
-              className="placer-menu-link"
-              style={{ color: view === link.key ? t.ink : t.inkDim, fontWeight: view === link.key ? 700 : 600 }}
-            >
-              {link.label}
-            </button>
+      {open && createPortal(
+        <nav id="placer-menu-panel" ref={panelRef} aria-label="Site" className="placer-menu-panel"
+          style={{ color: t.ink }}>
+          {FOOTER_COLUMNS.map(({ heading, links }) => (
+            <section key={heading} className="placer-menu-section">
+              <div className="placer-menu-heading" style={{ color: t.inkFaint }}>{heading}</div>
+              {links.map(({ label, view: target, href }) => target ? (
+                <button
+                  key={label}
+                  onClick={() => go(target)}
+                  aria-current={view === target ? 'page' : undefined}
+                  className="placer-menu-link"
+                  style={{ color: view === target ? t.ink : t.inkDim, fontWeight: view === target ? 700 : 600 }}
+                >
+                  {label}
+                </button>
+              ) : href ? (
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+                  onClick={() => setOpen(false)} className="placer-menu-link" style={{ color: t.inkDim }}>
+                  {label}
+                </a>
+              ) : (
+                <span key={label} className="placer-menu-link" style={{ color: t.inkFaint, cursor: 'default' }}>
+                  {label}
+                </span>
+              ))}
+            </section>
           ))}
-        </nav>
+        </nav>,
+        document.body,
       )}
     </div>
   );
