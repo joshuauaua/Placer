@@ -162,35 +162,32 @@ describe('the copy link button', () => {
 });
 
 describe('inside the app', () => {
-  // The site links live in the nav bar's hamburger menu, so reaching one means
-  // opening it first. Returns the open menu, scoped so "Sandbox" is not also the
-  // page heading.
-  const siteMenu = () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
-    return within(screen.getByRole('navigation', { name: 'Site' }));
-  };
+  // Signed in, Sandbox and Explore live in the side nav and About and Resources in
+  // the footer. Each is scoped so "Sandbox" is not also the page heading.
+  const sideNav = () => within(screen.getByRole('navigation', { name: 'App' }));
+  const footer = () => within(screen.getByRole('contentinfo'));
 
-  it('reaches the Sandbox from the nav bar', async () => {
+  it('reaches the Sandbox from the side nav', async () => {
     const { location } = renderAt('/');
 
-    fireEvent.click(siteMenu().getByText('Sandbox'));
+    fireEvent.click(sideNav().getByRole('button', { name: 'Sandbox' }));
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Sandbox' })).toBeInTheDocument();
     expect(location.history.at(-1)).toBe('/sandbox');
   });
 
-  it('keeps the nav bar and footer around an experiment', async () => {
+  it('keeps the side nav and footer around an experiment', async () => {
     renderAt('/sandbox/street-mixer');
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' })).toBeInTheDocument();
-    expect(siteMenu().getByText('About')).toBeInTheDocument();
+    expect(sideNav().getByRole('button', { name: 'Sandbox' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Terms of Service' })).toBeInTheDocument();
   });
 
   it('serves the gallery and an experiment from the one route', async () => {
     renderAt('/sandbox');
     expect(await screen.findByRole('heading', { level: 1, name: 'Sandbox' })).toBeInTheDocument();
-    expect(siteMenu().getByText('About')).toBeInTheDocument();
+    expect(sideNav().getByRole('button', { name: 'Sandbox' })).toBeInTheDocument();
   });
 
   it('leaves the Sandbox again, and puts the URL on the new view', async () => {
@@ -199,11 +196,11 @@ describe('inside the app', () => {
     const { location } = renderAt('/sandbox/street-mixer');
     await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' });
 
-    fireEvent.click(siteMenu().getByText('About'));
+    fireEvent.click(footer().getByText('About'));
 
-    // The About page is the project poster alone, so its alt text is what marks it.
+    // The About page is a photo of the team, so its alt text is what marks it.
     expect(
-      await screen.findByRole('img', { name: /participatory placemaking/i }),
+      await screen.findByRole('img', { name: /people behind PLACER/i }),
     ).toBeInTheDocument();
     expect(location.history.at(-1)).toBe('/about');
     expect(screen.queryByRole('heading', { level: 1, name: 'Street Section Mixer' })).not.toBeInTheDocument();
@@ -212,9 +209,9 @@ describe('inside the app', () => {
   it('goes back into the Sandbox from another view', async () => {
     const { location } = renderAt('/');
 
-    fireEvent.click(siteMenu().getByText('Resources'));
+    fireEvent.click(footer().getByText('Resources', { selector: '[role="link"]' }));
     await screen.findByRole('heading', { level: 1, name: 'Resources' });
-    fireEvent.click(siteMenu().getByText('Sandbox'));
+    fireEvent.click(sideNav().getByRole('button', { name: 'Sandbox' }));
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Sandbox' })).toBeInTheDocument();
     expect(location.history.at(-1)).toBe('/sandbox');
@@ -224,10 +221,8 @@ describe('inside the app', () => {
     renderAt('/sandbox');
     await screen.findByRole('heading', { level: 1, name: 'Sandbox' });
 
-    // The active item is the one set in bold.
-    const nav = siteMenu();
-    expect(nav.getByText('Sandbox')).toHaveStyle({ fontWeight: 700 });
-    expect(nav.getByText('About')).toHaveStyle({ fontWeight: 600 });
+    expect(sideNav().getByRole('button', { name: 'Sandbox' })).toHaveAttribute('aria-current', 'page');
+    expect(sideNav().getByRole('button', { name: 'Explore' })).not.toHaveAttribute('aria-current');
   });
 
   it('does not fall through to the welcome view', async () => {

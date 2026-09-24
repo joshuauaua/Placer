@@ -506,85 +506,10 @@ body {
   }
 }
 
-/* PLACER — the site menu inside the nav bar (see HamburgerMenu.jsx).
- *
- * The panel is a small dropdown rather than a full-screen dialog, positioned
- * relative to the trigger so it never needs its own fixed coordinates. It is
- * glass too, so it reads as part of the bar it drops out of.
- */
-.placer-menu-root {
-  position: relative;
-}
-
-.placer-menu-trigger {
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  border: none;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
-}
-
-.placer-menu-trigger:hover,
-.placer-menu-trigger:focus-visible,
-.placer-menu-trigger[aria-expanded='true'] {
-  background: rgba(255, 255, 255, 0.55);
-  transform: scale(1.06);
-}
-
-.placer-menu-panel {
-  position: absolute;
-  top: calc(100% + 14px);
-  right: 0;
-  min-width: 180px;
-  border-radius: 20px;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  /* Solid rather than glass like the bar: a backdrop-filter nested inside the
-     bar's own does not blur in Chromium, so a clear panel let the page show
-     through the links unblurred. */
-  background: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 10px 36px rgba(0, 0, 0, 0.14);
-}
-
-.placer-menu-link {
-  all: unset;
-  box-sizing: border-box;
-  width: 100%;
-  cursor: pointer;
-  padding: 10px 14px;
-  border-radius: 14px;
-  font-family: var(--placer-font);
-  font-size: 14.5px;
-  transition: background 0.15s ease;
-}
-
-.placer-menu-link:hover,
-.placer-menu-link:focus-visible {
-  background: rgba(0, 0, 0, 0.05);
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .placer-menu-trigger,
-  .placer-menu-link,
   .placer-side-nav,
   .placer-side-nav-link {
     transition: none;
-  }
-
-  .placer-menu-trigger:hover,
-  .placer-menu-trigger:focus-visible,
-  .placer-menu-trigger[aria-expanded='true'] {
-    transform: none;
   }
 }
 

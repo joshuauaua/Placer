@@ -7,25 +7,15 @@
  * in index.css (.placer-glass-nav).
  *
  * The right-hand end depends on who is there. Logged out, it is Create Account
- * and Log In and nothing else. Logged in, it is notifications, the account menu
- * and the site menu. While the session is still being read it stays empty,
+ * and Log In and nothing else. Logged in, it is just the account menu — the side
+ * nav and the footer carry the site links. While the session is still being read it stays empty,
  * rather than flashing the logged-out buttons at someone who is signed in.
  */
 
 import { Btn } from './UI';
-import { HamburgerMenu } from './HamburgerMenu';
-import { NotificationBell } from './NotificationBell';
 import { UserMenu } from './UserMenu';
 
-export function GlassNavbar({ t, view, profile, loading, onNavigate, onExplore, onSignIn,
-  onCreateAccount, onSignOut, onOpenProject }) {
-  const siteItems = [
-    { key: 'about', label: 'About', onSelect: () => onNavigate('about') },
-    { key: 'resources', label: 'Resources', onSelect: () => onNavigate('resources') },
-    { key: 'sandbox', label: 'Sandbox', onSelect: () => onNavigate('sandbox') },
-    { key: 'map', label: 'Explore', onSelect: onExplore },
-  ];
-
+export function GlassNavbar({ t, profile, loading, onNavigate, onSignIn, onCreateAccount, onSignOut }) {
   return (
     <header className="placer-glass-nav" style={{ color: t.ink }}>
       <button
@@ -38,11 +28,7 @@ export function GlassNavbar({ t, view, profile, loading, onNavigate, onExplore, 
 
       <div className="placer-glass-nav-end">
         {loading ? null : profile ? (
-          <>
-            <NotificationBell t={t} enabled onOpenProject={onOpenProject} />
-            <UserMenu t={t} profile={profile} onNavigate={onNavigate} onSignIn={onSignIn} onSignOut={onSignOut} />
-            <HamburgerMenu t={t} view={view} items={siteItems} />
-          </>
+          <UserMenu t={t} profile={profile} onNavigate={onNavigate} onSignIn={onSignIn} onSignOut={onSignOut} />
         ) : (
           <>
             <Btn t={t} variant="primary" size="sm" onClick={onCreateAccount}>Create Account</Btn>
