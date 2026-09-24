@@ -51,7 +51,7 @@ describe('App', () => {
     renderAt('/');
 
     fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Explore' }));
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Site' })).getByRole('button', { name: 'Explore' }));
 
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
   });
@@ -149,7 +149,7 @@ describe('App', () => {
       await screen.findByRole('heading', { level: 1, name: 'Profile' });
 
       fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
-      fireEvent.click(within(screen.getByRole('navigation')).getByText('Resources'));
+      fireEvent.click(within(screen.getByRole('navigation', { name: 'Site' })).getByText('Resources'));
 
       expect(await screen.findByRole('heading', { level: 1, name: 'Resources' })).toBeInTheDocument();
       expect(location.history.at(-1)).toBe('/resources');
@@ -175,6 +175,26 @@ describe('App', () => {
 
       // No project in the suite, so Log In is the instant local sign-in.
       expect(trigger()).toBeInTheDocument();
+    });
+
+    it('shows the side nav when signed in, and it navigates by URL', async () => {
+      const location = renderRecording();
+
+      const sideNav = within(screen.getByRole('navigation', { name: 'App' }));
+      fireEvent.click(sideNav.getByRole('button', { name: 'Settings' }));
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
+      expect(location.history.at(-1)).toBe('/settings');
+      expect(sideNav.getByRole('button', { name: 'Settings' })).toHaveAttribute('aria-current', 'page');
+    });
+
+    it('drops the side nav after logging out', () => {
+      renderRecording();
+
+      fireEvent.click(trigger());
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));
+
+      expect(screen.queryByRole('navigation', { name: 'App' })).not.toBeInTheDocument();
     });
 
     it('says so when /profile is reached while logged out', () => {
@@ -230,7 +250,7 @@ describe('App', () => {
       // to change your mind and go back to the map without using the browser's back
       // button, and it is a consequence of these being views rather than routes.
       fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
-      expect(within(screen.getByRole('navigation')).getByText('Resources')).toBeInTheDocument();
+      expect(within(screen.getByRole('navigation', { name: 'Site' })).getByText('Resources')).toBeInTheDocument();
     });
 
     it('moves between the two forms without leaving MainApp', async () => {

@@ -227,7 +227,9 @@ body {
   right: 0;
 }
 
-@media (max-width: 1199px) {
+/* Measured against the content area rather than the viewport, because the side
+   nav takes a column out of it for anyone signed in. */
+@container (max-width: 1199px) {
   .placer-landing-frame {
     display: none;
   }
@@ -347,6 +349,63 @@ body {
    the top of every view clear of it at rest. */
 .placer-under-glass-nav {
   padding-top: 56px;
+  container-type: inline-size;
+}
+
+/* PLACER — the side nav (see SideNav.jsx). A column down the left edge, under
+ * the glass bar, for anyone who is signed in. Below 760px it narrows to icons.
+ */
+.placer-side-nav {
+  flex: 0 0 auto;
+  width: 208px;
+  box-sizing: border-box;
+  padding: 72px 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.placer-side-nav-link {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-family: var(--placer-font);
+  font-size: 14.5px;
+  letter-spacing: -0.01em;
+  transition: background 0.15s ease;
+}
+
+.placer-side-nav-link:hover,
+.placer-side-nav-link:focus-visible {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.placer-side-nav-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+
+@media (max-width: 760px) {
+  .placer-side-nav {
+    width: 60px;
+    padding: 68px 8px 12px;
+  }
+
+  .placer-side-nav-link {
+    justify-content: center;
+    padding: 10px 0;
+  }
+
+  .placer-side-nav-label {
+    display: none;
+  }
 }
 
 /* Browsers without backdrop-filter get a near-opaque bar instead of an
@@ -426,7 +485,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .placer-menu-trigger,
-  .placer-menu-link {
+  .placer-menu-link,
+  .placer-side-nav-link {
     transition: none;
   }
 
