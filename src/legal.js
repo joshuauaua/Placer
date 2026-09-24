@@ -1,14 +1,14 @@
 /* PLACER — details shared by the legal page (terms, privacy, GDPR) */
 
-// TODO: replace with the real operating entity before publishing this page.
+// The operating entity, named as the controller on the legal page.
 export const OPERATOR = {
-  name: '[Organisation name]',
-  address: '[Registered address, country]',
+  name: 'Föreningen Stapelbädden',
+  address: 'Malmöhusvägen 5, 211 18 Malmö, Sweden',
   email: 'info@plcr.org',
 };
 
-// TODO: replace with the jurisdiction whose law should govern the Terms of Service.
-export const GOVERNING_LAW = '[Governing law / jurisdiction]';
+// The jurisdiction whose law governs the Terms of Service.
+export const GOVERNING_LAW = 'Sweden';
 
 // Shown as "Last updated" at the top of the legal page.
 export const LAST_UPDATED = '24 September 2026';

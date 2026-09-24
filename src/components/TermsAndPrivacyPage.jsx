@@ -350,8 +350,9 @@ export function TermsAndPrivacyPage({ t }) {
 
       <Section t={t} title="Where survey answers and applications are stored">
         <P t={t}>
-          Survey answers and User Lab applications are stored in a database hosted by Supabase,
-          which processes them on our behalf under its data processing agreement. Your browser can
+          Survey answers and User Lab applications are stored in a database hosted by Supabase
+          in the EU (Ireland), which processes them on our behalf under its data processing
+          agreement. Your browser can
           send an answer or application to it but cannot read anything back: only the PLACER team
           can see what has been submitted.
         </P>
@@ -519,9 +520,9 @@ export function TermsAndPrivacyPage({ t }) {
           Data Privacy Framework.
         </P>
         <P t={t}>
-          Survey answers and User Lab applications are stored with Supabase. Supabase, Inc. is a
-          US company, so any processing outside the EEA is covered by the Standard Contractual
-          Clauses in its data processing agreement.
+          Survey answers and User Lab applications are stored with Supabase in the EU (Ireland).
+          Supabase, Inc. is a US company, so any support access from outside the EEA is covered
+          by the Standard Contractual Clauses in its data processing agreement.
         </P>
         <P t={t}>
           Analytics, if you accept them, go to PostHog&rsquo;s EU Cloud and are stored in the EU.
