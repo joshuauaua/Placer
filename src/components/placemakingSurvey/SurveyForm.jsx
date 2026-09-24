@@ -29,6 +29,10 @@ const DANGER = '#D6452F';
 
 const selectedFill = (t) => t.accent + (t.mapMode === 'dark' ? '14' : '22');
 
+// The glass nav bar (.placer-glass-nav in index.css) is fixed over the top of every
+// page, so each screen here starts this far down to keep its top out from under it.
+const NAV_HEIGHT = 56;
+
 /**
  * A centred card on the gradient, for the thank-you screen. The pane scrolls
  * rather than clipping on a short window.
@@ -45,7 +49,7 @@ function FullScreen({ t, children, maxWidth = 640 }) {
         alignItems: 'center',
         justifyContent: 'center',
         background: `linear-gradient(135deg, ${t.page} 0%, ${t.chrome} 100%)`,
-        padding: 20,
+        padding: `${NAV_HEIGHT + 20}px 20px 20px`,
       }}
     >
       <div style={{ maxWidth, width: '100%', margin: 'auto', textAlign: 'center' }}>{children}</div>
@@ -253,7 +257,7 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
       <div
         style={{
           flex: '0 0 auto',
-          padding: '24px 32px',
+          padding: `${NAV_HEIGHT + 24}px 32px 24px`,
           borderBottom: `1px solid ${t.line}`,
           background: t.surface,
         }}
