@@ -33,6 +33,8 @@ describe('UserLabsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Apply for a User Lab' })).toBeInTheDocument();
     expect(screen.getByLabelText(/Phone number/)).not.toBeRequired();
+    expect(screen.getByLabelText(/Food allergies/)).not.toBeRequired();
+    expect(screen.getByRole('checkbox', { name: /newsletter/ })).not.toBeChecked();
     expect(screen.getByLabelText('Email')).toBeRequired();
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
@@ -45,9 +47,10 @@ describe('UserLabsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
 
     fillIn();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Send me PLACER news and the newsletter' }));
     fireEvent.click(screen.getByRole('button', { name: 'Send application' }));
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Thank you' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Thank you for your interest' })).toBeInTheDocument();
     expect(screen.getByText('ada@example.com')).toBeInTheDocument();
     expect(saveSurveyResponse).toHaveBeenCalledWith({
       source: 'user_labs_application',
@@ -58,6 +61,8 @@ describe('UserLabsPage', () => {
       phone: '',
       role: 'Urban planner',
       motivation: 'Try the toolkit on my street',
+      dietary: '',
+      newsletter: true,
     });
   });
 

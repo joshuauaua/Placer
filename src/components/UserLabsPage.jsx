@@ -34,7 +34,7 @@ const UPCOMING_LAB = {
   ],
 };
 
-const EMPTY_FORM = { lab: '', name: '', email: '', phone: '', role: '', motivation: '' };
+const EMPTY_FORM = { lab: '', name: '', email: '', phone: '', role: '', motivation: '', dietary: '', newsletter: false };
 
 /** Matches the form inputs on the survey's contact step (placemakingSurvey/SurveyQuestion). */
 const inputStyle = (t) => ({
@@ -97,6 +97,8 @@ function ApplicationForm({ t, onCancel, onSubmitted }) {
         phone: form.phone.trim(),
         role: form.role.trim(),
         motivation: form.motivation.trim(),
+        dietary: form.dietary.trim(),
+        newsletter: form.newsletter,
       });
       onSubmitted(form);
     } catch {
@@ -169,6 +171,24 @@ function ApplicationForm({ t, onCancel, onSubmitted }) {
           value={form.motivation} onChange={set('motivation')}
           style={{ ...inputStyle(t), resize: 'vertical', lineHeight: 1.5 }} />
       </Field>
+
+      <Field t={t} id="user-labs-dietary" label="Food allergies or dietary preferences" hint="(optional)">
+        <input id="user-labs-dietary" type="text"
+          placeholder="e.g. vegetarian, nut allergy"
+          value={form.dietary} onChange={set('dietary')} style={inputStyle(t)} />
+      </Field>
+
+      {/* Unticked by default: a newsletter sign-up has to be asked for, not assumed. */}
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 24, cursor: 'pointer',
+        fontSize: 15, lineHeight: 1.5, color: t.ink }}>
+        <input
+          type="checkbox"
+          checked={form.newsletter}
+          onChange={(e) => setForm((current) => ({ ...current, newsletter: e.target.checked }))}
+          style={{ marginTop: 4, width: 16, height: 16, accentColor: t.ink }}
+        />
+        <span>Send me PLACER news and the newsletter</span>
+      </label>
 
       {error && (
         <p role="alert" style={{ marginTop: 20, fontSize: 15, lineHeight: 1.6, color: t.ink }}>
@@ -244,7 +264,6 @@ export function UserLabsPage({ t }) {
           <PhotoSplitHeading
             t={t}
             title="Apply for a User Lab"
-            subtitle={`${UPCOMING_LAB.dateLabel}, in Malmö or Ankara. It takes about two minutes.`}
           />
           <ApplicationForm
             t={t}
@@ -256,11 +275,11 @@ export function UserLabsPage({ t }) {
 
       {step === 'sent' && (
         <>
-          <PhotoSplitHeading t={t} title="Thank you" subtitle="Your application is in." />
+          <PhotoSplitHeading t={t} title="Thank you for your interest" />
           <p style={{ marginTop: 20, fontSize: 17, lineHeight: 1.65, color: t.inkDim }}>
-            We&rsquo;ll be in touch at <strong style={{ color: t.ink }}>{sentTo?.email}</strong> before{' '}
-            {UPCOMING_LAB.dateLabel} to confirm your place in{' '}
-            {UPCOMING_LAB.sessions.find((s) => s.value === sentTo?.lab)?.city}.
+            We&rsquo;ve received your application for the User Lab in{' '}
+            {UPCOMING_LAB.sessions.find((s) => s.value === sentTo?.lab)?.city}, and we&rsquo;ll get
+            back to you at <strong style={{ color: t.ink }}>{sentTo?.email}</strong> soon.
           </p>
         </>
       )}
