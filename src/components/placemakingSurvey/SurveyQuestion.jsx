@@ -239,7 +239,7 @@ function ScaleQuestion({ t, question, value, onToggle }) {
         style={{
           '--placer-slider-fill': `${fill}%`,
           '--placer-slider-accent': t.accent,
-          '--placer-slider-track': t.chrome,
+          '--placer-slider-track': t.lineStrong,
           '--placer-slider-thumb': chosen ? t.accent : t.surface,
           '--placer-slider-thumb-border': chosen ? t.accent : t.lineStrong,
         }}
