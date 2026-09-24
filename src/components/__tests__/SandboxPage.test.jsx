@@ -28,6 +28,9 @@ function renderPageAt(path) {
   return { ...result, location };
 }
 
+/** Past an experiment's cover page, to the tool itself. */
+const start = () => fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+
 describe('experimentIdFrom', () => {
   it('finds the experiment in a path', () => {
     expect(experimentIdFrom('/sandbox/street-mixer')).toBe('street-mixer');
@@ -95,6 +98,32 @@ describe('the gallery', () => {
     expect(screen.getByRole('button', { name: /Budget Ballot/i })).toBeInTheDocument();
   });
 
+  it('opens an experiment on its cover page, and shows the tool after Get started', async () => {
+    renderPageAt('/sandbox/street-mixer');
+
+    await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' });
+    expect(screen.getByText('Twenty metres, and everything wants some.')).toBeInTheDocument();
+    expect(screen.getByText(/By PLACER/)).toBeInTheDocument();
+    // The tool, and the header's copy-link button, wait behind the cover.
+    expect(screen.queryByRole('button', { name: /copy link/i })).not.toBeInTheDocument();
+
+    start();
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Street Section Mixer' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /copy link/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Get started' })).not.toBeInTheDocument();
+  });
+
+  it('opens the next experiment on its own cover, rather than skipping it', async () => {
+    renderPageAt('/sandbox/street-mixer');
+    start();
+
+    fireEvent.click(screen.getByRole('button', { name: /all experiments/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Desire Lines/i }));
+
+    expect(await screen.findByRole('button', { name: 'Get started' })).toBeInTheDocument();
+  });
+
   it('says what each experiment is for, so a tile is not just a name', () => {
     renderPageAt('/sandbox');
     for (const experiment of EXPERIMENTS) {
@@ -113,6 +142,7 @@ describe('the copy link button', () => {
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
 
     renderPageAt('/sandbox/budget-ballot');
+    start();
     fireEvent.click(await screen.findByRole('button', { name: /copy link/i }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/sandbox/budget-ballot')));
@@ -123,6 +153,7 @@ describe('the copy link button', () => {
     vi.stubGlobal('navigator', { ...navigator, clipboard: undefined });
 
     renderPageAt('/sandbox/budget-ballot');
+    start();
     fireEvent.click(await screen.findByRole('button', { name: /copy link/i }));
 
     const field = await screen.findByLabelText('Link to this experiment');

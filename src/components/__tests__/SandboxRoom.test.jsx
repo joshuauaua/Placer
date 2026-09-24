@@ -34,6 +34,7 @@ const hours = (n) => new Date(Date.now() + n * 3600000 + (n > 0 ? 30000 : 0)).to
 /** A room that is live, with the full two hours ahead of it. */
 const openRoom = () => ({ experiment: 'budget-ballot', status: 'open', expiresAt: hours(2) });
 
+/** The page at `path`, past the experiment's cover page — these are about the tool. */
 function renderAt(path, searchPath = '', props = {}) {
   const location = memoryLocation({ path, searchPath, record: true });
   render(
@@ -41,6 +42,7 @@ function renderAt(path, searchPath = '', props = {}) {
       <SandboxPage t={THEME} {...props} />
     </Router>
   );
+  fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
   return location;
 }
 

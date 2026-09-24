@@ -587,3 +587,74 @@ body {
     transform: none;
   }
 }
+
+/* PLACER — a sandbox experiment's cover page (see sandbox/SandboxCover.jsx).
+ *
+ * The User Labs layout from the landingpage branch: the experiment's colour
+ * fills the left half and the copy sits centred on the right. On a phone they
+ * stack, colour first. Here rather than inline, since a media query cannot
+ * override an inline style.
+ */
+.placer-cover {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100%;
+}
+
+.placer-cover-color {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 420px;
+}
+
+.placer-cover-copy {
+  align-self: center;
+  max-width: 560px;
+  padding: 64px 56px;
+}
+
+.placer-cover-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 32px;
+  height: 52px;
+  padding: 0 40px;
+  font-family: var(--placer-font);
+  font-weight: 700;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.placer-cover-action:hover,
+.placer-cover-action:focus-visible {
+  transform: scale(1.04);
+}
+
+@media (max-width: 800px) {
+  .placer-cover {
+    grid-template-columns: 1fr;
+  }
+
+  .placer-cover-color {
+    min-height: 220px;
+  }
+
+  .placer-cover-copy {
+    padding: 32px 24px 56px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-cover-action {
+    transition: none;
+  }
+
+  .placer-cover-action:hover,
+  .placer-cover-action:focus-visible {
+    transform: none;
+  }
+}

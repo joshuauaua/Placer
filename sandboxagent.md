@@ -14,11 +14,16 @@ Nothing is saved unless you open a room for other people to join.
 
 ## Anatomy of an experiment
 
-Every experiment has three parts:
+Every experiment has four parts:
 
-1. **Registry entry** in `src/sandbox/experiments.js` — metadata and wiring
-2. **Component** in `src/components/sandbox/` — the interactive UI
-3. **Logic module** in `src/lib/` — pure functions and constants (no React)
+1. **Cover page** — the first thing a visitor sees, drawn from the registry entry (see [The cover page](#the-cover-page))
+2. **Registry entry** in `src/sandbox/experiments.js` — metadata and wiring
+3. **Component** in `src/components/sandbox/` — the interactive UI
+4. **Logic module** in `src/lib/` — pure functions and constants (no React)
+
+Write the cover page first, by filling in the registry entry's fields. Doing so
+forces the experiment's question, audience and length to be settled before any of
+the tool is.
 
 Optional: a fourth part for multi-player room support (see [Rooms](#rooms)).
 
@@ -32,7 +37,6 @@ Add an entry to the `EXPERIMENTS` array in `src/sandbox/experiments.js`:
   name: 'My Experiment',
   tagline: 'One line that makes people curious.',
   blurb: 'A longer paragraph shown at the top of the experiment view. Explains what the visitor is looking at and what they can do.',
-  hint: 'Try this — drag the slider to see what happens.',
   color: '#5A3ED6',
   icon: 'flask',
   submittedBy: 'your-username',
@@ -48,11 +52,16 @@ Add an entry to the `EXPERIMENTS` array in `src/sandbox/experiments.js`:
 | `name` | string | Display heading in the layout header and on the tile. |
 | `tagline` | string | Short teaser shown on the tile card. One sentence. |
 | `blurb` | string | Longer description shown in the experiment header. |
-| `hint` | string | Instruction under the title: "Try this — ..." |
 | `color` | string | Accent hex colour. Used for the tile gradient, slider tracks, meter fills. |
 | `icon` | string | Icon name from the `Icon` component (see `src/components/Icon.jsx`). |
-| `submittedBy` | string | Username or team name of who built the experiment. Shown on the tile and header. |
+| `submittedBy` | string | Username or team name of who built the experiment. Shown on the tile, cover and header. |
 | `component` | Component | The React component that renders the experiment. |
+
+### Optional fields
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `duration` | string | Roughly how long it takes, e.g. `'About 3 minutes'`. Shown on the cover page. |
 
 ### Choosing a colour
 
@@ -67,6 +76,32 @@ Browse `src/components/Icon.jsx` for available names. Sandbox-appropriate icons
 include `flask`, `section`, `path`, `walk`, `coins`, `tree`, `bench`, `light`,
 `play`, `cart`, `bike`. If none fit, add a new 24x24 SVG to the `Icon` component
 following the existing hand-drawn style (stroke-based, `viewBox="0 0 24 24"`).
+
+## The cover page
+
+Every experiment opens on a cover page, not on the tool. A visitor arriving from
+the gallery, a shared link or a room's QR code should know what they are about to
+do before they are asked to do it. The tool appears only once they press
+**Get started**.
+
+You do not build the cover. `SandboxPage` renders it for every experiment
+(`src/components/sandbox/SandboxCover.jsx`), in the same split layout as the site's User Labs page:
+a block of the experiment's `color` with its `icon` fills the left half, and the
+right half carries, in order:
+
+- **The name** — `name`, as the page heading.
+- **The tagline** — `tagline`, as a bold subtitle.
+- **What it is and what you will do** — `blurb`.
+- **How long it takes and who made it** — `duration` (optional) and `submittedBy`.
+- **The Get started button.**
+
+So the cover is only as good as the registry entry. Write those fields as the pitch
+for the experiment, and fill them in first: settling the question, the audience and
+the length before building any of the tool is the point.
+
+In a room, participants see the cover too, and the tool (with its `room.publish`
+calls) only mounts once they press Get started, so nobody counts as taking part
+until they have begun.
 
 ## The component
 
@@ -132,7 +167,7 @@ export default MyExperiment;
 
 The shared layout (`SandboxLayout`) renders:
 - A back button to `/sandbox`
-- A header with the experiment icon, name, blurb, and hint
+- A header with the experiment icon, name, and blurb
 - An actions slot (for "Start a room" / "Copy link" buttons)
 - Your component as `{children}`
 
@@ -220,7 +255,6 @@ export const EXPERIMENTS = [
     name: 'My Experiment',
     tagline: '...',
     blurb: '...',
-    hint: '...',
     color: '#5A3ED6',
     icon: 'flask',
     submittedBy: 'your-username',
@@ -283,6 +317,7 @@ src/
   components/
     sandbox/
       YourExperiment.jsx       # Your component
+      SandboxCover.jsx         # Cover page, drawn from the registry entry (do not edit)
     SandboxPage.jsx             # Page (do not edit)
     SandboxLayout.jsx           # Layout + Panel, Readout, Meter
   lib/
@@ -314,12 +349,13 @@ These paths are **denied** (security-sensitive room layer, reviewed separately):
 
 Write tests in `src/components/__tests__/SandboxTools.test.jsx`. Follow the existing
 pattern: mount the experiment with `t={THEME}` and `experiment={findExperiment(id)}`.
+The component is mounted on its own there, so there is no cover page in the way.
 
 ```jsx
 describe('MyExperiment', () => {
   it('renders without crashing', () => {
     render(<MyExperiment t={THEME} experiment={findExperiment('my-experiment')} />);
-    expect(screen.getByText('My Experiment')).toBeInTheDocument();
+    // ... assert the tool is showing
   });
 
   it('responds to user interaction', () => {
@@ -328,6 +364,10 @@ describe('MyExperiment', () => {
   });
 });
 ```
+
+Tests that mount the whole `SandboxPage` (as `SandboxPage.test.jsx` and
+`SandboxRoom.test.jsx` do) land on the cover page first, and press
+**Get started** to reach the tool.
 
 If the experiment has room support, also add room tests in
 `src/components/__tests__/SandboxRoom.test.jsx` and registry tests in

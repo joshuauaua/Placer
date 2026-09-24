@@ -14,13 +14,14 @@
  * experiment as a prop, so every experiment has a link that can be shared.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import posthog from 'posthog-js';
 import { Icon } from './Icon';
 import { Btn } from './UI';
 import { SandboxLayout, Panel } from './SandboxLayout';
 import { RoomBar } from './sandbox/RoomBar';
+import { SandboxCover } from './sandbox/SandboxCover';
 import { useRoom } from './sandbox/useRoom';
 import { EXPERIMENTS, findExperiment } from '../sandbox/experiments';
 import { projectIdFrom, roomIdFrom, roomPath } from '../sandbox/rooms';
@@ -155,8 +156,9 @@ git checkout -b my-experiment`}
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 12 }}>
             Open <code style={{ padding: '2px 6px', borderRadius: 4, background: t.surfaceAlt,
               fontSize: 13, color: t.ink, border: `1px solid ${t.line}` }}>sandboxagent.md</code> in
-            the repo root. It covers the experiment registry, component structure,
-            styling conventions, file layout, and scope rules.
+            the repo root. It explains the cover page every experiment opens on, the
+            experiment registry, component structure, styling conventions, file layout,
+            and scope rules.
           </p>
           <Btn t={t} size="sm" variant="outline" icon="arrowRight"
             onClick={() => window.open('https://github.com/joshuauaua/Placer/blob/Development/sandboxagent.md', '_blank')}>
@@ -169,7 +171,8 @@ git checkout -b my-experiment`}
             Prompt your coding assistant with:{" "}
             <em>"Create a new sandbox experiment referencing sandboxagent.md for
             instructions"</em>, or follow the guide manually. Your experiment needs a
-            registry entry, a component, and a logic module.
+            registry entry, which also fills its cover page, a component, and a logic
+            module.
           </p>
         </Panel>
 
@@ -242,6 +245,11 @@ export function SandboxPage({ t, displayName = null, needsAccount = false, onSig
     posthog.capture('sandbox_experiment_opened', { experiment: experiment.id });
   }, [experiment]);
 
+  // Which experiment has been started past its cover. An id rather than a flag, so
+  // opening a different experiment lands on that one's cover rather than skipping it,
+  // and opening a room (which only changes the query string) does not bring it back.
+  const [startedId, setStartedId] = useState(null);
+
   const Experiment = experiment?.component;
   // Offered only where a room would mean something, and only with a database behind it.
   const roomIsPossible =
@@ -249,6 +257,16 @@ export function SandboxPage({ t, displayName = null, needsAccount = false, onSig
   // Opening one also takes an account. Joining one does not — nothing on this page is
   // gated for a participant who arrived with a PIN or a QR code.
   const canStartRoom = roomIsPossible && !needsAccount;
+
+  // Every experiment opens on its cover, full-bleed rather than inside the padded
+  // column the tool itself sits in.
+  if (experiment && Experiment && startedId !== experiment.id) {
+    return (
+      <SandboxCover t={t} experiment={experiment}
+        onStart={() => setStartedId(experiment.id)}
+        onBack={() => navigate('/sandbox')} />
+    );
+  }
 
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page, padding: '48px 40px 80px' }}>

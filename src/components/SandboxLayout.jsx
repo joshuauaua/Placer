@@ -39,11 +39,8 @@ export function SandboxLayout({ t, experiment, onBack, actions, children }) {
             </h1>
           </div>
           <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6, maxWidth: 660 }}>{experiment.blurb}</p>
-          <p className="placer-mono" style={{ marginTop: 12, fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: experiment.color }}>
-            Try this — {experiment.hint}
-          </p>
           {experiment.submittedBy && (
-            <p className="placer-mono" style={{ marginTop: 8, fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: t.inkFaint }}>
+            <p className="placer-mono" style={{ marginTop: 12, fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: t.inkFaint }}>
               Submitted by {experiment.submittedBy}
             </p>
           )}
