@@ -56,10 +56,10 @@ export function LandingPage({ t }) {
         <h1 className="placer-disp placer-landing-title" style={{ color: t.ink }}>PLACER</h1>
 
         <p className="placer-landing-pitch" style={{ color: t.ink }}>
-          PLACER aims to be the definitive digital toolkit for participatory
-          placemaking. We believe that everyone has the potential to play a role in
-          shaping the city. We bridge the gap between everyday folks, designers, and
-          local leaders to build lively public spaces where everyone feels welcome.
+          PLACER is the digital toolkit that makes urban design participatory. We
+          bring together community members, designers, and local authorities to
+          collaborate on public spaces that are active, accessible, and welcoming
+          to all.
         </p>
 
         {/* The feedback trigger sits centred here, in the gap that separates
