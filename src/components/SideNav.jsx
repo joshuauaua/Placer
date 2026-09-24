@@ -1,7 +1,7 @@
 /* PLACER — the side nav, down the left edge for anyone who is signed in.
  *
  * The places someone with an account goes back to: the map, their projects, the
- * Sandbox and their profile, under a primary button for starting a new project,
+ * Sandbox and their dashboard, under a primary button for starting a new project,
  * with their settings apart from the rest at the bottom. It sits under the glass
  * nav bar rather than beside it, so the bar still spans the full width, and it
  * stops where the page does, so the footer does too. The button at its top
@@ -51,7 +51,7 @@ export function SideNav({ t, view, onNavigate, onExplore, onNewProject }) {
     { key: 'map', label: 'Explore', icon: 'pin', onSelect: onExplore, active: ['map'] },
     { key: 'projects', label: 'Projects', icon: 'grid', onSelect: () => onNavigate('projects'), active: ['projects', 'projectDashboard'] },
     { key: 'sandbox', label: 'Sandbox', icon: 'flask', onSelect: () => onNavigate('sandbox'), active: ['sandbox'] },
-    { key: 'profile', label: 'Profile', icon: 'user', onSelect: () => onNavigate('profile'), active: ['profile'] },
+    { key: 'dashboard', label: 'Dashboard', icon: 'user', onSelect: () => onNavigate('dashboard'), active: ['dashboard'] },
     { key: 'settings', label: 'Settings', icon: 'gear', onSelect: () => onNavigate('settings'), active: ['settings'], bottom: true },
   ];
 

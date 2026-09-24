@@ -117,14 +117,14 @@ describe('App', () => {
       expect(trigger()).toHaveAccessibleName('Account menu — You There');
     });
 
-    it('opens the profile from the menu and puts it in the URL', async () => {
+    it('opens the dashboard from the menu and puts it in the URL', async () => {
       const location = renderRecording();
 
       fireEvent.click(trigger());
-      fireEvent.click(screen.getByRole('menuitem', { name: 'Profile' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Dashboard' }));
 
-      expect(await screen.findByRole('heading', { level: 1, name: 'Profile' })).toBeInTheDocument();
-      expect(location.history.at(-1)).toBe('/profile');
+      expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+      expect(location.history.at(-1)).toBe('/dashboard');
     });
 
     it('opens the settings from the menu', async () => {
@@ -137,15 +137,31 @@ describe('App', () => {
       expect(location.history.at(-1)).toBe('/settings');
     });
 
-    it('opens the profile on a direct visit, so the URL survives a refresh', async () => {
+    it('opens the dashboard on a direct visit, so the URL survives a refresh', async () => {
+      renderRecording('/dashboard');
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+    });
+
+    it('still opens the dashboard at its old /profile address', async () => {
       renderRecording('/profile');
 
-      expect(await screen.findByRole('heading', { level: 1, name: 'Profile' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+    });
+
+    it('lands on the dashboard after logging in from the nav bar', async () => {
+      localStorage.setItem('placemaking_profile', JSON.stringify({ signedIn: false }));
+      const location = renderRecording();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Log In' }));
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+      expect(location.history.at(-1)).toBe('/dashboard');
     });
 
     it('navigates to a nav item\'s own URL when one is picked', async () => {
-      const location = renderRecording('/profile');
-      await screen.findByRole('heading', { level: 1, name: 'Profile' });
+      const location = renderRecording('/dashboard');
+      await screen.findByRole('heading', { level: 1, name: 'Dashboard' });
 
       fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Sandbox' }));
 
@@ -210,12 +226,12 @@ describe('App', () => {
       expect(screen.getByText('You are logged out')).toBeInTheDocument();
     });
 
-    it('says so when /profile is reached while logged out', () => {
+    it('says so when /dashboard is reached while logged out', () => {
       localStorage.setItem('placemaking_profile', JSON.stringify({ signedIn: false }));
-      renderRecording('/profile');
+      renderRecording('/dashboard');
 
       expect(screen.getByText('You are logged out')).toBeInTheDocument();
-      expect(screen.queryByRole('heading', { level: 1, name: 'Profile' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { level: 1, name: 'Dashboard' })).not.toBeInTheDocument();
     });
   });
 

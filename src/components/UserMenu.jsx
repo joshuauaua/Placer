@@ -23,7 +23,7 @@ function MenuItem({ t, icon, label, onClick, divided }) {
 }
 
 /**
- * The avatar, the display name, and a dropdown holding Profile, Settings and
+ * The avatar, the display name, and a dropdown holding Dashboard, Settings and
  * Log out. Logged out, it is a Sign in button and nothing else: an avatar with
  * nobody behind it invited a click that went nowhere.
  *
@@ -89,7 +89,7 @@ export function UserMenu({ t, profile, onNavigate, onSignIn, onSignOut }) {
             minWidth: 190, padding: '6px 0', background: t.surface,
             border: `1px solid ${t.line}`, borderRadius: 12, boxShadow: t.shadow,
             overflow: 'hidden' }}>
-          <MenuItem t={t} icon="user" label="Profile" onClick={go('profile')} />
+          <MenuItem t={t} icon="user" label="Dashboard" onClick={go('dashboard')} />
           <MenuItem t={t} icon="gear" label="Settings" onClick={go('settings')} />
           <MenuItem t={t} icon="logout" label="Log out" divided onClick={() => { setOpen(false); onSignOut(); }} />
         </div>

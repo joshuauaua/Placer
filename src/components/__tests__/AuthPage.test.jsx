@@ -65,7 +65,7 @@ describe('AuthPage, signing in', () => {
 
     fireEvent.click(submit('Sign in'));
 
-    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('welcome'));
+    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('dashboard'));
     expect(signInWithPassword).toHaveBeenCalledWith({
       email: 'mara@example.com', password: 'longenough',
     });
@@ -173,7 +173,7 @@ describe('AuthPage, signing up', () => {
 
     fireEvent.click(submit('Create account'));
 
-    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('welcome'));
+    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('dashboard'));
   });
 
   it('shows what went wrong instead of a silent dead end', async () => {

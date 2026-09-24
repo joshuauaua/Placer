@@ -18,7 +18,7 @@ describe('SideNav', () => {
     setup();
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label')))
-      .toEqual(['Collapse side nav', 'New project', 'Explore', 'Projects', 'Sandbox', 'Profile', 'Settings']);
+      .toEqual(['Collapse side nav', 'New project', 'Explore', 'Projects', 'Sandbox', 'Dashboard', 'Settings']);
   });
 
   it('collapses to icons and back, and remembers which', () => {
@@ -54,15 +54,15 @@ describe('SideNav', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Projects' }));
     fireEvent.click(screen.getByRole('button', { name: 'Sandbox' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Profile' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Dashboard' }));
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['projects', 'sandbox', 'profile', 'settings']);
+    expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['projects', 'sandbox', 'dashboard', 'settings']);
   });
 
   it('marks the current view, and keeps Projects marked on a project dashboard', () => {
     setup({ view: 'projectDashboard' });
 
     expect(screen.getByRole('button', { name: 'Projects' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('button', { name: 'Profile' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('button', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
   });
 });

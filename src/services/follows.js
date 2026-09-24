@@ -15,7 +15,7 @@
  *
  * There is nowhere in the app yet that calls follow() for a project or a city: neither
  * has a page to follow one from. The functions below still work end to end — read, add,
- * remove — so that ProfilePage can show the (currently always empty) sections honestly,
+ * remove — so that DashboardPage can show the (currently always empty) sections honestly,
  * and so that wiring up a "Follow" control anywhere in the app later is a call to an
  * already-tested function rather than a new feature.
  */

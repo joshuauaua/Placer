@@ -308,7 +308,7 @@ export function AuthPage({ t, mode = 'signin', onNavigate }) {
         t={t}
         mode={mode}
         onModeChange={onNavigate}
-        onSignedIn={() => onNavigate('welcome')}
+        onSignedIn={() => onNavigate('dashboard')}
         onAwaitingConfirmation={setAwaiting}
       />
     </Shell>

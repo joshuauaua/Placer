@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { ProfilePage } from '../ProfilePage';
+import { DashboardPage } from '../DashboardPage';
 import { postsAreShared, readImaginations, readLocalImaginations } from '../../services/imaginations';
 import { readFollows, unfollow } from '../../services/follows';
 import { isSupabaseConfigured, readMyProjects } from '../../services/projects';
@@ -61,7 +61,7 @@ const setup = (saved = [], { profile = PROFILE, local = [], shared = false, acco
   vi.mocked(readImaginations).mockResolvedValue(saved);
   vi.mocked(readLocalImaginations).mockResolvedValue(local);
   return render(
-    <ProfilePage t={THEME} profile={profile} accountId={accountId} onNavigate={vi.fn()} />
+    <DashboardPage t={THEME} profile={profile} accountId={accountId} onNavigate={vi.fn()} />
   );
 };
 
@@ -69,7 +69,7 @@ const setup = (saved = [], { profile = PROFILE, local = [], shared = false, acco
 // found by its label and read back through its parent.
 const statFor = (label) => screen.getByText(label).parentElement;
 
-describe('ProfilePage', () => {
+describe('DashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -77,7 +77,7 @@ describe('ProfilePage', () => {
   it('names who you are posting as', async () => {
     setup(MINE);
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Profile' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
     expect(screen.getByText('Mara Quinn')).toBeInTheDocument();
   });
 
@@ -110,7 +110,7 @@ describe('ProfilePage', () => {
     vi.mocked(readImaginations).mockResolvedValue([]);
     vi.mocked(readLocalImaginations).mockResolvedValue([]);
     const onNavigate = vi.fn();
-    render(<ProfilePage t={THEME} profile={PROFILE} onNavigate={onNavigate} />);
+    render(<DashboardPage t={THEME} profile={PROFILE} onNavigate={onNavigate} />);
     (await screen.findByRole('button', { name: /Start imagining/ })).click();
 
     expect(onNavigate).toHaveBeenCalledWith('map');
@@ -121,7 +121,7 @@ describe('ProfilePage', () => {
     vi.mocked(postsAreShared).mockReturnValue(false);
     vi.mocked(readImaginations).mockRejectedValue(new Error('storage gone'));
     vi.mocked(readLocalImaginations).mockResolvedValue([]);
-    render(<ProfilePage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
+    render(<DashboardPage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Could not load your imaginations/);
     consoleErrorSpy.mockRestore();
@@ -165,7 +165,7 @@ describe('ProfilePage', () => {
   });
 });
 
-describe('ProfilePage, followed sections', () => {
+describe('DashboardPage, followed sections', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(readImaginations).mockResolvedValue([]);
@@ -175,7 +175,7 @@ describe('ProfilePage, followed sections', () => {
 
   it('shows an honest empty state for each of the four kinds of following', async () => {
     vi.mocked(readFollows).mockResolvedValue([]);
-    render(<ProfilePage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
+    render(<DashboardPage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
 
     expect(await screen.findByRole('heading', { name: 'Followed imaginations' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Followed users' })).toBeInTheDocument();
@@ -195,7 +195,7 @@ describe('ProfilePage, followed sections', () => {
       type === 'imagination' ? [{ id: 'f1', type: 'imagination', targetId: 'img-1', label: 'Mural under the rail bridge' }] : [],
     ));
 
-    render(<ProfilePage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
+    render(<DashboardPage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
 
     expect(await screen.findAllByText('Mural under the rail bridge')).not.toHaveLength(0);
   });
@@ -207,7 +207,7 @@ describe('ProfilePage, followed sections', () => {
       : [],
     ));
 
-    render(<ProfilePage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
+    render(<DashboardPage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
 
     expect(await screen.findByText('Riverside Greenway')).toBeInTheDocument();
     expect(screen.getByText('Malmö')).toBeInTheDocument();
@@ -218,7 +218,7 @@ describe('ProfilePage, followed sections', () => {
       type === 'city' ? [{ id: 'f2', type: 'city', targetId: 'malmo', label: 'Malmö' }] : [],
     ));
 
-    render(<ProfilePage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
+    render(<DashboardPage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
     (await screen.findByText('Malmö')).closest('div').querySelector('button').click();
 
     await waitFor(() => expect(unfollow).toHaveBeenCalledWith('city', 'malmo'));
@@ -229,7 +229,7 @@ describe('ProfilePage, followed sections', () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(readFollows).mockRejectedValue(new Error('storage gone'));
 
-    render(<ProfilePage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
+    render(<DashboardPage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
 
     expect(await screen.findAllByText(/Could not load followed/i)).not.toHaveLength(0);
     consoleErrorSpy.mockRestore();
@@ -242,7 +242,7 @@ describe('ProfilePage, followed sections', () => {
  * to orphan everything you had already posted, because ownership was a string comparison
  * against the name you happened to be using at the time.
  */
-describe('ProfilePage, with imaginations in the database', () => {
+describe('DashboardPage, with imaginations in the database', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -305,7 +305,7 @@ describe('ProfilePage, with imaginations in the database', () => {
   });
 });
 
-describe('ProfilePage, your projects', () => {
+describe('DashboardPage, your projects', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(readImaginations).mockResolvedValue([]);
@@ -317,7 +317,7 @@ describe('ProfilePage, your projects', () => {
   it('has no projects section at all with no Supabase project', async () => {
     vi.mocked(isSupabaseConfigured).mockReturnValue(false);
 
-    render(<ProfilePage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()} />);
+    render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()} />);
     await screen.findByText('Pocket park on Lot 7').catch(() => {});
 
     expect(screen.queryByRole('heading', { name: 'Your projects' })).not.toBeInTheDocument();
@@ -329,7 +329,7 @@ describe('ProfilePage, your projects', () => {
     vi.mocked(readMyProjects).mockResolvedValue([]);
     const onNewProject = vi.fn();
 
-    render(<ProfilePage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()} onNewProject={onNewProject} />);
+    render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()} onNewProject={onNewProject} />);
 
     expect(await screen.findByRole('heading', { name: 'Your projects' })).toBeInTheDocument();
     expect(screen.getByText(/Nothing yet\. A project gets a dashboard/)).toBeInTheDocument();
@@ -345,7 +345,7 @@ describe('ProfilePage, your projects', () => {
     ]);
     const onOpenProjectDashboard = vi.fn();
 
-    render(<ProfilePage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()}
+    render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()}
       onOpenProjectDashboard={onOpenProjectDashboard} />);
 
     expect(await screen.findByText('Riverside Greenway')).toBeInTheDocument();
@@ -358,7 +358,7 @@ describe('ProfilePage, your projects', () => {
     vi.mocked(isSupabaseConfigured).mockReturnValue(true);
     vi.mocked(readMyProjects).mockRejectedValue(new Error('network down'));
 
-    render(<ProfilePage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()} />);
+    render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()} />);
 
     expect(await screen.findByText(/Could not load your projects/)).toBeInTheDocument();
     consoleError.mockRestore();

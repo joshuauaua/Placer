@@ -1,4 +1,4 @@
-/* PLACER — your profile: what you have posted, and how it has landed */
+/* PLACER — your dashboard: what you have posted, and how it has landed */
 
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from './Icon';
@@ -145,7 +145,7 @@ function FollowedSection({ t, title, empty, items, status, render }) {
   );
 }
 
-export function ProfilePage({ t, profile, accountId = null, onNavigate, onNewProject,
+export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewProject,
   onOpenProjectDashboard, onSignIn }) {
   // The imagination open in the modal, if any — set from any card on this page.
   const [selected, setSelected] = useState(null);
@@ -298,7 +298,7 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate, onNewPro
           <div>
             <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink,
               letterSpacing: '-0.03em', marginBottom: 8 }}>
-              Profile
+              Dashboard
             </h1>
             <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6 }}>
               Posting as <strong style={{ color: t.ink }}>{name}</strong>.{' '}
@@ -463,4 +463,4 @@ export function ProfilePage({ t, profile, accountId = null, onNavigate, onNewPro
   );
 }
 
-export default ProfilePage;
+export default DashboardPage;

@@ -30,7 +30,7 @@ const PostPage = lazy(() => import('./components/PostPage'));
 const AdminImaginations = lazy(() => import('./components/AdminImaginations'));
 const SandboxPage = lazy(() => import('./components/SandboxPage'));
 const JoinPage = lazy(() => import('./components/JoinPage'));
-const ProfilePage = lazy(() => import('./components/ProfilePage'));
+const DashboardPage = lazy(() => import('./components/DashboardPage'));
 const SettingsPage = lazy(() => import('./components/SettingsPage'));
 const AuthPage = lazy(() => import('./components/AuthPage'));
 const AuthCallback = lazy(() => import('./components/AuthCallback'));
@@ -55,14 +55,16 @@ const FLOW_VIEWS = ['street', 'describe', 'post'];
 // Post step signed out can therefore sign in and come back to the capture, the drawing
 // and the draft they left in MainApp's state. A sibling Route would throw all of it away.
 const ACCOUNT_PATHS = {
-  profile: '/profile',
+  dashboard: '/dashboard',
   projects: '/projects',
   settings: '/settings',
   signin: '/signin',
   signup: '/signup',
 };
 const ACCOUNT_VIEWS = {
-  '/profile': 'profile',
+  '/dashboard': 'dashboard',
+  // The dashboard's old address, so a bookmark from when it was the profile still works.
+  '/profile': 'dashboard',
   '/projects': 'projects',
   '/settings': 'settings',
   '/signin': 'signin',
@@ -104,7 +106,7 @@ function LoadingFallback() {
   );
 }
 
-// What /profile, /projects and /settings show to someone who has logged out. Not a redirect,
+// What /dashboard, /projects and /settings show to someone who has logged out. Not a redirect,
 // so the URL still works once they log back in.
 function SignedOutNotice({ t, onSignIn }) {
   return (
@@ -116,7 +118,7 @@ function SignedOutNotice({ t, onSignIn }) {
           You are logged out
         </h1>
         <p style={{ fontSize: 15, color: t.inkDim, marginBottom: 24 }}>
-          Log back in to see your profile, projects and settings.
+          Log back in to see your dashboard, projects and settings.
         </p>
         <Btn t={t} variant="primary" onClick={onSignIn}>Sign in</Btn>
       </div>
@@ -253,12 +255,22 @@ function MainApp({ initialView = 'welcome' }) {
       setDraft(pending.draft ?? EMPTY_DRAFT);
       setPreview(pending.preview ?? null);
       clearPendingImagination();
-      // Back where they left off, which is the whole point of having parked it.
+      // Back where they left off, which is the whole point of having parked it. Off
+      // /dashboard first, where the redirect below will already have sent them.
+      navigate('/', { replace: true });
       setCurrentView('post');
     });
 
     return () => { cancelled = true; };
-  }, [identityStatus, capturedView]);
+  }, [identityStatus, capturedView, navigate]);
+
+  // The dashboard is home for anyone with a real account: signing in lands on it, and
+  // so does opening the app cold with a session, or the logo. The landing page is only
+  // for visitors who are signed out. Not in the local, no-project mode, where everybody
+  // is "signed in" under the default name and the landing page would never show.
+  useEffect(() => {
+    if (view === 'welcome' && identityStatus === 'signedIn') navigate('/dashboard', { replace: true });
+  }, [view, identityStatus, navigate]);
 
   const handlePosted = () => {
     // Posted, so there is nothing left to come back to.
@@ -283,8 +295,16 @@ function MainApp({ initialView = 'welcome' }) {
   // With no project there are no accounts to create, so Create Account does
   // what Log In does there: the instant local sign-in. Otherwise, the sign-up form.
   const handleCreateAccount = () => {
-    if (identityStatus === 'local') handleSignIn();
+    if (identityStatus === 'local') handleLogIn();
     else show('signup');
+  };
+
+  // The nav bar's Log In, as opposed to the sign-in prompts inside a page, which leave
+  // somebody where they were. Locally there is no /signin to come back from, so this is
+  // where the dashboard gets to be the first thing after logging in.
+  const handleLogIn = () => {
+    handleSignIn();
+    if (identityStatus === 'local') show('dashboard');
   };
 
   // Back to the welcome view, because the account views have nothing to show
@@ -355,15 +375,12 @@ function MainApp({ initialView = 'welcome' }) {
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', background: t.page, color: t.ink }}>
       <GlassNavbar
         t={t}
-        view={view}
         profile={profile}
         loading={identityLoading}
         onNavigate={show}
-        onExplore={handleExplore}
-        onSignIn={handleSignIn}
+        onSignIn={handleLogIn}
         onCreateAccount={handleCreateAccount}
         onSignOut={handleSignOut}
-        onOpenProject={showProjectPublic}
       />
 
       {/* Main Content. The map fills it and has no footer. Every other view scrolls
@@ -382,7 +399,10 @@ function MainApp({ initialView = 'welcome' }) {
           )}
 
           <div className="placer-app-page">
-            {view === 'welcome' && <LandingPage t={t} />}
+            {/* Held back while the session is read, so somebody signed in does not see the
+                landing page flash up before the redirect to their dashboard. */}
+            {view === 'welcome' && identityLoading && <LoadingFallback />}
+            {view === 'welcome' && !identityLoading && <LandingPage t={t} />}
 
             {view === 'map' && (
               <Suspense fallback={<LoadingFallback />}>
@@ -433,15 +453,15 @@ function MainApp({ initialView = 'welcome' }) {
 
             {/* Reachable by URL, so both have to cope with arriving before the session has
                 been read, and with arriving logged out. */}
-            {(view === 'profile' || view === 'settings' || view === 'projects') && identityLoading && <LoadingFallback />}
+            {(view === 'dashboard' || view === 'settings' || view === 'projects') && identityLoading && <LoadingFallback />}
 
-            {(view === 'profile' || view === 'settings' || view === 'projects') && !identityLoading && !profile && (
+            {(view === 'dashboard' || view === 'settings' || view === 'projects') && !identityLoading && !profile && (
               <SignedOutNotice t={t} onSignIn={handleSignIn} />
             )}
 
-            {view === 'profile' && profile && (
+            {view === 'dashboard' && profile && (
               <Suspense fallback={<LoadingFallback />}>
-                <ProfilePage t={t} profile={profile} accountId={accountId} onNavigate={show}
+                <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
                   onNewProject={showNewProject} onOpenProjectDashboard={showProjectDashboard}
                   onSignIn={handleSignIn} />
               </Suspense>
@@ -467,7 +487,7 @@ function MainApp({ initialView = 'welcome' }) {
               </Suspense>
             )}
 
-            {/* projectNew and projectDashboard need an account, the same shape profile and
+            {/* projectNew and projectDashboard need an account, the same shape the dashboard and
                 settings are gated — starting or managing a project is not something a
                 signed-out visitor can do. projectPublic needs nothing: a project's public
                 page is exactly the thing anyone should be able to open cold, unsignedin,
@@ -482,7 +502,7 @@ function MainApp({ initialView = 'welcome' }) {
               <Suspense fallback={<LoadingFallback />}>
                 <ProjectSetupPage t={t} accountId={accountId} accountName={profile.name}
                   onSaved={(project) => showProjectDashboard(project.id)}
-                  onCancel={() => show('profile')} />
+                  onCancel={() => show('dashboard')} />
               </Suspense>
             )}
 

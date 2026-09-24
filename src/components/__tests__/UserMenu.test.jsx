@@ -54,7 +54,7 @@ describe('UserMenu', () => {
     setup();
     fireEvent.click(trigger());
 
-    expect(item('Profile')).toBeInTheDocument();
+    expect(item('Dashboard')).toBeInTheDocument();
     expect(item('Settings')).toBeInTheDocument();
     expect(item('Log out')).toBeInTheDocument();
   });
@@ -81,7 +81,7 @@ describe('UserMenu', () => {
     setup();
     fireEvent.click(trigger());
 
-    fireEvent.mouseDown(item('Profile'));
+    fireEvent.mouseDown(item('Dashboard'));
 
     expect(menu()).toBeInTheDocument();
   });
@@ -90,9 +90,9 @@ describe('UserMenu', () => {
     const { onNavigate } = setup();
     fireEvent.click(trigger());
 
-    fireEvent.click(item('Profile'));
+    fireEvent.click(item('Dashboard'));
 
-    expect(onNavigate).toHaveBeenCalledWith('profile');
+    expect(onNavigate).toHaveBeenCalledWith('dashboard');
     expect(menu()).not.toBeInTheDocument();
   });
 

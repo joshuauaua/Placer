@@ -98,7 +98,7 @@ export function ImaginationPreview({ t, imagination, onClose, accountId = null,
   const [commentError, setCommentError] = useState(null);
 
   // Reloads whenever the modal is pointed at a different imagination — MapContainer
-  // and ProfilePage both swap `imagination` on this same open instance rather than
+  // and DashboardPage both swap `imagination` on this same open instance rather than
   // remounting it, so a stale thread or vote from the last one opened must not linger.
   useEffect(() => {
     let cancelled = false;

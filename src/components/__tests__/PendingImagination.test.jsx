@@ -131,14 +131,15 @@ describe('an imagination parked while signing in', () => {
 
     renderApp();
 
-    expect(await screen.findByText('a toolkit for participatory placemaking')).toBeInTheDocument();
+    expect(await screen.findByText('Loading…')).toBeInTheDocument();
     expect(localStorage.getItem(PENDING_KEY)).not.toBeNull();
   });
 
+  // With nothing to restore, signing in lands where it always does: the dashboard.
   it('stays out of the way when nothing was parked', async () => {
     renderApp();
 
-    expect(await screen.findByText('a toolkit for participatory placemaking')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
   });
 
   it('ignores a stale parked imagination rather than resurrecting it', async () => {
@@ -146,7 +147,40 @@ describe('an imagination parked while signing in', () => {
 
     renderApp();
 
-    expect(await screen.findByText('a toolkit for participatory placemaking')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
     expect(localStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+});
+
+describe('where somebody signed in starts', () => {
+  const renderRecording = (path) => {
+    const location = memoryLocation({ path, record: true });
+    render(
+      <Router hook={location.hook}>
+        <App />
+      </Router>
+    );
+    return location;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    identity();
+  });
+
+  it('opens on the dashboard rather than the landing page', async () => {
+    const location = renderRecording('/');
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+    expect(screen.queryByText('a toolkit for participatory placemaking')).not.toBeInTheDocument();
+    expect(location.history.at(-1)).toBe('/dashboard');
+  });
+
+  it('still shows the landing page to somebody signed out', async () => {
+    identity({ profile: null, status: 'signedOut', accountId: null, email: null });
+    const location = renderRecording('/');
+
+    expect(await screen.findByText('a toolkit for participatory placemaking')).toBeInTheDocument();
+    expect(location.history.at(-1)).toBe('/');
   });
 });

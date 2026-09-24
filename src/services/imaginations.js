@@ -7,7 +7,7 @@
  * record in localStorage, which is how the app worked before accounts existed: yours,
  * on this device, and nowhere else.
  *
- * Both stores hand back the same camelCase shape, so MapContainer, ProfilePage and
+ * Both stores hand back the same camelCase shape, so MapContainer, DashboardPage and
  * AdminImaginations cannot tell which they are looking at. The one visible difference is
  * `preview`: a data URL from localStorage, a bucket URL from Supabase. Both go straight
  * into an <img src> and neither cares.

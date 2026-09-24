@@ -10,7 +10,7 @@
  * services/profile.js that the app used before accounts existed.
  *
  * Every consumer sees one shape either way: a `profile` of { name, bio } or null. That
- * is what keeps UserMenu, ProfilePage and the author line on a posted imagination from
+ * is what keeps UserMenu, DashboardPage and the author line on a posted imagination from
  * having to care, and it is why services/auth.js maps display_name to `name` at its own
  * boundary rather than leaking the column name up here.
  *
