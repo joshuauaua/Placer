@@ -741,6 +741,100 @@ body {
   }
 }
 
+/* PLACER — the About page (see AboutPage.jsx).
+ *
+ * The PhotoSplit hero, then full-width sections on a centred measure: three
+ * pillars side by side, and photo-and-text rows that alternate sides. On a phone
+ * everything is one column, and a row's photo always comes first.
+ */
+.placer-about .placer-split {
+  min-height: min(100vh, 760px);
+}
+
+.placer-about-section {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 96px 40px;
+}
+
+.placer-about-pillars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-top: 48px;
+}
+
+.placer-about-pillar-art {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+}
+
+/* The drawings are black lines on white, so multiply drops the white out onto
+   whatever sits behind them. */
+.placer-about-pillar-art img {
+  max-width: 70%;
+  max-height: 100%;
+  mix-blend-mode: multiply;
+}
+
+.placer-about-feature {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+
+.placer-about-feature-reverse .placer-about-feature-media {
+  order: 2;
+}
+
+.placer-about-feature-media img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+}
+
+.placer-about-logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 32px 56px;
+  margin-top: 40px;
+}
+
+.placer-about-logos img {
+  display: block;
+  height: 36px;
+  width: auto;
+}
+
+@media (max-width: 800px) {
+  .placer-about .placer-split {
+    min-height: 0;
+  }
+
+  .placer-about-section {
+    padding: 64px 24px;
+  }
+
+  .placer-about-pillars,
+  .placer-about-feature {
+    grid-template-columns: 1fr;
+  }
+
+  .placer-about-feature {
+    gap: 28px;
+  }
+
+  .placer-about-feature-reverse .placer-about-feature-media {
+    order: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .placer-split-action {
     transition: none;

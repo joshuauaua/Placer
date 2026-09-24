@@ -168,9 +168,8 @@ describe('inside the app', () => {
 
     fireEvent.click(within(screen.getByRole('navigation')).getByText('About'));
 
-    // The About page is the project poster alone, so its alt text is what marks it.
     expect(
-      await screen.findByRole('img', { name: /participatory placemaking/i }),
+      await screen.findByRole('heading', { level: 1, name: 'About PLACER' }),
     ).toBeInTheDocument();
     expect(location.history.at(-1)).toBe('/');
     expect(screen.queryByRole('heading', { level: 1, name: 'Street Section Mixer' })).not.toBeInTheDocument();
