@@ -10,14 +10,14 @@ import { THEME_INK } from '../theme';
 // so the menu and the footer cannot drift apart.
 export const FOOTER_COLUMNS = [
   {
-    heading: 'Project',
+    heading: 'Project News',
     links: [
-      { label: 'Project Concept', href: 'https://www.stpln.se/participatory-toolkit' },
-      { label: 'User Labs', view: 'userLabs' },
+      { label: 'Project Announcement', href: 'https://www.stpln.se/participatory-toolkit' },
       {
-        label: 'Swedish Institute',
+        label: 'Pilot Project',
         href: 'https://si.se/en/projects-granted-funding/designing-participatory-spaces-innovation-in-placemaking-and-capacity-building/',
       },
+      { label: 'User Labs', view: 'userLabs' },
     ],
   },
   {
@@ -27,7 +27,7 @@ export const FOOTER_COLUMNS = [
     ],
   },
   {
-    heading: 'Company',
+    heading: 'About Us',
     links: [
       { label: 'About', view: 'about' },
       // Unlike Development, this branch has a real Contact page (ContactPage.jsx).
@@ -123,7 +123,8 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
                     {target ? (
                       <FooterLink t={t} active={view === target} onClick={() => onNavigate(target)}>{label}</FooterLink>
                     ) : href ? (
-                      <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: t.inkDim }}>{label}</a>
+                      <a href={href} target="_blank" rel="noopener noreferrer"
+                        style={{ color: t.inkDim, textDecoration: 'none' }}>{label}</a>
                     ) : (
                       <Placeholder t={t}>{label}</Placeholder>
                     )}

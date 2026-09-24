@@ -75,7 +75,7 @@ export function HamburgerMenu({ t, view, onNavigate }) {
                   onClick={() => go(target)}
                   aria-current={view === target ? 'page' : undefined}
                   className="placer-menu-link"
-                  style={{ color: view === target ? t.ink : t.inkDim, fontWeight: view === target ? 700 : 600 }}
+                  style={{ color: view === target ? t.ink : t.inkDim }}
                 >
                   {label}
                 </button>

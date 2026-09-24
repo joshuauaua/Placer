@@ -495,6 +495,7 @@ body {
   border-radius: 14px;
   font-family: 'Archivo', sans-serif;
   font-size: 17px;
+  font-weight: 400;
   transition: background 0.15s ease;
 }
 

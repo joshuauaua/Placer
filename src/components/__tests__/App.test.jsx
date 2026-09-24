@@ -112,10 +112,10 @@ describe('App', () => {
     expect(scrollArea.scrollTop).toBe(0);
   });
 
-  it('opens Project Concept on the STPLN site in a new tab', () => {
+  it('opens Project Announcement on the STPLN site in a new tab', () => {
     renderAt('/');
 
-    const link = screen.getByRole('link', { name: 'Project Concept' });
+    const link = screen.getByRole('link', { name: 'Project Announcement' });
     expect(link).toHaveAttribute('href', 'https://www.stpln.se/participatory-toolkit');
     expect(link).toHaveAttribute('target', '_blank');
   });
