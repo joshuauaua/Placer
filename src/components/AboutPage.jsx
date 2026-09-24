@@ -1,17 +1,14 @@
 /* PLACER — About Page
  *
- * PLACEHOLDER: the structure is meant to stay, the copy is not. Every heading and
- * paragraph here is a stand-in written from what the rest of the site already
- * says, to be replaced once the real text is written.
- *
- * Top to bottom: a photo of the team beside the pitch (PhotoSplit, as on User
- * Labs), three things PLACER lets you do, two photo-and-text rows on how it is
- * being built, and the partners behind it. The geometry lives in index.css
+ * Top to bottom: a User Labs photo beside the pitch (PhotoSplit, as on User
+ * Labs), three things PLACER lets you do (understand, imagine, plan), two photo-and-text rows on how it is
+ * being built, and the team and partners behind it. The geometry lives in index.css
  * (.placer-about-*), since the rows rearrange on a phone and a media query cannot
  * override an inline style.
  */
 
-import aboutPhoto from '../assets/about-team.jpg';
+import malmoPhoto from '../assets/about-malmo.jpg';
+import teamPhoto from '../assets/about-team.jpg';
 import logoAks from '../assets/logo-aks.png';
 import logoStpln from '../assets/logo-stpln.png';
 import logoSwedishInstitute from '../assets/logo-swedish-institute.png';
@@ -25,40 +22,40 @@ import { PhotoSplit, PhotoSplitHeading } from './PhotoSplit';
 const PILLARS = [
   {
     image: streetBench,
-    title: 'Sketch',
-    body: 'Place benches, planters and trees on a real street and see the space the way you imagine it.',
+    title: 'Understand',
+    body: 'Find the right approach to gather meaningful feedback, from interactive polls and surveys to digital adaptations of methodologies by leading design studios.',
   },
   {
     image: streetPlanter,
-    title: 'Share',
-    body: 'Put your idea on the map where neighbours, designers and the city can find it and add to it.',
+    title: 'Imagine',
+    body: 'Every built space around us was once an idea. Intuitive spatial visualization tools allow anyone to quickly transform ideas into clear visual concepts.',
   },
   {
     image: streetBicycle,
-    title: 'Decide',
-    body: 'Vote, comment and weigh up the options together, so what gets built is what people asked for.',
+    title: 'Plan',
+    body: 'Bring everything together on a dedicated project page. Research, community ideas, and interactive outputs are displayed in one transparent space—creating a living repository for your placemaking journey.',
   },
 ];
 
 const FEATURES = [
   {
-    image: userLabsPhoto,
-    alt: 'People at a User Labs session pinning notes to a map and sketching on wooden boards outdoors.',
+    image: placemakingTrendsPhoto,
+    alt: 'A deck of cards clipped to a plywood board beside a street map dotted with pins, from a workshop.',
     kicker: 'User Labs',
     title: 'Built with the people who will use it',
     body: [
-      'PLACER is tested on real streets and squares in Malmö and Ankara. In our User Labs, residents, designers and local leaders try early versions of the toolkit and tell us what works.',
-      'What we learn in each session shapes what we build next.',
+      'PLACER is tested on the streets of Malmö, Ankara, and beyond. In our User Labs, residents, designers, and local leaders test early versions of the toolkit, telling us what works and what doesn’t.',
+      'What we learn in each session directly shapes what we build next.',
     ],
   },
   {
-    image: placemakingTrendsPhoto,
-    alt: 'A deck of cards clipped to a plywood board beside a street map dotted with pins, from a workshop.',
+    image: malmoPhoto,
+    alt: 'A small group talking on a sunny street in Malmö, beside red-brick buildings and a large tree.',
     kicker: 'Research',
     title: 'Grounded in how cities work today',
     body: [
-      'Alongside the toolkit we are surveying city officials and planners about how they involve citizens in public space today, and where it falls short.',
-      'The findings feed into the Placemaking Trends 2026/2027 Report.',
+      'Alongside the toolkit, we are surveying city officials and urban planners globally to understand how they engage citizens in public space development today—and where the greatest opportunities for improvement lie.',
+      'The findings feed into our Placemaking Trends 2026/2027 Report, available May 2027.',
     ],
   },
 ];
@@ -92,16 +89,16 @@ export function AboutPage({ t }) {
     <div className="placer-about" style={{ width: '100%', background: t.page }}>
       <PhotoSplit
         t={t}
-        src={aboutPhoto}
-        alt="A Polaroid-style photo of the people behind PLACER gathered around a table at a restaurant, smiling towards the camera."
+        src={userLabsPhoto}
+        alt="People at a User Labs session pinning notes to a map and sketching on wooden boards outdoors."
       >
         <PhotoSplitHeading
           t={t}
           title="About PLACER"
-          subtitle="A toolkit for shaping public space together."
+          subtitle="A toolkit for shaping shared spaces together."
         />
         <p style={{ marginTop: 20, fontSize: 17, lineHeight: 1.65, color: t.inkDim }}>
-          Streets and squares belong to everyone who uses them, but the people who know
+          Shared spaces belong to everyone who uses them, but the people who know
           them best are rarely the ones asked how they should change. PLACER gives
           residents, designers and local authorities one place to imagine, discuss and
           decide on the spaces they share.
@@ -109,9 +106,7 @@ export function AboutPage({ t }) {
       </PhotoSplit>
 
       <section className="placer-about-section" style={{ borderTop: `1px solid ${t.line}` }}>
-        <Kicker t={t}>What PLACER does</Kicker>
-        <SectionTitle t={t}>From an idea on your street to a plan the city can act on</SectionTitle>
-        <div className="placer-about-pillars">
+        <div className="placer-about-pillars" style={{ marginTop: 0 }}>
           {PILLARS.map(({ image, title, body }) => (
             <div key={title}>
               <div className="placer-about-pillar-art" style={{ background: t.surface, border: `1px solid ${t.line}` }}>
@@ -149,11 +144,19 @@ export function AboutPage({ t }) {
       ))}
 
       <section className="placer-about-section" style={{ borderTop: `1px solid ${t.line}` }}>
+        <img
+          className="placer-about-team-photo"
+          src={teamPhoto}
+          alt="A Polaroid-style photo of the people behind PLACER gathered around a table at a restaurant, smiling towards the camera."
+        />
         <Kicker t={t}>Who is behind it</Kicker>
-        <SectionTitle t={t}>Made in Malmö and Ankara</SectionTitle>
+        <SectionTitle t={t}>
+          Made with <span role="img" aria-label="love">♥</span> in Malmö and Ankara
+        </SectionTitle>
         <p style={{ marginTop: 16, maxWidth: 680, fontSize: 17, lineHeight: 1.65, color: t.inkDim }}>
-          PLACER is developed by STPLN in Malmö and Ankara Aks in Ankara, as part of
-          Designing Participatory Spaces, a project funded by the Swedish Institute.
+          PLACER is developed by STPLN in Malmö and Ankara Aks in Ankara as part of
+          Participatory Urban Design Toolkit for Democratic and Inclusive City-building,
+          funded by the Swedish Institute.
         </p>
         <div className="placer-about-logos">
           {PARTNERS.map(({ src, alt, href }) => {

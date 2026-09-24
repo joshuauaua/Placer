@@ -798,6 +798,14 @@ body {
   object-fit: cover;
 }
 
+.placer-about-team-photo {
+  display: block;
+  width: 100%;
+  max-width: 760px;
+  height: auto;
+  margin-bottom: 56px;
+}
+
 .placer-about-logos {
   display: flex;
   flex-wrap: wrap;
