@@ -285,6 +285,31 @@ export async function readStats(projectId) {
 }
 
 /**
+ * Every Sandbox room opened for this project, newest first, with how many people have
+ * contributed to each. Owner-or-collaborator only (project_rooms in
+ * supabase/rooms-lifetime.sql), and it includes each room's facilitator token — the
+ * dashboard hands that to the Sandbox so a room can be run from any browser, not only
+ * the one that opened it.
+ */
+export async function readProjectRooms(projectId) {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('project_rooms', { p_project_id: projectId });
+
+  if (error) throw new Error(`Could not load this project's rooms: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    id: row.room_id,
+    experiment: row.experiment,
+    pin: row.pin,
+    joinCode: row.join_code,
+    facilitatorToken: row.facilitator_token,
+    createdAt: row.created_at,
+    expiresAt: row.expires_at,
+    status: row.status,
+    contributions: row.contributions ?? 0,
+  }));
+}
+
+/**
  * How many Sandbox sessions have run for this project — the one number the public
  * page needs from a table it otherwise cannot see into at all. Needs no account;
  * see project_sandbox_activity in supabase/projects.sql for why a plain count is

@@ -46,12 +46,18 @@ async function client() {
  * — so its dashboard and public page can show the session. Omitting it opens an
  * ordinary, unattached room exactly as this always has; passing one refuses unless the
  * caller owns or collaborates on that project, which the database checks, not this.
+ *
+ * `lifetime` is one of ROOM_LIFETIMES in sandbox/rooms.js. Anything past two hours
+ * needs a project, and comes back with a `joinCode` for its QR code — see
+ * supabase/rooms-lifetime.sql. The default is left off the request entirely, so a
+ * workshop room still opens against a database that has not had that file yet.
  */
-export async function createRoom(experimentId, projectId = null) {
+export async function createRoom(experimentId, projectId = null, lifetime = '2h') {
   const supabase = await client();
-  const { data, error } = await supabase
-    .rpc('sandbox_room_create', { p_experiment: experimentId, p_project_id: projectId })
-    .single();
+  const params = { p_experiment: experimentId, p_project_id: projectId };
+  if (lifetime && lifetime !== '2h') params.p_lifetime = lifetime;
+
+  const { data, error } = await supabase.rpc('sandbox_room_create', params).single();
 
   if (error) {
     // 42501 is insufficient_privilege, which PostgREST also reports as a 403.
@@ -64,6 +70,7 @@ export async function createRoom(experimentId, projectId = null) {
   return {
     id: data.room_id,
     pin: data.pin,
+    joinCode: lifetime && lifetime !== '2h' ? (data.join_code ?? null) : null,
     facilitatorToken: data.facilitator_token,
     expiresAt: data.expires_at,
   };
@@ -84,6 +91,24 @@ export async function joinRoom(pin) {
   if (!data) return null;
 
   return { id: data.room_id, experiment: data.experiment };
+}
+
+/**
+ * Look up a room by the code in its QR link. Unlike a PIN this answers for a finished
+ * room too — `status` is 'open', 'closed' or 'expired', and `endsAt` is when it ended
+ * or will — so a poster scanned after its poll closed can say so. Null for a code
+ * that matches nothing, including a room already swept away.
+ */
+export async function joinRoomByCode(code) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .rpc('sandbox_room_join_code', { p_code: code })
+    .maybeSingle();
+
+  if (error) throw new Error(`Could not join that room: ${error.message}`);
+  if (!data) return null;
+
+  return { id: data.room_id, experiment: data.experiment, status: data.status, endsAt: data.expires_at };
 }
 
 /**

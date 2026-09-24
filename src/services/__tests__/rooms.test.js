@@ -93,6 +93,8 @@ describe('opening a room', () => {
     expect(room).toEqual({
       id: 'room-1',
       pin: '839201',
+      // A workshop room is joined by its PIN; only a long room hands back a code.
+      joinCode: null,
       facilitatorToken: 'facilitator-1',
       // The deadline comes from the database, never from the browser's clock.
       expiresAt: '2026-09-11T12:00:00Z',
@@ -109,6 +111,21 @@ describe('opening a room', () => {
     await rooms.createRoom('budget-ballot', 'proj-1');
 
     expect(rpc).toHaveBeenCalledWith('sandbox_room_create', { p_experiment: 'budget-ballot', p_project_id: 'proj-1' });
+  });
+
+  it('asks for a longer lifetime only when there is one, and hands back its join code', async () => {
+    rpc.mockReturnValue(result({
+      data: { room_id: 'room-1', pin: '839201', join_code: 'a'.repeat(32),
+        facilitator_token: 'facilitator-1', expires_at: '2026-10-24T12:00:00Z' },
+      error: null,
+    }));
+
+    const room = await rooms.createRoom('open-vote', 'proj-1', '30d');
+
+    expect(rpc).toHaveBeenCalledWith('sandbox_room_create',
+      { p_experiment: 'open-vote', p_project_id: 'proj-1', p_lifetime: '30d' });
+    expect(room.joinCode).toBe('a'.repeat(32));
+    expect(room.expiresAt).toBe('2026-10-24T12:00:00Z');
   });
 
   it('surfaces a failure as an error rather than a room that is not there', async () => {
@@ -141,6 +158,29 @@ describe('joining a room', () => {
     rpc.mockReturnValue(result({ data: null, error: null }));
 
     await expect(rooms.joinRoom('000000')).resolves.toBeNull();
+  });
+});
+
+describe('joining a room by its code', () => {
+  beforeEach(async () => {
+    await load();
+  });
+
+  it('answers with the room and whether it is still open', async () => {
+    rpc.mockReturnValue(result({
+      data: { room_id: 'room-1', experiment: 'open-vote', status: 'open', expires_at: '2026-10-24T12:00:00Z' },
+      error: null,
+    }));
+
+    const room = await rooms.joinRoomByCode('a'.repeat(32));
+
+    expect(rpc).toHaveBeenCalledWith('sandbox_room_join_code', { p_code: 'a'.repeat(32) });
+    expect(room).toEqual({ id: 'room-1', experiment: 'open-vote', status: 'open', endsAt: '2026-10-24T12:00:00Z' });
+  });
+
+  it('is null for a code that matches nothing', async () => {
+    rpc.mockReturnValue(result({ data: null, error: null }));
+    expect(await rooms.joinRoomByCode('b'.repeat(32))).toBeNull();
   });
 });
 

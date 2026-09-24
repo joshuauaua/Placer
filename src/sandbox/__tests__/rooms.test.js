@@ -1,6 +1,10 @@
 import { describe, it, expect, afterEach } from 'vite-plus/test';
 import {
   PIN_LENGTH,
+  ROOM_LIFETIMES,
+  codeJoinUrl,
+  isLongRoom,
+  parseJoinCode,
   timeRemaining,
   forgetHostedRoom,
   formatPin,
@@ -99,6 +103,12 @@ describe('who this browser is in a room', () => {
     expect(hostedRoom('room-2')).toBeNull();
   });
 
+  it('keeps a long room\'s join code alongside its token', () => {
+    rememberHostedRoom('room-1', { pin: '839201', token: 'facilitator-1', code: 'a'.repeat(32) });
+
+    expect(hostedRoom('room-1')).toEqual({ pin: '839201', token: 'facilitator-1', code: 'a'.repeat(32) });
+  });
+
   it('forgets a room once it is closed, and leaves the others alone', () => {
     rememberHostedRoom('room-1', { pin: '839201', token: 'facilitator-1' });
     rememberHostedRoom('room-2', { pin: '111222', token: 'facilitator-2' });
@@ -133,9 +143,43 @@ describe('how long a room has left', () => {
     expect(timeRemaining(inMinutes(-5), now)).toBeNull();
   });
 
+  it('counts in days once a room has weeks to run', () => {
+    expect(timeRemaining(inMinutes(30 * 24 * 60), now)).toBe('30d');
+    expect(timeRemaining(inMinutes((3 * 24 + 4) * 60 + 20), now)).toBe('3d 4h');
+    // Under two days it is still hours, which is what somebody deciding on one more
+    // round wants to know.
+    expect(timeRemaining(inMinutes(47 * 60), now)).toBe('47h');
+  });
+
   it('is null rather than NaN for a deadline that is not one', () => {
     expect(timeRemaining(null, now)).toBeNull();
     expect(timeRemaining(undefined, now)).toBeNull();
     expect(timeRemaining('not a date', now)).toBeNull();
+  });
+});
+
+describe('rooms that stay open for weeks', () => {
+  const opened = '2026-09-24T12:00:00Z';
+
+  it('offers exactly the lifetimes the database accepts', () => {
+    // sandbox_room_create in supabase/rooms-lifetime.sql refuses anything else.
+    expect(ROOM_LIFETIMES.map((option) => option.id)).toEqual(['2h', '1w', '30d', '90d']);
+  });
+
+  it('tells a workshop room from a long one by how long it was opened for', () => {
+    expect(isLongRoom({ createdAt: opened, expiresAt: '2026-09-24T14:00:00Z' })).toBe(false);
+    expect(isLongRoom({ createdAt: opened, expiresAt: '2026-10-24T12:00:00Z' })).toBe(true);
+    expect(isLongRoom({ createdAt: null, expiresAt: null })).toBe(false);
+  });
+
+  it('points a long room\'s link at its code, never its PIN', () => {
+    expect(codeJoinUrl('a'.repeat(32))).toBe(`${window.location.origin}/join?code=${'a'.repeat(32)}`);
+  });
+
+  it('only takes a code that could be one', () => {
+    expect(parseJoinCode(` ${'A'.repeat(32)} `)).toBe('a'.repeat(32));
+    expect(parseJoinCode('839201')).toBeNull();
+    expect(parseJoinCode('z'.repeat(32))).toBeNull();
+    expect(parseJoinCode(null)).toBeNull();
   });
 });

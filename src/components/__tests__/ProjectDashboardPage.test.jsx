@@ -7,11 +7,14 @@ import {
   readCollaborators,
   readLinks,
   readProject,
+  readProjectRooms,
   readStats,
   removeCollaborator,
   removeLink,
   updateProject,
 } from '../../services/projects';
+import { closeRoom } from '../../services/rooms';
+import { hostedRoom } from '../../sandbox/rooms';
 import { THEME } from '../../theme';
 
 // ProjectSetupPage is rendered in place for "Edit setup" (see the test below) and
@@ -21,12 +24,17 @@ vi.mock('../../services/projects', () => ({
   readStats: vi.fn(),
   readCollaborators: vi.fn(),
   readLinks: vi.fn(),
+  readProjectRooms: vi.fn(),
   addCollaborator: vi.fn(() => Promise.resolve({ success: true })),
   removeCollaborator: vi.fn(() => Promise.resolve({ success: true })),
   addLink: vi.fn(),
   removeLink: vi.fn(() => Promise.resolve({ success: true })),
   createProject: vi.fn(),
   updateProject: vi.fn(),
+}));
+
+vi.mock('../../services/rooms', () => ({
+  closeRoom: vi.fn(() => Promise.resolve(true)),
 }));
 
 const PROJECT = {
@@ -39,7 +47,7 @@ const STATS = { imaginationsCount: 4, imaginationsUpvotes: 19, sandboxRoomsCount
 const setup = (overrides = {}) => {
   const props = {
     t: THEME, accountId: 'user-1', projectId: PROJECT.id,
-    onOpenSandbox: vi.fn(), onNavigateToPublic: vi.fn(),
+    onOpenSandbox: vi.fn(), onOpenRoom: vi.fn(), onNavigateToPublic: vi.fn(),
     ...overrides,
   };
   render(<ProjectDashboardPage {...props} />);
@@ -52,6 +60,7 @@ describe('ProjectDashboardPage', () => {
     vi.mocked(readStats).mockResolvedValue(STATS);
     vi.mocked(readCollaborators).mockResolvedValue([]);
     vi.mocked(readLinks).mockResolvedValue([]);
+    vi.mocked(readProjectRooms).mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -202,5 +211,67 @@ describe('ProjectDashboardPage', () => {
 
     await waitFor(() => expect(removeLink).toHaveBeenCalledWith('link-1'));
     expect(screen.queryByRole('link', { name: 'Council report' })).not.toBeInTheDocument();
+  });
+});
+
+describe('ProjectDashboardPage, a project\'s open rooms', () => {
+  const now = Date.now();
+  const LONG_ROOM = {
+    id: 'room-1', experiment: 'open-vote', pin: '839201', joinCode: 'a'.repeat(32),
+    facilitatorToken: 'facilitator-1', createdAt: new Date(now).toISOString(),
+    expiresAt: new Date(now + 30 * 86400000).toISOString(), status: 'open', contributions: 12,
+  };
+  const ENDED_ROOM = { ...LONG_ROOM, id: 'room-2', status: 'closed' };
+
+  beforeEach(() => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    vi.mocked(readStats).mockResolvedValue(STATS);
+    vi.mocked(readCollaborators).mockResolvedValue([]);
+    vi.mocked(readLinks).mockResolvedValue([]);
+    vi.mocked(readProjectRooms).mockResolvedValue([LONG_ROOM, ENDED_ROOM]);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  it('lists the rooms still open, with how they are going', async () => {
+    setup();
+
+    expect(await screen.findByText('Open Vote')).toBeInTheDocument();
+    expect(screen.getByText(/12 responses/)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^open$/i })).toHaveLength(1);
+  });
+
+  it('opens a room as its facilitator, from a browser that did not open it', async () => {
+    const props = setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: /^open$/i }));
+
+    expect(hostedRoom('room-1')).toEqual({ pin: '839201', token: 'facilitator-1', code: 'a'.repeat(32) });
+    expect(props.onOpenRoom).toHaveBeenCalledWith('open-vote', 'room-1');
+  });
+
+  it('asks once before closing a room, then closes it with its token', async () => {
+    setup();
+
+    const close = await screen.findByRole('button', { name: /^close$/i });
+    fireEvent.click(close);
+    expect(closeRoom).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /close — confirm/i }));
+    await waitFor(() => expect(closeRoom).toHaveBeenCalledWith('room-1', 'facilitator-1'));
+  });
+
+  it('leaves the rest of the dashboard alone when the rooms cannot be read', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(readProjectRooms).mockRejectedValue(new Error('function project_rooms does not exist'));
+
+    setup();
+
+    expect(await screen.findByText('4')).toBeInTheDocument();
+    expect(screen.queryByText('Open rooms')).not.toBeInTheDocument();
+    consoleError.mockRestore();
   });
 });

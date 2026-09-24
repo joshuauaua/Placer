@@ -22,10 +22,35 @@
 
 /** This browser's participant token. */
 const PARTICIPANT_KEY = 'placemaking_room_participant';
-/** Rooms this browser opened: { [roomId]: { pin, token } }. */
+/** Rooms this browser opened: { [roomId]: { pin, token, code } }. */
 const HOSTED_KEY = 'placemaking_rooms_hosted';
 
 export const PIN_LENGTH = 6;
+
+/**
+ * How long a room can be opened for — the same four values sandbox_room_create in
+ * supabase/rooms-lifetime.sql accepts, and nothing else. Only the first is a workshop:
+ * the rest are for a poll left running on a poster, need a project behind them, and
+ * are joined by their code rather than their PIN.
+ */
+export const ROOM_LIFETIMES = [
+  { id: '2h', label: '2 hours' },
+  { id: '1w', label: '1 week' },
+  { id: '30d', label: '30 days' },
+  { id: '90d', label: '90 days' },
+];
+
+export const DEFAULT_LIFETIME = '2h';
+
+/**
+ * True for a room opened for longer than a workshop — the same test sandbox_room_join
+ * applies in supabase/rooms-lifetime.sql, and the reason such a room is reached by its
+ * join code and never its PIN.
+ */
+export function isLongRoom({ createdAt, expiresAt }) {
+  const span = new Date(expiresAt ?? NaN).getTime() - new Date(createdAt ?? NaN).getTime();
+  return Number.isFinite(span) && span > 2 * 60 * 60 * 1000;
+}
 
 /** '839201' → '839-201'. Grouped because six digits read back badly in one run. */
 export function formatPin(pin) {
@@ -63,8 +88,23 @@ export function timeRemaining(expiresAt, now = Date.now()) {
   if (minutes < 60) return `${minutes}m`;
 
   const hours = Math.floor(minutes / 60);
+  // Past two days, minutes stop meaning anything to somebody reading a countdown on a
+  // room that runs for weeks.
+  if (hours >= 48) {
+    const days = Math.floor(hours / 24);
+    const restHours = hours % 24;
+    return restHours === 0 ? `${days}d` : `${days}d ${restHours}h`;
+  }
+
   const rest = minutes % 60;
   return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
+}
+
+/** '2026-10-24T…' → '24 October 2026', for saying when a long room ends. */
+export function formatRoomDate(value) {
+  const date = new Date(value ?? NaN);
+  if (!Number.isFinite(date.getTime())) return null;
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 function origin() {
@@ -74,6 +114,20 @@ function origin() {
 /** The link a QR code encodes, and the one somebody can be sent. */
 export function joinUrl(pin) {
   return `${origin()}/join?pin=${encodeURIComponent(String(pin ?? ''))}`;
+}
+
+/**
+ * The link a long room's QR code encodes. Its code rather than its PIN: a room left
+ * open for weeks cannot rest on six guessable digits — see supabase/rooms-lifetime.sql.
+ */
+export function codeJoinUrl(code) {
+  return `${origin()}/join?code=${encodeURIComponent(String(code ?? ''))}`;
+}
+
+/** The join code in whatever arrived, or null if it is not one. */
+export function parseJoinCode(input) {
+  const code = String(input ?? '').trim().toLowerCase();
+  return /^[0-9a-f]{32}$/.test(code) ? code : null;
 }
 
 /** Where a room is actually played, once joined. */
@@ -146,10 +200,14 @@ export function participantToken() {
   return participantFallback;
 }
 
-/** Remember that this browser opened a room, and how to close it again. */
-export function rememberHostedRoom(roomId, { pin, token }) {
+/**
+ * Remember that this browser opened a room, and how to close it again. `code` is only
+ * set for a long room, and is what its QR code carries in place of the PIN. A
+ * project's dashboard calls this too, so its owner can run a room from any browser.
+ */
+export function rememberHostedRoom(roomId, { pin, token, code = null }) {
   const hosted = readJson(HOSTED_KEY) ?? {};
-  hosted[roomId] = { pin, token };
+  hosted[roomId] = code ? { pin, token, code } : { pin, token };
   writeJson(HOSTED_KEY, hosted);
 }
 

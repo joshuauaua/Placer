@@ -159,7 +159,8 @@ Database → Extensions. Without it, rooms still expire correctly; the data simp
 is not deleted, and that sentence on the GDPR page stops being true.
 
 To change the two hours, edit the default on `expires_at` in `rooms.sql` and re-run
-it — the interval is written in exactly one place. Then change the retention row on
+it — the interval is written in exactly one place for a plain room. A project can open
+one for longer; see "Rooms that stay open for weeks" under step 12. Then change the retention row on
 the GDPR page and the paragraph on the privacy page, both of which name it.
 
 **A PIN is guessable.** Six digits is a million combinations, the publishable key
@@ -387,6 +388,32 @@ returns rows rather than an empty array:
 curl -s "https://<project-ref>.supabase.co/rest/v1/projects?select=name,owner_name" \
   -H "apikey: <anon key>"
 ```
+
+### Rooms that stay open for weeks
+
+Requires step 12. Run `rooms-lifetime.sql` in the SQL editor after `projects.sql`. It is
+re-runnable.
+
+A room can then be opened for 2 hours (the default, unchanged), 1 week, 30 days or 90
+days — for a poll whose QR code goes on a poster rather than a screen. The rules, all
+enforced in the database:
+
+- Only those four lifetimes are accepted, and a check constraint caps every room at 90
+  days whatever calls the function.
+- Anything longer than two hours has to belong to a project, so there is always an
+  owner who can find it again. The project dashboard lists its open rooms through
+  `project_rooms` (owner or collaborator only), with each room's QR code, response
+  count, and Open, Download QR and Close — from any browser, not only the one that
+  opened it.
+- A long room is joined through `sandbox_room_join_code` with a 32-character code,
+  which is what its QR link carries. `sandbox_room_join` no longer answers for a long
+  room's PIN, because six guessable digits are not fit to leave open for months (see
+  "A PIN is guessable" in step 8). A code for a room that has ended says when it
+  ended, so a poster scanned after its poll closed tells people so.
+
+The sweep in `rooms-cleanup.sql` needs no change: it goes by `expires_at`, so a long
+room is deleted a day after it ends like any other. The privacy page already names the
+90-day ceiling — change it there too if you change it here.
 
 ## 13. Notifications
 

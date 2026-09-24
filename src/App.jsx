@@ -182,11 +182,15 @@ function MainApp({ initialView = 'welcome' }) {
   const showProjectPublic = (id) => navigate(`/projects/${id}`);
   // Sent straight to the chosen experiment with the project attached, rather than
   // to the gallery, because the gallery has nowhere to carry ?project= through into
-  // picking one. Only 'budget-ballot' can actually host a room today — see
-  // supabase/rooms.sql's sandbox_rooms_experiment_known constraint — so ?project=
+  // picking one. Only 'budget-ballot' and 'open-vote' can actually host a room today —
+  // see supabase/rooms.sql's sandbox_rooms_experiment_known constraint — so ?project=
   // is inert on any other experiment until it opts in too.
   const showProjectSandbox = (id, experimentId) =>
     navigate(`/sandbox/${encodeURIComponent(experimentId)}?project=${encodeURIComponent(id)}`);
+  // A room the project already has, from its dashboard — the dashboard has already
+  // told this browser it may run it, so it opens as the facilitator's view.
+  const showProjectRoom = (experimentId, roomId) =>
+    navigate(`/sandbox/${encodeURIComponent(experimentId)}?room=${encodeURIComponent(roomId)}`);
 
   const show = (next) => {
     if (next === 'sandbox') {
@@ -516,6 +520,7 @@ function MainApp({ initialView = 'welcome' }) {
               <Suspense fallback={<LoadingFallback />}>
                 <ProjectDashboardPage t={t} accountId={accountId} projectId={projectRoute.id}
                   onOpenSandbox={showProjectSandbox}
+                  onOpenRoom={showProjectRoom}
                   onNavigateToPublic={showProjectPublic} />
               </Suspense>
             )}

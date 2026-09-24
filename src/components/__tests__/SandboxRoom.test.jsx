@@ -105,7 +105,7 @@ describe('opening a room', () => {
     await waitFor(() => {
       expect(location.history.at(-1)).toBe('/sandbox/budget-ballot?room=room-1');
     });
-    expect(createRoom).toHaveBeenCalledWith('budget-ballot', null);
+    expect(createRoom).toHaveBeenCalledWith('budget-ballot', null, '2h');
   });
 
   it('attaches the room to a project named in the URL', async () => {
@@ -118,7 +118,54 @@ describe('opening a room', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
 
-    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('budget-ballot', 'proj-1'));
+    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('budget-ballot', 'proj-1', '2h'));
+  });
+});
+
+describe('opening a room that stays open for weeks', () => {
+  it('only asks how long when a project is behind the room', () => {
+    renderAt('/sandbox/open-vote');
+    expect(screen.queryByLabelText(/open for/i)).not.toBeInTheDocument();
+  });
+
+  it('opens it for the lifetime chosen', async () => {
+    createRoom.mockResolvedValue({
+      id: 'room-1', pin: '839201', joinCode: 'a'.repeat(32), facilitatorToken: 'facilitator-1',
+      expiresAt: hours(24 * 30),
+    });
+    readRoom.mockResolvedValue({ experiment: 'open-vote', status: 'open', expiresAt: hours(24 * 30) });
+
+    renderAt('/sandbox/open-vote', 'project=proj-1');
+
+    fireEvent.change(screen.getByLabelText(/open for/i), { target: { value: '30d' } });
+    fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
+
+    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('open-vote', 'proj-1', '30d'));
+  });
+});
+
+describe('a long room seen by the facilitator', () => {
+  beforeEach(() => {
+    rememberHostedRoom('room-1', { pin: '839201', token: 'facilitator-1', code: 'a'.repeat(32) });
+    // Past the ~24.8 days one setTimeout can wait, which would otherwise fire at once.
+    readRoom.mockResolvedValue({ experiment: 'open-vote', status: 'open', expiresAt: hours(24 * 60) });
+  });
+
+  it('says until when instead of showing a PIN, and offers the QR code to print', async () => {
+    renderAt('/sandbox/open-vote', 'room=room-1');
+
+    expect(await screen.findByText(/^Open until /)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Room PIN/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /download qr/i })).toBeInTheDocument();
+    expect((await screen.findAllByText(/60d left/)).length).toBeGreaterThan(0);
+  });
+
+  it('does not call a room months from ending over the moment it opens', async () => {
+    renderAt('/sandbox/open-vote', 'room=room-1');
+
+    expect(await screen.findByText(/^Open until /)).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(screen.queryByText(/run out of time/i)).not.toBeInTheDocument();
   });
 });
 

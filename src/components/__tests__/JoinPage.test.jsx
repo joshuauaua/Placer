@@ -6,10 +6,12 @@ import { THEME } from '../../theme';
 import JoinPage from '../JoinPage';
 
 const joinRoom = vi.fn();
+const joinRoomByCode = vi.fn();
 const isSupabaseConfigured = vi.fn(() => true);
 
 vi.mock('../../services/rooms', () => ({
   joinRoom: (...args) => joinRoom(...args),
+  joinRoomByCode: (...args) => joinRoomByCode(...args),
   isSupabaseConfigured: (...args) => isSupabaseConfigured(...args),
 }));
 
@@ -26,11 +28,47 @@ function renderAt(searchPath) {
 
 beforeEach(() => {
   joinRoom.mockReset();
+  joinRoomByCode.mockReset();
   isSupabaseConfigured.mockReset().mockReturnValue(true);
 });
 
 afterEach(() => {
   localStorage.clear();
+});
+
+describe('joining a long room by the code in its QR link', () => {
+  const code = 'a'.repeat(32);
+
+  it('follows the code straight into the room', async () => {
+    joinRoomByCode.mockResolvedValue({ id: 'room-1', experiment: 'open-vote', status: 'open', endsAt: null });
+
+    const location = renderAt(`code=${code}`);
+
+    await waitFor(() => {
+      expect(location.history.at(-1)).toBe('/sandbox/open-vote?room=room-1');
+    });
+    expect(joinRoomByCode).toHaveBeenCalledWith(code);
+    expect(joinRoom).not.toHaveBeenCalled();
+  });
+
+  it('says when the poll closed, for a poster scanned after it ended', async () => {
+    joinRoomByCode.mockResolvedValue({
+      id: 'room-1', experiment: 'open-vote', status: 'expired', endsAt: '2026-10-24T12:00:00Z',
+    });
+
+    const location = renderAt(`code=${code}`);
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/closed on 24 October 2026/);
+    expect(location.history).toHaveLength(1);
+  });
+
+  it('says the link leads nowhere when nothing matches it', async () => {
+    joinRoomByCode.mockResolvedValue(null);
+
+    renderAt(`code=${code}`);
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/does not lead to a room/i);
+  });
 });
 
 describe('joining by a scanned code', () => {

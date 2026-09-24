@@ -8,17 +8,23 @@
  * The QR encodes the join URL rather than the room id: scanning it has to land
  * somebody in the room without them typing anything.
  *
- * A room lasts two hours from being opened, so the time left is on screen next to
- * the PIN — a facilitator needs to know whether there is room for one more round
- * before they start it.
+ * A workshop room lasts two hours from being opened, so the time left is on screen
+ * next to the PIN — a facilitator needs to know whether there is room for one more
+ * round before they start it.
+ *
+ * A room a project opened for weeks is a different object: nobody reads its PIN
+ * aloud, and it is joined by the code in its QR link rather than by a PIN at all
+ * (supabase/rooms-lifetime.sql). So in its place the bar says when the room closes,
+ * and offers the QR code as a file to print.
  */
 
 import QRCode from 'react-qr-code';
 import { Icon } from '../Icon';
 import { Panel } from '../SandboxLayout';
 import { Btn, CopyButton } from '../UI';
-import { formatPin, joinUrl, timeRemaining } from '../../sandbox/rooms';
-import { useEffect, useState } from 'react';
+import { codeJoinUrl, formatPin, formatRoomDate, joinUrl, timeRemaining } from '../../sandbox/rooms';
+import { downloadQrSvg } from '../../lib/qrDownload';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * The time left, re-read every half minute. Coarse on purpose — the countdown is
@@ -59,6 +65,7 @@ function CloseRoom({ t, onClose }) {
 
 export function RoomBar({ t, experiment, room }) {
   const left = useTimeRemaining(room.expiresAt);
+  const qrRef = useRef(null);
 
   if (room.status === 'none') return null;
 
@@ -68,7 +75,7 @@ export function RoomBar({ t, experiment, room }) {
         <p role="status" style={{ fontSize: 14, color: t.ink, lineHeight: 1.6 }}>
           {room.status === 'closed'
             ? 'This room is closed. Nothing more can be added to it, and what it held has been let go.'
-            : 'This room has run out of time. Rooms last two hours, and what it held has been let go.'}
+            : 'This room has run out of time, and what it held has been let go.'}
           {' '}The experiment still works on its own, and a new room can be opened for another round.
         </p>
       </Panel>
@@ -114,7 +121,10 @@ export function RoomBar({ t, experiment, room }) {
     );
   }
 
-  const url = joinUrl(room.pin);
+  // Only a long room has a join code, so its presence is what says which kind this is.
+  const long = Boolean(room.joinCode);
+  const url = long ? codeJoinUrl(room.joinCode) : joinUrl(room.pin);
+  const closesOn = formatRoomDate(room.expiresAt);
 
   return (
     <Panel t={t} title="The room" style={{ marginBottom: 20 }} aside={
@@ -132,21 +142,37 @@ export function RoomBar({ t, experiment, room }) {
     }>
       <div style={{ display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' }}>
         {/* The QR, at a size that survives being photographed from across a room. */}
-        <div style={{ background: '#fff', padding: 10, borderRadius: 10, border: `1px solid ${t.line}`, flex: '0 0 auto' }}>
+        <div ref={qrRef} data-testid="room-qr"
+          style={{ background: '#fff', padding: 10, borderRadius: 10, border: `1px solid ${t.line}`, flex: '0 0 auto' }}>
           <QRCode value={url} size={132} bgColor="#ffffff" fgColor="#000000" />
         </div>
 
         <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: t.inkDim, marginBottom: 6 }}>
-            Join at {typeof window === 'undefined' ? '' : window.location.host}/join
-          </div>
-          {/* The PIN is the thing somebody reads aloud, so it is set as large as the
-              headline numbers in the experiments themselves. */}
-          <div className="placer-disp" aria-label={`Room PIN ${formatPin(room.pin)}`}
-            style={{ fontSize: 46, fontWeight: 900, letterSpacing: '0.02em', lineHeight: 1.05,
-              color: t.ink, fontVariantNumeric: 'tabular-nums' }}>
-            {formatPin(room.pin)}
-          </div>
+          {long ? (
+            <>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: t.inkDim, marginBottom: 6 }}>
+                Scan the code or share the link
+              </div>
+              {/* No PIN to read out, so the headline is the thing a poster needs: until when. */}
+              <div className="placer-disp"
+                style={{ fontSize: 30, fontWeight: 900, letterSpacing: '-0.01em', lineHeight: 1.1, color: t.ink }}>
+                Open until {closesOn}
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: t.inkDim, marginBottom: 6 }}>
+                Join at {typeof window === 'undefined' ? '' : window.location.host}/join
+              </div>
+              {/* The PIN is the thing somebody reads aloud, so it is set as large as the
+                  headline numbers in the experiments themselves. */}
+              <div className="placer-disp" aria-label={`Room PIN ${formatPin(room.pin)}`}
+                style={{ fontSize: 46, fontWeight: 900, letterSpacing: '0.02em', lineHeight: 1.05,
+                  color: t.ink, fontVariantNumeric: 'tabular-nums' }}>
+                {formatPin(room.pin)}
+              </div>
+            </>
+          )}
 
           <CopyButton
             t={t}
@@ -155,12 +181,23 @@ export function RoomBar({ t, experiment, room }) {
             fieldLabel="Link to join this room"
             fieldWidth={320}
             style={{ marginTop: 14 }}
-            actions={<CloseRoom t={t} onClose={room.close} />}
+            actions={(
+              <>
+                {long && (
+                  <Btn t={t} variant="quiet" size="sm" icon="arrowDown"
+                    onClick={() => downloadQrSvg(qrRef.current, `placer-${experiment.id}-qr.svg`)}>
+                    Download QR
+                  </Btn>
+                )}
+                <CloseRoom t={t} onClose={room.close} />
+              </>
+            )}
           />
 
           <p style={{ fontSize: 12.5, color: t.inkFaint, lineHeight: 1.55, marginTop: 12 }}>
-            The room lasts two hours from opening{left ? ` — ${left} left` : ''}, and closing it
-            ends it sooner. Either way what it held is let go.
+            {long
+              ? `The room stays open until ${closesOn}${left ? ` — ${left} left` : ''}. You can close it sooner from here or from the project's dashboard. Either way what it held is let go a day after it ends.`
+              : `The room lasts two hours from opening${left ? ` — ${left} left` : ''}, and closing it ends it sooner. Either way what it held is let go.`}
           </p>
         </div>
       </div>

@@ -1,7 +1,8 @@
 -- PLACER — clearing out sandbox rooms.
 --
--- A room stops working two hours after it is opened, or the moment its facilitator
--- closes it. That is enforced in the predicates in rooms.sql, so an expired room is
+-- A room stops working when its time runs out — two hours after it is opened, or up
+-- to 90 days for a project's long-running room (rooms-lifetime.sql) — or the moment
+-- its facilitator closes it. That is enforced in the predicates in rooms.sql, so an expired room is
 -- already unusable — unjoinable, unwritable, and its contributions invisible — with
 -- or without anything here.
 --

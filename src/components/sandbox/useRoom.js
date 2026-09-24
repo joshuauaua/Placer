@@ -11,7 +11,8 @@
  *   'opening' — creating a room, or loading one from a link
  *   'open'    — in a room; `contributions` and `combined` are live
  *   'closed'  — its facilitator ended it early
- *   'expired' — it ran out of time; rooms last two hours from being opened
+ *   'expired' — it ran out of time; a room lasts two hours from being opened, or
+ *               longer when a project opens it for weeks (supabase/rooms-lifetime.sql)
  *   'error'   — `error` says what went wrong, in a sentence fit to show somebody
  *
  * The deadline always comes from the database. The browser's clock is used only to
@@ -21,6 +22,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  DEFAULT_LIFETIME,
   forgetHostedRoom,
   hostedRoom,
   participantToken,
@@ -31,12 +33,20 @@ import * as roomService from '../../services/rooms';
 /** How long to sit on a change before publishing it. A slider fires far too often. */
 const PUBLISH_DELAY = 500;
 
+/**
+ * The longest delay setTimeout honours. Anything past it — about 24.8 days — fires
+ * straight away, which for a room opened for a month would mean calling it over the
+ * moment it opened. Longer waits are taken in steps of this.
+ */
+const MAX_TIMER_DELAY = 2 ** 31 - 1;
+
 export function useRoom({ experiment, roomId, displayName, onOpened, projectId = null, service = roomService }) {
   const capable = Boolean(experiment?.room) && service.isSupabaseConfigured();
 
   const [status, setStatus] = useState('none');
   const [error, setError] = useState(null);
   const [pin, setPin] = useState(null);
+  const [joinCode, setJoinCode] = useState(null);
   const [isHost, setIsHost] = useState(false);
   const [contributions, setContributions] = useState([]);
   const [expiresAt, setExpiresAt] = useState(null);
@@ -67,6 +77,7 @@ export function useRoom({ experiment, roomId, displayName, onOpened, projectId =
       setContributions([]);
       setIsHost(false);
       setPin(null);
+      setJoinCode(null);
       setExpiresAt(null);
       return undefined;
     }
@@ -96,6 +107,7 @@ export function useRoom({ experiment, roomId, displayName, onOpened, projectId =
         const hosted = hostedRoom(roomId);
         setIsHost(Boolean(hosted));
         setPin(hosted?.pin ?? null);
+        setJoinCode(hosted?.code ?? null);
         setExpiresAt(room.expiresAt ?? null);
 
         if (room.status !== 'open') {
@@ -132,7 +144,9 @@ export function useRoom({ experiment, roomId, displayName, onOpened, projectId =
   );
 
   // Sitting on an open room until its deadline. Without this the page would go on
-  // offering a PIN that has already stopped working.
+  // offering a PIN that has already stopped working. `recheck` re-arms the timer when
+  // a deadline is further off than one setTimeout can wait.
+  const [recheck, setRecheck] = useState(0);
   useEffect(() => {
     if (status !== 'open' || !expiresAt) return undefined;
 
@@ -142,18 +156,25 @@ export function useRoom({ experiment, roomId, displayName, onOpened, projectId =
       return undefined;
     }
 
-    const timer = setTimeout(() => setStatus('expired'), left);
+    const timer = left > MAX_TIMER_DELAY
+      ? setTimeout(() => setRecheck((n) => n + 1), MAX_TIMER_DELAY)
+      : setTimeout(() => setStatus('expired'), left);
     return () => clearTimeout(timer);
-  }, [status, expiresAt]);
+  }, [status, expiresAt, recheck]);
 
-  /** Open a room on this experiment and hand its id back to the caller to navigate to. */
-  const start = useCallback(async () => {
+  /**
+   * Open a room on this experiment and hand its id back to the caller to navigate to.
+   * `lifetime` is one of ROOM_LIFETIMES; anything past two hours needs `projectId`,
+   * which the database enforces.
+   */
+  const start = useCallback(async (lifetime) => {
     setStatus('opening');
     setError(null);
     try {
-      const room = await service.createRoom(experiment.id, projectId);
-      rememberHostedRoom(room.id, { pin: room.pin, token: room.facilitatorToken });
+      const room = await service.createRoom(experiment.id, projectId, lifetime ?? DEFAULT_LIFETIME);
+      rememberHostedRoom(room.id, { pin: room.pin, token: room.facilitatorToken, code: room.joinCode ?? null });
       setPin(room.pin);
+      setJoinCode(room.joinCode ?? null);
       setIsHost(true);
       setExpiresAt(room.expiresAt ?? null);
       if (onOpened) onOpened(room.id);
@@ -230,6 +251,7 @@ export function useRoom({ experiment, roomId, displayName, onOpened, projectId =
     error,
     roomId: roomId ?? null,
     pin,
+    joinCode,
     expiresAt,
     isHost,
     contributions,

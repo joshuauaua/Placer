@@ -24,7 +24,7 @@ import { RoomBar } from './sandbox/RoomBar';
 import { SandboxCover } from './sandbox/SandboxCover';
 import { useRoom } from './sandbox/useRoom';
 import { EXPERIMENTS, findExperiment } from '../sandbox/experiments';
-import { projectIdFrom, roomIdFrom, roomPath } from '../sandbox/rooms';
+import { DEFAULT_LIFETIME, ROOM_LIFETIMES, projectIdFrom, roomIdFrom, roomPath } from '../sandbox/rooms';
 import { isSupabaseConfigured } from '../services/rooms';
 
 /** The experiment id in a path like /sandbox/street-mixer, if there is one. */
@@ -87,18 +87,45 @@ function Tile({ t, experiment, onOpen }) {
 /**
  * Offered on an experiment that can host a room, when there is a database to host it in
  * and somebody with an account to open it.
+ *
+ * Opened from a project, the room can also be left running for weeks — a poll on a
+ * poster rather than a workshop — so how long it stays open becomes a choice. Without a
+ * project there is no choice to offer: a long room needs somebody who can find it again
+ * and close it, and the database refuses one that has no project behind it
+ * (supabase/rooms-lifetime.sql).
  */
-function StartRoom({ t, experiment, onStart, busy }) {
+function StartRoom({ t, experiment, onStart, busy, canStayOpen }) {
+  const [lifetime, setLifetime] = useState(DEFAULT_LIFETIME);
+
   return (
-    <Btn
-      t={t}
-      size="sm"
-      icon="user"
-      onClick={onStart}
-      disabled={busy}
-      style={{ background: experiment.color, color: '#fff' }}>
-      {busy ? 'Opening…' : 'Start a room'}
-    </Btn>
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      {canStayOpen && (
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13,
+          fontWeight: 600, color: t.inkDim }}>
+          Open for
+          <select
+            value={lifetime}
+            onChange={(event) => setLifetime(event.target.value)}
+            disabled={busy}
+            style={{ height: 34, padding: '0 10px', borderRadius: 8, border: `1.5px solid ${t.line}`,
+              background: t.chrome, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 13.5,
+              fontWeight: 600 }}>
+            {ROOM_LIFETIMES.map((option) => (
+              <option key={option.id} value={option.id}>{option.label}</option>
+            ))}
+          </select>
+        </label>
+      )}
+      <Btn
+        t={t}
+        size="sm"
+        icon="user"
+        onClick={() => onStart(lifetime)}
+        disabled={busy}
+        style={{ background: experiment.color, color: '#fff' }}>
+        {busy ? 'Opening…' : 'Start a room'}
+      </Btn>
+    </div>
   );
 }
 
@@ -223,6 +250,8 @@ export function SandboxPage({ t, displayName = null, needsAccount = false, onSig
   const experiment = requestedId ? findExperiment(requestedId) : null;
   const missing = requestedId && !experiment ? requestedId : null;
 
+  const projectId = projectIdFrom(search);
+
   const room = useRoom({
     experiment,
     roomId: roomIdFrom(search),
@@ -233,7 +262,7 @@ export function SandboxPage({ t, displayName = null, needsAccount = false, onSig
     displayName,
     // Only meaningful for a room being opened, not one being joined — see
     // projectIdFrom's own comment. A ProjectDashboardPage link is what sets this.
-    projectId: projectIdFrom(search),
+    projectId,
     onOpened: (id) => {
       posthog.capture('sandbox_room_opened', { experiment: experiment.id });
       navigate(roomPath(experiment.id, id));
@@ -277,7 +306,8 @@ export function SandboxPage({ t, displayName = null, needsAccount = false, onSig
             experiment={experiment}
             onBack={() => navigate('/sandbox')}
             actions={canStartRoom ? (
-              <StartRoom t={t} experiment={experiment} onStart={room.start} busy={room.status === 'opening'} />
+              <StartRoom t={t} experiment={experiment} onStart={room.start} busy={room.status === 'opening'}
+                canStayOpen={Boolean(projectId)} />
             ) : roomIsPossible ? (
               <StartRoomSignedOut t={t} onSignIn={onSignIn} />
             ) : null}>

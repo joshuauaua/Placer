@@ -308,6 +308,12 @@ export function MyExperiment({ t, experiment, room }) {
 
 Opening a room requires a signed-in account. Joining one does not.
 
+A room lasts two hours by default. Opened from a project's dashboard, it can instead
+stay open for a week, 30 or 90 days — a poll on a poster rather than a workshop — and
+is joined by the code in its QR link instead of a PIN (`supabase/rooms-lifetime.sql`).
+Your experiment needs nothing extra for this: `room.combined` and `room.publish` work
+the same, so do not assume everybody is in the room at the same time.
+
 ## File structure
 
 ```

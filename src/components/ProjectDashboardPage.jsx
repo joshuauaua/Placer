@@ -1,20 +1,33 @@
 /* PLACER — a project's dashboard: its numbers, its roster, and its documentation */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import QRCode from 'react-qr-code';
 import { Icon } from './Icon';
 import { Btn } from './UI';
 import { ProjectSetupPage } from './ProjectSetupPage';
-import { EXPERIMENTS } from '../sandbox/experiments';
+import { EXPERIMENTS, findExperiment } from '../sandbox/experiments';
+import {
+  codeJoinUrl,
+  formatPin,
+  formatRoomDate,
+  isLongRoom,
+  joinUrl,
+  rememberHostedRoom,
+  timeRemaining,
+} from '../sandbox/rooms';
+import { downloadQrSvg } from '../lib/qrDownload';
 import {
   addCollaborator,
   addLink,
   readCollaborators,
   readLinks,
   readProject,
+  readProjectRooms,
   readStats,
   removeCollaborator,
   removeLink,
 } from '../services/projects';
+import { closeRoom } from '../services/rooms';
 
 const inputStyle = (t) => ({
   padding: '10px 14px',
@@ -142,6 +155,58 @@ function AddSandboxExperiment({ t, onChoose }) {
   );
 }
 
+/**
+ * One open room: its QR code, how it is going, and the three things a project runs it
+ * with — open it as the facilitator, save its code to print, and close it. The point of
+ * having these here rather than only on the room itself is that a poll left running for
+ * a month outlives the browser tab, and often the device, it was opened on.
+ */
+function RoomRow({ t, room, onOpen, onClose }) {
+  const qrRef = useRef(null);
+  const [confirming, setConfirming] = useState(false);
+  const experiment = findExperiment(room.experiment);
+  const long = isLongRoom(room);
+  const url = long ? codeJoinUrl(room.joinCode) : joinUrl(room.pin);
+  const left = timeRemaining(room.expiresAt);
+  const name = experiment?.name ?? room.experiment;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0',
+      borderTop: `1px solid ${t.line}`, flexWrap: 'wrap' }}>
+      <div ref={qrRef} style={{ background: '#fff', padding: 6, borderRadius: 8,
+        border: `1px solid ${t.line}`, flex: '0 0 auto', display: 'flex' }}>
+        <QRCode value={url} size={64} bgColor="#ffffff" fgColor="#000000" title={`Join ${name}`} />
+      </div>
+
+      <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>{name}</div>
+        <div style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.5 }}>
+          {room.contributions} {room.contributions === 1 ? 'response' : 'responses'}
+          {left ? ` · ${left} left` : ''}
+          {long ? ` · open until ${formatRoomDate(room.expiresAt)}` : ` · PIN ${formatPin(room.pin)}`}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Btn t={t} variant="outline" size="sm" icon="arrowRight" onClick={() => onOpen(room)}>
+          Open
+        </Btn>
+        <Btn t={t} variant="quiet" size="sm" icon="arrowDown"
+          onClick={() => downloadQrSvg(qrRef.current, `placer-${room.experiment}-qr.svg`)}>
+          Download QR
+        </Btn>
+        {/* The same two-step RoomBar's Close room uses: closing ends it for everybody. */}
+        <Btn t={t} variant="quiet" size="sm" icon="close"
+          onClick={() => (confirming ? onClose(room) : setConfirming(true))}
+          onBlur={() => setConfirming(false)}
+          style={confirming ? { borderColor: '#C0392B', color: '#C0392B' } : undefined}>
+          {confirming ? 'Close — confirm' : 'Close'}
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
 function LinkRow({ t, link, onRemove }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -165,7 +230,7 @@ function LinkRow({ t, link, onRemove }) {
  * controls; a plain collaborator sees everything else.
  */
 export function ProjectDashboardPage({ t, accountId, projectId,
-  onOpenSandbox, onNavigateToPublic }) {
+  onOpenSandbox, onOpenRoom, onNavigateToPublic }) {
   const [project, setProject] = useState(null);
   const [status, setStatus] = useState('loading');
   const [editing, setEditing] = useState(false);
@@ -179,6 +244,18 @@ export function ProjectDashboardPage({ t, accountId, projectId,
   const [linkUrl, setLinkUrl] = useState('');
   const [linkError, setLinkError] = useState(null);
   const [addingLink, setAddingLink] = useState(false);
+  // Null until loaded, and left null if the database has not had rooms-lifetime.sql
+  // yet — the rest of the dashboard does not depend on it, so it should not fail with it.
+  const [rooms, setRooms] = useState(null);
+
+  const loadRooms = useCallback(async (id) => {
+    try {
+      setRooms(await readProjectRooms(id));
+    } catch (err) {
+      console.error("Could not load this project's rooms:", err);
+      setRooms(null);
+    }
+  }, []);
 
   const loadEverything = useCallback(async (id) => {
     const [proj, projStats, roster, docs] = await Promise.all([
@@ -198,6 +275,7 @@ export function ProjectDashboardPage({ t, accountId, projectId,
     let cancelled = false;
 
     setStatus('loading');
+    loadRooms(projectId);
     loadEverything(projectId)
       .then(() => { if (!cancelled) setStatus('ready'); })
       .catch((err) => {
@@ -207,7 +285,7 @@ export function ProjectDashboardPage({ t, accountId, projectId,
       });
 
     return () => { cancelled = true; };
-  }, [projectId, loadEverything]);
+  }, [projectId, loadEverything, loadRooms]);
 
   const isOwner = project?.ownerId === accountId;
 
@@ -256,6 +334,23 @@ export function ProjectDashboardPage({ t, accountId, projectId,
     } finally {
       setAddingLink(false);
     }
+  };
+
+  const handleOpenRoom = (room) => {
+    // Hands this browser the facilitator's token before going, so the room opens as
+    // the facilitator's view — PIN or QR, count, Close — rather than a participant's.
+    const long = isLongRoom(room);
+    rememberHostedRoom(room.id, { pin: room.pin, token: room.facilitatorToken, code: long ? room.joinCode : null });
+    onOpenRoom?.(room.experiment, room.id);
+  };
+
+  const handleCloseRoom = async (room) => {
+    try {
+      await closeRoom(room.id, room.facilitatorToken);
+    } catch (err) {
+      console.error('Could not close that room:', err);
+    }
+    loadRooms(project.id);
   };
 
   const handleRemoveLink = async (link) => {
@@ -329,6 +424,23 @@ export function ProjectDashboardPage({ t, accountId, projectId,
             above, and on the public page once it has run.
           </p>
           <AddSandboxExperiment t={t} onChoose={(experimentId) => onOpenSandbox(project.id, experimentId)} />
+
+          {rooms && (
+            <div style={{ marginTop: 24 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 4 }}>Open rooms</h3>
+              <p style={{ fontSize: 13, color: t.inkDim, lineHeight: 1.55, marginBottom: 8 }}>
+                A room opened from here can stay open for up to 90 days — long enough to print
+                its QR code on a poster and leave it up.
+              </p>
+              {rooms.filter((room) => room.status === 'open').length === 0 ? (
+                <p style={{ fontSize: 13.5, color: t.inkFaint }}>No rooms are open right now.</p>
+              ) : (
+                rooms.filter((room) => room.status === 'open').map((room) => (
+                  <RoomRow key={room.id} t={t} room={room} onOpen={handleOpenRoom} onClose={handleCloseRoom} />
+                ))
+              )}
+            </div>
+          )}
         </Card>
 
         <Card t={t} title="Documentation">

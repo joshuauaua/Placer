@@ -138,7 +138,9 @@ export function OpenVote({ t, experiment, room }) {
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6 }}>
             Open a room and share its PIN or QR code, and everybody who joins votes on
             whatever you asked — the tally above updates live as each person picks.
-            Closing the room, or its two hours running out, lets go of every vote in it.
+            Opened from a project, a room can stay open for up to 90 days, so its QR code
+            can go on a poster. Closing the room, or its time running out, lets go of
+            every vote in it.
           </p>
         </Panel>
       </div>

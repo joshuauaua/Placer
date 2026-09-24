@@ -7,6 +7,10 @@
  * With a ?pin= in the URL it looks the room up immediately, so scanning a code
  * involves no tapping at all. Without one — or when that PIN has been closed — it
  * asks, which is also the way in for somebody reading the PIN off a screen.
+ *
+ * A ?code= is a long room's QR link (supabase/rooms-lifetime.sql). It is followed the
+ * same way, but a poster outlives its poll, so a code for a room that has ended says
+ * when it ended rather than that nothing matched.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -14,16 +18,18 @@ import { useLocation, useSearch } from 'wouter';
 import posthog from 'posthog-js';
 import { Btn, Logo } from './UI';
 import { findExperiment } from '../sandbox/experiments';
-import { PIN_LENGTH, formatPin, parsePin, roomPath } from '../sandbox/rooms';
-import { isSupabaseConfigured, joinRoom } from '../services/rooms';
+import { PIN_LENGTH, formatPin, formatRoomDate, parseJoinCode, parsePin, roomPath } from '../sandbox/rooms';
+import { isSupabaseConfigured, joinRoom, joinRoomByCode } from '../services/rooms';
 
 export function JoinPage({ t }) {
   const [, navigate] = useLocation();
   const search = useSearch();
   const [typed, setTyped] = useState('');
-  // 'idle' | 'joining' | 'unknown' | 'error'
+  // 'idle' | 'joining' | 'unknown' | 'ended' | 'error'
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
+  // When the room a ?code= named ended, for status 'ended'.
+  const [endedOn, setEndedOn] = useState(null);
 
   const configured = isSupabaseConfigured();
 
@@ -64,13 +70,48 @@ export function JoinPage({ t }) {
     [navigate]
   );
 
-  // A PIN in the URL is followed once, on arrival. Re-running this when the PIN
+  const attemptCode = useCallback(
+    async (code) => {
+      setStatus('joining');
+      setError(null);
+
+      try {
+        const room = await joinRoomByCode(code);
+        if (!room) {
+          setStatus('unknown');
+          return;
+        }
+        if (room.status !== 'open') {
+          setEndedOn(formatRoomDate(room.endsAt));
+          setStatus('ended');
+          return;
+        }
+        if (!findExperiment(room.experiment)) {
+          setError('That room is for an experiment this version of PLACER does not have.');
+          setStatus('error');
+          return;
+        }
+
+        posthog.capture('sandbox_room_joined', { experiment: room.experiment, via: 'code' });
+        navigate(roomPath(room.experiment, room.id));
+      } catch (cause) {
+        setError(cause.message);
+        setStatus('error');
+      }
+    },
+    [navigate]
+  );
+
+  // A PIN or a code in the URL is followed once, on arrival. Re-running this when it
   // changes would fight the navigate() above.
-  const fromUrl = parsePin(new URLSearchParams(String(search ?? '').replace(/^\?/, '')).get('pin'));
+  const params = new URLSearchParams(String(search ?? '').replace(/^\?/, ''));
+  const fromUrl = parsePin(params.get('pin'));
+  const codeFromUrl = parseJoinCode(params.get('code'));
   useEffect(() => {
-    if (!configured || !fromUrl) return;
-    attempt(fromUrl);
-  }, [configured, fromUrl, attempt]);
+    if (!configured) return;
+    if (codeFromUrl) attemptCode(codeFromUrl);
+    else if (fromUrl) attempt(fromUrl);
+  }, [configured, fromUrl, codeFromUrl, attempt, attemptCode]);
 
   const digits = typed.replace(/\D/g, '');
   const ready = digits.length === PIN_LENGTH;
@@ -144,7 +185,16 @@ export function JoinPage({ t }) {
 
             {status === 'unknown' && (
               <p role="status" style={{ marginTop: 16, fontSize: 14, color: '#C0392B', lineHeight: 1.6 }}>
-                No open room has that PIN. It may have been closed, or one of the digits may be off.
+                {codeFromUrl && !ready
+                  ? 'That link does not lead to a room any more. It may have ended a while ago.'
+                  : 'No open room has that PIN. It may have been closed, or one of the digits may be off.'}
+              </p>
+            )}
+
+            {status === 'ended' && (
+              <p role="status" style={{ marginTop: 16, fontSize: 14, color: t.ink, lineHeight: 1.6 }}>
+                {endedOn ? `This room closed on ${endedOn}.` : 'This room has closed.'} Thanks for
+                looking &mdash; it is not taking any more answers.
               </p>
             )}
 
