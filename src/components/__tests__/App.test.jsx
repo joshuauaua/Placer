@@ -197,6 +197,22 @@ describe('App', () => {
       expect(screen.queryByRole('navigation', { name: 'App' })).not.toBeInTheDocument();
     });
 
+    it('opens Projects from the side nav and puts it in the URL', async () => {
+      const location = renderRecording();
+
+      fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Projects' }));
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Projects' })).toBeInTheDocument();
+      expect(location.history.at(-1)).toBe('/projects');
+    });
+
+    it('says so when /projects is reached while logged out', () => {
+      localStorage.setItem('placemaking_profile', JSON.stringify({ signedIn: false }));
+      renderRecording('/projects');
+
+      expect(screen.getByText('You are logged out')).toBeInTheDocument();
+    });
+
     it('says so when /profile is reached while logged out', () => {
       localStorage.setItem('placemaking_profile', JSON.stringify({ signedIn: false }));
       renderRecording('/profile');

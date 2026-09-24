@@ -243,9 +243,35 @@ body {
   overflow-y: auto;
 }
 
-.placer-scroll-view > :first-child {
-  height: auto !important;
+/* The side nav and the page, side by side. The footer comes after this row, not
+ * inside it, so it spans the full width. On the map the row is exactly the area's
+ * height; everywhere else it is at least a screen tall and grows with the page. */
+.placer-app-row {
+  display: flex;
+  height: 100%;
+}
+
+.placer-scroll-view > .placer-app-row {
+  height: auto;
   min-height: 100%;
+}
+
+.placer-app-page {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  /* What the landing frames measure themselves against — see .placer-landing-frame. */
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+}
+
+.placer-app-page > * {
+  flex: 1 0 auto;
+}
+
+.placer-scroll-view .placer-app-page > * {
+  height: auto !important;
   overflow-y: visible !important;
 }
 
@@ -349,21 +375,29 @@ body {
    the top of every view clear of it at rest. */
 .placer-under-glass-nav {
   padding-top: 56px;
-  container-type: inline-size;
 }
 
 /* PLACER — the side nav (see SideNav.jsx). A column down the left edge, under
- * the glass bar, for anyone who is signed in. Below 760px it narrows to icons.
+ * the glass bar, for anyone who is signed in. It sticks below the bar while the
+ * page scrolls and scrolls away with the end of the row when the footer arrives.
+ * top is 0 rather than the bar's height: the scroll area's own padding-top already
+ * clears the bar, and a sticky offset is measured from inside that padding.
+ * It collapses to icons with .is-collapsed, and always below 760px.
  */
 .placer-side-nav {
   flex: 0 0 auto;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: calc(100vh - 56px);
   width: 208px;
   box-sizing: border-box;
-  padding: 72px 10px 16px;
+  padding: 16px 10px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   overflow-y: auto;
+  transition: width 0.2s ease;
 }
 
 .placer-side-nav-link {
@@ -379,6 +413,7 @@ body {
   font-family: var(--placer-font);
   font-size: 14.5px;
   letter-spacing: -0.01em;
+  white-space: nowrap;
   transition: background 0.15s ease;
 }
 
@@ -392,10 +427,64 @@ body {
   outline-offset: -2px;
 }
 
+/* Icon only, at the top of the column: at the right-hand end while expanded, so
+   it sits apart from the places, and centred like them once collapsed. */
+.placer-side-nav-toggle {
+  width: auto;
+  align-self: flex-end;
+  padding: 8px;
+  margin-bottom: 6px;
+}
+
+.placer-side-nav.is-collapsed .placer-side-nav-toggle {
+  align-self: center;
+  padding: 8px;
+}
+
+/* Settings, pushed to the foot of the column and ruled off from the places. */
+.placer-side-nav-bottom {
+  margin-top: auto;
+  position: relative;
+}
+
+.placer-side-nav-bottom::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 0;
+  right: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* New project, above the places and set apart from them as the one action. */
+.placer-side-nav-primary {
+  margin-bottom: 14px;
+  justify-content: center;
+}
+
+.placer-side-nav-primary:hover,
+.placer-side-nav-primary:focus-visible {
+  opacity: 0.88;
+}
+
+.placer-side-nav.is-collapsed {
+  width: 60px;
+  padding: 16px 8px;
+}
+
+.placer-side-nav.is-collapsed .placer-side-nav-link {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.placer-side-nav.is-collapsed .placer-side-nav-label {
+  display: none;
+}
+
 @media (max-width: 760px) {
   .placer-side-nav {
     width: 60px;
-    padding: 68px 8px 12px;
+    padding: 16px 8px;
   }
 
   .placer-side-nav-link {
@@ -403,7 +492,8 @@ body {
     padding: 10px 0;
   }
 
-  .placer-side-nav-label {
+  .placer-side-nav-label,
+  .placer-side-nav-toggle {
     display: none;
   }
 }
@@ -486,6 +576,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .placer-menu-trigger,
   .placer-menu-link,
+  .placer-side-nav,
   .placer-side-nav-link {
     transition: none;
   }

@@ -36,6 +36,7 @@ const AuthPage = lazy(() => import('./components/AuthPage'));
 const AuthCallback = lazy(() => import('./components/AuthCallback'));
 const ResetPasswordPage = lazy(() => import('./components/ResetPasswordPage'));
 const ProjectSetupPage = lazy(() => import('./components/ProjectSetupPage'));
+const ProjectsPage = lazy(() => import('./components/ProjectsPage'));
 const ProjectDashboardPage = lazy(() => import('./components/ProjectDashboardPage'));
 const PublicProjectPage = lazy(() => import('./components/PublicProjectPage'));
 
@@ -55,12 +56,14 @@ const FLOW_VIEWS = ['street', 'describe', 'post'];
 // and the draft they left in MainApp's state. A sibling Route would throw all of it away.
 const ACCOUNT_PATHS = {
   profile: '/profile',
+  projects: '/projects',
   settings: '/settings',
   signin: '/signin',
   signup: '/signup',
 };
 const ACCOUNT_VIEWS = {
   '/profile': 'profile',
+  '/projects': 'projects',
   '/settings': 'settings',
   '/signin': 'signin',
   '/signup': 'signup',
@@ -101,7 +104,7 @@ function LoadingFallback() {
   );
 }
 
-// What /profile and /settings show to someone who has logged out. Not a redirect,
+// What /profile, /projects and /settings show to someone who has logged out. Not a redirect,
 // so the URL still works once they log back in.
 function SignedOutNotice({ t, onSignIn }) {
   return (
@@ -113,7 +116,7 @@ function SignedOutNotice({ t, onSignIn }) {
           You are logged out
         </h1>
         <p style={{ fontSize: 15, color: t.inkDim, marginBottom: 24 }}>
-          Log back in to see your profile and settings.
+          Log back in to see your profile, projects and settings.
         </p>
         <Btn t={t} variant="primary" onClick={onSignIn}>Sign in</Btn>
       </div>
@@ -363,141 +366,152 @@ function MainApp({ initialView = 'welcome' }) {
         onOpenProject={showProjectPublic}
       />
 
-      <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
-        {/* Only once somebody is signed in: everything on it is a place an account
-            goes back to. Held back while the session is still being read, the same as
-            the nav bar's right-hand end. */}
-        {!identityLoading && profile && (
-          <SideNav t={t} view={view} onNavigate={show} onExplore={handleExplore}
-            onNewProject={showNewProject} />
-        )}
-
-        {/* Main Content. The map fills it and has no footer. Every other view scrolls
-            here, with the footer after it — see .placer-scroll-view in index.css. */}
-        <div className={`placer-under-glass-nav${view === 'map' ? '' : ' placer-scroll-view'}`}
-          style={{ flex: 1, minWidth: 0, position: 'relative', overflow: view === 'map' ? 'hidden' : undefined }}>
-          {view === 'welcome' && <LandingPage t={t} />}
-
-          {view === 'map' && (
-            <Suspense fallback={<LoadingFallback />}>
-              <MapContainer
-                onCaptureView={handleCaptureView}
-                apiKey={GOOGLE_MAPS_API_KEY}
-                initialCenter={mapFocus}
-                accountId={accountId}
-                authorName={profile?.name ?? DEFAULT_NAME}
-                onSignIn={handleSignIn}
-                onOpenProject={showProjectPublic}
-              />
-            </Suspense>
+      {/* Main Content. The map fills it and has no footer. Every other view scrolls
+          here, with the footer after it — see .placer-scroll-view in index.css. The
+          side nav shares a row with the page rather than with the whole area, so it
+          ends where the page does and the footer runs the full width beneath both. */}
+      <div className={`placer-under-glass-nav${view === 'map' ? '' : ' placer-scroll-view'}`}
+        style={{ flex: 1, minHeight: 0, position: 'relative', overflow: view === 'map' ? 'hidden' : undefined }}>
+        <div className="placer-app-row">
+          {/* Only once somebody is signed in: everything on it is a place an account
+              goes back to. Held back while the session is still being read, the same as
+              the nav bar's right-hand end. */}
+          {!identityLoading && profile && (
+            <SideNav t={t} view={view} onNavigate={show} onExplore={handleExplore}
+              onNewProject={showNewProject} />
           )}
 
-          {view === 'about' && (
-            <Suspense fallback={<LoadingFallback />}>
-              <AboutPage t={t} />
-            </Suspense>
-          )}
+          <div className="placer-app-page">
+            {view === 'welcome' && <LandingPage t={t} />}
 
-          {view === 'resources' && (
-            <Suspense fallback={<LoadingFallback />}>
-              <ResourcesPage t={t} />
-            </Suspense>
-          )}
+            {view === 'map' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <MapContainer
+                  onCaptureView={handleCaptureView}
+                  apiKey={GOOGLE_MAPS_API_KEY}
+                  initialCenter={mapFocus}
+                  accountId={accountId}
+                  authorName={profile?.name ?? DEFAULT_NAME}
+                  onSignIn={handleSignIn}
+                  onOpenProject={showProjectPublic}
+                />
+              </Suspense>
+            )}
 
-          {view === 'sandbox' && (
-            <Suspense fallback={<LoadingFallback />}>
-              {/* Passed down rather than read from services/profile inside SandboxPage: with
-                  accounts the name is behind a request, and a component cannot await one in
-                  its render body. */}
-              <SandboxPage
-                t={t}
-                displayName={profile?.name ?? null}
-                // Only opening a room is gated. Joining, contributing and reading are not.
-                needsAccount={identityStatus === 'signedOut'}
-                onSignIn={handleSignIn}
-              />
-            </Suspense>
-          )}
+            {view === 'about' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <AboutPage t={t} />
+              </Suspense>
+            )}
 
-          {(view === 'signin' || view === 'signup') && (
-            <Suspense fallback={<LoadingFallback />}>
-              <AuthPage t={t} mode={view} onNavigate={show} />
-            </Suspense>
-          )}
+            {view === 'resources' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <ResourcesPage t={t} />
+              </Suspense>
+            )}
 
-          {/* Reachable by URL, so both have to cope with arriving before the session has
-              been read, and with arriving logged out. */}
-          {(view === 'profile' || view === 'settings') && identityLoading && <LoadingFallback />}
+            {view === 'sandbox' && (
+              <Suspense fallback={<LoadingFallback />}>
+                {/* Passed down rather than read from services/profile inside SandboxPage: with
+                    accounts the name is behind a request, and a component cannot await one in
+                    its render body. */}
+                <SandboxPage
+                  t={t}
+                  displayName={profile?.name ?? null}
+                  // Only opening a room is gated. Joining, contributing and reading are not.
+                  needsAccount={identityStatus === 'signedOut'}
+                  onSignIn={handleSignIn}
+                />
+              </Suspense>
+            )}
 
-          {(view === 'profile' || view === 'settings') && !identityLoading && !profile && (
-            <SignedOutNotice t={t} onSignIn={handleSignIn} />
-          )}
+            {(view === 'signin' || view === 'signup') && (
+              <Suspense fallback={<LoadingFallback />}>
+                <AuthPage t={t} mode={view} onNavigate={show} />
+              </Suspense>
+            )}
 
-          {view === 'profile' && profile && (
-            <Suspense fallback={<LoadingFallback />}>
-              <ProfilePage t={t} profile={profile} accountId={accountId} onNavigate={show}
-                onNewProject={showNewProject} onOpenProjectDashboard={showProjectDashboard}
-                onSignIn={handleSignIn} />
-            </Suspense>
-          )}
+            {/* Reachable by URL, so both have to cope with arriving before the session has
+                been read, and with arriving logged out. */}
+            {(view === 'profile' || view === 'settings' || view === 'projects') && identityLoading && <LoadingFallback />}
 
-          {view === 'settings' && profile && (
-            <Suspense fallback={<LoadingFallback />}>
-              <SettingsPage t={t} profile={profile} email={accountEmail}
-                onSaveProfile={handleSaveProfile} onNavigate={show} />
-            </Suspense>
-          )}
+            {(view === 'profile' || view === 'settings' || view === 'projects') && !identityLoading && !profile && (
+              <SignedOutNotice t={t} onSignIn={handleSignIn} />
+            )}
 
-          {view === 'terms' && (
-            <Suspense fallback={<LoadingFallback />}>
-              <TermsAndPrivacyPage t={t} />
-            </Suspense>
-          )}
+            {view === 'profile' && profile && (
+              <Suspense fallback={<LoadingFallback />}>
+                <ProfilePage t={t} profile={profile} accountId={accountId} onNavigate={show}
+                  onNewProject={showNewProject} onOpenProjectDashboard={showProjectDashboard}
+                  onSignIn={handleSignIn} />
+              </Suspense>
+            )}
 
-          {/* projectNew and projectDashboard need an account, the same shape profile and
-              settings are gated — starting or managing a project is not something a
-              signed-out visitor can do. projectPublic needs nothing: a project's public
-              page is exactly the thing anyone should be able to open cold, unsignedin,
-              from a shared link. */}
-          {view === 'projectNew' && identityLoading && <LoadingFallback />}
+            {view === 'projects' && profile && (
+              <Suspense fallback={<LoadingFallback />}>
+                <ProjectsPage t={t} accountId={accountId} onNewProject={showNewProject}
+                  onOpenProjectDashboard={showProjectDashboard} />
+              </Suspense>
+            )}
 
-          {view === 'projectNew' && !identityLoading && !profile && (
-            <SignedOutNotice t={t} onSignIn={handleSignIn} />
-          )}
+            {view === 'settings' && profile && (
+              <Suspense fallback={<LoadingFallback />}>
+                <SettingsPage t={t} profile={profile} email={accountEmail}
+                  onSaveProfile={handleSaveProfile} onNavigate={show} />
+              </Suspense>
+            )}
 
-          {view === 'projectNew' && profile && (
-            <Suspense fallback={<LoadingFallback />}>
-              <ProjectSetupPage t={t} accountId={accountId} accountName={profile.name}
-                onSaved={(project) => showProjectDashboard(project.id)}
-                onCancel={() => show('profile')} />
-            </Suspense>
-          )}
+            {view === 'terms' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <TermsAndPrivacyPage t={t} />
+              </Suspense>
+            )}
 
-          {view === 'projectDashboard' && identityLoading && <LoadingFallback />}
+            {/* projectNew and projectDashboard need an account, the same shape profile and
+                settings are gated — starting or managing a project is not something a
+                signed-out visitor can do. projectPublic needs nothing: a project's public
+                page is exactly the thing anyone should be able to open cold, unsignedin,
+                from a shared link. */}
+            {view === 'projectNew' && identityLoading && <LoadingFallback />}
 
-          {view === 'projectDashboard' && !identityLoading && !profile && (
-            <SignedOutNotice t={t} onSignIn={handleSignIn} />
-          )}
+            {view === 'projectNew' && !identityLoading && !profile && (
+              <SignedOutNotice t={t} onSignIn={handleSignIn} />
+            )}
 
-          {view === 'projectDashboard' && profile && (
-            <Suspense fallback={<LoadingFallback />}>
-              <ProjectDashboardPage t={t} accountId={accountId} projectId={projectRoute.id}
-                onOpenSandbox={showProjectSandbox}
-                onNavigateToPublic={showProjectPublic} />
-            </Suspense>
-          )}
+            {view === 'projectNew' && profile && (
+              <Suspense fallback={<LoadingFallback />}>
+                <ProjectSetupPage t={t} accountId={accountId} accountName={profile.name}
+                  onSaved={(project) => showProjectDashboard(project.id)}
+                  onCancel={() => show('profile')} />
+              </Suspense>
+            )}
 
-          {view === 'projectPublic' && (
-            <Suspense fallback={<LoadingFallback />}>
-              <PublicProjectPage t={t} projectId={projectRoute.id} accountId={accountId}
-                onImagineForProject={handleImagineForProject} />
-            </Suspense>
-          )}
-          {view !== 'map' && (
-            <SiteFooter t={t} view={view}
-              onNavigate={(next) => (next === 'map' ? handleExplore() : show(next))} />
-          )}
+            {view === 'projectDashboard' && identityLoading && <LoadingFallback />}
+
+            {view === 'projectDashboard' && !identityLoading && !profile && (
+              <SignedOutNotice t={t} onSignIn={handleSignIn} />
+            )}
+
+            {view === 'projectDashboard' && profile && (
+              <Suspense fallback={<LoadingFallback />}>
+                <ProjectDashboardPage t={t} accountId={accountId} projectId={projectRoute.id}
+                  onOpenSandbox={showProjectSandbox}
+                  onNavigateToPublic={showProjectPublic} />
+              </Suspense>
+            )}
+
+            {view === 'projectPublic' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <PublicProjectPage t={t} projectId={projectRoute.id} accountId={accountId}
+                  onImagineForProject={handleImagineForProject} />
+              </Suspense>
+            )}
+          </div>
         </div>
+        {view !== 'map' && (
+          <SiteFooter t={t} view={view}
+            onNavigate={(next) => (next === 'map' ? handleExplore() : show(next))} />
+        )}
       </div>
     </div>
   );
