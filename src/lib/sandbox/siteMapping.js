@@ -56,11 +56,11 @@ export const SURVEY_QUESTIONS = [
 // The five draggable icons of Section 2. `icon` names the Icon component entry,
 // `color` the marker fill, `verb` the status-line wording.
 export const MAP_MARKERS = [
-  { key: 'magnet', label: 'Magnet', icon: 'sparkle', color: '#D4407E', verb: 'something that pulls people in', help: 'Art, vendors, a view — what draws a crowd?' },
-  { key: 'gathering', label: 'Gathering', icon: 'user', color: '#2F7BD6', verb: 'where strangers end up together', help: 'A crossing, a queue, a narrow passage?' },
-  { key: 'refuge', label: 'Edge & refuge', icon: 'bench', color: '#3E9D4E', verb: 'where you can join without committing', help: 'A long bench, a wall, a slope to watch from?' },
-  { key: 'barrier', label: 'Barrier', icon: 'close', color: '#C0392B', verb: 'something that blocks or pushes away', help: 'A fence, a blank wall, a hostile grade?' },
-  { key: 'favourite', label: 'Favourite spot', icon: 'heart', color: '#E08A2B', verb: 'somewhere you would return to', help: 'Your own anchor in the space.' },
+  { key: 'magnet', label: 'Magnet', icon: 'sparkle', color: '#3A2480', verb: 'something that pulls people in', help: 'Art, vendors, a view — what draws a crowd?' },
+  { key: 'gathering', label: 'Gathering', icon: 'user', color: '#1D5FA8', verb: 'where strangers end up together', help: 'A crossing, a queue, a narrow passage?' },
+  { key: 'refuge', label: 'Edge & refuge', icon: 'bench', color: '#123F73', verb: 'where you can join without committing', help: 'A long bench, a wall, a slope to watch from?' },
+  { key: 'barrier', label: 'Barrier', icon: 'close', color: '#B3261E', verb: 'something that blocks or pushes away', help: 'A fence, a blank wall, a hostile grade?' },
+  { key: 'favourite', label: 'Favourite spot', icon: 'heart', color: '#9E4600', verb: 'somewhere you would return to', help: 'Your own anchor in the space.' },
 ];
 
 export const REFLECTION_PROMPTS = [

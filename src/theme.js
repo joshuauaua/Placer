@@ -1,95 +1,92 @@
-/* PLACER — design tokens: themes + category palette */
+/* PLACER — design tokens, from the brand kit (design.md).
+ *
+ * The platform is black and white. The only colours are the three character
+ * colours: blue for the city worker, orange for the citizen and purple for the
+ * design practitioner. Each comes in five steps with fixed jobs:
+ *
+ *   50  hover / selected backgrounds, comment highlight
+ *   100 chips, avatars, pins, character buttons — only ink text on it, never white
+ *   300 map areas, chart fills, button hover — never text
+ *   700 text, icons and outlines on white
+ *   900 text on a 50 / 100 tint
+ */
 
-// Category color coding
+export const NEUTRAL = {
+  ink: '#111111',
+  grey700: '#3D3D3D',
+  grey500: '#6E6E6E',
+  grey300: '#D6D6D6',
+  grey200: '#E6E6E6',
+  grey100: '#F5F5F5',
+  white: '#FFFFFF',
+  error: '#B3261E',
+  success: '#1E7B3A',
+};
+
+export const CHARACTER = {
+  cityWorker: { key: 'cityWorker', label: 'City worker', c50: '#EEF5FE', c100: '#C6DEF8', c300: '#8DBBEF', c700: '#1D5FA8', c900: '#123F73' },
+  citizen: { key: 'citizen', label: 'Citizen', c50: '#FFF3E8', c100: '#FFD9B8', c300: '#FDB27A', c700: '#9E4600', c900: '#6B2E00' },
+  practitioner: { key: 'practitioner', label: 'Design practitioner', c50: '#F4F0FE', c100: '#DDD2FA', c300: '#B39DF2', c700: '#5B3CB8', c900: '#3A2480' },
+};
+
+export const CHARACTER_LIST = Object.values(CHARACTER);
+
+// The one shadow the kit allows: glass, the sidebar, dropdowns, modals, card hover.
+export const SHADOW = '0 8px 24px rgba(0,0,0,0.10)';
+
+// Category coding. The brand has no category colours — the three hues belong to the
+// characters — so a category is told apart by its icon and label, and drawn in ink.
 export const CAT = {
-  green:   { key: 'green',   label: 'Green space',       color: '#3E9D4E', icon: 'tree' },
-  seating: { key: 'seating', label: 'Public seating',    color: '#E08A2B', icon: 'bench' },
-  art:     { key: 'art',     label: 'Art & culture',     color: '#D4407E', icon: 'art' },
-  play:    { key: 'play',    label: 'Play & recreation', color: '#7A52E0', icon: 'play' },
-  safety:  { key: 'safety',  label: 'Safety & lighting', color: '#2F7BD6', icon: 'light' },
-  food:    { key: 'food',    label: 'Food & markets',    color: '#D6452F', icon: 'cart' },
+  green:   { key: 'green',   label: 'Green space',       color: NEUTRAL.ink, icon: 'tree' },
+  seating: { key: 'seating', label: 'Public seating',    color: NEUTRAL.ink, icon: 'bench' },
+  art:     { key: 'art',     label: 'Art & culture',     color: NEUTRAL.ink, icon: 'art' },
+  play:    { key: 'play',    label: 'Play & recreation', color: NEUTRAL.ink, icon: 'play' },
+  safety:  { key: 'safety',  label: 'Safety & lighting', color: NEUTRAL.ink, icon: 'light' },
+  food:    { key: 'food',    label: 'Food & markets',    color: NEUTRAL.ink, icon: 'cart' },
 };
 
 export const CAT_LIST = Object.values(CAT);
 
-// Theme: Bone (default paper + lime aesthetic)
-export const THEME_BONE = {
-  name: 'Bone',
-  accent: '#D7FB36',          // lime signal
-  accentInk: '#14130E',       // text that sits ON accent
-  page: '#EDE9DF',            // canvas behind panels
-  chrome: '#F6F3EC',          // nav / rails
-  surface: '#FFFFFF',         // cards
-  surfaceAlt: '#F1EDE3',
-  ink: '#16150F',
-  inkDim: 'rgba(22,21,15,0.56)',
-  inkFaint: 'rgba(22,21,15,0.34)',
-  line: 'rgba(22,21,15,0.12)',
-  lineStrong: 'rgba(22,21,15,0.22)',
-  primaryBg: '#16150F',       // primary button
-  primaryFg: '#F6F3EC',
-  mapMode: 'light',
-  shadow: '0 1px 2px rgba(22,21,15,.06), 0 8px 28px rgba(22,21,15,.08)',
-};
-
-// Theme: Ink (night mode)
-export const THEME_INK = {
-  name: 'Ink',
-  accent: '#D7FB36',
-  accentInk: '#14130E',
-  page: '#0D0D10',
-  chrome: '#16161B',
-  surface: '#1C1C22',
-  surfaceAlt: '#222229',
-  ink: '#F4F2EA',
-  inkDim: 'rgba(244,242,234,0.60)',
-  inkFaint: 'rgba(244,242,234,0.36)',
-  line: 'rgba(244,242,234,0.12)',
-  lineStrong: 'rgba(244,242,234,0.22)',
-  primaryBg: '#D7FB36',
-  primaryFg: '#14130E',
-  mapMode: 'dark',
-  shadow: '0 1px 2px rgba(0,0,0,.4), 0 12px 36px rgba(0,0,0,.5)',
-};
-
-// Theme: Signal (electric blue)
-export const THEME_SIGNAL = {
-  name: 'Signal',
-  accent: '#2D5BFF',          // electric blue signal
-  accentInk: '#FFFFFF',
-  page: '#ECEEF3',
-  chrome: '#FFFFFF',
-  surface: '#FFFFFF',
-  surfaceAlt: '#F1F3F8',
-  ink: '#11131A',
-  inkDim: 'rgba(17,19,26,0.56)',
-  inkFaint: 'rgba(17,19,26,0.34)',
-  line: 'rgba(17,19,26,0.10)',
-  lineStrong: 'rgba(17,19,26,0.20)',
-  primaryBg: '#2D5BFF',
-  primaryFg: '#FFFFFF',
-  mapMode: 'light',
-  shadow: '0 1px 2px rgba(17,19,26,.06), 0 10px 30px rgba(45,91,255,.10)',
-};
-
-// Theme: Simple (black and white)
+// The site theme. The field names predate the brand kit and are read all over the
+// app, so they stay; only the values follow it.
 export const THEME_SIMPLE = {
   name: 'Simple',
-  accent: '#000000',          // black accent
-  accentInk: '#FFFFFF',       // white text on black
-  page: '#FFFFFF',            // white canvas
-  chrome: '#FFFFFF',          // white nav
-  surface: '#FFFFFF',         // white cards
-  surfaceAlt: '#F5F5F5',      // very light gray
-  ink: '#000000',             // black text
-  inkDim: 'rgba(0,0,0,0.6)',
-  inkFaint: 'rgba(0,0,0,0.35)',
-  line: 'rgba(0,0,0,0.12)',
-  lineStrong: 'rgba(0,0,0,0.25)',
-  primaryBg: '#000000',       // black button
-  primaryFg: '#FFFFFF',       // white text
+  accent: NEUTRAL.ink,
+  accentInk: NEUTRAL.white,
+  page: NEUTRAL.white,
+  chrome: NEUTRAL.white,
+  surface: NEUTRAL.white,
+  surfaceAlt: NEUTRAL.grey100,
+  ink: NEUTRAL.ink,
+  inkDim: NEUTRAL.grey700,
+  inkFaint: NEUTRAL.grey500,
+  line: NEUTRAL.grey200,
+  lineStrong: NEUTRAL.grey300,
+  primaryBg: NEUTRAL.ink,
+  primaryHover: NEUTRAL.grey700,
+  primaryFg: NEUTRAL.white,
+  error: NEUTRAL.error,
+  success: NEUTRAL.success,
   mapMode: 'light',
-  shadow: '0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.08)',
+  shadow: SHADOW,
+};
+
+// Dark surfaces — only the footer uses these now.
+export const THEME_INK = {
+  ...THEME_SIMPLE,
+  name: 'Ink',
+  page: NEUTRAL.ink,
+  chrome: NEUTRAL.ink,
+  surface: NEUTRAL.ink,
+  surfaceAlt: NEUTRAL.grey700,
+  ink: NEUTRAL.white,
+  inkDim: NEUTRAL.grey300,
+  inkFaint: NEUTRAL.grey500,
+  line: NEUTRAL.grey700,
+  lineStrong: NEUTRAL.grey500,
+  primaryBg: NEUTRAL.white,
+  primaryFg: NEUTRAL.ink,
+  mapMode: 'dark',
 };
 
 // Default theme

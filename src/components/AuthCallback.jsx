@@ -62,7 +62,7 @@ export function AuthCallback({ t }) {
         {failed ? (
           <>
             <Icon name="close" size={44} stroke={2} style={{ color: t.inkDim, margin: '0 auto 16px' }} />
-            <h1 className="placer-disp" style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
+            <h1 className="placer-disp" style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>
               That did not work
             </h1>
             <p style={{ fontSize: 15, color: t.inkDim, marginBottom: 24, lineHeight: 1.6 }}>

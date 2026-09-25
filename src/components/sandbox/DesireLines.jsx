@@ -113,11 +113,11 @@ export function DesireLines({ t, experiment }) {
           onPointerDown={startDrag}
           onPointerMove={moveDrag}
           onPointerUp={endDrag}
-          style={{ width: '100%', display: 'block', borderRadius: 10, background: '#E7EDE3',
+          style={{ width: '100%', display: 'block', borderRadius: 12, background: '#E7EDE3',
             border: `1px solid ${t.line}`, touchAction: 'none', cursor: 'crosshair' }}>
           {/* The paving, as designed */}
           {PAVING.map((rect, index) => (
-            <rect key={`paving-${index}`} x={rect.x} y={rect.y} width={rect.w} height={rect.h} fill="#D5D2CA" />
+            <rect key={`paving-${index}`} x={rect.x} y={rect.y} width={rect.w} height={rect.h} fill="#E6E6E6" />
           ))}
 
           {/* Where enough people have walked to be worth paving */}
@@ -138,7 +138,7 @@ export function DesireLines({ t, experiment }) {
             <line
               key={line.id}
               x1={line.from.x} y1={line.from.y} x2={line.to.x} y2={line.to.y}
-              stroke={line.walker === 'you' ? experiment.color : '#6B6F76'}
+              stroke={line.walker === 'you' ? experiment.color : '#6E6E6E'}
               strokeWidth={line.walker === 'you' ? 0.9 : 0.6}
               strokeLinecap="round"
               opacity={line.walker === 'you' ? 0.55 : 0.32}

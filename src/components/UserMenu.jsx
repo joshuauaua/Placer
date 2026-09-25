@@ -12,7 +12,7 @@ function MenuItem({ t, icon, label, onClick, divided }) {
       style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%',
         padding: '10px 14px', background: 'transparent', color: t.ink, cursor: 'pointer',
         border: 'none', borderTop: divided ? `1px solid ${t.line}` : 'none',
-        fontFamily: 'var(--placer-font)', fontWeight: 600, fontSize: 14.5,
+        fontFamily: 'var(--placer-font)', fontWeight: 500, fontSize: 14.5,
         letterSpacing: '-0.01em', textAlign: 'left' }}
       onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
@@ -71,12 +71,12 @@ export function UserMenu({ t, profile, onNavigate, onSignIn, onSignOut }) {
         aria-expanded={open}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px 4px 4px',
-          background: 'transparent', border: 'none', borderRadius: 999, cursor: 'pointer',
-          color: t.ink, fontFamily: 'var(--placer-font)', fontWeight: 600, fontSize: 14.5,
+          background: 'transparent', border: 'none', borderRadius: 12, cursor: 'pointer',
+          color: t.ink, fontFamily: 'var(--placer-font)', fontWeight: 500, fontSize: 14.5,
           letterSpacing: '-0.01em' }}
         onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-        <Avatar name={profile.name} icon={profile.avatar} size={40} ring={t.line} />
+        <Avatar name={profile.name} icon={profile.avatar} size={40} />
         <Icon name={open ? 'chevUp' : 'chevDown'} size={16} stroke={2.2} style={{ color: t.inkDim }} />
       </button>
 

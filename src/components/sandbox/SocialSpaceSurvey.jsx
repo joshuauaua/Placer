@@ -31,9 +31,9 @@ function today() {
 
 function inputField(t) {
   return {
-    width: '100%', height: 42, padding: '0 12px', borderRadius: 9,
+    width: '100%', height: 42, padding: '0 12px', borderRadius: 12,
     border: `1.5px solid ${t.line}`, background: t.surfaceAlt, color: t.ink,
-    fontFamily: 'var(--placer-font)', fontSize: 14.5, fontWeight: 600,
+    fontFamily: 'var(--placer-font)', fontSize: 14.5, fontWeight: 500,
   };
 }
 
@@ -59,11 +59,11 @@ function Field({ t, id, label, children, hint }) {
 
 function Stat({ t, value, label, tone }) {
   return (
-    <div style={{ background: t.surfaceAlt, borderRadius: 10, padding: '12px 14px' }}>
-      <div className="placer-disp" style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.1, color: tone || t.ink }}>
+    <div style={{ background: t.surfaceAlt, borderRadius: 12, padding: '12px 14px' }}>
+      <div className="placer-disp" style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1, color: tone || t.ink }}>
         {value}
       </div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: t.inkDim, marginTop: 3 }}>{label}</div>
+      <div style={{ fontSize: 12, fontWeight: 500, color: t.inkDim, marginTop: 3 }}>{label}</div>
     </div>
   );
 }
@@ -89,7 +89,7 @@ function Steps({ t, experiment, step, done, s, onGo }) {
               disabled={!unlocked}
               aria-current={active ? 'step' : undefined}
               title={unlocked ? node.label : `${node.label} — complete step 1 first`}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, height: 40, padding: '0 12px', borderRadius: 9,
+              style={{ display: 'flex', alignItems: 'center', gap: 8, height: 40, padding: '0 12px', borderRadius: 12,
                 border: `1.5px solid ${active ? c : t.line}`, background: active ? c + '14' : 'transparent',
                 color: active ? c : t.ink, opacity: unlocked ? 1 : 0.5,
                 cursor: unlocked ? 'pointer' : 'not-allowed', fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: 13 }}>
@@ -247,7 +247,7 @@ export function SocialSpaceSurvey({ t, experiment }) {
               <Icon name="check" size={18} stroke={2.8} />
             </span>
             <div>
-              <div style={{ fontSize: 17, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: 17, fontWeight: 700, color: t.ink, letterSpacing: '-0.02em' }}>
                 Step 1 recorded — this space is in your notebook.
               </div>
               <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.6, marginTop: 6 }}>
@@ -259,7 +259,7 @@ export function SocialSpaceSurvey({ t, experiment }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
             <Stat t={t} value={`${s.invited}/${s.invitedTotal}`} label="Inviting features" tone={c} />
-            <Stat t={t} value={`${s.hindered}/${s.hinderedTotal}`} label="Hindering features" tone={s.hindered > 0 ? '#C0392B' : undefined} />
+            <Stat t={t} value={`${s.hindered}/${s.hinderedTotal}`} label="Hindering features" tone={s.hindered > 0 ? '#B3261E' : undefined} />
             <Stat t={t} value={s.patterns} label="Spatial patterns" />
             <Stat t={t} value={`${s.rated}/${s.ratedTotal}`} label="Reflection answered" />
           </div>
@@ -278,7 +278,7 @@ export function SocialSpaceSurvey({ t, experiment }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <Panel t={t} title="Step 1 · Site setup">
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: t.surfaceAlt,
-              borderRadius: 8, padding: '10px 12px', marginBottom: 18 }}>
+              borderRadius: 12, padding: '10px 12px', marginBottom: 18 }}>
               <Icon name="sparkle" size={16} stroke={2} style={{ color: c, marginTop: 1, flex: '0 0 auto' }} />
               <p style={{ fontSize: 13, color: t.inkDim, lineHeight: 1.55 }}>
                 Bring clothes for the weather and take at least 5 minutes to observe before filling out.
@@ -341,7 +341,7 @@ export function SocialSpaceSurvey({ t, experiment }) {
               <section style={{ flex: '1 1 420px', minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <Icon name="sparkle" size={16} stroke={2.2} style={{ color: c }} />
-                  <span style={{ fontSize: 14.5, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em' }}>Inviting features</span>
+                  <span style={{ fontSize: 14.5, fontWeight: 700, color: t.ink, letterSpacing: '-0.02em' }}>Inviting features</span>
                   <span className="placer-mono" style={{ fontSize: 11, color: t.inkDim }}>items 1–14 · {s.invited}/{s.invitedTotal}</span>
                 </div>
                 <p style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.5, marginBottom: 6 }}>
@@ -354,13 +354,13 @@ export function SocialSpaceSurvey({ t, experiment }) {
                     return (
                       <li key={item.key} style={{ borderBottom: `1px solid ${t.line}`, padding: '9px 0' }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                          <span className="placer-mono" style={{ flex: '0 0 auto', width: 26, height: 26, borderRadius: 8,
+                          <span className="placer-mono" style={{ flex: '0 0 auto', width: 26, height: 26, borderRadius: 12,
                             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700,
                             background: checked ? c + '18' : t.surfaceAlt, color: checked ? c : t.inkDim,
                             border: `1px solid ${checked ? c : t.line}` }}>{item.number}</span>
                           <label htmlFor={`inv-${item.key}`} style={{ flex: 1, display: 'flex', alignItems: 'center',
                             justifyContent: 'space-between', gap: 12, cursor: 'pointer' }}>
-                            <span style={{ fontSize: 14, fontWeight: 600, color: t.ink, lineHeight: 1.4 }}>{item.label}</span>
+                            <span style={{ fontSize: 14, fontWeight: 500, color: t.ink, lineHeight: 1.4 }}>{item.label}</span>
                             <input id={`inv-${item.key}`} type="checkbox" checked={checked}
                               onChange={() => toggleInviting(item.key)} style={{ width: 17, height: 17, accentColor: c, flex: '0 0 auto' }} />
                           </label>
@@ -382,8 +382,8 @@ export function SocialSpaceSurvey({ t, experiment }) {
 
               <section style={{ flex: '1 1 360px', minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <Icon name="close" size={16} stroke={2.2} style={{ color: '#C0392B' }} />
-                  <span style={{ fontSize: 14.5, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em' }}>Hindering features</span>
+                  <Icon name="close" size={16} stroke={2.2} style={{ color: '#B3261E' }} />
+                  <span style={{ fontSize: 14.5, fontWeight: 700, color: t.ink, letterSpacing: '-0.02em' }}>Hindering features</span>
                   <span className="placer-mono" style={{ fontSize: 11, color: t.inkDim }}>items 15–18 · {s.hindered}/{s.hinderedTotal}</span>
                 </div>
                 <p style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.5, marginBottom: 6 }}>
@@ -396,15 +396,15 @@ export function SocialSpaceSurvey({ t, experiment }) {
                     return (
                       <li key={item.key} style={{ borderBottom: `1px solid ${t.line}`, padding: '9px 0' }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                          <span className="placer-mono" style={{ flex: '0 0 auto', width: 26, height: 26, borderRadius: 8,
+                          <span className="placer-mono" style={{ flex: '0 0 auto', width: 26, height: 26, borderRadius: 12,
                             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700,
-                            background: checked ? '#C0392B18' : t.surfaceAlt, color: checked ? '#C0392B' : t.inkDim,
-                            border: `1px solid ${checked ? '#C0392B' : t.line}` }}>{item.number}</span>
+                            background: checked ? '#B3261E18' : t.surfaceAlt, color: checked ? '#B3261E' : t.inkDim,
+                            border: `1px solid ${checked ? '#B3261E' : t.line}` }}>{item.number}</span>
                           <label htmlFor={`hin-${item.key}`} style={{ flex: 1, display: 'flex', alignItems: 'center',
                             justifyContent: 'space-between', gap: 12, cursor: 'pointer' }}>
-                            <span style={{ fontSize: 14, fontWeight: 600, color: t.ink, lineHeight: 1.4 }}>{item.label}</span>
+                            <span style={{ fontSize: 14, fontWeight: 500, color: t.ink, lineHeight: 1.4 }}>{item.label}</span>
                             <input id={`hin-${item.key}`} type="checkbox" checked={checked}
-                              onChange={() => toggleHindering(item.key)} style={{ width: 17, height: 17, accentColor: '#C0392B', flex: '0 0 auto' }} />
+                              onChange={() => toggleHindering(item.key)} style={{ width: 17, height: 17, accentColor: '#B3261E', flex: '0 0 auto' }} />
                           </label>
                         </div>
                       </li>
@@ -452,7 +452,7 @@ export function SocialSpaceSurvey({ t, experiment }) {
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
                     {entries.map((entry, index) => (
-                      <div key={index} style={{ border: `1px solid ${t.line}`, borderRadius: 10, padding: 14, background: t.surfaceAlt }}>
+                      <div key={index} style={{ border: `1px solid ${t.line}`, borderRadius: 12, padding: 14, background: t.surfaceAlt }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                           <span className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
                             textTransform: 'uppercase', color: t.inkDim }}>{kind.title} {index + 1}</span>
@@ -478,7 +478,7 @@ export function SocialSpaceSurvey({ t, experiment }) {
                               {[1, 2, 3, 4, 5].map((n) => (
                                 <button key={n} type="button" aria-pressed={entry.strength === n}
                                   aria-label={`Strength ${n} of 5`} onClick={() => setPattern(kind.key, index, 'strength', n)}
-                                  style={{ width: 32, height: 32, borderRadius: 8, cursor: 'pointer',
+                                  style={{ width: 32, height: 32, borderRadius: 12, cursor: 'pointer',
                                     fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: 13.5,
                                     background: n <= entry.strength ? c + '2E' : 'transparent',
                                     border: `1.5px solid ${n <= entry.strength ? c : t.line}`,

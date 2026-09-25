@@ -124,7 +124,7 @@ export function JoinPage({ t }) {
           <Logo t={t} size={22} />
         </div>
 
-        <h1 className="placer-disp" style={{ fontSize: 34, fontWeight: 900, color: t.ink,
+        <h1 className="placer-disp" style={{ fontSize: 34, fontWeight: 700, color: t.ink,
           letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 12 }}>
           Join a room
         </h1>
@@ -164,10 +164,10 @@ export function JoinPage({ t }) {
                   setTyped(formatPin(event.target.value.replace(/\D/g, '').slice(0, PIN_LENGTH)));
                   if (status !== 'idle') setStatus('idle');
                 }}
-                style={{ width: '100%', height: 58, padding: '0 16px', borderRadius: 10,
-                  border: `1.5px solid ${status === 'unknown' ? '#C0392B' : t.line}`,
+                style={{ width: '100%', height: 58, padding: '0 16px', borderRadius: 12,
+                  border: `1.5px solid ${status === 'unknown' ? '#B3261E' : t.line}`,
                   background: t.chrome, color: t.ink, fontFamily: 'var(--placer-font)',
-                  fontWeight: 900, fontSize: 26, letterSpacing: '0.06em', outline: 'none',
+                  fontWeight: 700, fontSize: 26, letterSpacing: '0.06em', outline: 'none',
                   fontVariantNumeric: 'tabular-nums' }}
               />
 
@@ -184,7 +184,7 @@ export function JoinPage({ t }) {
             </form>
 
             {status === 'unknown' && (
-              <p role="status" style={{ marginTop: 16, fontSize: 14, color: '#C0392B', lineHeight: 1.6 }}>
+              <p role="status" style={{ marginTop: 16, fontSize: 14, color: '#B3261E', lineHeight: 1.6 }}>
                 {codeFromUrl && !ready
                   ? 'That link does not lead to a room any more. It may have ended a while ago.'
                   : 'No open room has that PIN. It may have been closed, or one of the digits may be off.'}
@@ -199,7 +199,7 @@ export function JoinPage({ t }) {
             )}
 
             {status === 'error' && (
-              <p role="status" style={{ marginTop: 16, fontSize: 14, color: '#C0392B', lineHeight: 1.6 }}>
+              <p role="status" style={{ marginTop: 16, fontSize: 14, color: '#B3261E', lineHeight: 1.6 }}>
                 {error}
               </p>
             )}

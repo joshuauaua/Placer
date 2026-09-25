@@ -122,13 +122,13 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
   };
 
   if (status === 'loading') {
-    return <div style={{ padding: 48, fontSize: 14, color: t.inkDim, fontWeight: 600 }}>Loading…</div>;
+    return <div style={{ padding: 48, fontSize: 14, color: t.inkDim, fontWeight: 500 }}>Loading…</div>;
   }
 
   if (status === 'notFound') {
     return (
       <div style={{ padding: 48, textAlign: 'center' }}>
-        <h1 className="placer-disp" style={{ fontSize: 24, fontWeight: 800, color: t.ink, marginBottom: 8 }}>
+        <h1 className="placer-disp" style={{ fontSize: 24, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
           Project not found
         </h1>
         <p style={{ fontSize: 14, color: t.inkDim }}>It may have been removed.</p>
@@ -138,7 +138,7 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
 
   if (status === 'error') {
     return (
-      <div role="alert" style={{ padding: 48, fontSize: 14, color: t.ink, fontWeight: 600 }}>
+      <div role="alert" style={{ padding: 48, fontSize: 14, color: t.ink, fontWeight: 500 }}>
         Could not load this project. See the console for details.
       </div>
     );
@@ -155,11 +155,11 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
           gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
           <div>
-            <h1 className="placer-disp" style={{ fontSize: 44, fontWeight: 900, color: t.ink,
+            <h1 className="placer-disp" style={{ fontSize: 44, fontWeight: 700, color: t.ink,
               letterSpacing: '-0.03em', marginBottom: 8, lineHeight: 1.1 }}>
               {project.name}
             </h1>
-            <p style={{ fontSize: 15, color: t.inkDim, fontWeight: 600 }}>
+            <p style={{ fontSize: 15, color: t.inkDim, fontWeight: 500 }}>
               Started by {project.ownerName}
             </p>
           </div>
@@ -171,7 +171,7 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, marginBottom: 28,
-          fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
+          fontSize: 14, color: t.inkDim, fontWeight: 500 }}>
           {range && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <Icon name="clock" size={15} stroke={2.1} />{range}
@@ -196,14 +196,14 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
           </Btn>
           {sandboxActivity > 0 && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14,
-              color: t.inkDim, fontWeight: 600 }}>
+              color: t.inkDim, fontWeight: 500 }}>
               <Icon name="grid" size={16} stroke={2} />
               {sandboxActivity} Sandbox {sandboxActivity === 1 ? 'session' : 'sessions'} run
             </span>
           )}
         </div>
 
-        <h2 className="placer-disp" style={{ fontSize: 26, fontWeight: 900, color: t.ink,
+        <h2 className="placer-disp" style={{ fontSize: 26, fontWeight: 700, color: t.ink,
           letterSpacing: '-0.02em', marginBottom: 20 }}>
           Citizen imaginations
         </h2>
@@ -226,7 +226,7 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
 
         {links.length > 0 && (
           <>
-            <h2 className="placer-disp" style={{ fontSize: 26, fontWeight: 900, color: t.ink,
+            <h2 className="placer-disp" style={{ fontSize: 26, fontWeight: 700, color: t.ink,
               letterSpacing: '-0.02em', marginBottom: 12 }}>
               News &amp; resources
             </h2>

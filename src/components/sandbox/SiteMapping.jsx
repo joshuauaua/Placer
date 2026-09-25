@@ -63,9 +63,9 @@ function loadGoogleMaps(apiKey) {
 
 function fieldStyle(t) {
   return {
-    width: '100%', height: 42, padding: '0 12px', borderRadius: 9,
+    width: '100%', height: 42, padding: '0 12px', borderRadius: 12,
     border: `1.5px solid ${t.line}`, background: t.surfaceAlt, color: t.ink,
-    fontFamily: 'var(--placer-font)', fontSize: 14.5, fontWeight: 600,
+    fontFamily: 'var(--placer-font)', fontSize: 14.5, fontWeight: 500,
   };
 }
 
@@ -351,7 +351,7 @@ export function SiteMapping({ t, experiment }) {
           {showMap ? (
             <div style={{ marginTop: 12 }}>
               <div ref={mapEl} role="application" aria-label="Choose site on map. Click to drop the site pin."
-                style={{ width: '100%', height: 320, borderRadius: 10, overflow: 'hidden', border: `1px solid ${t.line}`, background: t.surfaceAlt }} />
+                style={{ width: '100%', height: 320, borderRadius: 12, overflow: 'hidden', border: `1px solid ${t.line}`, background: t.surfaceAlt }} />
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10, alignItems: 'center' }}>
                 <Btn t={t} variant="outline" size="sm" icon="pin"
                   disabled={geoState === 'locating'} onClick={locateMe}>
@@ -386,7 +386,7 @@ export function SiteMapping({ t, experiment }) {
               }} style={{ ...fieldStyle(t), marginTop: 6 }} />
           </div>
           {searchError && (
-            <p role="alert" style={{ fontSize: 13, color: '#C0392B', marginTop: 10 }}>{searchError}</p>
+            <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{searchError}</p>
           )}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16, alignItems: 'center' }}>
             <Btn t={t} variant="primary" size="md" icon="pin"
@@ -470,7 +470,7 @@ export function SiteMapping({ t, experiment }) {
           onClick={panel === 'spatial' ? clickMap : undefined}
           onDragOver={(e) => { if (panel === 'spatial') e.preventDefault(); }}
           onDrop={panel === 'spatial' ? dropOnMap : undefined}
-          style={{ borderRadius: 10, overflow: 'hidden', border: `1px solid ${t.line}`, background: t.surfaceAlt, cursor: panel === 'spatial' ? 'crosshair' : 'default' }}>
+          style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${t.line}`, background: t.surfaceAlt, cursor: panel === 'spatial' ? 'crosshair' : 'default' }}>
           <svg viewBox="0 0 100 70" style={{ width: '100%', display: 'block' }} role="img"
             aria-label={`Schematic plan of ${site.name} with ${placedTotal} placed markers`}>
             {/* grass, paths, water hint */}
@@ -494,7 +494,7 @@ export function SiteMapping({ t, experiment }) {
               return (
                 <g key={m.id}>
                   <circle cx={m.x * 100} cy={m.y * 70} r="3" fill={kind.color} stroke="#fff" strokeWidth="0.7" />
-                  <text x={m.x * 100} y={m.y * 70 + 1.4} textAnchor="middle" fontSize="3" fontWeight="800" fill="#fff"
+                  <text x={m.x * 100} y={m.y * 70 + 1.4} textAnchor="middle" fontSize="3" fontWeight="700" fill="#fff"
                     style={{ fontFamily: 'var(--placer-font)', pointerEvents: 'none' }}>
                     {kind.label[0]}
                   </text>
@@ -553,11 +553,11 @@ export function SiteMapping({ t, experiment }) {
               <div aria-hidden="true" style={{ position: 'absolute', inset: '8px 10px 2px', borderRadius: 12, background: t.surfaceAlt, border: `1px solid ${t.line}` }} />
               <div aria-hidden="true" style={{ position: 'absolute', inset: '4px 5px 6px', borderRadius: 12, background: t.surfaceAlt, border: `1px solid ${t.line}` }} />
               <div style={{ position: 'relative', border: `1.5px solid ${t.line}`, borderRadius: 12, padding: 18, background: t.surface, boxShadow: t.shadow }}>
-                <div className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: current.kind === 'hindering' ? '#C0392B' : c, marginBottom: 8 }}>
+                <div className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: current.kind === 'hindering' ? '#B3261E' : c, marginBottom: 8 }}>
                   {current.number}. {current.kind === 'hindering' ? 'Hindering' : 'Inviting'} · {current.kind === 'hindering' ? 'does it block?' : 'is it here?'}
                 </div>
                 <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-                  <legend style={{ fontSize: 16.5, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em', lineHeight: 1.4, padding: 0, marginBottom: 4 }}>
+                  <legend style={{ fontSize: 16.5, fontWeight: 700, color: t.ink, letterSpacing: '-0.02em', lineHeight: 1.4, padding: 0, marginBottom: 4 }}>
                     {current.label}
                   </legend>
                   {current.detail && (
@@ -595,7 +595,7 @@ export function SiteMapping({ t, experiment }) {
                 <Icon name="check" size={17} stroke={2.8} />
               </span>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: t.ink, letterSpacing: '-0.02em' }}>
                   Eighteen of eighteen — {site.name} is in your notebook.
                 </div>
                 <p style={{ fontSize: 13, color: t.inkDim, lineHeight: 1.6, marginTop: 4 }}>
@@ -612,7 +612,7 @@ export function SiteMapping({ t, experiment }) {
                 Add qualitative reflection (optional)
               </Btn>
               <div style={{ border: `1.5px dashed ${t.line}`, borderRadius: 12, padding: '12px 14px', background: t.surfaceAlt }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: t.ink }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>
                   Want to stay involved in {site.name}?
                 </div>
                 <p style={{ fontSize: 13, color: t.inkDim, lineHeight: 1.6, marginTop: 4, marginBottom: 10 }}>
@@ -623,7 +623,7 @@ export function SiteMapping({ t, experiment }) {
                   Continue — leave contact details
                 </Btn>
               </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: t.ink }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, cursor: 'pointer', fontSize: 14, fontWeight: 500, color: t.ink }}>
                 <input type="checkbox" checked={false} onChange={() => setPanel('export')}
                   aria-label="Complete the tool and export" style={{ width: 17, height: 17, accentColor: c }} />
                 I&apos;m done — complete the tool & export
@@ -650,7 +650,7 @@ export function SiteMapping({ t, experiment }) {
                   onClick={() => setSelectedMarker(kind.key)}
                   aria-pressed={selectedMarker === kind.key}
                   title={kind.help}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10,
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12,
                     cursor: 'grab', textAlign: 'left', fontFamily: 'var(--placer-font)',
                     border: `1.5px solid ${selectedMarker === kind.key ? kind.color : t.line}`,
                     background: selectedMarker === kind.key ? kind.color + '14' : 'transparent', color: t.ink }}>
@@ -659,7 +659,7 @@ export function SiteMapping({ t, experiment }) {
                     <Icon name={kind.icon} size={16} stroke={2.2} />
                   </span>
                   <span>
-                    <span style={{ display: 'block', fontSize: 13.5, fontWeight: 800 }}>{kind.label}</span>
+                    <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>{kind.label}</span>
                     <span style={{ display: 'block', fontSize: 12, color: t.inkDim }}>{counts[kind.key] || 0} on map · {kind.verb}</span>
                   </span>
                 </button>
@@ -712,15 +712,15 @@ export function SiteMapping({ t, experiment }) {
         {panel === 'export' && (
           <Panel t={t} title="Review & export">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-              <div style={{ background: t.surfaceAlt, borderRadius: 10, padding: '12px 14px' }}>
+              <div style={{ background: t.surfaceAlt, borderRadius: 12, padding: '12px 14px' }}>
                 <Readout t={t} label="Survey" value={`${answered}/18`} tone={done ? c : undefined} />
               </div>
-              <div style={{ background: t.surfaceAlt, borderRadius: 10, padding: '12px 14px' }}>
+              <div style={{ background: t.surfaceAlt, borderRadius: 12, padding: '12px 14px' }}>
                 <Readout t={t} label="Markers" value={placedTotal} />
               </div>
             </div>
             <div style={{ border: `1.5px solid ${t.line}`, borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: t.ink, letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: t.ink, letterSpacing: '-0.02em' }}>
                 Stay in touch about {site.name}? (optional)
               </div>
               <p style={{ fontSize: 13, color: t.inkDim, lineHeight: 1.6, marginTop: 4, marginBottom: 12 }}>
@@ -753,11 +753,11 @@ export function SiteMapping({ t, experiment }) {
                     style={{ ...fieldStyle(t), marginTop: 6 }} />
                 </div>
                 {!isValidEmail(state.contact?.email) && (
-                  <p role="alert" style={{ fontSize: 13, color: '#C0392B', margin: 0 }}>
+                  <p role="alert" style={{ fontSize: 13, color: '#B3261E', margin: 0 }}>
                     That email does not look right — check for a missing @.
                   </p>
                 )}
-                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: t.ink, lineHeight: 1.5 }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', fontSize: 13.5, fontWeight: 500, color: t.ink, lineHeight: 1.5 }}>
                   <input type="checkbox" checked={state.contact?.consent === true}
                     onChange={(e) => setContact({ consent: e.target.checked })}
                     aria-label="Happy to be contacted about follow-ups"
@@ -778,7 +778,7 @@ export function SiteMapping({ t, experiment }) {
             </div>
             <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, maxHeight: 320, overflow: 'auto',
               fontFamily: "'Space Mono', monospace", fontSize: 11.5, color: t.inkDim, lineHeight: 1.65,
-              background: t.surfaceAlt, borderRadius: 8, padding: 12 }}>
+              background: t.surfaceAlt, borderRadius: 12, padding: 12 }}>
               {summary}
             </pre>
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>

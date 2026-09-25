@@ -45,39 +45,32 @@ function Tile({ t, experiment, onOpen }) {
     <button
       onClick={onOpen}
       style={{ position: 'relative', overflow: 'hidden', textAlign: 'left', cursor: 'pointer',
-        border: 'none', borderRadius: 14, padding: '26px 24px 24px', minHeight: 220,
-        background: `linear-gradient(150deg, ${experiment.color} 0%, ${experiment.color}D9 100%)`,
-        color: '#fff', display: 'flex', flexDirection: 'column', gap: 10,
-        fontFamily: 'var(--placer-font)', boxShadow: t.shadow,
-        transition: 'transform 0.2s, box-shadow 0.2s' }}
-      onMouseEnter={(event) => {
-        event.currentTarget.style.transform = 'translateY(-4px)';
-        event.currentTarget.style.boxShadow = '0 16px 36px rgba(0,0,0,0.18)';
-      }}
-      onMouseLeave={(event) => {
-        event.currentTarget.style.transform = 'translateY(0)';
-        event.currentTarget.style.boxShadow = t.shadow;
-      }}>
+        border: `1px solid ${experiment.color}`, borderRadius: 16, padding: 24, minHeight: 220,
+        background: experiment.tint,
+        color: t.ink, display: 'flex', flexDirection: 'column', gap: 8,
+        fontFamily: 'var(--placer-font)', boxShadow: 'none',
+        transition: 'box-shadow 0.2s' }}
+      onMouseEnter={(event) => { event.currentTarget.style.boxShadow = t.shadow; }}
+      onMouseLeave={(event) => { event.currentTarget.style.boxShadow = 'none'; }}>
       {/* The experiment's own mark, oversized and half out of frame. */}
-      <span aria-hidden="true" style={{ position: 'absolute', right: -18, bottom: -22, opacity: 0.22 }}>
+      <span aria-hidden="true" style={{ position: 'absolute', right: -18, bottom: -22, opacity: 0.18 }}>
         <Icon name={experiment.icon} size={150} stroke={1.4} />
       </span>
 
       <Icon name={experiment.icon} size={30} stroke={2.1} />
-      <span className="placer-disp" style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.15, position: 'relative' }}>
+      <span className="placer-h3" style={{ position: 'relative' }}>
         {experiment.name}
       </span>
-      <span style={{ fontSize: 15, fontWeight: 600, opacity: 0.92, lineHeight: 1.45, position: 'relative', maxWidth: 320 }}>
+      <span style={{ fontSize: 16, lineHeight: '24px', position: 'relative', maxWidth: 320 }}>
         {experiment.tagline}
       </span>
       {experiment.submittedBy && (
-        <span className="placer-mono" style={{ fontSize: 11, opacity: 0.7, letterSpacing: '0.04em', textTransform: 'uppercase', position: 'relative' }}>
+        <span className="placer-caption" style={{ color: t.inkDim, position: 'relative' }}>
           Submitted by {experiment.submittedBy}
         </span>
       )}
       <div style={{ flex: 1 }} />
-      <span className="placer-mono" style={{ fontSize: 11.5, letterSpacing: '0.06em', textTransform: 'uppercase',
-        display: 'inline-flex', alignItems: 'center', gap: 6, position: 'relative' }}>
+      <span className="placer-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, position: 'relative' }}>
         Open <Icon name="arrowRight" size={14} stroke={2.4} />
       </span>
     </button>
@@ -101,15 +94,15 @@ function StartRoom({ t, experiment, onStart, busy, canStayOpen }) {
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
       {canStayOpen && (
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13,
-          fontWeight: 600, color: t.inkDim }}>
+          fontWeight: 500, color: t.inkDim }}>
           Open for
           <select
             value={lifetime}
             onChange={(event) => setLifetime(event.target.value)}
             disabled={busy}
-            style={{ height: 34, padding: '0 10px', borderRadius: 8, border: `1.5px solid ${t.line}`,
-              background: t.chrome, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 13.5,
-              fontWeight: 600 }}>
+            style={{ height: 40, padding: '0 12px', borderRadius: 12, border: `1px solid ${t.lineStrong}`,
+              background: t.surface, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 14,
+              fontWeight: 500 }}>
             {ROOM_LIFETIMES.map((option) => (
               <option key={option.id} value={option.id}>{option.label}</option>
             ))}
@@ -120,9 +113,10 @@ function StartRoom({ t, experiment, onStart, busy, canStayOpen }) {
         t={t}
         size="sm"
         icon="user"
+        variant="character"
+        tone={experiment}
         onClick={() => onStart(lifetime)}
-        disabled={busy}
-        style={{ background: experiment.color, color: '#fff' }}>
+        disabled={busy}>
         {busy ? 'Opening…' : 'Start a room'}
       </Btn>
     </div>
@@ -157,7 +151,7 @@ function ContributePage({ t, onBack }) {
           <Icon name="flask" size={15} stroke={2.1} />
           Sandbox
         </div>
-        <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink,
+        <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
           letterSpacing: '-0.03em', marginBottom: 16, lineHeight: 1.05 }}>
           Contribute
         </h1>
@@ -170,7 +164,7 @@ function ContributePage({ t, onBack }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 680 }}>
         <Panel t={t} title="1. Clone and branch">
-          <pre style={{ margin: 0, padding: 16, background: t.surfaceAlt, borderRadius: 8,
+          <pre style={{ margin: 0, padding: 16, background: t.surfaceAlt, borderRadius: 12,
             fontSize: 13.5, lineHeight: 1.6, overflow: 'auto', fontFamily: 'var(--placer-font)',
             color: t.ink, border: `1px solid ${t.line}` }}>
 {`git clone https://github.com/joshuauaua/Placer.git
@@ -204,7 +198,7 @@ git checkout -b my-experiment`}
         </Panel>
 
         <Panel t={t} title="4. Test locally">
-          <pre style={{ margin: 0, padding: 16, background: t.surfaceAlt, borderRadius: 8,
+          <pre style={{ margin: 0, padding: 16, background: t.surfaceAlt, borderRadius: 12,
             fontSize: 13.5, lineHeight: 1.6, overflow: 'auto', fontFamily: 'var(--placer-font)',
             color: t.ink, border: `1px solid ${t.line}` }}>
 {`npm run dev`}
@@ -215,7 +209,7 @@ git checkout -b my-experiment`}
             see it in the gallery. Make sure it renders, responds to interaction, and
             passes the existing tests:
           </p>
-          <pre style={{ margin: '12px 0 0', padding: 16, background: t.surfaceAlt, borderRadius: 8,
+          <pre style={{ margin: '12px 0 0', padding: 16, background: t.surfaceAlt, borderRadius: 12,
             fontSize: 13.5, lineHeight: 1.6, overflow: 'auto', fontFamily: 'var(--placer-font)',
             color: t.ink, border: `1px solid ${t.line}` }}>
 {`npm run test:run`}
@@ -325,7 +319,7 @@ export function SandboxPage({ t, displayName = null, needsAccount = false, onSig
                   <Icon name="flask" size={15} stroke={2.1} />
                   Experiments
                 </div>
-                <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink,
+                <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
                   letterSpacing: '-0.03em', marginBottom: 16, lineHeight: 1.05 }}>
                   Sandbox
                 </h1>
@@ -341,7 +335,7 @@ export function SandboxPage({ t, displayName = null, needsAccount = false, onSig
             </div>
 
             {missing && (
-              <p role="status" style={{ marginBottom: 24, padding: '12px 16px', borderRadius: 10,
+              <p role="status" style={{ marginBottom: 24, padding: '12px 16px', borderRadius: 12,
                 background: t.surfaceAlt, border: `1px solid ${t.line}`, fontSize: 14, color: t.ink }}>
                 There is no experiment called <span className="placer-mono">{missing}</span>. Here is everything there is.
               </p>

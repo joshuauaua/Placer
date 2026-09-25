@@ -5,8 +5,9 @@
  * with their settings apart from the rest at the bottom. It sits under the glass
  * nav bar rather than beside it, so the bar still spans the full width, and it
  * stops where the page does, so the footer does too. The button at its top
- * collapses it to a rail of icons, and below 760px it always is one; either way
- * each label stays on as the button's accessible name. Styling lives in
+ * collapses it to a rail of icons. Below 1024px it becomes the glass tab bar
+ * along the bottom of the window. Either way each label stays on as the button's
+ * accessible name. All the styling, the brand kit's glass sidebar, lives in
  * index.css (.placer-side-nav).
  *
  * Each item is { key, label, icon, onSelect, active, bottom }. `active` is a list
@@ -37,7 +38,7 @@ function writeCollapsed(collapsed) {
   }
 }
 
-export function SideNav({ t, view, onNavigate, onExplore, onNewProject }) {
+export function SideNav({ view, onNavigate, onExplore, onNewProject }) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
 
   const toggle = () => {
@@ -57,16 +58,15 @@ export function SideNav({ t, view, onNavigate, onExplore, onNewProject }) {
 
   return (
     <nav aria-label="App" className={`placer-side-nav${collapsed ? ' is-collapsed' : ''}`}
-      style={{ background: t.chrome, borderRight: `1px solid ${t.line}` }}>
+    >
       <button
         onClick={toggle}
         aria-label={collapsed ? 'Expand side nav' : 'Collapse side nav'}
         aria-expanded={!collapsed}
         title={collapsed ? 'Expand' : 'Collapse'}
         className="placer-side-nav-link placer-side-nav-toggle"
-        style={{ color: t.inkDim, fontWeight: 600 }}
       >
-        <Icon name={collapsed ? 'chevRight' : 'chevLeft'} size={19} stroke={2} />
+        <Icon name={collapsed ? 'chevRight' : 'chevLeft'} size={20} stroke={2} />
       </button>
 
       <button
@@ -75,9 +75,8 @@ export function SideNav({ t, view, onNavigate, onExplore, onNewProject }) {
         aria-current={view === 'projectNew' ? 'page' : undefined}
         title="New project"
         className="placer-side-nav-link placer-side-nav-primary"
-        style={{ background: t.primaryBg, color: t.primaryFg, fontWeight: 700 }}
       >
-        <Icon name="plus" size={19} stroke={2.2} />
+        <Icon name="plus" size={20} stroke={2.2} />
         <span className="placer-side-nav-label">New project</span>
       </button>
 
@@ -91,10 +90,8 @@ export function SideNav({ t, view, onNavigate, onExplore, onNewProject }) {
             aria-current={current ? 'page' : undefined}
             title={item.label}
             className={`placer-side-nav-link${item.bottom ? ' placer-side-nav-bottom' : ''}`}
-            style={{ color: current ? t.ink : t.inkDim, fontWeight: current ? 700 : 600,
-              background: current ? t.surfaceAlt : undefined }}
           >
-            <Icon name={item.icon} size={19} stroke={2} />
+            <Icon name={item.icon} size={20} stroke={2} />
             <span className="placer-side-nav-label">{item.label}</span>
           </button>
         );

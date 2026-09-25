@@ -15,9 +15,9 @@ const voteWeight = (direction) => (direction === 'up' ? 1 : direction === 'down'
 
 function VoteControl({ t, score, myVote, disabled, onVote }) {
   const buttonStyle = (active) => ({
-    width: 30, height: 30, borderRadius: 8, cursor: disabled ? 'default' : 'pointer',
+    width: 30, height: 30, borderRadius: 12, cursor: disabled ? 'default' : 'pointer',
     border: `1.5px solid ${active ? t.accent : t.line}`,
-    background: active ? t.accent + '22' : 'transparent',
+    background: active ? t.surfaceAlt : 'transparent',
     color: active ? t.ink : t.inkDim,
     display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.5 : 1,
   });
@@ -33,7 +33,7 @@ function VoteControl({ t, score, myVote, disabled, onVote }) {
         style={buttonStyle(myVote === 'up')}>
         <Icon name="arrowUp" size={16} stroke={2.4} />
       </button>
-      <span className="placer-disp" style={{ fontSize: 17, fontWeight: 800, color: t.ink,
+      <span className="placer-disp" style={{ fontSize: 17, fontWeight: 700, color: t.ink,
         minWidth: 22, textAlign: 'center' }}>
         {score}
       </span>
@@ -216,7 +216,7 @@ export function ImaginationPreview({ t, imagination, onClose, accountId = null,
             <div style={{ minWidth: 0 }}>
               {cat && <div style={{ marginBottom: 10 }}><CatTag cat={cat} t={t} size="sm" /></div>}
 
-              <h2 className="placer-disp" style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em',
+              <h2 className="placer-disp" style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em',
                 lineHeight: 1.25, marginBottom: blurb ? 8 : 0 }}>
                 {title || 'Untitled imagination'}
               </h2>
@@ -234,7 +234,7 @@ export function ImaginationPreview({ t, imagination, onClose, accountId = null,
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingTop: 12,
-            borderTop: `1px solid ${t.line}`, fontSize: 12.5, color: t.inkDim, fontWeight: 600 }}>
+            borderTop: `1px solid ${t.line}`, fontSize: 12.5, color: t.inkDim, fontWeight: 500 }}>
             {loc && <div>{loc}</div>}
             <div>
               <span className="placer-disp" style={{ color: t.ink, fontWeight: 700 }}>{canvasAssets.length}</span> assets
@@ -244,14 +244,14 @@ export function ImaginationPreview({ t, imagination, onClose, accountId = null,
 
           {!canInteract && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-              marginTop: 14, padding: '10px 12px', background: t.surfaceAlt, borderRadius: 8,
+              marginTop: 14, padding: '10px 12px', background: t.surfaceAlt, borderRadius: 12,
               fontSize: 13, color: t.inkDim }}>
               <span>Sign in to vote or comment.</span>
               {onSignIn && <Btn t={t} variant="outline" size="sm" onClick={onSignIn}>Sign in</Btn>}
             </div>
           )}
 
-          <h3 className="placer-disp" style={{ fontSize: 14, fontWeight: 800, letterSpacing: '-0.01em',
+          <h3 className="placer-disp" style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em',
             color: t.ink, marginTop: 18, marginBottom: 2 }}>
             Comments{commentsStatus === 'ready' && comments.length > 0 ? ` · ${comments.length}` : ''}
           </h3>
@@ -282,12 +282,12 @@ export function ImaginationPreview({ t, imagination, onClose, accountId = null,
                 placeholder="Add a comment…"
                 rows={2}
                 aria-label="Add a comment"
-                style={{ width: '100%', resize: 'vertical', padding: '8px 10px', borderRadius: 8,
+                style={{ width: '100%', resize: 'vertical', padding: '8px 10px', borderRadius: 12,
                   border: `1.5px solid ${t.line}`, fontFamily: 'var(--placer-font)', fontSize: 13.5,
                   color: t.ink, background: t.surface }}
               />
               {commentError && (
-                <div role="alert" style={{ fontSize: 12.5, color: '#D6452F', fontWeight: 600 }}>
+                <div role="alert" style={{ fontSize: 12.5, color: '#B3261E', fontWeight: 500 }}>
                   {commentError}
                 </div>
               )}

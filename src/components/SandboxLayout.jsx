@@ -30,11 +30,12 @@ export function SandboxLayout({ t, experiment, onBack, actions, children }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, flexWrap: 'wrap', marginBottom: 28 }}>
         <div style={{ flex: '1 1 420px', minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-            <span style={{ width: 40, height: 40, borderRadius: 10, background: experiment.color, color: '#fff',
+            <span style={{ width: 40, height: 40, borderRadius: 12, background: experiment.tint, color: t.ink,
+              boxShadow: `inset 0 0 0 1px ${experiment.color}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>
               <Icon name={experiment.icon} size={22} stroke={2.2} />
             </span>
-            <h1 className="placer-disp" style={{ fontSize: 32, fontWeight: 900, color: t.ink, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+            <h1 className="placer-disp" style={{ fontSize: 32, fontWeight: 700, color: t.ink, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
               {experiment.name}
             </h1>
           </div>
@@ -86,12 +87,12 @@ export function Readout({ t, label, value, unit, delta, deltaLabel, tone }) {
   return (
     <div style={{ minWidth: 0 }}>
       <div style={{ fontSize: 12.5, fontWeight: 700, color: t.inkDim, marginBottom: 4 }}>{label}</div>
-      <div className="placer-disp" style={{ fontSize: 26, fontWeight: 900, color: tone || t.ink, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+      <div className="placer-disp" style={{ fontSize: 26, fontWeight: 700, color: tone || t.ink, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
         {value}
         {unit && <span style={{ fontSize: 14, fontWeight: 700, color: t.inkDim, marginLeft: 4 }}>{unit}</span>}
       </div>
       {delta !== undefined && delta !== null && (
-        <div className="placer-mono" style={{ fontSize: 11.5, marginTop: 4, color: delta === 0 ? t.inkFaint : delta > 0 ? '#2E7D32' : '#C0392B' }}>
+        <div className="placer-mono" style={{ fontSize: 11.5, marginTop: 4, color: delta === 0 ? t.inkFaint : delta > 0 ? '#1E7B3A' : '#B3261E' }}>
           {delta === 0 ? 'no change' : `${sign}${delta}`} {deltaLabel}
         </div>
       )}

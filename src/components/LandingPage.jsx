@@ -52,7 +52,7 @@ export function LandingPage({ t }) {
       }}>
         <h1 className="placer-disp" style={{
           fontSize: 64,
-          fontWeight: 900,
+          fontWeight: 700,
           color: t.ink,
           letterSpacing: '-0.03em',
           lineHeight: 1,

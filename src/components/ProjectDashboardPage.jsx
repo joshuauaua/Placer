@@ -33,7 +33,7 @@ const inputStyle = (t) => ({
   padding: '10px 14px',
   fontSize: 14,
   border: `1.5px solid ${t.line}`,
-  borderRadius: 8,
+  borderRadius: 12,
   background: t.chrome,
   color: t.ink,
   fontFamily: 'var(--placer-font)',
@@ -52,10 +52,10 @@ function Card({ t, title, children }) {
 
 function StatTile({ t, icon, label, value }) {
   return (
-    <div style={{ flex: 1, minWidth: 140, padding: 18, background: t.surfaceAlt, borderRadius: 10 }}>
+    <div style={{ flex: 1, minWidth: 140, padding: 18, background: t.surfaceAlt, borderRadius: 12 }}>
       <Icon name={icon} size={18} stroke={2} style={{ color: t.inkDim, marginBottom: 8 }} />
-      <div className="placer-disp" style={{ fontSize: 26, fontWeight: 900, color: t.ink }}>{value}</div>
-      <div style={{ fontSize: 12.5, color: t.inkDim, fontWeight: 600 }}>{label}</div>
+      <div className="placer-disp" style={{ fontSize: 26, fontWeight: 700, color: t.ink }}>{value}</div>
+      <div style={{ fontSize: 12.5, color: t.inkDim, fontWeight: 500 }}>{label}</div>
     </div>
   );
 }
@@ -73,7 +73,7 @@ function CollaboratorRow({ t, collaborator, onRemove }) {
         )}
       </div>
       <button onClick={() => onRemove(collaborator)} style={{ background: 'none', border: 'none',
-        color: t.inkDim, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+        color: t.inkDim, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: 0 }}>
         Remove
       </button>
     </div>
@@ -87,7 +87,7 @@ function ExperimentMenuItem({ t, experiment, onClick }) {
       onClick={onClick}
       style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%',
         padding: '10px 14px', background: 'transparent', color: t.ink, cursor: 'pointer',
-        border: 'none', fontFamily: 'var(--placer-font)', fontWeight: 600, fontSize: 14.5,
+        border: 'none', fontFamily: 'var(--placer-font)', fontWeight: 500, fontSize: 14.5,
         letterSpacing: '-0.01em', textAlign: 'left' }}
       onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
@@ -128,7 +128,7 @@ function AddSandboxExperiment({ t, onChoose }) {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
-        style={{ height: 42, padding: '0 18px', borderRadius: 9, cursor: 'pointer',
+        style={{ height: 42, padding: '0 18px', borderRadius: 12, cursor: 'pointer',
           display: 'inline-flex', alignItems: 'center', gap: 8, background: t.accent,
           color: t.accentInk, border: '1px solid transparent', fontFamily: 'var(--placer-font)',
           fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em' }}>
@@ -173,7 +173,7 @@ function RoomRow({ t, room, onOpen, onClose }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0',
       borderTop: `1px solid ${t.line}`, flexWrap: 'wrap' }}>
-      <div ref={qrRef} style={{ background: '#fff', padding: 6, borderRadius: 8,
+      <div ref={qrRef} style={{ background: '#fff', padding: 6, borderRadius: 12,
         border: `1px solid ${t.line}`, flex: '0 0 auto', display: 'flex' }}>
         <QRCode value={url} size={64} bgColor="#ffffff" fgColor="#000000" title={`Join ${name}`} />
       </div>
@@ -199,7 +199,7 @@ function RoomRow({ t, room, onOpen, onClose }) {
         <Btn t={t} variant="quiet" size="sm" icon="close"
           onClick={() => (confirming ? onClose(room) : setConfirming(true))}
           onBlur={() => setConfirming(false)}
-          style={confirming ? { borderColor: '#C0392B', color: '#C0392B' } : undefined}>
+          style={confirming ? { borderColor: '#B3261E', color: '#B3261E' } : undefined}>
           {confirming ? 'Close — confirm' : 'Close'}
         </Btn>
       </div>
@@ -217,7 +217,7 @@ function LinkRow({ t, link, onRemove }) {
         {link.title}
       </a>
       <button onClick={() => onRemove(link)} style={{ background: 'none', border: 'none',
-        color: t.inkDim, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0, flex: '0 0 auto' }}>
+        color: t.inkDim, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: 0, flex: '0 0 auto' }}>
         Remove
       </button>
     </div>
@@ -364,12 +364,12 @@ export function ProjectDashboardPage({ t, accountId, projectId,
   };
 
   if (status === 'loading') {
-    return <div style={{ padding: 48, fontSize: 14, color: t.inkDim, fontWeight: 600 }}>Loading…</div>;
+    return <div style={{ padding: 48, fontSize: 14, color: t.inkDim, fontWeight: 500 }}>Loading…</div>;
   }
 
   if (status === 'error' || !project) {
     return (
-      <div role="alert" style={{ padding: 48, fontSize: 14, color: t.ink, fontWeight: 600 }}>
+      <div role="alert" style={{ padding: 48, fontSize: 14, color: t.ink, fontWeight: 500 }}>
         Could not load this project's dashboard. See the console for details.
       </div>
     );
@@ -393,7 +393,7 @@ export function ProjectDashboardPage({ t, accountId, projectId,
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
           gap: 16, marginBottom: 32 }}>
           <div>
-            <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 900, color: t.ink,
+            <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 700, color: t.ink,
               letterSpacing: '-0.03em', marginBottom: 8 }}>
               {project.name}
             </h1>
@@ -401,7 +401,7 @@ export function ProjectDashboardPage({ t, accountId, projectId,
               onClick={() => onNavigateToPublic(project.id)}
               role="link" tabIndex={0}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigateToPublic(project.id); }}
-              style={{ fontSize: 14, color: t.inkDim, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+              style={{ fontSize: 14, color: t.inkDim, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline' }}>
               View the public page
             </span>
           </div>
@@ -464,7 +464,7 @@ export function ProjectDashboardPage({ t, accountId, projectId,
               {addingLink ? 'Adding…' : 'Add'}
             </Btn>
           </form>
-          {linkError && <p role="alert" style={{ fontSize: 13, color: '#D6452F', marginTop: 10 }}>{linkError}</p>}
+          {linkError && <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{linkError}</p>}
         </Card>
 
         <Card t={t} title="Collaborators">
@@ -496,7 +496,7 @@ export function ProjectDashboardPage({ t, accountId, projectId,
               </Btn>
             </form>
           )}
-          {inviteError && <p role="alert" style={{ fontSize: 13, color: '#D6452F', marginTop: 10 }}>{inviteError}</p>}
+          {inviteError && <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{inviteError}</p>}
         </Card>
       </div>
     </div>

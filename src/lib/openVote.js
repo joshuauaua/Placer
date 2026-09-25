@@ -9,9 +9,9 @@
 export const DEFAULT_QUESTION = 'Yes or No?';
 
 export const OPTIONS = [
-  { key: 'yes', label: 'Yes', color: '#3E9D4E' },
-  { key: 'no', label: 'No', color: '#D6452F' },
-  { key: 'undecided', label: 'Undecided', color: '#8A8A8A' },
+  { key: 'yes', label: 'Yes', color: '#1E7B3A' },
+  { key: 'no', label: 'No', color: '#B3261E' },
+  { key: 'undecided', label: 'Undecided', color: '#6E6E6E' },
 ];
 
 const OPTION_KEYS = new Set(OPTIONS.map((option) => option.key));

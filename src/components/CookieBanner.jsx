@@ -64,7 +64,7 @@ export function CookieBanner({ t }) {
             Nothing is stored on your device and nothing is sent until you accept.{' '}
             <Link
               href="/terms-and-privacy"
-              style={{ color: t.ink, fontWeight: 600, textDecoration: 'underline' }}>
+              style={{ color: t.ink, fontWeight: 500, textDecoration: 'underline' }}>
               Terms and Privacy
             </Link>
           </div>

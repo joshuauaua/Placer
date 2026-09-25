@@ -101,7 +101,7 @@ export function staticMapUrl({
   // same auto-fit ProjectSetupPage's live map gets for free from google.maps.Map —
   // there is no bounds math to duplicate here.
   paths,
-  pathColor = '2f91a2',
+  pathColor = '1D5FA8',
 }) {
   const { width, height } = clampSize(size)
   const params = new URLSearchParams({

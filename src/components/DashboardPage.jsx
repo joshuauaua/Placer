@@ -43,14 +43,14 @@ function StatCard({ t, icon, label, value }) {
   return (
     <div style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12,
       padding: 24, boxShadow: t.shadow }}>
-      <div style={{ width: 48, height: 48, borderRadius: 10, background: t.accent + '15',
+      <div style={{ width: 48, height: 48, borderRadius: 12, background: t.surfaceAlt,
         display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
         <Icon name={icon} size={24} stroke={2} style={{ color: t.accent }} />
       </div>
-      <div className="placer-disp" style={{ fontSize: 32, fontWeight: 900, color: t.ink, marginBottom: 4 }}>
+      <div className="placer-disp" style={{ fontSize: 32, fontWeight: 700, color: t.ink, marginBottom: 4 }}>
         {value}
       </div>
-      <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>{label}</div>
     </div>
   );
 }
@@ -111,10 +111,10 @@ function ImaginationCard({ t, imagination, onOpen }) {
 function FollowedRow({ t, item, onUnfollow }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-      padding: '12px 16px', background: t.surface, border: `1px solid ${t.line}`, borderRadius: 10 }}>
+      padding: '12px 16px', background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12 }}>
       <span style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>{item.label}</span>
       <button onClick={() => onUnfollow(item)} style={{ background: 'none', border: 'none',
-        color: t.inkDim, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+        color: t.inkDim, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: 0 }}>
         Unfollow
       </button>
     </div>
@@ -124,16 +124,16 @@ function FollowedRow({ t, item, onUnfollow }) {
 function FollowedSection({ t, title, empty, items, status, render }) {
   return (
     <>
-      <h2 className="placer-disp" style={{ fontSize: 22, fontWeight: 900, color: t.ink,
+      <h2 className="placer-disp" style={{ fontSize: 22, fontWeight: 700, color: t.ink,
         letterSpacing: '-0.02em', margin: '40px 0 16px' }}>
         {title}
       </h2>
       {status === 'loading' && (
-        <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>Loading…</div>
+        <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>Loading…</div>
       )}
       {status === 'error' && (
-        <div role="alert" style={{ padding: 16, borderRadius: 8, background: '#D6452F22',
-          borderLeft: '4px solid #D6452F', fontSize: 14, fontWeight: 600, color: t.ink }}>
+        <div role="alert" style={{ padding: 16, borderRadius: 12, background: '#F5F5F5',
+          borderLeft: '4px solid #B3261E', fontSize: 14, fontWeight: 500, color: t.ink }}>
           Could not load {title.toLowerCase()}. See the console for details.
         </div>
       )}
@@ -296,7 +296,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20, marginBottom: 48 }}>
           <Avatar name={name} icon={profile?.avatar} size={72} ring={t.line} />
           <div>
-            <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink,
+            <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
               letterSpacing: '-0.03em', marginBottom: 8 }}>
               Dashboard
             </h1>
@@ -307,13 +307,13 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
                 role="link"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate('settings'); }}
-                style={{ color: t.ink, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+                style={{ color: t.ink, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline' }}>
                 Change your name
               </span>
             </p>
             {profile?.location && (
               <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14.5,
-                color: t.inkDim, fontWeight: 600, marginTop: 6 }}>
+                color: t.inkDim, fontWeight: 500, marginTop: 6 }}>
                 <Icon name="pin" size={15} stroke={2.1} />
                 {profile.location}
               </p>
@@ -337,7 +337,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
           <>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               marginBottom: 20 }}>
-              <h2 className="placer-disp" style={{ fontSize: 28, fontWeight: 900, color: t.ink,
+              <h2 className="placer-disp" style={{ fontSize: 28, fontWeight: 700, color: t.ink,
                 letterSpacing: '-0.02em' }}>
                 Your projects
               </h2>
@@ -349,8 +349,8 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
             </div>
 
             {projectsStatus === 'error' && (
-              <div role="alert" style={{ padding: 16, borderRadius: 8, background: '#D6452F22',
-                borderLeft: '4px solid #D6452F', fontSize: 14, fontWeight: 600, color: t.ink, marginBottom: 40 }}>
+              <div role="alert" style={{ padding: 16, borderRadius: 12, background: '#F5F5F5',
+                borderLeft: '4px solid #B3261E', fontSize: 14, fontWeight: 500, color: t.ink, marginBottom: 40 }}>
                 Could not load your projects. See the console for details.
               </div>
             )}
@@ -373,18 +373,18 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
           </>
         )}
 
-        <h2 className="placer-disp" style={{ fontSize: 28, fontWeight: 900, color: t.ink,
+        <h2 className="placer-disp" style={{ fontSize: 28, fontWeight: 700, color: t.ink,
           letterSpacing: '-0.02em', marginBottom: 20 }}>
           Created imaginations
         </h2>
 
         {status === 'loading' && (
-          <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>Loading imaginations…</div>
+          <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>Loading imaginations…</div>
         )}
 
         {status === 'error' && (
-          <div role="alert" style={{ padding: 16, borderRadius: 8, background: '#D6452F22',
-            borderLeft: '4px solid #D6452F', fontSize: 14, fontWeight: 600, color: t.ink }}>
+          <div role="alert" style={{ padding: 16, borderRadius: 12, background: '#F5F5F5',
+            borderLeft: '4px solid #B3261E', fontSize: 14, fontWeight: 500, color: t.ink }}>
             Could not load your imaginations. See the console for details.
           </div>
         )}
@@ -419,7 +419,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
             and publishing it to a shared map without being asked would break that. */}
         {status === 'ready' && shared && onlyHere.length > 0 && (
           <>
-            <h2 className="placer-disp" style={{ fontSize: 28, fontWeight: 900, color: t.ink,
+            <h2 className="placer-disp" style={{ fontSize: 28, fontWeight: 700, color: t.ink,
               letterSpacing: '-0.02em', margin: '48px 0 8px' }}>
               Saved on this device
             </h2>

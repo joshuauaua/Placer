@@ -26,6 +26,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Btn } from './UI';
 import { googleMapsApiKey, loadGoogleMaps } from '../lib/googleMaps';
 import { MAP_STYLE } from '../lib/mapStyle';
+import { CHARACTER } from '../theme';
 
 // Same default centre MapContainer opens on: STPLN, Malmöhusvägen 5, Malmö.
 const DEFAULT_CENTER = { lat: 55.6054, lng: 12.9854 };
@@ -73,9 +74,9 @@ export function LocationMapPicker({ t, initialShapes = [], onChange = () => {} }
   const [draftPoints, setDraftPoints] = useState([]);
 
   const shapeStyle = {
-    fillColor: t.accent,
-    fillOpacity: 0.25,
-    strokeColor: t.accent,
+    fillColor: CHARACTER.cityWorker.c300,
+    fillOpacity: 0.4,
+    strokeColor: CHARACTER.cityWorker.c700,
     strokeWeight: 2,
     editable: true,
     draggable: true,
@@ -183,7 +184,7 @@ export function LocationMapPicker({ t, initialShapes = [], onChange = () => {} }
     // so it never steals a click from the map underneath it while drawing.
     const draftPolyline = new google.maps.Polyline({
       path: [],
-      strokeColor: t.accent,
+      strokeColor: CHARACTER.cityWorker.c700,
       strokeWeight: 2,
       clickable: false,
     });
@@ -231,7 +232,7 @@ export function LocationMapPicker({ t, initialShapes = [], onChange = () => {} }
         </div>
       )}
 
-      <div style={{ position: 'relative', width: '100%', height: 360, borderRadius: 8,
+      <div style={{ position: 'relative', width: '100%', height: 360, borderRadius: 12,
         overflow: 'hidden', border: `1.5px solid ${t.line}`, background: t.chrome }}>
         <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
 
@@ -252,7 +253,7 @@ export function LocationMapPicker({ t, initialShapes = [], onChange = () => {} }
           flexDirection: 'column', gap: 6 }}>
           {shapes.map((shape, i) => (
             <li key={shape.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '8px 12px', borderRadius: 8, background: t.chrome, fontSize: 13.5, color: t.ink }}>
+              padding: '8px 12px', borderRadius: 12, background: t.chrome, fontSize: 13.5, color: t.ink }}>
               <span>Shape {i + 1} · {shape.path.length} points</span>
               <Btn t={t} variant="ghost" size="sm" icon="trash"
                 ariaLabel={`Remove shape ${i + 1}`}

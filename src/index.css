@@ -1,19 +1,57 @@
-/* PLACER — design system base */
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
-
-/* PLACER — the site typefaces, matching the landingpage branch.
+/* PLACER — design system base, from the brand kit (design.md).
  *
- * Archivo for text, and Archivo Expanded for display type (.placer-disp): the
- * wordmark, the hero and headings. Both load every weight the app uses, up to
- * 900, which the hero relies on.
+ * Helvetica throughout (Bold 700, Medium 500, Regular 400), falling back to Arial.
+ * The kit has one typeface, so the display face and the "mono" labels both resolve
+ * to it; the class names stay because the components use them.
  *
- * The text face is held as a custom property because it is named in inline
- * styles and SVG attributes as well as in this file, and those cannot read a JS
- * constant without threading an import through every component.
+ * The type scale, the neutrals and the three character colours are custom
+ * properties so inline styles and SVG attributes can read them too. The type
+ * scale switches at the kit's one breakpoint, 1024px.
  */
 :root {
-  --placer-font: 'Archivo', system-ui, sans-serif;
-  --placer-font-display: 'Archivo Expanded', 'Archivo', sans-serif;
+  --placer-font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --placer-font-display: var(--placer-font);
+
+  --placer-ink: #111111;
+  --placer-grey-700: #3D3D3D;
+  --placer-grey-500: #6E6E6E;
+  --placer-grey-300: #D6D6D6;
+  --placer-grey-200: #E6E6E6;
+  --placer-grey-100: #F5F5F5;
+  --placer-white: #FFFFFF;
+  --placer-error: #B3261E;
+  --placer-success: #1E7B3A;
+
+  --placer-blue-50: #EEF5FE;  --placer-blue-100: #C6DEF8;  --placer-blue-300: #8DBBEF;  --placer-blue-700: #1D5FA8;  --placer-blue-900: #123F73;
+  --placer-orange-50: #FFF3E8; --placer-orange-100: #FFD9B8; --placer-orange-300: #FDB27A; --placer-orange-700: #9E4600; --placer-orange-900: #6B2E00;
+  --placer-purple-50: #F4F0FE; --placer-purple-100: #DDD2FA; --placer-purple-300: #B39DF2; --placer-purple-700: #5B3CB8; --placer-purple-900: #3A2480;
+
+  --placer-radius-sm: 12px;
+  --placer-radius-lg: 16px;
+  --placer-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+
+  /* Mobile type scale (0–1023px): size / line height. */
+  --placer-display: 40px; --placer-display-lh: 44px;
+  --placer-h1: 32px; --placer-h1-lh: 38px;
+  --placer-h2: 24px; --placer-h2-lh: 30px;
+  --placer-h3: 20px; --placer-h3-lh: 26px;
+  --placer-body-lg: 17px; --placer-body-lg-lh: 26px;
+
+  --placer-margin: 20px;
+  --placer-glass-pad: 16px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --placer-display: 64px; --placer-display-lh: 68px;
+    --placer-h1: 44px; --placer-h1-lh: 52px;
+    --placer-h2: 32px; --placer-h2-lh: 40px;
+    --placer-h3: 22px; --placer-h3-lh: 28px;
+    --placer-body-lg: 18px; --placer-body-lg-lh: 28px;
+
+    --placer-margin: 80px;
+    --placer-glass-pad: 24px;
+  }
 }
 
 * {
@@ -31,18 +69,158 @@ html, body {
 
 body {
   font-family: var(--placer-font);
-  font-feature-settings: 'ss01';
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--placer-ink);
+  background: var(--placer-white);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
+/* The type scale. Page titles are always H1; the classes are for anything else
+ * that should sit on a step of the scale. Helvetica has no weight above Bold, so
+ * the heavier weights the components still ask for are held to 700. */
+h1,
+.placer-h1 {
+  font-size: var(--placer-h1) !important;
+  line-height: var(--placer-h1-lh) !important;
+  letter-spacing: -0.01em !important;
+  font-weight: 700 !important;
+}
+
+.placer-display {
+  font-size: var(--placer-display) !important;
+  line-height: var(--placer-display-lh) !important;
+  letter-spacing: -0.02em !important;
+  font-weight: 700 !important;
+}
+
+.placer-h2 {
+  font-size: var(--placer-h2) !important;
+  line-height: var(--placer-h2-lh) !important;
+  letter-spacing: -0.01em !important;
+  font-weight: 700 !important;
+}
+
+.placer-h3 {
+  font-size: var(--placer-h3) !important;
+  line-height: var(--placer-h3-lh) !important;
+  letter-spacing: 0 !important;
+  font-weight: 700 !important;
+}
+
+.placer-body-lg {
+  font-size: var(--placer-body-lg);
+  line-height: var(--placer-body-lg-lh);
+}
+
+.placer-label {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.placer-caption {
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.01em;
+}
+
+h2, h3 {
+  font-weight: 700;
+}
+
+/* Kept as a class for the small uppercase labels, but set in the one typeface. */
 .placer-mono {
-  font-family: 'Space Mono', monospace;
+  font-family: var(--placer-font);
+  letter-spacing: 0.01em;
 }
 
 .placer-disp {
   font-family: var(--placer-font-display);
+  font-weight: 700 !important;
+}
+
+/* Focus: a 2px ink ring, 2px off the edge, on everything that takes focus. */
+:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+/* Inputs: 48px, 12px corners, a grey-300 hairline that becomes 2px ink on focus.
+ * Components still style most fields inline, so the radius and focus are the
+ * parts enforced here. */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+select,
+textarea {
+  font-family: var(--placer-font);
+  border-radius: var(--placer-radius-sm) !important;
+}
+
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 0;
+}
+
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'] {
+  accent-color: var(--placer-ink);
+}
+
+a {
+  color: var(--placer-ink);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* Buttons from UI.jsx's Btn. Hover lives here because an inline style cannot
+ * have one: primary goes grey-700, secondary goes grey-100. */
+.placer-btn {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.placer-btn-primary:not(:disabled):hover {
+  background: var(--placer-grey-700) !important;
+}
+
+.placer-btn-character:not(:disabled):hover {
+  background: var(--placer-btn-hover) !important;
+}
+
+.placer-btn-secondary:not(:disabled):hover,
+.placer-btn-ghost:not(:disabled):hover {
+  background: var(--placer-grey-100) !important;
+}
+
+/* Cards: 16px corners, a grey-200 hairline and no shadow until hovered. */
+.placer-card {
+  border-radius: var(--placer-radius-lg);
+  border: 1px solid var(--placer-grey-200);
+  background: var(--placer-white);
+  padding: 24px;
+  transition: box-shadow 0.2s ease;
+}
+
+.placer-card:hover {
+  box-shadow: var(--placer-shadow);
+}
+
+/* Matte glass: white at 12% over a 24px blur, a 45% white rim and the one shadow.
+ * For map panels, the sidebar, the tab bar and glass buttons on maps. Never glass
+ * on glass. */
+.placer-glass {
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: var(--placer-radius-lg);
+  box-shadow: var(--placer-shadow);
+  color: var(--placer-ink);
 }
 
 .placer-scroll {
@@ -275,9 +453,15 @@ body {
   overflow-y: visible !important;
 }
 
+/* PLACER — the footer (see SiteFooter.jsx). Ink, no radius, no shadow; four
+ * columns in a row from 1024px, stacked below it. Content pages only. */
+.placer-footer {
+  padding: 64px 80px;
+}
+
 .placer-footer-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 40px;
 }
 
@@ -289,77 +473,84 @@ body {
   gap: 16px;
 }
 
-@media (max-width: 760px) {
+.placer-footer-link {
+  color: var(--placer-grey-300);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.placer-footer-link:hover,
+.placer-footer-link[aria-current='page'] {
+  color: var(--placer-white);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.placer-footer-link:focus-visible {
+  outline-color: var(--placer-white);
+}
+
+@media (max-width: 1023px) {
   .placer-footer {
-    padding: 36px 20px 24px !important;
+    padding: 40px 20px;
   }
 
   .placer-footer-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 32px 20px;
-  }
-
-  .placer-footer-grid > :first-child {
-    grid-column: 1 / -1;
+    grid-template-columns: 1fr;
+    gap: 32px;
   }
 }
 
-/* PLACER — the nav bar (see GlassNavbar.jsx), ported from the landingpage branch.
- *
- * A "liquid glass" bar across the full width of the top edge, square-cornered.
- * The effect is a stack: a translucent tint, a blur that also lifts saturation
- * so what passes underneath stays vivid, a bright rim along the top edge and a
- * hairline along the bottom that separates it from the page, and a soft sheen
- * across the upper half (::before).
- */
+/* PLACER — the bar across the top (see GlassNavbar.jsx): the wordmark top left at
+ * the page margin, and the account controls at the other end. Matte glass, square
+ * to the window since it runs edge to edge. */
 .placer-glass-nav {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 56px;
+  height: 64px;
   box-sizing: border-box;
-  padding: 0 14px 0 22px;
+  padding: 0 var(--placer-margin);
   display: flex;
   justify-content: space-between;
   align-items: center;
   z-index: 160;
-  background: rgba(255, 255, 255, 0.42);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 4px 20px rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: var(--placer-shadow);
 }
 
-.placer-glass-nav::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 55%);
-  pointer-events: none;
+/* The wordmark: Helvetica Bold, uppercase, +8% tracking. Font size is cap height
+ * over Helvetica's 0.717 cap ratio — 20px caps on desktop, 16px on mobile. */
+.placer-wordmark {
+  font-family: var(--placer-font);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  font-size: 22px;
+  min-width: 72px;
 }
 
-.placer-glass-nav > * {
-  position: relative;
+@media (min-width: 1024px) {
+  .placer-wordmark {
+    font-size: 28px;
+  }
 }
 
 .placer-glass-nav-logo {
   all: unset;
   cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-family: var(--placer-font-display);
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: inherit;
+  color: var(--placer-ink);
+  border-radius: var(--placer-radius-sm);
 }
 
 .placer-glass-nav-logo:focus-visible {
-  outline: 2px solid currentColor;
+  outline: 2px solid var(--placer-ink);
   outline-offset: 2px;
 }
 
@@ -374,29 +565,40 @@ body {
    down, so what scrolls up passes under the glass; this padding is what keeps
    the top of every view clear of it at rest. */
 .placer-under-glass-nav {
-  padding-top: 56px;
+  padding-top: 64px;
 }
 
-/* PLACER — the side nav (see SideNav.jsx). A column down the left edge, under
- * the glass bar, for anyone who is signed in. It sticks below the bar while the
- * page scrolls and scrolls away with the end of the row when the footer arrives.
- * top is 0 rather than the bar's height: the scroll area's own padding-top already
- * clears the bar, and a sticky offset is measured from inside that padding.
- * It collapses to icons with .is-collapsed, and always below 760px.
+/* PLACER — the sidebar (see SideNav.jsx), for anyone who is signed in.
+ *
+ * Desktop: a matte-glass panel 280px wide (72px collapsed), inset 12px from the
+ * window, 16px corners, 48px items with 12px corners, 20px icons and 16px labels.
+ * The current place is white at 60% and bold. It sticks below the top bar while
+ * the page scrolls.
+ *
+ * Below 1024px it becomes the glass tab bar along the bottom: 64px plus the safe
+ * area, icons over 12px labels, the collapse toggle gone.
  */
 .placer-side-nav {
   flex: 0 0 auto;
   position: sticky;
-  top: 0;
+  top: 12px;
   align-self: flex-start;
-  height: calc(100vh - 56px);
-  width: 208px;
+  margin: 12px 0 12px 12px;
+  height: calc(100vh - 64px - 24px);
+  width: 280px;
   box-sizing: border-box;
-  padding: 16px 10px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   overflow-y: auto;
+  z-index: 150;
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: var(--placer-radius-lg);
+  box-shadow: var(--placer-shadow);
   transition: width 0.2s ease;
 }
 
@@ -404,41 +606,48 @@ body {
   all: unset;
   box-sizing: border-box;
   width: 100%;
+  height: 48px;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 0 14px;
+  border-radius: var(--placer-radius-sm);
   font-family: var(--placer-font);
-  font-size: 14.5px;
-  letter-spacing: -0.01em;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--placer-ink);
   white-space: nowrap;
   transition: background 0.15s ease;
 }
 
-.placer-side-nav-link:hover,
-.placer-side-nav-link:focus-visible {
-  background: rgba(0, 0, 0, 0.05);
+.placer-side-nav-link:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.placer-side-nav-link[aria-current='page'] {
+  background: rgba(255, 255, 255, 0.6);
+  font-weight: 700;
 }
 
 .placer-side-nav-link:focus-visible {
-  outline: 2px solid currentColor;
+  outline: 2px solid var(--placer-ink);
   outline-offset: -2px;
 }
 
 /* Icon only, at the top of the column: at the right-hand end while expanded, so
    it sits apart from the places, and centred like them once collapsed. */
 .placer-side-nav-toggle {
-  width: auto;
+  width: 48px;
   align-self: flex-end;
-  padding: 8px;
-  margin-bottom: 6px;
+  justify-content: center;
+  padding: 0;
+  margin-bottom: 4px;
 }
 
 .placer-side-nav.is-collapsed .placer-side-nav-toggle {
   align-self: center;
-  padding: 8px;
 }
 
 /* Settings, pushed to the foot of the column and ruled off from the places. */
@@ -450,75 +659,129 @@ body {
 .placer-side-nav-bottom::before {
   content: '';
   position: absolute;
-  top: -9px;
+  top: -5px;
   left: 0;
   right: 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  border-top: 1px solid var(--placer-grey-200);
 }
 
-/* New project, above the places and set apart from them as the one action. */
+/* New project, above the places and set apart from them as the one action: a
+   primary button, ink with white text, grey-700 on hover. */
 .placer-side-nav-primary {
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   justify-content: center;
+  background: var(--placer-ink);
+  color: var(--placer-white);
+  font-weight: 500;
 }
 
 .placer-side-nav-primary:hover,
+.placer-side-nav-primary[aria-current='page'] {
+  background: var(--placer-grey-700);
+}
+
 .placer-side-nav-primary:focus-visible {
-  opacity: 0.88;
+  outline-offset: 2px;
 }
 
 .placer-side-nav.is-collapsed {
-  width: 60px;
-  padding: 16px 8px;
+  width: 72px;
 }
 
 .placer-side-nav.is-collapsed .placer-side-nav-link {
   justify-content: center;
-  padding: 10px 0;
+  padding: 0;
 }
 
 .placer-side-nav.is-collapsed .placer-side-nav-label {
   display: none;
 }
 
-@media (max-width: 760px) {
-  .placer-side-nav {
-    width: 60px;
-    padding: 16px 8px;
+@media (max-width: 1023px) {
+  .placer-side-nav,
+  .placer-side-nav.is-collapsed {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    width: auto;
+    height: calc(64px + env(safe-area-inset-bottom));
+    padding: 0 8px env(safe-area-inset-bottom);
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    gap: 8px;
+    border-radius: 0;
+    border-width: 1px 0 0;
+    overflow: visible;
   }
 
-  .placer-side-nav-link {
+  .placer-side-nav .placer-side-nav-link,
+  .placer-side-nav.is-collapsed .placer-side-nav-link {
+    flex: 1 1 0;
+    min-width: 44px;
+    height: 56px;
+    padding: 0;
+    flex-direction: column;
     justify-content: center;
-    padding: 10px 0;
+    gap: 2px;
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0.01em;
   }
 
-  .placer-side-nav-label,
+  .placer-side-nav .placer-side-nav-label,
+  .placer-side-nav.is-collapsed .placer-side-nav-label {
+    display: block;
+  }
+
   .placer-side-nav-toggle {
+    display: none !important;
+  }
+
+  .placer-side-nav-primary {
+    margin: 0;
+  }
+
+  .placer-side-nav-bottom {
+    margin: 0;
+  }
+
+  .placer-side-nav-bottom::before {
     display: none;
+  }
+
+  /* Keep the last of the page and the footer clear of the tab bar. */
+  .placer-under-glass-nav:has(.placer-side-nav) {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
   }
 }
 
-/* Browsers without backdrop-filter get a near-opaque bar instead of an
-   unreadable clear one. */
+/* Browsers without backdrop-filter get white at 85% instead of an unreadable
+   clear glass. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .placer-glass-nav {
-    background: rgba(255, 255, 255, 0.92);
+  .placer-glass-nav,
+  .placer-side-nav,
+  .placer-glass {
+    background: rgba(255, 255, 255, 0.85);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .placer-side-nav,
-  .placer-side-nav-link {
+  .placer-side-nav-link,
+  .placer-btn,
+  .placer-card {
     transition: none;
   }
 }
 
 /* PLACER — a sandbox experiment's cover page (see sandbox/SandboxCover.jsx).
  *
- * The User Labs layout from the landingpage branch: the experiment's colour
- * fills the left half and the copy sits centred on the right. On a phone they
- * stack, colour first. Here rather than inline, since a media query cannot
- * override an inline style.
+ * The experiment's character tint fills the left half and the copy sits centred
+ * on the right. Below 1024px they stack, tint first.
  */
 .placer-cover {
   display: grid;
@@ -540,26 +803,10 @@ body {
 }
 
 .placer-cover-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   margin-top: 32px;
-  height: 52px;
-  padding: 0 40px;
-  font-family: var(--placer-font);
-  font-weight: 700;
-  font-size: 15px;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.2s ease;
 }
 
-.placer-cover-action:hover,
-.placer-cover-action:focus-visible {
-  transform: scale(1.04);
-}
-
-@media (max-width: 800px) {
+@media (max-width: 1023px) {
   .placer-cover {
     grid-template-columns: 1fr;
   }
@@ -569,17 +816,6 @@ body {
   }
 
   .placer-cover-copy {
-    padding: 32px 24px 56px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .placer-cover-action {
-    transition: none;
-  }
-
-  .placer-cover-action:hover,
-  .placer-cover-action:focus-visible {
-    transform: none;
+    padding: 32px 20px 56px;
   }
 }

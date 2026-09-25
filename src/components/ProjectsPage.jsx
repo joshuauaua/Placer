@@ -44,7 +44,7 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '48px 40px' }} className="placer-scroll">
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink,
+        <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
           letterSpacing: '-0.03em', marginBottom: 8 }}>
           Projects
         </h1>
@@ -59,12 +59,12 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
         )}
 
         {projectsAvailable() && status === 'loading' && (
-          <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>Loading projects…</div>
+          <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>Loading projects…</div>
         )}
 
         {projectsAvailable() && status === 'error' && (
-          <div role="alert" style={{ padding: 16, borderRadius: 8, background: '#D6452F22',
-            borderLeft: '4px solid #D6452F', fontSize: 14, fontWeight: 600, color: t.ink }}>
+          <div role="alert" style={{ padding: 16, borderRadius: 12, background: '#F5F5F5',
+            borderLeft: '4px solid #B3261E', fontSize: 14, fontWeight: 500, color: t.ink }}>
             Could not load your projects. See the console for details.
           </div>
         )}

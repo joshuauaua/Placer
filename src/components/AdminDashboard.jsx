@@ -18,7 +18,7 @@ function StatCard({ icon, label, value, change, color, t }) {
         <div style={{
           width: 48,
           height: 48,
-          borderRadius: 10,
+          borderRadius: 12,
           background: cardColor + '15',
           display: 'flex',
           alignItems: 'center',
@@ -30,16 +30,16 @@ function StatCard({ icon, label, value, change, color, t }) {
           <span style={{
             fontSize: 13,
             fontWeight: 700,
-            color: change.startsWith('+') ? '#3E9D4E' : '#D6452F'
+            color: change.startsWith('+') ? '#1E7B3A' : '#B3261E'
           }}>
             {change}
           </span>
         )}
       </div>
-      <div style={{ fontSize: 32, fontWeight: 900, color: t.ink, marginBottom: 4 }}>
+      <div style={{ fontSize: 32, fontWeight: 700, color: t.ink, marginBottom: 4 }}>
         {value}
       </div>
-      <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
+      <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>
         {label}
       </div>
     </div>
@@ -53,7 +53,7 @@ export function AdminDashboard({ t }) {
     excerpt: '',
     tags: [],
     icon: 'layers',
-    color: '#3E9D4E',
+    color: '#123F73',
     readTime: '5 min read'
   });
 
@@ -162,7 +162,7 @@ export function AdminDashboard({ t }) {
   ];
 
   const availableIcons = ['layers', 'tree', 'users', 'award', 'box', 'book', 'heart', 'trendingUp'];
-  const availableColors = ['#3E9D4E', '#2F7BD6', '#7A52E0', '#E08A2B', '#D4407E', '#16766B', '#D6452F'];
+  const availableColors = ['#123F73', '#1D5FA8', '#5B3CB8', '#9E4600', '#3A2480', '#8DBBEF', '#B3261E'];
 
   const handleAddArticle = (e) => {
     e.preventDefault();
@@ -172,7 +172,7 @@ export function AdminDashboard({ t }) {
       excerpt: '',
       tags: [],
       icon: 'layers',
-      color: '#3E9D4E',
+      color: '#123F73',
       readTime: '5 min read'
     });
   };
@@ -205,7 +205,7 @@ export function AdminDashboard({ t }) {
           <div>
             <h1 className="placer-disp" style={{
               fontSize: 28,
-              fontWeight: 900,
+              fontWeight: 700,
               color: t.ink,
               letterSpacing: '-0.02em',
               marginBottom: 4
@@ -218,8 +218,8 @@ export function AdminDashboard({ t }) {
           </div>
           <div style={{
             padding: '8px 16px',
-            background: t.accent + '15',
-            borderRadius: 8,
+            background: t.surfaceAlt,
+            borderRadius: 12,
             border: `1px solid ${t.accent}`,
             fontSize: 13,
             fontWeight: 700,
@@ -244,7 +244,7 @@ export function AdminDashboard({ t }) {
               onClick={() => setActiveTab(tab.key)}
               style={{
                 padding: '10px 16px',
-                borderRadius: 8,
+                borderRadius: 12,
                 border: 'none',
                 background: activeTab === tab.key ? t.accent : 'transparent',
                 color: activeTab === tab.key ? t.accentInk : t.inkDim,
@@ -324,7 +324,7 @@ export function AdminDashboard({ t }) {
                             {day.visits}
                           </span>
                         </div>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: t.inkDim }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: t.inkDim }}>
                           {day.day}
                         </span>
                       </div>
@@ -346,15 +346,15 @@ export function AdminDashboard({ t }) {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <div>
                       <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 4 }}>Avg Session Time</div>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: t.ink }}>{analytics.avgSessionTime}</div>
+                      <div style={{ fontSize: 24, fontWeight: 700, color: t.ink }}>{analytics.avgSessionTime}</div>
                     </div>
                     <div>
                       <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 4 }}>Bounce Rate</div>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: t.ink }}>{analytics.bounceRate}</div>
+                      <div style={{ fontSize: 24, fontWeight: 700, color: t.ink }}>{analytics.bounceRate}</div>
                     </div>
                     <div>
                       <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 4 }}>New Users (30d)</div>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: t.ink }}>{userStats.newThisMonth}</div>
+                      <div style={{ fontSize: 24, fontWeight: 700, color: t.ink }}>{userStats.newThisMonth}</div>
                     </div>
                   </div>
                 </div>
@@ -391,7 +391,7 @@ export function AdminDashboard({ t }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {analytics.topPages.map((page, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <div style={{ width: 100, fontSize: 14, fontWeight: 600, color: t.ink }}>
+                      <div style={{ width: 100, fontSize: 14, fontWeight: 500, color: t.ink }}>
                         {page.page}
                       </div>
                       <div style={{ flex: 1, height: 32, background: t.chrome, borderRadius: 6, overflow: 'hidden', position: 'relative' }}>
@@ -451,7 +451,7 @@ export function AdminDashboard({ t }) {
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   {Object.entries(surveyStats.topAnswers).map(([key, data]) => (
-                    <div key={key} style={{ padding: 16, background: t.chrome, borderRadius: 8 }}>
+                    <div key={key} style={{ padding: 16, background: t.chrome, borderRadius: 12 }}>
                       <div style={{ fontSize: 12, color: t.inkDim, marginBottom: 8, textTransform: 'uppercase', fontWeight: 700 }}>
                         {key.replace(/([A-Z])/g, ' $1').trim()}
                       </div>
@@ -482,7 +482,7 @@ export function AdminDashboard({ t }) {
                     <div key={response.id} style={{
                       padding: 16,
                       background: t.chrome,
-                      borderRadius: 8,
+                      borderRadius: 12,
                       border: `1px solid ${t.line}`
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -496,19 +496,19 @@ export function AdminDashboard({ t }) {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13 }}>
                         <div>
                           <span style={{ color: t.inkDim }}>Visit Frequency:</span>{' '}
-                          <span style={{ fontWeight: 600, color: t.ink }}>{response.responses.q1}</span>
+                          <span style={{ fontWeight: 500, color: t.ink }}>{response.responses.q1}</span>
                         </div>
                         <div>
                           <span style={{ color: t.inkDim }}>Age Group:</span>{' '}
-                          <span style={{ fontWeight: 600, color: t.ink }}>{response.responses.q10}</span>
+                          <span style={{ fontWeight: 500, color: t.ink }}>{response.responses.q10}</span>
                         </div>
                         <div>
                           <span style={{ color: t.inkDim }}>Priority:</span>{' '}
-                          <span style={{ fontWeight: 600, color: t.ink }}>{response.responses.q2}</span>
+                          <span style={{ fontWeight: 500, color: t.ink }}>{response.responses.q2}</span>
                         </div>
                         <div>
                           <span style={{ color: t.inkDim }}>Neighborhood:</span>{' '}
-                          <span style={{ fontWeight: 600, color: t.ink }}>{response.responses.q11}</span>
+                          <span style={{ fontWeight: 500, color: t.ink }}>{response.responses.q11}</span>
                         </div>
                       </div>
                     </div>
@@ -557,7 +557,7 @@ export function AdminDashboard({ t }) {
                   <tbody>
                     {recentUsers.map(user => (
                       <tr key={user.id} style={{ borderBottom: `1px solid ${t.line}` }}>
-                        <td style={{ padding: '16px 0', fontSize: 14, fontWeight: 600, color: t.ink }}>{user.name}</td>
+                        <td style={{ padding: '16px 0', fontSize: 14, fontWeight: 500, color: t.ink }}>{user.name}</td>
                         <td style={{ padding: '16px 0', fontSize: 14, color: t.inkDim }}>{user.email}</td>
                         <td style={{ padding: '16px 0', fontSize: 14, color: t.inkDim }}>{user.joined}</td>
                         <td style={{ padding: '16px 0', fontSize: 14, fontWeight: 700, color: t.ink }}>{user.projects}</td>
@@ -569,7 +569,7 @@ export function AdminDashboard({ t }) {
                             background: 'transparent',
                             color: t.ink,
                             fontSize: 13,
-                            fontWeight: 600,
+                            fontWeight: 500,
                             cursor: 'pointer'
                           }}>
                             View
@@ -592,7 +592,7 @@ export function AdminDashboard({ t }) {
               padding: 32,
               boxShadow: t.shadow
             }}>
-              <h3 style={{ fontSize: 22, fontWeight: 800, color: t.ink, marginBottom: 8 }}>
+              <h3 style={{ fontSize: 22, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
                 Add New Article
               </h3>
               <p style={{ fontSize: 14, color: t.inkDim, marginBottom: 32 }}>
@@ -617,7 +617,7 @@ export function AdminDashboard({ t }) {
                         padding: '12px 16px',
                         fontSize: 15,
                         border: `1.5px solid ${t.line}`,
-                        borderRadius: 8,
+                        borderRadius: 12,
                         background: t.chrome,
                         color: t.ink,
                         fontFamily: 'var(--placer-font)',
@@ -642,7 +642,7 @@ export function AdminDashboard({ t }) {
                         padding: '12px 16px',
                         fontSize: 15,
                         border: `1.5px solid ${t.line}`,
-                        borderRadius: 8,
+                        borderRadius: 12,
                         background: t.chrome,
                         color: t.ink,
                         fontFamily: 'var(--placer-font)',
@@ -701,7 +701,7 @@ export function AdminDashboard({ t }) {
                             border: `1px solid ${t.line}`,
                             borderRadius: 6,
                             fontSize: 13,
-                            fontWeight: 600,
+                            fontWeight: 500,
                             color: newArticle.tags.includes(tag) ? t.inkDim : t.ink,
                             cursor: newArticle.tags.includes(tag) ? 'not-allowed' : 'pointer'
                           }}
@@ -727,9 +727,9 @@ export function AdminDashboard({ t }) {
                             style={{
                               width: 44,
                               height: 44,
-                              borderRadius: 8,
+                              borderRadius: 12,
                               border: `2px solid ${newArticle.icon === icon ? t.accent : t.line}`,
-                              background: newArticle.icon === icon ? t.accent + '15' : t.chrome,
+                              background: newArticle.icon === icon ? t.surfaceAlt : t.chrome,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -755,7 +755,7 @@ export function AdminDashboard({ t }) {
                             style={{
                               width: 44,
                               height: 44,
-                              borderRadius: 8,
+                              borderRadius: 12,
                               border: `2px solid ${newArticle.color === color ? t.ink : t.line}`,
                               background: color,
                               cursor: 'pointer'
@@ -781,7 +781,7 @@ export function AdminDashboard({ t }) {
                         padding: '12px 16px',
                         fontSize: 15,
                         border: `1.5px solid ${t.line}`,
-                        borderRadius: 8,
+                        borderRadius: 12,
                         background: t.chrome,
                         color: t.ink,
                         fontFamily: 'var(--placer-font)',

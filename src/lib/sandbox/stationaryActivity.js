@@ -11,13 +11,13 @@
 
 /** Postures, each with the colour it gets on the map. */
 export const POSTURES = {
-  standing: { key: 'standing', label: 'Standing', color: '#2F7BD6' },
-  sittingPublic: { key: 'sittingPublic', label: 'Sitting in Public', color: '#E08A2B' },
-  sittingPrivate: { key: 'sittingPrivate', label: 'Sitting in Private', color: '#D4407E' },
-  sittingCommercial: { key: 'sittingCommercial', label: 'Sitting in a Commercial Area', color: '#7A52E0' },
-  sittingInformally: { key: 'sittingInformally', label: 'Sitting Informally', color: '#16A085' },
-  lying: { key: 'lying', label: 'Lying Down', color: '#2ECC71' },
-  multiple: { key: 'multiple', label: 'Multiple / Movement', color: '#E74C3C' },
+  standing: { key: 'standing', label: 'Standing', color: '#1D5FA8' },
+  sittingPublic: { key: 'sittingPublic', label: 'Sitting in Public', color: '#9E4600' },
+  sittingPrivate: { key: 'sittingPrivate', label: 'Sitting in Private', color: '#3A2480' },
+  sittingCommercial: { key: 'sittingCommercial', label: 'Sitting in a Commercial Area', color: '#5B3CB8' },
+  sittingInformally: { key: 'sittingInformally', label: 'Sitting Informally', color: '#8DBBEF' },
+  lying: { key: 'lying', label: 'Lying Down', color: '#B39DF2' },
+  multiple: { key: 'multiple', label: 'Multiple / Movement', color: '#FDB27A' },
 };
 
 export const POSTURE_LIST = Object.values(POSTURES);

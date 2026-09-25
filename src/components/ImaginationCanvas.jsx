@@ -220,7 +220,7 @@ const ImaginationCanvas = ({
         <div style={{ background: t.surface, borderRadius: 12, padding: 16, marginBottom: 16,
           border: `1px solid ${t.line}`, boxShadow: t.shadow, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
+            <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>
               <span className="placer-disp" style={{ color: t.ink, fontWeight: 700 }}>{canvasAssets.length}</span> assets placed
               {selectedAssetId && (
                 <span style={{ marginLeft: 16, color: t.accent }}>
@@ -232,16 +232,16 @@ const ImaginationCanvas = ({
               <button
                 onClick={handleDeleteSelected}
                 disabled={!selectedAssetId}
-                style={{ height: 34, padding: '0 14px', borderRadius: 8,
+                style={{ height: 34, padding: '0 14px', borderRadius: 12,
                   cursor: selectedAssetId ? 'pointer' : 'not-allowed',
-                  background: '#D6452F', color: '#fff', border: 'none', fontWeight: 700, fontSize: 13,
+                  background: '#B3261E', color: '#fff', border: 'none', fontWeight: 700, fontSize: 13,
                   opacity: selectedAssetId ? 1 : 0.5 }}>
                 Delete
               </button>
               <button
                 onClick={() => onCanvasAssetsChange([])}
                 disabled={canvasAssets.length === 0}
-                style={{ height: 34, padding: '0 14px', borderRadius: 8,
+                style={{ height: 34, padding: '0 14px', borderRadius: 12,
                   cursor: canvasAssets.length > 0 ? 'pointer' : 'not-allowed',
                   background: t.lineStrong, color: t.ink, border: 'none', fontWeight: 700, fontSize: 13,
                   opacity: canvasAssets.length > 0 ? 1 : 0.5 }}>
@@ -281,7 +281,7 @@ const ImaginationCanvas = ({
           </Stage>
         </div>
 
-        <div style={{ marginTop: 16, padding: 12, background: t.accent + '22', borderRadius: 8,
+        <div style={{ marginTop: 16, padding: 12, background: t.surfaceAlt, borderRadius: 12,
           borderLeft: `4px solid ${t.accent}`, fontSize: 13, color: t.ink }}>
           <strong>Tip:</strong> Click assets from the library to add them. Drag to move, use corner
           handles to resize, and the top handle to rotate. Press Delete to remove the selection.
@@ -291,7 +291,7 @@ const ImaginationCanvas = ({
       {/* Asset Library Panel - RIGHT SIDE */}
       <div style={{ width: 340, background: t.chrome, borderLeft: `1px solid ${t.line}`,
         display: 'flex', flexDirection: 'column', height: '100%', padding: 16 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, color: t.ink, marginBottom: 16 }}>Asset Library</h3>
+        <h3 style={{ fontSize: 18, fontWeight: 700, color: t.ink, marginBottom: 16 }}>Asset Library</h3>
 
         <div style={{ flex: 1, overflowY: 'auto' }} className="placer-scroll">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -301,9 +301,9 @@ const ImaginationCanvas = ({
                 <button
                   key={asset.type}
                   onClick={() => handleAddAsset(asset)}
-                  style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 10, padding: 12, cursor: 'pointer',
+                  style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, padding: 12, cursor: 'pointer',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 60, height: 60, borderRadius: 8, background: cat.color + '22',
+                  <div style={{ width: 60, height: 60, borderRadius: 12, background: cat.color + '22',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
                     {asset.icon ? (
                       <img src={asset.icon} alt="" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />

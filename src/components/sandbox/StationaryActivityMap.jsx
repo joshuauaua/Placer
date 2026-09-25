@@ -234,7 +234,7 @@ export function StationaryActivityMap({ t, experiment }) {
               </div>
 
               {!selectedLocation && (
-                <p style={{ fontSize: 12, color: '#C0392B', margin: '0 0 12px' }}>
+                <p style={{ fontSize: 12, color: '#B3261E', margin: '0 0 12px' }}>
                   Click a spot on the map first to set a location.
                 </p>
               )}
@@ -326,7 +326,7 @@ export function StationaryActivityMap({ t, experiment }) {
             role="group"
             aria-label="Observation map — click to select a location, then record"
             style={{
-              width: '100%', height: 520, borderRadius: 10,
+              width: '100%', height: 520, borderRadius: 12,
               border: `1px solid ${t.line}`, overflow: 'hidden',
               background: t.surfaceAlt, cursor: 'crosshair',
             }}
@@ -334,7 +334,7 @@ export function StationaryActivityMap({ t, experiment }) {
 
           {/* No API key notice */}
           {(!apiKey || !googleLoaded) && (
-            <div style={{ background: '#FEF3C7', borderLeft: `4px solid #F59E0B`, color: '#92400E',
+            <div style={{ background: '#F5F5F5', borderLeft: `4px solid #111111`, color: '#111111',
               padding: 10, marginTop: 8, fontSize: 13, borderRadius: 6 }}>
               <strong>Google Maps API Key Required</strong> — add <code>VITE_GOOGLE_MAPS_API_KEY</code> to <code>.env</code> to enable the map.
             </div>
@@ -386,7 +386,7 @@ export function StationaryActivityMap({ t, experiment }) {
                     </span>
                   </td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>
-                    <span className="placer-disp" style={{ fontSize: 16, fontWeight: 800, color: people > 0 ? item.color : t.inkFaint }}>
+                    <span className="placer-disp" style={{ fontSize: 16, fontWeight: 700, color: people > 0 ? item.color : t.inkFaint }}>
                       {people}
                     </span>
                   </td>
@@ -412,7 +412,7 @@ export function StationaryActivityMap({ t, experiment }) {
           <tfoot>
             <tr>
               <td className="placer-mono" style={{ padding: '8px 10px 0 0', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: t.inkDim }}>Total</td>
-              <td className="placer-disp" style={{ padding: '8px', textAlign: 'right', fontSize: 16, fontWeight: 800, color: t.ink }}>{counts.total}</td>
+              <td className="placer-disp" style={{ padding: '8px', textAlign: 'right', fontSize: 16, fontWeight: 700, color: t.ink }}>{counts.total}</td>
               <td style={{ padding: '8px 0 0 10px' }} />
             </tr>
           </tfoot>

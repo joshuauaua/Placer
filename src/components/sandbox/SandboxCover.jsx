@@ -1,7 +1,7 @@
 /* PLACER — the cover page every sandbox experiment opens on.
  *
  * The layout of the landingpage branch's User Labs page (PhotoSplit there): a
- * block of the experiment's own colour fills the left half where User Labs has
+ * block of the experiment's character tint fills the left half where User Labs has
  * its photo, and the copy sits centred on the right, ending in the one button
  * that starts the tool. On a phone they stack, colour first. Everything on it is
  * read from the registry entry, so the tile, the cover and the header above the
@@ -14,8 +14,8 @@ import { Btn } from '../UI';
 export function SandboxCover({ t, experiment, onStart, onBack }) {
   return (
     <div className="placer-cover" style={{ background: t.page }}>
-      <div className="placer-cover-color" style={{ background: experiment.color }}>
-        <Icon name={experiment.icon} size={120} stroke={1.4} style={{ color: '#fff' }} />
+      <div className="placer-cover-color" style={{ background: experiment.tint }}>
+        <Icon name={experiment.icon} size={120} stroke={1.5} style={{ color: t.ink }} />
       </div>
 
       <div className="placer-cover-copy">
@@ -24,34 +24,31 @@ export function SandboxCover({ t, experiment, onStart, onBack }) {
           All experiments
         </Btn>
 
-        <div className="placer-mono" style={{ fontSize: 11.5, letterSpacing: '0.08em',
-          textTransform: 'uppercase', color: t.inkDim, marginBottom: 14 }}>
+        <div className="placer-caption" style={{ textTransform: 'uppercase', color: experiment.color,
+          fontWeight: 700, marginBottom: 12 }}>
           Sandbox experiment
         </div>
-        <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, letterSpacing: '-0.03em',
-          lineHeight: 1.05, color: t.ink }}>
+        <h1 style={{ color: t.ink }}>
           {experiment.name}
         </h1>
         {experiment.tagline && (
-          <p style={{ marginTop: 16, fontSize: 21, fontWeight: 700, lineHeight: 1.4, color: t.ink }}>
+          <p className="placer-h3" style={{ marginTop: 16, color: t.ink }}>
             {experiment.tagline}
           </p>
         )}
-        <p style={{ marginTop: 20, fontSize: 17, lineHeight: 1.65, color: t.inkDim }}>
+        <p className="placer-body-lg" style={{ marginTop: 16, color: t.inkDim }}>
           {experiment.blurb}
         </p>
         {(experiment.duration || experiment.submittedBy) && (
-          <p className="placer-mono" style={{ marginTop: 20, fontSize: 11, letterSpacing: '0.04em',
-            textTransform: 'uppercase', color: t.inkFaint }}>
+          <p className="placer-caption" style={{ marginTop: 16, color: t.inkFaint }}>
             {[experiment.duration, experiment.submittedBy && `By ${experiment.submittedBy}`]
               .filter(Boolean).join(' · ')}
           </p>
         )}
 
-        <button onClick={onStart} className="placer-cover-action"
-          style={{ background: t.primaryBg, color: t.primaryFg }}>
-          Get started
-        </button>
+        <div className="placer-cover-action">
+          <Btn t={t} size="lg" onClick={onStart}>Get started</Btn>
+        </div>
       </div>
     </div>
   );

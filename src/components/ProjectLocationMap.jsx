@@ -7,6 +7,7 @@
 
 import { googleMapsApiKey } from '../lib/googleMaps';
 import { staticMapUrl } from '../lib/staticMaps';
+import { CHARACTER } from '../theme';
 
 const SIZE = { width: 1000, height: 240 };
 
@@ -16,7 +17,7 @@ export function ProjectLocationMap({ t, project }) {
   const shapes = (project?.locationShapes ?? []).filter((shape) => (shape?.path?.length ?? 0) >= 3);
   if (!apiKey || shapes.length === 0) return null;
 
-  const url = staticMapUrl({ apiKey, paths: shapes, pathColor: t.accent, size: SIZE });
+  const url = staticMapUrl({ apiKey, paths: shapes, pathColor: CHARACTER.cityWorker.c700, size: SIZE });
 
   return (
     <img

@@ -14,14 +14,14 @@
  * cars       — counts as space handed to private motor vehicles.
  */
 export const SEGMENT_TYPES = {
-  sidewalk: { key: 'sidewalk', label: 'Sidewalk',      color: '#8C93A0', min: 1.5, max: 8,  def: 2.5, throughput: 1200, canopy: 0,   cars: false },
-  trees:    { key: 'trees',    label: 'Street trees',  color: '#3E9D4E', min: 1,   max: 4,  def: 1.5, throughput: 0,    canopy: 1.8, cars: false },
-  cafe:     { key: 'cafe',     label: 'Café seating',  color: '#E08A2B', min: 1.5, max: 6,  def: 2,   throughput: 0,    canopy: 0.2, cars: false },
-  cycle:    { key: 'cycle',    label: 'Cycle track',   color: '#D4407E', min: 1.5, max: 4,  def: 2,   throughput: 1000, canopy: 0,   cars: false },
-  bus:      { key: 'bus',      label: 'Bus lane',      color: '#7A52E0', min: 3,   max: 4,  def: 3.2, throughput: 2500, canopy: 0,   cars: false },
-  play:     { key: 'play',     label: 'Play street',   color: '#2F7BD6', min: 3,   max: 12, def: 5,   throughput: 400,  canopy: 0,   cars: false },
-  traffic:  { key: 'traffic',  label: 'Traffic lane',  color: '#55595F', min: 2.7, max: 3.6, def: 3.2, throughput: 250, canopy: 0,   cars: true },
-  parking:  { key: 'parking',  label: 'Parking',       color: '#A8814C', min: 2,   max: 2.6, def: 2.2, throughput: 0,    canopy: 0,   cars: true },
+  sidewalk: { key: 'sidewalk', label: 'Sidewalk',      color: '#D6D6D6', min: 1.5, max: 8,  def: 2.5, throughput: 1200, canopy: 0,   cars: false },
+  trees:    { key: 'trees',    label: 'Street trees',  color: '#123F73', min: 1,   max: 4,  def: 1.5, throughput: 0,    canopy: 1.8, cars: false },
+  cafe:     { key: 'cafe',     label: 'Café seating',  color: '#9E4600', min: 1.5, max: 6,  def: 2,   throughput: 0,    canopy: 0.2, cars: false },
+  cycle:    { key: 'cycle',    label: 'Cycle track',   color: '#3A2480', min: 1.5, max: 4,  def: 2,   throughput: 1000, canopy: 0,   cars: false },
+  bus:      { key: 'bus',      label: 'Bus lane',      color: '#5B3CB8', min: 3,   max: 4,  def: 3.2, throughput: 2500, canopy: 0,   cars: false },
+  play:     { key: 'play',     label: 'Play street',   color: '#1D5FA8', min: 3,   max: 12, def: 5,   throughput: 400,  canopy: 0,   cars: false },
+  traffic:  { key: 'traffic',  label: 'Traffic lane',  color: '#3D3D3D', min: 2.7, max: 3.6, def: 3.2, throughput: 250, canopy: 0,   cars: true },
+  parking:  { key: 'parking',  label: 'Parking',       color: '#FDB27A', min: 2,   max: 2.6, def: 2.2, throughput: 0,    canopy: 0,   cars: true },
 };
 
 export const SEGMENT_LIST = Object.values(SEGMENT_TYPES);

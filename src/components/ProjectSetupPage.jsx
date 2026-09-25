@@ -11,7 +11,7 @@ const inputStyle = (t) => ({
   padding: '12px 16px',
   fontSize: 15,
   border: `1.5px solid ${t.line}`,
-  borderRadius: 8,
+  borderRadius: 12,
   background: t.chrome,
   color: t.ink,
   fontFamily: 'var(--placer-font)',
@@ -89,7 +89,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project = null, on
       padding: '48px 40px 96px' }} className="placer-scroll">
       <form onSubmit={handleSubmit} style={{ maxWidth: 640, margin: '0 auto' }}>
         <div style={{ marginBottom: 36 }}>
-          <h1 className="placer-disp" style={{ fontSize: 40, fontWeight: 900, color: t.ink,
+          <h1 className="placer-disp" style={{ fontSize: 40, fontWeight: 700, color: t.ink,
             letterSpacing: '-0.03em', marginBottom: 12, lineHeight: 1.1 }}>
             {editing ? 'Edit project' : 'Start a project'}
           </h1>
@@ -149,8 +149,8 @@ export function ProjectSetupPage({ t, accountId, accountName, project = null, on
         )}
 
         {error && (
-          <div role="alert" style={{ marginBottom: 24, padding: 14, borderRadius: 8,
-            background: '#D6452F22', borderLeft: '4px solid #D6452F', fontSize: 14, color: t.ink, fontWeight: 600 }}>
+          <div role="alert" style={{ marginBottom: 24, padding: 14, borderRadius: 12,
+            background: '#F5F5F5', borderLeft: '4px solid #B3261E', fontSize: 14, color: t.ink, fontWeight: 500 }}>
             {error}
           </div>
         )}

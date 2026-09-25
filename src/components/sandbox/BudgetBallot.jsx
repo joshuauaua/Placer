@@ -219,7 +219,7 @@ export function BudgetBallot({ t, experiment, room }) {
                 signed
                 label={group.label}
                 value={score / 100}
-                color={score < 0 ? '#C0392B' : '#2E7D32'}
+                color={score < 0 ? '#B3261E' : '#1E7B3A'}
                 caption={score === 0 ? '—' : `${score > 0 ? '+' : ''}${score}`}
               />
             );
@@ -240,7 +240,7 @@ export function BudgetBallot({ t, experiment, room }) {
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
               {result.items.map((item) => (
                 <li key={item.key} style={{ display: 'flex', gap: 10, fontSize: 13.5 }}>
-                  <span style={{ color: t.ink, fontWeight: 600, flex: 1, minWidth: 0 }}>
+                  <span style={{ color: t.ink, fontWeight: 500, flex: 1, minWidth: 0 }}>
                     {item.label} × {item.quantity}
                   </span>
                   <span className="placer-mono" style={{ color: t.inkDim }}>{formatEuros(item.cost)}</span>

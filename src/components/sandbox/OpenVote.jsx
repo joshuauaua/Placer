@@ -65,7 +65,7 @@ export function OpenVote({ t, experiment, room }) {
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             placeholder={DEFAULT_QUESTION}
-            style={{ width: '100%', padding: '12px 14px', fontSize: 18, fontWeight: 700, borderRadius: 8,
+            style={{ width: '100%', padding: '12px 14px', fontSize: 18, fontWeight: 700, borderRadius: 12,
               border: `1.5px solid ${t.line}`, background: t.chrome, color: t.ink,
               fontFamily: 'var(--placer-font)', outline: 'none' }}
           />

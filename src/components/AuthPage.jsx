@@ -17,7 +17,7 @@ const inputStyle = (t) => ({
   padding: '12px 16px',
   fontSize: 15,
   border: `1.5px solid ${t.line}`,
-  borderRadius: 8,
+  borderRadius: 12,
   background: t.chrome,
   color: t.ink,
   fontFamily: 'var(--placer-font)',
@@ -56,7 +56,7 @@ function Shell({ t, title, blurb, children }) {
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '48px 40px' }} className="placer-scroll">
       <div style={{ maxWidth: 440, margin: '0 auto' }}>
-        <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 900, color: t.ink,
+        <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 700, color: t.ink,
           letterSpacing: '-0.03em', marginBottom: 12, lineHeight: 1.15 }}>
           {title}
         </h1>
@@ -99,7 +99,7 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
       <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
         <Icon name="send" size={22} stroke={2} style={{ color: t.inkDim, flex: '0 0 auto', marginTop: 2 }} />
         <div>
-          <p style={{ fontSize: 15, color: t.ink, lineHeight: 1.6, margin: '0 0 10px', fontWeight: 600 }}>
+          <p style={{ fontSize: 15, color: t.ink, lineHeight: 1.6, margin: '0 0 10px', fontWeight: 500 }}>
             We have sent a confirmation link to {sentTo}.
           </p>
           <p style={{ fontSize: 14.5, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
@@ -202,7 +202,7 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
       role="link"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
-      style={{ color: t.ink, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+      style={{ color: t.ink, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline' }}>
       {label}
     </span>
   );
@@ -229,15 +229,15 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
         />
 
         {error && (
-          <div role="alert" style={{ margin: '4px 0 18px', padding: 14, borderRadius: 8,
-            background: '#D6452F22', borderLeft: '4px solid #D6452F', fontSize: 14,
-            color: t.ink, fontWeight: 600, lineHeight: 1.5 }}>
+          <div role="alert" style={{ margin: '4px 0 18px', padding: 14, borderRadius: 12,
+            background: '#F5F5F5', borderLeft: '4px solid #B3261E', fontSize: 14,
+            color: t.ink, fontWeight: 500, lineHeight: 1.5 }}>
             {error}
           </div>
         )}
         {notice && (
           <div role="status" style={{ margin: '4px 0 18px', fontSize: 14, color: t.inkDim,
-            lineHeight: 1.5, fontWeight: 600 }}>
+            lineHeight: 1.5, fontWeight: 500 }}>
             {notice}
           </div>
         )}
@@ -255,7 +255,7 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '22px 0' }}>
         <div style={{ flex: 1, height: 1, background: t.line }} />
         <span className="placer-mono" style={{ fontSize: 11, letterSpacing: '0.06em',
-          textTransform: 'uppercase', color: t.inkFaint, fontWeight: 600 }}>
+          textTransform: 'uppercase', color: t.inkFaint, fontWeight: 500 }}>
           or
         </span>
         <div style={{ flex: 1, height: 1, background: t.line }} />

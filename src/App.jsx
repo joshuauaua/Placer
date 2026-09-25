@@ -114,7 +114,7 @@ function SignedOutNotice({ t, onSignIn }) {
       justifyContent: 'center', background: t.page, color: t.ink }}>
       <div style={{ textAlign: 'center', maxWidth: 400, padding: 40 }}>
         <Icon name="user" size={48} stroke={2} style={{ color: t.inkDim, margin: '0 auto 16px' }} />
-        <h1 className="placer-disp" style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
+        <h1 className="placer-disp" style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>
           You are logged out
         </h1>
         <p style={{ fontSize: 15, color: t.inkDim, marginBottom: 24 }}>
@@ -551,7 +551,7 @@ function AdminGate({ children, t }) {
         justifyContent: 'center', background: t.page, color: t.ink }}>
         <div style={{ textAlign: 'center', maxWidth: 400 }}>
           <Icon name="shield" size={48} stroke={2} style={{ color: t.inkDim, margin: '0 auto 16px' }} />
-          <h1 className="placer-disp" style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Access Restricted</h1>
+          <h1 className="placer-disp" style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Access Restricted</h1>
           <p style={{ fontSize: 15, color: t.inkDim }}>
             The admin dashboard is not available in this environment.
           </p>

@@ -6,7 +6,7 @@ export function ProjectCard({ t, project, onOpen }) {
     <button onClick={() => onOpen(project.id)} style={{ textAlign: 'left', padding: 20,
       background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, boxShadow: t.shadow,
       cursor: 'pointer', fontFamily: 'var(--placer-font)' }}>
-      <h3 style={{ fontSize: 17, fontWeight: 800, color: t.ink, marginBottom: 6 }}>{project.name}</h3>
+      <h3 style={{ fontSize: 17, fontWeight: 700, color: t.ink, marginBottom: 6 }}>{project.name}</h3>
       {project.description && (
         <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.5,
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>

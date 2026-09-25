@@ -17,7 +17,7 @@ const inputStyle = (t) => ({
   padding: '12px 16px',
   fontSize: 15,
   border: `1.5px solid ${t.line}`,
-  borderRadius: 8,
+  borderRadius: 12,
   background: t.chrome,
   color: t.ink,
   fontFamily: 'var(--placer-font)',
@@ -78,12 +78,12 @@ function DisplayName({ t, profile, onSaveProfile }) {
           {status === 'saving' ? 'Saving…' : 'Save name'}
         </Btn>
         {status === 'saved' && (
-          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
+          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>
             Saved.
           </span>
         )}
         {status === 'error' && (
-          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 600 }}>
+          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 500 }}>
             Could not save that. Try again.
           </span>
         )}
@@ -143,12 +143,12 @@ function ProfileField({ t, profile, onSaveProfile, fieldKey, title, description,
           {status === 'saving' ? 'Saving…' : `Save ${label.toLowerCase()}`}
         </Btn>
         {status === 'saved' && (
-          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
+          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>
             Saved.
           </span>
         )}
         {status === 'error' && (
-          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 600 }}>
+          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 500 }}>
             Could not save that. Try again.
           </span>
         )}
@@ -161,7 +161,7 @@ function ProfileField({ t, profile, onSaveProfile, fieldKey, title, description,
 const avatarOptionStyle = (t, selected) => ({
   width: 46, height: 46, borderRadius: '50%', cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  background: selected ? t.accent + '22' : 'transparent',
+  background: selected ? t.surfaceAlt : 'transparent',
   border: `1.5px solid ${selected ? t.accent : t.line}`,
   color: t.ink,
 });
@@ -213,12 +213,12 @@ function AvatarPicker({ t, profile, onSaveProfile }) {
           {status === 'saving' ? 'Saving…' : 'Save avatar'}
         </Btn>
         {status === 'saved' && (
-          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
+          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>
             Saved.
           </span>
         )}
         {status === 'error' && (
-          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 600 }}>
+          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 500 }}>
             Could not save that. Try again.
           </span>
         )}
@@ -276,9 +276,9 @@ function ChangePassword({ t }) {
         </div>
 
         {error && (
-          <div role="alert" style={{ marginBottom: 18, padding: 14, borderRadius: 8,
-            background: '#D6452F22', borderLeft: '4px solid #D6452F', fontSize: 14,
-            color: t.ink, fontWeight: 600, lineHeight: 1.5, maxWidth: 380 }}>
+          <div role="alert" style={{ marginBottom: 18, padding: 14, borderRadius: 12,
+            background: '#F5F5F5', borderLeft: '4px solid #B3261E', fontSize: 14,
+            color: t.ink, fontWeight: 500, lineHeight: 1.5, maxWidth: 380 }}>
             {error}
           </div>
         )}
@@ -289,7 +289,7 @@ function ChangePassword({ t }) {
             {busy ? 'Saving…' : 'Save new password'}
           </Btn>
           {done && (
-            <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>
+            <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>
               Changed.
             </span>
           )}
@@ -339,7 +339,7 @@ function Analytics({ t, onNavigate }) {
           role="link"
           tabIndex={0}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate('terms'); }}
-          style={{ color: t.ink, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+          style={{ color: t.ink, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline' }}>
           What is collected, and your rights
         </span>
       </div>
@@ -361,7 +361,7 @@ const NOTIFICATION_KINDS = [
     description: 'Platform announcements and account maintenance.' },
 ];
 
-const checkboxLabelStyle = { display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 };
+const checkboxLabelStyle = { display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500 };
 
 function NotificationPreferences({ t }) {
   const [prefs, setPrefs] = useState(null); // null while loading
@@ -417,9 +417,9 @@ function NotificationPreferences({ t }) {
       )}
 
       {error && (
-        <div role="alert" style={{ marginBottom: 18, padding: 14, borderRadius: 8,
-          background: '#D6452F22', borderLeft: '4px solid #D6452F', fontSize: 14,
-          color: t.ink, fontWeight: 600, lineHeight: 1.5 }}>
+        <div role="alert" style={{ marginBottom: 18, padding: 14, borderRadius: 12,
+          background: '#F5F5F5', borderLeft: '4px solid #B3261E', fontSize: 14,
+          color: t.ink, fontWeight: 500, lineHeight: 1.5 }}>
           {error}
         </div>
       )}
@@ -466,7 +466,7 @@ function YourData({ t, onNavigate }) {
       role="link"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate(view); }}
-      style={{ color: t.ink, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+      style={{ color: t.ink, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline' }}>
       {label}
     </span>
   );
@@ -488,7 +488,7 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate }) {
       padding: '48px 40px' }} className="placer-scroll">
       <div style={{ maxWidth: 760, margin: '0 auto', paddingBottom: 40 }}>
         <div style={{ marginBottom: 40 }}>
-          <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink,
+          <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
             letterSpacing: '-0.03em', marginBottom: 16 }}>
             Settings
           </h1>

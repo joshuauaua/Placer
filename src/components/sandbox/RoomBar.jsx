@@ -57,7 +57,7 @@ function CloseRoom({ t, onClose }) {
       icon="close"
       onClick={() => (confirming ? onClose() : setConfirming(true))}
       onBlur={() => setConfirming(false)}
-      style={confirming ? { borderColor: '#C0392B', color: '#C0392B' } : undefined}>
+      style={confirming ? { borderColor: '#B3261E', color: '#B3261E' } : undefined}>
       {confirming ? 'Close — confirm' : 'Close room'}
     </Btn>
   );
@@ -85,7 +85,7 @@ export function RoomBar({ t, experiment, room }) {
   if (room.status === 'error') {
     return (
       <Panel t={t} style={{ marginBottom: 20 }}>
-        <p role="status" style={{ fontSize: 14, color: '#C0392B', lineHeight: 1.6 }}>
+        <p role="status" style={{ fontSize: 14, color: '#B3261E', lineHeight: 1.6 }}>
           {room.error}
         </p>
       </Panel>
@@ -135,7 +135,7 @@ export function RoomBar({ t, experiment, room }) {
             {' · '}
             {/* Under ten minutes is the point at which it stops being background
                 information and starts being something to act on. */}
-            <span style={{ color: timeIsShort(left) ? '#C0392B' : t.inkDim }}>{left} left</span>
+            <span style={{ color: timeIsShort(left) ? '#B3261E' : t.inkDim }}>{left} left</span>
           </>
         )}
       </span>
@@ -143,7 +143,7 @@ export function RoomBar({ t, experiment, room }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' }}>
         {/* The QR, at a size that survives being photographed from across a room. */}
         <div ref={qrRef} data-testid="room-qr"
-          style={{ background: '#fff', padding: 10, borderRadius: 10, border: `1px solid ${t.line}`, flex: '0 0 auto' }}>
+          style={{ background: '#fff', padding: 10, borderRadius: 12, border: `1px solid ${t.line}`, flex: '0 0 auto' }}>
           <QRCode value={url} size={132} bgColor="#ffffff" fgColor="#000000" />
         </div>
 
@@ -155,7 +155,7 @@ export function RoomBar({ t, experiment, room }) {
               </div>
               {/* No PIN to read out, so the headline is the thing a poster needs: until when. */}
               <div className="placer-disp"
-                style={{ fontSize: 30, fontWeight: 900, letterSpacing: '-0.01em', lineHeight: 1.1, color: t.ink }}>
+                style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.1, color: t.ink }}>
                 Open until {closesOn}
               </div>
             </>
@@ -167,7 +167,7 @@ export function RoomBar({ t, experiment, room }) {
               {/* The PIN is the thing somebody reads aloud, so it is set as large as the
                   headline numbers in the experiments themselves. */}
               <div className="placer-disp" aria-label={`Room PIN ${formatPin(room.pin)}`}
-                style={{ fontSize: 46, fontWeight: 900, letterSpacing: '0.02em', lineHeight: 1.05,
+                style={{ fontSize: 46, fontWeight: 700, letterSpacing: '0.02em', lineHeight: 1.05,
                   color: t.ink, fontVariantNumeric: 'tabular-nums' }}>
                 {formatPin(room.pin)}
               </div>

@@ -19,7 +19,7 @@ function Row({ t, label, children }) {
   return (
     <div style={{ display: 'flex', gap: 20, padding: '14px 0', borderTop: `1px solid ${t.line}` }}>
       <div className="placer-mono" style={{ width: 130, flex: '0 0 auto', fontSize: 11,
-        letterSpacing: '0.06em', textTransform: 'uppercase', color: t.inkDim, fontWeight: 600, paddingTop: 3 }}>
+        letterSpacing: '0.06em', textTransform: 'uppercase', color: t.inkDim, fontWeight: 500, paddingTop: 3 }}>
         {label}
       </div>
       <div style={{ flex: 1, fontSize: 15.5, color: t.ink, lineHeight: 1.6 }}>{children}</div>
@@ -45,7 +45,7 @@ function SignInToPost({ t, mode, onModeChange, onLeaving }) {
   return (
     <section style={{ marginTop: 32, padding: 24, background: t.surface, borderRadius: 12,
       border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
-      <h2 className="placer-disp" style={{ fontSize: 20, fontWeight: 800, color: t.ink,
+      <h2 className="placer-disp" style={{ fontSize: 20, fontWeight: 700, color: t.ink,
         letterSpacing: '-0.02em', marginBottom: 8 }}>
         {awaiting ? 'Check your inbox' : 'Sign in to post this'}
       </h2>
@@ -132,7 +132,7 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
       backLabel="Back to describe"
       actions={
         needsAccount ? (
-          <span style={{ fontSize: 13.5, color: t.inkDim, fontWeight: 600 }}>
+          <span style={{ fontSize: 13.5, color: t.inkDim, fontWeight: 500 }}>
             Sign in below to post
           </span>
         ) : (
@@ -147,7 +147,7 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
         className="placer-scroll">
         <div style={{ maxWidth: 760, margin: '0 auto' }}>
           <div style={{ marginBottom: 36 }}>
-            <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 900, color: t.ink,
+            <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 700, color: t.ink,
               letterSpacing: '-0.03em', marginBottom: 12, lineHeight: 1.1 }}>
               Ready to post
             </h1>
@@ -165,7 +165,7 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
             />
           )}
 
-          <h2 className="placer-disp" style={{ fontSize: 26, fontWeight: 800, color: t.ink,
+          <h2 className="placer-disp" style={{ fontSize: 26, fontWeight: 700, color: t.ink,
             letterSpacing: '-0.02em', marginBottom: 16, lineHeight: 1.2 }}>
             {draft.title}
           </h2>
@@ -180,8 +180,8 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
           </Row>
 
           {error && (
-            <div role="alert" style={{ marginTop: 24, padding: 14, borderRadius: 8,
-              background: '#D6452F22', borderLeft: '4px solid #D6452F', fontSize: 14, color: t.ink, fontWeight: 600 }}>
+            <div role="alert" style={{ marginTop: 24, padding: 14, borderRadius: 12,
+              background: '#F5F5F5', borderLeft: '4px solid #B3261E', fontSize: 14, color: t.ink, fontWeight: 500 }}>
               {error}
             </div>
           )}
@@ -194,7 +194,7 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
               onLeaving={onStashDraft}
             />
           ) : (
-            <div style={{ marginTop: 32, padding: 14, background: t.surfaceAlt, borderRadius: 8,
+            <div style={{ marginTop: 32, padding: 14, background: t.surfaceAlt, borderRadius: 12,
               fontSize: 13.5, color: t.inkDim, lineHeight: 1.55 }}>
               {shared ? (
                 <>

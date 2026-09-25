@@ -13,10 +13,10 @@ export const BUDGET = 250000;
 
 /** What a scheme is trying to achieve. */
 export const OUTCOMES = {
-  shade: { key: 'shade', label: 'Shade & cool', color: '#3E9D4E' },
-  safety: { key: 'safety', label: 'Feels safe', color: '#2F7BD6' },
-  play: { key: 'play', label: 'Room to play', color: '#7A52E0' },
-  footfall: { key: 'footfall', label: 'Local trade', color: '#E08A2B' },
+  shade: { key: 'shade', label: 'Shade & cool', color: '#123F73' },
+  safety: { key: 'safety', label: 'Feels safe', color: '#1D5FA8' },
+  play: { key: 'play', label: 'Room to play', color: '#5B3CB8' },
+  footfall: { key: 'footfall', label: 'Local trade', color: '#9E4600' },
 };
 
 /** Who ends up better or worse off. These are allowed to go negative. */

@@ -14,7 +14,7 @@ const inputStyle = (t) => ({
   padding: '12px 16px',
   fontSize: 15,
   border: `1.5px solid ${t.line}`,
-  borderRadius: 8,
+  borderRadius: 12,
   background: t.chrome,
   color: t.ink,
   fontFamily: 'var(--placer-font)',
@@ -72,7 +72,7 @@ export function ResetPasswordPage({ t }) {
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '48px 40px' }} className="placer-scroll">
       <div style={{ maxWidth: 440, margin: '0 auto' }}>
-        <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 900, color: t.ink,
+        <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 700, color: t.ink,
           letterSpacing: '-0.03em', marginBottom: 12, lineHeight: 1.15 }}>
           Choose a new password
         </h1>
@@ -119,9 +119,9 @@ export function ResetPasswordPage({ t }) {
                 </div>
 
                 {error && (
-                  <div role="alert" style={{ marginBottom: 18, padding: 14, borderRadius: 8,
-                    background: '#D6452F22', borderLeft: '4px solid #D6452F', fontSize: 14,
-                    color: t.ink, fontWeight: 600, lineHeight: 1.5 }}>
+                  <div role="alert" style={{ marginBottom: 18, padding: 14, borderRadius: 12,
+                    background: '#F5F5F5', borderLeft: '4px solid #B3261E', fontSize: 14,
+                    color: t.ink, fontWeight: 500, lineHeight: 1.5 }}>
                     {error}
                   </div>
                 )}
