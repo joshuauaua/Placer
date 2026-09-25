@@ -332,7 +332,7 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
         style={{ flex: 1, overflowY: 'auto', padding: '48px 32px' }}
       >
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          {onOptInStep && (
+          {onOptInStep && content.steps.optInDescription && (
             <p
               style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 32, whiteSpace: 'pre-line' }}
             >

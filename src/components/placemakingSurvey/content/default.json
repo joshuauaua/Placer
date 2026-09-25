@@ -15,7 +15,6 @@
     "module3Title": "Section 3: Key Challenges",
     "module4Title": "Section 4: Future Solutions",
     "optInTitle": "Section 5: Next Steps",
-    "optInDescription": "Where should we send your copy of the Placemaking Trends 2026/2027 Report?\n\nEnter your details below and choose how you’d like to stay involved. Prefer to participate anonymously? Simply select the last option.",
     "optInChecklistTitle": "Next steps & beta access",
     "otherLabel": "Please specify",
     "otherPlaceholder": "Tell us which",
@@ -164,12 +163,12 @@
   ],
   "optIns": [
     {
-      "key": "beta",
-      "label": "Sign up our municipality for early beta access & product testing"
+      "key": "report",
+      "label": "Send me a copy of the Placemaking Trends 2026/2027 Report once it is ready"
     },
     {
-      "key": "userLab",
-      "label": "Invite me to join user lab wireframe testing sessions"
+      "key": "beta",
+      "label": "Sign up for early beta access and product testing"
     },
     {
       "key": "anonymous",
@@ -178,7 +177,7 @@
     }
   ],
   "contact": {
-    "title": "Your details",
+    "title": "Your Details",
     "fields": [
       { "key": "name", "label": "Full Name", "placeholder": "Your full name" },
       { "key": "email", "label": "Work Email Address", "placeholder": "you@city.gov", "type": "email" },

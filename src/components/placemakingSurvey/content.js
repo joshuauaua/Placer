@@ -38,7 +38,6 @@ const COVER_FIELDS = ['title', 'startLabel'];
 const STEP_FIELDS = [
   ...MODULES.map((module) => `${module}Title`),
   'optInTitle',
-  'optInDescription',
   // Shown against an `other` option and an `optional` question respectively, so
   // both live in the content rather than in the components.
   'otherLabel',
@@ -214,6 +213,9 @@ export function validateSurveyContent(content) {
   object(content, 'content');
   cover(content.cover, 'cover');
   fields(content.steps, STEP_FIELDS, 'steps');
+  // Copy above the closing step's details. Optional, so the step can open straight
+  // on the contact fields.
+  optionalText(content.steps.optInDescription, 'steps.optInDescription');
   fields(content.success, SUCCESS_FIELDS, 'success');
   text(content.errorMessage, 'errorMessage');
 

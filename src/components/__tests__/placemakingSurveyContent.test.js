@@ -180,8 +180,9 @@ describe('placemaking trends survey content', () => {
     it('ships the opt-ins, with the anonymous one last', () => {
       const content = resolveSurveyContent();
 
-      expect(content.optIns.map((entry) => entry.key)).toEqual(['beta', 'userLab', 'anonymous']);
-      expect(content.optIns[0].label).toMatch(/beta access/i);
+      expect(content.optIns.map((entry) => entry.key)).toEqual(['report', 'beta', 'anonymous']);
+      expect(content.optIns[0].label).toMatch(/report/i);
+      expect(content.optIns[1].label).toMatch(/beta access/i);
       // The step's description tells respondents to pick the last option.
       expect(content.optIns.at(-1).anonymous).toBe(true);
     });

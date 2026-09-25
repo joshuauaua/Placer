@@ -169,7 +169,7 @@ describe('PlacemakingTrendsSurveyPage', () => {
       expect(stored[0]).toMatchObject({
         email: 'planner@city.gov',
         source: 'placemaking_trends_survey',
-        optIns: ['beta'],
+        optIns: [content.optIns[0].key],
         contact: {
           name: 'A. Planner',
           email: 'planner@city.gov',
