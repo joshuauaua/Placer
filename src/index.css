@@ -819,3 +819,94 @@ a {
     padding: 32px 20px 56px;
   }
 }
+
+/* PLACER — a project's public page (see PublicProjectPage.jsx).
+ *
+ * The article on the left and, from 1024px, a 280px column on the right holding
+ * the floating table of contents, which sticks as the page scrolls. The top offset
+ * is small because the scroll area's own padding already clears the glass bar.
+ * Below 1024px the page is one column and the contents card is left out: the
+ * sections follow each other directly on a phone. */
+.placer-project {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 32px var(--placer-margin) 96px;
+}
+
+.placer-project-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 64px;
+  align-items: start;
+}
+
+.placer-project-section {
+  /* Clear of the glass bar when the contents card scrolls a section into view. */
+  scroll-margin-top: 88px;
+  margin-bottom: 64px;
+}
+
+.placer-project-aside {
+  position: sticky;
+  top: 24px;
+}
+
+/* Floating, so it carries the kit's one shadow all the time, not just on hover. */
+.placer-project-toc,
+.placer-project-toc:hover {
+  box-shadow: var(--placer-shadow);
+}
+
+.placer-project-toc-link {
+  display: block;
+  min-height: 40px;
+  padding: 10px 12px;
+  border-radius: var(--placer-radius-sm);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--placer-ink);
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.placer-project-toc-link:hover {
+  background: var(--placer-grey-100) !important;
+}
+
+.placer-project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.placer-project-related {
+  border-top: 1px solid var(--placer-grey-200);
+  padding-top: 48px;
+  margin-bottom: 0;
+}
+
+.placer-project-related-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+@media (max-width: 1023px) {
+  .placer-project-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .placer-project-aside {
+    display: none;
+  }
+
+  .placer-project-related-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-project-toc-link {
+    transition: none;
+  }
+}

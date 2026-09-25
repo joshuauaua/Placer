@@ -11,20 +11,32 @@ import { CHARACTER } from '../theme';
 
 const SIZE = { width: 1000, height: 240 };
 
-/** Renders nothing when the project has no drawn shape, or there is no API key. */
-export function ProjectLocationMap({ t, project }) {
+const drawnShapes = (project) =>
+  (project?.locationShapes ?? []).filter((shape) => (shape?.path?.length ?? 0) >= 3);
+
+/** Whether ProjectLocationMap has anything to draw for this project. */
+export function hasProjectMap(project) {
+  return Boolean(googleMapsApiKey()) && drawnShapes(project).length > 0;
+}
+
+/**
+ * Renders nothing when the project has no drawn shape, or there is no API key.
+ * `size` is the image requested and `style` overrides how it sits on the page,
+ * for the project page's larger hero and the related-project thumbnails.
+ */
+export function ProjectLocationMap({ t, project, size = SIZE, style }) {
   const apiKey = googleMapsApiKey();
-  const shapes = (project?.locationShapes ?? []).filter((shape) => (shape?.path?.length ?? 0) >= 3);
+  const shapes = drawnShapes(project);
   if (!apiKey || shapes.length === 0) return null;
 
-  const url = staticMapUrl({ apiKey, paths: shapes, pathColor: CHARACTER.cityWorker.c700, size: SIZE });
+  const url = staticMapUrl({ apiKey, paths: shapes, pathColor: CHARACTER.cityWorker.c700, size });
 
   return (
     <img
       src={url}
       alt={`Map of the area for ${project?.name || 'this project'}`}
-      style={{ width: '100%', height: 240, objectFit: 'cover', borderRadius: 12,
-        border: `1px solid ${t.line}`, marginBottom: 28, display: 'block' }}
+      style={{ width: '100%', height: size.height, objectFit: 'cover', borderRadius: 16,
+        border: `1px solid ${t.line}`, marginBottom: 28, display: 'block', ...style }}
     />
   );
 }

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { PublicProjectPage } from '../PublicProjectPage';
 import { readImaginationsByProject } from '../../services/imaginations';
-import { readLinks, readProject, readPublicSandboxActivity } from '../../services/projects';
+import { readLinks, readProject, readPublicSandboxActivity, readRelatedProjects } from '../../services/projects';
 import { follow, isFollowing, unfollow } from '../../services/follows';
 import { THEME } from '../../theme';
 
@@ -14,6 +14,7 @@ vi.mock('../../services/projects', () => ({
   readProject: vi.fn(),
   readLinks: vi.fn(() => Promise.resolve([])),
   readPublicSandboxActivity: vi.fn(() => Promise.resolve(0)),
+  readRelatedProjects: vi.fn(() => Promise.resolve([])),
 }));
 
 vi.mock('../../services/follows', () => ({
@@ -31,7 +32,7 @@ const PROJECT = {
 const setup = (overrides = {}) => {
   const props = {
     t: THEME, projectId: 'proj-1', accountId: null,
-    onImagineForProject: vi.fn(), onNavigate: vi.fn(),
+    onImagineForProject: vi.fn(), onBack: vi.fn(), onOpenProject: vi.fn(), onOpenSandbox: vi.fn(),
     ...overrides,
   };
   render(<PublicProjectPage {...props} />);
@@ -43,6 +44,7 @@ describe('PublicProjectPage', () => {
     vi.mocked(readImaginationsByProject).mockResolvedValue([]);
     vi.mocked(readLinks).mockResolvedValue([]);
     vi.mocked(readPublicSandboxActivity).mockResolvedValue(0);
+    vi.mocked(readRelatedProjects).mockResolvedValue([]);
     vi.mocked(isFollowing).mockResolvedValue(false);
   });
 
@@ -55,9 +57,9 @@ describe('PublicProjectPage', () => {
 
     setup();
 
-    expect(await screen.findByRole('heading', { name: 'Riverside Greenway' })).toBeInTheDocument();
-    expect(screen.getByText('Started by Mara Quinn')).toBeInTheDocument();
-    expect(screen.getByText('2026-01-01 → 2026-12-31')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' })).toBeInTheDocument();
+    expect(screen.getByText('By Mara Quinn')).toBeInTheDocument();
+    expect(screen.getByText('1 Jan 2026 – 31 Dec 2026')).toBeInTheDocument();
     expect(screen.getByText('Malmö, Folkets Park')).toBeInTheDocument();
     expect(screen.getByText(/Turn the old rail corridor/)).toBeInTheDocument();
   });
@@ -119,11 +121,82 @@ describe('PublicProjectPage', () => {
     expect(await screen.findByText(/2 Sandbox sessions run/)).toBeInTheDocument();
   });
 
+  it('dates a project without dates by the day it was started', async () => {
+    vi.mocked(readProject).mockResolvedValue({ ...PROJECT, startDate: null, endDate: null,
+      createdAt: '2026-03-05T10:00:00Z' });
+
+    setup();
+
+    expect(await screen.findByText('5 Mar 2026')).toBeInTheDocument();
+  });
+
+  it('goes back to all projects', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    const { onBack } = setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: /All Projects/ }));
+
+    expect(onBack).toHaveBeenCalled();
+  });
+
+  it('opens a Sandbox tool with the project attached', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    const { onOpenSandbox } = setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Budget Ballot/ }));
+
+    expect(onOpenSandbox).toHaveBeenCalledWith('proj-1', 'budget-ballot');
+  });
+
+  it('has a table of contents for the sections on the page', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+
+    setup();
+
+    const toc = within(await screen.findByRole('navigation', { name: 'On this page' }));
+    expect(toc.getAllByRole('link').map((link) => link.textContent))
+      .toEqual(['Overview', 'Sandbox tools', 'Imaginations']);
+    expect(toc.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'location');
+
+    fireEvent.click(toc.getByRole('link', { name: 'Imaginations' }));
+    expect(toc.getByRole('link', { name: 'Imaginations' })).toHaveAttribute('aria-current', 'location');
+  });
+
+  it('ends with related projects, which open', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    vi.mocked(readRelatedProjects).mockResolvedValue([
+      { id: 'proj-2', name: 'Harbour Steps', ownerName: 'Ines', description: '', locations: [], createdAt: '2026-02-01' },
+      { id: 'proj-3', name: 'Market Square', ownerName: 'Oskar', description: '', locations: [], createdAt: '2026-02-02' },
+      { id: 'proj-4', name: 'School Street', ownerName: 'Lee', description: '', locations: [], createdAt: '2026-02-03' },
+    ]);
+    const { onOpenProject } = setup();
+
+    expect(await screen.findByRole('heading', { name: 'Related Projects' })).toBeInTheDocument();
+    expect(readRelatedProjects).toHaveBeenCalledWith(PROJECT);
+    expect(screen.getByRole('link', { name: 'Related projects' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Market Square/ }));
+    expect(onOpenProject).toHaveBeenCalledWith('proj-3');
+  });
+
+  it('still shows the project when related projects fail to load', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    vi.mocked(readRelatedProjects).mockRejectedValue(new Error('network down'));
+
+    setup();
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' })).toBeInTheDocument();
+    await waitFor(() => expect(consoleError).toHaveBeenCalled());
+    expect(screen.queryByRole('heading', { name: 'Related Projects' })).not.toBeInTheDocument();
+    consoleError.mockRestore();
+  });
+
   it('has no Follow button for a signed-out visitor', async () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
 
     setup({ accountId: null });
-    await screen.findByRole('heading', { name: 'Riverside Greenway' });
+    await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' });
 
     expect(screen.queryByRole('button', { name: /Follow/ })).not.toBeInTheDocument();
   });
@@ -173,7 +246,7 @@ describe('PublicProjectPage', () => {
 
     setup();
 
-    await screen.findByRole('heading', { name: 'Riverside Greenway' });
+    await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' });
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 });

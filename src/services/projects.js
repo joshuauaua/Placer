@@ -111,6 +111,37 @@ export async function readProjectLocations() {
     .filter((project) => project.locationShapes.length > 0);
 }
 
+// How many recent projects readRelatedProjects ranks before it picks its few.
+const RELATED_POOL = 24;
+
+/**
+ * A few other projects to offer at the foot of a project's page. Public, like
+ * readProject. "Related" is kept simple: from the most recent projects, the ones
+ * that share a place name with this one come first, and the rest by recency.
+ */
+export async function readRelatedProjects(project, limit = 3) {
+  if (!project?.id) return [];
+
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECTS_TABLE)
+    .select(PROJECT_COLUMNS)
+    .neq('id', project.id)
+    .order('created_at', { ascending: false })
+    .limit(RELATED_POOL);
+
+  if (error) throw new Error(`Could not load related projects: ${error.message}`);
+
+  const places = new Set((project.locations ?? []).map((place) => place.toLowerCase()));
+  const shared = (candidate) => candidate.locations.filter((place) => places.has(place.toLowerCase())).length;
+
+  // Array.prototype.sort is stable, so equal overlaps keep their newest-first order.
+  return (data ?? [])
+    .map(fromRow)
+    .sort((a, b) => shared(b) - shared(a))
+    .slice(0, limit);
+}
+
 /**
  * Every project this account owns or collaborates on, newest first. Two queries
  * rather than one: `project_collaborators` only tells this account about its own

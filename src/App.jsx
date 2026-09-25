@@ -528,7 +528,10 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'projectPublic' && (
               <Suspense fallback={<LoadingFallback />}>
                 <PublicProjectPage t={t} projectId={projectRoute.id} accountId={accountId}
-                  onImagineForProject={handleImagineForProject} />
+                  onImagineForProject={handleImagineForProject}
+                  onBack={() => show('projects')}
+                  onOpenProject={showProjectPublic}
+                  onOpenSandbox={showProjectSandbox} />
               </Suspense>
             )}
           </div>
