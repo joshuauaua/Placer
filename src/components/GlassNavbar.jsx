@@ -15,7 +15,7 @@ export function GlassNavbar({ t, view, onNavigate }) {
       <button
         onClick={() => onNavigate('welcome')}
         aria-label="PLACER home"
-        className="placer-glass-nav-logo placer-disp"
+        className="placer-glass-nav-logo placer-wordmark"
       >
         PLACER
       </button>

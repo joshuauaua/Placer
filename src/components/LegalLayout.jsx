@@ -19,14 +19,14 @@ export function LegalPage({ t, title, intro, children }) {
             letterSpacing: '0.06em',
             color: t.inkDim,
             textTransform: 'uppercase',
-            fontWeight: 600,
+            fontWeight: 500,
             marginBottom: 16
           }}>
             Last updated {LAST_UPDATED}
           </div>
           <h1 className="placer-disp" style={{
             fontSize: 48,
-            fontWeight: 900,
+            fontWeight: 700,
             color: t.ink,
             letterSpacing: '-0.03em',
             marginBottom: 16,
@@ -51,7 +51,7 @@ export function Chapter({ t, title }) {
   return (
     <h2 className="placer-disp" style={{
       fontSize: 32,
-      fontWeight: 900,
+      fontWeight: 700,
       color: t.ink,
       letterSpacing: '-0.02em',
       marginTop: 56,
@@ -69,7 +69,7 @@ export function Section({ t, title, children }) {
     <section style={{ marginBottom: 40 }}>
       <h3 style={{
         fontSize: 22,
-        fontWeight: 800,
+        fontWeight: 700,
         color: t.ink,
         letterSpacing: '-0.01em',
         marginBottom: 12
@@ -147,7 +147,7 @@ export function Table({ t, columns, rows }) {
                 fontSize: 11,
                 letterSpacing: '0.06em',
                 textTransform: 'uppercase',
-                fontWeight: 600,
+                fontWeight: 500,
                 color: t.inkDim,
                 background: t.surfaceAlt,
                 borderBottom: `1px solid ${t.line}`
@@ -186,7 +186,7 @@ export function ExternalLink({ t, href, children }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      style={{ color: t.ink, fontWeight: 600, textDecoration: 'underline' }}
+      style={{ color: t.ink, fontWeight: 500, textDecoration: 'underline' }}
     >
       {children}
     </a>
@@ -200,7 +200,7 @@ export function PageLink({ t, onClick, children }) {
       role="link"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
-      style={{ color: t.ink, fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
+      style={{ color: t.ink, fontWeight: 500, textDecoration: 'underline', cursor: 'pointer' }}
     >
       {children}
     </span>

@@ -13,7 +13,7 @@ const sortNewestFirst = (records) =>
   [...records].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
 function Meta({ t, children }) {
-  return <span style={{ color: t.inkDim, fontWeight: 600 }}>{children}</span>;
+  return <span style={{ color: t.inkDim, fontWeight: 500 }}>{children}</span>;
 }
 
 function Dot({ t }) {
@@ -27,19 +27,19 @@ function Row({ t, imagination, confirming, busy, onAskDelete, onCancelDelete, on
 
   return (
     <div style={{ display: 'flex', gap: 16, padding: 16, background: t.surface,
-      border: `1px solid ${confirming ? '#D6452F' : t.line}`, borderRadius: 12,
+      border: `1px solid ${confirming ? '#B3261E' : t.line}`, borderRadius: 12,
       boxShadow: t.shadow, opacity: busy ? 0.5 : 1 }}>
       {preview ? (
         <img
           src={preview}
           alt={`Preview of ${name}`}
-          style={{ width: 132, height: 92, objectFit: 'cover', borderRadius: 8,
+          style={{ width: 132, height: 92, objectFit: 'cover', borderRadius: 12,
             border: `1px solid ${t.line}`, flex: '0 0 auto' }}
         />
       ) : (
         <div
           aria-label="No preview"
-          style={{ width: 132, height: 92, borderRadius: 8, background: t.surfaceAlt,
+          style={{ width: 132, height: 92, borderRadius: 12, background: t.surfaceAlt,
             border: `1px solid ${t.line}`, flex: '0 0 auto', display: 'flex',
             alignItems: 'center', justifyContent: 'center', color: t.inkFaint }}>
           <Icon name="image" size={26} stroke={1.8} />
@@ -48,7 +48,7 @@ function Row({ t, imagination, confirming, busy, onAskDelete, onCancelDelete, on
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <h2 className="placer-disp" style={{ fontSize: 17, fontWeight: 800, color: t.ink,
+          <h2 className="placer-disp" style={{ fontSize: 17, fontWeight: 700, color: t.ink,
             letterSpacing: '-0.01em', margin: 0 }}>
             {name}
           </h2>
@@ -88,7 +88,7 @@ function Row({ t, imagination, confirming, busy, onAskDelete, onCancelDelete, on
               onClick={onConfirmDelete}
               disabled={busy}
               ariaLabel={`Confirm deleting ${name}`}
-              style={{ background: '#D6452F', color: '#fff', border: '1px solid transparent' }}>
+              style={{ background: '#B3261E', color: '#fff', border: '1px solid transparent' }}>
               {busy ? 'Deleting…' : 'Delete for good'}
             </Btn>
           </>
@@ -155,7 +155,7 @@ export function AdminImaginations({ t }) {
       <div style={{ background: t.surface, borderBottom: `1px solid ${t.line}`, padding: '20px 32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <div>
-            <h1 className="placer-disp" style={{ fontSize: 28, fontWeight: 900, color: t.ink,
+            <h1 className="placer-disp" style={{ fontSize: 28, fontWeight: 700, color: t.ink,
               letterSpacing: '-0.02em', marginBottom: 4 }}>
               Imaginations
             </h1>
@@ -163,8 +163,8 @@ export function AdminImaginations({ t }) {
               Everything people have posted, newest first. Deleting is permanent.
             </p>
           </div>
-          <div className="placer-mono" style={{ padding: '8px 16px', background: t.accent + '15',
-            borderRadius: 8, border: `1px solid ${t.accent}`, fontSize: 13, fontWeight: 700, color: t.ink }}>
+          <div className="placer-mono" style={{ padding: '8px 16px', background: t.surfaceAlt,
+            borderRadius: 12, border: `1px solid ${t.accent}`, fontSize: 13, fontWeight: 700, color: t.ink }}>
             {imaginations.length} saved
           </div>
         </div>
@@ -172,12 +172,12 @@ export function AdminImaginations({ t }) {
 
       <div style={{ padding: '24px 32px 64px', maxWidth: 1040 }}>
         {status === 'loading' && (
-          <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 600 }}>Loading imaginations…</div>
+          <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>Loading imaginations…</div>
         )}
 
         {status === 'error' && (
-          <div role="alert" style={{ padding: 16, borderRadius: 8, background: '#D6452F22',
-            borderLeft: '4px solid #D6452F', fontSize: 14, fontWeight: 600 }}>
+          <div role="alert" style={{ padding: 16, borderRadius: 12, background: '#F5F5F5',
+            borderLeft: '4px solid #B3261E', fontSize: 14, fontWeight: 500 }}>
             Could not load imaginations. See the console for details.
           </div>
         )}
@@ -194,8 +194,8 @@ export function AdminImaginations({ t }) {
         )}
 
         {error && (
-          <div role="alert" style={{ marginBottom: 16, padding: 14, borderRadius: 8,
-            background: '#D6452F22', borderLeft: '4px solid #D6452F', fontSize: 14, fontWeight: 600 }}>
+          <div role="alert" style={{ marginBottom: 16, padding: 14, borderRadius: 12,
+            background: '#F5F5F5', borderLeft: '4px solid #B3261E', fontSize: 14, fontWeight: 500 }}>
             {error}
           </div>
         )}

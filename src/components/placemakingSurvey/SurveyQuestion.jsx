@@ -9,7 +9,7 @@ const inputStyle = (t) => ({
   padding: '12px 16px',
   fontSize: 15,
   border: `1.5px solid ${t.line}`,
-  borderRadius: 8,
+  borderRadius: 12,
   background: t.chrome,
   color: t.ink,
   fontFamily: 'var(--placer-font)',
@@ -17,7 +17,7 @@ const inputStyle = (t) => ({
 });
 
 /** The tint a selected option carries, which differs by theme. */
-const selectedFill = (t) => t.accent + (t.mapMode === 'dark' ? '14' : '22');
+const selectedFill = (t) => t.surfaceAlt;
 
 function Heading({ t, id, children, tight }) {
   return (
@@ -212,7 +212,7 @@ function ScaleQuestion({ t, question, value, onToggle }) {
           className="placer-disp"
           style={{
             fontSize: 48,
-            fontWeight: 900,
+            fontWeight: 700,
             letterSpacing: '-0.03em',
             color: chosen ? t.accent : t.inkDim,
             lineHeight: 1,
@@ -220,7 +220,7 @@ function ScaleQuestion({ t, question, value, onToggle }) {
         >
           {chosen ? current : '—'}
         </span>
-        <span style={{ fontSize: 15, fontWeight: 600, color: t.inkDim }}>/ {max}</span>
+        <span style={{ fontSize: 15, fontWeight: 500, color: t.inkDim }}>/ {max}</span>
       </div>
 
       <input

@@ -12,6 +12,12 @@ import { BudgetBallot } from '../components/sandbox/BudgetBallot';
 import { DesireLines } from '../components/sandbox/DesireLines';
 import { FifteenMinute } from '../components/sandbox/FifteenMinute';
 import { StreetMixer } from '../components/sandbox/StreetMixer';
+import { CHARACTER } from '../theme';
+
+// Each experiment wears one of the three character colours: `color` is the 700,
+// for text, icons and outlines on white, `tint` the 100, for fills with ink on
+// them, and `hover` the 300 a character button turns on hover.
+const tone = (character) => ({ color: character.c700, tint: character.c100, hover: character.c300, wash: character.c50 });
 
 export const EXPERIMENTS = [
   {
@@ -20,7 +26,7 @@ export const EXPERIMENTS = [
     tagline: 'Twenty metres, and everything wants some.',
     blurb: 'A street is a fixed width. Cycle track, bus lane, trees, parking, footway — they are all bidding for the same metres, and the only way to give one more is to take it from another.',
     hint: 'drag a divider, and see what the metre you just moved was doing before.',
-    color: '#2F7BD6',
+    ...tone(CHARACTER.cityWorker),
     icon: 'section',
     component: StreetMixer,
   },
@@ -30,7 +36,7 @@ export const EXPERIMENTS = [
     tagline: 'The path people take, not the one that got paved.',
     blurb: 'A plaza paved the way plazas are paved, with the things people walk between in the corners. Draw the walks you would actually make and the argument for repaving draws itself.',
     hint: 'walk from the metro to the tram stop, then look at the grass in between.',
-    color: '#D4407E',
+    ...tone(CHARACTER.practitioner),
     icon: 'path',
     component: DesireLines,
   },
@@ -40,7 +46,7 @@ export const EXPERIMENTS = [
     tagline: 'Everything within a quarter-hour walk. Everything.',
     blurb: 'Place a food shop, a school, a clinic, a park and a transit stop, and see how much of the neighbourhood can really walk to all five — around the railway rather than through it.',
     hint: "load the council's draft, then look at who lives south of the tracks.",
-    color: '#3E9D4E',
+    ...tone(CHARACTER.practitioner),
     icon: 'walk',
     component: FifteenMinute,
   },
@@ -50,7 +56,7 @@ export const EXPERIMENTS = [
     tagline: 'Two hundred and fifty thousand euros. Nine things. Choose.',
     blurb: 'Every line has a real price and a real effect, and the money runs out well before the street is finished. Spending it is easy; explaining who ended up better off is the hard part.',
     hint: 'fund the parklets, then watch the shopkeepers’ bar go the other way.',
-    color: '#E08A2B',
+    ...tone(CHARACTER.citizen),
     icon: 'coins',
     component: BudgetBallot,
   },

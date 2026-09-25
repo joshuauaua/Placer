@@ -22,7 +22,7 @@ export function PhotoSplit({ t, src, alt, children }) {
 export function PhotoSplitHeading({ t, title, subtitle }) {
   return (
     <>
-      <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, letterSpacing: '-0.03em',
+      <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, letterSpacing: '-0.03em',
         lineHeight: 1.05, color: t.ink }}>
         {title}
       </h1>

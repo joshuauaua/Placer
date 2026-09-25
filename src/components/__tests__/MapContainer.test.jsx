@@ -4,7 +4,7 @@ import { toPng } from 'html-to-image';
 import MapContainer from '../MapContainer';
 import { fetchImaginations } from '../../services/api';
 import { stitchPanoTiles } from '../../lib/panoStitch';
-import { CAT, THEME } from '../../theme';
+import { CHARACTER } from '../../theme';
 
 vi.mock('html-to-image', () => ({
   toPng: vi.fn(() => Promise.resolve('data:image/png;base64,mock')),
@@ -535,7 +535,7 @@ describe('MapContainer', () => {
       );
     });
 
-    it('colours each pin by its category and labels it with the title', async () => {
+    it('draws each pin in the citizen pin style and labels it with the title', async () => {
       window.google = mockGoogleMaps();
       vi.mocked(fetchImaginations).mockResolvedValue(SAVED);
 
@@ -546,8 +546,10 @@ describe('MapContainer', () => {
       const [first, second] = window.google.maps.Marker.mock.calls.map((call) => call[0]);
       expect(first.position).toEqual({ lat: 55.61, lng: 12.99 });
       expect(first.title).toBe('Pocket park');
-      expect(first.icon.fillColor).toBe(CAT.green.color);
-      expect(second.icon.fillColor).toBe(CAT.seating.color);
+      for (const pin of [first, second]) {
+        expect(pin.icon.fillColor).toBe(CHARACTER.citizen.c100);
+        expect(pin.icon.strokeColor).toBe(CHARACTER.citizen.c700);
+      }
     });
 
     it('skips imaginations saved without usable coordinates', async () => {
@@ -562,18 +564,6 @@ describe('MapContainer', () => {
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
       await waitFor(() => expect(window.google.maps.Marker).toHaveBeenCalledTimes(2));
-    });
-
-    it('falls back to the accent colour for an unrecognised category', async () => {
-      window.google = mockGoogleMaps();
-      vi.mocked(fetchImaginations).mockResolvedValue([
-        { id: 'img-9', title: 'Odd one', cat: 'not-a-category', position: { lat: 1, lng: 2 } },
-      ]);
-
-      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-
-      await waitFor(() => expect(window.google.maps.Marker).toHaveBeenCalledTimes(1));
-      expect(window.google.maps.Marker.mock.calls[0][0].icon.fillColor).toBe(THEME.accent);
     });
 
     it('draws no pins when nothing has been saved yet', async () => {

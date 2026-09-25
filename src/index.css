@@ -1,5 +1,58 @@
-/* PLACER — design system base */
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+/* PLACER — design system base, from the brand kit (design.md).
+ *
+ * Helvetica throughout (Bold 700, Medium 500, Regular 400), falling back to Arial.
+ * The kit has one typeface, so the display face and the "mono" labels both resolve
+ * to it; the class names stay because the components use them.
+ *
+ * The type scale, the neutrals and the three character colours are custom
+ * properties so inline styles and SVG attributes can read them too. The type
+ * scale switches at the kit's one breakpoint, 1024px.
+ */
+:root {
+  --placer-font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --placer-font-display: var(--placer-font);
+
+  --placer-ink: #111111;
+  --placer-grey-700: #3D3D3D;
+  --placer-grey-500: #6E6E6E;
+  --placer-grey-300: #D6D6D6;
+  --placer-grey-200: #E6E6E6;
+  --placer-grey-100: #F5F5F5;
+  --placer-white: #FFFFFF;
+  --placer-error: #B3261E;
+  --placer-success: #1E7B3A;
+
+  --placer-blue-50: #EEF5FE;  --placer-blue-100: #C6DEF8;  --placer-blue-300: #8DBBEF;  --placer-blue-700: #1D5FA8;  --placer-blue-900: #123F73;
+  --placer-orange-50: #FFF3E8; --placer-orange-100: #FFD9B8; --placer-orange-300: #FDB27A; --placer-orange-700: #9E4600; --placer-orange-900: #6B2E00;
+  --placer-purple-50: #F4F0FE; --placer-purple-100: #DDD2FA; --placer-purple-300: #B39DF2; --placer-purple-700: #5B3CB8; --placer-purple-900: #3A2480;
+
+  --placer-radius-sm: 12px;
+  --placer-radius-lg: 16px;
+  --placer-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+
+  /* Mobile type scale (0–1023px): size / line height. */
+  --placer-display: 40px; --placer-display-lh: 44px;
+  --placer-h1: 32px; --placer-h1-lh: 38px;
+  --placer-h2: 24px; --placer-h2-lh: 30px;
+  --placer-h3: 20px; --placer-h3-lh: 26px;
+  --placer-body-lg: 17px; --placer-body-lg-lh: 26px;
+
+  --placer-margin: 20px;
+  --placer-glass-pad: 16px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --placer-display: 64px; --placer-display-lh: 68px;
+    --placer-h1: 44px; --placer-h1-lh: 52px;
+    --placer-h2: 32px; --placer-h2-lh: 40px;
+    --placer-h3: 22px; --placer-h3-lh: 28px;
+    --placer-body-lg: 18px; --placer-body-lg-lh: 28px;
+
+    --placer-margin: 80px;
+    --placer-glass-pad: 24px;
+  }
+}
 
 * {
   box-sizing: border-box;
@@ -15,19 +68,159 @@ html, body {
 }
 
 body {
-  font-family: 'Archivo', system-ui, sans-serif;
-  font-feature-settings: 'ss01';
+  font-family: var(--placer-font);
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--placer-ink);
+  background: var(--placer-white);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
+/* The type scale. Page titles are always H1; the classes are for anything else
+ * that should sit on a step of the scale. Helvetica has no weight above Bold, so
+ * the heavier weights the components still ask for are held to 700. */
+h1,
+.placer-h1 {
+  font-size: var(--placer-h1) !important;
+  line-height: var(--placer-h1-lh) !important;
+  letter-spacing: -0.01em !important;
+  font-weight: 700 !important;
+}
+
+.placer-display {
+  font-size: var(--placer-display) !important;
+  line-height: var(--placer-display-lh) !important;
+  letter-spacing: -0.02em !important;
+  font-weight: 700 !important;
+}
+
+.placer-h2 {
+  font-size: var(--placer-h2) !important;
+  line-height: var(--placer-h2-lh) !important;
+  letter-spacing: -0.01em !important;
+  font-weight: 700 !important;
+}
+
+.placer-h3 {
+  font-size: var(--placer-h3) !important;
+  line-height: var(--placer-h3-lh) !important;
+  letter-spacing: 0 !important;
+  font-weight: 700 !important;
+}
+
+.placer-body-lg {
+  font-size: var(--placer-body-lg);
+  line-height: var(--placer-body-lg-lh);
+}
+
+.placer-label {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.placer-caption {
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.01em;
+}
+
+h2, h3 {
+  font-weight: 700;
+}
+
+/* Kept as a class for the small uppercase labels, but set in the one typeface. */
 .placer-mono {
-  font-family: 'Space Mono', monospace;
+  font-family: var(--placer-font);
+  letter-spacing: 0.01em;
 }
 
 .placer-disp {
-  font-family: 'Archivo Expanded', 'Archivo', sans-serif;
+  font-family: var(--placer-font-display);
+  font-weight: 700 !important;
+}
+
+/* Focus: a 2px ink ring, 2px off the edge, on everything that takes focus. */
+:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+/* Inputs: 48px, 12px corners, a grey-300 hairline that becomes 2px ink on focus.
+ * Components still style most fields inline, so the radius and focus are the
+ * parts enforced here. */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+select,
+textarea {
+  font-family: var(--placer-font);
+  border-radius: var(--placer-radius-sm) !important;
+}
+
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 0;
+}
+
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'] {
+  accent-color: var(--placer-ink);
+}
+
+a {
+  color: var(--placer-ink);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* Buttons from UI.jsx's Btn. Hover lives here because an inline style cannot
+ * have one: primary goes grey-700, secondary goes grey-100. */
+.placer-btn {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.placer-btn-primary:not(:disabled):hover {
+  background: var(--placer-grey-700) !important;
+}
+
+.placer-btn-character:not(:disabled):hover {
+  background: var(--placer-btn-hover) !important;
+}
+
+.placer-btn-secondary:not(:disabled):hover,
+.placer-btn-ghost:not(:disabled):hover {
+  background: var(--placer-grey-100) !important;
+}
+
+/* Cards: 16px corners, a grey-200 hairline and no shadow until hovered. */
+.placer-card {
+  border-radius: var(--placer-radius-lg);
+  border: 1px solid var(--placer-grey-200);
+  background: var(--placer-white);
+  padding: 24px;
+  transition: box-shadow 0.2s ease;
+}
+
+.placer-card:hover {
+  box-shadow: var(--placer-shadow);
+}
+
+/* Matte glass: white at 12% over a 24px blur, a 45% white rim and the one shadow.
+ * For map panels, the sidebar, the tab bar and glass buttons on maps. Never glass
+ * on glass. */
+.placer-glass {
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: var(--placer-radius-lg);
+  box-shadow: var(--placer-shadow);
+  color: var(--placer-ink);
 }
 
 .placer-scroll {
@@ -217,17 +410,19 @@ body {
 }
 
 .placer-landing-title {
-  font-size: 64px;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 1;
+  /* The wordmark at Display size: uppercase Helvetica Bold, +8% tracking. */
+  font-size: var(--placer-display) !important;
+  line-height: var(--placer-display-lh) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
   margin-bottom: 32px;
 }
 
 .placer-landing-pitch {
-  font-size: 24px;
+  font-size: var(--placer-body-lg);
   font-weight: 400;
-  line-height: 1.5;
+  line-height: var(--placer-body-lg-lh);
   margin-bottom: 56px;
 }
 
@@ -247,19 +442,17 @@ body {
   justify-content: center;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1023px) {
   .placer-landing-column {
     padding-top: 112px;
   }
 
   .placer-landing-title {
-    font-size: 48px;
     margin-bottom: 24px;
   }
 
   /* Room for the credit to sit apart from the pitch, well down the page. */
   .placer-landing-pitch {
-    font-size: 20px;
     margin-bottom: 96px;
   }
 
@@ -293,26 +486,25 @@ body {
 .placer-feedback-trigger {
   z-index: 150;
   width: auto;
-  height: 56px;
-  padding: 0 32px;
-  border: none;
-  border-radius: 0;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-family: 'Archivo', sans-serif;
-  font-weight: 700;
-  font-size: 15px;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
+  font-family: var(--placer-font);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 20px;
+  letter-spacing: 0.01em;
   text-align: center;
-  transition: transform 0.2s ease;
+  transition: background-color 0.15s ease;
 }
 
-.placer-feedback-trigger:hover,
-.placer-feedback-trigger:focus-visible {
-  transform: scale(1.06);
+/* A character button: the 100 fill, 300 on hover. */
+.placer-feedback-trigger:hover {
+  background: var(--placer-orange-300) !important;
 }
 
 /* Room set aside at the foot of the page for the mobile bar. Nothing on desktop,
@@ -321,7 +513,7 @@ body {
   height: 0;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1023px) {
   /* A bar across the foot of the screen: full width, one line, and short enough
      to leave the page readable above it. 60px = the footer plus a 16px gap. */
   .placer-feedback-trigger {
@@ -331,7 +523,8 @@ body {
     bottom: calc(60px + var(--placer-consent-inset, 0px));
     width: auto;
     padding: 0 20px;
-    transition: bottom 0.2s ease, transform 0.2s ease;
+    min-height: 48px;
+    transition: bottom 0.2s ease, background-color 0.15s ease;
   }
 
   .placer-feedback-spacer {
@@ -340,68 +533,60 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .placer-feedback-trigger:hover,
-  .placer-feedback-trigger:focus-visible {
-    transform: none;
+  .placer-feedback-trigger {
+    transition: none;
   }
 }
 
-/* PLACER — the holding page's nav bar (see GlassNavbar.jsx).
- *
- * A "liquid glass" bar across the full width of the top edge, square-cornered.
- * The effect is a stack: a translucent tint, a blur that also lifts saturation
- * so what passes underneath stays vivid, a bright rim along the top edge and a
- * hairline along the bottom that separates it from the page, and a soft sheen
- * across the upper half (::before).
- */
+/* PLACER — the holding page's nav bar (see GlassNavbar.jsx): the wordmark top
+ * left at the page margin, the menu at the other end. Matte glass from the brand
+ * kit, square to the window since it runs edge to edge. */
 .placer-glass-nav {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 56px;
+  height: 64px;
   box-sizing: border-box;
-  padding: 0 14px 0 22px;
+  padding: 0 var(--placer-margin);
   display: flex;
   justify-content: space-between;
   align-items: center;
   z-index: 160;
-  background: rgba(255, 255, 255, 0.42);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 4px 20px rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: var(--placer-shadow);
 }
 
-.placer-glass-nav::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 55%);
-  pointer-events: none;
+/* The wordmark: Helvetica Bold, uppercase, +8% tracking. Font size is cap height
+ * over Helvetica's 0.717 cap ratio — 20px caps on desktop, 16px on mobile. */
+.placer-wordmark {
+  font-family: var(--placer-font);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  font-size: 22px;
+  min-width: 72px;
 }
 
-.placer-glass-nav > * {
-  position: relative;
+@media (min-width: 1024px) {
+  .placer-wordmark {
+    font-size: 28px;
+  }
 }
 
 .placer-glass-nav-logo {
   all: unset;
   cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-family: 'Archivo Expanded', 'Archivo', sans-serif;
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: inherit;
+  color: var(--placer-ink);
+  border-radius: var(--placer-radius-sm);
 }
 
 .placer-glass-nav-logo:focus-visible {
-  outline: 2px solid currentColor;
+  outline: 2px solid var(--placer-ink);
   outline-offset: 2px;
 }
 
@@ -413,8 +598,9 @@ body {
 /* Browsers without backdrop-filter get a near-opaque bar instead of an
    unreadable clear one. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .placer-glass-nav {
-    background: rgba(255, 255, 255, 0.92);
+  .placer-glass-nav,
+  .placer-glass {
+    background: rgba(255, 255, 255, 0.85);
   }
 }
 
@@ -429,9 +615,9 @@ body {
 }
 
 .placer-menu-trigger {
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   border: none;
   background: transparent;
   display: flex;
@@ -444,13 +630,12 @@ body {
 .placer-menu-trigger:hover,
 .placer-menu-trigger:focus-visible,
 .placer-menu-trigger[aria-expanded='true'] {
-  background: rgba(255, 255, 255, 0.55);
-  transform: scale(1.06);
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .placer-menu-panel {
   position: fixed;
-  top: 56px;
+  top: 64px;
   left: 0;
   right: 0;
   bottom: 0;
@@ -458,14 +643,15 @@ body {
   overflow-y: auto;
   overscroll-behavior: contain;
   box-sizing: border-box;
-  padding: 28px 12px 40px;
+  padding: 24px var(--placer-margin) 40px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  background: rgba(255, 255, 255, 0.42);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
-  border-top: 1px solid rgba(255, 255, 255, 0.6);
+  gap: 24px;
+  /* The bar above is glass already, and the kit never stacks glass on glass, so
+     the panel under it is the glass fallback: white at 85%. */
+  background: rgba(255, 255, 255, 0.85);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
 }
 
 .placer-menu-section {
@@ -479,11 +665,10 @@ body {
 
 .placer-menu-heading {
   padding: 0 14px 8px;
-  font-family: 'Archivo', sans-serif;
-  font-size: 12.5px;
+  font-family: var(--placer-font);
+  font-size: 14px;
+  line-height: 20px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .placer-menu-link {
@@ -491,17 +676,20 @@ body {
   box-sizing: border-box;
   width: 100%;
   cursor: pointer;
-  padding: 12px 14px;
-  border-radius: 14px;
-  font-family: 'Archivo', sans-serif;
-  font-size: 17px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-family: var(--placer-font);
+  font-size: 16px;
   font-weight: 400;
   transition: background 0.15s ease;
 }
 
 :is(a, button).placer-menu-link:hover,
 :is(a, button).placer-menu-link:focus-visible {
-  background: #00FFF9; /* the landing page's feedback trigger (HaveYourSay.jsx) */
+  background: var(--placer-grey-100);
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -519,7 +707,7 @@ body {
   .placer-menu-trigger:hover,
   .placer-menu-trigger:focus-visible,
   .placer-menu-trigger[aria-expanded='true'] {
-    transform: none;
+    background: rgba(255, 255, 255, 0.6);
   }
 }
 
@@ -644,9 +832,15 @@ body {
   overflow-y: visible !important;
 }
 
+/* The footer (see SiteFooter.jsx). Ink, no radius, no shadow; four columns in a
+ * row from 1024px, stacked below it. */
+.placer-footer {
+  padding: 64px 80px;
+}
+
 .placer-footer-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 40px;
 }
 
@@ -658,18 +852,32 @@ body {
   gap: 16px;
 }
 
-@media (max-width: 760px) {
+.placer-footer-link {
+  color: var(--placer-grey-300);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.placer-footer-link:hover,
+.placer-footer-link[aria-current='page'] {
+  color: var(--placer-white);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.placer-footer-link:focus-visible {
+  outline-color: var(--placer-white);
+}
+
+@media (max-width: 1023px) {
   .placer-footer {
-    padding: 36px 20px 24px !important;
+    padding: 40px 20px;
   }
 
   .placer-footer-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 32px 20px;
-  }
-
-  .placer-footer-grid > :first-child {
-    grid-column: 1 / -1;
+    grid-template-columns: 1fr;
+    gap: 32px;
   }
 }
 
@@ -710,23 +918,25 @@ body {
   align-items: center;
   justify-content: center;
   margin-top: 32px;
-  height: 52px;
-  padding: 0 40px;
-  font-family: 'Archivo', sans-serif;
-  font-weight: 700;
-  font-size: 15px;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 12px;
+  font-family: var(--placer-font);
+  font-weight: 500;
+  font-size: 16px;
+  letter-spacing: 0.01em;
   text-decoration: none;
   border: none;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: background-color 0.15s ease;
 }
 
-.placer-split-action:hover,
-.placer-split-action:focus-visible {
-  transform: scale(1.04);
+/* A primary button: ink, grey-700 on hover. */
+.placer-split-action:hover {
+  background: var(--placer-grey-700) !important;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 1023px) {
   .placer-split {
     grid-template-columns: 1fr;
   }
@@ -820,7 +1030,7 @@ body {
   width: auto;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 1023px) {
   .placer-about .placer-split {
     min-height: 0;
   }
@@ -844,12 +1054,9 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .placer-split-action {
+  .placer-split-action,
+  .placer-btn,
+  .placer-card {
     transition: none;
-  }
-
-  .placer-split-action:hover,
-  .placer-split-action:focus-visible {
-    transform: none;
   }
 }

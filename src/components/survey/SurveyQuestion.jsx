@@ -8,10 +8,10 @@ const inputStyle = (t) => ({
   padding: '12px 16px',
   fontSize: 15,
   border: `1.5px solid ${t.line}`,
-  borderRadius: 8,
+  borderRadius: 12,
   background: t.chrome,
   color: t.ink,
-  fontFamily: "'Archivo', sans-serif",
+  fontFamily: 'var(--placer-font)',
   outline: 'none',
 });
 
@@ -70,7 +70,7 @@ export function SurveyQuestion({
               // Announced when it appears: the buttons going quiet is otherwise
               // invisible to anyone not looking at them.
               role="status"
-              style={{ display: 'block', marginTop: 6, fontWeight: 600, color: t.ink }}
+              style={{ display: 'block', marginTop: 6, fontWeight: 500, color: t.ink }}
             >
               {`${maxChoices} chosen — deselect one to change the ranking.`}
             </span>
@@ -109,7 +109,7 @@ export function SurveyQuestion({
                 minWidth: scale ? 72 : undefined,
                 borderRadius: 12,
                 border: `2px solid ${selected ? t.accent : t.line}`,
-                background: selected ? t.accent + (t.mapMode === 'dark' ? '14' : '22') : t.surface,
+                background: selected ? t.surfaceAlt : t.surface,
                 textAlign: scale ? 'center' : 'left',
                 cursor: blocked ? 'not-allowed' : 'pointer',
                 opacity: blocked ? 0.45 : 1,
@@ -118,7 +118,7 @@ export function SurveyQuestion({
                 alignItems: 'center',
                 justifyContent: scale ? 'center' : 'flex-start',
                 gap: 16,
-                fontFamily: "'Archivo', sans-serif",
+                fontFamily: 'var(--placer-font)',
               }}
               onMouseEnter={(e) => {
                 if (selected || blocked) return;
@@ -146,7 +146,7 @@ export function SurveyQuestion({
                     justifyContent: 'center',
                     flex: '0 0 auto',
                     fontSize: 13,
-                    fontWeight: 800,
+                    fontWeight: 700,
                     color: t.accentInk,
                   }}
                 >

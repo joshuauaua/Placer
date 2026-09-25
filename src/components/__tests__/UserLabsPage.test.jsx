@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { UserLabsPage } from '../UserLabsPage';
 import { saveSurveyResponse } from '../../services/api';
-import { THEME_BONE } from '../../theme';
+import { THEME } from '../../theme';
 
 vi.mock('../../services/api', () => ({ saveSurveyResponse: vi.fn() }));
 
@@ -21,14 +21,14 @@ describe('UserLabsPage', () => {
   });
 
   it('shows the upcoming lab above Apply', () => {
-    render(<UserLabsPage t={THEME_BONE} />);
+    render(<UserLabsPage t={THEME} />);
 
     expect(screen.getByText('Upcoming User Lab, October 21')).toBeInTheDocument();
     expect(screen.getByText('Malmö 12:30 – 15:30 · Ankara 13:30 – 16:30')).toBeInTheDocument();
   });
 
   it('opens the application form from Apply, and goes back to the pitch', () => {
-    render(<UserLabsPage t={THEME_BONE} />);
+    render(<UserLabsPage t={THEME} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Apply for a User Lab' })).toBeInTheDocument();
@@ -43,7 +43,7 @@ describe('UserLabsPage', () => {
 
   it('saves the application and thanks the applicant', async () => {
     saveSurveyResponse.mockResolvedValue({});
-    render(<UserLabsPage t={THEME_BONE} />);
+    render(<UserLabsPage t={THEME} />);
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
 
     fillIn();
@@ -68,7 +68,7 @@ describe('UserLabsPage', () => {
 
   it('keeps the answers and offers email when saving fails', async () => {
     saveSurveyResponse.mockRejectedValue(new Error('offline'));
-    render(<UserLabsPage t={THEME_BONE} />);
+    render(<UserLabsPage t={THEME} />);
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
 
     fillIn();

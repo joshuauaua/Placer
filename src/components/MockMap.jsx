@@ -53,8 +53,8 @@ export function MockMap({ t, onCaptureView }) {
           <rect x="520" y="400" width="140" height="150" fill={t.surface} stroke={t.lineStrong} strokeWidth="2" rx="4" />
 
           {/* Green Space (Lot 7) */}
-          <rect x="700" y="150" width="200" height="180" fill="#B8D5A8" stroke="#3E9D4E" strokeWidth="3" rx="6" />
-          <text x="800" y="240" textAnchor="middle" fill="#2D6E2D" fontSize="14" fontWeight="700">Lot 7</text>
+          <rect x="700" y="150" width="200" height="180" fill="#F5F5F5" stroke="#123F73" strokeWidth="3" rx="6" />
+          <text x="800" y="240" textAnchor="middle" fill="#111111" fontSize="14" fontWeight="700">Lot 7</text>
 
           {/* Location Markers */}
           <g transform="translate(800, 240)">
@@ -69,7 +69,7 @@ export function MockMap({ t, onCaptureView }) {
           background: t.surface, borderRadius: 12, padding: '20px 28px', boxShadow: t.shadow,
           border: `1px solid ${t.line}`, maxWidth: 500, textAlign: 'center' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 48, height: 48, borderRadius: 10, background: t.accent, marginBottom: 12 }}>
+            width: 48, height: 48, borderRadius: 12, background: t.accent, marginBottom: 12 }}>
             <Icon name="sparkle" size={24} stroke={2.2} style={{ color: t.accentInk }} />
           </div>
           <div style={{ fontSize: 18, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
@@ -85,7 +85,7 @@ export function MockMap({ t, onCaptureView }) {
 
         {/* Map Controls */}
         <div style={{ position: 'absolute', right: 20, bottom: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ borderRadius: 11, overflow: 'hidden', boxShadow: t.shadow, border: `1px solid ${t.line}` }}>
+          <div style={{ borderRadius: 12, overflow: 'hidden', boxShadow: t.shadow, border: `1px solid ${t.line}` }}>
             <button style={{ width: 42, height: 42, background: t.surface, border: 'none', borderBottom: `1px solid ${t.line}`,
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.ink }}>
               <Icon name="plus" size={20} stroke={2.2} />
@@ -95,7 +95,7 @@ export function MockMap({ t, onCaptureView }) {
               <Icon name="minus" size={20} stroke={2.2} />
             </button>
           </div>
-          <button style={{ width: 42, height: 42, borderRadius: 11, background: t.surface, border: `1px solid ${t.line}`,
+          <button style={{ width: 42, height: 42, borderRadius: 12, background: t.surface, border: `1px solid ${t.line}`,
             boxShadow: t.shadow, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.accent }}>
             <Icon name="crosshair" size={19} stroke={2} />
           </button>

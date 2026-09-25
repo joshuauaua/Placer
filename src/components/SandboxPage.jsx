@@ -31,34 +31,27 @@ function Tile({ t, experiment, onOpen }) {
     <button
       onClick={onOpen}
       style={{ position: 'relative', overflow: 'hidden', textAlign: 'left', cursor: 'pointer',
-        border: 'none', borderRadius: 14, padding: '26px 24px 24px', minHeight: 220,
-        background: `linear-gradient(150deg, ${experiment.color} 0%, ${experiment.color}D9 100%)`,
-        color: '#fff', display: 'flex', flexDirection: 'column', gap: 10,
-        fontFamily: "'Archivo', sans-serif", boxShadow: t.shadow,
-        transition: 'transform 0.2s, box-shadow 0.2s' }}
-      onMouseEnter={(event) => {
-        event.currentTarget.style.transform = 'translateY(-4px)';
-        event.currentTarget.style.boxShadow = '0 16px 36px rgba(0,0,0,0.18)';
-      }}
-      onMouseLeave={(event) => {
-        event.currentTarget.style.transform = 'translateY(0)';
-        event.currentTarget.style.boxShadow = t.shadow;
-      }}>
+        border: `1px solid ${experiment.color}`, borderRadius: 16, padding: 24, minHeight: 220,
+        background: experiment.tint,
+        color: t.ink, display: 'flex', flexDirection: 'column', gap: 8,
+        fontFamily: 'var(--placer-font)', boxShadow: 'none',
+        transition: 'box-shadow 0.2s' }}
+      onMouseEnter={(event) => { event.currentTarget.style.boxShadow = t.shadow; }}
+      onMouseLeave={(event) => { event.currentTarget.style.boxShadow = 'none'; }}>
       {/* The experiment's own mark, oversized and half out of frame. */}
-      <span aria-hidden="true" style={{ position: 'absolute', right: -18, bottom: -22, opacity: 0.22 }}>
+      <span aria-hidden="true" style={{ position: 'absolute', right: -18, bottom: -22, opacity: 0.18 }}>
         <Icon name={experiment.icon} size={150} stroke={1.4} />
       </span>
 
       <Icon name={experiment.icon} size={30} stroke={2.1} />
-      <span className="placer-disp" style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.15, position: 'relative' }}>
+      <span className="placer-h3" style={{ position: 'relative' }}>
         {experiment.name}
       </span>
-      <span style={{ fontSize: 15, fontWeight: 600, opacity: 0.92, lineHeight: 1.45, position: 'relative', maxWidth: 320 }}>
+      <span style={{ fontSize: 16, lineHeight: '24px', position: 'relative', maxWidth: 320 }}>
         {experiment.tagline}
       </span>
       <div style={{ flex: 1 }} />
-      <span className="placer-mono" style={{ fontSize: 11.5, letterSpacing: '0.06em', textTransform: 'uppercase',
-        display: 'inline-flex', alignItems: 'center', gap: 6, position: 'relative' }}>
+      <span className="placer-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, position: 'relative' }}>
         Open <Icon name="arrowRight" size={14} stroke={2.4} />
       </span>
     </button>
@@ -93,7 +86,7 @@ export function SandboxPage({ t }) {
                 <Icon name="flask" size={15} stroke={2.1} />
                 Experiments
               </div>
-              <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 900, color: t.ink,
+              <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
                 letterSpacing: '-0.03em', marginBottom: 16, lineHeight: 1.05 }}>
                 Sandbox
               </h1>
@@ -105,7 +98,7 @@ export function SandboxPage({ t }) {
             </div>
 
             {missing && (
-              <p role="status" style={{ marginBottom: 24, padding: '12px 16px', borderRadius: 10,
+              <p role="status" style={{ marginBottom: 24, padding: '12px 16px', borderRadius: 12,
                 background: t.surfaceAlt, border: `1px solid ${t.line}`, fontSize: 14, color: t.ink }}>
                 There is no experiment called <span className="placer-mono">{missing}</span>. Here is everything there is.
               </p>

@@ -111,7 +111,7 @@ export function FifteenMinute({ t, experiment }) {
                 onClick={() => setSelected(amenity.key)}
                 aria-pressed={on}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 36, padding: '0 13px',
-                  borderRadius: 999, cursor: 'pointer', fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 13.5,
+                  borderRadius: 999, cursor: 'pointer', fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: 13.5,
                   border: `1.5px solid ${on ? amenity.color : t.line}`,
                   background: on ? `${amenity.color}18` : 'transparent',
                   color: on ? amenity.color : t.inkDim }}>
@@ -128,7 +128,7 @@ export function FifteenMinute({ t, experiment }) {
           role="group"
           aria-label={`Neighbourhood grid, ${GRID.cols} by ${GRID.rows}. Arrow keys move the cursor, Enter places the selected amenity.`}
           onKeyDown={onKeyDown}
-          style={{ borderRadius: 10, outlineOffset: 3 }}>
+          style={{ borderRadius: 12, outlineOffset: 3 }}>
           <svg
             viewBox={`0 0 ${GRID.cols} ${GRID.rows}`}
             aria-hidden="true"
@@ -138,7 +138,7 @@ export function FifteenMinute({ t, experiment }) {
               setCursor(cell);
               toggleCell(cell);
             }}
-            style={{ width: '100%', display: 'block', borderRadius: 10, background: t.surfaceAlt,
+            style={{ width: '100%', display: 'block', borderRadius: 12, background: t.surfaceAlt,
               border: `1px solid ${t.line}`, cursor: 'pointer' }}>
             {cells.map((index) => {
               const { x, y } = cellCoords(index);
@@ -148,7 +148,7 @@ export function FifteenMinute({ t, experiment }) {
                 <rect
                   key={`cell-${index}`}
                   x={x} y={y} width={1} height={1}
-                  fill={passable ? experiment.color : '#3C3F44'}
+                  fill={passable ? experiment.color : '#3D3D3D'}
                   fillOpacity={passable ? (reach / result.categoryCount) * 0.8 : 1}
                   stroke={t.line}
                   strokeWidth={0.02}
@@ -159,7 +159,7 @@ export function FifteenMinute({ t, experiment }) {
             {/* The bridges: the only way over the tracks. */}
             {BRIDGE_COLS.map((column) => (
               <rect key={`bridge-${column}`} x={column} y={RAIL_ROW} width={1} height={1}
-                fill={t.surface} stroke="#3C3F44" strokeWidth={0.06} />
+                fill={t.surface} stroke="#3D3D3D" strokeWidth={0.06} />
             ))}
 
             {/* Where people live, as dots. Bigger dot, more homes. */}
@@ -179,7 +179,7 @@ export function FifteenMinute({ t, experiment }) {
                 <g key={placement.id}>
                   <circle cx={x + 0.5} cy={y + 0.5} r={0.42} fill={amenity.color} stroke={t.surface} strokeWidth={0.1} />
                   <text x={x + 0.5} y={y + 0.68} textAnchor="middle" fontSize={0.55} fontWeight={800}
-                    fontFamily="'Archivo', sans-serif" fill="#fff">
+                    fontFamily="var(--placer-font)" fill="#fff">
                     {amenity.label[0]}
                   </text>
                 </g>
@@ -212,9 +212,9 @@ export function FifteenMinute({ t, experiment }) {
         <Panel t={t} title={`Within a ${REACH_MINUTES}-minute walk`}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 20 }}>
             <Readout t={t} label="Served by all five" value={Math.round(result.share * 100)} unit="%"
-              tone={result.share > 0.6 ? '#2E7D32' : result.share > 0.2 ? undefined : '#C0392B'} />
+              tone={result.share > 0.6 ? '#1E7B3A' : result.share > 0.2 ? undefined : '#B3261E'} />
             <Readout t={t} label="Can reach nothing" value={Math.round(result.strandedShare * 100)} unit="%"
-              tone={result.strandedShare > 0.2 ? '#C0392B' : undefined} />
+              tone={result.strandedShare > 0.2 ? '#B3261E' : undefined} />
           </div>
 
           {AMENITY_LIST.map((amenity) => (

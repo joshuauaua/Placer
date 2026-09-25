@@ -211,25 +211,25 @@ function MainApp({ initialView = 'welcome' }) {
           <nav style={{ display: 'flex', gap: 4 }}>
             <span
               onClick={() => show('about')}
-              style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
+              style={{ padding: '7px 12px', borderRadius: 12, fontSize: 14.5, fontWeight: 500,
               color: view === 'about' ? t.ink : t.inkDim,
               background: view === 'about' ? t.surfaceAlt : 'transparent',
               cursor: 'pointer' }}>About</span>
             <span
               onClick={() => show('contact')}
-              style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
+              style={{ padding: '7px 12px', borderRadius: 12, fontSize: 14.5, fontWeight: 500,
               color: view === 'contact' ? t.ink : t.inkDim,
               background: view === 'contact' ? t.surfaceAlt : 'transparent',
               cursor: 'pointer' }}>Contact</span>
             <span
               onClick={() => show('resources')}
-              style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
+              style={{ padding: '7px 12px', borderRadius: 12, fontSize: 14.5, fontWeight: 500,
               color: view === 'resources' ? t.ink : t.inkDim,
               background: view === 'resources' ? t.surfaceAlt : 'transparent',
               cursor: 'pointer' }}>Resources</span>
             <span
               onClick={() => show('sandbox')}
-              style={{ padding: '7px 12px', borderRadius: 8, fontSize: 14.5, fontWeight: 600,
+              style={{ padding: '7px 12px', borderRadius: 12, fontSize: 14.5, fontWeight: 500,
               color: view === 'sandbox' ? t.ink : t.inkDim,
               background: view === 'sandbox' ? t.surfaceAlt : 'transparent',
               cursor: 'pointer' }}>Sandbox</span>
@@ -315,7 +315,7 @@ function AdminGate({ children, t }) {
         justifyContent: 'center', background: t.page, color: t.ink }}>
         <div style={{ textAlign: 'center', maxWidth: 400 }}>
           <Icon name="shield" size={48} stroke={2} style={{ color: t.inkDim, margin: '0 auto 16px' }} />
-          <h1 className="placer-disp" style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Access Restricted</h1>
+          <h1 className="placer-disp" style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Access Restricted</h1>
           <p style={{ fontSize: 15, color: t.inkDim }}>
             The admin dashboard is not available in this environment.
           </p>

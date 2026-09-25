@@ -157,7 +157,7 @@ export function BudgetBallot({ t, experiment }) {
                 signed
                 label={group.label}
                 value={score / 100}
-                color={score < 0 ? '#C0392B' : '#2E7D32'}
+                color={score < 0 ? '#B3261E' : '#1E7B3A'}
                 caption={score === 0 ? '—' : `${score > 0 ? '+' : ''}${score}`}
               />
             );
@@ -178,7 +178,7 @@ export function BudgetBallot({ t, experiment }) {
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
               {result.items.map((item) => (
                 <li key={item.key} style={{ display: 'flex', gap: 10, fontSize: 13.5 }}>
-                  <span style={{ color: t.ink, fontWeight: 600, flex: 1, minWidth: 0 }}>
+                  <span style={{ color: t.ink, fontWeight: 500, flex: 1, minWidth: 0 }}>
                     {item.label} × {item.quantity}
                   </span>
                   <span className="placer-mono" style={{ color: t.inkDim }}>{formatEuros(item.cost)}</span>
@@ -191,8 +191,8 @@ export function BudgetBallot({ t, experiment }) {
             onClick={async () => setCopied(await copyText(summary))}
             disabled={result.items.length === 0}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 14px',
-              borderRadius: 9, border: 'none', background: t.primaryBg, color: t.primaryFg, cursor: 'pointer',
-              fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 14,
+              borderRadius: 12, border: 'none', background: t.primaryBg, color: t.primaryFg, cursor: 'pointer',
+              fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: 14,
               opacity: result.items.length === 0 ? 0.45 : 1 }}>
             <Icon name={copied ? 'check' : 'send'} size={16} stroke={2.2} />
             {copied ? 'Copied' : 'Copy my ballot'}
@@ -204,8 +204,8 @@ export function BudgetBallot({ t, experiment }) {
               value={summary}
               aria-label="Your ballot as text"
               rows={8}
-              style={{ width: '100%', marginTop: 12, padding: 10, borderRadius: 8, border: `1.5px solid ${t.line}`,
-                background: t.chrome, color: t.inkDim, fontFamily: "'Space Mono', monospace", fontSize: 11.5, resize: 'vertical' }}
+              style={{ width: '100%', marginTop: 12, padding: 10, borderRadius: 12, border: `1.5px solid ${t.line}`,
+                background: t.chrome, color: t.inkDim, fontFamily: 'var(--placer-font)', fontSize: 11.5, resize: 'vertical' }}
             />
           )}
         </Panel>

@@ -17,7 +17,7 @@ const inputStyle = (t) => ({
   padding: '12px 16px',
   fontSize: 15,
   border: `1.5px solid ${t.line}`,
-  borderRadius: 8,
+  borderRadius: 12,
   background: t.chrome,
   color: t.ink,
   fontFamily: 'var(--placer-font)',
@@ -25,9 +25,9 @@ const inputStyle = (t) => ({
 });
 
 // The alert red used across the app.
-const DANGER = '#D6452F';
+const DANGER = '#B3261E';
 
-const selectedFill = (t) => t.accent + (t.mapMode === 'dark' ? '14' : '22');
+const selectedFill = (t) => t.surfaceAlt;
 
 // The glass nav bar (.placer-glass-nav in index.css) is fixed over the top of every
 // page, so each screen here starts this far down to keep its top out from under it.
@@ -82,7 +82,7 @@ function EnterHint({ t, labels, phrase }) {
           background: t.chrome,
           color: t.ink,
           fontSize: 12,
-          fontWeight: 600,
+          fontWeight: 500,
         }}
       >
         {labels.enterKeyLabel}
@@ -207,7 +207,7 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
             className="placer-disp"
             style={{
               fontSize: 36,
-              fontWeight: 900,
+              fontWeight: 700,
               color: t.ink,
               letterSpacing: '-0.02em',
               marginBottom: 16,
@@ -284,7 +284,7 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
               className="placer-disp"
               style={{
                 fontSize: 24,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: t.ink,
                 letterSpacing: '-0.02em',
               }}
@@ -293,7 +293,7 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
             </h2>
             <span
               className="placer-mono"
-              style={{ fontSize: 13, fontWeight: 600, color: t.inkDim, whiteSpace: 'nowrap' }}
+              style={{ fontSize: 13, fontWeight: 500, color: t.inkDim, whiteSpace: 'nowrap' }}
             >
               {counterText}
             </span>
@@ -351,7 +351,7 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
                   className="placer-disp"
                   style={{
                     fontSize: 18,
-                    fontWeight: 800,
+                    fontWeight: 700,
                     color: t.ink,
                     letterSpacing: '-0.01em',
                     marginBottom: 4,
@@ -415,7 +415,7 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
                     className="placer-disp"
                     style={{
                       fontSize: 18,
-                      fontWeight: 800,
+                      fontWeight: 700,
                       color: t.ink,
                       letterSpacing: '-0.01em',
                       marginBottom: 12,
@@ -447,11 +447,11 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
                   style={{
                     marginTop: 24,
                     padding: 16,
-                    borderRadius: 8,
+                    borderRadius: 12,
                     background: `${DANGER}22`,
                     borderLeft: `4px solid ${DANGER}`,
                     fontSize: 14,
-                    fontWeight: 600,
+                    fontWeight: 500,
                     color: t.ink,
                   }}
                 >

@@ -10,6 +10,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 
 import { Icon } from './Icon';
 import defaultSurveyContent from './survey/content/default.json';
+import { CHARACTER } from '../theme';
 
 // The survey drags in the whole flow, its content and the api layer. Most
 // visitors to a holding page never open it, so it is fetched on the click
@@ -30,10 +31,13 @@ export const LANDING_SURVEY_CONTENT = {
   },
 };
 
-// Deliberately off-palette: the theme is black and white, and this one call to
-// action is the exception rather than an accent drawn from it.
-const TRIGGER_BG = '#00FFF9';
-const TRIGGER_FG = '#000000';
+// The one call to action on the holding page, as a character button: the
+// citizen's orange 100 with a 1px 700 hairline and ink text, 300 on hover (see
+// index.css). The brand kit's only colours are the three characters', and this
+// page speaks to citizens.
+const TRIGGER_BG = CHARACTER.citizen.c100;
+const TRIGGER_BORDER = CHARACTER.citizen.c700;
+const TRIGGER_FG = '#111111';
 
 // Above the cookie banner (200), so an open survey is not overlapped by it. The
 // trigger sits below it and clears it by offsetting instead (see index.css).
@@ -114,7 +118,7 @@ export function HaveYourSay({ t }) {
         onClick={() => setOpen(true)}
         // Shape and place live in index.css: a phone gets a full-width bar, and
         // a media query cannot override an inline style.
-        style={{ background: TRIGGER_BG, color: TRIGGER_FG, boxShadow: t.shadow }}
+        style={{ background: TRIGGER_BG, color: TRIGGER_FG, border: `1px solid ${TRIGGER_BORDER}` }}
       >
         {LABEL}
       </button>

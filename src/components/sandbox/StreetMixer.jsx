@@ -126,7 +126,7 @@ export function StreetMixer({ t, experiment }) {
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(280px, 1fr)', gap: 20, alignItems: 'start' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
         <Panel t={t} title="The street" aside={
-          <span className="placer-mono" style={{ fontSize: 12, color: current.unallocated > 0 ? '#C0392B' : t.inkDim }}>
+          <span className="placer-mono" style={{ fontSize: 12, color: current.unallocated > 0 ? '#B3261E' : t.inkDim }}>
             {formatMetres(current.used)} of {formatMetres(streetWidth)}
             {current.unallocated > 0 && ` — ${formatMetres(current.unallocated)} spare`}
           </span>
@@ -137,7 +137,7 @@ export function StreetMixer({ t, experiment }) {
           <div
             ref={stripRef}
             style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', height: 170, marginTop: 18,
-              borderRadius: 10, background: t.surfaceAlt, overflow: 'hidden', touchAction: 'none' }}>
+              borderRadius: 12, background: t.surfaceAlt, overflow: 'hidden', touchAction: 'none' }}>
             {segments.map((segment, index) => {
               const type = SEGMENT_TYPES[segment.type];
               if (!type) return null;
@@ -284,7 +284,7 @@ export function StreetMixer({ t, experiment }) {
               ))}
             </div>
             {notice && (
-              <p role="status" style={{ marginTop: 10, fontSize: 13, fontWeight: 600, color: '#C0392B' }}>{notice}</p>
+              <p role="status" style={{ marginTop: 10, fontSize: 13, fontWeight: 500, color: '#B3261E' }}>{notice}</p>
             )}
           </div>
         </Panel>
@@ -312,7 +312,7 @@ export function StreetMixer({ t, experiment }) {
 
           <Meter t={t} label="Space for people" value={current.peopleShare} color={experiment.color}
             caption={`${Math.round(current.peopleShare * 100)}%`} />
-          <Meter t={t} label="Space for cars" value={current.carShare} color="#55595F"
+          <Meter t={t} label="Space for cars" value={current.carShare} color="#3D3D3D"
             caption={`${Math.round(current.carShare * 100)}%`} />
           {current.unallocated > 0 && (
             <Meter t={t} label="Still unallocated" value={current.unallocated / streetWidth} color={t.lineStrong}
@@ -356,9 +356,9 @@ function iconFor(key) {
 
 function buttonStyle(t) {
   return {
-    display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 11px', borderRadius: 8,
+    display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 11px', borderRadius: 12,
     border: `1.5px solid ${t.line}`, background: 'transparent', cursor: 'pointer', color: t.inkDim,
-    fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 13,
+    fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: 13,
   };
 }
 

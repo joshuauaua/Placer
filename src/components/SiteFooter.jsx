@@ -1,7 +1,7 @@
 /* PLACER — the site footer */
 
 import { Icon } from './Icon';
-import { THEME_INK } from '../theme';
+import { NEUTRAL } from '../theme';
 
 // Each column's entries. One with a `view` opens that MainApp view, one with an
 // `href` opens outside the app, and one with neither is a placeholder for a page
@@ -39,14 +39,14 @@ export const FOOTER_COLUMNS = [
 // The same address ContactPage.jsx shows.
 const CONTACT_EMAIL = 'info@plcr.org';
 
-// The footer is dark whatever the page is: black, with the night theme's light
-// ink for its text, rules and icons.
+// The footer is ink whatever the page is: white headings, grey-300 links that go
+// white and underlined on hover, and grey-700 rules. No radius, no shadow.
 const FOOTER_COLORS = {
-  chrome: '#000000',
-  ink: THEME_INK.ink,
-  inkDim: THEME_INK.inkDim,
-  inkFaint: THEME_INK.inkFaint,
-  line: THEME_INK.line,
+  chrome: NEUTRAL.ink,
+  ink: NEUTRAL.white,
+  inkDim: NEUTRAL.grey300,
+  inkFaint: NEUTRAL.grey500,
+  line: NEUTRAL.grey700,
 };
 
 // Only Instagram and email are live so far.
@@ -55,14 +55,15 @@ const SOCIALS = [
   { icon: 'mail', label: 'Email', href: `mailto:${CONTACT_EMAIL}` },
 ];
 
-function FooterLink({ t, active, onClick, children }) {
+function FooterLink({ active, onClick, children }) {
   return (
     <span
       onClick={onClick}
       role="link"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
-      style={{ color: active ? t.ink : t.inkDim, cursor: 'pointer' }}>
+      aria-current={active ? 'page' : undefined}
+      className="placer-footer-link"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}>
       {children}
     </span>
   );
@@ -79,33 +80,32 @@ function Placeholder({ t, children }) {
 export function SiteFooter({ t: pageTheme, view, onNavigate }) {
   const t = { ...pageTheme, ...FOOTER_COLORS };
   return (
-    <footer style={{ background: t.chrome, borderTop: `1px solid ${t.line}`, color: t.ink }}>
-      <div className="placer-footer" style={{ maxWidth: 1400, margin: '0 auto', padding: '48px 22px 28px' }}>
+    <footer style={{ background: t.chrome, color: t.ink }}>
+      <div className="placer-footer" style={{ maxWidth: 1440, margin: '0 auto' }}>
         <div className="placer-footer-grid">
           <div>
-            {/* Wordmark only — no pin badge — the same choice Development's shared
-                Logo makes, just kept local to the footer rather than changed for the
-                nav bar too, which nobody asked to change. */}
+            {/* The wordmark in white, at the footer's 16px cap height. */}
             <span
-              className="placer-disp"
+              className="placer-wordmark"
               onClick={() => onNavigate('welcome')}
-              style={{ cursor: 'pointer', display: 'inline-block', fontSize: 25.3, fontWeight: 800,
-                letterSpacing: '-0.02em', color: t.ink }}>
+              style={{ cursor: 'pointer', display: 'inline-block', fontSize: 22, color: t.ink }}>
               PLACER
             </span>
-            <p style={{ marginTop: 16, maxWidth: 360, fontSize: 15, lineHeight: 1.55, color: t.inkDim }}>
+            <p style={{ marginTop: 16, maxWidth: 360, fontSize: 14, lineHeight: '20px', color: t.inkDim }}>
               Reimagine your city. Sketch, share and vote on ideas for the streets and
               places around you.
             </p>
-            <div style={{ display: 'flex', gap: 16, marginTop: 20 }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               {SOCIALS.map(({ icon, label, href }) => href ? (
                 <a key={icon} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
-                  style={{ color: t.inkDim }}>
-                  <Icon name={icon} size={22} />
+                  className="placer-footer-link"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44 }}>
+                  <Icon name={icon} size={20} />
                 </a>
               ) : (
-                <span key={icon} aria-label={label} title={`${label} — coming soon`} style={{ color: t.inkFaint }}>
-                  <Icon name={icon} size={22} />
+                <span key={icon} aria-label={label} title={`${label} — coming soon`}
+                  style={{ color: t.inkFaint, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44 }}>
+                  <Icon name={icon} size={20} />
                 </span>
               ))}
             </div>
@@ -113,18 +113,17 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
 
           {FOOTER_COLUMNS.map(({ heading, links }) => (
             <div key={heading}>
-              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-                marginBottom: 16 }}>
+              <div style={{ fontSize: 14, lineHeight: '20px', fontWeight: 700, marginBottom: 16 }}>
                 {heading}
               </div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 15 }}>
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, lineHeight: '20px' }}>
                 {links.map(({ label, view: target, href }) => (
                   <li key={label}>
                     {target ? (
-                      <FooterLink t={t} active={view === target} onClick={() => onNavigate(target)}>{label}</FooterLink>
+                      <FooterLink active={view === target} onClick={() => onNavigate(target)}>{label}</FooterLink>
                     ) : href ? (
                       <a href={href} target="_blank" rel="noopener noreferrer"
-                        style={{ color: t.inkDim, textDecoration: 'none' }}>{label}</a>
+                        className="placer-footer-link">{label}</a>
                     ) : (
                       <Placeholder t={t}>{label}</Placeholder>
                     )}
@@ -135,13 +134,13 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
           ))}
         </div>
 
-        <div className="placer-footer-bottom" style={{ marginTop: 40, paddingTop: 20, borderTop: `1px solid ${t.line}`,
-          fontSize: 13 }}>
-          <span style={{ color: t.inkFaint }}>© 2026 PLACER. All rights reserved.</span>
+        <div className="placer-footer-bottom" style={{ marginTop: 40, paddingTop: 24, borderTop: `1px solid ${t.line}`,
+          fontSize: 12, lineHeight: '16px', letterSpacing: '0.01em' }}>
+          <span style={{ color: t.inkDim }}>© 2026 PLACER. All rights reserved.</span>
           {/* Privacy and terms are one page for now, so both open it. */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
-            <FooterLink t={t} active={view === 'terms'} onClick={() => onNavigate('terms')}>Privacy Policy</FooterLink>
-            <FooterLink t={t} active={view === 'terms'} onClick={() => onNavigate('terms')}>Terms of Service</FooterLink>
+            <FooterLink active={view === 'terms'} onClick={() => onNavigate('terms')}>Privacy Policy</FooterLink>
+            <FooterLink active={view === 'terms'} onClick={() => onNavigate('terms')}>Terms of Service</FooterLink>
           </div>
         </div>
       </div>

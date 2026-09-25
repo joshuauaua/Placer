@@ -10,10 +10,10 @@ const inputStyle = (t) => ({
   padding: '12px 16px',
   fontSize: 15,
   border: `1.5px solid ${t.line}`,
-  borderRadius: 8,
+  borderRadius: 12,
   background: t.chrome,
   color: t.ink,
-  fontFamily: "'Archivo', sans-serif",
+  fontFamily: 'var(--placer-font)',
   outline: 'none',
 });
 
@@ -59,7 +59,7 @@ export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview 
         className="placer-scroll">
         <div style={{ maxWidth: 760, margin: '0 auto' }}>
           <div style={{ marginBottom: 36 }}>
-            <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 900, color: t.ink,
+            <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 700, color: t.ink,
               letterSpacing: '-0.03em', marginBottom: 12, lineHeight: 1.1 }}>
               Describe your imagination
             </h1>
@@ -117,7 +117,7 @@ export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview 
           </Field>
 
           {!complete && (
-            <div style={{ fontSize: 13.5, color: t.inkDim, fontWeight: 600 }}>
+            <div style={{ fontSize: 13.5, color: t.inkDim, fontWeight: 500 }}>
               Fill in the title, category, and description to continue.
             </div>
           )}

@@ -47,7 +47,7 @@ export function ImaginationPreview({ t, imagination, onClose }) {
       <div style={{ padding: 16 }}>
         {cat && <div style={{ marginBottom: 10 }}><CatTag cat={cat} t={t} size="sm" /></div>}
 
-        <h2 className="placer-disp" style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em',
+        <h2 className="placer-disp" style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em',
           lineHeight: 1.25, marginBottom: blurb ? 8 : 0 }}>
           {title || 'Untitled imagination'}
         </h2>
@@ -60,7 +60,7 @@ export function ImaginationPreview({ t, imagination, onClose }) {
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingTop: 12,
-          borderTop: `1px solid ${t.line}`, fontSize: 12.5, color: t.inkDim, fontWeight: 600 }}>
+          borderTop: `1px solid ${t.line}`, fontSize: 12.5, color: t.inkDim, fontWeight: 500 }}>
           {loc && <div>{loc}</div>}
           <div>
             <span className="placer-disp" style={{ color: t.ink, fontWeight: 700 }}>{canvasAssets.length}</span> assets

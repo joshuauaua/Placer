@@ -58,9 +58,9 @@ describe('HaveYourSay', () => {
     expect(trigger()).toHaveTextContent(LABEL);
     expect(trigger()).not.toHaveAttribute('aria-label');
     expect(trigger()).toHaveStyle({
-      // Off-palette on purpose: the one brand colour on a black-and-white page.
-      backgroundColor: '#00FFF9',
-      color: '#000000',
+      // A character button: the citizen's orange 100, with ink text.
+      backgroundColor: '#FFD9B8',
+      color: '#111111',
     });
   });
 

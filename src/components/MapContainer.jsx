@@ -6,7 +6,7 @@ import { toPng } from 'html-to-image';
 import { Icon } from './Icon';
 import { Btn } from './UI';
 import { ImaginationPreview } from './ImaginationPreview';
-import { CAT, THEME } from '../theme';
+import { CHARACTER, THEME } from '../theme';
 import { fetchImaginations } from '../services/api';
 import {
   DEFAULT_SIZE,
@@ -18,8 +18,9 @@ import {
 } from '../lib/staticMaps';
 import { tilingGain } from '../lib/panoGeometry';
 
-// Pin colour for an imagination saved without a recognised category.
-const FALLBACK_PIN_COLOR = THEME.accent;
+// An imagination's pin, in the brand kit's pin style: a 24px circle in a character's
+// 100 with a 2px ring in its 700. Imaginations come from citizens, so orange.
+const PIN = { fill: CHARACTER.citizen.c100, ring: CHARACTER.citizen.c700 };
 
 // Below this resolution gain, tiling is not worth its extra requests: the gain
 // comes from spending a whole 640px tile on a slice of the view, so it shrinks as
@@ -182,11 +183,11 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
         title: imagination.title || 'Imagination',
         icon: {
           path: window.google.maps.SymbolPath.CIRCLE,
-          scale: 9,
-          fillColor: CAT[imagination.cat]?.color || FALLBACK_PIN_COLOR,
+          scale: 11,
+          fillColor: PIN.fill,
           fillOpacity: 1,
-          strokeColor: '#FFFFFF',
-          strokeWeight: 2.5,
+          strokeColor: PIN.ring,
+          strokeWeight: 2,
         },
         // Above the plain marker the address search drops.
         zIndex: 10,
@@ -451,7 +452,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
               minWidth: 0,
               height: 44,
               padding: '0 16px',
-              borderRadius: 10,
+              borderRadius: 12,
               border: `1.5px solid ${t.line}`,
               background: t.surface,
               boxShadow: t.shadow
@@ -469,7 +470,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
                   border: 'none',
                   background: 'transparent',
                   outline: 'none',
-                  fontFamily: "'Archivo', sans-serif",
+                  fontFamily: 'var(--placer-font)',
                   fontSize: 15,
                   fontWeight: 500,
                   color: t.ink,
@@ -500,7 +501,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null }) => {
       </div>
 
       {!apiKey && (
-        <div style={{ background: '#FEF3C7', borderLeft: `4px solid #F59E0B`, color: '#92400E',
+        <div style={{ background: '#F5F5F5', borderLeft: `4px solid #111111`, color: '#111111',
           padding: 16, margin: 12 }}>
           <p style={{ fontWeight: 700, marginBottom: 4 }}>Google Maps API Key Required</p>
           <p style={{ fontSize: 14 }}>Add your API key to .env to enable map functionality.</p>

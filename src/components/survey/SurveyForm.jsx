@@ -16,15 +16,15 @@ const inputStyle = (t) => ({
   padding: '12px 16px',
   fontSize: 15,
   border: `1.5px solid ${t.line}`,
-  borderRadius: 8,
+  borderRadius: 12,
   background: t.chrome,
   color: t.ink,
-  fontFamily: "'Archivo', sans-serif",
+  fontFamily: 'var(--placer-font)',
   outline: 'none',
 });
 
 // The alert red used across the app.
-const DANGER = '#D6452F';
+const DANGER = '#B3261E';
 
 /* The drawings that open and close the survey. They are the only pictures in the
  * flow; the glyphs on Back, Next and the selected options are controls, not
@@ -98,7 +98,7 @@ export function SurveyForm({
         <h1
           className="placer-disp placer-survey-title"
           style={{
-            fontWeight: 900,
+            fontWeight: 700,
             color: t.ink,
             letterSpacing: '-0.03em',
             marginBottom: 16,
@@ -129,7 +129,7 @@ export function SurveyForm({
         <h1
           className="placer-disp placer-survey-title-success"
           style={{
-            fontWeight: 900,
+            fontWeight: 700,
             color: t.ink,
             letterSpacing: '-0.02em',
             marginBottom: 16,
@@ -205,7 +205,7 @@ export function SurveyForm({
               className="placer-disp"
               style={{
                 fontSize: 24,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: t.ink,
                 letterSpacing: '-0.02em',
               }}
@@ -214,7 +214,7 @@ export function SurveyForm({
             </h2>
             <span
               className="placer-mono"
-              style={{ fontSize: 13, fontWeight: 600, color: t.inkDim, whiteSpace: 'nowrap' }}
+              style={{ fontSize: 13, fontWeight: 500, color: t.inkDim, whiteSpace: 'nowrap' }}
             >
               {counterText}
             </span>
@@ -304,11 +304,11 @@ export function SurveyForm({
                   style={{
                     marginTop: 24,
                     padding: 16,
-                    borderRadius: 8,
+                    borderRadius: 12,
                     background: `${DANGER}22`,
                     borderLeft: `4px solid ${DANGER}`,
                     fontSize: 14,
-                    fontWeight: 600,
+                    fontWeight: 500,
                     color: t.ink,
                   }}
                 >

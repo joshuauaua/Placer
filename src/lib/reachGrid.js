@@ -20,11 +20,11 @@ export const RAIL_ROW = 8;
 export const BRIDGE_COLS = [3, 12];
 
 export const AMENITY_TYPES = {
-  groceries: { key: 'groceries', label: 'Food shop', color: '#D6452F', icon: 'cart' },
-  school: { key: 'school', label: 'School', color: '#E08A2B', icon: 'play' },
-  clinic: { key: 'clinic', label: 'Clinic', color: '#D4407E', icon: 'heart' },
-  park: { key: 'park', label: 'Park', color: '#3E9D4E', icon: 'tree' },
-  transit: { key: 'transit', label: 'Transit stop', color: '#2F7BD6', icon: 'bike' },
+  groceries: { key: 'groceries', label: 'Food shop', color: '#6B2E00', icon: 'cart' },
+  school: { key: 'school', label: 'School', color: '#9E4600', icon: 'play' },
+  clinic: { key: 'clinic', label: 'Clinic', color: '#3A2480', icon: 'heart' },
+  park: { key: 'park', label: 'Park', color: '#123F73', icon: 'tree' },
+  transit: { key: 'transit', label: 'Transit stop', color: '#1D5FA8', icon: 'bike' },
 };
 
 export const AMENITY_LIST = Object.values(AMENITY_TYPES);

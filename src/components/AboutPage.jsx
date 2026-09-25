@@ -77,7 +77,7 @@ function Kicker({ t, children }) {
 
 function SectionTitle({ t, children }) {
   return (
-    <h2 className="placer-disp" style={{ fontSize: 'clamp(28px, 4vw, 36px)', fontWeight: 900,
+    <h2 className="placer-disp" style={{ fontSize: 'clamp(28px, 4vw, 36px)', fontWeight: 700,
       letterSpacing: '-0.03em', lineHeight: 1.1, color: t.ink }}>
       {children}
     </h2>
@@ -112,7 +112,7 @@ export function AboutPage({ t }) {
               <div className="placer-about-pillar-art" style={{ background: t.surface, border: `1px solid ${t.line}` }}>
                 <img src={image} alt="" />
               </div>
-              <h3 className="placer-disp" style={{ marginTop: 20, fontSize: 21, fontWeight: 800,
+              <h3 className="placer-disp" style={{ marginTop: 20, fontSize: 21, fontWeight: 700,
                 letterSpacing: '-0.02em', color: t.ink }}>
                 {title}
               </h3>

@@ -10,7 +10,7 @@ export function ResourcesPage({ t }) {
       id: 1,
       title: 'How to Design Better Public Spaces',
       excerpt: 'Essential principles for creating vibrant, accessible community areas that serve everyone.',
-      image: { bg: '#3E9D4E', icon: 'layers' },
+      image: { bg: '#123F73', icon: 'layers' },
       tags: ['Guide', 'Design'],
       date: 'June 15, 2026',
       readTime: '5 min read'
@@ -19,7 +19,7 @@ export function ResourcesPage({ t }) {
       id: 2,
       title: 'The Impact of Street Trees on Urban Life',
       excerpt: 'Research shows how trees reduce heat, improve air quality, and boost property values.',
-      image: { bg: '#2F7BD6', icon: 'tree' },
+      image: { bg: '#1D5FA8', icon: 'tree' },
       tags: ['Research', 'Environment'],
       date: 'June 10, 2026',
       readTime: '8 min read'
@@ -28,7 +28,7 @@ export function ResourcesPage({ t }) {
       id: 3,
       title: 'Community Engagement Best Practices',
       excerpt: 'Learn how to gather meaningful feedback and build consensus around urban improvements.',
-      image: { bg: '#7A52E0', icon: 'users' },
+      image: { bg: '#5B3CB8', icon: 'users' },
       tags: ['Guide', 'Community'],
       date: 'June 5, 2026',
       readTime: '6 min read'
@@ -37,7 +37,7 @@ export function ResourcesPage({ t }) {
       id: 4,
       title: 'Case Study: Transforming a Neighborhood Park',
       excerpt: 'How one community used PLACER to redesign their local park and secure funding.',
-      image: { bg: '#E08A2B', icon: 'award' },
+      image: { bg: '#9E4600', icon: 'award' },
       tags: ['Case Study', 'Success Story'],
       date: 'May 28, 2026',
       readTime: '10 min read'
@@ -46,7 +46,7 @@ export function ResourcesPage({ t }) {
       id: 5,
       title: 'Getting Started with Asset Placement',
       excerpt: 'A beginner-friendly tutorial on visualizing improvements with PLACER\'s asset library.',
-      image: { bg: '#D4407E', icon: 'box' },
+      image: { bg: '#3A2480', icon: 'box' },
       tags: ['Tutorial', 'Basics'],
       date: 'May 20, 2026',
       readTime: '4 min read'
@@ -55,7 +55,7 @@ export function ResourcesPage({ t }) {
       id: 6,
       title: 'Urban Planning 101: The Basics',
       excerpt: 'Understanding zoning, permits, and the approval process for public space changes.',
-      image: { bg: '#16766B', icon: 'book' },
+      image: { bg: '#8DBBEF', icon: 'book' },
       tags: ['Education', 'Planning'],
       date: 'May 15, 2026',
       readTime: '7 min read'
@@ -64,7 +64,7 @@ export function ResourcesPage({ t }) {
       id: 7,
       title: 'Accessible Design for All',
       excerpt: 'Why universal design principles matter and how to incorporate them into your proposals.',
-      image: { bg: '#D6452F', icon: 'heart' },
+      image: { bg: '#B3261E', icon: 'heart' },
       tags: ['Guide', 'Accessibility'],
       date: 'May 8, 2026',
       readTime: '6 min read'
@@ -73,7 +73,7 @@ export function ResourcesPage({ t }) {
       id: 8,
       title: 'Measuring Success: Before & After',
       excerpt: 'Tools and metrics for tracking the real-world impact of community-led improvements.',
-      image: { bg: '#3E9D4E', icon: 'trendingUp' },
+      image: { bg: '#123F73', icon: 'trendingUp' },
       tags: ['Research', 'Data'],
       date: 'May 1, 2026',
       readTime: '9 min read'
@@ -100,7 +100,7 @@ export function ResourcesPage({ t }) {
         <div style={{ marginBottom: 48 }}>
           <h1 className="placer-disp" style={{
             fontSize: 48,
-            fontWeight: 900,
+            fontWeight: 700,
             color: t.ink,
             letterSpacing: '-0.03em',
             marginBottom: 16

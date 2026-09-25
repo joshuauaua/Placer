@@ -21,7 +21,7 @@ export function ContactPage({ t }) {
         <div style={{ marginBottom: 40, paddingBottom: 32, borderBottom: `1px solid ${t.line}` }}>
           <h1 className="placer-disp" style={{
             fontSize: 48,
-            fontWeight: 900,
+            fontWeight: 700,
             color: t.ink,
             letterSpacing: '-0.03em',
             marginBottom: 16,

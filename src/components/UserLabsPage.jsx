@@ -42,7 +42,7 @@ const inputStyle = (t) => ({
   padding: '12px 16px',
   fontSize: 15,
   border: `1.5px solid ${t.line}`,
-  borderRadius: 8,
+  borderRadius: 12,
   background: t.chrome,
   color: t.ink,
   fontFamily: 'var(--placer-font)',
@@ -118,7 +118,7 @@ function ApplicationForm({ t, onCancel, onSubmitted }) {
               <label
                 key={session.value}
                 style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', borderRadius: 8,
+                  display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', borderRadius: 12,
                   cursor: 'pointer', background: t.chrome,
                   border: `1.5px solid ${checked ? t.ink : t.line}`,
                 }}

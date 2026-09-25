@@ -25,15 +25,15 @@ function CopyLink({ t, experiment }) {
           value={url}
           aria-label="Link to this experiment"
           onFocus={(event) => event.target.select()}
-          style={{ width: 260, height: 36, padding: '0 10px', borderRadius: 8, border: `1.5px solid ${t.line}`,
-            background: t.chrome, color: t.inkDim, fontFamily: "'Space Mono', monospace", fontSize: 12 }}
+          style={{ width: 260, height: 36, padding: '0 10px', borderRadius: 12, border: `1.5px solid ${t.line}`,
+            background: t.chrome, color: t.inkDim, fontFamily: 'var(--placer-font)', fontSize: 12 }}
         />
       )}
       <button
         onClick={async () => setCopied(await copyText(url))}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 36, padding: '0 13px', borderRadius: 9,
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 36, padding: '0 13px', borderRadius: 12,
           border: `1.5px solid ${t.line}`, background: 'transparent', cursor: 'pointer', color: t.inkDim,
-          fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 13.5 }}>
+          fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: 13.5 }}>
         <Icon name={copied ? 'check' : 'link'} size={16} stroke={2.2} />
         {copied ? 'Link copied' : 'Copy link'}
       </button>
@@ -51,8 +51,8 @@ export function SandboxLayout({ t, experiment, onBack, children }) {
       <button
         onClick={onBack}
         style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 12px 0 6px',
-          marginBottom: 18, borderRadius: 9, border: 'none', background: 'transparent', cursor: 'pointer',
-          color: t.inkDim, fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 13.5 }}>
+          marginBottom: 18, borderRadius: 12, border: 'none', background: 'transparent', cursor: 'pointer',
+          color: t.inkDim, fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: 13.5 }}>
         <Icon name="chevLeft" size={18} stroke={2.2} />
         All experiments
       </button>
@@ -60,11 +60,12 @@ export function SandboxLayout({ t, experiment, onBack, children }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, flexWrap: 'wrap', marginBottom: 28 }}>
         <div style={{ flex: '1 1 420px', minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-            <span style={{ width: 40, height: 40, borderRadius: 10, background: experiment.color, color: '#fff',
+            <span style={{ width: 40, height: 40, borderRadius: 12, background: experiment.tint, color: t.ink,
+              boxShadow: `inset 0 0 0 1px ${experiment.color}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>
               <Icon name={experiment.icon} size={22} stroke={2.2} />
             </span>
-            <h1 className="placer-disp" style={{ fontSize: 32, fontWeight: 900, color: t.ink, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+            <h1 className="placer-disp" style={{ fontSize: 32, fontWeight: 700, color: t.ink, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
               {experiment.name}
             </h1>
           </div>
@@ -109,12 +110,12 @@ export function Readout({ t, label, value, unit, delta, deltaLabel, tone }) {
   return (
     <div style={{ minWidth: 0 }}>
       <div style={{ fontSize: 12.5, fontWeight: 700, color: t.inkDim, marginBottom: 4 }}>{label}</div>
-      <div className="placer-disp" style={{ fontSize: 26, fontWeight: 900, color: tone || t.ink, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+      <div className="placer-disp" style={{ fontSize: 26, fontWeight: 700, color: tone || t.ink, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
         {value}
         {unit && <span style={{ fontSize: 14, fontWeight: 700, color: t.inkDim, marginLeft: 4 }}>{unit}</span>}
       </div>
       {delta !== undefined && delta !== null && (
-        <div className="placer-mono" style={{ fontSize: 11.5, marginTop: 4, color: delta === 0 ? t.inkFaint : delta > 0 ? '#2E7D32' : '#C0392B' }}>
+        <div className="placer-mono" style={{ fontSize: 11.5, marginTop: 4, color: delta === 0 ? t.inkFaint : delta > 0 ? '#1E7B3A' : '#B3261E' }}>
           {delta === 0 ? 'no change' : `${sign}${delta}`} {deltaLabel}
         </div>
       )}
@@ -157,7 +158,7 @@ export function PresetRow({ t, presets, active, onPick, color, label = 'Presets'
             aria-pressed={on}
             title={preset.note}
             style={{ height: 36, padding: '0 14px', borderRadius: 999, cursor: 'pointer', whiteSpace: 'nowrap',
-              fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: 13.5,
+              fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: 13.5,
               border: `1.5px solid ${on ? color : t.line}`,
               background: on ? `${color}18` : 'transparent',
               color: on ? color : t.inkDim }}>
