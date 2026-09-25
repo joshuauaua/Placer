@@ -218,7 +218,14 @@ export function validateSurveyContent(content) {
   text(content.errorMessage, 'errorMessage');
 
   // The closing step: what a respondent can ask for, and how we reach them.
-  keyedList(content.optIns, 'optIns', (entry, path) => text(entry.label, `${path}.label`));
+  keyedList(content.optIns, 'optIns', (entry, path) => {
+    text(entry.label, `${path}.label`);
+    // Ticking an `anonymous` opt-in clears the details and every other opt-in.
+    flag(entry.anonymous, `${path}.anonymous`);
+  });
+  if (content.optIns.filter((entry) => entry.anonymous).length > 1) {
+    fail('optIns', 'marks more than one opt-in as anonymous');
+  }
 
   object(content.contact, 'contact');
   text(content.contact.title, 'contact.title');

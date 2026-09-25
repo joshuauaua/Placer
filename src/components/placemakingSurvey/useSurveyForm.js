@@ -154,7 +154,11 @@ export function useSurveyForm({ content, submit, source }) {
   const trimmedContact = Object.fromEntries(
     Object.entries(contact).map(([key, value]) => [key, value.trim()]),
   );
-  const wantsContact = Object.values(trimmedContact).some(filled);
+  // An anonymous respondent leaves no details and asks for nothing else; the
+  // fields and the other opt-ins are cleared and locked while it is ticked.
+  const anonymousOptIn = content.optIns.find((entry) => entry.anonymous);
+  const isAnonymous = Boolean(anonymousOptIn && optIns[anonymousOptIn.key]);
+  const wantsContact = !isAnonymous && Object.values(trimmedContact).some(filled);
   const emailField = content.contact.fields.find((field) => field.type === 'email');
   const contactComplete = content.contact.fields.every((field) =>
     field.type === 'email'
@@ -207,7 +211,22 @@ export function useSurveyForm({ content, submit, source }) {
     }));
   };
 
-  const toggleOptIn = (key) => setOptIns((current) => ({ ...current, [key]: !current[key] }));
+  const toggleOptIn = (key) => {
+    if (key !== anonymousOptIn?.key) {
+      setOptIns((current) => ({ ...current, [key]: !current[key] }));
+      return;
+    }
+
+    const turningOn = !optIns[key];
+    setOptIns((current) =>
+      turningOn
+        ? Object.fromEntries(Object.keys(current).map((other) => [other, other === key]))
+        : { ...current, [key]: false },
+    );
+    if (turningOn) {
+      setContact((current) => Object.fromEntries(Object.keys(current).map((field) => [field, ''])));
+    }
+  };
 
   const setContactField = (key, value) =>
     setContact((current) => ({ ...current, [key]: value }));
@@ -361,6 +380,8 @@ export function useSurveyForm({ content, submit, source }) {
     progressValue,
     optIns,
     toggleOptIn,
+    isAnonymous,
+    anonymousOptInKey: anonymousOptIn?.key,
     wantsContact,
     contact,
     setContactField,

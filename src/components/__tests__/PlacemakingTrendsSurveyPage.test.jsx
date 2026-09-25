@@ -116,6 +116,29 @@ describe('PlacemakingTrendsSurveyPage', () => {
       expect(button(content.steps.submitLabel)).not.toBeDisabled();
     });
 
+    it('clears and locks the details and other opt-ins when anonymous is ticked', () => {
+      const anonymous = content.optIns.find((entry) => entry.anonymous);
+      const others = content.optIns.filter((entry) => !entry.anonymous);
+
+      fireEvent.change(field('Full Name'), { target: { value: 'A. Planner' } });
+      fireEvent.click(optIn(others[0].label));
+      fireEvent.click(optIn(anonymous.label));
+
+      content.contact.fields.forEach((entry) => {
+        expect(field(entry.label)).toHaveValue('');
+        expect(field(entry.label)).toBeDisabled();
+      });
+      others.forEach((entry) => {
+        expect(optIn(entry.label)).not.toBeChecked();
+        expect(optIn(entry.label)).toBeDisabled();
+      });
+      expect(button(content.steps.submitLabel)).not.toBeDisabled();
+
+      fireEvent.click(optIn(anonymous.label));
+      expect(field('Full Name')).not.toBeDisabled();
+      others.forEach((entry) => expect(optIn(entry.label)).not.toBeDisabled());
+    });
+
     it('steps back into the last question of module 4', () => {
       fireEvent.click(button(content.steps.backLabel));
 
@@ -176,6 +199,22 @@ describe('PlacemakingTrendsSurveyPage', () => {
       expect(stored[0].email).toBeNull();
       expect(stored[0].contact).toBeNull();
       expect(stored[0].optIns).toEqual([]);
+    });
+
+    it('stores an anonymous response with no details', async () => {
+      render(<PlacemakingTrendsSurveyPage t={THEME} />);
+      walkToOptIn();
+
+      const anonymous = content.optIns.find((entry) => entry.anonymous);
+      fireEvent.click(optIn(anonymous.label));
+      fireEvent.click(button(content.steps.submitLabel));
+
+      expect(await screen.findByRole('heading', { name: content.success.title })).toBeInTheDocument();
+
+      const stored = JSON.parse(localStorage.getItem('placemaking_survey_responses'));
+      expect(stored[0].email).toBeNull();
+      expect(stored[0].contact).toBeNull();
+      expect(stored[0].optIns).toEqual([anonymous.key]);
     });
 
     it('keeps two surveys apart in the same local store', async () => {

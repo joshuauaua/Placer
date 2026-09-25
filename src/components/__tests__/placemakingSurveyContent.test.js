@@ -18,7 +18,7 @@ describe('placemaking trends survey content', () => {
 
     expect(content).toBe(resolveSurveyContent());
     expect(MODULES.every((module) => content[module].length > 0)).toBe(true);
-    expect(MODULES.reduce((sum, module) => sum + content[module].length, 0)).toBe(11);
+    expect(MODULES.reduce((sum, module) => sum + content[module].length, 0)).toBe(12);
   });
 
   it('validates supplied content instead of the default', () => {
@@ -26,6 +26,15 @@ describe('placemaking trends survey content', () => {
     content.cover.title = 'A different survey';
 
     expect(resolveSurveyContent(content).cover.title).toBe('A different survey');
+  });
+
+  it('rejects more than one anonymous opt-in', () => {
+    const content = clone();
+    content.optIns.forEach((entry) => {
+      entry.anonymous = true;
+    });
+
+    expect(() => validateSurveyContent(content)).toThrow(/more than one opt-in as anonymous/);
   });
 
   it('rejects a missing copy field, naming it', () => {
@@ -168,11 +177,13 @@ describe('placemaking trends survey content', () => {
   });
 
   describe('the closing step', () => {
-    it('ships the two opt-ins', () => {
+    it('ships the opt-ins, with the anonymous one last', () => {
       const content = resolveSurveyContent();
 
-      expect(content.optIns.map((entry) => entry.key)).toEqual(['beta', 'userLab']);
+      expect(content.optIns.map((entry) => entry.key)).toEqual(['beta', 'userLab', 'anonymous']);
       expect(content.optIns[0].label).toMatch(/beta access/i);
+      // The step's description tells respondents to pick the last option.
+      expect(content.optIns.at(-1).anonymous).toBe(true);
     });
 
     it('asks for a name, work email, municipality and department', () => {

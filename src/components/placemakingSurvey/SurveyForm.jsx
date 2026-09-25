@@ -93,7 +93,7 @@ function EnterHint({ t, labels, phrase }) {
 }
 
 /** A tickable row, used for both the opt-ins and (once) the old single consent. */
-function CheckRow({ t, id, checked, label, onChange }) {
+function CheckRow({ t, id, checked, label, onChange, disabled = false }) {
   return (
     <label
       htmlFor={id}
@@ -105,15 +105,23 @@ function CheckRow({ t, id, checked, label, onChange }) {
         borderRadius: 12,
         border: `2px solid ${checked ? t.accent : t.line}`,
         background: checked ? selectedFill(t) : t.surface,
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.5 : 1,
       }}
     >
       <input
         id={id}
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        style={{ width: 20, height: 20, accentColor: t.accent, cursor: 'pointer', flex: '0 0 auto' }}
+        style={{
+          width: 20,
+          height: 20,
+          accentColor: t.accent,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          flex: '0 0 auto',
+        }}
       />
       <span style={{ fontSize: 16, fontWeight: checked ? 600 : 500, color: t.ink, lineHeight: 1.5 }}>
         {label}
@@ -325,7 +333,9 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
       >
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           {onOptInStep && (
-            <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 32 }}>
+            <p
+              style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 32, whiteSpace: 'pre-line' }}
+            >
               {content.steps.optInDescription}
             </p>
           )}
@@ -383,9 +393,13 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
                           type={field.type === 'email' ? 'email' : 'text'}
                           autoComplete={field.type === 'email' ? 'email' : 'off'}
                           value={survey.contact[field.key]}
+                          disabled={survey.isAnonymous}
                           placeholder={field.placeholder}
                           onChange={(e) => survey.setContactField(field.key, e.target.value)}
-                          style={inputStyle(t)}
+                          style={{
+                            ...inputStyle(t),
+                            ...(survey.isAnonymous && { opacity: 0.5, cursor: 'not-allowed' }),
+                          }}
                         />
                       </div>
                     );
@@ -419,6 +433,7 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
                       checked={survey.optIns[entry.key]}
                       label={entry.label}
                       onChange={() => survey.toggleOptIn(entry.key)}
+                      disabled={survey.isAnonymous && entry.key !== survey.anonymousOptInKey}
                     />
                   ))}
                 </div>

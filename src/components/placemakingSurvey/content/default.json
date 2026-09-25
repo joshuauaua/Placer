@@ -3,19 +3,19 @@
     "title": "Citizen Engagement in Public Space Development",
     "subtitle": "Placemaking Trends Survey 2026/2027",
     "body": [
-      "We are inviting city officials and municipal planning professionals worldwide to share their experience with citizen engagement in public space development. Your answers will shape both the tool we are building and the upcoming Placemaking Trends 2026–2027 Report.",
+      "We are inviting city officials and municipal planning professionals worldwide to share their experience with citizen engagement in public space development. Your answers will help to shape our upcoming Placemaking Trends 2026–2027 Report. It will also inform the design choices we make in building our Digital Placemaking Toolkit.",
       "It takes about 7 minutes. All responses are confidential and reported only in aggregate. At the end you can opt in to receive the report, or to become an early adopter of the platform.",
       "Thank you for contributing your expertise to building more inclusive, collaborative cities."
     ],
     "startLabel": "Start the survey"
   },
   "steps": {
-    "module1Title": "Module 1: Profile & Strategic Alignment",
-    "module2Title": "Module 2: Current Tool Stack & Digital Maturity",
-    "module3Title": "Module 3: Key Challenges & Operational Bottlenecks",
-    "module4Title": "Module 4: Future Solution & Feature Validation",
-    "optInTitle": "Module 5: Lead Magnet & Opt-In",
-    "optInDescription": "Where should we send your copy of the Placemaking Trends 2026/2027 Report? Leave your details below, and tick anything else you'd like — all of it is optional, and Submit works without any of it.",
+    "module1Title": "Section 1: Profile",
+    "module2Title": "Section 2: Current Tools",
+    "module3Title": "Section 3: Key Challenges",
+    "module4Title": "Section 4: Future Solutions",
+    "optInTitle": "Section 5: Next Steps",
+    "optInDescription": "Where should we send your copy of the Placemaking Trends 2026/2027 Report?\n\nEnter your details below and choose how you’d like to stay involved. Prefer to participate anonymously? Simply select the last option.",
     "optInChecklistTitle": "Next steps & beta access",
     "otherLabel": "Please specify",
     "otherPlaceholder": "Tell us which",
@@ -153,6 +153,12 @@
       "scaleMax": 5,
       "minLabel": "1 = Not valuable",
       "maxLabel": "5 = Extremely valuable"
+    },
+    {
+      "key": "anythingToAdd",
+      "label": "Anything you would like to add?",
+      "type": "paragraph",
+      "optional": true
     }
   ],
   "optIns": [
@@ -163,6 +169,11 @@
     {
       "key": "userLab",
       "label": "Invite me to join user lab wireframe testing sessions"
+    },
+    {
+      "key": "anonymous",
+      "label": "I'd prefer to participate anonymously",
+      "anonymous": true
     }
   ],
   "contact": {
