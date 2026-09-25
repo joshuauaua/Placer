@@ -499,9 +499,9 @@ body {
   transition: background 0.15s ease;
 }
 
-.placer-menu-link:hover,
-.placer-menu-link:focus-visible {
-  background: rgba(255, 255, 255, 0.7);
+:is(a, button).placer-menu-link:hover,
+:is(a, button).placer-menu-link:focus-visible {
+  background: #00FFF9; /* the landing page's feedback trigger (HaveYourSay.jsx) */
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
