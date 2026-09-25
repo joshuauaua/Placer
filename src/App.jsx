@@ -92,11 +92,11 @@ function MainApp({ initialView = 'welcome' }) {
 
   // Every view shares one scrolling area, so without this a page opened from the
   // footer would open scrolled down to where the footer was. Reset on each change
-  // of view, so every page opens at its top.
+  // of view, and of path so a Sandbox experiment opens at its top too.
   const scrollRef = useRef(null);
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
-  }, [view]);
+  }, [view, location]);
 
   const show = (next) => {
     if (next === 'sandbox') {

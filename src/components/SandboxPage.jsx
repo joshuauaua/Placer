@@ -8,7 +8,7 @@
  * experiment as a prop, so every experiment has a link that can be shared.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import posthog from 'posthog-js';
 import { Icon } from './Icon';
@@ -69,10 +69,18 @@ export function SandboxPage({ t }) {
     posthog.capture('sandbox_experiment_opened', { experiment: experiment.id });
   }, [experiment]);
 
+  // The gallery and every experiment share this one scrolling container, which stays
+  // mounted between them, so opening a tile from low in the gallery would otherwise
+  // land partway down the experiment. Start each one at its top.
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [requestedId]);
+
   const Experiment = experiment?.component;
 
   return (
-    <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page, padding: '48px 40px 80px' }}>
+    <div ref={scrollRef} style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page, padding: '48px 40px 80px' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         {experiment && Experiment ? (
           <SandboxLayout t={t} experiment={experiment} onBack={() => navigate('/sandbox')}>
