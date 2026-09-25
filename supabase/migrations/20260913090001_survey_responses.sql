@@ -19,8 +19,10 @@ create extension if not exists pgcrypto;
 create table if not exists public.survey_responses (
   id           uuid        primary key default gen_random_uuid(),
   submitted_at timestamptz not null    default now(),
-  -- Which survey it came from: `community_survey` is the /survey route,
-  -- `landing_survey` the dialog on the landing page.
+  -- Which form it came from: `community_survey` is the /survey route,
+  -- `landing_survey` the dialog on the landing page, and -- both served by the
+  -- landingpage branch -- `placemaking_trends_survey` the municipal survey and
+  -- `user_labs_application` the User Labs sign-up form.
   source       text        not null,
   -- Optional: only present when the visitor asked to be contacted.
   email        text,
@@ -58,7 +60,7 @@ create policy "anon can submit a survey response"
 -- them to a table that already exists.
 alter table public.survey_responses drop constraint if exists survey_responses_source_known;
 alter table public.survey_responses add constraint survey_responses_source_known
-  check (source in ('community_survey', 'landing_survey'));
+  check (source in ('community_survey', 'landing_survey', 'placemaking_trends_survey', 'user_labs_application'));
 
 alter table public.survey_responses drop constraint if exists survey_responses_answers_size;
 alter table public.survey_responses add constraint survey_responses_answers_size
