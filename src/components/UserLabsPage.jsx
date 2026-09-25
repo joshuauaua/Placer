@@ -166,7 +166,7 @@ function ApplicationForm({ t, onCancel, onSubmitted }) {
       </Field>
 
       <Field t={t} id="user-labs-motivation" label="What would you like to get out of the User Lab?">
-        <textarea id="user-labs-motivation" rows={4} required
+        <textarea id="user-labs-motivation" rows={4} required maxLength={2000}
           placeholder="What draws you to it, and what you hope to take away"
           value={form.motivation} onChange={set('motivation')}
           style={{ ...inputStyle(t), resize: 'vertical', lineHeight: 1.5 }} />

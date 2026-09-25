@@ -12,12 +12,20 @@ create extension if not exists pgcrypto;
 create table if not exists public.survey_responses (
   id           uuid        primary key default gen_random_uuid(),
   submitted_at timestamptz not null    default now(),
-  -- Which survey it came from: `community_survey` is the /survey route,
-  -- `landing_survey` the dialog on the landing page.
+  -- Which form it came from:
+  --   `community_survey`          the /survey route
+  --   `landing_survey`            the same survey, in the dialog on the landing page
+  --   `placemaking_trends_survey` the municipal survey at /placemaking-trends-survey
+  --   `user_labs_application`     the sign-up form on the User Labs page
   source       text        not null,
   -- Optional: only present when the visitor asked to be contacted.
   email        text,
-  -- { section1: {...}, section2: {...}, section3: {...} }
+  -- Everything else the form sent, so its shape follows `source`:
+  --   community/landing: { section1: {...}, section2: {...}, section3: {...} }
+  --   placemaking_trends: { module1..module4: {...}, optIns: [...], contact: {...} | null }
+  --     (on screen the modules are titled Section 1-4; `optIns` holds
+  --     "anonymous" when the respondent chose to leave no details)
+  --   user_labs_application: the form's fields, flat (name, phone, lab, ...)
   answers      jsonb       not null,
   -- Free text typed against an `other` option, keyed by question.
   other_text   jsonb       not null    default '{}'::jsonb

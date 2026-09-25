@@ -158,7 +158,8 @@
       "key": "anythingToAdd",
       "label": "Anything you would like to add?",
       "type": "paragraph",
-      "optional": true
+      "optional": true,
+      "maxLength": 2000
     }
   ],
   "optIns": [
