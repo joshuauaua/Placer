@@ -33,6 +33,8 @@ const fixture = {
     backLabel: 'Back',
     submitLabel: 'Send',
     submittingLabel: 'Sending…',
+    termsNotice: 'By submitting, I acknowledge the',
+    termsLinkLabel: 'Terms and Privacy',
   },
   section1: [
     {

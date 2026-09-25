@@ -18,7 +18,9 @@
     "nextLabel": "Next",
     "backLabel": "Back",
     "submitLabel": "Submit & Complete",
-    "submittingLabel": "Submitting…"
+    "submittingLabel": "Submitting…",
+    "termsNotice": "By submitting, I acknowledge the",
+    "termsLinkLabel": "Terms and Privacy"
   },
   "section1": [
     {

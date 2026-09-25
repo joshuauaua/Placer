@@ -32,6 +32,9 @@ const STEP_FIELDS = [
   'backLabel',
   'submitLabel',
   'submittingLabel',
+  // The line above Submit, with the Terms and Privacy page as its link.
+  'termsNotice',
+  'termsLinkLabel',
 ];
 
 const SUCCESS_FIELDS = ['title', 'body', 'closeLabel'];

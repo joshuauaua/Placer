@@ -26,6 +26,25 @@ const inputStyle = (t) => ({
 // The alert red used across the app.
 const DANGER = '#B3261E';
 
+/* The acknowledgement above Submit. It opens the legal page in a new tab, so a
+ * reader who follows it comes back to a survey with its answers intact. */
+function TermsNotice({ t, labels }) {
+  return (
+    <p style={{ marginTop: 24, fontSize: 13, color: t.inkDim, lineHeight: 1.6 }}>
+      {labels.termsNotice}{' '}
+      <a
+        href="/terms-and-privacy"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ color: t.ink, fontWeight: 600, textDecoration: 'underline' }}
+      >
+        {labels.termsLinkLabel}
+      </a>
+      .
+    </p>
+  );
+}
+
 /* The drawings that open and close the survey. They are the only pictures in the
  * flow; the glyphs on Back, Next and the selected options are controls, not
  * illustration. Line art on a light ground, so they are shown as they are rather
@@ -295,6 +314,8 @@ export function SurveyForm({
                   style={inputStyle(t)}
                 />
               </div>
+
+              <TermsNotice t={t} labels={content.steps} />
 
               {/* A failed save, not a rejected address — so it sits outside the
                   field group and shows whether or not the field is here. */}

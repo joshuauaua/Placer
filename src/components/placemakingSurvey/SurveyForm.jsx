@@ -27,6 +27,25 @@ const inputStyle = (t) => ({
 // The alert red used across the app.
 const DANGER = '#B3261E';
 
+/* The acknowledgement above Submit. It opens the legal page in a new tab, so a
+ * reader who follows it comes back to a survey with its answers intact. */
+function TermsNotice({ t, labels }) {
+  return (
+    <p style={{ marginTop: 24, fontSize: 13, color: t.inkDim, lineHeight: 1.6 }}>
+      {labels.termsNotice}{' '}
+      <a
+        href="/terms-and-privacy"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ color: t.ink, fontWeight: 600, textDecoration: 'underline' }}
+      >
+        {labels.termsLinkLabel}
+      </a>
+      .
+    </p>
+  );
+}
+
 const selectedFill = (t) => t.surfaceAlt;
 
 // The glass nav bar (.placer-glass-nav in index.css) is fixed over the top of every
@@ -438,6 +457,8 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
                   ))}
                 </div>
               </div>
+
+              <TermsNotice t={t} labels={content.steps} />
 
               {/* A failed save, not a rejected address — so it sits outside the
                   field group and shows whether or not the fields are here. */}
