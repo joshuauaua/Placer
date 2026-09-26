@@ -72,6 +72,7 @@ const HAND_WRITTEN = [
   '20260922130001_imagination_votes_and_comments.sql',
   '20260922130002_sandbox_rooms_open_vote.sql',
   '20260925090001_survey_responses_new_sources.sql',
+  '20260926090001_notification_preferences_insert_updated_at.sql',
 ]
 
 export function render({ src, slice, note }, read = (f) => readFileSync(`${DIR}/${f}`, 'utf8')) {

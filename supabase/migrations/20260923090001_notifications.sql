@@ -159,9 +159,11 @@ create policy "an owner can change their notification preferences"
 
 revoke all on public.notification_preferences from anon, authenticated;
 grant select on public.notification_preferences to authenticated;
+-- updated_at is in the insert grant too: savePreferences() upserts, and Postgres
+-- checks INSERT privilege on every column an upsert sends, even when the row exists.
 grant insert (
   user_id, engagement_inapp, engagement_email, activity_inapp, activity_email,
-  follower_inapp, follower_email, system_inapp, system_email
+  follower_inapp, follower_email, system_inapp, system_email, updated_at
 ) on public.notification_preferences to authenticated;
 -- user_id is included even though it never actually changes: an upsert's ON
 -- CONFLICT DO UPDATE sets every column it was given, this one included, and the
