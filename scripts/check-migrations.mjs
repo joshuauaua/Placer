@@ -63,6 +63,7 @@ const PLAN = [
   { name: '20260922100001_projects.sql', src: 'projects.sql' },
   { name: '20260923090001_notifications.sql', src: 'notifications.sql' },
   { name: '20260924090001_sandbox_rooms_lifetime.sql', src: 'rooms-lifetime.sql' },
+  { name: '20260925110001_invite_codes.sql', src: 'invites.sql' },
 ]
 
 const HAND_WRITTEN = [

@@ -26,8 +26,9 @@ const email = () => screen.getByLabelText('Email address');
 const password = () => screen.getByLabelText('Password');
 const submit = (name) => screen.getByRole('button', { name });
 
-const fill = ({ name, address = 'mara@example.com', secret = 'longenough' } = {}) => {
+const fill = ({ name, code, address = 'mara@example.com', secret = 'longenough' } = {}) => {
   if (name) fireEvent.change(screen.getByLabelText('Your name'), { target: { value: name } });
+  if (code) fireEvent.change(screen.getByLabelText('Invite code'), { target: { value: code } });
   fireEvent.change(email(), { target: { value: address } });
   fireEvent.change(password(), { target: { value: secret } });
 };
@@ -146,18 +147,33 @@ describe('AuthPage, signing up', () => {
 
   it('passes the name through so the profile is created with it', async () => {
     setup('signup');
-    fill({ name: 'Mara Quinn' });
+    fill({ name: 'Mara Quinn', code: 'PLACER-MARA' });
 
     fireEvent.click(submit('Create account'));
 
     await waitFor(() => expect(signUpWithPassword).toHaveBeenCalledWith({
       email: 'mara@example.com', password: 'longenough', displayName: 'Mara Quinn',
+      inviteCode: 'PLACER-MARA',
     }));
+  });
+
+  it('will not create an account without an invite code', () => {
+    setup('signup');
+    fill({ name: 'Mara Quinn' });
+
+    expect(screen.getByLabelText('Invite code')).toBeInTheDocument();
+    expect(submit('Create account')).toBeDisabled();
+  });
+
+  it('does not offer Google, which cannot carry an invite code', () => {
+    setup('signup');
+
+    expect(screen.queryByRole('button', { name: 'Continue with Google' })).not.toBeInTheDocument();
   });
 
   it('sends somebody to their inbox rather than pretending they are signed in', async () => {
     const { onNavigate } = setup('signup');
-    fill({ name: 'Mara Quinn' });
+    fill({ name: 'Mara Quinn', code: 'PLACER-MARA' });
 
     fireEvent.click(submit('Create account'));
 
@@ -169,7 +185,7 @@ describe('AuthPage, signing up', () => {
   it('goes straight in when the project is not asking for confirmation', async () => {
     vi.mocked(signUpWithPassword).mockResolvedValue({ needsConfirmation: false });
     const { onNavigate } = setup('signup');
-    fill({ name: 'Mara Quinn' });
+    fill({ name: 'Mara Quinn', code: 'PLACER-MARA' });
 
     fireEvent.click(submit('Create account'));
 
@@ -180,7 +196,7 @@ describe('AuthPage, signing up', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(signUpWithPassword).mockRejectedValue(new Error('Could not create your account: nope'));
     setup('signup');
-    fill({ name: 'Mara Quinn' });
+    fill({ name: 'Mara Quinn', code: 'PLACER-MARA' });
 
     fireEvent.click(submit('Create account'));
 

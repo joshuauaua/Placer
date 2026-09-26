@@ -35,6 +35,7 @@ Font: **Helvetica** (Bold 700, Medium 500, Regular 400) · Fallback: Arial
 | grey-200 | #E6E6E6 | Card outlines, disabled | — |
 | grey-100 | #F5F5F5 | Fills | — |
 | white | #FFFFFF | Surfaces | — |
+| cream | #FAF7F0 | Page background | — |
 | error | #B3261E | Form errors | 6.5 : 1 |
 | success | #1E7B3A | Confirmations | 5.3 : 1 |
 

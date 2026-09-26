@@ -247,6 +247,7 @@ describe('PostPage, reached without an account', () => {
     signedOut({ onStashDraft });
 
     fireEvent.click(screen.getByRole('link', { name: 'Create an account' }));
+    fireEvent.change(screen.getByLabelText('Invite code'), { target: { value: 'PLACER-MARA' } });
     fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Mara Quinn' } });
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'mara@example.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'longenough' } });
@@ -261,6 +262,7 @@ describe('PostPage, reached without an account', () => {
     signedOut();
 
     fireEvent.click(screen.getByRole('link', { name: 'Create an account' }));
+    fireEvent.change(screen.getByLabelText('Invite code'), { target: { value: 'PLACER-MARA' } });
     fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Mara Quinn' } });
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'mara@example.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'longenough' } });

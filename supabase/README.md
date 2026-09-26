@@ -249,6 +249,13 @@ An empty array is the policy working. Rows come back only for the account whose
 session is attached, which is why the app never joins a stranger's profile: the
 author's name is copied onto each imagination when it is posted instead.
 
+**Invite codes, during the beta.** Run `invites.sql` after `auth.sql`. From then
+on a new account needs a code from `public.invite_codes`, checked by a trigger on
+`auth.users` — existing accounts sign in as before. Codes are made in the SQL editor
+(examples at the end of that file). New Google or Apple accounts are refused, since a
+provider sign-in cannot carry a code, and so is the dashboard's "Add user". When the
+beta ends, `drop trigger invite_code_on_new_user on auth.users;` opens signups again.
+
 **A confirmation email cannot be un-sent.** Somebody who signs up with a typo'd
 address owns an account they can never confirm and never delete. Nothing in the app
 handles that yet; it needs the SQL editor.

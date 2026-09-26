@@ -22,6 +22,10 @@ import { getSupabase, isSupabaseConfigured } from './supabase';
 
 export const PROFILES_TABLE = 'profiles';
 
+export const INVITE_REFUSED =
+  'That invite code is not valid, or has already been used. Check it for typos, or ask '
+  + 'whoever sent it for a new one.';
+
 export { isSupabaseConfigured };
 
 async function client() {
@@ -62,19 +66,35 @@ function callbackUrl(next = '/') {
  * An address that is already registered does NOT throw. Supabase answers it exactly
  * as it answers a new one, so that this call cannot be used to find out who has an
  * account, and this function keeps that property rather than unpicking it.
+ *
+ * During the beta a new account needs an invite code, checked and spent by a trigger
+ * on auth.users (supabase/invites.sql). It travels as user metadata for the same
+ * reason the display name does. The code is looked at first, so that a mistyped one
+ * gets a sentence; if it is refused anyway — used up by somebody else in between —
+ * Supabase only reports a database error, which is translated back here.
  */
-export async function signUpWithPassword({ email, password, displayName }) {
+export async function signUpWithPassword({ email, password, displayName, inviteCode }) {
   const supabase = await client();
+
+  const { data: valid, error: checkError } = await supabase.rpc('invite_code_check', {
+    p_code: inviteCode ?? '',
+  });
+  if (checkError) throw new Error(`Could not check your invite code: ${checkError.message}`);
+  if (!valid) throw new Error(INVITE_REFUSED);
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { display_name: displayName ?? null },
+      data: { display_name: displayName ?? null, invite_code: inviteCode ?? null },
       emailRedirectTo: callbackUrl('/'),
     },
   });
 
-  if (error) throw new Error(`Could not create your account: ${error.message}`);
+  if (error) {
+    if (/database error saving new user/i.test(error.message)) throw new Error(INVITE_REFUSED);
+    throw new Error(`Could not create your account: ${error.message}`);
+  }
 
   return { needsConfirmation: !data?.session };
 }

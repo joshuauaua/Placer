@@ -87,6 +87,7 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
   const signingUp = mode === 'signup';
 
   const [name, setName] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(null); // null | 'password' | 'google' | 'reset'
@@ -115,8 +116,9 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
 
   const trimmedEmail = email.trim();
   const trimmedName = name.trim();
+  const trimmedCode = inviteCode.trim();
   const ready = trimmedEmail && password.length >= MIN_PASSWORD
-    && (!signingUp || trimmedName.length > 0);
+    && (!signingUp || (trimmedName.length > 0 && trimmedCode.length > 0));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -134,6 +136,7 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
           email: trimmedEmail,
           password,
           displayName: trimmedName,
+          inviteCode: trimmedCode,
         });
         if (needsConfirmation) {
           setSentTo(trimmedEmail);
@@ -212,6 +215,13 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
       <form onSubmit={handleSubmit}>
         {signingUp && (
           <Field
+            t={t} id="auth-invite" label="Invite code" type="text" value={inviteCode}
+            onChange={setInviteCode} autoComplete="off"
+            hint="PLACER is in a closed beta, so new accounts need a code from us."
+          />
+        )}
+        {signingUp && (
+          <Field
             t={t} id="auth-name" label="Your name" type="text" value={name} onChange={setName}
             autoComplete="name"
             hint="Shown on the imaginations you post. You can change it later."
@@ -252,18 +262,24 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
         </Btn>
       </form>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '22px 0' }}>
-        <div style={{ flex: 1, height: 1, background: t.line }} />
-        <span className="placer-mono" style={{ fontSize: 11, letterSpacing: '0.06em',
-          textTransform: 'uppercase', color: t.inkFaint, fontWeight: 500 }}>
-          or
-        </span>
-        <div style={{ flex: 1, height: 1, background: t.line }} />
-      </div>
+      {/* Sign in only. A Google sign-in cannot carry an invite code, so during the beta
+          it can reach an existing account but never make a new one (supabase/invites.sql). */}
+      {!signingUp && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '22px 0' }}>
+            <div style={{ flex: 1, height: 1, background: t.line }} />
+            <span className="placer-mono" style={{ fontSize: 11, letterSpacing: '0.06em',
+              textTransform: 'uppercase', color: t.inkFaint, fontWeight: 500 }}>
+              or
+            </span>
+            <div style={{ flex: 1, height: 1, background: t.line }} />
+          </div>
 
-      <Btn t={t} variant="outline" full type="button" onClick={handleGoogle} disabled={Boolean(busy)}>
-        {busy === 'google' ? 'Taking you to Google…' : 'Continue with Google'}
-      </Btn>
+          <Btn t={t} variant="outline" full type="button" onClick={handleGoogle} disabled={Boolean(busy)}>
+            {busy === 'google' ? 'Taking you to Google…' : 'Continue with Google'}
+          </Btn>
+        </>
+      )}
 
       <div style={{ marginTop: 22, paddingTop: 20, borderTop: `1px solid ${t.line}`,
         fontSize: 14.5, color: t.inkDim, lineHeight: 1.7 }}>

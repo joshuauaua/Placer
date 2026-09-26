@@ -27,9 +27,11 @@ const selectAfterUpdate = vi.fn(() => ({ maybeSingle }));
 const update = vi.fn(() => ({ select: selectAfterUpdate }));
 const select = vi.fn(() => ({ maybeSingle }));
 const from = vi.fn(() => ({ select, update }));
+const rpc = vi.fn();
 
 const createClient = vi.fn(() => ({
   from,
+  rpc,
   auth: {
     signUp,
     signInWithPassword,
@@ -63,11 +65,12 @@ const account = (over = {}) => ({ id: 'user-1', email: 'mara@example.com', ...ov
 beforeEach(() => {
   for (const spy of [signUp, signInWithPassword, signInWithOAuth, resetPasswordForEmail,
     updateUser, signOut, getSession, onAuthStateChange, unsubscribe,
-    maybeSingle, selectAfterUpdate, update, select, from, createClient]) {
+    maybeSingle, selectAfterUpdate, update, select, from, rpc, createClient]) {
     spy.mockClear();
   }
   getSession.mockResolvedValue({ data: { session: null }, error: null });
   maybeSingle.mockResolvedValue({ data: null, error: null });
+  rpc.mockResolvedValue({ data: true, error: null });
   onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe } } });
 });
 
@@ -87,22 +90,46 @@ describe('auth, with no project configured', () => {
 });
 
 describe('signing up', () => {
-  it('sends the display name as metadata for the trigger to pick up', async () => {
+  it('sends the display name and invite code as metadata for the triggers to pick up', async () => {
     await load();
     signUp.mockResolvedValue({ data: { user: account(), session: null }, error: null });
 
     await auth.signUpWithPassword({
       email: 'mara@example.com', password: 'longenough', displayName: 'Mara Quinn',
+      inviteCode: 'PLACER-MARA',
     });
 
     expect(signUp).toHaveBeenCalledWith(expect.objectContaining({
       email: 'mara@example.com',
       password: 'longenough',
       options: expect.objectContaining({
-        data: { display_name: 'Mara Quinn' },
+        data: { display_name: 'Mara Quinn', invite_code: 'PLACER-MARA' },
         emailRedirectTo: expect.stringContaining('/auth/callback'),
       }),
     }));
+  });
+
+  it('checks the invite code before trying, and stops at a bad one', async () => {
+    await load();
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    await expect(auth.signUpWithPassword({
+      email: 'a@b.co', password: 'longenough', inviteCode: 'NOPE',
+    })).rejects.toThrow(auth.INVITE_REFUSED);
+    expect(rpc).toHaveBeenCalledWith('invite_code_check', { p_code: 'NOPE' });
+    expect(signUp).not.toHaveBeenCalled();
+  });
+
+  it('explains a code the trigger refused, rather than a bare database error', async () => {
+    await load();
+    signUp.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { status: 500, message: 'Database error saving new user' },
+    });
+
+    await expect(auth.signUpWithPassword({
+      email: 'a@b.co', password: 'longenough', inviteCode: 'LASTUSE',
+    })).rejects.toThrow(auth.INVITE_REFUSED);
   });
 
   it('reports that confirmation is needed when no session comes back', async () => {
