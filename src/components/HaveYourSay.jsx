@@ -32,11 +32,10 @@ export const LANDING_SURVEY_CONTENT = {
 };
 
 // The one call to action on the holding page, as a character button: the
-// citizen's orange 100 with a 1px 700 hairline and ink text, 300 on hover (see
-// index.css). The brand kit's only colours are the three characters', and this
-// page speaks to citizens.
-const TRIGGER_BG = CHARACTER.citizen.c100;
-const TRIGGER_BORDER = CHARACTER.citizen.c700;
+// practitioner's purple 100 with a 1px 700 hairline and ink text, 300 on hover
+// (see index.css). The brand kit's only colours are the three characters'.
+const TRIGGER_BG = CHARACTER.practitioner.c100;
+const TRIGGER_BORDER = CHARACTER.practitioner.c700;
 const TRIGGER_FG = '#111111';
 
 // Above the cookie banner (200), so an open survey is not overlapped by it. The

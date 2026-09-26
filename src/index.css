@@ -19,6 +19,7 @@
   --placer-grey-200: #E6E6E6;
   --placer-grey-100: #F5F5F5;
   --placer-white: #FFFFFF;
+  --placer-cream: #FAF7F0;
   --placer-error: #B3261E;
   --placer-success: #1E7B3A;
 
@@ -72,7 +73,7 @@ body {
   font-size: 16px;
   line-height: 24px;
   color: var(--placer-ink);
-  background: var(--placer-white);
+  background: var(--placer-cream);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -504,7 +505,7 @@ a {
 
 /* A character button: the 100 fill, 300 on hover. */
 .placer-feedback-trigger:hover {
-  background: var(--placer-orange-300) !important;
+  background: var(--placer-purple-300) !important;
 }
 
 /* Room set aside at the foot of the page for the mobile bar. Nothing on desktop,
