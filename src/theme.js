@@ -19,8 +19,6 @@ export const NEUTRAL = {
   grey200: '#E6E6E6',
   grey100: '#F5F5F5',
   white: '#FFFFFF',
-  // The page behind everything: a warm off-white, so white cards read as cards.
-  cream: '#FAF7F0',
   error: '#B3261E',
   success: '#1E7B3A',
 };
@@ -55,7 +53,7 @@ export const THEME_SIMPLE = {
   name: 'Simple',
   accent: NEUTRAL.ink,
   accentInk: NEUTRAL.white,
-  page: NEUTRAL.cream,
+  page: NEUTRAL.white,
   chrome: NEUTRAL.white,
   surface: NEUTRAL.white,
   surfaceAlt: NEUTRAL.grey100,
