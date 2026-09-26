@@ -4,7 +4,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
 import { Switch, Route, useLocation } from 'wouter';
 import { THEME } from './theme';
-import { Btn } from './components/UI';
+import { Btn, LoadingMark } from './components/UI';
 import { Icon } from './components/Icon';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieBanner } from './components/CookieBanner';
@@ -101,7 +101,7 @@ function projectRouteFrom(path) {
 function LoadingFallback() {
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ fontSize: 14, color: '#888' }}>Loading…</div>
+      <LoadingMark />
     </div>
   );
 }

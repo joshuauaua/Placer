@@ -12,7 +12,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
-import { Btn, CatTag, Vote } from './UI';
+import { Btn, CatTag, LoadingMark, Vote } from './UI';
 import { ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
 import { EXPERIMENTS } from '../sandbox/experiments';
 import { readImaginationsByProject } from '../services/imaginations';
@@ -309,7 +309,7 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
   );
 
   if (status === 'loading') {
-    return <div ref={topRef} style={{ padding: 48, fontSize: 14, color: t.inkDim, fontWeight: 500 }}>Loading…</div>;
+    return <div ref={topRef} style={{ padding: 48, display: 'flex', justifyContent: 'center' }}><LoadingMark /></div>;
   }
 
   if (status === 'notFound') {

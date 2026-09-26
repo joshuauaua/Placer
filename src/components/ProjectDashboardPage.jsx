@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { Icon } from './Icon';
-import { Btn } from './UI';
+import { Btn, LoadingMark } from './UI';
 import { ProjectSetupPage } from './ProjectSetupPage';
 import { EXPERIMENTS, findExperiment } from '../sandbox/experiments';
 import {
@@ -364,7 +364,7 @@ export function ProjectDashboardPage({ t, accountId, projectId,
   };
 
   if (status === 'loading') {
-    return <div style={{ padding: 48, fontSize: 14, color: t.inkDim, fontWeight: 500 }}>Loading…</div>;
+    return <div style={{ padding: 48, display: 'flex', justifyContent: 'center' }}><LoadingMark /></div>;
   }
 
   if (status === 'error' || !project) {

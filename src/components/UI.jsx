@@ -6,6 +6,21 @@ import { copyText } from '../lib/clipboard';
 import { CAT, CHARACTER_LIST } from '../theme';
 
 /**
+ * The loading state: the favicon's bench mark — white bench on the #111111
+ * square, at the kit's 22% app-icon radius — turning in place. The text stays
+ * in the tree, visually hidden, so screen readers still hear what is happening.
+ */
+export function LoadingMark({ size = 56, label = 'Loading…' }) {
+  return (
+    <div role="status" className="placer-loading-mark">
+      <img src="/apple-touch-icon.png" alt="" width={size} height={size}
+        style={{ borderRadius: size * 0.22 }} />
+      <span className="placer-visually-hidden">{label}</span>
+    </div>
+  );
+}
+
+/**
  * The wordmark: Helvetica Bold, uppercase, +8% tracking, in ink or white only.
  * `size` is the cap height; the font size is that over Helvetica's cap ratio.
  * Left unset it follows the kit — 20px caps on desktop, 16px on mobile (see

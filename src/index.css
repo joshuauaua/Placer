@@ -345,6 +345,44 @@ a {
   }
 }
 
+/* LoadingMark (UI.jsx): the bench mark turning while a page or the session loads.
+ * With reduced motion it breathes instead of spinning. */
+.placer-loading-mark {
+  display: flex;
+}
+
+.placer-loading-mark img {
+  display: block;
+  animation: placer-spin 1.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-loading-mark img {
+    animation: placer-breathe 1.6s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes placer-breathe {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.45;
+  }
+}
+
+.placer-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @keyframes placer-pin-pop {
   0% {
     transform: translateY(6px) scale(0.6);

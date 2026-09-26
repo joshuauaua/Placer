@@ -1,7 +1,7 @@
 /* PLACER — account settings: your name, and what the app is allowed to measure */
 
 import { Fragment, useEffect, useState } from 'react';
-import { Avatar, AVATAR_ICONS, Btn } from './UI';
+import { Avatar, AVATAR_ICONS, Btn, LoadingMark } from './UI';
 import { Icon } from './Icon';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
 import { updatePassword } from '../services/auth';
@@ -413,7 +413,7 @@ function NotificationPreferences({ t }) {
       </p>
 
       {prefs === null && !error && (
-        <p style={{ fontSize: 14, color: t.inkDim }}>Loading…</p>
+        <LoadingMark size={28} />
       )}
 
       {error && (

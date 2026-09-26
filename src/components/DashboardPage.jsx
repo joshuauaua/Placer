@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from './Icon';
-import { Avatar, Btn, CatTag, Vote } from './UI';
+import { Avatar, Btn, CatTag, LoadingMark, Vote } from './UI';
 import { ImaginationPreview } from './ImaginationPreview';
 import { ProjectCard } from './ProjectCard';
 import { postsAreShared, readImaginations, readLocalImaginations } from '../services/imaginations';
@@ -129,7 +129,7 @@ function FollowedSection({ t, title, empty, items, status, render }) {
         {title}
       </h2>
       {status === 'loading' && (
-        <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>Loading…</div>
+        <LoadingMark size={28} />
       )}
       {status === 'error' && (
         <div role="alert" style={{ padding: 16, borderRadius: 12, background: '#F5F5F5',
