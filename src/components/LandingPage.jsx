@@ -63,10 +63,9 @@ export function LandingPage({ t }) {
         </p>
 
         {/* The feedback trigger sits centred here, in the gap that separates
-          * the pitch from the credit, rather than floating over a corner of
-          * the page. On a phone that gap closes, the credit reads on from the
-          * pitch as one block, and the trigger becomes a fixed bar across the
-          * foot of the screen instead (see index.css). */}
+          * the pitch from the credit. On a phone it sits straight under the
+          * pitch, and the credit and funder lockup below are hidden (see
+          * index.css). */}
         <div className="placer-landing-divider">
           <HaveYourSay t={t} />
         </div>
@@ -85,11 +84,6 @@ export function LandingPage({ t }) {
             style={{ height: FUNDER_HEIGHT, width: 'auto' }}
           />
         </div>
-
-        {/* On a phone the trigger is a bar across the foot of the screen, so the
-          * column ends with the room it takes up and nothing sits under it.
-          * Empty on a wide screen, where the trigger rides the rule above instead. */}
-        <div className="placer-feedback-spacer" aria-hidden="true" />
       </div>
     </div>
   );

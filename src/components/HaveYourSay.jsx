@@ -38,8 +38,7 @@ const TRIGGER_BG = CHARACTER.practitioner.c100;
 const TRIGGER_BORDER = CHARACTER.practitioner.c700;
 const TRIGGER_FG = '#111111';
 
-// Above the cookie banner (200), so an open survey is not overlapped by it. The
-// trigger sits below it and clears it by offsetting instead (see index.css).
+// Above the cookie banner (200), so an open survey is not overlapped by it.
 const DIALOG_Z = 300;
 
 // Everything the browser will let us focus inside the panel, in tab order.

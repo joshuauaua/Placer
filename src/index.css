@@ -401,9 +401,8 @@ a {
  * inline style cannot be overridden by a media query. Only the colours are set in
  * the component, the rule's through --placer-landing-line.
  *
- * On a phone the pitch shrinks, the credit drops below the pitch by a wide gap
- * rather than the full-screen one, and the rule that used to divide them moves
- * below to carry the funder lockup instead.
+ * On a phone the pitch shrinks and is followed directly by the trigger, sitting
+ * in the flow under it. The credit and the funder lockup are dropped there.
  */
 /* More room above than below, so the column sits lower than centred. */
 .placer-landing-column {
@@ -452,34 +451,28 @@ a {
     margin-bottom: 24px;
   }
 
-  /* Room for the credit to sit apart from the pitch, well down the page. */
   .placer-landing-pitch {
-    margin-bottom: 96px;
+    margin-bottom: 32px;
   }
 
-  .placer-landing-credit {
-    margin-bottom: 0;
-  }
-
-  /* No gap to hold open between the pitch and credit at this width. */
+  /* The trigger takes its own height in the flow, straight under the pitch. */
   .placer-landing-divider {
-    height: 0;
+    height: auto;
     margin-bottom: 0;
   }
 
+  /* Only the pitch and the trigger on a phone. */
+  .placer-landing-credit,
   .placer-landing-funder {
-    border-top: 1px solid var(--placer-landing-line);
-    padding-top: 28px;
-    margin-top: 40px;
+    display: none;
   }
 }
 
 /* PLACER — the landing page's feedback trigger.
  *
- * Two shapes. On a wide screen it is a rectangle centred on the rule between the
- * pitch and the credit (see .placer-landing-divider). On a phone that rule is
- * dropped and the trigger becomes a bar across the foot of the screen instead,
- * and .placer-feedback-spacer reserves the room it occupies so it covers nothing.
+ * On a wide screen it is a rectangle centred in the gap between the pitch and
+ * the credit (see .placer-landing-divider). On a phone it sits in the flow
+ * directly under the pitch, full width, rather than floating over the page.
  *
  * The geometry lives here rather than inline because an inline style cannot be
  * overridden by a media query. Only the colours are set in the component.
@@ -508,28 +501,11 @@ a {
   background: var(--placer-purple-300) !important;
 }
 
-/* Room set aside at the foot of the page for the mobile bar. Nothing on desktop,
-   where the trigger sits clear of the copy on its own. */
-.placer-feedback-spacer {
-  height: 0;
-}
-
 @media (max-width: 1023px) {
-  /* A bar across the foot of the screen: full width, one line, and short enough
-     to leave the page readable above it. 60px = the footer plus a 16px gap. */
   .placer-feedback-trigger {
-    position: fixed;
-    left: 16px;
-    right: 16px;
-    bottom: calc(60px + var(--placer-consent-inset, 0px));
-    width: auto;
+    width: 100%;
     padding: 0 20px;
     min-height: 48px;
-    transition: bottom 0.2s ease, background-color 0.15s ease;
-  }
-
-  .placer-feedback-spacer {
-    height: 88px;
   }
 }
 
