@@ -151,6 +151,30 @@ describe('signing up', () => {
   });
 });
 
+describe('reading a public profile', () => {
+  it('asks profile_public for one account and shapes the row', async () => {
+    await load();
+    rpc.mockResolvedValue({
+      data: [{ id: 'user-2', display_name: 'Devon Park', bio: null, location: 'Lund', avatar: null }],
+      error: null,
+    });
+
+    await expect(auth.readPublicProfile('user-2')).resolves.toEqual({
+      id: 'user-2', name: 'Devon Park', bio: '', location: 'Lund', avatar: null,
+    });
+    expect(rpc).toHaveBeenCalledWith('profile_public', { p_id: 'user-2' });
+    // Never the table: it is readable only by its owner.
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it('is null for an account that does not exist', async () => {
+    await load();
+    rpc.mockResolvedValue({ data: [], error: null });
+
+    await expect(auth.readPublicProfile('user-9')).resolves.toBeNull();
+  });
+});
+
 describe('signing in with a password', () => {
   it('returns the account', async () => {
     await load();

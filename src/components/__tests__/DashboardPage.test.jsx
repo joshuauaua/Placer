@@ -56,12 +56,14 @@ const SOMEONE_ELSE = {
 
 const PROFILE = { name: 'Mara Quinn', bio: '' };
 
-const setup = (saved = [], { profile = PROFILE, local = [], shared = false, accountId = 'user-1' } = {}) => {
+const setup = (saved = [], { profile = PROFILE, local = [], shared = false, accountId = 'user-1',
+  handlers = {} } = {}) => {
   vi.mocked(postsAreShared).mockReturnValue(shared);
   vi.mocked(readImaginations).mockResolvedValue(saved);
   vi.mocked(readLocalImaginations).mockResolvedValue(local);
   return render(
-    <DashboardPage t={THEME} profile={profile} accountId={accountId} onNavigate={vi.fn()} />
+    <DashboardPage t={THEME} profile={profile} accountId={accountId} onNavigate={vi.fn()}
+      {...handlers} />
   );
 };
 
@@ -74,11 +76,49 @@ describe('DashboardPage', () => {
     vi.clearAllMocks();
   });
 
-  it('names who you are posting as', async () => {
+  it('welcomes you back, with no "Change your name" link any more', async () => {
     setup(MINE);
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
-    expect(screen.getByText('Mara Quinn')).toBeInTheDocument();
+    expect(screen.getByText('Welcome back!')).toBeInTheDocument();
+    expect(screen.queryByText('Change your name')).not.toBeInTheDocument();
+  });
+
+  it('logs you out from beside the heading', async () => {
+    const onSignOut = vi.fn();
+    setup(MINE, { handlers: { onSignOut } });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Log Out' }));
+
+    expect(onSignOut).toHaveBeenCalled();
+  });
+
+  it('links to your public profile', async () => {
+    const onOpenPublicProfile = vi.fn();
+    setup(MINE, { handlers: { onOpenPublicProfile } });
+
+    const link = await screen.findByRole('link', { name: 'View your public profile' });
+    expect(link).toHaveAttribute('href', '/people/user-1');
+    fireEvent.click(link);
+
+    expect(onOpenPublicProfile).toHaveBeenCalledWith('user-1');
+  });
+
+  it('offers editing your profile, the map and a new project', async () => {
+    const onNavigate = vi.fn();
+    const onExplore = vi.fn();
+    const onNewProject = vi.fn();
+    vi.mocked(readImaginations).mockResolvedValue(MINE);
+    render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={onNavigate}
+      onExplore={onExplore} onNewProject={onNewProject} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit my profile' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Explore the map' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create a Project' }));
+
+    expect(onNavigate).toHaveBeenCalledWith('settings');
+    expect(onExplore).toHaveBeenCalled();
+    expect(onNewProject).toHaveBeenCalled();
   });
 
   it('lists only your own imaginations', async () => {
@@ -125,21 +165,6 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Could not load your imaginations/);
     consoleErrorSpy.mockRestore();
-  });
-
-  it('shows the bio and location when they are set', async () => {
-    setup(MINE, { profile: { name: 'Mara Quinn', bio: 'Cyclist and tree enthusiast', location: 'Malmö' } });
-    await screen.findByText('Pocket park on Lot 7');
-
-    expect(screen.getByText('Cyclist and tree enthusiast')).toBeInTheDocument();
-    expect(screen.getByText('Malmö')).toBeInTheDocument();
-  });
-
-  it('shows neither line when the bio and location are blank', async () => {
-    setup(MINE, { profile: PROFILE });
-    await screen.findByText('Pocket park on Lot 7');
-
-    expect(screen.queryByText('Malmö')).not.toBeInTheDocument();
   });
 
   it('opens an imagination in a modal when its card is clicked', async () => {

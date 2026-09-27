@@ -501,11 +501,11 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate }) {
         <AvatarPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />
         <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="bio"
           title="Bio" label="Bio" id="settings-bio" multiline
-          description="A couple of lines about you, shown on your profile. Optional."
+          description="A couple of lines about you, shown on your public profile. Optional."
           placeholder="What you're into, or what brought you here." />
         <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="location"
           title="Location" label="Location" id="settings-location"
-          description="Where you're based, shown on your profile. Optional."
+          description="Where you're based, shown on your public profile. Optional."
           placeholder="e.g. Malmö, Sweden" />
         {email && <ChangePassword t={t} />}
         {email && <NotificationPreferences t={t} />}

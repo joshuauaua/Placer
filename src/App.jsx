@@ -39,6 +39,7 @@ const ProjectSetupPage = lazy(() => import('./components/ProjectSetupPage'));
 const ProjectsPage = lazy(() => import('./components/ProjectsPage'));
 const ProjectDashboardPage = lazy(() => import('./components/ProjectDashboardPage'));
 const PublicProjectPage = lazy(() => import('./components/PublicProjectPage'));
+const PublicProfilePage = lazy(() => import('./components/PublicProfilePage'));
 
 const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
 
@@ -96,6 +97,15 @@ function projectRouteFrom(path) {
   const match = /^\/projects\/([^/]+)(\/dashboard)?$/.exec(path);
   if (!match) return null;
   return { mode: match[2] ? 'dashboard' : 'public', id: match[1] };
+}
+
+/**
+ * `/people/<account id>`, somebody's public profile — read off the location for the
+ * same reason a project's public page is. Null for anything else.
+ */
+function personIdFrom(path) {
+  const match = /^\/people\/([^/]+)$/.exec(path);
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
 function LoadingFallback() {
@@ -175,11 +185,14 @@ function MainApp({ initialView = 'welcome' }) {
   const staticView = STATIC_VIEWS[location];
   const projectRoute = projectRouteFrom(location);
   const projectView = projectRoute && { new: 'projectNew', public: 'projectPublic', dashboard: 'projectDashboard' }[projectRoute.mode];
-  const view = accountView ?? staticView ?? (inSandbox ? 'sandbox' : projectView ?? currentView);
+  const personId = personIdFrom(location);
+  const view = accountView ?? staticView
+    ?? (inSandbox ? 'sandbox' : projectView ?? (personId ? 'profilePublic' : currentView));
 
   const showNewProject = () => navigate('/projects/new');
   const showProjectDashboard = (id) => navigate(`/projects/${id}/dashboard`);
   const showProjectPublic = (id) => navigate(`/projects/${id}`);
+  const showPublicProfile = (id) => navigate(`/people/${encodeURIComponent(id)}`);
   // Sent straight to the chosen experiment with the project attached, rather than
   // to the gallery, because the gallery has nowhere to carry ?project= through into
   // picking one. Only 'budget-ballot' and 'open-vote' can actually host a room today —
@@ -205,7 +218,7 @@ function MainApp({ initialView = 'welcome' }) {
       navigate(STATIC_PATHS[next]);
       return;
     }
-    if (inSandbox || accountView || staticView) navigate('/');
+    if (inSandbox || accountView || staticView || personId) navigate('/');
     setCurrentView(next);
   };
 
@@ -467,7 +480,8 @@ function MainApp({ initialView = 'welcome' }) {
               <Suspense fallback={<LoadingFallback />}>
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
                   onNewProject={showNewProject} onOpenProjectDashboard={showProjectDashboard}
-                  onSignIn={handleSignIn} />
+                  onSignIn={handleSignIn} onSignOut={handleSignOut} onExplore={handleExplore}
+                  onOpenPublicProfile={showPublicProfile} />
               </Suspense>
             )}
 
@@ -522,6 +536,14 @@ function MainApp({ initialView = 'welcome' }) {
                   onOpenSandbox={showProjectSandbox}
                   onOpenRoom={showProjectRoom}
                   onNavigateToPublic={showProjectPublic} />
+              </Suspense>
+            )}
+
+            {/* Public, like a project's page: anyone with the link can open it cold. */}
+            {view === 'profilePublic' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <PublicProfilePage t={t} userId={personId} accountId={accountId}
+                  authorName={profile?.name ?? DEFAULT_NAME} onSignIn={handleSignIn} />
               </Suspense>
             )}
 

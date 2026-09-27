@@ -199,6 +199,29 @@ export async function readOwnProfile() {
 }
 
 /**
+ * Anybody's public profile — name, bio, location, avatar — by account id, or null if
+ * there is no such account. Needs no session: it goes through profile_public()
+ * (supabase/profiles-public.sql), which answers for one id at a time, because the
+ * profiles table itself is readable only by its owner.
+ */
+export async function readPublicProfile(id) {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('profile_public', { p_id: id });
+
+  if (error) throw new Error(`Could not load this profile: ${error.message}`);
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    name: row.display_name,
+    bio: row.bio ?? '',
+    location: row.location ?? '',
+    avatar: row.avatar ?? null,
+  };
+}
+
+/**
  * Change the display name, the bio, or both, and return the profile as stored.
  *
  * Only the keys given are touched, so saving a name cannot blank a bio. The update

@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from './Icon';
-import { Avatar, Btn, CatTag, LoadingMark, Vote } from './UI';
+import { Btn, LoadingMark } from './UI';
+import { ImaginationCard } from './ImaginationCard';
 import { ImaginationPreview } from './ImaginationPreview';
 import { ProjectCard } from './ProjectCard';
 import { postsAreShared, readImaginations, readLocalImaginations } from '../services/imaginations';
@@ -55,54 +56,19 @@ function StatCard({ t, icon, label, value }) {
   );
 }
 
-function ImaginationCard({ t, imagination, onOpen }) {
-  const { title, cat, blurb, loc, preview, upvotes = 0, comments = [] } = imagination;
-  const commentCount = Array.isArray(comments) ? comments.length : 0;
-
+// One of the three things the dashboard offers to do next, as a card-sized button.
+function Shortcut({ t, icon, label, onClick }) {
   return (
-    <article
-      onClick={() => onOpen(imagination)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(imagination); } }}
-      style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12,
-        overflow: 'hidden', boxShadow: t.shadow, cursor: 'pointer',
-        transition: 'transform 0.2s, box-shadow 0.2s' }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-4px)';
-        e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.12)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = t.shadow;
-      }}>
-      {preview && (
-        <img src={preview} alt={`Preview of ${title || 'this imagination'}`}
-          style={{ width: '100%', height: 170, objectFit: 'cover', display: 'block' }} />
-      )}
-      <div style={{ padding: 20, display: 'flex', gap: 14 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {cat && <div style={{ marginBottom: 10 }}><CatTag cat={cat} t={t} size="sm" /></div>}
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: t.ink, lineHeight: 1.3, marginBottom: 6 }}>
-            {title || 'Untitled imagination'}
-          </h3>
-          {blurb && (
-            <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 10,
-              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {blurb}
-            </p>
-          )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 12, color: t.inkDim }}>
-            {loc && <span>{loc}</span>}
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <Icon name="comment" size={14} stroke={2.1} />
-              {commentCount}
-            </span>
-          </div>
-        </div>
-        <Vote t={t} count={upvotes} size="sm" />
-      </div>
-    </article>
+    <button type="button" onClick={onClick} className="placer-btn placer-btn-secondary"
+      style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 20, textAlign: 'left',
+        background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, cursor: 'pointer',
+        fontFamily: 'var(--placer-font)', fontSize: 16, fontWeight: 700, color: t.ink }}>
+      <span style={{ width: 44, height: 44, borderRadius: 12, background: t.surfaceAlt, flex: '0 0 auto',
+        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={icon} size={22} stroke={2} />
+      </span>
+      {label}
+    </button>
   );
 }
 
@@ -146,7 +112,7 @@ function FollowedSection({ t, title, empty, items, status, render }) {
 }
 
 export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewProject,
-  onOpenProjectDashboard, onSignIn }) {
+  onOpenProjectDashboard, onSignIn, onSignOut, onExplore, onOpenPublicProfile }) {
   // The imagination open in the modal, if any — set from any card on this page.
   const [selected, setSelected] = useState(null);
   const [posted, setPosted] = useState([]);
@@ -293,37 +259,42 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
           accountId={accountId} authorName={name} onSignIn={onSignIn} />
       )}
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20, marginBottom: 48 }}>
-          <Avatar name={name} icon={profile?.avatar} size={72} ring={t.line} />
-          <div>
-            <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
-              letterSpacing: '-0.03em', marginBottom: 8 }}>
-              Dashboard
-            </h1>
-            <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6 }}>
-              Posting as <strong style={{ color: t.ink }}>{name}</strong>.{' '}
-              <span
-                onClick={() => onNavigate('settings')}
-                role="link"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate('settings'); }}
-                style={{ color: t.ink, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline' }}>
-                Change your name
-              </span>
-            </p>
-            {profile?.location && (
-              <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14.5,
-                color: t.inkDim, fontWeight: 500, marginTop: 6 }}>
-                <Icon name="pin" size={15} stroke={2.1} />
-                {profile.location}
-              </p>
-            )}
-            {profile?.bio && (
-              <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginTop: 10, maxWidth: 560 }}>
-                {profile.bio}
-              </p>
-            )}
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 16, flexWrap: 'wrap', marginBottom: 32 }}>
+          <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
+            letterSpacing: '-0.03em' }}>
+            Dashboard
+          </h1>
+          {onSignOut && (
+            <Btn t={t} variant="outline" size="sm" icon="logout" onClick={onSignOut}>
+              Log Out
+            </Btn>
+          )}
+        </div>
+
+        <div style={{ marginBottom: 32 }}>
+          <p className="placer-disp" style={{ fontSize: 36, fontWeight: 700, color: t.ink,
+            letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 10 }}>
+            Welcome back!
+          </p>
+          {/* No account id in the local, no-project mode, and so no public page to go to. */}
+          {accountId && onOpenPublicProfile && (
+            <a href={`/people/${accountId}`}
+              onClick={(e) => { e.preventDefault(); onOpenPublicProfile(accountId); }}
+              style={{ fontSize: 16, color: t.ink, fontWeight: 500, textDecoration: 'underline' }}>
+              View your public profile
+            </a>
+          )}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 16, marginBottom: 48 }}>
+          <Shortcut t={t} icon="pencil" label="Edit my profile" onClick={() => onNavigate('settings')} />
+          <Shortcut t={t} icon="pin" label="Explore the map"
+            onClick={() => (onExplore ? onExplore() : onNavigate('map'))} />
+          {onNewProject && (
+            <Shortcut t={t} icon="plus" label="Create a Project" onClick={onNewProject} />
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',

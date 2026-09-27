@@ -11,7 +11,7 @@ export const OPERATOR = {
 export const GOVERNING_LAW = '[Governing law / jurisdiction]';
 
 // Shown as "Last updated" at the top of the legal page.
-export const LAST_UPDATED = '27 August 2026';
+export const LAST_UPDATED = '27 September 2026';
 
 // Where map and Street View imagery comes from.
 export const GOOGLE_PRIVACY_URL = 'https://policies.google.com/privacy';

@@ -333,10 +333,13 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Your profile.</strong> Alongside the login we store a
-          display name and, if you write one, a short bio. The display name is public: it is
-          copied onto every imagination you post as the author, and it stays as it was on
+          display name, an avatar icon and, if you fill them in, a short bio and a location.
+          All four are public: they are shown on your public profile page, which anyone with
+          its link can open, next to the imaginations you have posted. The display name is
+          also copied onto every imagination you post as the author, and it stays as it was on
           anything already posted if you rename yourself later. Pick a name you are happy to
-          publish &mdash; it does not have to be your real one.
+          publish &mdash; it does not have to be your real one &mdash; and leave the bio and
+          location empty if you would rather not share them. Your email address is never shown.
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Imaginations you post.</strong> Pressing Post uploads

@@ -272,6 +272,25 @@ export async function readImaginationsByProject(projectId) {
 }
 
 /**
+ * Every imagination one account has posted, newest first — for its public profile.
+ * Public for the same reason readImaginationsByProject is, and empty without a
+ * Supabase project, where there are no accounts to have posted anything.
+ */
+export async function readImaginationsByUser(userId) {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(IMAGINATIONS_TABLE)
+    .select(COLUMNS)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(`Could not load these imaginations: ${error.message}`);
+  return (data ?? []).map((row) => fromRow(supabase, row));
+}
+
+/**
  * Remove an imagination, and its picture with it.
  *
  * The row goes first. If the picture will not delete, the imagination is still gone from
