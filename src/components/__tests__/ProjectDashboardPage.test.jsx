@@ -8,6 +8,7 @@ import {
   readLinks,
   readProject,
   readProjectRooms,
+  readProjectViews,
   readStats,
   removeCollaborator,
   removeLink,
@@ -22,6 +23,10 @@ import { THEME } from '../../theme';
 vi.mock('../../services/projects', () => ({
   readProject: vi.fn(),
   readStats: vi.fn(),
+  readProjectViews: vi.fn(() => Promise.resolve({
+    total: 158,
+    daily: [{ day: '2026-09-26', views: 21 }, { day: '2026-09-27', views: 13 }],
+  })),
   readCollaborators: vi.fn(),
   readLinks: vi.fn(),
   readProjectRooms: vi.fn(),
@@ -73,6 +78,37 @@ describe('ProjectDashboardPage', () => {
     expect(await screen.findByText('4')).toBeInTheDocument();
     expect(screen.getByText('19')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
+  });
+
+  it('shows the public page\'s total views, and the views per day', async () => {
+    setup();
+
+    expect(await screen.findByText('Page views', { selector: 'div' })).toBeInTheDocument();
+    expect(screen.getByText('158')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Page views' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Views per day/ })).toBeInTheDocument();
+    // 21 + 13 across the days loaded.
+    expect(screen.getByText('34')).toBeInTheDocument();
+    expect(readProjectViews).toHaveBeenCalledWith('proj-1', 30);
+  });
+
+  it('switches the chart to the last 7 days', async () => {
+    setup();
+
+    fireEvent.click(await screen.findByRole('radio', { name: '7 days' }));
+
+    await waitFor(() => expect(readProjectViews).toHaveBeenCalledWith('proj-1', 7));
+  });
+
+  it('leaves the rest of the dashboard alone when the views cannot be read', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(readProjectViews).mockRejectedValueOnce(new Error('network down'));
+    setup();
+
+    expect(await screen.findByText('19')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Page views' })).not.toBeInTheDocument());
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    consoleError.mockRestore();
   });
 
   it('says so when the dashboard cannot be loaded', async () => {

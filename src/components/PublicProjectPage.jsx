@@ -16,7 +16,9 @@ import { Btn, CatTag, LoadingMark, Vote } from './UI';
 import { ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
 import { EXPERIMENTS } from '../sandbox/experiments';
 import { readImaginationsByProject } from '../services/imaginations';
-import { readLinks, readProject, readPublicSandboxActivity, readRelatedProjects } from '../services/projects';
+import {
+  readLinks, readProject, readPublicSandboxActivity, readRelatedProjects, recordProjectView,
+} from '../services/projects';
 import { follow, isFollowing, unfollow } from '../services/follows';
 import { CHARACTER } from '../theme';
 
@@ -245,6 +247,8 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
         setLinks(docs);
         setSandboxActivity(activity);
         setStatus('ready');
+        // Only once the project is known to exist, so a broken link is not a view.
+        recordProjectView(proj.id);
 
         // Extra, not essential: the page stands without it, so a failure here is
         // logged and the section simply does not appear.

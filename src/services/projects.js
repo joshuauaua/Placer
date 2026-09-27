@@ -315,6 +315,61 @@ export async function readStats(projectId) {
   };
 }
 
+// Per tab, so a refresh or coming back to the page in the same session is one view.
+const VIEWED_KEY = 'placer_project_viewed';
+
+/**
+ * Count one view of a project's public page. Once per project per browser session,
+ * and the database ignores the project's own owner and collaborators
+ * (project_view_record in supabase/project-views.sql). Never throws: a view that
+ * could not be counted is not something the visitor should hear about.
+ */
+export async function recordProjectView(projectId) {
+  if (!isSupabaseConfigured() || !projectId) return;
+
+  let seen = [];
+  try {
+    seen = JSON.parse(sessionStorage.getItem(VIEWED_KEY) ?? '[]');
+    if (!Array.isArray(seen)) seen = [];
+  } catch {
+    seen = [];
+  }
+  if (seen.includes(projectId)) return;
+
+  try {
+    const supabase = await client();
+    const { error } = await supabase.rpc('project_view_record', { p_project_id: projectId });
+    if (error) throw error;
+    try {
+      sessionStorage.setItem(VIEWED_KEY, JSON.stringify([...seen, projectId]));
+    } catch {
+      // Without storage a refresh counts again, which is the lesser problem.
+    }
+  } catch (err) {
+    console.error('Could not count this view:', err?.message ?? err);
+  }
+}
+
+/**
+ * The public page's views: all-time total, and one entry per day for the last
+ * `days` days, oldest first, with a 0 for a day nobody came. Owner-or-collaborator
+ * only, like readStats.
+ */
+export async function readProjectViews(projectId, days = 30) {
+  const supabase = await client();
+  const [total, daily] = await Promise.all([
+    supabase.rpc('project_views_total', { p_project_id: projectId }),
+    supabase.rpc('project_views_daily', { p_project_id: projectId, p_days: days }),
+  ]);
+
+  const error = total.error ?? daily.error;
+  if (error) throw new Error(`Could not load this project's views: ${error.message}`);
+  return {
+    total: total.data ?? 0,
+    daily: (daily.data ?? []).map((row) => ({ day: row.day, views: row.views ?? 0 })),
+  };
+}
+
 /**
  * Every Sandbox room opened for this project, newest first, with how many people have
  * contributed to each. Owner-or-collaborator only (project_rooms in

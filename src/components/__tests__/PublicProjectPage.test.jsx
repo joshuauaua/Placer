@@ -13,6 +13,7 @@ vi.mock('../../services/imaginations', () => ({
 vi.mock('../../services/projects', () => ({
   readProject: vi.fn(),
   readLinks: vi.fn(() => Promise.resolve([])),
+  recordProjectView: vi.fn(() => Promise.resolve()),
   readPublicSandboxActivity: vi.fn(() => Promise.resolve(0)),
   readRelatedProjects: vi.fn(() => Promise.resolve([])),
 }));

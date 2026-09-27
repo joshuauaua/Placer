@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { Icon } from './Icon';
 import { Btn, LoadingMark } from './UI';
+import { ProjectViewsChart } from './ProjectViewsChart';
 import { ProjectSetupPage } from './ProjectSetupPage';
 import { EXPERIMENTS, findExperiment } from '../sandbox/experiments';
 import {
@@ -24,6 +25,7 @@ import {
   readProject,
   readProjectRooms,
   readStats,
+  readProjectViews,
   removeCollaborator,
   removeLink,
 } from '../services/projects';
@@ -235,6 +237,9 @@ export function ProjectDashboardPage({ t, accountId, projectId,
   const [status, setStatus] = useState('loading');
   const [editing, setEditing] = useState(false);
   const [stats, setStats] = useState(null);
+  // The public page's views: null while loading, false if they could not be read.
+  const [views, setViews] = useState(null);
+  const [viewDays, setViewDays] = useState(30);
   const [collaborators, setCollaborators] = useState([]);
   const [links, setLinks] = useState([]);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -287,7 +292,23 @@ export function ProjectDashboardPage({ t, accountId, projectId,
     return () => { cancelled = true; };
   }, [projectId, loadEverything, loadRooms]);
 
+  // Loaded apart from everything else: the dashboard stands without them, so a
+  // failure here is logged and the views simply do not appear.
+  useEffect(() => {
+    if (!projectId) return undefined;
+    let cancelled = false;
+    readProjectViews(projectId, viewDays)
+      .then((found) => { if (!cancelled) setViews(found); })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("Could not load this project's views:", err);
+        setViews(false);
+      });
+    return () => { cancelled = true; };
+  }, [projectId, viewDays]);
+
   const isOwner = project?.ownerId === accountId;
+  const viewsInRange = views ? views.daily.reduce((sum, d) => sum + d.views, 0) : 0;
 
   const handleInvite = async (e) => {
     e.preventDefault();
@@ -416,7 +437,36 @@ export function ProjectDashboardPage({ t, accountId, projectId,
           <StatTile t={t} icon="grid" label="Imaginations" value={stats?.imaginationsCount ?? 0} />
           <StatTile t={t} icon="arrowUp" label="Votes received" value={stats?.imaginationsUpvotes ?? 0} />
           <StatTile t={t} icon="sparkle" label="Sandbox sessions" value={stats?.sandboxRoomsCount ?? 0} />
+          {views !== false && (
+            <StatTile t={t} icon="user" label="Page views" value={views ? views.total : '–'} />
+          )}
         </div>
+
+        {views && (
+          <Card t={t} title="Page views">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+              <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
+                <strong style={{ color: t.ink }}>{viewsInRange}</strong>{' '}
+                {viewsInRange === 1 ? 'view' : 'views'} of the public page in the last {viewDays} days.
+                Visits by you and your collaborators are not counted.
+              </p>
+              <div role="radiogroup" aria-label="Period" style={{ display: 'flex', gap: 6 }}>
+                {[7, 30].map((n) => (
+                  <button key={n} type="button" role="radio" aria-checked={viewDays === n}
+                    onClick={() => setViewDays(n)}
+                    style={{ height: 32, padding: '0 12px', borderRadius: 8, cursor: 'pointer',
+                      fontFamily: 'var(--placer-font)', fontSize: 13, fontWeight: 500, color: t.ink,
+                      background: viewDays === n ? t.surfaceAlt : 'transparent',
+                      border: `1px solid ${viewDays === n ? t.ink : t.line}` }}>
+                    {n} days
+                  </button>
+                ))}
+              </div>
+            </div>
+            <ProjectViewsChart t={t} daily={views.daily} />
+          </Card>
+        )}
 
         <Card t={t} title="Sandbox">
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>

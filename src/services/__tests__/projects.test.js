@@ -388,3 +388,46 @@ describe("the public page's Sandbox count", () => {
     await expect(projects.readPublicSandboxActivity('proj-1')).rejects.toThrow('network down');
   });
 });
+
+describe('page views', () => {
+  beforeEach(() => sessionStorage.clear());
+
+  it('counts a view once per project per browser session', async () => {
+    await load();
+    rpc.mockResolvedValue({ data: null, error: null });
+
+    await projects.recordProjectView('proj-1');
+    await projects.recordProjectView('proj-1');
+    await projects.recordProjectView('proj-2');
+
+    expect(rpc).toHaveBeenCalledTimes(2);
+    expect(rpc).toHaveBeenCalledWith('project_view_record', { p_project_id: 'proj-1' });
+    expect(rpc).toHaveBeenCalledWith('project_view_record', { p_project_id: 'proj-2' });
+  });
+
+  it('tries again next time when counting failed, and never throws', async () => {
+    await load();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    rpc.mockResolvedValueOnce({ data: null, error: { message: 'down' } })
+      .mockResolvedValueOnce({ data: null, error: null });
+
+    await expect(projects.recordProjectView('proj-1')).resolves.toBeUndefined();
+    await projects.recordProjectView('proj-1');
+
+    expect(rpc).toHaveBeenCalledTimes(2);
+    consoleError.mockRestore();
+  });
+
+  it('reads the total and the days', async () => {
+    await load();
+    rpc.mockImplementation((name) => Promise.resolve(name === 'project_views_total'
+      ? { data: 42, error: null }
+      : { data: [{ day: '2026-09-26', views: 3 }, { day: '2026-09-27', views: null }], error: null }));
+
+    await expect(projects.readProjectViews('proj-1', 7)).resolves.toEqual({
+      total: 42,
+      daily: [{ day: '2026-09-26', views: 3 }, { day: '2026-09-27', views: 0 }],
+    });
+    expect(rpc).toHaveBeenCalledWith('project_views_daily', { p_project_id: 'proj-1', p_days: 7 });
+  });
+});

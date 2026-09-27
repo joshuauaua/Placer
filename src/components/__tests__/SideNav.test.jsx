@@ -14,11 +14,11 @@ describe('SideNav', () => {
     localStorage.clear();
   });
 
-  it('puts the collapse toggle and New project first, then the places an account goes back to', () => {
+  it('puts the collapse toggle and New project first, then the dashboard, then the other places', () => {
     setup();
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label')))
-      .toEqual(['Collapse side nav', 'New project', 'Explore', 'Projects', 'Sandbox', 'Dashboard', 'Settings']);
+      .toEqual(['Collapse side nav', 'New project', 'Dashboard', 'Explore', 'Projects', 'Sandbox', 'Settings']);
   });
 
   it('collapses to icons and back, and remembers which', () => {
