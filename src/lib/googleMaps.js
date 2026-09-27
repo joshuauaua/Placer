@@ -24,6 +24,8 @@ export function googleMapsApiKey() {
   return import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 }
 
+const READY_CALLBACK = '__placerGoogleMapsReady';
+
 let loadPromise = null;
 
 /** The shared `google` global, loaded once no matter how many components ask for it. */
@@ -32,10 +34,14 @@ export function loadGoogleMaps(apiKey) {
   if (loadPromise) return loadPromise;
 
   loadPromise = new Promise((resolve, reject) => {
+    // loading=async is Google's recommended way to load the API: it stops blocking the
+    // page on the script and removes the console warning. With it, google.maps.Map is
+    // not ready on the script's `load` event, only when the callback runs.
+    window[READY_CALLBACK] = () => resolve(window.google);
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=${LIBRARIES}`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=${LIBRARIES}`
+      + `&loading=async&callback=${READY_CALLBACK}`;
     script.async = true;
-    script.onload = () => resolve(window.google);
     script.onerror = () => {
       // A failed load must not be cached — the next mount that asks gets a fresh attempt
       // rather than being stuck replaying a rejected promise forever.

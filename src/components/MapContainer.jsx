@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import posthog from 'posthog-js';
 import { toPng } from 'html-to-image';
 import { Icon } from './Icon';
-import { Btn } from './UI';
+import { Btn, LoadingMark } from './UI';
 import { ImaginationPreview } from './ImaginationPreview';
 import { MapLegend } from './MapLegend';
 import { CHARACTER, THEME } from '../theme';
@@ -42,6 +42,11 @@ const MIN_TILING_GAIN = 1.25;
 // pixels cost time for detail nothing displays.
 const MAX_TILING_SCALE = 2;
 
+// How long the first tiles may take before the map offers a retry. Google's tile
+// requests sometimes end with no answer, and the map then stays a blank gray canvas
+// with nothing to say why. Slow tiles that arrive after this still clear the message.
+const TILES_TIMEOUT_MS = 10000;
+
 const hasCoords = (position) =>
   Number.isFinite(position?.lat) && Number.isFinite(position?.lng);
 
@@ -65,6 +70,11 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null,
   const panoramaRef = useRef(null);
   const [map, setMap] = useState(null);
   const [googleLoaded, setGoogleLoaded] = useState(() => !!window.google);
+  // 'loading' until the first tiles are drawn, 'ready' after, and 'failed' when the
+  // script or the tiles did not arrive in time. `attempt` counts retries: it reruns
+  // the script load, and keys the map div so a retry builds the map on a fresh one.
+  const [mapStatus, setMapStatus] = useState('loading');
+  const [attempt, setAttempt] = useState(0);
   const [searchValue, setSearchValue] = useState('');
   const [isCapturing, setIsCapturing] = useState(false);
   const [currentPosition, setCurrentPosition] = useState(
@@ -108,10 +118,13 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null,
       })
       .catch((error) => {
         console.error('Failed to load Google Maps script', error);
+        if (cancelled) return;
+        posthog.capture('map_load_failed', { surface: 'explore_map', reason: 'script_error', attempt });
+        setMapStatus('failed');
       });
 
     return () => { cancelled = true; };
-  }, [apiKey]);
+  }, [apiKey, attempt]);
 
   // Initialize Google Maps
   useEffect(() => {
@@ -144,6 +157,8 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null,
         setStreetViewOpen(Boolean(panoramaRef.current.getVisible()));
       });
 
+      googleMap.addListener('tilesloaded', () => setMapStatus('ready'));
+
       // Add click listener to update current position
       googleMap.addListener('click', (e) => {
         // A click on open water rather than a pin: put the preview away.
@@ -167,7 +182,26 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null,
     } catch (error) {
       console.error('Error initializing maps:', error);
     }
-  }, [googleLoaded]);
+  }, [googleLoaded, attempt]);
+
+  // Offer a retry when the first tiles have not arrived in time.
+  useEffect(() => {
+    if (!apiKey || mapStatus !== 'loading') return undefined;
+
+    const timer = setTimeout(() => {
+      posthog.capture('map_load_failed', { surface: 'explore_map', reason: 'tiles_timeout', attempt });
+      setMapStatus('failed');
+    }, TILES_TIMEOUT_MS);
+
+    return () => clearTimeout(timer);
+  }, [apiKey, mapStatus, attempt]);
+
+  const retryMap = () => {
+    mapInitializedRef.current = false;
+    setMap(null);
+    setMapStatus('loading');
+    setAttempt((n) => n + 1);
+  };
 
   // Load the imaginations to pin on the map. With a Supabase project configured this is
   // everybody's, not just this browser's — the map is the community's.
@@ -494,7 +528,28 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null,
       {/* Map View */}
       <div style={{ flex: 1, minHeight: 0 }}>
         <div style={{ width: '100%', height: '100%', position: 'relative', background: t.surface }}>
-          <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+          <div key={attempt} ref={mapRef} style={{ width: '100%', height: '100%' }} />
+
+          {apiKey && mapStatus === 'loading' && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', background: t.surface }}>
+              <LoadingMark label="Loading the map…" />
+            </div>
+          )}
+
+          {apiKey && mapStatus === 'failed' && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div role="alert" style={{ pointerEvents: 'auto', maxWidth: 320, padding: 20,
+                borderRadius: 16, border: `1px solid ${t.line}`, background: t.surface, boxShadow: t.shadow,
+                textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                <p style={{ fontSize: 15, fontWeight: 500, color: t.ink }}>
+                  The map is not loading. Check your connection and try again.
+                </p>
+                <Btn t={t} variant="outline" size="sm" icon="rotate" onClick={retryMap}>Try again</Btn>
+              </div>
+            </div>
+          )}
 
           {selected && (
             <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)}

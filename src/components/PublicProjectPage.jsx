@@ -13,14 +13,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn, CatTag, LoadingMark, Vote } from './UI';
-import { ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
+import { ImagePlaceholder, ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
 import { EXPERIMENTS } from '../sandbox/experiments';
 import { readImaginationsByProject } from '../services/imaginations';
 import {
   readLinks, readProject, readPublicSandboxActivity, readRelatedProjects, recordProjectView,
 } from '../services/projects';
 import { follow, isFollowing, unfollow } from '../services/follows';
-import { CHARACTER } from '../theme';
 
 // A fixed locale and UTC, so the label does not shift with the machine it renders on.
 const DATE_FORMAT = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -41,19 +40,6 @@ function dateLabel({ startDate, endDate, createdAt }) {
 // The hero: 16:9, as large as the Static Maps API serves (640 wide, at scale 2).
 const HERO_SIZE = { width: 640, height: 360 };
 const THUMB_SIZE = { width: 400, height: 225 };
-
-/** Stands in for the map when a project has no drawn area, so the page keeps its shape. */
-function ImagePlaceholder({ t, frame }) {
-  return (
-    <div aria-hidden="true" style={{ ...frame, borderRadius: 16, background: CHARACTER.cityWorker.c50,
-      border: `1px solid ${t.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <span style={{ width: 72, height: 72, borderRadius: '50%', background: CHARACTER.cityWorker.c100,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.ink }}>
-        <Icon name="pin" size={32} stroke={1.5} />
-      </span>
-    </div>
-  );
-}
 
 /** The project's area on the map, or the placeholder, in the same frame either way. */
 function ProjectImage({ t, project, size, frame }) {

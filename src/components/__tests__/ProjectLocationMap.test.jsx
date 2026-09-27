@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import posthog from 'posthog-js';
 import { ProjectLocationMap } from '../ProjectLocationMap';
 import { THEME } from '../../theme';
 
@@ -11,6 +12,7 @@ const PROJECT = {
 describe('ProjectLocationMap', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
   it('renders nothing when there is no API key', () => {
@@ -40,5 +42,17 @@ describe('ProjectLocationMap', () => {
     expect(img).toHaveAttribute('src', expect.stringContaining('https://maps.googleapis.com/maps/api/staticmap?'));
     expect(img.src).toContain('path=');
     expect(img.src).toContain('key=test-key');
+  });
+
+  it('swaps in the pin placeholder when the image fails to load, instead of an empty frame', () => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
+    const captureSpy = vi.spyOn(posthog, 'capture').mockImplementation(() => {});
+    const { container } = render(<ProjectLocationMap t={THEME} project={PROJECT} />);
+
+    fireEvent.error(screen.getByRole('img', { name: /Riverside Greenway/ }));
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(container.querySelector('[aria-hidden="true"] svg')).toBeInTheDocument();
+    expect(captureSpy).toHaveBeenCalledWith('map_load_failed', { surface: 'project_map', reason: 'image_error' });
   });
 });

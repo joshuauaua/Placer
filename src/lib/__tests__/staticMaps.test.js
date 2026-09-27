@@ -2,7 +2,9 @@ import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import {
   DEFAULT_SIZE,
   MAX_STATIC_SIZE,
+  MAX_STATIC_URL_LENGTH,
   StaticImageError,
+  encodePolyline,
   fetchAsDataUrl,
   fovFromPanoramaZoom,
   staticMapUrl,
@@ -141,7 +143,9 @@ describe('staticMapUrl', () => {
     const url = staticMapUrl({ apiKey: KEY, paths: shapes, pathColor: '#2f91a2' });
 
     const params = new URL(url).searchParams;
-    expect(params.getAll('path')).toEqual(['color:0x2f91a2ff|weight:2|fillcolor:0x2f91a240|1,2|1,3|2,3']);
+    expect(params.getAll('path')).toEqual([
+      `color:0x2f91a2ff|weight:2|fillcolor:0x2f91a240|enc:${encodePolyline(shapes[0].path)}`,
+    ]);
     expect(params.has('center')).toBe(false);
     expect(params.has('zoom')).toBe(false);
   });
@@ -159,6 +163,26 @@ describe('staticMapUrl', () => {
   it('skips a shape with no points rather than emitting an empty path', () => {
     const url = staticMapUrl({ apiKey: KEY, paths: [{ path: [] }] });
     expect(new URL(url).searchParams.getAll('path')).toHaveLength(0);
+  });
+
+  it('thins a long outline until the URL fits under the length Google accepts', () => {
+    // A traced outline of a few thousand points, which as raw pairs would run far
+    // past the cap.
+    const path = Array.from({ length: 4000 }, (_, i) => ({
+      lat: 55.6 + 0.01 * Math.sin(i / 50),
+      lng: 12.98 + 0.01 * Math.cos(i / 37),
+    }));
+    const url = staticMapUrl({ apiKey: KEY, paths: [{ path }] });
+
+    expect(url.length).toBeLessThanOrEqual(MAX_STATIC_URL_LENGTH);
+    expect(new URL(url).searchParams.getAll('path')).toHaveLength(1);
+  });
+});
+
+describe('encodePolyline', () => {
+  it("matches the worked example in Google's polyline algorithm docs", () => {
+    const points = [{ lat: 38.5, lng: -120.2 }, { lat: 40.7, lng: -120.95 }, { lat: 43.252, lng: -126.453 }];
+    expect(encodePolyline(points)).toBe('_p~iF~ps|U_ulLnnqC_mqNvxq`@');
   });
 });
 

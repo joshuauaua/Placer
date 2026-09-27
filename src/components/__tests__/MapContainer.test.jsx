@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import { toPng } from 'html-to-image';
+import posthog from 'posthog-js';
 import MapContainer from '../MapContainer';
 import { fetchImaginations } from '../../services/api';
 import { isSupabaseConfigured, readProjectLocations } from '../../services/projects';
@@ -137,6 +138,84 @@ describe('MapContainer', () => {
     const scriptEl = appendChildSpy.mock.calls[0][0];
     expect(scriptEl.tagName).toBe('SCRIPT');
     expect(scriptEl.src).toContain('maps.googleapis.com');
+  });
+
+  it('loads the script with loading=async and waits for its callback', () => {
+    const appendChildSpy = vi.spyOn(document.head, 'appendChild');
+    render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+    const src = new URL(appendChildSpy.mock.calls[0][0].src);
+    expect(src.searchParams.get('loading')).toBe('async');
+    expect(typeof window[src.searchParams.get('callback')]).toBe('function');
+  });
+
+  it('covers the map with a loading mark until the first tiles are drawn', () => {
+    window.google = mockGoogleMaps();
+    render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Loading the map…');
+
+    act(() => mapListeners.tilesloaded());
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('offers a retry when the tiles do not arrive in time, and builds a fresh map on retry', () => {
+    vi.useFakeTimers();
+    try {
+      const captureSpy = vi.spyOn(posthog, 'capture').mockImplementation(() => {});
+      window.google = mockGoogleMaps();
+      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+      act(() => { vi.advanceTimersByTime(10000); });
+
+      expect(screen.getByRole('alert')).toHaveTextContent('The map is not loading');
+      expect(captureSpy).toHaveBeenCalledWith('map_load_failed',
+        { surface: 'explore_map', reason: 'tiles_timeout', attempt: 0 });
+
+      fireEvent.click(screen.getByRole('button', { name: /Try again/ }));
+
+      expect(window.google.maps.Map).toHaveBeenCalledTimes(2);
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(screen.getByRole('status')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('clears the retry message when slow tiles arrive after all', () => {
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(posthog, 'capture').mockImplementation(() => {});
+      window.google = mockGoogleMaps();
+      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+      act(() => { vi.advanceTimersByTime(10000); });
+      act(() => mapListeners.tilesloaded());
+
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('offers a retry when the script fails to load', async () => {
+    const captureSpy = vi.spyOn(posthog, 'capture').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const appendChildSpy = vi.spyOn(document.head, 'appendChild');
+    render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+    act(() => appendChildSpy.mock.calls[0][0].onerror());
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(captureSpy).toHaveBeenCalledWith('map_load_failed',
+      { surface: 'explore_map', reason: 'script_error', attempt: 0 });
+  });
+
+  it('shows no loading mark without an API key, where the banner explains the blank map', () => {
+    render(<MapContainer onCaptureView={vi.fn()} apiKey="" />);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('does not append a new script tag when window.google is already present', () => {

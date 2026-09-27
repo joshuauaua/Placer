@@ -85,6 +85,45 @@ export function streetViewStaticUrl({
 // line), matching what LocationMapPicker draws live while editing.
 const PATH_FILL_ALPHA = '40'
 
+// Google refuses a Maps Static URL longer than this with a 4xx, and the project
+// page's <img> then shows nothing. An outline traced point by point can pass it.
+export const MAX_STATIC_URL_LENGTH = 16384
+
+// Google's encoded polyline format: each coordinate as a delta from the one
+// before, at 1e-5 degrees, in base-64 chunks. About a quarter of the length of
+// "lat,lng|" pairs, so a long outline stays well under the URL cap.
+// https://developers.google.com/maps/documentation/utilities/polylinealgorithm
+function encodeValue(value) {
+  let v = value < 0 ? ~(value << 1) : value << 1
+  let out = ''
+  while (v >= 0x20) {
+    out += String.fromCharCode((0x20 | (v & 0x1f)) + 63)
+    v >>= 5
+  }
+  return out + String.fromCharCode(v + 63)
+}
+
+export function encodePolyline(points) {
+  let lastLat = 0
+  let lastLng = 0
+  let out = ''
+  for (const { lat, lng } of points) {
+    const e5Lat = Math.round(lat * 1e5)
+    const e5Lng = Math.round(lng * 1e5)
+    out += encodeValue(e5Lat - lastLat) + encodeValue(e5Lng - lastLng)
+    lastLat = e5Lat
+    lastLng = e5Lng
+  }
+  return out
+}
+
+// Every `step`th point of each outline, dropping any that fall below a polygon.
+function samplePaths(paths, step) {
+  return paths
+    .map((shape) => (shape?.path ?? []).filter((_, i) => i % step === 0))
+    .filter((points) => points.length >= 3)
+}
+
 export function staticMapUrl({
   apiKey,
   center,
@@ -104,7 +143,7 @@ export function staticMapUrl({
   pathColor = '1D5FA8',
 }) {
   const { width, height } = clampSize(size)
-  const params = new URLSearchParams({
+  const base = {
     size: `${width}x${height}`,
     // Requested in CSS-ish pixels: `size` stays inside the 640 cap and scale
     // multiplies the pixels delivered, so this is 1280x896 of image describing
@@ -112,21 +151,35 @@ export function staticMapUrl({
     scale: String(clamp(Math.round(scale), 1, MAX_MAP_SCALE)),
     maptype,
     key: apiKey,
-  })
-
-  if (paths?.length) {
-    const color = pathColor.replace('#', '').toLowerCase()
-    for (const shape of paths) {
-      const points = (shape?.path ?? []).map(({ lat, lng }) => `${lat},${lng}`).join('|')
-      if (!points) continue
-      params.append('path', `color:0x${color}ff|weight:2|fillcolor:0x${color}${PATH_FILL_ALPHA}|${points}`)
-    }
-  } else {
-    params.set('center', `${center.lat},${center.lng}`)
-    params.set('zoom', String(zoom))
   }
 
-  return `${STATIC_MAP_ENDPOINT}?${params.toString()}`
+  if (!paths?.length) {
+    const params = new URLSearchParams(base)
+    params.set('center', `${center.lat},${center.lng}`)
+    params.set('zoom', String(zoom))
+    return `${STATIC_MAP_ENDPOINT}?${params.toString()}`
+  }
+
+  const color = pathColor.replace('#', '').toLowerCase()
+  const style = `color:0x${color}ff|weight:2|fillcolor:0x${color}${PATH_FILL_ALPHA}`
+  const longest = Math.max(...paths.map((shape) => shape?.path?.length ?? 0))
+
+  // Thin the outlines until the URL fits. A thinned outline is a coarser shape
+  // in the same place, which is better than no image at all.
+  const build = (step) => {
+    const params = new URLSearchParams(base)
+    for (const points of samplePaths(paths, step)) {
+      params.append('path', `${style}|enc:${encodePolyline(points)}`)
+    }
+    return `${STATIC_MAP_ENDPOINT}?${params.toString()}`
+  }
+  let step = 1
+  let url = build(step)
+  while (url.length > MAX_STATIC_URL_LENGTH && step < longest) {
+    step += 1
+    url = build(step)
+  }
+  return url
 }
 
 // Street View headings wrap at 360.
