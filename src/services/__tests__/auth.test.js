@@ -29,9 +29,15 @@ const select = vi.fn(() => ({ maybeSingle }));
 const from = vi.fn(() => ({ select, update }));
 const rpc = vi.fn();
 
+const upload = vi.fn();
+const remove = vi.fn();
+const getPublicUrl = vi.fn((path) => ({ data: { publicUrl: `https://cdn.example/${path}` } }));
+const storageFrom = vi.fn(() => ({ upload, remove, getPublicUrl }));
+
 const createClient = vi.fn(() => ({
   from,
   rpc,
+  storage: { from: storageFrom },
   auth: {
     signUp,
     signInWithPassword,
@@ -65,7 +71,8 @@ const account = (over = {}) => ({ id: 'user-1', email: 'mara@example.com', ...ov
 beforeEach(() => {
   for (const spy of [signUp, signInWithPassword, signInWithOAuth, resetPasswordForEmail,
     updateUser, signOut, getSession, onAuthStateChange, unsubscribe,
-    maybeSingle, selectAfterUpdate, update, select, from, rpc, createClient]) {
+    maybeSingle, selectAfterUpdate, update, select, from, rpc, upload, remove, storageFrom,
+    createClient]) {
     spy.mockClear();
   }
   getSession.mockResolvedValue({ data: { session: null }, error: null });
@@ -161,6 +168,7 @@ describe('reading a public profile', () => {
 
     await expect(auth.readPublicProfile('user-2')).resolves.toEqual({
       id: 'user-2', name: 'Devon Park', bio: '', location: 'Lund', avatar: null,
+      accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null,
     });
     expect(rpc).toHaveBeenCalledWith('profile_public', { p_id: 'user-2' });
     // Never the table: it is readable only by its owner.
@@ -172,6 +180,36 @@ describe('reading a public profile', () => {
     rpc.mockResolvedValue({ data: [], error: null });
 
     await expect(auth.readPublicProfile('user-9')).resolves.toBeNull();
+  });
+});
+
+describe('cover images', () => {
+  const file = (type, size = 1000) => ({ type, size });
+
+  it('uploads into the account\'s own folder and returns the path', async () => {
+    await load();
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'user-1' } } }, error: null });
+    upload.mockResolvedValue({ data: {}, error: null });
+
+    const path = await auth.uploadCover(file('image/png'));
+
+    expect(path).toMatch(/^user-1\/cover-\d+\.png$/);
+    expect(upload).toHaveBeenCalledWith(path, expect.anything(),
+      expect.objectContaining({ contentType: 'image/png' }));
+  });
+
+  it('refuses anything but a JPEG, PNG or WebP before uploading', async () => {
+    await load();
+
+    await expect(auth.uploadCover(file('image/gif'))).rejects.toThrow(/JPEG, PNG or WebP/);
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('refuses a file over 5 MB before uploading', async () => {
+    await load();
+
+    await expect(auth.uploadCover(file('image/jpeg', 6 * 1024 * 1024))).rejects.toThrow(/5 MB/);
+    expect(upload).not.toHaveBeenCalled();
   });
 });
 
@@ -242,7 +280,8 @@ describe('the profile', () => {
     });
 
     await expect(auth.readOwnProfile())
-      .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: 'Cyclist', location: 'Malmö', avatar: 'tree' });
+      .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: 'Cyclist', location: 'Malmö', avatar: 'tree',
+        accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null });
   });
 
   it('defaults location and avatar when the row has none', async () => {
@@ -252,7 +291,34 @@ describe('the profile', () => {
     });
 
     await expect(auth.readOwnProfile())
-      .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: '', location: '', avatar: null });
+      .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: '', location: '', avatar: null,
+        accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null });
+  });
+
+  it('turns a cover path into its public URL', async () => {
+    await load();
+    maybeSingle.mockResolvedValue({
+      data: { id: 'user-1', display_name: 'Mara', cover_path: 'user-1/cover-1.jpg',
+        account_type: 'organisation', contact_email: 'hi@mara.se', website: 'https://mara.se' },
+      error: null,
+    });
+
+    await expect(auth.readOwnProfile()).resolves.toEqual(expect.objectContaining({
+      accountType: 'organisation', contactEmail: 'hi@mara.se', website: 'https://mara.se',
+      coverPath: 'user-1/cover-1.jpg', cover: 'https://cdn.example/user-1/cover-1.jpg',
+    }));
+    expect(storageFrom).toHaveBeenCalledWith('profile-covers');
+  });
+
+  it('saves the details under their column names, with https:// added to a bare website', async () => {
+    await load();
+    maybeSingle.mockResolvedValue({ data: { id: 'user-1', display_name: 'Mara' }, error: null });
+
+    await auth.saveOwnProfile({ accountType: 'organisation', contactEmail: 'hi@mara.se', website: 'mara.se' });
+
+    expect(update).toHaveBeenCalledWith({
+      account_type: 'organisation', contact_email: 'hi@mara.se', website: 'https://mara.se',
+    });
   });
 
   it('is null when there is no row to read, rather than throwing', async () => {

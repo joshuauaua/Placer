@@ -68,7 +68,8 @@ describe('useIdentity with no Supabase project', () => {
 
     // The rule from before accounts existed: no stored record is not the same as
     // being signed out, because there was nothing to be signed out of.
-    expect(result.current.profile).toEqual({ name: 'You There', bio: '', location: '', avatar: null });
+    expect(result.current.profile).toEqual({ name: 'You There', bio: '', location: '', avatar: null,
+      accountType: 'individual', contactEmail: '', website: '', cover: null });
   });
 
   it('has no account id to offer, because there is no account', () => {
@@ -146,6 +147,34 @@ describe('useIdentity with a Supabase project', () => {
     expect(result.current.profile).toEqual({ id: 'user-1', name: 'Mara Quinn', bio: '' });
     expect(result.current.accountId).toBe('user-1');
     expect(result.current.email).toBe('mara@example.com');
+  });
+
+  it('goes back to loading when somebody signs in, rather than staying signed out', async () => {
+    let emit;
+    vi.mocked(subscribeToAuth).mockImplementation((onChange) => { emit = onChange; onChange(null); return () => {}; });
+    let arrive;
+    vi.mocked(readOwnProfile).mockReturnValue(new Promise((resolve) => { arrive = resolve; }));
+    const { result } = setup();
+    await waitFor(() => expect(result.current.status).toBe('signedOut'));
+
+    act(() => emit(account));
+
+    // The profile is still on its way: this is the moment the dashboard used to read
+    // as "You are logged out".
+    expect(result.current.status).toBe('loading');
+    await act(async () => arrive({ id: 'user-1', name: 'Mara Quinn', bio: '' }));
+    expect(result.current.status).toBe('signedIn');
+  });
+
+  it('stays signed in through a token refresh for the same account', async () => {
+    let emit;
+    vi.mocked(subscribeToAuth).mockImplementation((onChange) => { emit = onChange; onChange(account); return () => {}; });
+    const { result } = setup();
+    await waitFor(() => expect(result.current.status).toBe('signedIn'));
+
+    act(() => emit(account));
+
+    expect(result.current.status).toBe('signedIn');
   });
 
   it('ignores the browser record entirely, even when one is left over', async () => {

@@ -223,6 +223,181 @@ a {
   color: var(--placer-ink);
 }
 
+/* The public profile page (PublicProfilePage.jsx). The cover runs the full width of
+ * the page; a dark gradient along its foot keeps the white name readable on any photo.
+ * Below it, the bio and imaginations on the left and the Details card on the right —
+ * stacked on a narrow screen, Details first. */
+.placer-profile-cover {
+  position: relative;
+  min-height: 320px;
+  display: flex;
+  align-items: flex-end;
+  background-size: cover;
+  background-position: center;
+}
+
+.placer-profile-cover-image::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.18) 55%, rgba(0, 0, 0, 0) 100%);
+}
+
+.placer-profile-cover-inner {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 40px;
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.placer-profile-title {
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.placer-profile-body {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 40px 64px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-areas: 'main details';
+  gap: 40px;
+  align-items: start;
+}
+
+.placer-profile-main {
+  grid-area: main;
+  min-width: 0;
+}
+
+.placer-profile-details {
+  grid-area: details;
+  position: sticky;
+  top: 24px;
+}
+
+.placer-profile-dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px 16px;
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.placer-profile-dl dt {
+  font-weight: 500;
+}
+
+.placer-profile-dl dd {
+  margin: 0;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 899px) {
+  .placer-profile-cover {
+    min-height: 240px;
+  }
+
+  .placer-profile-cover-inner {
+    padding: 24px 20px;
+  }
+
+  .placer-profile-title {
+    font-size: 32px;
+  }
+
+  .placer-profile-body {
+    padding: 24px 20px 48px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'details' 'main';
+    gap: 32px;
+  }
+
+  .placer-profile-details {
+    position: static;
+  }
+}
+
+/* The map legend (MapLegend.jsx): glass, bottom left. 40px up clears Google's logo
+ * and terms line, which sit in the bottom 26px of the map and have to stay visible.
+ * Below 1024px the search bar spans the map's foot, so the legend rides above it. */
+.placer-map-legend {
+  position: absolute;
+  left: 16px;
+  bottom: calc(40px + var(--placer-consent-inset, 0px));
+  z-index: 5;
+  min-width: 200px;
+  max-width: calc(100% - 32px);
+  padding: 4px 8px 8px;
+  transition: bottom 0.2s ease;
+}
+
+@media (max-width: 1023px) {
+  .placer-map-legend {
+    bottom: calc(84px + var(--placer-consent-inset, 0px));
+  }
+}
+
+.placer-map-legend-toggle {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  font-family: var(--placer-font);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.placer-map-legend-toggle:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  border-radius: 8px;
+}
+
+.placer-map-legend-list {
+  list-style: none;
+  margin: 0;
+  padding: 2px 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.placer-map-legend-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.placer-map-legend-swatch {
+  width: 20px;
+  display: flex;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-map-legend {
+    transition: none;
+  }
+}
+
 .placer-scroll {
   scrollbar-width: none;
   -ms-overflow-style: none;

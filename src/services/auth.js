@@ -21,6 +21,47 @@
 import { getSupabase, isSupabaseConfigured } from './supabase';
 
 export const PROFILES_TABLE = 'profiles';
+export const COVERS_BUCKET = 'profile-covers';
+
+export const ACCOUNT_TYPES = [
+  { key: 'individual', label: 'Individual' },
+  { key: 'organisation', label: 'Organisation' },
+];
+
+const PROFILE_COLUMNS = 'id, display_name, bio, location, avatar, account_type, contact_email,'
+  + ' website, cover_path';
+
+// Cover images the bucket accepts, and its size limit (supabase/profiles-details.sql).
+const COVER_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+export const COVER_MAX_BYTES = 5 * 1024 * 1024;
+
+/** A profiles row, or a profile_public() row, in the shape the app speaks. */
+function profileFrom(supabase, row) {
+  return {
+    id: row.id,
+    name: row.display_name,
+    bio: row.bio ?? '',
+    location: row.location ?? '',
+    avatar: row.avatar ?? null,
+    accountType: row.account_type ?? 'individual',
+    contactEmail: row.contact_email ?? '',
+    website: row.website ?? '',
+    coverPath: row.cover_path ?? null,
+    cover: row.cover_path
+      ? supabase.storage.from(COVERS_BUCKET).getPublicUrl(row.cover_path).data?.publicUrl ?? null
+      : null,
+  };
+}
+
+/**
+ * What somebody typed as their website, as a link: "example.com" gets https:// in
+ * front, since the database only accepts http(s) links. Blank stays blank.
+ */
+export function normaliseWebsite(value) {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed) return '';
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
 
 export const INVITE_REFUSED =
   'That invite code is not valid, or has already been used. Check it for typos, or ask '
@@ -183,19 +224,13 @@ export async function readOwnProfile() {
   const supabase = await client();
   const { data, error } = await supabase
     .from(PROFILES_TABLE)
-    .select('id, display_name, bio, location, avatar')
+    .select(PROFILE_COLUMNS)
     .maybeSingle();
 
   if (error) throw new Error(`Could not read your profile: ${error.message}`);
   if (!data) return null;
 
-  return {
-    id: data.id,
-    name: data.display_name,
-    bio: data.bio ?? '',
-    location: data.location ?? '',
-    avatar: data.avatar ?? null,
-  };
+  return profileFrom(supabase, data);
 }
 
 /**
@@ -212,13 +247,7 @@ export async function readPublicProfile(id) {
   const row = Array.isArray(data) ? data[0] : data;
   if (!row) return null;
 
-  return {
-    id: row.id,
-    name: row.display_name,
-    bio: row.bio ?? '',
-    location: row.location ?? '',
-    avatar: row.avatar ?? null,
-  };
+  return profileFrom(supabase, row);
 }
 
 /**
@@ -228,7 +257,8 @@ export async function readPublicProfile(id) {
  * carries no id: the policy scopes it to auth.uid() already, and a client-supplied id
  * would be a way of asking to edit somebody else — refused, but not worth offering.
  */
-export async function saveOwnProfile({ name, bio, location, avatar }) {
+export async function saveOwnProfile({ name, bio, location, avatar, accountType, contactEmail,
+  website, coverPath }) {
   const supabase = await client();
 
   const patch = {};
@@ -236,23 +266,55 @@ export async function saveOwnProfile({ name, bio, location, avatar }) {
   if (bio !== undefined) patch.bio = bio;
   if (location !== undefined) patch.location = location;
   if (avatar !== undefined) patch.avatar = avatar;
+  if (accountType !== undefined) patch.account_type = accountType;
+  if (contactEmail !== undefined) patch.contact_email = contactEmail;
+  if (website !== undefined) patch.website = normaliseWebsite(website);
+  if (coverPath !== undefined) patch.cover_path = coverPath;
 
   const { data, error } = await supabase
     .from(PROFILES_TABLE)
     .update(patch)
-    .select('id, display_name, bio, location, avatar')
+    .select(PROFILE_COLUMNS)
     .maybeSingle();
 
   if (error) throw new Error(`Could not save your profile: ${error.message}`);
   if (!data) return null;
 
-  return {
-    id: data.id,
-    name: data.display_name,
-    bio: data.bio ?? '',
-    location: data.location ?? '',
-    avatar: data.avatar ?? null,
-  };
+  return profileFrom(supabase, data);
+}
+
+/**
+ * Upload a cover image for the signed-in account and return the storage path to
+ * save on the profile. A new file name every time, so a browser holding the old
+ * picture in its cache cannot keep showing it.
+ */
+export async function uploadCover(file) {
+  const ext = COVER_TYPES[file?.type];
+  if (!ext) throw new Error('A cover has to be a JPEG, PNG or WebP image.');
+  if (file.size > COVER_MAX_BYTES) throw new Error('A cover can be at most 5 MB.');
+
+  const supabase = await client();
+  const { data: session } = await supabase.auth.getSession();
+  const userId = session?.session?.user?.id;
+  if (!userId) throw new Error('Sign in to upload a cover.');
+
+  const path = `${userId}/cover-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from(COVERS_BUCKET)
+    .upload(path, file, { contentType: file.type, upsert: false });
+
+  if (error) throw new Error(`Could not upload your cover: ${error.message}`);
+  return path;
+}
+
+/**
+ * Delete a cover image no longer in use. Best effort: a leftover file is a tidiness
+ * problem, not a privacy one, since nothing points at it any more.
+ */
+export async function removeCoverFile(path) {
+  if (!path) return;
+  const supabase = await client();
+  const { error } = await supabase.storage.from(COVERS_BUCKET).remove([path]);
+  if (error) console.error('Could not delete the old cover:', error.message);
 }
 
 /**

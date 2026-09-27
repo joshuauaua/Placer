@@ -248,7 +248,7 @@ describe('PostPage, reached without an account', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'Create an account' }));
     fireEvent.change(screen.getByLabelText('Invite code'), { target: { value: 'PLACER-MARA' } });
-    fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Mara Quinn' } });
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'Mara Quinn' } });
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'mara@example.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'longenough' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
@@ -263,7 +263,7 @@ describe('PostPage, reached without an account', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'Create an account' }));
     fireEvent.change(screen.getByLabelText('Invite code'), { target: { value: 'PLACER-MARA' } });
-    fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Mara Quinn' } });
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'Mara Quinn' } });
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'mara@example.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'longenough' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));

@@ -76,11 +76,12 @@ describe('DashboardPage', () => {
     vi.clearAllMocks();
   });
 
-  it('welcomes you back, with no "Change your name" link any more', async () => {
+  it('welcomes you back by name, in place of a "Dashboard" title', async () => {
     setup(MINE);
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
-    expect(screen.getByText('Welcome back!')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Welcome back, Mara Quinn' }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Dashboard' })).not.toBeInTheDocument();
     expect(screen.queryByText('Change your name')).not.toBeInTheDocument();
   });
 

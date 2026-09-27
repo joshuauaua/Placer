@@ -27,7 +27,7 @@ const password = () => screen.getByLabelText('Password');
 const submit = (name) => screen.getByRole('button', { name });
 
 const fill = ({ name, code, address = 'mara@example.com', secret = 'longenough' } = {}) => {
-  if (name) fireEvent.change(screen.getByLabelText('Your name'), { target: { value: name } });
+  if (name) fireEvent.change(screen.getByLabelText('Username'), { target: { value: name } });
   if (code) fireEvent.change(screen.getByLabelText('Invite code'), { target: { value: code } });
   fireEvent.change(email(), { target: { value: address } });
   fireEvent.change(password(), { target: { value: secret } });
@@ -44,7 +44,7 @@ describe('AuthPage, signing in', () => {
 
     expect(email()).toBeInTheDocument();
     expect(password()).toBeInTheDocument();
-    expect(screen.queryByLabelText('Your name')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Username')).not.toBeInTheDocument();
   });
 
   it('cannot be submitted empty', () => {
@@ -141,7 +141,7 @@ describe('AuthPage, signing up', () => {
   it('asks for a name, because an imagination has to be credited to something', () => {
     setup('signup');
 
-    expect(screen.getByLabelText('Your name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Username')).toBeInTheDocument();
     expect(submit('Create account')).toBeDisabled();
   });
 

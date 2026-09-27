@@ -262,8 +262,8 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           gap: 16, flexWrap: 'wrap', marginBottom: 32 }}>
           <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
-            letterSpacing: '-0.03em' }}>
-            Dashboard
+            letterSpacing: '-0.03em', lineHeight: 1.15, overflowWrap: 'anywhere' }}>
+            Welcome back, {name}
           </h1>
           {onSignOut && (
             <Btn t={t} variant="outline" size="sm" icon="logout" onClick={onSignOut}>
@@ -272,11 +272,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
           )}
         </div>
 
-        <div style={{ marginBottom: 32 }}>
-          <p className="placer-disp" style={{ fontSize: 36, fontWeight: 700, color: t.ink,
-            letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 10 }}>
-            Welcome back!
-          </p>
+        <div style={{ marginTop: -20, marginBottom: 32 }}>
           {/* No account id in the local, no-project mode, and so no public page to go to. */}
           {accountId && onOpenPublicProfile && (
             <a href={`/people/${accountId}`}

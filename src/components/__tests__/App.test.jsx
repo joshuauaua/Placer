@@ -123,7 +123,7 @@ describe('App', () => {
       fireEvent.click(trigger());
       fireEvent.click(screen.getByRole('menuitem', { name: 'Dashboard' }));
 
-      expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: /^Welcome back/ })).toBeInTheDocument();
       expect(location.history.at(-1)).toBe('/dashboard');
     });
 
@@ -140,13 +140,13 @@ describe('App', () => {
     it('opens the dashboard on a direct visit, so the URL survives a refresh', async () => {
       renderRecording('/dashboard');
 
-      expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: /^Welcome back/ })).toBeInTheDocument();
     });
 
     it('still opens the dashboard at its old /profile address', async () => {
       renderRecording('/profile');
 
-      expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: /^Welcome back/ })).toBeInTheDocument();
     });
 
     it('lands on the dashboard after logging in from the nav bar', async () => {
@@ -155,13 +155,13 @@ describe('App', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Log In' }));
 
-      expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: /^Welcome back/ })).toBeInTheDocument();
       expect(location.history.at(-1)).toBe('/dashboard');
     });
 
     it('navigates to a nav item\'s own URL when one is picked', async () => {
       const location = renderRecording('/dashboard');
-      await screen.findByRole('heading', { level: 1, name: 'Dashboard' });
+      await screen.findByRole('heading', { level: 1, name: /^Welcome back/ });
 
       fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Sandbox' }));
 
@@ -231,7 +231,7 @@ describe('App', () => {
       renderRecording('/dashboard');
 
       expect(screen.getByText('You are logged out')).toBeInTheDocument();
-      expect(screen.queryByRole('heading', { level: 1, name: 'Dashboard' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { level: 1, name: /^Welcome back/ })).not.toBeInTheDocument();
     });
   });
 
@@ -264,11 +264,11 @@ describe('App', () => {
       expect(screen.getByLabelText('Email address')).toBeInTheDocument();
     });
 
-    it('renders the sign-up form at /signup, which asks for a name as well', async () => {
+    it('renders the sign-up form at /signup, which asks for a username as well', async () => {
       renderAt('/signup');
 
       expect(await screen.findByRole('heading', { level: 1, name: 'Create an account' })).toBeInTheDocument();
-      expect(screen.getByLabelText('Your name')).toBeInTheDocument();
+      expect(screen.getByLabelText('Username')).toBeInTheDocument();
     });
 
     it('keeps the nav bar on the auth views, so signing in is not a dead end', async () => {
@@ -288,7 +288,7 @@ describe('App', () => {
 
       fireEvent.click(screen.getByRole('link', { name: 'Create an account' }));
 
-      expect(await screen.findByLabelText('Your name')).toBeInTheDocument();
+      expect(await screen.findByLabelText('Username')).toBeInTheDocument();
       expect(location.history.at(-1)).toBe('/signup');
     });
   });

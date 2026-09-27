@@ -6,6 +6,7 @@ import { toPng } from 'html-to-image';
 import { Icon } from './Icon';
 import { Btn } from './UI';
 import { ImaginationPreview } from './ImaginationPreview';
+import { MapLegend } from './MapLegend';
 import { CHARACTER, THEME } from '../theme';
 import { readImaginations } from '../services/imaginations';
 import { isSupabaseConfigured, readProjectLocations } from '../services/projects';
@@ -85,6 +86,9 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null,
   const projectOverlaysRef = useRef([]);
   // The imagination whose preview card is open, if any.
   const [selected, setSelected] = useState(null);
+  // Whether Street View has taken over the map, where the legend's pins and areas
+  // are not drawn and it would only be in the way.
+  const [streetViewOpen, setStreetViewOpen] = useState(false);
   // Tracks the latest position without making the init effect below re-run on every change —
   // currentPosition should only seed the map's initial center, not trigger re-initialization.
   const currentPositionRef = useRef(currentPosition);
@@ -136,6 +140,9 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null,
       panoramaRef.current = googleMap.getStreetView
         ? googleMap.getStreetView()
         : null;
+      panoramaRef.current?.addListener?.('visible_changed', () => {
+        setStreetViewOpen(Boolean(panoramaRef.current.getVisible()));
+      });
 
       // Add click listener to update current position
       googleMap.addListener('click', (e) => {
@@ -493,6 +500,8 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null,
             <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)}
               accountId={accountId} authorName={authorName} onSignIn={onSignIn} />
           )}
+
+          {!streetViewOpen && <MapLegend t={t} pin={PIN} area={PROJECT_AREA} />}
 
           {/* Floating controls — bottom-centered over the map: search + capture */}
           <div style={{

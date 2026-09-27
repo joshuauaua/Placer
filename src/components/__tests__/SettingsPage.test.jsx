@@ -2,11 +2,17 @@ import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SettingsPage } from '../SettingsPage';
 import { saveProfile } from '../../services/profile';
-import { updatePassword } from '../../services/auth';
+import { removeCoverFile, updatePassword, uploadCover } from '../../services/auth';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/auth', () => ({
+  ACCOUNT_TYPES: [
+    { key: 'individual', label: 'Individual' },
+    { key: 'organisation', label: 'Organisation' },
+  ],
   updatePassword: vi.fn(() => Promise.resolve()),
+  uploadCover: vi.fn(() => Promise.resolve('user-1/cover-2.jpg')),
+  removeCoverFile: vi.fn(() => Promise.resolve()),
 }));
 
 const PROFILE_KEY = 'placemaking_profile';
@@ -115,6 +121,46 @@ describe('SettingsPage, bio and location', () => {
   afterEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
+  });
+
+  it('saves the account type as soon as one is picked', async () => {
+    const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: '', accountType: 'individual' } });
+
+    expect(screen.getByRole('radio', { name: 'Individual' })).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(screen.getByRole('radio', { name: 'Organisation' }));
+
+    await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ accountType: 'organisation' }));
+  });
+
+  it('saves a contact email and a website', async () => {
+    const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: '', contactEmail: '', website: '' } });
+
+    fireEvent.change(screen.getByLabelText('Contact email'), { target: { value: 'hi@mara.se' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save contact email/ }));
+    fireEvent.change(screen.getByLabelText('Website'), { target: { value: 'mara.se' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save website/ }));
+
+    await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ contactEmail: 'hi@mara.se' }));
+    await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ website: 'mara.se' }));
+  });
+
+  it('offers no cover image for a local-only profile, which has nowhere to store one', () => {
+    setup();
+
+    expect(screen.queryByText('Cover image')).not.toBeInTheDocument();
+  });
+
+  it('uploads a cover, points the profile at it, and deletes the old one', async () => {
+    const onSaveProfile = vi.fn(() => Promise.resolve());
+    setup({ email: 'mara@example.com', onSaveProfile,
+      profile: { name: 'Mara Quinn', bio: '', coverPath: 'user-1/cover-1.jpg', cover: 'https://cdn/x.jpg' } });
+
+    const file = new File(['x'], 'cover.jpg', { type: 'image/jpeg' });
+    fireEvent.change(screen.getByText('Replace cover').querySelector('input'), { target: { files: [file] } });
+
+    await waitFor(() => expect(removeCoverFile).toHaveBeenCalledWith('user-1/cover-1.jpg'));
+    expect(uploadCover).toHaveBeenCalledWith(file);
+    expect(onSaveProfile).toHaveBeenCalledWith({ coverPath: 'user-1/cover-2.jpg' });
   });
 
   it('shows the current bio and location', () => {

@@ -139,7 +139,7 @@ describe('an imagination parked while signing in', () => {
   it('stays out of the way when nothing was parked', async () => {
     renderApp();
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: /^Welcome back/ })).toBeInTheDocument();
   });
 
   it('ignores a stale parked imagination rather than resurrecting it', async () => {
@@ -147,7 +147,7 @@ describe('an imagination parked while signing in', () => {
 
     renderApp();
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: /^Welcome back/ })).toBeInTheDocument();
     expect(localStorage.getItem(PENDING_KEY)).toBeNull();
   });
 });
@@ -171,7 +171,7 @@ describe('where somebody signed in starts', () => {
   it('opens on the dashboard rather than the landing page', async () => {
     const location = renderRecording('/');
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: /^Welcome back/ })).toBeInTheDocument();
     expect(screen.queryByText('a toolkit for participatory placemaking')).not.toBeInTheDocument();
     expect(location.history.at(-1)).toBe('/dashboard');
   });

@@ -222,9 +222,8 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
         )}
         {signingUp && (
           <Field
-            t={t} id="auth-name" label="Your name" type="text" value={name} onChange={setName}
-            autoComplete="name"
-            hint="Shown on the imaginations you post. You can change it later."
+            t={t} id="auth-name" label="Username" type="text" value={name} onChange={setName}
+            autoComplete="username"
           />
         )}
         <Field

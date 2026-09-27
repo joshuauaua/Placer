@@ -20,7 +20,8 @@ export const PROFILE_KEY = 'placemaking_profile';
 /** What an imagination is credited to before anyone renames themselves. */
 export const DEFAULT_NAME = 'You There';
 
-const DEFAULT_PROFILE = { name: DEFAULT_NAME, bio: '', location: '', avatar: null };
+const DEFAULT_PROFILE = { name: DEFAULT_NAME, bio: '', location: '', avatar: null,
+  accountType: 'individual', contactEmail: '', website: '', cover: null };
 
 // A visitor who has never touched the account menu is treated as signed in under
 // the default name, because that is how the app behaved before profiles existed.
@@ -35,6 +36,11 @@ const asProfile = (stored) => {
     // null means "no icon chosen, fall back to initials" — never coerced to '' so
     // Avatar's `icon ? ... : initials` branch reads it the same way readProfile does.
     avatar: typeof stored.avatar === 'string' && stored.avatar ? stored.avatar : null,
+    accountType: stored.accountType === 'organisation' ? 'organisation' : 'individual',
+    contactEmail: typeof stored.contactEmail === 'string' ? stored.contactEmail : '',
+    website: typeof stored.website === 'string' ? stored.website : '',
+    // Covers need Storage, so there are none without a Supabase project.
+    cover: null,
   };
 };
 

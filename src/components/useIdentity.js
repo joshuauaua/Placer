@@ -65,6 +65,7 @@ export function useIdentity() {
     if (!configured) return undefined;
 
     const unsubscribe = subscribeToAuth((next) => {
+      const previousId = accountRef.current;
       accountRef.current = next?.id ?? null;
       setAccount(next);
 
@@ -73,6 +74,14 @@ export function useIdentity() {
         setStatus('signedOut');
         return;
       }
+
+      // A different account than before — somebody has just signed in — so back to
+      // 'loading' until its profile arrives. Without this the status stays
+      // 'signedOut' through the profile fetch, and the dashboard that signing in lands
+      // on shows "You are logged out" for that moment. Not for the same account again:
+      // Supabase repeats the session on every token refresh, and dropping to 'loading'
+      // then would swap whatever page is open for the loading mark.
+      if (next.id !== previousId) setStatus('loading');
 
       // The account is known before the profile is, and that is the honest state to
       // report: signed in, name still arriving. The nav bar has an avatar and a name

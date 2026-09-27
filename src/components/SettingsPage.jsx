@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { Avatar, AVATAR_ICONS, Btn, LoadingMark } from './UI';
 import { Icon } from './Icon';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
-import { updatePassword } from '../services/auth';
+import { ACCOUNT_TYPES, removeCoverFile, updatePassword, uploadCover } from '../services/auth';
 import { isSupabaseConfigured, readPreferences, savePreferences } from '../services/notifications';
 
 // The same floor AuthPage and ResetPasswordPage ask for.
@@ -98,7 +98,8 @@ function DisplayName({ t, profile, onSaveProfile }) {
 // call to this one — a required field with its own copy is a different enough thing
 // that folding it in would mean threading an "isRequired" branch through a function
 // two of its three uses do not need.
-function ProfileField({ t, profile, onSaveProfile, fieldKey, title, description, label, id, placeholder, multiline }) {
+function ProfileField({ t, profile, onSaveProfile, fieldKey, title, description, label, id, placeholder, multiline,
+  inputType = 'text' }) {
   const [value, setValue] = useState(profile?.[fieldKey] ?? '');
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
 
@@ -133,7 +134,7 @@ function ProfileField({ t, profile, onSaveProfile, fieldKey, title, description,
           onChange={(e) => { setValue(e.target.value); setStatus('idle'); }}
           style={fieldStyle} />
       ) : (
-        <input id={id} type="text" value={value} placeholder={placeholder}
+        <input id={id} type={inputType} value={value} placeholder={placeholder}
           onChange={(e) => { setValue(e.target.value); setStatus('idle'); }}
           style={fieldStyle} />
       )}
@@ -153,6 +154,130 @@ function ProfileField({ t, profile, onSaveProfile, fieldKey, title, description,
           </span>
         )}
       </div>
+    </Card>
+  );
+}
+
+// The picture across the top of the public profile. Uploading saves straight away —
+// there is nothing to review between choosing a file and wanting it — and the old
+// file is deleted once the profile points at the new one. Account path only: covers
+// live in Supabase Storage, and a local-only visitor has no bucket to put one in.
+function CoverPicker({ t, profile, onSaveProfile }) {
+  const [status, setStatus] = useState('idle'); // 'idle' | 'uploading' | 'removing' | 'error'
+  const [error, setError] = useState(null);
+  const cover = profile?.cover ?? null;
+
+  const replace = async (nextPath) => {
+    const previous = profile?.coverPath ?? null;
+    await onSaveProfile({ coverPath: nextPath });
+    if (previous && previous !== nextPath) await removeCoverFile(previous);
+  };
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setStatus('uploading');
+    setError(null);
+    try {
+      await replace(await uploadCover(file));
+      setStatus('idle');
+    } catch (err) {
+      console.error('Could not upload the cover:', err);
+      setError(err?.message ?? 'Could not upload that. Try again.');
+      setStatus('error');
+    }
+  };
+
+  const handleRemove = async () => {
+    setStatus('removing');
+    setError(null);
+    try {
+      await replace(null);
+      setStatus('idle');
+    } catch (err) {
+      console.error('Could not remove the cover:', err);
+      setError('Could not remove it. Try again.');
+      setStatus('error');
+    }
+  };
+
+  const busy = status === 'uploading' || status === 'removing';
+
+  return (
+    <Card t={t} title="Cover image">
+      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
+        The wide picture across the top of your public profile, with your name on it. A
+        landscape photo works best. JPEG, PNG or WebP, up to 5 MB. Optional.
+      </p>
+      <div style={{ height: 140, borderRadius: 12, marginBottom: 20, border: `1px solid ${t.line}`,
+        background: cover ? `center / cover no-repeat url("${cover}")` : t.surfaceAlt,
+        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {!cover && <span style={{ fontSize: 14, color: t.inkFaint }}>No cover yet</span>}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        {/* A label rather than a button, so the native file picker opens on click. */}
+        <label className="placer-btn placer-btn-primary" style={{ display: 'inline-flex',
+          alignItems: 'center', gap: 8, height: 44, padding: '0 18px', borderRadius: 12,
+          background: t.primaryBg, color: t.primaryFg, fontSize: 15, fontWeight: 500,
+          cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1 }}>
+          <Icon name="image" size={18} stroke={2} />
+          {status === 'uploading' ? 'Uploading…' : (cover ? 'Replace cover' : 'Upload a cover')}
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile}
+            disabled={busy} style={{ display: 'none' }} />
+        </label>
+        {cover && (
+          <Btn t={t} variant="outline" icon="trash" onClick={handleRemove} disabled={busy}>
+            {status === 'removing' ? 'Removing…' : 'Remove'}
+          </Btn>
+        )}
+        {error && (
+          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 500 }}>{error}</span>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function AccountTypePicker({ t, profile, onSaveProfile }) {
+  const current = profile?.accountType ?? 'individual';
+  const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'error'
+
+  const choose = async (key) => {
+    if (key === current || status === 'saving') return;
+    setStatus('saving');
+    try {
+      await onSaveProfile({ accountType: key });
+      setStatus('idle');
+    } catch (err) {
+      console.error('Could not save your account type:', err);
+      setStatus('error');
+    }
+  };
+
+  return (
+    <Card t={t} title="Account type">
+      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
+        Whether this account is you, or an organisation such as a municipality, studio or
+        association. Shown on your public profile.
+      </p>
+      <div role="radiogroup" aria-label="Account type" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        {ACCOUNT_TYPES.map(({ key, label }) => (
+          <button key={key} type="button" role="radio" aria-checked={current === key}
+            onClick={() => choose(key)} disabled={status === 'saving'}
+            style={{ height: 44, padding: '0 18px', borderRadius: 12, cursor: 'pointer',
+              fontFamily: 'var(--placer-font)', fontSize: 15, fontWeight: 500, color: t.ink,
+              background: current === key ? t.surfaceAlt : 'transparent',
+              border: `1.5px solid ${current === key ? t.accent : t.line}` }}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {status === 'error' && (
+        <p role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 500, marginTop: 12 }}>
+          Could not save that. Try again.
+        </p>
+      )}
     </Card>
   );
 }
@@ -498,15 +623,25 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate }) {
         </div>
 
         <DisplayName t={t} profile={profile} onSaveProfile={onSaveProfile} />
+        {email && <CoverPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />}
         <AvatarPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />
+        <AccountTypePicker t={t} profile={profile} onSaveProfile={onSaveProfile} />
         <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="bio"
           title="Bio" label="Bio" id="settings-bio" multiline
           description="A couple of lines about you, shown on your public profile. Optional."
           placeholder="What you're into, or what brought you here." />
         <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="location"
           title="Location" label="Location" id="settings-location"
-          description="Where you're based, shown on your public profile. Optional."
+          description="Where you're based, shown on your public profile under your name. Optional."
           placeholder="e.g. Malmö, Sweden" />
+        <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="contactEmail"
+          title="Contact email" label="Contact email" id="settings-contact-email" inputType="email"
+          description="An address people can reach you at, shown on your public profile. It does not have to be the one you sign in with, which is never shown. Optional."
+          placeholder="e.g. hello@example.com" />
+        <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="website"
+          title="Website" label="Website" id="settings-website" inputType="url"
+          description="A link shown on your public profile. Optional."
+          placeholder="e.g. example.com" />
         {email && <ChangePassword t={t} />}
         {email && <NotificationPreferences t={t} />}
         <Analytics t={t} onNavigate={onNavigate} />
