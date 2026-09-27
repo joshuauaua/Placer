@@ -427,6 +427,12 @@ a {
 
 .placer-landing-credit {
   margin-bottom: 48px;
+  /* One line, even though it is a little wider than the column: it may spill
+   * past both edges of the column equally, staying centred. Hidden on a phone. */
+  white-space: nowrap;
+  width: max-content;
+  margin-left: 50%;
+  transform: translateX(-50%);
 }
 
 /* Centres the trigger between the pitch and the credit, without a rule to
@@ -622,7 +628,6 @@ a {
   padding: 24px var(--placer-margin) 40px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
   /* The bar above is glass already, and the kit never stacks glass on glass, so
      the panel under it is the glass fallback: white at 85%. */
   background: rgba(255, 255, 255, 0.85);
@@ -630,13 +635,36 @@ a {
   backdrop-filter: blur(24px) saturate(140%);
 }
 
+/* margin:auto rather than justify-content, so the columns sit in the middle of
+ * the panel but still scroll from the top if they outgrow a short screen. */
+.placer-menu-columns {
+  margin: auto;
+  width: 100%;
+  max-width: 720px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px 48px;
+  align-items: start;
+}
+
+.placer-menu-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+/* A phone has no room for two columns of links side by side. */
+@media (max-width: 599px) {
+  .placer-menu-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 .placer-menu-section {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
 }
 
 .placer-menu-heading {

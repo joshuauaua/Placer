@@ -18,6 +18,14 @@ import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
 import { FOOTER_COLUMNS } from './SiteFooter';
 
+// Two columns: the project's own pages on the left, About Us on its own on the
+// right. Anything not named here falls into the left column.
+const RIGHT_COLUMN = ['About Us'];
+const MENU_COLUMNS = [
+  FOOTER_COLUMNS.filter(({ heading }) => !RIGHT_COLUMN.includes(heading)),
+  FOOTER_COLUMNS.filter(({ heading }) => RIGHT_COLUMN.includes(heading)),
+];
+
 export function HamburgerMenu({ t, view, onNavigate }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
@@ -66,31 +74,37 @@ export function HamburgerMenu({ t, view, onNavigate }) {
       {open && createPortal(
         <nav id="placer-menu-panel" ref={panelRef} aria-label="Site" className="placer-menu-panel"
           style={{ color: t.ink }}>
-          {FOOTER_COLUMNS.map(({ heading, links }) => (
-            <section key={heading} className="placer-menu-section">
-              <div className="placer-menu-heading" style={{ color: t.inkFaint }}>{heading}</div>
-              {links.map(({ label, view: target, href }) => target ? (
-                <button
-                  key={label}
-                  onClick={() => go(target)}
-                  aria-current={view === target ? 'page' : undefined}
-                  className="placer-menu-link"
-                  style={{ color: view === target ? t.ink : t.inkDim }}
-                >
-                  {label}
-                </button>
-              ) : href ? (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer"
-                  onClick={() => setOpen(false)} className="placer-menu-link" style={{ color: t.inkDim }}>
-                  {label}
-                </a>
-              ) : (
-                <span key={label} className="placer-menu-link" style={{ color: t.inkFaint, cursor: 'default' }}>
-                  {label}
-                </span>
-              ))}
-            </section>
-          ))}
+          <div className="placer-menu-columns">
+            {MENU_COLUMNS.map((sections, index) => (
+              <div key={index} className="placer-menu-column">
+                {sections.map(({ heading, links }) => (
+                  <section key={heading} className="placer-menu-section">
+                    <div className="placer-menu-heading" style={{ color: t.inkFaint }}>{heading}</div>
+                    {links.map(({ label, view: target, href }) => target ? (
+                      <button
+                        key={label}
+                        onClick={() => go(target)}
+                        aria-current={view === target ? 'page' : undefined}
+                        className="placer-menu-link"
+                        style={{ color: view === target ? t.ink : t.inkDim }}
+                      >
+                        {label}
+                      </button>
+                    ) : href ? (
+                      <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+                        onClick={() => setOpen(false)} className="placer-menu-link" style={{ color: t.inkDim }}>
+                        {label}
+                      </a>
+                    ) : (
+                      <span key={label} className="placer-menu-link" style={{ color: t.inkFaint, cursor: 'default' }}>
+                        {label}
+                      </span>
+                    ))}
+                  </section>
+                ))}
+              </div>
+            ))}
+          </div>
         </nav>,
         document.body,
       )}
