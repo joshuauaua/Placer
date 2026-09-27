@@ -1,6 +1,6 @@
 /* PLACER — Reimagine Your City */
 
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
 import { Switch, Route, useLocation } from 'wouter';
 import { THEME } from './theme';
@@ -289,6 +289,15 @@ function MainApp({ initialView = 'welcome' }) {
     if (view === 'welcome' && identityStatus === 'signedIn') navigate('/dashboard', { replace: true });
   }, [view, identityStatus, navigate]);
 
+  // Every page but the map scrolls in the one container below, which stays mounted from
+  // page to page. Without this, a footer link opens the next page still scrolled to the
+  // bottom, where the footer looks just as it did and the click seems to do nothing.
+  // A layout effect, so the next page is never painted at the old position first.
+  const scrollViewRef = useRef(null);
+  useLayoutEffect(() => {
+    if (scrollViewRef.current) scrollViewRef.current.scrollTop = 0;
+  }, [view, location]);
+
   const handlePosted = () => {
     // Posted, so there is nothing left to come back to.
     clearPendingImagination();
@@ -404,7 +413,7 @@ function MainApp({ initialView = 'welcome' }) {
           here, with the footer after it — see .placer-scroll-view in index.css. The
           side nav shares a row with the page rather than with the whole area, so it
           ends where the page does and the footer runs the full width beneath both. */}
-      <div className={`placer-under-glass-nav${view === 'map' ? '' : ' placer-scroll-view'}`}
+      <div ref={scrollViewRef} className={`placer-under-glass-nav${view === 'map' ? '' : ' placer-scroll-view'}`}
         style={{ flex: 1, minHeight: 0, position: 'relative', overflow: view === 'map' ? 'hidden' : undefined }}>
         <div className="placer-app-row">
           {/* Only once somebody is signed in: everything on it is a place an account

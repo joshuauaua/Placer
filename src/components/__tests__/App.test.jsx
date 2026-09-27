@@ -55,6 +55,19 @@ describe('App', () => {
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
   });
 
+  it('opens a page from the footer at the top, not at the old scroll position', async () => {
+    const { container } = renderAt('/resources');
+    await screen.findByRole('heading', { name: 'Resources' });
+    const scrollView = container.querySelector('.placer-scroll-view');
+    scrollView.scrollTop = 1200;
+
+    fireEvent.click(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'About' }));
+
+    expect(await screen.findByAltText(/people behind PLACER/)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Resources' })).not.toBeInTheDocument();
+    expect(scrollView.scrollTop).toBe(0);
+  });
+
   describe('/admin/imaginations route', () => {
     let originalValue;
 
