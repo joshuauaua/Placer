@@ -11,9 +11,42 @@
  * a VITE_ variable. So every write goes through the `media` Edge Function
  * (supabase/functions/media), which checks the Supabase session, only touches keys
  * under the caller's own id, and reads each upload's bytes to make sure it really is
- * a picture before it reaches the bucket. The type checks in auth.js and
- * imaginations.js are there to explain a refusal early, not to enforce anything.
+ * a picture before it reaches the bucket, and that the account stays within its
+ * 50 MB. Every picture is re-encoded here first (preparePhoto, lib/imageEncode.js) to
+ * strip its metadata and shrink it; the checks here explain a refusal early, but
+ * enforce nothing.
  */
+
+import { encodeImage, IMAGE_PRESETS } from '../lib/imageEncode';
+
+// How big a picked photo may be *before* it is re-encoded. Generous on purpose — it is
+// a phone photo straight off the camera — since what gets uploaded is the far smaller
+// re-encoded copy (lib/imageEncode.js), and the media function's limits apply to that.
+export const PICKED_MAX_BYTES = 30 * 1024 * 1024;
+
+/**
+ * Throw a readable sentence if `file` is not a picture this app will take. `what`
+ * names it ("A cover", "A profile photo"). SVG is refused outright: it is a document
+ * that can carry script, not a photo.
+ */
+export function checkPickedImage(file, what) {
+  const type = file?.type ?? '';
+  if (!type.startsWith('image/') || type === 'image/svg+xml') {
+    throw new Error(`${what} has to be a photo — a JPEG, PNG or WebP, for example.`);
+  }
+  if (file.size > PICKED_MAX_BYTES) throw new Error(`${what} can be at most 30 MB.`);
+}
+
+/**
+ * Check a picked photo, then re-encode it for `preset` (a key of IMAGE_PRESETS):
+ * scaled, stripped of its metadata, WebP where the browser can. Resolves to
+ * `{ blob, ext }`, ready for uploadMedia.
+ */
+export async function preparePhoto(file, preset, what) {
+  checkPickedImage(file, what);
+  const { blob, ext } = await encodeImage(file, IMAGE_PRESETS[preset]);
+  return { blob, ext };
+}
 
 /** Whether pictures have somewhere to be shown from. */
 export function isMediaConfigured() {

@@ -55,8 +55,17 @@ function ImagePlaceholder({ t, frame }) {
   );
 }
 
-/** The project's area on the map, or the placeholder, in the same frame either way. */
+/**
+ * The project's uploaded image, else its area on the map, else the placeholder — in
+ * the same frame every way, so the page keeps its shape whichever it has.
+ */
 function ProjectImage({ t, project, size, frame }) {
+  if (project.image) {
+    return (
+      <img src={project.image} alt="" style={{ display: 'block', borderRadius: 16,
+        border: `1px solid ${t.line}`, objectFit: 'cover', ...frame }} />
+    );
+  }
   return hasProjectMap(project)
     ? <ProjectLocationMap t={t} project={project} size={size} style={{ ...frame, marginBottom: 0 }} />
     : <ImagePlaceholder t={t} frame={frame} />;

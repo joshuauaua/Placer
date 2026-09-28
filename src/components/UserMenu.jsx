@@ -76,7 +76,7 @@ export function UserMenu({ t, profile, onNavigate, onSignIn, onSignOut }) {
           letterSpacing: '-0.01em' }}
         onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-        <Avatar name={profile.name} icon={profile.avatar} size={40} />
+        <Avatar name={profile.name} icon={profile.avatar} photo={profile.photo} size={40} />
         <Icon name={open ? 'chevUp' : 'chevDown'} size={16} stroke={2.2} style={{ color: t.inkDim }} />
       </button>
 

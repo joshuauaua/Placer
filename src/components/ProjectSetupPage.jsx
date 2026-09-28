@@ -1,9 +1,13 @@
 /* PLACER — start or edit a project: dates, where it is, and what it is trying to do */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Btn } from './UI';
+import { ImagePicker } from './ImagePicker';
 import { LocationMapPicker } from './LocationMapPicker';
-import { createProject, updateProject } from '../services/projects';
+import {
+  createProject, removeProjectImageFile, updateProject, uploadProjectImage,
+} from '../services/projects';
+import { checkPickedImage } from '../services/media';
 
 // Matches DescribePage's form styling.
 const inputStyle = (t) => ({
@@ -42,7 +46,11 @@ const textToLocations = (text) => text.split('\n').map((line) => line.trim()).fi
  * fromRow shape) to edit it in place — the same field set either way, so this is the
  * one form both `/projects/new` and a dashboard's "Edit setup" reach.
  */
-export function ProjectSetupPage({ t, accountId, accountName, project = null, onSaved, onCancel }) {
+export function ProjectSetupPage({ t, accountId, accountName, project: initialProject = null, onSaved, onCancel }) {
+  // Normally the project being edited. Starting a new one can set it too: if the
+  // project is created but its image then fails to upload, the form carries on as an
+  // edit of that project, so trying again cannot start a second one.
+  const [project, setProject] = useState(initialProject);
   const editing = !!project;
 
   const [name, setName] = useState(project?.name ?? '');
@@ -53,6 +61,28 @@ export function ProjectSetupPage({ t, accountId, accountName, project = null, on
   const [locationShapes, setLocationShapes] = useState(project?.locationShapes ?? []);
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'error'
   const [error, setError] = useState(null);
+  // A new project has no id to name the image's folder until it is created, so the
+  // picked file waits here, shown from a local preview, and is uploaded right after.
+  const [pending, setPending] = useState(null); // { file, url } | null
+
+  // The preview URL holds the file in memory until it is revoked.
+  useEffect(() => () => { if (pending) URL.revokeObjectURL(pending.url); }, [pending]);
+
+  // Editing: the image saves straight away, like a cover in Settings, and the file it
+  // replaces is deleted once the project points at the new one.
+  const replaceImage = async (nextPath) => {
+    const previous = project.imagePath;
+    const saved = await updateProject(project.id, { imagePath: nextPath });
+    setProject(saved);
+    if (previous && previous !== nextPath) await removeProjectImageFile(previous);
+  };
+
+  const pickPendingImage = async (file) => {
+    checkPickedImage(file, 'A project image'); // Throws the same sentence the upload would.
+    setPending({ file, url: URL.createObjectURL(file) });
+  };
+
+  const shownImage = editing ? project.image : pending?.url;
 
   const complete = name.trim().length > 0;
 
@@ -72,9 +102,24 @@ export function ProjectSetupPage({ t, accountId, accountName, project = null, on
         locationShapes,
       };
 
-      const saved = editing
+      let saved = editing
         ? await updateProject(project.id, patch)
         : await createProject({ ownerId: accountId, ownerName: accountName, ...patch });
+
+      if (!editing && pending) {
+        try {
+          const imagePath = await uploadProjectImage(saved.id, pending.file);
+          saved = await updateProject(saved.id, { imagePath });
+        } catch (imageError) {
+          console.error('Could not add the project image:', imageError);
+          setProject(saved);
+          setPending(null);
+          setError(`The project was started, but its image could not be added: ${imageError.message} `
+            + 'Try it again below, or save without one.');
+          setStatus('idle');
+          return;
+        }
+      }
 
       onSaved(saved);
     } catch (err) {
@@ -128,6 +173,24 @@ export function ProjectSetupPage({ t, accountId, accountName, project = null, on
             </Field>
           </div>
         </div>
+
+        <Field t={t} label="Image"
+          hint="Shown at the top of the project's page and on its card, instead of the map of its area. A landscape photo works best. It is resized, and saved without its location data. Optional.">
+          {shownImage && (
+            <img src={shownImage} alt="" style={{ display: 'block', width: '100%', aspectRatio: '16 / 9',
+              objectFit: 'cover', borderRadius: 12, border: `1px solid ${t.line}`, marginBottom: 14 }} />
+          )}
+          {editing ? (
+            <ImagePicker t={t} hasImage={!!project.image} uploadLabel="Add an image"
+              replaceLabel="Replace image"
+              onUpload={async (file) => replaceImage(await uploadProjectImage(project.id, file))}
+              onRemove={() => replaceImage(null)} disabled={status === 'saving'} />
+          ) : (
+            <ImagePicker t={t} hasImage={!!pending} uploadLabel="Add an image"
+              replaceLabel="Choose another" onUpload={pickPendingImage}
+              onRemove={async () => setPending(null)} disabled={status === 'saving'} />
+          )}
+        </Field>
 
         <Field t={t} label="Locations" htmlFor="project-locations"
           hint="Where this project is about — one place per line.">

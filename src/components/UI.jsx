@@ -59,21 +59,29 @@ export const AVATAR_ICONS = [
 
 export const AVATAR_ICON_KEYS = AVATAR_ICONS.map((option) => option.key);
 
-// `icon` picks one of AVATAR_ICONS over the initials this used to always show. Same
-// circle either way, so switching between the two is a same-size swap.
+// `icon` picks one of AVATAR_ICONS over the initials this used to always show, and
+// `photo` (an uploaded picture's URL) wins over both. Same circle every way, so
+// switching between them is a same-size swap.
 //
 // The brand kit's avatar: a character's 100 fill, a 2px ring in its 700 and ink
 // initials. Nobody has a character on their profile yet, so the name picks one of
 // the three, the same way every time. `ring` still adds an outer ring when asked.
-export function Avatar({ name = '', size = 40, ring, icon }) {
+export function Avatar({ name = '', size = 40, ring, icon, photo }) {
   const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
   const character = CHARACTER_LIST[(name.charCodeAt(0) + name.length || 0) % CHARACTER_LIST.length];
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', background: character.c100, color: '#111111',
       display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto',
       fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: Math.max(12, Math.round(size * 0.4)),
-      boxShadow: `inset 0 0 0 2px ${character.c700}${ring ? `, 0 0 0 2px ${ring}` : ''}` }}>
-      {icon ? <Icon name={icon} size={size * 0.52} stroke={2} /> : initials}
+      // A photo would paint over the inset character ring, so it keeps only the outer one.
+      boxShadow: photo
+        ? (ring ? `0 0 0 2px ${ring}` : 'none')
+        : `inset 0 0 0 2px ${character.c700}${ring ? `, 0 0 0 2px ${ring}` : ''}` }}>
+      {photo
+        // Decorative: the name is always beside it, or in the button's label.
+        ? <img src={photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%',
+          objectFit: 'cover', display: 'block' }} />
+        : icon ? <Icon name={icon} size={size * 0.52} stroke={2} /> : initials}
     </div>
   );
 }

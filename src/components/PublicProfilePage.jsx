@@ -114,7 +114,7 @@ export function PublicProfilePage({ t, userId, accountId = null, authorName, onS
           : { background: t.surfaceAlt }}>
         <div className="placer-profile-cover-inner"
           style={{ color: person.cover ? '#FFFFFF' : t.ink }}>
-          <Avatar name={person.name} icon={person.avatar} size={72}
+          <Avatar name={person.name} icon={person.avatar} photo={person.photo} size={72}
             ring={person.cover ? '#FFFFFF' : t.line} />
           <div style={{ minWidth: 0 }}>
             <h1 className="placer-disp placer-profile-title">{person.name}</h1>

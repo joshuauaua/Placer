@@ -43,6 +43,15 @@ vi.mock('../media', () => ({
   mediaUrl: (...a) => mediaUrl(...a),
 }));
 
+// The preview re-encode. By default it fails, the way it does in a browser that cannot
+// write WebP (or in jsdom, which cannot decode at all), so the preview goes as exported
+// — which is what most tests below assert. One test has it succeed.
+const encodeImage = vi.fn(() => Promise.reject(new Error('no canvas here')));
+vi.mock('../../lib/imageEncode', async (importOriginal) => ({
+  ...(await importOriginal()),
+  encodeImage: (...a) => encodeImage(...a),
+}));
+
 const createClient = vi.fn(() => ({ from, rpc }));
 
 vi.mock('@supabase/supabase-js', () => ({ createClient }));
@@ -131,6 +140,10 @@ beforeEach(() => {
   // bare integer — see the "voting" describe block below.
   rpc.mockResolvedValue({ data: [{ upvotes: 13, my_vote: 1 }], error: null });
   vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('img-1');
+  encodeImage.mockReset();
+  encodeImage.mockRejectedValue(new Error('no canvas here'));
+  // postImagination says, on the console, when it falls back to the exported preview.
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
 describe('with no project configured', () => {
@@ -319,6 +332,19 @@ describe('posting', () => {
     await imaginations.postImagination(DRAFT);
 
     expect(upload.mock.calls[0][1]).toBe('previews/user-1/img-1.jpg');
+  });
+
+  it('re-encodes the preview as WebP where the browser can, to save space', async () => {
+    await load();
+    const webp = new Blob(['webp'], { type: 'image/webp' });
+    encodeImage.mockResolvedValue({ blob: webp, type: 'image/webp', ext: 'webp' });
+
+    await imaginations.postImagination(DRAFT);
+
+    expect(encodeImage).toHaveBeenCalledWith(expect.any(Blob), expect.objectContaining({ maxSide: 1920 }));
+    expect(upload.mock.calls[0][1]).toBe('previews/user-1/img-1.webp');
+    expect(upload.mock.calls[0][2]).toBe(webp);
+    expect(insert.mock.calls[0][0]).toMatchObject({ preview_path: 'previews/user-1/img-1.webp' });
   });
 
   it('uploads before it inserts, because the row carries the path', async () => {

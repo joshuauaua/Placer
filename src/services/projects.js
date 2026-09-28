@@ -12,10 +12,14 @@
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
+import { mediaUrl, preparePhoto, removeMedia, uploadMedia } from './media';
 
 export const PROJECTS_TABLE = 'projects';
 export const COLLABORATORS_TABLE = 'project_collaborators';
 export const LINKS_TABLE = 'project_links';
+// The folder project images go under in the R2 bucket (supabase/functions/media).
+// Named after the project, not the uploader: any collaborator may replace it.
+export const PROJECT_IMAGES_FOLDER = 'projects';
 
 export { isSupabaseConfigured };
 
@@ -30,7 +34,7 @@ async function client() {
 }
 
 const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, description, start_date, end_date, '
-  + 'locations, location_shapes, created_at, updated_at';
+  + 'locations, location_shapes, image_path, created_at, updated_at';
 
 function fromRow(row) {
   return {
@@ -46,6 +50,9 @@ function fromRow(row) {
     // Additive to `locations`, not a replacement for it: a place name and its shape
     // on the map are two different things about the same location.
     locationShapes: row.location_shapes ?? [],
+    // An uploaded picture, shown instead of the map of the area when there is one.
+    imagePath: row.image_path ?? null,
+    image: mediaUrl(row.image_path),
     createdAt: row.created_at ?? null,
     updatedAt: row.updated_at ?? null,
   };
@@ -195,7 +202,7 @@ export async function updateProject(id, patch) {
   const columns = {
     ownerName: 'owner_name', name: 'name', description: 'description',
     startDate: 'start_date', endDate: 'end_date', locations: 'locations',
-    locationShapes: 'location_shapes',
+    locationShapes: 'location_shapes', imagePath: 'image_path',
   };
   const row = {};
   for (const [key, column] of Object.entries(columns)) {
@@ -213,11 +220,51 @@ export async function updateProject(id, patch) {
   return fromRow(data);
 }
 
+/**
+ * Upload an image for a project and return the path to save on it with
+ * updateProject({ imagePath }). The project has to exist already, since its id names
+ * the folder, and the caller has to be its owner or a collaborator.
+ */
+export async function uploadProjectImage(projectId, file) {
+  // Resized and stripped of its metadata (location included) before anything is sent.
+  const { blob, ext } = await preparePhoto(file, 'project', 'A project image');
+  const supabase = await client();
+  const path = `${PROJECT_IMAGES_FOLDER}/${projectId}/image-${Date.now()}.${ext}`;
+  try {
+    return await uploadMedia(supabase, path, blob);
+  } catch (error) {
+    throw new Error(`Could not upload the project image: ${error.message}`);
+  }
+}
+
+/** Delete a project image no longer in use. Best effort, like removeProfileImageFile. */
+export async function removeProjectImageFile(path) {
+  if (!path) return;
+  const supabase = await client();
+  try {
+    await removeMedia(supabase, path);
+  } catch (error) {
+    console.error('Could not delete the old project image:', error.message);
+  }
+}
+
 /** Remove a project. Owner-only — the delete policy refuses anyone else. */
 export async function deleteProject(id) {
   const supabase = await client();
+
+  // Read the path before the row that holds it is gone.
+  const { data: existing } = await supabase
+    .from(PROJECTS_TABLE)
+    .select('image_path')
+    .eq('id', id)
+    .maybeSingle();
+
   const { error } = await supabase.from(PROJECTS_TABLE).delete().eq('id', id);
   if (error) throw new Error(`Could not remove that project: ${error.message}`);
+
+  // After the row, not before: a refused delete must not cost the project its image.
+  // The media function lets anyone clear the files of a project that no longer exists.
+  await removeProjectImageFile(existing?.image_path);
   return { success: true };
 }
 

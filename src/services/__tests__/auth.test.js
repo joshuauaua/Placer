@@ -35,7 +35,19 @@ const upload = vi.fn();
 const remove = vi.fn();
 const mediaUrl = vi.fn((path) => (path ? `https://cdn.example/${path}` : null));
 
-vi.mock('../media', () => ({
+// checkPickedImage and preparePhoto are the real ones: the type and size check is part
+// of what the cover and photo tests below assert. Only the re-encode itself is faked —
+// jsdom cannot decode an image — as a WebP, which is what a real browser hands back.
+const encodeImage = vi.fn(() => Promise.resolve({
+  blob: new Blob(['webp'], { type: 'image/webp' }), type: 'image/webp', ext: 'webp',
+}));
+vi.mock('../../lib/imageEncode', async (importOriginal) => ({
+  ...(await importOriginal()),
+  encodeImage: (...a) => encodeImage(...a),
+}));
+
+vi.mock('../media', async (importOriginal) => ({
+  ...(await importOriginal()),
   uploadMedia: (...a) => upload(...a),
   removeMedia: (...a) => remove(...a),
   mediaUrl: (...a) => mediaUrl(...a),
@@ -79,7 +91,7 @@ beforeEach(() => {
   for (const spy of [signUp, signInWithPassword, signInWithOAuth, resetPasswordForEmail,
     updateUser, signOut, getSession, onAuthStateChange, unsubscribe,
     maybeSingle, selectAfterUpdate, eqUpdate, update, select, from, rpc, upload, remove, mediaUrl,
-    createClient]) {
+    encodeImage, createClient]) {
     spy.mockClear();
   }
   getSession.mockResolvedValue({ data: { session: null }, error: null });
@@ -175,7 +187,7 @@ describe('reading a public profile', () => {
 
     await expect(auth.readPublicProfile('user-2')).resolves.toEqual({
       id: 'user-2', name: 'Devon Park', bio: '', location: 'Lund', avatar: null,
-      accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null,
+      accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null, photoPath: null, photo: null,
     });
     expect(rpc).toHaveBeenCalledWith('profile_public', { p_id: 'user-2' });
     // Never the table: it is readable only by its owner.
@@ -198,24 +210,58 @@ describe('cover images', () => {
     getSession.mockResolvedValue({ data: { session: { user: { id: 'user-1' } } }, error: null });
     upload.mockImplementation((supabase, path) => Promise.resolve(path));
 
-    const path = await auth.uploadCover(file('image/png'));
+    const picked = file('image/png');
+    const path = await auth.uploadCover(picked);
 
-    expect(path).toMatch(/^covers\/user-1\/cover-\d+\.png$/);
-    expect(upload).toHaveBeenCalledWith(expect.anything(), path, expect.objectContaining({ type: 'image/png' }));
+    // Re-encoded first, at the cover's size, and it is the re-encoded copy that goes.
+    expect(encodeImage).toHaveBeenCalledWith(picked, expect.objectContaining({ maxSide: 1920 }));
+    expect(path).toMatch(/^covers\/user-1\/cover-\d+\.webp$/);
+    expect(upload).toHaveBeenCalledWith(expect.anything(), path, expect.objectContaining({ type: 'image/webp' }));
   });
 
-  it('refuses anything but a JPEG, PNG or WebP before uploading', async () => {
+  it('refuses anything that is not a photo before uploading, SVG included', async () => {
     await load();
 
-    await expect(auth.uploadCover(file('image/gif'))).rejects.toThrow(/JPEG, PNG or WebP/);
+    await expect(auth.uploadCover(file('application/pdf'))).rejects.toThrow(/has to be a photo/);
+    await expect(auth.uploadCover(file('image/svg+xml'))).rejects.toThrow(/has to be a photo/);
+    expect(encodeImage).not.toHaveBeenCalled();
     expect(upload).not.toHaveBeenCalled();
   });
 
-  it('refuses a file over 5 MB before uploading', async () => {
+  it('uploads a profile photo into the account\'s avatars folder', async () => {
     await load();
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'user-1' } } }, error: null });
+    upload.mockImplementation((supabase, path) => Promise.resolve(path));
 
-    await expect(auth.uploadCover(file('image/jpeg', 6 * 1024 * 1024))).rejects.toThrow(/5 MB/);
-    expect(upload).not.toHaveBeenCalled();
+    const path = await auth.uploadProfilePhoto(file('image/jpeg'));
+
+    // A square crop, at avatar size.
+    expect(encodeImage).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ square: true, maxSide: 512 }));
+    expect(path).toMatch(/^avatars\/user-1\/avatar-\d+\.webp$/);
+  });
+
+  it('turns a photo path into its public URL, and saves it under avatar_path', async () => {
+    await load();
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'user-1' } } }, error: null });
+    maybeSingle.mockResolvedValue({
+      data: { id: 'user-1', display_name: 'Mara', avatar_path: 'avatars/user-1/avatar-1.jpg' }, error: null,
+    });
+
+    const saved = await auth.saveOwnProfile({ photoPath: 'avatars/user-1/avatar-1.jpg' });
+
+    expect(update).toHaveBeenCalledWith({ avatar_path: 'avatars/user-1/avatar-1.jpg' });
+    expect(saved).toMatchObject({
+      photoPath: 'avatars/user-1/avatar-1.jpg', photo: 'https://cdn.example/avatars/user-1/avatar-1.jpg',
+    });
+  });
+
+  it('takes a phone photo far bigger than what is uploaded, but not an absurd one', async () => {
+    await load();
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'user-1' } } }, error: null });
+    upload.mockImplementation((supabase, path) => Promise.resolve(path));
+
+    await expect(auth.uploadCover(file('image/jpeg', 12 * 1024 * 1024))).resolves.toMatch(/^covers\//);
+    await expect(auth.uploadCover(file('image/jpeg', 31 * 1024 * 1024))).rejects.toThrow(/30 MB/);
   });
 });
 
@@ -287,7 +333,7 @@ describe('the profile', () => {
 
     await expect(auth.readOwnProfile())
       .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: 'Cyclist', location: 'Malmö', avatar: 'tree',
-        accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null });
+        accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null, photoPath: null, photo: null });
   });
 
   it('defaults location and avatar when the row has none', async () => {
@@ -298,7 +344,7 @@ describe('the profile', () => {
 
     await expect(auth.readOwnProfile())
       .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: '', location: '', avatar: null,
-        accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null });
+        accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null, photoPath: null, photo: null });
   });
 
   it('turns a cover path into its public URL', async () => {

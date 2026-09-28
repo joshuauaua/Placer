@@ -462,15 +462,28 @@ cause a notification, not on the table that receives one.
 
 ## 14. Pictures on Cloudflare R2
 
-Requires steps 9 and 10 — the profile covers and the imagination previews are the two
-kinds of picture. Supabase keeps the tables and the accounts; the files themselves live
-in an R2 bucket. The browser reads them from the bucket's public domain and writes them
-through the `media` Edge Function (`supabase/functions/media`), which checks the
-Supabase session, only writes keys under the caller's own id (`previews/<user id>/…`,
-`covers/<user id>/…`), and reads each upload's bytes: only a real JPEG, PNG or WebP is
-stored, with the type the function found rather than the one the browser claimed.
-Uploading a cover also deletes the account's older covers, keeping the new one and the
-one the profile currently uses. The R2 keys never reach the browser.
+Requires steps 9, 10 and 12 — for the profile covers and photos, the imagination
+previews, and the project images. Supabase keeps the tables and the accounts; the
+files themselves live in an R2 bucket. The R2 keys never reach the browser.
+
+- **Re-encoded before upload.** Every picture is decoded, scaled and encoded afresh as
+  WebP in the browser (`src/lib/imageEncode.js`): a 512px square avatar, a cover up to
+  1920px, a project image up to 1600px. That drops all metadata — including the GPS
+  location a phone photo carries — and brings a typical picture down to 40–300 KB.
+- **Checked on upload.** The browser writes through the `media` Edge Function
+  (`supabase/functions/media`), which checks the Supabase session and only writes keys
+  under the caller's own id (`previews/<user id>/…`, `covers/<user id>/…`,
+  `avatars/<user id>/…`) or under a project they can edit (`projects/<project id>/…`,
+  checked with `project_can_edit()`). It reads each upload's bytes: only a real JPEG,
+  PNG or WebP is stored, with the type the function found rather than the one the
+  browser claimed, and within a size limit per folder (1 MB avatars, 3 MB covers and
+  project images, 5 MB previews).
+- **50 MB per account.** An upload is refused if it would take the account past 50 MB
+  in all — its own folders plus the images of the projects it owns. A project image
+  counts against the project's owner, whoever uploads it.
+- **Old pictures are removed.** Uploading a cover, profile photo or project image
+  deletes the older ones in that folder, keeping the new one and the one the row
+  currently uses; deleting an imagination or a project deletes its picture.
 
 **In Cloudflare**
 
@@ -495,7 +508,8 @@ supabase secrets set R2_JURISDICTION=eu
 supabase functions deploy media
 ```
 
-Then run `media-r2.sql` in the SQL editor (or `supabase db push`). It drops the
+Then run `media-r2.sql` and `media-photos.sql` in the SQL editor (or `supabase db push`).
+The second adds `profiles.avatar_path`, `projects.image_path` and `project_can_edit()`. It drops the
 storage policies of the two old buckets, clears the preview and cover paths that
 pointed into them, and adds a check that a row can only point into its owner's folder.
 Finally delete the `imagination-previews` and `profile-covers` buckets in
@@ -512,6 +526,59 @@ Upload a cover in Settings. The network tab should show one `POST …/functions/
 answered `200` with the new key, and the cover should load from `VITE_MEDIA_URL`. A
 file that is not a JPEG, PNG or WebP — whatever its name says — answers `415`. Signed
 out, the function answers `401`; a key under somebody else's id answers `403`.
+
+## 15. Survey responses in Slack
+
+Optional. Requires step 2. Each new row in `survey_responses` is posted to a Slack
+channel by the `survey-to-slack` Edge Function (`supabase/functions/survey-to-slack`),
+with the form it came from, the email, and the contact details if any were given.
+
+**In Slack**
+
+1. Create the channel, e.g. `#survey-responses`.
+2. api.slack.com/apps -> Create New App -> From scratch -> **Incoming Webhooks** -> on ->
+   Add New Webhook to Workspace -> pick the channel. Keep the URL; anyone holding it can
+   post to that channel.
+
+**In Supabase**
+
+```sh
+supabase secrets set SLACK_WEBHOOK_URL=https://hooks.slack.com/services/… \
+  SURVEY_WEBHOOK_SECRET=$(openssl rand -hex 32)
+supabase secrets list   # note the secret's value is not shown — keep your own copy of it
+supabase functions deploy survey-to-slack
+```
+
+Then, in the SQL editor, put the same secret in Vault and run `survey-slack.sql`, which
+adds an insert trigger that calls the function through `pg_net`:
+
+```sql
+select vault.create_secret('<same value as SURVEY_WEBHOOK_SECRET>', 'survey_webhook_secret');
+```
+
+(The dashboard's Database Webhooks do the same thing, if your dashboard shows them — use
+one or the other, not both, or every response posts twice.)
+
+The function refuses any call without that header, so the public function URL cannot be
+used to post into the channel. Everything in a row came from an anonymous visitor, and
+the function escapes it before it reaches Slack, so a response cannot `@channel` anyone.
+
+**Everyone in the channel sees respondents' emails.** Keep the channel private and small,
+and remember it when answering an erasure request: deleting the row does not delete the
+Slack message.
+
+### Verify
+
+Submit the survey; a message should appear within a second or two. If not, look at the
+webhook's calls:
+
+```sql
+select created, status_code, content from net._http_response order by created desc limit 5;
+```
+
+`401` means the header does not match the secret; `500 not configured` means a secret is
+missing; `502` means Slack refused the post (usually a revoked webhook URL). Slack being
+down loses that one message but never the response itself, which is already saved.
 
 ## Still to decide
 

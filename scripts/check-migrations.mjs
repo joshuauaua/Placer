@@ -71,6 +71,7 @@ const PLAN = [
   // pushed after them, and `db push` refuses one older than the newest applied.
   { name: '20260928080001_bug_reports.sql', src: 'bug-reports.sql' },
   { name: '20260928090001_media_on_r2.sql', src: 'media-r2.sql' },
+  { name: '20260928110001_profile_photos_and_project_images.sql', src: 'media-photos.sql' },
 ]
 
 const HAND_WRITTEN = [

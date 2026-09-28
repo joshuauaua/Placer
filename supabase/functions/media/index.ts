@@ -9,12 +9,16 @@
 //       only what actually is a JPEG, PNG or WebP — what the browser *says* the file
 //       is counts for nothing, since that is the file name talking — and stores it
 //       with the type it found, so R2 can only ever serve an image as an image.
-//       Uploading a cover also clears out the account's older covers (see sweep).
+//       Each account may keep 50 MB in all (see usage). Replacing a cover, a profile
+//       photo or a project image also clears out the older ones (see sweep).
 //   POST, JSON { action: 'delete', path }              ->  { ok: true }
 //
 // This is what the storage.objects policies used to do. A key is always
-// '<folder>/<user id>/<file>', and a caller can only touch keys under their own id —
-// the same rule as `(storage.foldername(name))[1] = auth.uid()`, one level down.
+// '<folder>/<owner id>/<file>'. For previews, covers and profile photos the owner is
+// an account, and a caller can only touch keys under their own id — the same rule
+// as `(storage.foldername(name))[1] = auth.uid()`, one level down. For project
+// images the owner is a project, and the caller has to be able to edit it
+// (project_can_edit() in supabase/media-photos.sql).
 //
 // Secrets, set with `supabase secrets set` (see supabase/README.md section 14):
 //   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
@@ -23,14 +27,38 @@
 // SUPABASE_URL and SUPABASE_ANON_KEY are provided by the platform.
 
 import { AwsClient } from 'npm:aws4fetch@1.0.20';
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
-// What each folder accepts. Previews are a composited JPEG or PNG of the whole stage,
-// so they get more room than a cover.
-const FOLDERS: Record<string, { types: string[]; maxBytes: number }> = {
-  previews: { types: ['image/jpeg', 'image/png'], maxBytes: 10 * 1024 * 1024 },
-  covers: { types: ['image/jpeg', 'image/png', 'image/webp'], maxBytes: 5 * 1024 * 1024 },
+const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MB = 1024 * 1024;
+
+// Everything one account may keep in the bucket: its previews, cover and profile photo,
+// and the images of the projects it owns. What keeps the bucket inside R2's free tier.
+const QUOTA_BYTES = 50 * MB;
+
+// What each folder accepts, whose id names it, and — for the ones that hold a single
+// current picture — which column says which picture that is, so sweep can keep it.
+//
+// The limits are for pictures already re-encoded in the browser (src/lib/imageEncode.js):
+// a 512px avatar is ~40 KB, a 1920px cover a few hundred. They are ceilings for anyone
+// who skips that step, not sizes anyone honest comes near. Previews may still arrive as
+// the PNG the stage exported, when a browser cannot write WebP, so they get the most.
+type Folder = {
+  types: string[];
+  maxBytes: number;
+  owner: 'account' | 'project';
+  current?: { table: string; column: string };
 };
+const FOLDERS: Record<string, Folder> = {
+  previews: { types: PHOTO_TYPES, maxBytes: 5 * MB, owner: 'account' },
+  covers: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'account',
+    current: { table: 'profiles', column: 'cover_path' } },
+  avatars: { types: PHOTO_TYPES, maxBytes: 1 * MB, owner: 'account',
+    current: { table: 'profiles', column: 'avatar_path' } },
+  projects: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'project',
+    current: { table: 'projects', column: 'image_path' } },
+};
+const ACCOUNT_FOLDERS = Object.keys(FOLDERS).filter((name) => FOLDERS[name].owner === 'account');
 
 const EXTENSIONS: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 
@@ -55,12 +83,40 @@ function env(name: string) {
 
 const KEY = /^([a-z]+)\/([0-9a-f-]{36})\/([A-Za-z0-9_-]+)\.(jpg|png|webp)$/;
 
-/** The folder a key belongs to, or null when it is not one this caller may touch. */
-function parseKey(path: unknown, userId: string) {
+/** A key taken apart, or null for anything that is not one of ours. */
+function parseKey(path: unknown) {
   if (typeof path !== 'string') return null;
   const match = KEY.exec(path);
-  if (!match || match[2] !== userId || !FOLDERS[match[1]]) return null;
-  return { name: match[1], folder: FOLDERS[match[1]], ext: match[4] };
+  if (!match || !FOLDERS[match[1]]) return null;
+  return { name: match[1], folder: FOLDERS[match[1]], ownerId: match[2], ext: match[4] };
+}
+
+type Key = NonNullable<ReturnType<typeof parseKey>>;
+type Caller = { id: string; supabase: SupabaseClient };
+
+/**
+ * Whether this caller may write this key. An account folder has to be their own; a
+ * project folder has to be a project they can edit. For a delete only, a project
+ * that no longer exists also passes: its files belong to nobody now, and removing
+ * them is what deleting the project wants — it is what lets deleteProject clear the
+ * image after the row is already gone.
+ */
+async function mayWrite(key: Key, caller: Caller, forDelete: boolean) {
+  if (key.folder.owner === 'account') return key.ownerId === caller.id;
+
+  const { data: canEdit } = await caller.supabase.rpc('project_can_edit', { p_project_id: key.ownerId });
+  if (canEdit === true) return true;
+  if (!forDelete) return false;
+  const { data: project } = await caller.supabase.from('projects').select('id').eq('id', key.ownerId).maybeSingle();
+  return !project;
+}
+
+/** The key the owning row points at right now, or null. */
+async function currentKey(key: Key, caller: Caller) {
+  if (!key.folder.current) return null;
+  const { table, column } = key.folder.current;
+  const { data } = await caller.supabase.from(table).select(column).eq('id', key.ownerId).maybeSingle();
+  return (data as Record<string, string | null> | null)?.[column] ?? null;
 }
 
 /**
@@ -89,27 +145,70 @@ function r2Client() {
   return { r2, bucketUrl: `https://${host}/${env('R2_BUCKET')}` };
 }
 
-/**
- * Delete every cover in this account's folder except the one just uploaded and the one
- * the profile points at right now. The profile is only switched to the new cover after
- * this returns, so keeping the current one means a failed save never leaves the
- * profile pointing at nothing — and whatever that failure leaves behind is swept up by
- * the next upload. So an account holds at most two covers, and usually one.
- */
-async function sweepCovers(
-  { r2, bucketUrl }: ReturnType<typeof r2Client>,
-  userId: string,
-  keep: Set<string>,
-) {
-  const res = await r2.fetch(`${bucketUrl}?list-type=2&prefix=${encodeURIComponent(`covers/${userId}/`)}`);
-  if (!res.ok) throw new Error(`R2 refused the listing (${res.status})`);
-  const xml = await res.text();
+type Store = ReturnType<typeof r2Client>;
 
-  const keys = [...xml.matchAll(/<Key>([^<]+)<\/Key>/g)].map((m) => m[1]);
-  for (const key of keys) {
-    // Only ever a key this account owns, whatever the listing says.
-    if (keep.has(key) || !parseKey(key, userId)) continue;
-    await r2.fetch(`${bucketUrl}/${key}`, { method: 'DELETE' });
+/** Every object under `prefix`, with its size, following the listing across pages. */
+async function listObjects({ r2, bucketUrl }: Store, prefix: string) {
+  const objects: { key: string; size: number }[] = [];
+  let token: string | null = null;
+  do {
+    const page = token ? `&continuation-token=${encodeURIComponent(token)}` : '';
+    const res = await r2.fetch(`${bucketUrl}?list-type=2&prefix=${encodeURIComponent(prefix)}${page}`);
+    if (!res.ok) throw new Error(`R2 refused the listing (${res.status})`);
+    const xml = await res.text();
+
+    for (const [, entry] of xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)) {
+      const key = /<Key>([^<]+)<\/Key>/.exec(entry)?.[1];
+      const size = Number(/<Size>(\d+)<\/Size>/.exec(entry)?.[1] ?? 0);
+      // Only ever a key under this prefix, whatever the listing says.
+      if (key?.startsWith(prefix)) objects.push({ key, size });
+    }
+    token = /<IsTruncated>true<\/IsTruncated>/.test(xml)
+      ? /<NextContinuationToken>([^<]+)<\/NextContinuationToken>/.exec(xml)?.[1] ?? null
+      : null;
+  } while (token);
+  return objects;
+}
+
+/**
+ * The account an upload counts against: the caller for their own folders, the owner
+ * for a project's — so a collaborator adding a project image uses the owner's room,
+ * the same as the owner adding it.
+ */
+async function chargedAccount(key: Key, caller: Caller) {
+  if (key.folder.owner === 'account') return key.ownerId;
+  const { data } = await caller.supabase.from('projects').select('owner_id').eq('id', key.ownerId).maybeSingle();
+  return (data as { owner_id: string } | null)?.owner_id ?? null;
+}
+
+/**
+ * How many bytes this account keeps in the bucket, leaving out `replacing` — the folder
+ * an upload is about to replace the picture in. Whatever is there is on its way out
+ * (sweep, and the page deleting the previous one), so a full account can still swap
+ * its cover or photo for another.
+ */
+async function usage(store: Store, caller: Caller, accountId: string, replacing: string | null) {
+  const { data: owned } = await caller.supabase.from('projects').select('id').eq('owner_id', accountId);
+  const prefixes = [
+    ...ACCOUNT_FOLDERS.map((name) => `${name}/${accountId}/`),
+    ...((owned ?? []) as { id: string }[]).map((project) => `projects/${project.id}/`),
+  ].filter((prefix) => prefix !== replacing);
+
+  const listings = await Promise.all(prefixes.map((prefix) => listObjects(store, prefix)));
+  return listings.flat().reduce((total, object) => total + object.size, 0);
+}
+
+/**
+ * Delete every picture in this folder except the one just uploaded and the one its
+ * row points at right now. The row is only switched to the new picture after this
+ * returns, so keeping the current one means a failed save never leaves it pointing
+ * at nothing — and whatever that failure leaves behind is swept up by the next
+ * upload. So a profile or project holds at most two of each, and usually one.
+ */
+async function sweep(store: Store, key: Key, keep: Set<string>) {
+  for (const { key: other } of await listObjects(store, `${key.name}/${key.ownerId}/`)) {
+    if (keep.has(other) || !parseKey(other)) continue;
+    await store.r2.fetch(`${store.bucketUrl}/${other}`, { method: 'DELETE' });
   }
 }
 
@@ -124,13 +223,16 @@ Deno.serve(async (req) => {
   });
   const { data: { user } } = await supabase.auth.getUser(token);
   if (!user) return reply(401, { error: 'Sign in to upload pictures.' });
+  const caller: Caller = { id: user.id, supabase };
 
   const store = r2Client();
   const uploadPath = req.headers.get('x-media-path');
 
   if (uploadPath) {
-    const key = parseKey(uploadPath, user.id);
-    if (!key) return reply(403, { error: 'That file is not yours to change.' });
+    const key = parseKey(uploadPath);
+    if (!key || !(await mayWrite(key, caller, false))) {
+      return reply(403, { error: 'That file is not yours to change.' });
+    }
 
     // Refuse an oversized body before reading it, when the size is declared...
     const declared = Number(req.headers.get('Content-Length'));
@@ -151,6 +253,17 @@ Deno.serve(async (req) => {
       return reply(415, { error: `That file is a ${EXTENSIONS[type].toUpperCase()}, not a ${key.ext.toUpperCase()}.` });
     }
 
+    const account = await chargedAccount(key, caller);
+    if (!account) return reply(403, { error: 'That file is not yours to change.' });
+    const replacing = key.folder.current ? `${key.name}/${key.ownerId}/` : null;
+    if ((await usage(store, caller, account, replacing)) + bytes.length > QUOTA_BYTES) {
+      const whose = account === caller.id ? 'your' : "this project's owner's";
+      return reply(413, {
+        error: `That would take ${whose} pictures past ${QUOTA_BYTES / MB} MB. `
+          + 'Delete some imaginations or pictures to make room.',
+      });
+    }
+
     const put = await store.r2.fetch(`${store.bucketUrl}/${uploadPath}`, {
       method: 'PUT',
       headers: {
@@ -162,13 +275,13 @@ Deno.serve(async (req) => {
     });
     if (!put.ok) return reply(502, { error: `The picture store refused the upload (${put.status}).` });
 
-    if (key.name === 'covers') {
+    if (key.folder.current) {
       try {
-        const { data: profile } = await supabase.from('profiles').select('cover_path').eq('id', user.id).maybeSingle();
-        await sweepCovers(store, user.id, new Set([uploadPath, profile?.cover_path].filter(Boolean)));
+        const current = await currentKey(key, caller);
+        await sweep(store, key, new Set([uploadPath, current].filter((k): k is string => Boolean(k))));
       } catch (error) {
         // Tidiness, not correctness: the upload stands, and the next one sweeps again.
-        console.error('Could not clear out older covers:', error);
+        console.error('Could not clear out older pictures:', error);
       }
     }
 
@@ -183,7 +296,10 @@ Deno.serve(async (req) => {
   }
 
   const { action, path } = body ?? {};
-  if (!parseKey(path, user.id)) return reply(403, { error: 'That file is not yours to change.' });
+  const key = parseKey(path);
+  if (!key || !(await mayWrite(key, caller, true))) {
+    return reply(403, { error: 'That file is not yours to change.' });
+  }
 
   if (action === 'delete') {
     const res = await store.r2.fetch(`${store.bucketUrl}/${path}`, { method: 'DELETE' });

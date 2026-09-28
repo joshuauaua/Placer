@@ -4,7 +4,10 @@ import { Fragment, useEffect, useState } from 'react';
 import { Avatar, AVATAR_ICONS, Btn, LoadingMark } from './UI';
 import { Icon } from './Icon';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
-import { ACCOUNT_TYPES, removeCoverFile, updatePassword, uploadCover } from '../services/auth';
+import { ImagePicker } from './ImagePicker';
+import {
+  ACCOUNT_TYPES, removeProfileImageFile, updatePassword, uploadCover, uploadProfilePhoto,
+} from '../services/auth';
 import { isSupabaseConfigured, readPreferences, savePreferences } from '../services/notifications';
 
 // The same floor AuthPage and ResetPasswordPage ask for.
@@ -158,82 +161,58 @@ function ProfileField({ t, profile, onSaveProfile, fieldKey, title, description,
   );
 }
 
+// Point the profile at a newly uploaded picture (or at none), then delete the one it
+// replaces. In that order, so the profile never points at a file that is already gone.
+async function replaceProfileImage({ onSaveProfile, field, previous, nextPath }) {
+  await onSaveProfile({ [field]: nextPath });
+  if (previous && previous !== nextPath) await removeProfileImageFile(previous);
+}
+
 // The picture across the top of the public profile. Uploading saves straight away —
 // there is nothing to review between choosing a file and wanting it — and the old
 // file is deleted once the profile points at the new one. Account path only: covers
 // live in the R2 bucket, and a local-only visitor has no account to upload one with.
 function CoverPicker({ t, profile, onSaveProfile }) {
-  const [status, setStatus] = useState('idle'); // 'idle' | 'uploading' | 'removing' | 'error'
-  const [error, setError] = useState(null);
   const cover = profile?.cover ?? null;
-
-  const replace = async (nextPath) => {
-    const previous = profile?.coverPath ?? null;
-    await onSaveProfile({ coverPath: nextPath });
-    if (previous && previous !== nextPath) await removeCoverFile(previous);
-  };
-
-  const handleFile = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setStatus('uploading');
-    setError(null);
-    try {
-      await replace(await uploadCover(file));
-      setStatus('idle');
-    } catch (err) {
-      console.error('Could not upload the cover:', err);
-      setError(err?.message ?? 'Could not upload that. Try again.');
-      setStatus('error');
-    }
-  };
-
-  const handleRemove = async () => {
-    setStatus('removing');
-    setError(null);
-    try {
-      await replace(null);
-      setStatus('idle');
-    } catch (err) {
-      console.error('Could not remove the cover:', err);
-      setError('Could not remove it. Try again.');
-      setStatus('error');
-    }
-  };
-
-  const busy = status === 'uploading' || status === 'removing';
+  const replace = (nextPath) => replaceProfileImage({
+    onSaveProfile, field: 'coverPath', previous: profile?.coverPath ?? null, nextPath });
 
   return (
     <Card t={t} title="Cover image">
       <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
         The wide picture across the top of your public profile, with your name on it. A
-        landscape photo works best. JPEG, PNG or WebP, up to 5 MB. Optional.
+        landscape photo works best. It is resized, and saved without its location data.
+        Optional.
       </p>
       <div style={{ height: 140, borderRadius: 12, marginBottom: 20, border: `1px solid ${t.line}`,
         background: cover ? `center / cover no-repeat url("${cover}")` : t.surfaceAlt,
         display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {!cover && <span style={{ fontSize: 14, color: t.inkFaint }}>No cover yet</span>}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        {/* A label rather than a button, so the native file picker opens on click. */}
-        <label className="placer-btn placer-btn-primary" style={{ display: 'inline-flex',
-          alignItems: 'center', gap: 8, height: 44, padding: '0 18px', borderRadius: 12,
-          background: t.primaryBg, color: t.primaryFg, fontSize: 15, fontWeight: 500,
-          cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1 }}>
-          <Icon name="image" size={18} stroke={2} />
-          {status === 'uploading' ? 'Uploading…' : (cover ? 'Replace cover' : 'Upload a cover')}
-          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile}
-            disabled={busy} style={{ display: 'none' }} />
-        </label>
-        {cover && (
-          <Btn t={t} variant="outline" icon="trash" onClick={handleRemove} disabled={busy}>
-            {status === 'removing' ? 'Removing…' : 'Remove'}
-          </Btn>
-        )}
-        {error && (
-          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 500 }}>{error}</span>
-        )}
+      <ImagePicker t={t} hasImage={!!cover} uploadLabel="Upload a cover" replaceLabel="Replace cover"
+        onUpload={async (file) => replace(await uploadCover(file))} onRemove={() => replace(null)} />
+    </Card>
+  );
+}
+
+// The photo in the avatar circle, shown instead of the icon or the initials. Saves
+// straight away, like the cover, and for the same reason is account path only.
+function ProfilePhotoPicker({ t, profile, onSaveProfile }) {
+  const photo = profile?.photo ?? null;
+  const replace = (nextPath) => replaceProfileImage({
+    onSaveProfile, field: 'photoPath', previous: profile?.photoPath ?? null, nextPath });
+
+  return (
+    <Card t={t} title="Profile photo">
+      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
+        A picture of you, shown in the circle wherever your avatar appears — instead of the
+        icon or your initials. It is cropped to a square from the middle, and saved
+        without its location data. Optional.
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+        <Avatar name={profile?.name ?? ''} icon={profile?.avatar} photo={photo} size={72} />
+        <ImagePicker t={t} hasImage={!!photo} uploadLabel="Upload a photo" replaceLabel="Replace photo"
+          onUpload={async (file) => replace(await uploadProfilePhoto(file))} onRemove={() => replace(null)} />
       </div>
     </Card>
   );
@@ -316,7 +295,8 @@ function AvatarPicker({ t, profile, onSaveProfile }) {
   return (
     <Card t={t} title="Avatar">
       <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
-        An icon shown instead of your initials wherever your avatar appears. Optional.
+        An icon shown instead of your initials wherever your avatar appears. Optional. A
+        profile photo, if you add one, is shown instead of either.
       </p>
       <div role="radiogroup" aria-label="Avatar icon"
         style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
@@ -624,6 +604,7 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate }) {
 
         <DisplayName t={t} profile={profile} onSaveProfile={onSaveProfile} />
         {email && <CoverPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />}
+        {email && <ProfilePhotoPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />}
         <AvatarPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />
         <AccountTypePicker t={t} profile={profile} onSaveProfile={onSaveProfile} />
         <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="bio"

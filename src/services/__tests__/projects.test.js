@@ -31,6 +31,26 @@ const createClient = vi.fn(() => ({ from, rpc }));
 
 vi.mock('@supabase/supabase-js', () => ({ createClient }));
 
+// Pictures go through services/media (media.test.js covers it). Its checks stay real,
+// since the type and size check is part of what the image tests assert; only the
+// re-encode is faked, as the WebP a real browser hands back — jsdom cannot decode.
+const encodeImage = vi.fn(() => Promise.resolve({
+  blob: new Blob(['webp'], { type: 'image/webp' }), type: 'image/webp', ext: 'webp',
+}));
+vi.mock('../../lib/imageEncode', async (importOriginal) => ({
+  ...(await importOriginal()),
+  encodeImage: (...a) => encodeImage(...a),
+}));
+
+const upload = vi.fn((supabase, path) => Promise.resolve(path));
+const remove = vi.fn(() => Promise.resolve());
+vi.mock('../media', async (importOriginal) => ({
+  ...(await importOriginal()),
+  uploadMedia: (...a) => upload(...a),
+  removeMedia: (...a) => remove(...a),
+  mediaUrl: (path) => (path ? `https://media.example/${path}` : null),
+}));
+
 let projects;
 
 async function load({ configured = true } = {}) {
@@ -62,6 +82,9 @@ beforeEach(() => {
   from.mockReset();
   from.mockImplementation((table) => fromChains[table] ?? makeChain());
   rpc.mockReset();
+  upload.mockClear();
+  remove.mockClear();
+  encodeImage.mockClear();
   vi.unstubAllEnvs();
 });
 
@@ -244,6 +267,18 @@ describe('editing and removing a project', () => {
     expect(updateCall).toEqual(['update', [{ name: 'New name' }]]);
   });
 
+  it('saves an image path under its column name', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: { ...ROW, image_path: 'projects/proj-1/image-1.jpg' }, error: null });
+
+    const saved = await projects.updateProject('proj-1', { imagePath: 'projects/proj-1/image-1.jpg' });
+
+    expect(fromChains.projects.calls[0]).toEqual(['update', [{ image_path: 'projects/proj-1/image-1.jpg' }]]);
+    expect(saved).toMatchObject({
+      imagePath: 'projects/proj-1/image-1.jpg', image: 'https://media.example/projects/proj-1/image-1.jpg',
+    });
+  });
+
   it('removes a project', async () => {
     await load();
     fromChains.projects = makeChain({ error: null });
@@ -251,6 +286,48 @@ describe('editing and removing a project', () => {
     await expect(projects.deleteProject('proj-1')).resolves.toEqual({ success: true });
     expect(fromChains.projects.calls).toContainEqual(['delete', []]);
     expect(fromChains.projects.calls).toContainEqual(['eq', ['id', 'proj-1']]);
+  });
+
+  it('removes the image along with the project, after the row', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: { image_path: 'projects/proj-1/image-1.jpg' }, error: null });
+
+    await projects.deleteProject('proj-1');
+
+    expect(remove).toHaveBeenCalledWith(expect.anything(), 'projects/proj-1/image-1.jpg');
+  });
+
+  it('keeps the image when the delete is refused', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: { image_path: 'projects/proj-1/image-1.jpg' },
+      error: { message: 'violates row-level security' } });
+
+    await expect(projects.deleteProject('proj-1')).rejects.toThrow(/row-level security/);
+    expect(remove).not.toHaveBeenCalled();
+  });
+});
+
+describe('project images', () => {
+  it('uploads into the project\'s own folder, not the uploader\'s', async () => {
+    await load();
+    const file = { type: 'image/jpeg', size: 1000 };
+
+    const path = await projects.uploadProjectImage('proj-1', file);
+
+    // Re-encoded at project-image size first; the re-encoded copy is what goes.
+    expect(encodeImage).toHaveBeenCalledWith(file, expect.objectContaining({ maxSide: 1600 }));
+    expect(path).toMatch(/^projects\/proj-1\/image-\d+\.webp$/);
+    expect(upload).toHaveBeenCalledWith(expect.anything(), path, expect.objectContaining({ type: 'image/webp' }));
+  });
+
+  it('refuses anything that is not a photo, and anything over 30 MB, before uploading', async () => {
+    await load();
+
+    await expect(projects.uploadProjectImage('proj-1', { type: 'text/html', size: 10 }))
+      .rejects.toThrow(/has to be a photo/);
+    await expect(projects.uploadProjectImage('proj-1', { type: 'image/png', size: 31 * 1024 * 1024 }))
+      .rejects.toThrow(/30 MB/);
+    expect(upload).not.toHaveBeenCalled();
   });
 });
 

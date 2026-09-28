@@ -42,3 +42,5 @@ european_planning_contacts.csv
 # Supabase CLI local state: written by `supabase link` and specific to one machine
 # and one linked project. The schema itself is versioned in supabase/*.sql.
 supabase/.temp
+# Vercel CLI link state: written by `vercel link`, specific to one machine.
+.vercel

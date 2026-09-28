@@ -19,11 +19,13 @@
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
-import { mediaUrl, removeMedia, uploadMedia } from './media';
+import { mediaUrl, preparePhoto, removeMedia, uploadMedia } from './media';
 
 export const PROFILES_TABLE = 'profiles';
-// The folder covers go under in the R2 bucket (supabase/functions/media).
+// The folders covers and profile photos go under in the R2 bucket
+// (supabase/functions/media).
 export const COVERS_FOLDER = 'covers';
+export const AVATARS_FOLDER = 'avatars';
 
 export const ACCOUNT_TYPES = [
   { key: 'individual', label: 'Individual' },
@@ -31,11 +33,7 @@ export const ACCOUNT_TYPES = [
 ];
 
 const PROFILE_COLUMNS = 'id, display_name, bio, location, avatar, account_type, contact_email,'
-  + ' website, cover_path';
-
-// Cover images the media function accepts, and its size limit (supabase/functions/media).
-const COVER_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
-export const COVER_MAX_BYTES = 5 * 1024 * 1024;
+  + ' website, cover_path, avatar_path';
 
 /** A profiles row, or a profile_public() row, in the shape the app speaks. */
 function profileFrom(supabase, row) {
@@ -50,6 +48,9 @@ function profileFrom(supabase, row) {
     website: row.website ?? '',
     coverPath: row.cover_path ?? null,
     cover: mediaUrl(row.cover_path),
+    // A photo wins over the `avatar` icon, which wins over the initials (Avatar in UI.jsx).
+    photoPath: row.avatar_path ?? null,
+    photo: mediaUrl(row.avatar_path),
   };
 }
 
@@ -259,7 +260,7 @@ export async function readPublicProfile(id) {
  * refuses any UPDATE without a WHERE clause, so the filter has to be there.
  */
 export async function saveOwnProfile({ name, bio, location, avatar, accountType, contactEmail,
-  website, coverPath }) {
+  website, coverPath, photoPath }) {
   const supabase = await client();
   const { data: session } = await supabase.auth.getSession();
   const userId = session?.session?.user?.id;
@@ -274,6 +275,7 @@ export async function saveOwnProfile({ name, bio, location, avatar, accountType,
   if (contactEmail !== undefined) patch.contact_email = contactEmail;
   if (website !== undefined) patch.website = normaliseWebsite(website);
   if (coverPath !== undefined) patch.cover_path = coverPath;
+  if (photoPath !== undefined) patch.avatar_path = photoPath;
 
   const { data, error } = await supabase
     .from(PROFILES_TABLE)
@@ -288,40 +290,54 @@ export async function saveOwnProfile({ name, bio, location, avatar, accountType,
   return profileFrom(supabase, data);
 }
 
+// One upload for both of a profile's pictures, which differ only in folder and name.
+async function uploadProfileImage(file, { folder, prefix, preset, what, noun }) {
+  // Resized and stripped of its metadata (location included) before anything is sent.
+  const { blob, ext } = await preparePhoto(file, preset, what);
+
+  const supabase = await client();
+  const { data: session } = await supabase.auth.getSession();
+  const userId = session?.session?.user?.id;
+  if (!userId) throw new Error(`Sign in to upload a ${noun}.`);
+
+  const path = `${folder}/${userId}/${prefix}-${Date.now()}.${ext}`;
+  try {
+    return await uploadMedia(supabase, path, blob);
+  } catch (error) {
+    throw new Error(`Could not upload your ${noun}: ${error.message}`);
+  }
+}
+
 /**
  * Upload a cover image for the signed-in account and return the storage path to
  * save on the profile. A new file name every time, so a browser holding the old
  * picture in its cache cannot keep showing it.
  */
-export async function uploadCover(file) {
-  const ext = COVER_TYPES[file?.type];
-  if (!ext) throw new Error('A cover has to be a JPEG, PNG or WebP image.');
-  if (file.size > COVER_MAX_BYTES) throw new Error('A cover can be at most 5 MB.');
+export function uploadCover(file) {
+  return uploadProfileImage(file, {
+    folder: COVERS_FOLDER, prefix: 'cover', preset: 'cover', what: 'A cover', noun: 'cover',
+  });
+}
 
-  const supabase = await client();
-  const { data: session } = await supabase.auth.getSession();
-  const userId = session?.session?.user?.id;
-  if (!userId) throw new Error('Sign in to upload a cover.');
-
-  const path = `${COVERS_FOLDER}/${userId}/cover-${Date.now()}.${ext}`;
-  try {
-    return await uploadMedia(supabase, path, file);
-  } catch (error) {
-    throw new Error(`Could not upload your cover: ${error.message}`);
-  }
+/** The same, for the profile photo shown in place of the avatar icon or initials. */
+export function uploadProfilePhoto(file) {
+  return uploadProfileImage(file, {
+    folder: AVATARS_FOLDER, prefix: 'avatar', preset: 'avatar', what: 'A profile photo', noun: 'photo',
+  });
 }
 
 /**
- * Delete a cover image no longer in use. Best effort: a leftover file is a tidiness
- * problem, not a privacy one, since nothing points at it any more.
+ * Delete a cover or profile photo no longer in use. Best effort: a leftover file is a
+ * tidiness problem, not a privacy one, since nothing points at it any more — and the
+ * next upload to the same folder sweeps it up anyway.
  */
-export async function removeCoverFile(path) {
+export async function removeProfileImageFile(path) {
   if (!path) return;
   const supabase = await client();
   try {
     await removeMedia(supabase, path);
   } catch (error) {
-    console.error('Could not delete the old cover:', error.message);
+    console.error('Could not delete the old picture:', error.message);
   }
 }
 

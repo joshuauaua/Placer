@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SettingsPage } from '../SettingsPage';
 import { saveProfile } from '../../services/profile';
-import { removeCoverFile, updatePassword, uploadCover } from '../../services/auth';
+import { removeProfileImageFile, updatePassword, uploadCover, uploadProfilePhoto } from '../../services/auth';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/auth', () => ({
@@ -12,7 +12,8 @@ vi.mock('../../services/auth', () => ({
   ],
   updatePassword: vi.fn(() => Promise.resolve()),
   uploadCover: vi.fn(() => Promise.resolve('user-1/cover-2.jpg')),
-  removeCoverFile: vi.fn(() => Promise.resolve()),
+  uploadProfilePhoto: vi.fn(() => Promise.resolve('avatars/user-1/avatar-2.jpg')),
+  removeProfileImageFile: vi.fn(() => Promise.resolve()),
 }));
 
 const PROFILE_KEY = 'placemaking_profile';
@@ -158,9 +159,40 @@ describe('SettingsPage, bio and location', () => {
     const file = new File(['x'], 'cover.jpg', { type: 'image/jpeg' });
     fireEvent.change(screen.getByText('Replace cover').querySelector('input'), { target: { files: [file] } });
 
-    await waitFor(() => expect(removeCoverFile).toHaveBeenCalledWith('user-1/cover-1.jpg'));
+    await waitFor(() => expect(removeProfileImageFile).toHaveBeenCalledWith('user-1/cover-1.jpg'));
     expect(uploadCover).toHaveBeenCalledWith(file);
     expect(onSaveProfile).toHaveBeenCalledWith({ coverPath: 'user-1/cover-2.jpg' });
+  });
+
+  it('offers no profile photo for a local-only profile either', () => {
+    setup();
+
+    expect(screen.queryByText('Profile photo')).not.toBeInTheDocument();
+  });
+
+  it('uploads a profile photo, points the profile at it, and deletes the old one', async () => {
+    const onSaveProfile = vi.fn(() => Promise.resolve());
+    setup({ email: 'mara@example.com', onSaveProfile,
+      profile: { name: 'Mara Quinn', bio: '', photoPath: 'avatars/user-1/avatar-1.jpg', photo: 'https://cdn/a.jpg' } });
+
+    const file = new File(['x'], 'me.jpg', { type: 'image/jpeg' });
+    fireEvent.change(screen.getByText('Replace photo').querySelector('input'), { target: { files: [file] } });
+
+    await waitFor(() => expect(removeProfileImageFile).toHaveBeenCalledWith('avatars/user-1/avatar-1.jpg'));
+    expect(uploadProfilePhoto).toHaveBeenCalledWith(file);
+    expect(onSaveProfile).toHaveBeenCalledWith({ photoPath: 'avatars/user-1/avatar-2.jpg' });
+  });
+
+  it('removes the profile photo, falling back to the icon or initials', async () => {
+    const onSaveProfile = vi.fn(() => Promise.resolve());
+    setup({ email: 'mara@example.com', onSaveProfile,
+      profile: { name: 'Mara Quinn', bio: '', photoPath: 'avatars/user-1/avatar-1.jpg', photo: 'https://cdn/a.jpg' } });
+
+    // The cover card has no cover, so the only Remove button is the photo's.
+    fireEvent.click(screen.getByRole('button', { name: /Remove/ }));
+
+    await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ photoPath: null }));
+    expect(removeProfileImageFile).toHaveBeenCalledWith('avatars/user-1/avatar-1.jpg');
   });
 
   it('shows the current bio and location', () => {
