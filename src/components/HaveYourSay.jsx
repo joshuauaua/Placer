@@ -141,14 +141,13 @@ export function HaveYourSay({ t }) {
             tabIndex={-1}
             // A definite height, because the survey fills what it is given. It is in
             // index.css rather than here because it needs the vh/dvh fallback pair,
-            // which one style object cannot hold. The glass (background, blur, rim
-            // and shadow) is the nav bar's, from .placer-glass-panel.
-            className="placer-survey-dialog placer-glass-panel"
+            // which one style object cannot hold. The glass (background, blur, rim,
+            // radius and shadow) is the brand kit's, the same as the nav bar's.
+            className="placer-survey-dialog placer-glass"
             style={{
               position: 'relative',
               width: '100%',
               maxWidth: 900,
-              borderRadius: 16,
               overflow: 'hidden',
               outline: 'none',
             }}
