@@ -71,15 +71,14 @@ function Mark({ t, src }) {
  * The layout, the padding and the centring that survives an overflow all live in
  * .placer-survey-screen. Given no height it fills the visible viewport itself, which
  * is what the /survey route wants; the dialog passes '100%' and keeps its own. */
-function FullScreen({ t, height, glass, children }) {
+function FullScreen({ t, height, children }) {
   return (
     <div
       className={`placer-survey-screen${height ? '' : ' placer-viewport'}`}
       style={{
         width: '100%',
         height,
-        // On glass the panel behind is the surface, so the gradient would only hide it.
-        background: glass ? 'transparent' : `linear-gradient(135deg, ${t.page} 0%, ${t.chrome} 100%)`,
+        background: `linear-gradient(135deg, ${t.page} 0%, ${t.chrome} 100%)`,
       }}
     >
       <div style={{ maxWidth: 600, textAlign: 'center' }}>{children}</div>
@@ -122,11 +121,6 @@ function EnterHint({ t, labels, phrase }) {
   );
 }
 
-// The question screen's header and footer bands when the survey sits on glass: a
-// faint white wash over the blur rather than an opaque fill, so the bands still read
-// as bands.
-const GLASS_BAND = 'rgba(255, 255, 255, 0.35)';
-
 /**
  * @param content  a validated survey, from `resolveSurveyContent`
  * @param submit   persists the finished response; rejects if it could not
@@ -137,8 +131,6 @@ const GLASS_BAND = 'rgba(255, 255, 255, 0.35)';
  *                 has a definite height of its own
  * @param onClose  replaces the default "leave the survey" behaviour, which is a
  *                 navigation to / and no use to a caller already showing /
- * @param glass    drops the survey's own opaque backgrounds so a glass panel
- *                 behind it shows through (see HaveYourSay)
  */
 export function SurveyForm({
   t,
@@ -148,14 +140,13 @@ export function SurveyForm({
   idPrefix = 'survey',
   height,
   onClose,
-  glass = false,
 }) {
   const survey = useSurveyForm({ content, submit, source });
   const { step } = survey;
 
   if (step === 'intro') {
     return (
-      <FullScreen t={t} height={height} glass={glass}>
+      <FullScreen t={t} height={height}>
         <Mark t={t} src={markIntro} />
 
         <h1
@@ -190,7 +181,7 @@ export function SurveyForm({
       // No card: the thank-you screen is the whole surface it is shown on, the
       // same as the intro. Inside the dialog a bordered card would read as a
       // second panel within the panel.
-      <FullScreen t={t} height={height} glass={glass}>
+      <FullScreen t={t} height={height}>
         <Mark t={t} src={markSuccess} />
 
         <h1
@@ -243,8 +234,6 @@ export function SurveyForm({
     ? survey.canSubmit && !survey.isSubmitting
     : survey.currentQuestionValid;
 
-  const band = glass ? GLASS_BAND : t.surface;
-
   return (
     <div
       className={height ? undefined : 'placer-viewport'}
@@ -253,7 +242,7 @@ export function SurveyForm({
         height,
         display: 'flex',
         flexDirection: 'column',
-        background: glass ? 'transparent' : t.page,
+        background: t.page,
       }}
     >
       {/* Section heading, position in the survey, and progress */}
@@ -262,7 +251,7 @@ export function SurveyForm({
         style={{
           flex: '0 0 auto',
           borderBottom: `1px solid ${t.line}`,
-          background: band,
+          background: t.surface,
         }}
       >
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
@@ -417,7 +406,7 @@ export function SurveyForm({
         style={{
           flex: '0 0 auto',
           borderTop: `1px solid ${t.line}`,
-          background: band,
+          background: t.surface,
         }}
       >
         <div

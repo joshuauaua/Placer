@@ -127,8 +127,7 @@ export function HaveYourSay({ t }) {
           // survey is easy to lose and hard to retype. The × and Escape do it.
           style={{
             position: 'fixed', inset: 0, zIndex: DIALOG_Z,
-            // Light enough that the page still reads through the panel's glass.
-            background: 'rgba(0,0,0,0.25)',
+            background: 'rgba(0,0,0,0.55)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: 24,
           }}
@@ -141,13 +140,16 @@ export function HaveYourSay({ t }) {
             tabIndex={-1}
             // A definite height, because the survey fills what it is given. It is in
             // index.css rather than here because it needs the vh/dvh fallback pair,
-            // which one style object cannot hold. The glass (background, blur, rim,
-            // radius and shadow) is the brand kit's, the same as the nav bar's.
-            className="placer-survey-dialog placer-glass"
+            // which one style object cannot hold.
+            className="placer-survey-dialog"
             style={{
               position: 'relative',
               width: '100%',
               maxWidth: 900,
+              background: t.page,
+              border: `1px solid ${t.line}`,
+              borderRadius: 16,
+              boxShadow: t.shadow,
               overflow: 'hidden',
               outline: 'none',
             }}
@@ -178,7 +180,6 @@ export function HaveYourSay({ t }) {
                 // Closing beats the default, which walks the browser to / and
                 // would reload the very page the dialog is sitting on.
                 onClose={() => setOpen(false)}
-                glass
               />
             </Suspense>
           </div>

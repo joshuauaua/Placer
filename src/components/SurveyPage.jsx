@@ -19,7 +19,6 @@ export function SurveyPage({
   idPrefix = 'community-survey',
   height,
   onClose,
-  glass,
 }) {
   return (
     <SurveyForm
@@ -30,7 +29,6 @@ export function SurveyPage({
       idPrefix={idPrefix}
       height={height}
       onClose={onClose}
-      glass={glass}
     />
   );
 }
