@@ -29,9 +29,16 @@ const SandboxPage = lazy(() => import('./components/SandboxPage'));
 
 const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
 
-// The longer, five-module municipal-practitioner survey, ported from Development —
-// see PlacemakingTrendsSurveyPage's own header. Linked from the footer's Resources.
-const PLACEMAKING_TRENDS_SURVEY_PATH = '/placemaking-trends-survey';
+// The views with a link of their own, read off the location rather than held in
+// state (see MainApp). The Placemaking Trends survey is the longer, five-module
+// municipal-practitioner survey, ported from Development — see
+// PlacemakingTrendsSurveyPage's own header — and is linked from the footer's
+// Resources. User Labs is linked from the footer too.
+const VIEW_PATHS = {
+  placemakingTrendsSurvey: '/placemaking-trends-survey',
+  userLabs: '/user-labs',
+};
+const PATH_VIEWS = Object.fromEntries(Object.entries(VIEW_PATHS).map(([view, path]) => [path, view]));
 
 // The site is a landing page for now, so the nav bar is off unless asked for.
 // Read at render time rather than module load, the same way AdminGate reads its
@@ -80,15 +87,14 @@ function MainApp({ initialView = 'welcome' }) {
   // applies on first mount — which works for a URL that is only an entry point, and
   // silently does nothing for one you can navigate to from inside the app.
   //
-  // The Placemaking Trends survey lives in the URL for the same reason: its link is
-  // what gets sent to city officials. It is a view rather than a Route of its own so
-  // it sits inside the same nav and footer as every other page.
+  // The Placemaking Trends survey and User Labs live in the URL for the same reason:
+  // the survey's link is what gets sent to city officials, and User Labs is a page
+  // worth linking to. Each is a view rather than a Route of its own so it sits inside
+  // the same nav and footer as every other page.
   const [location, navigate] = useLocation();
   const inSandbox = location.startsWith('/sandbox');
-  const inPlacemakingTrendsSurvey = location === PLACEMAKING_TRENDS_SURVEY_PATH;
-  const view = inSandbox ? 'sandbox'
-    : inPlacemakingTrendsSurvey ? 'placemakingTrendsSurvey'
-    : currentView;
+  const pathView = PATH_VIEWS[location];
+  const view = inSandbox ? 'sandbox' : pathView ?? currentView;
 
   // Every view shares one scrolling area, so without this a page opened from the
   // footer would open scrolled down to where the footer was. Reset on each change
@@ -103,11 +109,11 @@ function MainApp({ initialView = 'welcome' }) {
       navigate('/sandbox');
       return;
     }
-    if (next === 'placemakingTrendsSurvey') {
-      navigate(PLACEMAKING_TRENDS_SURVEY_PATH);
+    if (VIEW_PATHS[next]) {
+      navigate(VIEW_PATHS[next]);
       return;
     }
-    if (inSandbox || inPlacemakingTrendsSurvey) navigate('/');
+    if (inSandbox || pathView) navigate('/');
     setCurrentView(next);
   };
 
