@@ -389,6 +389,13 @@ export function TermsAndPrivacyPage({ t }) {
           other.
         </P>
         <P t={t}>
+          <strong style={{ color: t.ink }}>Bug reports, if you send one.</strong> The &ldquo;Report
+          a bug&rdquo; button stores what you type in our database, along with the page you were on,
+          your browser&rsquo;s name and version, and your account if you are signed in, so we can
+          find and fix the problem. Please keep personal details out of the text box, since it is
+          stored exactly as written.
+        </P>
+        <P t={t}>
           <strong style={{ color: t.ink }}>Sandbox rooms, if you join one.</strong> The Sandbox
           experiments run entirely in your browser and save nothing — unless somebody opens a room
           and you join it with a PIN or a QR code. Then what you allocate in that experiment is
@@ -422,7 +429,7 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Who else sees what we store.</strong> Accounts,
-          profiles, posted imaginations, their pictures, survey answers and Sandbox rooms are all
+          profiles, posted imaginations, their pictures, survey answers, bug reports and Sandbox rooms are all
           stored for us by Supabase, which hosts the database and file storage in the EU and
           processes them only on our instructions.{' '}
           <ExternalLink t={t} href={SUPABASE_PRIVACY_URL}>Read Supabase&rsquo;s privacy policy</ExternalLink>

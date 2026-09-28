@@ -8,6 +8,7 @@ import { Btn, LoadingMark } from './components/UI';
 import { Icon } from './components/Icon';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieBanner } from './components/CookieBanner';
+import { BugReportButton } from './components/BugReportButton';
 // Not lazy: the home view, so there is nothing to defer.
 import { LandingPage } from './components/LandingPage';
 // Not lazy: the nav bar renders it on every view, so there is nothing to defer.
@@ -616,6 +617,8 @@ function App() {
       {/* Outside the boundary so a crashed route still leaves the consent
           choice reachable. */}
       <CookieBanner t={t} />
+      {/* Outside it too: a crash is exactly when somebody wants to report one. */}
+      <BugReportButton t={t} />
     </>
   );
 }

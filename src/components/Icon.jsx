@@ -95,6 +95,13 @@ const ICON_ELEMENTS = {
   ),
   bookmark: <path d="M6 4h12v17l-6-4-6 4V4z" />,
   flag: <path d="M6 3v18M6 4h12l-2.5 4L18 12H6" />,
+  bug: (
+    <>
+      <path d="M9 7.5V6a3 3 0 016 0v1.5" />
+      <rect x="7" y="7.5" width="10" height="12" rx="5" />
+      <path d="M12 11v8.5M3.5 13H7M17 13h3.5M4.5 8.5L7 10M19.5 8.5L17 10M4.5 18.5L7.3 16.5M19.5 18.5l-2.8-2" />
+    </>
+  ),
   pencil: <path d="M4 20l1-4L16 5l3 3L8 19l-4 1z" />,
   send: <path d="M4 12l16-7-7 16-2.5-6.5L4 12z" />,
   dot3: (
