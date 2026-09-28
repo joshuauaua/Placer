@@ -1,6 +1,6 @@
 /* PLACER — somebody's public profile, at /people/<account id>.
  *
- * What anyone may see of an account: the display name, avatar icon, bio and
+ * What anyone may see of an account: the display name, profile photo, bio and
  * location it chose to fill in, and everything it has posted to the map. Needs no
  * session, the same as a project's public page — a profile link is something to
  * share. The profile comes from profile_public() (supabase/profiles-public.sql),
@@ -114,7 +114,7 @@ export function PublicProfilePage({ t, userId, accountId = null, authorName, onS
           : { background: t.surfaceAlt }}>
         <div className="placer-profile-cover-inner"
           style={{ color: person.cover ? '#FFFFFF' : t.ink }}>
-          <Avatar name={person.name} icon={person.avatar} photo={person.photo} size={72}
+          <Avatar name={person.name} photo={person.photo} size={72}
             ring={person.cover ? '#FFFFFF' : t.line} />
           <div style={{ minWidth: 0 }}>
             <h1 className="placer-disp placer-profile-title">{person.name}</h1>

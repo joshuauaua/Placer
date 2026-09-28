@@ -186,7 +186,7 @@ describe('reading a public profile', () => {
     });
 
     await expect(auth.readPublicProfile('user-2')).resolves.toEqual({
-      id: 'user-2', name: 'Devon Park', bio: '', location: 'Lund', avatar: null,
+      id: 'user-2', name: 'Devon Park', bio: '', location: 'Lund',
       accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null, photoPath: null, photo: null,
     });
     expect(rpc).toHaveBeenCalledWith('profile_public', { p_id: 'user-2' });
@@ -332,18 +332,18 @@ describe('the profile', () => {
     });
 
     await expect(auth.readOwnProfile())
-      .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: 'Cyclist', location: 'Malmö', avatar: 'tree',
+      .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: 'Cyclist', location: 'Malmö',
         accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null, photoPath: null, photo: null });
   });
 
-  it('defaults location and avatar when the row has none', async () => {
+  it('defaults the location when the row has none', async () => {
     await load();
     maybeSingle.mockResolvedValue({
       data: { id: 'user-1', display_name: 'Mara Quinn', bio: '', location: null, avatar: null }, error: null,
     });
 
     await expect(auth.readOwnProfile())
-      .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: '', location: '', avatar: null,
+      .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: '', location: '',
         accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null, photoPath: null, photo: null });
   });
 
@@ -392,7 +392,7 @@ describe('the profile', () => {
     expect(update).toHaveBeenCalledWith({ display_name: 'Devon Park' });
   });
 
-  it('sends a location and an avatar icon when they are the fields being changed', async () => {
+  it('sends a location when it is the field being changed', async () => {
     await load();
     maybeSingle.mockResolvedValue({
       data: { id: 'user-1', display_name: 'Devon Park', bio: '', location: 'Malmö', avatar: 'tree' },
@@ -400,9 +400,9 @@ describe('the profile', () => {
     });
 
     signedIn();
-    await auth.saveOwnProfile({ location: 'Malmö', avatar: 'tree' });
+    await auth.saveOwnProfile({ location: 'Malmö' });
 
-    expect(update).toHaveBeenCalledWith({ location: 'Malmö', avatar: 'tree' });
+    expect(update).toHaveBeenCalledWith({ location: 'Malmö' });
   });
 
   it('filters the update to the session\'s own id, never one carried in the patch', async () => {

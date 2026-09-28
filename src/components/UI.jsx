@@ -35,38 +35,14 @@ export function Logo({ t, size }) {
   );
 }
 
-/**
- * The predefined avatar library: a fixed set of icon names, already in Icon.jsx,
- * that a profile may pick instead of the initials Avatar falls back to. Kept as one
- * list so the picker in SettingsPage and the `avatar` column's check constraint in
- * supabase/auth.sql cannot drift apart — the SQL comment next to that constraint
- * says to keep this list in step with it.
- */
-export const AVATAR_ICONS = [
-  { key: 'user', label: 'Person' },
-  { key: 'tree', label: 'Tree' },
-  { key: 'bench', label: 'Bench' },
-  { key: 'art', label: 'Art' },
-  { key: 'play', label: 'Play' },
-  { key: 'light', label: 'Lighting' },
-  { key: 'cart', label: 'Market' },
-  { key: 'sparkle', label: 'Sparkle' },
-  { key: 'pin', label: 'Pin' },
-  { key: 'walk', label: 'Walking' },
-  { key: 'bike', label: 'Cycling' },
-  { key: 'planter', label: 'Planter' },
-];
-
-export const AVATAR_ICON_KEYS = AVATAR_ICONS.map((option) => option.key);
-
-// `icon` picks one of AVATAR_ICONS over the initials this used to always show, and
-// `photo` (an uploaded picture's URL) wins over both. Same circle every way, so
-// switching between them is a same-size swap.
+// The profile photo (an uploaded picture's URL) when there is one, and otherwise the
+// name's initials — which is what a new account shows until a photo is added. Same
+// circle either way, so adding or removing a photo is a same-size swap.
 //
 // The brand kit's avatar: a character's 100 fill, a 2px ring in its 700 and ink
 // initials. Nobody has a character on their profile yet, so the name picks one of
 // the three, the same way every time. `ring` still adds an outer ring when asked.
-export function Avatar({ name = '', size = 40, ring, icon, photo }) {
+export function Avatar({ name = '', size = 40, ring, photo }) {
   const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
   const character = CHARACTER_LIST[(name.charCodeAt(0) + name.length || 0) % CHARACTER_LIST.length];
   return (
@@ -81,7 +57,7 @@ export function Avatar({ name = '', size = 40, ring, icon, photo }) {
         // Decorative: the name is always beside it, or in the button's label.
         ? <img src={photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%',
           objectFit: 'cover', display: 'block' }} />
-        : icon ? <Icon name={icon} size={size * 0.52} stroke={2} /> : initials}
+        : initials}
     </div>
   );
 }

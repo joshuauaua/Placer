@@ -1,8 +1,7 @@
 /* PLACER — account settings: your name, and what the app is allowed to measure */
 
 import { Fragment, useEffect, useState } from 'react';
-import { Avatar, AVATAR_ICONS, Btn, LoadingMark } from './UI';
-import { Icon } from './Icon';
+import { Avatar, Btn, LoadingMark } from './UI';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
 import { ImagePicker } from './ImagePicker';
 import {
@@ -195,8 +194,9 @@ function CoverPicker({ t, profile, onSaveProfile }) {
   );
 }
 
-// The photo in the avatar circle, shown instead of the icon or the initials. Saves
-// straight away, like the cover, and for the same reason is account path only.
+// The photo in the avatar circle, shown instead of the initials a new account starts
+// with. Saves straight away, like the cover, and for the same reason is account path
+// only.
 function ProfilePhotoPicker({ t, profile, onSaveProfile }) {
   const photo = profile?.photo ?? null;
   const replace = (nextPath) => replaceProfileImage({
@@ -205,12 +205,12 @@ function ProfilePhotoPicker({ t, profile, onSaveProfile }) {
   return (
     <Card t={t} title="Profile photo">
       <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
-        A picture of you, shown in the circle wherever your avatar appears — instead of the
-        icon or your initials. It is cropped to a square from the middle, and saved
-        without its location data. Optional.
+        A picture of you, shown in the circle wherever your avatar appears. Until you add
+        one, the circle shows your initials. It is cropped to a square from the middle, and
+        saved without its location data. Optional.
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-        <Avatar name={profile?.name ?? ''} icon={profile?.avatar} photo={photo} size={72} />
+        <Avatar name={profile?.name ?? ''} photo={photo} size={72} />
         <ImagePicker t={t} hasImage={!!photo} uploadLabel="Upload a photo" replaceLabel="Replace photo"
           onUpload={async (file) => replace(await uploadProfilePhoto(file))} onRemove={() => replace(null)} />
       </div>
@@ -257,77 +257,6 @@ function AccountTypePicker({ t, profile, onSaveProfile }) {
           Could not save that. Try again.
         </p>
       )}
-    </Card>
-  );
-}
-
-// Selected and unselected states of one icon choice in the avatar grid.
-const avatarOptionStyle = (t, selected) => ({
-  width: 46, height: 46, borderRadius: '50%', cursor: 'pointer',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  background: selected ? t.surfaceAlt : 'transparent',
-  border: `1.5px solid ${selected ? t.accent : t.line}`,
-  color: t.ink,
-});
-
-function AvatarPicker({ t, profile, onSaveProfile }) {
-  const [avatar, setAvatar] = useState(profile?.avatar ?? null);
-  const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
-
-  const unchanged = avatar === (profile?.avatar ?? null);
-
-  const choose = (next) => {
-    setAvatar(next);
-    setStatus('idle');
-  };
-
-  const handleSave = async () => {
-    setStatus('saving');
-    try {
-      await onSaveProfile({ avatar });
-      setStatus('saved');
-    } catch (err) {
-      console.error('Could not save your avatar:', err);
-      setStatus('error');
-    }
-  };
-
-  return (
-    <Card t={t} title="Avatar">
-      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
-        An icon shown instead of your initials wherever your avatar appears. Optional. A
-        profile photo, if you add one, is shown instead of either.
-      </p>
-      <div role="radiogroup" aria-label="Avatar icon"
-        style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
-        <button type="button" role="radio" aria-checked={avatar === null}
-          aria-label="No icon — show my initials instead" onClick={() => choose(null)}
-          style={{ ...avatarOptionStyle(t, avatar === null), padding: 0, background: 'transparent' }}>
-          <Avatar name={profile?.name ?? ''} size={44} ring={avatar === null ? t.accent : 'transparent'} />
-        </button>
-        {AVATAR_ICONS.map(({ key, label }) => (
-          <button key={key} type="button" role="radio" aria-checked={avatar === key}
-            aria-label={label} onClick={() => choose(key)} style={avatarOptionStyle(t, avatar === key)}>
-            <Icon name={key} size={20} stroke={2} />
-          </button>
-        ))}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Btn t={t} variant="primary" icon="check" onClick={handleSave}
-          disabled={unchanged || status === 'saving'}>
-          {status === 'saving' ? 'Saving…' : 'Save avatar'}
-        </Btn>
-        {status === 'saved' && (
-          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>
-            Saved.
-          </span>
-        )}
-        {status === 'error' && (
-          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 500 }}>
-            Could not save that. Try again.
-          </span>
-        )}
-      </div>
     </Card>
   );
 }
@@ -605,7 +534,6 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate }) {
         <DisplayName t={t} profile={profile} onSaveProfile={onSaveProfile} />
         {email && <CoverPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />}
         {email && <ProfilePhotoPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />}
-        <AvatarPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />
         <AccountTypePicker t={t} profile={profile} onSaveProfile={onSaveProfile} />
         <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="bio"
           title="Bio" label="Bio" id="settings-bio" multiline

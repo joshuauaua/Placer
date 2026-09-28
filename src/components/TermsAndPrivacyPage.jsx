@@ -334,9 +334,9 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Your profile.</strong> Alongside the login we store a
-          display name, an avatar icon, whether the account is an individual or an organisation
-          and, if you fill them in, a short bio, a location, a contact email, a website and a
-          cover image. All of these are public: they are shown on your public profile page,
+          display name, whether the account is an individual or an organisation and, if you
+          fill them in, a short bio, a location, a contact email, a website, a profile photo
+          and a cover image. All of these are public: they are shown on your public profile page,
           which anyone with its link can open, next to the imaginations you have posted. The
           display name is also copied onto every imagination you post as the author, and it stays as it was on
           anything already posted if you rename yourself later. Pick a name you are happy to

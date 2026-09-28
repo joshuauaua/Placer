@@ -3,7 +3,7 @@
  * Supabase Auth owns the login: the email address, the password hash, the Google
  * identity, whether the address has been confirmed. None of that is stored by this
  * app and none of it is ours to read. What this module adds on top is the profile —
- * the display name, bio, location and avatar icon in public.profiles — because that
+ * the display name, bio, location and profile photo in public.profiles — because that
  * is the part of a person the app actually renders.
  *
  * Unlike services/profile.js, which keeps an identity in localStorage and is
@@ -32,7 +32,7 @@ export const ACCOUNT_TYPES = [
   { key: 'organisation', label: 'Organisation' },
 ];
 
-const PROFILE_COLUMNS = 'id, display_name, bio, location, avatar, account_type, contact_email,'
+const PROFILE_COLUMNS = 'id, display_name, bio, location, account_type, contact_email,'
   + ' website, cover_path, avatar_path';
 
 /** A profiles row, or a profile_public() row, in the shape the app speaks. */
@@ -42,13 +42,12 @@ function profileFrom(supabase, row) {
     name: row.display_name,
     bio: row.bio ?? '',
     location: row.location ?? '',
-    avatar: row.avatar ?? null,
     accountType: row.account_type ?? 'individual',
     contactEmail: row.contact_email ?? '',
     website: row.website ?? '',
     coverPath: row.cover_path ?? null,
     cover: mediaUrl(row.cover_path),
-    // A photo wins over the `avatar` icon, which wins over the initials (Avatar in UI.jsx).
+    // Shown in the avatar circle instead of the initials (Avatar in UI.jsx).
     photoPath: row.avatar_path ?? null,
     photo: mediaUrl(row.avatar_path),
   };
@@ -235,7 +234,7 @@ export async function readOwnProfile() {
 }
 
 /**
- * Anybody's public profile — name, bio, location, avatar — by account id, or null if
+ * Anybody's public profile — name, bio, location, photo — by account id, or null if
  * there is no such account. Needs no session: it goes through profile_public()
  * (supabase/profiles-public.sql), which answers for one id at a time, because the
  * profiles table itself is readable only by its owner.
@@ -259,7 +258,7 @@ export async function readPublicProfile(id) {
  * from the caller. The policy scopes it to auth.uid() regardless, but the project
  * refuses any UPDATE without a WHERE clause, so the filter has to be there.
  */
-export async function saveOwnProfile({ name, bio, location, avatar, accountType, contactEmail,
+export async function saveOwnProfile({ name, bio, location, accountType, contactEmail,
   website, coverPath, photoPath }) {
   const supabase = await client();
   const { data: session } = await supabase.auth.getSession();
@@ -270,7 +269,6 @@ export async function saveOwnProfile({ name, bio, location, avatar, accountType,
   if (name !== undefined) patch.display_name = name;
   if (bio !== undefined) patch.bio = bio;
   if (location !== undefined) patch.location = location;
-  if (avatar !== undefined) patch.avatar = avatar;
   if (accountType !== undefined) patch.account_type = accountType;
   if (contactEmail !== undefined) patch.contact_email = contactEmail;
   if (website !== undefined) patch.website = normaliseWebsite(website);
@@ -319,7 +317,7 @@ export function uploadCover(file) {
   });
 }
 
-/** The same, for the profile photo shown in place of the avatar icon or initials. */
+/** The same, for the profile photo shown in place of the initials. */
 export function uploadProfilePhoto(file) {
   return uploadProfileImage(file, {
     folder: AVATARS_FOLDER, prefix: 'avatar', preset: 'avatar', what: 'A profile photo', noun: 'photo',

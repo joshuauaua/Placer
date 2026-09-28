@@ -4,7 +4,7 @@ import { readProfile, saveProfile, signIn, signOut, DEFAULT_NAME } from '../prof
 // The literal rather than the import, so renaming the key fails this test.
 const PROFILE_KEY = 'placemaking_profile';
 
-const DEFAULT_PROFILE = { name: DEFAULT_NAME, bio: '', location: '', avatar: null,
+const DEFAULT_PROFILE = { name: DEFAULT_NAME, bio: '', location: '',
   accountType: 'individual', contactEmail: '', website: '', cover: null };
 
 describe('profile', () => {
@@ -36,10 +36,10 @@ describe('profile', () => {
     expect(readProfile()).toMatchObject({ name: 'Mara Quinn', bio: 'Tree enthusiast' });
   });
 
-  it('saves a location and an avatar icon alongside the rest', () => {
-    saveProfile({ name: 'Mara Quinn', location: 'Malmö', avatar: 'tree' });
+  it('saves a location alongside the rest', () => {
+    saveProfile({ name: 'Mara Quinn', location: 'Malmö' });
 
-    expect(readProfile()).toMatchObject({ location: 'Malmö', avatar: 'tree' });
+    expect(readProfile()).toMatchObject({ location: 'Malmö' });
   });
 
   it('reports nobody signed in after logging out', () => {
@@ -68,9 +68,9 @@ describe('profile', () => {
     expect(readProfile()).toEqual(DEFAULT_PROFILE);
   });
 
-  it('drops a non-string avatar rather than storing something Avatar cannot render', () => {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: 'Mara Quinn', avatar: 42 }));
+  it('ignores an avatar icon left over from before the picker was retired', () => {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: 'Mara Quinn', avatar: 'tree' }));
 
-    expect(readProfile()).toMatchObject({ avatar: null });
+    expect(readProfile()).not.toHaveProperty('avatar');
   });
 });

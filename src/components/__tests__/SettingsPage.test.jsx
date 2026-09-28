@@ -183,7 +183,7 @@ describe('SettingsPage, bio and location', () => {
     expect(onSaveProfile).toHaveBeenCalledWith({ photoPath: 'avatars/user-1/avatar-2.jpg' });
   });
 
-  it('removes the profile photo, falling back to the icon or initials', async () => {
+  it('removes the profile photo, falling back to the initials', async () => {
     const onSaveProfile = vi.fn(() => Promise.resolve());
     setup({ email: 'mara@example.com', onSaveProfile,
       profile: { name: 'Mara Quinn', bio: '', photoPath: 'avatars/user-1/avatar-1.jpg', photo: 'https://cdn/a.jpg' } });
@@ -235,35 +235,18 @@ describe('SettingsPage, avatar', () => {
     vi.clearAllMocks();
   });
 
-  it('starts on the initials option when no icon is set', () => {
-    setup({ profile: { name: 'Mara Quinn', bio: '', avatar: null } });
+  it('offers no avatar icons to pick from, only the profile photo', () => {
+    setup({ email: 'mara@example.com' });
 
-    expect(screen.getByRole('radio', { name: /show my initials/i })).toHaveAttribute('aria-checked', 'true');
-    expect(screen.getByRole('button', { name: /Save avatar/ })).toBeDisabled();
+    expect(screen.queryByRole('radiogroup', { name: 'Avatar icon' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Save avatar/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Profile photo')).toBeInTheDocument();
   });
 
-  it('shows the currently chosen icon as selected', () => {
-    setup({ profile: { name: 'Mara Quinn', bio: '', avatar: 'tree' } });
+  it('shows the initials in the photo circle until a photo is added', () => {
+    setup({ email: 'mara@example.com' });
 
-    expect(screen.getByRole('radio', { name: 'Tree' })).toHaveAttribute('aria-checked', 'true');
-  });
-
-  it('picks an icon and saves it', async () => {
-    const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: '', avatar: null } });
-
-    fireEvent.click(screen.getByRole('radio', { name: 'Tree' }));
-    fireEvent.click(screen.getByRole('button', { name: /Save avatar/ }));
-
-    await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ avatar: 'tree' }));
-  });
-
-  it('can clear a chosen icon back to initials', async () => {
-    const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: '', avatar: 'tree' } });
-
-    fireEvent.click(screen.getByRole('radio', { name: /show my initials/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Save avatar/ }));
-
-    await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ avatar: null }));
+    expect(screen.getByText('MQ')).toBeInTheDocument();
   });
 });
 
