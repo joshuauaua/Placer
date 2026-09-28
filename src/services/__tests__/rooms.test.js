@@ -311,6 +311,28 @@ describe('closing a room', () => {
   });
 });
 
+describe('deleting a room', () => {
+  beforeEach(async () => {
+    await load();
+  });
+
+  it('needs the facilitator token, and reports whether it worked', async () => {
+    rpc.mockReturnValue(result({ data: true, error: null }));
+
+    await expect(rooms.deleteRoom('room-1', 'facilitator-1')).resolves.toBe(true);
+    expect(rpc).toHaveBeenCalledWith('sandbox_room_delete', {
+      p_room_id: 'room-1',
+      p_token: 'facilitator-1',
+    });
+  });
+
+  it('is false for a browser that did not open the room', async () => {
+    rpc.mockReturnValue(result({ data: false, error: null }));
+
+    await expect(rooms.deleteRoom('room-1', 'not-the-facilitator')).resolves.toBe(false);
+  });
+});
+
 describe('following a room', () => {
   beforeEach(async () => {
     await load();

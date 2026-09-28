@@ -4,6 +4,7 @@ import { ProjectDashboardPage } from '../ProjectDashboardPage';
 import {
   addCollaborator,
   addLink,
+  deleteProject,
   readCollaborators,
   readLinks,
   readProject,
@@ -14,7 +15,7 @@ import {
   removeLink,
   updateProject,
 } from '../../services/projects';
-import { closeRoom } from '../../services/rooms';
+import { closeRoom, deleteRoom } from '../../services/rooms';
 import { hostedRoom } from '../../sandbox/rooms';
 import { THEME } from '../../theme';
 
@@ -36,10 +37,12 @@ vi.mock('../../services/projects', () => ({
   removeLink: vi.fn(() => Promise.resolve({ success: true })),
   createProject: vi.fn(),
   updateProject: vi.fn(),
+  deleteProject: vi.fn(() => Promise.resolve({ success: true })),
 }));
 
 vi.mock('../../services/rooms', () => ({
   closeRoom: vi.fn(() => Promise.resolve(true)),
+  deleteRoom: vi.fn(() => Promise.resolve(true)),
 }));
 
 const PROJECT = {
@@ -300,6 +303,16 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
     await waitFor(() => expect(closeRoom).toHaveBeenCalledWith('room-1', 'facilitator-1'));
   });
 
+  it('asks once before deleting a room, then deletes it with its token', async () => {
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: /^delete$/i }));
+    expect(deleteRoom).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /delete — confirm/i }));
+    await waitFor(() => expect(deleteRoom).toHaveBeenCalledWith('room-1', 'facilitator-1'));
+  });
+
   it('leaves the rest of the dashboard alone when the rooms cannot be read', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(readProjectRooms).mockRejectedValue(new Error('function project_rooms does not exist'));
@@ -309,5 +322,63 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
     expect(await screen.findByText('4')).toBeInTheDocument();
     expect(screen.queryByText('Open rooms')).not.toBeInTheDocument();
     consoleError.mockRestore();
+  });
+});
+
+describe('ProjectDashboardPage, deleting the project', () => {
+  beforeEach(() => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    vi.mocked(readStats).mockResolvedValue(STATS);
+    vi.mocked(readCollaborators).mockResolvedValue([]);
+    vi.mocked(readLinks).mockResolvedValue([]);
+    vi.mocked(readProjectRooms).mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const deleteButton = () => screen.getByRole('button', { name: /Delete project/ });
+  const nameField = () => screen.getByLabelText(/to confirm/);
+
+  it('is offered to the owner only', async () => {
+    setup({ accountId: 'user-2' });
+
+    await screen.findByRole('heading', { name: PROJECT.name });
+    expect(screen.queryByRole('button', { name: /Delete project/ })).not.toBeInTheDocument();
+  });
+
+  it('stays locked until the project name is typed exactly', async () => {
+    setup();
+    await screen.findByRole('heading', { name: PROJECT.name });
+
+    expect(deleteButton()).toBeDisabled();
+    fireEvent.change(nameField(), { target: { value: 'Riverside' } });
+    expect(deleteButton()).toBeDisabled();
+    fireEvent.change(nameField(), { target: { value: PROJECT.name } });
+    expect(deleteButton()).not.toBeDisabled();
+  });
+
+  it('deletes the project and hands back to the caller', async () => {
+    const { onDeleted } = setup({ onDeleted: vi.fn() });
+    await screen.findByRole('heading', { name: PROJECT.name });
+
+    fireEvent.change(nameField(), { target: { value: PROJECT.name } });
+    fireEvent.click(deleteButton());
+
+    await waitFor(() => expect(onDeleted).toHaveBeenCalled());
+    expect(deleteProject).toHaveBeenCalledWith(PROJECT.id);
+  });
+
+  it('stays on the dashboard and says why when the delete is refused', async () => {
+    vi.mocked(deleteProject).mockRejectedValueOnce(new Error('Could not remove that project: denied'));
+    const { onDeleted } = setup({ onDeleted: vi.fn() });
+    await screen.findByRole('heading', { name: PROJECT.name });
+
+    fireEvent.change(nameField(), { target: { value: PROJECT.name } });
+    fireEvent.click(deleteButton());
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not remove that project');
+    expect(onDeleted).not.toHaveBeenCalled();
   });
 });

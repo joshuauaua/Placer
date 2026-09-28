@@ -63,11 +63,41 @@ function CloseRoom({ t, onClose }) {
   );
 }
 
+function DeleteRoom({ t, onDelete }) {
+  // Deleting takes everybody's contributions with it, for good, so it asks first the
+  // same way closing does.
+  const [confirming, setConfirming] = useState(false);
+
+  return (
+    <Btn
+      t={t}
+      variant="quiet"
+      size="sm"
+      icon="trash"
+      onClick={() => (confirming ? onDelete() : setConfirming(true))}
+      onBlur={() => setConfirming(false)}
+      style={confirming ? { borderColor: '#B3261E', color: '#B3261E' } : undefined}>
+      {confirming ? 'Delete — confirm' : 'Delete room'}
+    </Btn>
+  );
+}
+
 export function RoomBar({ t, experiment, room }) {
   const left = useTimeRemaining(room.expiresAt);
   const qrRef = useRef(null);
 
   if (room.status === 'none') return null;
+
+  if (room.status === 'deleted') {
+    return (
+      <Panel t={t} style={{ marginBottom: 20 }}>
+        <p role="status" style={{ fontSize: 14, color: t.ink, lineHeight: 1.6 }}>
+          This room has been deleted, along with everything contributed to it. The
+          experiment still works on its own, and a new room can be opened for another round.
+        </p>
+      </Panel>
+    );
+  }
 
   if (room.status === 'closed' || room.status === 'expired') {
     return (
@@ -190,6 +220,7 @@ export function RoomBar({ t, experiment, room }) {
                   </Btn>
                 )}
                 <CloseRoom t={t} onClose={room.close} />
+                <DeleteRoom t={t} onDelete={room.remove} />
               </>
             )}
           />

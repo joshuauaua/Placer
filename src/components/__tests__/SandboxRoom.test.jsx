@@ -11,6 +11,7 @@ const readRoom = vi.fn();
 const readContributions = vi.fn();
 const saveContribution = vi.fn();
 const closeRoom = vi.fn();
+const deleteRoom = vi.fn();
 const subscribeToRoom = vi.fn();
 const isSupabaseConfigured = vi.fn(() => true);
 
@@ -20,6 +21,7 @@ vi.mock('../../services/rooms', () => ({
   readContributions: (...a) => readContributions(...a),
   saveContribution: (...a) => saveContribution(...a),
   closeRoom: (...a) => closeRoom(...a),
+  deleteRoom: (...a) => deleteRoom(...a),
   subscribeToRoom: (...a) => subscribeToRoom(...a),
   isSupabaseConfigured: (...a) => isSupabaseConfigured(...a),
 }));
@@ -47,7 +49,7 @@ function renderAt(path, searchPath = '', props = {}) {
 }
 
 beforeEach(() => {
-  for (const spy of [createRoom, readRoom, readContributions, saveContribution, closeRoom, subscribeToRoom]) {
+  for (const spy of [createRoom, readRoom, readContributions, saveContribution, closeRoom, deleteRoom, subscribeToRoom]) {
     spy.mockReset();
   }
   isSupabaseConfigured.mockReset().mockReturnValue(true);
@@ -248,6 +250,19 @@ describe('a room seen by the facilitator', () => {
 
     await waitFor(() => expect(closeRoom).toHaveBeenCalledWith('room-1', 'facilitator-1'));
     expect(await screen.findByRole('status')).toHaveTextContent(/this room is closed/i);
+  });
+
+  it('asks once before deleting the room, then deletes it and what it held', async () => {
+    deleteRoom.mockResolvedValue(true);
+
+    renderAt('/sandbox/budget-ballot', 'room=room-1');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete room' }));
+    expect(deleteRoom).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /delete — confirm/i }));
+
+    await waitFor(() => expect(deleteRoom).toHaveBeenCalledWith('room-1', 'facilitator-1'));
+    expect(await screen.findByRole('status')).toHaveTextContent(/this room has been deleted/i);
   });
 });
 

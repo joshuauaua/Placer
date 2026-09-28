@@ -422,6 +422,37 @@ The sweep in `rooms-cleanup.sql` needs no change: it goes by `expires_at`, so a 
 room is deleted a day after it ends like any other. The privacy page already names the
 90-day ceiling — change it there too if you change it here.
 
+### Deleting a project
+
+Requires step 11 and step 12. Run `project-delete.sql` in the SQL editor after
+`projects.sql` and `follows.sql` (or `supabase db push`). It is re-runnable.
+
+An owner deletes a project from the bottom of its dashboard. The database already
+takes its collaborators, links and view counts with it, and leaves the imaginations
+and Sandbox rooms made for it in place, unlinked. The client removes its image from
+R2. This file adds the one missing piece: a trigger that deletes everybody's follows
+of the project, which nothing cascades to because `follows.followed_id` is a string
+rather than a foreign key.
+
+```sql
+select tgname from pg_trigger where tgrelid = 'public.projects'::regclass
+   and tgname = 'projects_delete_follows';
+```
+
+### Deleting a Sandbox room
+
+Requires step 8. Run `rooms-delete.sql` in the SQL editor after `rooms.sql` (or
+`supabase db push`). It is re-runnable.
+
+It adds `sandbox_room_delete`, which removes a room and every contribution in it at
+once instead of waiting for the sweep. Like `sandbox_room_close` it takes the
+facilitator token, so only the browser that opened the room, or the project dashboard
+of the project it belongs to, can delete it.
+
+```sql
+select proname from pg_proc where proname = 'sandbox_room_delete';
+```
+
 ## 13. Notifications
 
 Requires steps 9, 10, 11 and 12 (in that order — it references profiles, imaginations,

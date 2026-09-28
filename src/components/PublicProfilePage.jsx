@@ -103,7 +103,11 @@ export function PublicProfilePage({ t, userId, accountId = null, authorName, onS
       className="placer-scroll">
       {selected && (
         <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)}
-          accountId={accountId} authorName={authorName} onSignIn={onSignIn} />
+          accountId={accountId} authorName={authorName} onSignIn={onSignIn}
+          onDeleted={(id) => {
+            setImaginations((current) => current.filter((item) => item.id !== id));
+            setSelected(null);
+          }} />
       )}
 
       {/* The cover, edge to edge, with the name and location on it. Without a cover it

@@ -4,7 +4,9 @@
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn, CatTag } from './UI';
-import { postComment, postsAreShared, readComments, readMyVote, voteImagination } from '../services/imaginations';
+import {
+  postComment, postsAreShared, readComments, readMyVote, removeImagination, voteImagination,
+} from '../services/imaginations';
 import { DEFAULT_NAME } from '../services/profile';
 
 // ISO slice rather than toLocaleDateString, so a comment's date does not shift with
@@ -68,8 +70,50 @@ function CommentRow({ t, comment }) {
   );
 }
 
+/**
+ * The author's way to take an imagination down, with its picture. Asks once first —
+ * the same two-step closing a Sandbox room uses — because there is no undo, and the
+ * votes and comments on it go too.
+ */
+function DeleteImagination({ t, imagination, onDeleted }) {
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleClick = async () => {
+    if (!confirming) { setConfirming(true); return; }
+
+    setDeleting(true);
+    setError(null);
+    try {
+      await removeImagination(imagination.id, { local: imagination.shared === false });
+      onDeleted?.(imagination.id);
+    } catch (err) {
+      console.error('Could not delete this imagination:', err);
+      setError('Could not delete this imagination. Try again.');
+      setDeleting(false);
+      setConfirming(false);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: 14 }}>
+      <Btn t={t} variant="quiet" size="sm" icon="trash" onClick={handleClick} disabled={deleting}
+        onBlur={() => setConfirming(false)}
+        style={confirming ? { borderColor: '#B3261E', color: '#B3261E' } : undefined}>
+        {deleting ? 'Deleting…' : confirming ? 'Delete — confirm' : 'Delete'}
+      </Btn>
+      {error && (
+        <div role="alert" style={{ fontSize: 12.5, color: '#B3261E', fontWeight: 500, marginTop: 8 }}>
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ImaginationPreview({ t, imagination, onClose, accountId = null,
-  authorName = DEFAULT_NAME, onSignIn }) {
+  authorName = DEFAULT_NAME, onSignIn, onDeleted }) {
   const {
     id,
     title,
@@ -86,6 +130,10 @@ export function ImaginationPreview({ t, imagination, onClose, accountId = null,
   // With no project configured there is always an account of a kind, the browser
   // itself, so nothing here is ever gated in that world.
   const canInteract = !postsAreShared() || !!accountId;
+
+  // Only its author may delete it — the delete policy on public.imaginations says the
+  // same. One still only in this browser is this browser's to delete.
+  const canDelete = imagination.shared === false || (!!accountId && imagination.userId === accountId);
 
   const [score, setScore] = useState(imagination.upvotes ?? 0);
   const [myVote, setMyVote] = useState(null);
@@ -241,6 +289,8 @@ export function ImaginationPreview({ t, imagination, onClose, accountId = null,
               {author && <> <span style={{ margin: '0 6px', color: t.inkFaint }}>·</span> {author}</>}
             </div>
           </div>
+
+          {canDelete && <DeleteImagination t={t} imagination={imagination} onDeleted={onDeleted} />}
 
           {!canInteract && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,

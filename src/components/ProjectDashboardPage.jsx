@@ -20,6 +20,7 @@ import { downloadQrSvg } from '../lib/qrDownload';
 import {
   addCollaborator,
   addLink,
+  deleteProject,
   readCollaborators,
   readLinks,
   readProject,
@@ -29,7 +30,10 @@ import {
   removeCollaborator,
   removeLink,
 } from '../services/projects';
-import { closeRoom } from '../services/rooms';
+import { closeRoom, deleteRoom } from '../services/rooms';
+
+// The alert red used across the app.
+const DANGER = '#B3261E';
 
 const inputStyle = (t) => ({
   padding: '10px 14px',
@@ -158,14 +162,16 @@ function AddSandboxExperiment({ t, onChoose }) {
 }
 
 /**
- * One open room: its QR code, how it is going, and the three things a project runs it
- * with — open it as the facilitator, save its code to print, and close it. The point of
+ * One open room: its QR code, how it is going, and the things a project runs it with —
+ * open it as the facilitator, save its code to print, close it, or delete it and
+ * everything contributed to it. The point of
  * having these here rather than only on the room itself is that a poll left running for
  * a month outlives the browser tab, and often the device, it was opened on.
  */
-function RoomRow({ t, room, onOpen, onClose }) {
+function RoomRow({ t, room, onOpen, onClose, onDelete }) {
   const qrRef = useRef(null);
   const [confirming, setConfirming] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const experiment = findExperiment(room.experiment);
   const long = isLongRoom(room);
   const url = long ? codeJoinUrl(room.joinCode) : joinUrl(room.pin);
@@ -204,6 +210,13 @@ function RoomRow({ t, room, onOpen, onClose }) {
           style={confirming ? { borderColor: '#B3261E', color: '#B3261E' } : undefined}>
           {confirming ? 'Close — confirm' : 'Close'}
         </Btn>
+        {/* Deleting takes every response with it, so it asks the same way. */}
+        <Btn t={t} variant="quiet" size="sm" icon="trash"
+          onClick={() => (confirmingDelete ? onDelete(room) : setConfirmingDelete(true))}
+          onBlur={() => setConfirmingDelete(false)}
+          style={confirmingDelete ? { borderColor: DANGER, color: DANGER } : undefined}>
+          {confirmingDelete ? 'Delete — confirm' : 'Delete'}
+        </Btn>
       </div>
     </div>
   );
@@ -227,12 +240,69 @@ function LinkRow({ t, link, onRemove }) {
 }
 
 /**
+ * The owner's way to remove the project for good. Typing its name unlocks the button,
+ * because a second click on a confirm is too easy to make without reading — and there
+ * is no undo. What goes and what stays is spelled out, since the imaginations posted
+ * to it are other people's and are kept.
+ */
+function DeleteProject({ t, project, onDeleted }) {
+  const [typed, setTyped] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState(null);
+
+  const matches = typed.trim() === project.name.trim();
+
+  const handleDelete = async (e) => {
+    e.preventDefault();
+    if (!matches || deleting) return;
+
+    setDeleting(true);
+    setError(null);
+    try {
+      await deleteProject(project.id);
+      onDeleted?.();
+    } catch (err) {
+      console.error('Could not delete this project:', err);
+      setError(err?.message ?? 'Could not delete this project.');
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <Card t={t} title="Delete project">
+      <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
+        Removes the project, its public page, its image, its news and resources, its
+        collaborators and its page views, and takes it off everyone's followed list. The
+        imaginations and Sandbox sessions made for it stay, no longer linked to it. This
+        cannot be undone.
+      </p>
+      <form onSubmit={handleDelete}>
+        <label htmlFor="delete-project-name"
+          style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+          {`Type “${project.name}” to confirm`}
+        </label>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input id="delete-project-name" value={typed} autoComplete="off"
+            onChange={(e) => { setTyped(e.target.value); setError(null); }}
+            style={{ ...inputStyle(t), flex: '1 1 240px' }} />
+          <Btn t={t} variant="outline" size="sm" icon="trash" type="submit" disabled={!matches || deleting}
+            style={{ color: DANGER, borderColor: DANGER }}>
+            {deleting ? 'Deleting…' : 'Delete project'}
+          </Btn>
+        </div>
+      </form>
+      {error && <p role="alert" style={{ fontSize: 13, color: DANGER, marginTop: 10 }}>{error}</p>}
+    </Card>
+  );
+}
+
+/**
  * Reached cold from a link the way PublicProjectPage is, so `projectId` is all this
  * needs — everything else is read here. `isOwner` gates the roster and delete
  * controls; a plain collaborator sees everything else.
  */
 export function ProjectDashboardPage({ t, accountId, projectId,
-  onOpenSandbox, onOpenRoom, onNavigateToPublic }) {
+  onOpenSandbox, onOpenRoom, onNavigateToPublic, onDeleted }) {
   const [project, setProject] = useState(null);
   const [status, setStatus] = useState('loading');
   const [editing, setEditing] = useState(false);
@@ -374,6 +444,15 @@ export function ProjectDashboardPage({ t, accountId, projectId,
     loadRooms(project.id);
   };
 
+  const handleDeleteRoom = async (room) => {
+    try {
+      await deleteRoom(room.id, room.facilitatorToken);
+    } catch (err) {
+      console.error('Could not delete that room:', err);
+    }
+    loadRooms(project.id);
+  };
+
   const handleRemoveLink = async (link) => {
     setLinks((current) => current.filter((l) => l.id !== link.id));
     try {
@@ -486,7 +565,8 @@ export function ProjectDashboardPage({ t, accountId, projectId,
                 <p style={{ fontSize: 13.5, color: t.inkFaint }}>No rooms are open right now.</p>
               ) : (
                 rooms.filter((room) => room.status === 'open').map((room) => (
-                  <RoomRow key={room.id} t={t} room={room} onOpen={handleOpenRoom} onClose={handleCloseRoom} />
+                  <RoomRow key={room.id} t={t} room={room} onOpen={handleOpenRoom} onClose={handleCloseRoom}
+                    onDelete={handleDeleteRoom} />
                 ))
               )}
             </div>
@@ -548,6 +628,8 @@ export function ProjectDashboardPage({ t, accountId, projectId,
           )}
           {inviteError && <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{inviteError}</p>}
         </Card>
+
+        {isOwner && <DeleteProject t={t} project={project} onDeleted={onDeleted} />}
       </div>
     </div>
   );

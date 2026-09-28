@@ -256,7 +256,12 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
       padding: '48px 40px' }} className="placer-scroll">
       {selected && (
         <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)}
-          accountId={accountId} authorName={name} onSignIn={onSignIn} />
+          accountId={accountId} authorName={name} onSignIn={onSignIn}
+          onDeleted={(id) => {
+            setPosted((current) => current.filter((item) => item.id !== id));
+            setOnlyHere((current) => current.filter((item) => item.id !== id));
+            setSelected(null);
+          }} />
       )}
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',

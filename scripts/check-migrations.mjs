@@ -72,6 +72,8 @@ const PLAN = [
   { name: '20260928080001_bug_reports.sql', src: 'bug-reports.sql' },
   { name: '20260928090001_media_on_r2.sql', src: 'media-r2.sql' },
   { name: '20260928110001_profile_photos_and_project_images.sql', src: 'media-photos.sql' },
+  { name: '20260928120001_project_delete_follows.sql', src: 'project-delete.sql' },
+  { name: '20260928120002_sandbox_room_delete.sql', src: 'rooms-delete.sql' },
 ]
 
 const HAND_WRITTEN = [

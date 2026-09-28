@@ -307,9 +307,12 @@ export async function readImaginationsByUser(userId) {
  * The row goes first. If the picture will not delete, the imagination is still gone from
  * the map, which is what somebody asking for this actually wants — an orphaned object in
  * a bucket is a tidiness problem, not a privacy one, since nothing links to it any more.
+ *
+ * `local` is for one still only in this browser (readLocalImaginations) while a project
+ * is configured: it was never posted, so it is removed from localStorage, not the table.
  */
-export async function removeImagination(id) {
-  if (!isSupabaseConfigured()) return deleteLocal(id);
+export async function removeImagination(id, { local = false } = {}) {
+  if (!isSupabaseConfigured() || local) return deleteLocal(id);
 
   const supabase = await client();
 

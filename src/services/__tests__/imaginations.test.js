@@ -446,6 +446,15 @@ describe('posting', () => {
 });
 
 describe('removing', () => {
+  it('removes one still only in this browser from the browser, not the table', async () => {
+    await load();
+
+    await imaginations.removeImagination('local-1', { local: true });
+
+    expect(deleteLocal).toHaveBeenCalledWith('local-1');
+    expect(del).not.toHaveBeenCalled();
+  });
+
   it('takes the picture with the row', async () => {
     await load();
     maybeSingle.mockResolvedValue({ data: { preview_path: 'previews/user-1/img-1.jpg' }, error: null });

@@ -11,6 +11,7 @@
  *   'opening' — creating a room, or loading one from a link
  *   'open'    — in a room; `contributions` and `combined` are live
  *   'closed'  — its facilitator ended it early
+ *   'deleted' — its facilitator deleted it, and everything contributed to it
  *   'expired' — it ran out of time; a room lasts two hours from being opened, or
  *               longer when a project opens it for weeks (supabase/rooms-lifetime.sql)
  *   'error'   — `error` says what went wrong, in a sentence fit to show somebody
@@ -240,6 +241,25 @@ export function useRoom({ experiment, roomId, displayName, onOpened, projectId =
     }
   }, [roomId, service]);
 
+  /** Delete the room and what it held. The same token, and the same browser, as close. */
+  const remove = useCallback(async () => {
+    const hosted = hostedRoom(roomId);
+    if (!hosted) return false;
+
+    try {
+      const deleted = await service.deleteRoom(roomId, hosted.token);
+      if (deleted) {
+        forgetHostedRoom(roomId);
+        setStatus('deleted');
+        setContributions([]);
+      }
+      return deleted;
+    } catch (cause) {
+      setError(cause.message);
+      return false;
+    }
+  }, [roomId, service]);
+
   const combined = useMemo(() => {
     if (!experiment?.room || contributions.length === 0) return null;
     return experiment.room.combine(contributions.map((entry) => entry.state));
@@ -260,6 +280,7 @@ export function useRoom({ experiment, roomId, displayName, onOpened, projectId =
     start,
     publish,
     close,
+    remove,
   };
 }
 

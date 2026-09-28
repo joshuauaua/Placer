@@ -536,7 +536,8 @@ function MainApp({ initialView = 'welcome' }) {
                 <ProjectDashboardPage t={t} accountId={accountId} projectId={projectRoute.id}
                   onOpenSandbox={showProjectSandbox}
                   onOpenRoom={showProjectRoom}
-                  onNavigateToPublic={showProjectPublic} />
+                  onNavigateToPublic={showProjectPublic}
+                  onDeleted={() => show('projects')} />
               </Suspense>
             )}
 

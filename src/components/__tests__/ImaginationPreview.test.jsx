@@ -8,6 +8,7 @@ const readComments = vi.fn(() => Promise.resolve([]));
 const readMyVote = vi.fn(() => Promise.resolve(null));
 const postComment = vi.fn(() => Promise.resolve(null));
 const voteImagination = vi.fn(() => Promise.resolve(null));
+const removeImagination = vi.fn(() => Promise.resolve({ success: true }));
 
 vi.mock('../../services/imaginations', () => ({
   postsAreShared: (...a) => postsAreShared(...a),
@@ -15,6 +16,7 @@ vi.mock('../../services/imaginations', () => ({
   readMyVote: (...a) => readMyVote(...a),
   postComment: (...a) => postComment(...a),
   voteImagination: (...a) => voteImagination(...a),
+  removeImagination: (...a) => removeImagination(...a),
 }));
 
 const IMAGINATION = {
@@ -254,5 +256,53 @@ describe('ImaginationPreview', () => {
       expect(screen.getByLabelText('Vote up')).not.toBeDisabled();
       expect(screen.getByLabelText('Add a comment')).toBeInTheDocument();
     });
+  });
+});
+
+describe('ImaginationPreview, deleting', () => {
+  const POSTED = { ...IMAGINATION, shared: true, userId: 'user-1' };
+
+  it('offers Delete to the author only', async () => {
+    postsAreShared.mockReturnValue(true);
+    await setup({ imagination: { ...POSTED, userId: 'someone-else' } });
+
+    expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
+  });
+
+  it('asks once, then deletes it and hands its id back', async () => {
+    postsAreShared.mockReturnValue(true);
+    const onDeleted = vi.fn();
+    await setup({ imagination: POSTED, onDeleted });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(removeImagination).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /delete — confirm/i }));
+
+    await waitFor(() => expect(onDeleted).toHaveBeenCalledWith('img-1'));
+    expect(removeImagination).toHaveBeenCalledWith('img-1', { local: false });
+  });
+
+  it('deletes one still only in this browser from the browser', async () => {
+    postsAreShared.mockReturnValue(true);
+    const onDeleted = vi.fn();
+    await setup({ imagination: { ...IMAGINATION, shared: false }, onDeleted });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.click(screen.getByRole('button', { name: /delete — confirm/i }));
+
+    await waitFor(() => expect(removeImagination).toHaveBeenCalledWith('img-1', { local: true }));
+  });
+
+  it('stays open and says so when the delete fails', async () => {
+    postsAreShared.mockReturnValue(true);
+    removeImagination.mockRejectedValueOnce(new Error('denied'));
+    const onDeleted = vi.fn();
+    await setup({ imagination: POSTED, onDeleted });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.click(screen.getByRole('button', { name: /delete — confirm/i }));
+
+    expect(await screen.findByText(/could not delete this imagination/i)).toBeInTheDocument();
+    expect(onDeleted).not.toHaveBeenCalled();
   });
 });

@@ -186,6 +186,22 @@ export async function closeRoom(roomId, facilitatorToken) {
 }
 
 /**
+ * Delete a room and every contribution in it, open or ended. True once it is gone;
+ * false if this token does not open it, or it was already gone. The facilitator's
+ * token, the same one closing takes (supabase/rooms-delete.sql).
+ */
+export async function deleteRoom(roomId, facilitatorToken) {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('sandbox_room_delete', {
+    p_room_id: roomId,
+    p_token: facilitatorToken,
+  });
+
+  if (error) throw new Error(`Could not delete the room: ${error.message}`);
+  return data === true;
+}
+
+/**
  * Call `onChange` whenever anything in this room changes.
  *
  * The payload is deliberately ignored. A change is only a nudge to re-read the
