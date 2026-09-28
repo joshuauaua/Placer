@@ -25,6 +25,11 @@ export const POSTHOG_PRIVACY_URL = 'https://posthog.com/privacy';
 // US-hosted project needs the wording there changed.
 export const SUPABASE_PRIVACY_URL = 'https://supabase.com/privacy';
 
+// Where uploaded pictures are stored (Cloudflare R2, see supabase/README.md section 14).
+// NOTE: the privacy pages state the pictures are stored in the EU. That holds only if
+// the bucket was created with the EU jurisdiction — change the wording if it was not.
+export const CLOUDFLARE_PRIVACY_URL = 'https://www.cloudflare.com/privacypolicy/';
+
 // Directory of EU/EEA supervisory authorities, for complaints.
 export const EDPB_AUTHORITIES_URL =
   'https://www.edpb.europa.eu/about-edpb/about-edpb/members_en';

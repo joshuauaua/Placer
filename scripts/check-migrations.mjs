@@ -70,6 +70,7 @@ const PLAN = [
   // Dated after the migrations above it rather than when it was written: it was
   // pushed after them, and `db push` refuses one older than the newest applied.
   { name: '20260928080001_bug_reports.sql', src: 'bug-reports.sql' },
+  { name: '20260928090001_media_on_r2.sql', src: 'media-r2.sql' },
 ]
 
 const HAND_WRITTEN = [
@@ -79,6 +80,7 @@ const HAND_WRITTEN = [
   '20260922130002_sandbox_rooms_open_vote.sql',
   '20260925090001_survey_responses_new_sources.sql',
   '20260925100001_survey_responses_sandbox_contribution.sql',
+  '20260928100001_profiles_cover_path_r2_folder.sql',
 ]
 
 export function render({ src, slice, note }, read = (f) => readFileSync(`${DIR}/${f}`, 'utf8')) {

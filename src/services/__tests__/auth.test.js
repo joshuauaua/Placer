@@ -24,20 +24,26 @@ const onAuthStateChange = vi.fn(() => ({ data: { subscription: { unsubscribe } }
 
 const maybeSingle = vi.fn();
 const selectAfterUpdate = vi.fn(() => ({ maybeSingle }));
-const update = vi.fn(() => ({ select: selectAfterUpdate }));
+const eqUpdate = vi.fn(() => ({ select: selectAfterUpdate }));
+const update = vi.fn(() => ({ eq: eqUpdate }));
 const select = vi.fn(() => ({ maybeSingle }));
 const from = vi.fn(() => ({ select, update }));
 const rpc = vi.fn();
 
+// Pictures go through services/media; media.test.js covers what happens inside it.
 const upload = vi.fn();
 const remove = vi.fn();
-const getPublicUrl = vi.fn((path) => ({ data: { publicUrl: `https://cdn.example/${path}` } }));
-const storageFrom = vi.fn(() => ({ upload, remove, getPublicUrl }));
+const mediaUrl = vi.fn((path) => (path ? `https://cdn.example/${path}` : null));
+
+vi.mock('../media', () => ({
+  uploadMedia: (...a) => upload(...a),
+  removeMedia: (...a) => remove(...a),
+  mediaUrl: (...a) => mediaUrl(...a),
+}));
 
 const createClient = vi.fn(() => ({
   from,
   rpc,
-  storage: { from: storageFrom },
   auth: {
     signUp,
     signInWithPassword,
@@ -67,11 +73,12 @@ async function load({ configured = true } = {}) {
 }
 
 const account = (over = {}) => ({ id: 'user-1', email: 'mara@example.com', ...over });
+const signedIn = () => getSession.mockResolvedValue({ data: { session: { user: account() } }, error: null });
 
 beforeEach(() => {
   for (const spy of [signUp, signInWithPassword, signInWithOAuth, resetPasswordForEmail,
     updateUser, signOut, getSession, onAuthStateChange, unsubscribe,
-    maybeSingle, selectAfterUpdate, update, select, from, rpc, upload, remove, storageFrom,
+    maybeSingle, selectAfterUpdate, eqUpdate, update, select, from, rpc, upload, remove, mediaUrl,
     createClient]) {
     spy.mockClear();
   }
@@ -189,13 +196,12 @@ describe('cover images', () => {
   it('uploads into the account\'s own folder and returns the path', async () => {
     await load();
     getSession.mockResolvedValue({ data: { session: { user: { id: 'user-1' } } }, error: null });
-    upload.mockResolvedValue({ data: {}, error: null });
+    upload.mockImplementation((supabase, path) => Promise.resolve(path));
 
     const path = await auth.uploadCover(file('image/png'));
 
-    expect(path).toMatch(/^user-1\/cover-\d+\.png$/);
-    expect(upload).toHaveBeenCalledWith(path, expect.anything(),
-      expect.objectContaining({ contentType: 'image/png' }));
+    expect(path).toMatch(/^covers\/user-1\/cover-\d+\.png$/);
+    expect(upload).toHaveBeenCalledWith(expect.anything(), path, expect.objectContaining({ type: 'image/png' }));
   });
 
   it('refuses anything but a JPEG, PNG or WebP before uploading', async () => {
@@ -298,22 +304,22 @@ describe('the profile', () => {
   it('turns a cover path into its public URL', async () => {
     await load();
     maybeSingle.mockResolvedValue({
-      data: { id: 'user-1', display_name: 'Mara', cover_path: 'user-1/cover-1.jpg',
+      data: { id: 'user-1', display_name: 'Mara', cover_path: 'covers/user-1/cover-1.jpg',
         account_type: 'organisation', contact_email: 'hi@mara.se', website: 'https://mara.se' },
       error: null,
     });
 
     await expect(auth.readOwnProfile()).resolves.toEqual(expect.objectContaining({
       accountType: 'organisation', contactEmail: 'hi@mara.se', website: 'https://mara.se',
-      coverPath: 'user-1/cover-1.jpg', cover: 'https://cdn.example/user-1/cover-1.jpg',
+      coverPath: 'covers/user-1/cover-1.jpg', cover: 'https://cdn.example/covers/user-1/cover-1.jpg',
     }));
-    expect(storageFrom).toHaveBeenCalledWith('profile-covers');
   });
 
   it('saves the details under their column names, with https:// added to a bare website', async () => {
     await load();
     maybeSingle.mockResolvedValue({ data: { id: 'user-1', display_name: 'Mara' }, error: null });
 
+    signedIn();
     await auth.saveOwnProfile({ accountType: 'organisation', contactEmail: 'hi@mara.se', website: 'mara.se' });
 
     expect(update).toHaveBeenCalledWith({
@@ -334,6 +340,7 @@ describe('the profile', () => {
       data: { id: 'user-1', display_name: 'Devon Park', bio: 'Cyclist' }, error: null,
     });
 
+    signedIn();
     await auth.saveOwnProfile({ name: 'Devon Park' });
 
     expect(update).toHaveBeenCalledWith({ display_name: 'Devon Park' });
@@ -346,21 +353,32 @@ describe('the profile', () => {
       error: null,
     });
 
+    signedIn();
     await auth.saveOwnProfile({ location: 'Malmö', avatar: 'tree' });
 
     expect(update).toHaveBeenCalledWith({ location: 'Malmö', avatar: 'tree' });
   });
 
-  it('carries no id on the update: the policy already scopes it to the caller', async () => {
+  it('filters the update to the session\'s own id, never one carried in the patch', async () => {
     await load();
     maybeSingle.mockResolvedValue({
       data: { id: 'user-1', display_name: 'Devon Park', bio: '' }, error: null,
     });
 
+    signedIn();
     await auth.saveOwnProfile({ name: 'Devon Park', bio: '' });
 
     expect(update).toHaveBeenCalledWith({ display_name: 'Devon Park', bio: '' });
     expect(update.mock.calls[0][0]).not.toHaveProperty('id');
+    // The project refuses an UPDATE with no WHERE clause, so this filter is required.
+    expect(eqUpdate).toHaveBeenCalledWith('id', 'user-1');
+  });
+
+  it('refuses to save without a session rather than sending an unfiltered update', async () => {
+    await load();
+
+    await expect(auth.saveOwnProfile({ name: 'Devon Park' })).rejects.toThrow(/Sign in/);
+    expect(update).not.toHaveBeenCalled();
   });
 });
 

@@ -460,6 +460,59 @@ DELETE policy and no INSERT; `notification_preferences` with SELECT, INSERT and 
 and no triggers listed on `notifications` itself — they live on the five tables that
 cause a notification, not on the table that receives one.
 
+## 14. Pictures on Cloudflare R2
+
+Requires steps 9 and 10 — the profile covers and the imagination previews are the two
+kinds of picture. Supabase keeps the tables and the accounts; the files themselves live
+in an R2 bucket. The browser reads them from the bucket's public domain and writes them
+through the `media` Edge Function (`supabase/functions/media`), which checks the
+Supabase session, only writes keys under the caller's own id (`previews/<user id>/…`,
+`covers/<user id>/…`), and reads each upload's bytes: only a real JPEG, PNG or WebP is
+stored, with the type the function found rather than the one the browser claimed.
+Uploading a cover also deletes the account's older covers, keeping the new one and the
+one the profile currently uses. The R2 keys never reach the browser.
+
+**In Cloudflare**
+
+1. The bucket. Create it with **Specify jurisdiction -> European Union** if the
+   privacy page's "stored in the EU" is to stay true. A *location hint* such as
+   "Eastern Europe (EEUR)" is not the same thing — it is a preference, not a
+   guarantee. Jurisdiction is chosen at creation and cannot be changed afterwards.
+2. Settings -> Public access -> connect a **custom domain** (e.g. `media.<your-domain>`).
+   The `r2.dev` address is rate-limited and not meant for production.
+3. No CORS policy is needed: the browser never talks to the bucket's S3 endpoint, only
+   to the function and to the public domain. Remove one if it was added earlier.
+4. R2 -> Manage API tokens -> an **Object Read & Write** token scoped to this bucket
+   only. Keep the Access Key ID and Secret Access Key; the account ID is on the R2
+   overview page.
+
+**In Supabase**
+
+```sh
+supabase secrets set R2_ACCOUNT_ID=… R2_ACCESS_KEY_ID=… R2_SECRET_ACCESS_KEY=… R2_BUCKET=…
+# Only for an EU-jurisdiction bucket, whose endpoint is <account>.eu.r2.cloudflarestorage.com:
+supabase secrets set R2_JURISDICTION=eu
+supabase functions deploy media
+```
+
+Then run `media-r2.sql` in the SQL editor (or `supabase db push`). It drops the
+storage policies of the two old buckets, clears the preview and cover paths that
+pointed into them, and adds a check that a row can only point into its owner's folder.
+Finally delete the `imagination-previews` and `profile-covers` buckets in
+Dashboard -> Storage; Supabase does not allow that from SQL.
+
+**In the app**
+
+Set `VITE_MEDIA_URL` to the custom domain, locally and in Vercel. It is the only R2
+value the frontend knows.
+
+### Verify
+
+Upload a cover in Settings. The network tab should show one `POST …/functions/v1/media`
+answered `200` with the new key, and the cover should load from `VITE_MEDIA_URL`. A
+file that is not a JPEG, PNG or WebP — whatever its name says — answers `415`. Signed
+out, the function answers `401`; a key under somebody else's id answers `403`.
+
 ## Still to decide
 
 - **Projects have one role beyond the owner, not several.** A collaborator can edit

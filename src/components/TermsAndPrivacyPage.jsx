@@ -10,6 +10,7 @@ import {
   GOOGLE_PRIVACY_URL,
   POSTHOG_PRIVACY_URL,
   SUPABASE_PRIVACY_URL,
+  CLOUDFLARE_PRIVACY_URL,
   EDPB_AUTHORITIES_URL,
 } from '../legal';
 import { exportAllData, eraseAllData } from '../services/api';
@@ -429,10 +430,14 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Who else sees what we store.</strong> Accounts,
-          profiles, posted imaginations, their pictures, survey answers, bug reports and Sandbox rooms are all
-          stored for us by Supabase, which hosts the database and file storage in the EU and
-          processes them only on our instructions.{' '}
+          profiles, posted imaginations, survey answers, bug reports and Sandbox rooms are all
+          stored for us by Supabase, which hosts the database in the EU and processes them only
+          on our instructions. The pictures you upload — imagination previews and profile
+          covers — are stored for us by Cloudflare, in its R2 storage in the EU, on the same
+          terms.{' '}
           <ExternalLink t={t} href={SUPABASE_PRIVACY_URL}>Read Supabase&rsquo;s privacy policy</ExternalLink>
+          {' · '}
+          <ExternalLink t={t} href={CLOUDFLARE_PRIVACY_URL}>Read Cloudflare&rsquo;s privacy policy</ExternalLink>
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>What PLACER does not collect.</strong>
@@ -671,13 +676,14 @@ export function TermsAndPrivacyPage({ t }) {
           the Standard Contractual Clauses in its data processing agreement.
         </P>
         <P t={t}>
-          Everything we store — accounts and profiles, the imaginations you post, the pictures of
-          them, survey answers and Sandbox rooms — is held in a Postgres database and file storage
-          hosted by Supabase in the EU, acting as our processor. Supabase Inc. is a US company, so
-          support access from outside the EEA is likewise covered by the Standard Contractual
-          Clauses in its data processing agreement. The pictures are served from a public address
-          on that storage, which means they may be fetched from wherever the person looking at the
-          map happens to be.
+          Everything we store — accounts and profiles, the imaginations you post, survey answers
+          and Sandbox rooms — is held in a Postgres database hosted by Supabase in the EU, acting
+          as our processor. The pictures — imagination previews and profile covers — are held in
+          Cloudflare R2 storage in the EU, with Cloudflare acting as our processor. Supabase Inc.
+          and Cloudflare, Inc. are US companies, so support access from outside the EEA is likewise
+          covered by the Standard Contractual Clauses in their data processing agreements. The
+          pictures are served from a public address through Cloudflare&rsquo;s network, which means
+          they may be fetched from wherever the person looking at the map happens to be.
         </P>
         <P t={t}>
           <ExternalLink t={t} href={GOOGLE_PRIVACY_URL}>Google&rsquo;s privacy policy</ExternalLink>
@@ -685,6 +691,8 @@ export function TermsAndPrivacyPage({ t }) {
           <ExternalLink t={t} href={POSTHOG_PRIVACY_URL}>PostHog&rsquo;s privacy policy</ExternalLink>
           {' · '}
           <ExternalLink t={t} href={SUPABASE_PRIVACY_URL}>Supabase&rsquo;s privacy policy</ExternalLink>
+          {' · '}
+          <ExternalLink t={t} href={CLOUDFLARE_PRIVACY_URL}>Cloudflare&rsquo;s privacy policy</ExternalLink>
         </P>
       </Section>
 

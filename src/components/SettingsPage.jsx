@@ -161,7 +161,7 @@ function ProfileField({ t, profile, onSaveProfile, fieldKey, title, description,
 // The picture across the top of the public profile. Uploading saves straight away —
 // there is nothing to review between choosing a file and wanting it — and the old
 // file is deleted once the profile points at the new one. Account path only: covers
-// live in Supabase Storage, and a local-only visitor has no bucket to put one in.
+// live in the R2 bucket, and a local-only visitor has no account to upload one with.
 function CoverPicker({ t, profile, onSaveProfile }) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'uploading' | 'removing' | 'error'
   const [error, setError] = useState(null);

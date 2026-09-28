@@ -19,9 +19,11 @@
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
+import { mediaUrl, removeMedia, uploadMedia } from './media';
 
 export const PROFILES_TABLE = 'profiles';
-export const COVERS_BUCKET = 'profile-covers';
+// The folder covers go under in the R2 bucket (supabase/functions/media).
+export const COVERS_FOLDER = 'covers';
 
 export const ACCOUNT_TYPES = [
   { key: 'individual', label: 'Individual' },
@@ -31,7 +33,7 @@ export const ACCOUNT_TYPES = [
 const PROFILE_COLUMNS = 'id, display_name, bio, location, avatar, account_type, contact_email,'
   + ' website, cover_path';
 
-// Cover images the bucket accepts, and its size limit (supabase/profiles-details.sql).
+// Cover images the media function accepts, and its size limit (supabase/functions/media).
 const COVER_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 export const COVER_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -47,9 +49,7 @@ function profileFrom(supabase, row) {
     contactEmail: row.contact_email ?? '',
     website: row.website ?? '',
     coverPath: row.cover_path ?? null,
-    cover: row.cover_path
-      ? supabase.storage.from(COVERS_BUCKET).getPublicUrl(row.cover_path).data?.publicUrl ?? null
-      : null,
+    cover: mediaUrl(row.cover_path),
   };
 }
 
@@ -253,13 +253,17 @@ export async function readPublicProfile(id) {
 /**
  * Change the display name, the bio, or both, and return the profile as stored.
  *
- * Only the keys given are touched, so saving a name cannot blank a bio. The update
- * carries no id: the policy scopes it to auth.uid() already, and a client-supplied id
- * would be a way of asking to edit somebody else — refused, but not worth offering.
+ * Only the keys given are touched, so saving a name cannot blank a bio. The update is
+ * filtered to the signed-in account's own id, read from the session rather than taken
+ * from the caller. The policy scopes it to auth.uid() regardless, but the project
+ * refuses any UPDATE without a WHERE clause, so the filter has to be there.
  */
 export async function saveOwnProfile({ name, bio, location, avatar, accountType, contactEmail,
   website, coverPath }) {
   const supabase = await client();
+  const { data: session } = await supabase.auth.getSession();
+  const userId = session?.session?.user?.id;
+  if (!userId) throw new Error('Sign in to save your profile.');
 
   const patch = {};
   if (name !== undefined) patch.display_name = name;
@@ -274,6 +278,7 @@ export async function saveOwnProfile({ name, bio, location, avatar, accountType,
   const { data, error } = await supabase
     .from(PROFILES_TABLE)
     .update(patch)
+    .eq('id', userId)
     .select(PROFILE_COLUMNS)
     .maybeSingle();
 
@@ -298,12 +303,12 @@ export async function uploadCover(file) {
   const userId = session?.session?.user?.id;
   if (!userId) throw new Error('Sign in to upload a cover.');
 
-  const path = `${userId}/cover-${Date.now()}.${ext}`;
-  const { error } = await supabase.storage.from(COVERS_BUCKET)
-    .upload(path, file, { contentType: file.type, upsert: false });
-
-  if (error) throw new Error(`Could not upload your cover: ${error.message}`);
-  return path;
+  const path = `${COVERS_FOLDER}/${userId}/cover-${Date.now()}.${ext}`;
+  try {
+    return await uploadMedia(supabase, path, file);
+  } catch (error) {
+    throw new Error(`Could not upload your cover: ${error.message}`);
+  }
 }
 
 /**
@@ -313,8 +318,11 @@ export async function uploadCover(file) {
 export async function removeCoverFile(path) {
   if (!path) return;
   const supabase = await client();
-  const { error } = await supabase.storage.from(COVERS_BUCKET).remove([path]);
-  if (error) console.error('Could not delete the old cover:', error.message);
+  try {
+    await removeMedia(supabase, path);
+  } catch (error) {
+    console.error('Could not delete the old cover:', error.message);
+  }
 }
 
 /**

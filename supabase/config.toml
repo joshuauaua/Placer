@@ -391,6 +391,12 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Signs uploads to, and deletes from, the Cloudflare R2 bucket that holds every
+# picture (supabase/functions/media). The platform checks the caller's JWT before the
+# function runs; the function checks it again to learn whose folder they may touch.
+[functions.media]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

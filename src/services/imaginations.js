@@ -9,7 +9,7 @@
  *
  * Both stores hand back the same camelCase shape, so MapContainer, DashboardPage and
  * AdminImaginations cannot tell which they are looking at. The one visible difference is
- * `preview`: a data URL from localStorage, a bucket URL from Supabase. Both go straight
+ * `preview`: a data URL from localStorage, an R2 URL (services/media.js) otherwise. Both go straight
  * into an <img src> and neither cares.
  *
  * Deliberately not folded into services/api.js. That module is the localStorage layer and
@@ -17,11 +17,12 @@
  * those mocks ambiguous about what they are standing in for. The local functions are
  * imported from there rather than reimplemented.
  *
- * Previews go to Storage, never into a column: a composited JPEG is a few hundred KB and
+ * Previews go to the R2 bucket, never into a column: a composited JPEG is a few hundred KB and
  * a column would mean every read of the map dragging every picture with it.
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
+import { mediaUrl, removeMedia, uploadMedia } from './media';
 import {
   addComment as addCommentLocal,
   deleteImagination as deleteLocal,
@@ -33,7 +34,8 @@ import {
 } from './api';
 
 export const IMAGINATIONS_TABLE = 'imaginations';
-export const PREVIEWS_BUCKET = 'imagination-previews';
+// The folder previews go under in the R2 bucket (supabase/functions/media).
+export const PREVIEWS_FOLDER = 'previews';
 export const COMMENTS_TABLE = 'imagination_comments';
 export const VOTES_TABLE = 'imagination_votes';
 
@@ -90,11 +92,6 @@ function dataUrlToBlob(dataUrl, contentType) {
   return new Blob([bytes], { type: contentType });
 }
 
-function publicPreviewUrl(supabase, path) {
-  if (!path) return null;
-  return supabase.storage.from(PREVIEWS_BUCKET).getPublicUrl(path).data?.publicUrl ?? null;
-}
-
 /** A database row, in the shape the rest of the app already speaks. */
 function fromRow(supabase, row) {
   const hasCoords = Number.isFinite(row.lat) && Number.isFinite(row.lng);
@@ -113,7 +110,7 @@ function fromRow(supabase, row) {
     pov: row.pov ?? null,
     fov: row.fov ?? null,
     canvasAssets: row.canvas_assets ?? [],
-    preview: publicPreviewUrl(supabase, row.preview_path),
+    preview: mediaUrl(row.preview_path),
     upvotes: row.upvotes ?? 0,
     // Null for the ordinary case — an imagination posted without a project open.
     projectId: row.project_id ?? null,
@@ -213,15 +210,12 @@ export async function postImagination(imagination) {
   let previewPath = null;
   const kind = previewKind(preview);
   if (kind) {
-    previewPath = `${userId}/${id}.${kind.ext}`;
-    const { error } = await supabase.storage
-      .from(PREVIEWS_BUCKET)
-      .upload(previewPath, dataUrlToBlob(preview, kind.contentType), {
-        contentType: kind.contentType,
-        upsert: true,
-      });
-
-    if (error) throw new Error(`Could not upload the preview: ${error.message}`);
+    previewPath = `${PREVIEWS_FOLDER}/${userId}/${id}.${kind.ext}`;
+    try {
+      await uploadMedia(supabase, previewPath, dataUrlToBlob(preview, kind.contentType));
+    } catch (error) {
+      throw new Error(`Could not upload the preview: ${error.message}`);
+    }
   }
 
   const { data, error } = await supabase
@@ -248,7 +242,14 @@ export async function postImagination(imagination) {
     .select(COLUMNS)
     .single();
 
-  if (error) throw new Error(`Could not post your imagination: ${error.message}`);
+  if (error) {
+    // Nothing points at the picture now, so it would only sit in the bucket using space.
+    if (previewPath) {
+      await removeMedia(supabase, previewPath)
+        .catch((storageError) => console.error('Could not remove the unused preview:', storageError));
+    }
+    throw new Error(`Could not post your imagination: ${error.message}`);
+  }
   return fromRow(supabase, data);
 }
 
@@ -313,11 +314,11 @@ export async function removeImagination(id) {
   if (error) throw new Error(`Could not remove that imagination: ${error.message}`);
 
   if (existing?.preview_path) {
-    const { error: storageError } = await supabase.storage
-      .from(PREVIEWS_BUCKET)
-      .remove([existing.preview_path]);
-
-    if (storageError) console.error('Could not remove the preview image:', storageError);
+    try {
+      await removeMedia(supabase, existing.preview_path);
+    } catch (storageError) {
+      console.error('Could not remove the preview image:', storageError);
+    }
   }
 
   return { success: true };

@@ -5,7 +5,8 @@ import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
  *
  * The Supabase SDK is faked whole, so no client is built and no request is made. The
  * shape of the fake is part of the assertion: from() offers select, insert, update and
- * delete and nothing else, and the storage handle offers upload, remove and getPublicUrl.
+ * delete and nothing else. Pictures go through services/media, faked below as the three
+ * calls it offers; what it does with them is media.test.js's business.
  * A test fails the moment this module reaches for something the rules in
  * supabase/imaginations.sql do not grant it.
  *
@@ -34,12 +35,15 @@ const rpc = vi.fn();
 
 const upload = vi.fn();
 const remove = vi.fn();
-const getPublicUrl = vi.fn((path) => ({
-  data: { publicUrl: `https://example.supabase.co/storage/v1/object/public/imagination-previews/${path}` },
-}));
-const storageFrom = vi.fn(() => ({ upload, remove, getPublicUrl }));
+const mediaUrl = vi.fn((path) => (path ? `https://media.example/${path}` : null));
 
-const createClient = vi.fn(() => ({ from, rpc, storage: { from: storageFrom } }));
+vi.mock('../media', () => ({
+  uploadMedia: (...a) => upload(...a),
+  removeMedia: (...a) => remove(...a),
+  mediaUrl: (...a) => mediaUrl(...a),
+}));
+
+const createClient = vi.fn(() => ({ from, rpc }));
 
 vi.mock('@supabase/supabase-js', () => ({ createClient }));
 
@@ -86,7 +90,7 @@ const ROW = {
   pov: { heading: 90, pitch: 0, zoom: 1 },
   fov: 90,
   canvas_assets: [{ id: 'a1' }],
-  preview_path: 'user-1/img-1.jpg',
+  preview_path: 'previews/user-1/img-1.jpg',
   upvotes: 12,
   created_at: '2026-09-01T10:00:00.000Z',
   updated_at: '2026-09-01T10:00:00.000Z',
@@ -113,7 +117,7 @@ const DRAFT = {
 
 beforeEach(() => {
   for (const spy of [order, maybeSingle, single, eqSelect, matchSelect, select, selectAfterInsert,
-    insert, eqDelete, del, update, from, rpc, upload, remove, getPublicUrl, storageFrom, createClient,
+    insert, eqDelete, del, update, from, rpc, upload, remove, mediaUrl, createClient,
     fetchLocal, saveLocal, deleteLocal, voteLocal, readMyVoteLocal, addCommentLocal, readCommentsLocal]) {
     spy.mockClear();
   }
@@ -121,14 +125,11 @@ beforeEach(() => {
   maybeSingle.mockResolvedValue({ data: null, error: null });
   single.mockResolvedValue({ data: ROW, error: null });
   eqDelete.mockResolvedValue({ error: null });
-  upload.mockResolvedValue({ data: { path: 'user-1/img-1.jpg' }, error: null });
-  remove.mockResolvedValue({ data: [], error: null });
+  upload.mockImplementation((supabase, path) => Promise.resolve(path));
+  remove.mockResolvedValue(undefined);
   // imagination_vote returns a one-row table, unlike the old imagination_upvote's
   // bare integer — see the "voting" describe block below.
   rpc.mockResolvedValue({ data: [{ upvotes: 13, my_vote: 1 }], error: null });
-  getPublicUrl.mockImplementation((path) => ({
-    data: { publicUrl: `https://example.supabase.co/storage/v1/object/public/imagination-previews/${path}` },
-  }));
   vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('img-1');
 });
 
@@ -252,8 +253,8 @@ describe('reading the community', () => {
 
     const [first] = await imaginations.readImaginations();
 
-    expect(getPublicUrl).toHaveBeenCalledWith('user-1/img-1.jpg');
-    expect(first.preview).toContain('imagination-previews/user-1/img-1.jpg');
+    expect(mediaUrl).toHaveBeenCalledWith('previews/user-1/img-1.jpg');
+    expect(first.preview).toBe('https://media.example/previews/user-1/img-1.jpg');
   });
 
   it('has no position at all when there are no coordinates', async () => {
@@ -317,8 +318,7 @@ describe('posting', () => {
 
     await imaginations.postImagination(DRAFT);
 
-    expect(storageFrom).toHaveBeenCalledWith('imagination-previews');
-    expect(upload.mock.calls[0][0]).toBe('user-1/img-1.jpg');
+    expect(upload.mock.calls[0][1]).toBe('previews/user-1/img-1.jpg');
   });
 
   it('uploads before it inserts, because the row carries the path', async () => {
@@ -336,8 +336,8 @@ describe('posting', () => {
 
     // StreetScreen exports PNG when the capture failed, because JPEG has no alpha and a
     // transparent stage would flatten to black.
-    expect(upload.mock.calls[0][0]).toBe('user-1/img-1.png');
-    expect(upload.mock.calls[0][2]).toMatchObject({ contentType: 'image/png' });
+    expect(upload.mock.calls[0][1]).toBe('previews/user-1/img-1.png');
+    expect(upload.mock.calls[0][2].type).toBe('image/png');
   });
 
   it('posts without a picture rather than refusing to post', async () => {
@@ -351,7 +351,7 @@ describe('posting', () => {
 
   it('does not insert a half-posted imagination when the upload fails', async () => {
     await load();
-    upload.mockResolvedValue({ data: null, error: { message: 'bucket missing' } });
+    upload.mockRejectedValue(new Error('bucket missing'));
 
     await expect(imaginations.postImagination(DRAFT)).rejects.toThrow(/bucket missing/);
     expect(insert).not.toHaveBeenCalled();
@@ -370,7 +370,7 @@ describe('posting', () => {
       category: 'green',
       lat: 51.5074,
       lng: -0.1278,
-      preview_path: 'user-1/img-1.jpg',
+      preview_path: 'previews/user-1/img-1.jpg',
     });
     // Not the client's to set: the defaults and the trigger own these.
     expect(row).not.toHaveProperty('created_at');
@@ -409,22 +409,30 @@ describe('posting', () => {
 
     await expect(imaginations.postImagination(DRAFT)).rejects.toThrow(/row-level security/);
   });
+
+  it('deletes the uploaded picture when the insert is refused, so it does not sit unused', async () => {
+    await load();
+    single.mockResolvedValue({ data: null, error: { message: 'violates row-level security' } });
+
+    await expect(imaginations.postImagination(DRAFT)).rejects.toThrow();
+    expect(remove).toHaveBeenCalledWith(expect.anything(), 'previews/user-1/img-1.jpg');
+  });
 });
 
 describe('removing', () => {
   it('takes the picture with the row', async () => {
     await load();
-    maybeSingle.mockResolvedValue({ data: { preview_path: 'user-1/img-1.jpg' }, error: null });
+    maybeSingle.mockResolvedValue({ data: { preview_path: 'previews/user-1/img-1.jpg' }, error: null });
 
     await imaginations.removeImagination('img-1');
 
     expect(eqDelete).toHaveBeenCalledWith('id', 'img-1');
-    expect(remove).toHaveBeenCalledWith(['user-1/img-1.jpg']);
+    expect(remove).toHaveBeenCalledWith(expect.anything(), 'previews/user-1/img-1.jpg');
   });
 
   it('reads the path before deleting the row that holds it', async () => {
     await load();
-    maybeSingle.mockResolvedValue({ data: { preview_path: 'user-1/img-1.jpg' }, error: null });
+    maybeSingle.mockResolvedValue({ data: { preview_path: 'previews/user-1/img-1.jpg' }, error: null });
 
     await imaginations.removeImagination('img-1');
 
@@ -443,10 +451,10 @@ describe('removing', () => {
   it('counts the imagination gone even if the picture will not delete', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     await load();
-    maybeSingle.mockResolvedValue({ data: { preview_path: 'user-1/img-1.jpg' }, error: null });
-    remove.mockResolvedValue({ data: null, error: { message: 'object missing' } });
+    maybeSingle.mockResolvedValue({ data: { preview_path: 'previews/user-1/img-1.jpg' }, error: null });
+    remove.mockRejectedValue(new Error('object missing'));
 
-    // An orphan in a bucket is untidy; a pin that will not go away is the actual problem.
+    // An orphan in the bucket is untidy; a pin that will not go away is the actual problem.
     await expect(imaginations.removeImagination('img-1')).resolves.toMatchObject({ success: true });
     consoleError.mockRestore();
   });
