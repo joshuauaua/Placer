@@ -29,6 +29,10 @@ const fixture = {
     emailPlaceholder: 'you@example.com',
     otherLabel: 'Which one?',
     otherPlaceholder: 'Name it',
+    enterKeyLabel: 'Enter ↵',
+    enterHintStart: 'to begin',
+    enterHint: 'to continue',
+    enterHintSubmit: 'to submit',
     nextLabel: 'Next',
     backLabel: 'Back',
     submitLabel: 'Send',
@@ -601,6 +605,64 @@ describe('SurveyForm', () => {
     fireEvent.keyDown(field, { key: 'Enter' });
 
     expect(await screen.findByRole('heading', { name: fixture.success.title })).toBeInTheDocument();
+  });
+
+  describe('Enter to continue', () => {
+    const enter = (target = document.body) => fireEvent.keyDown(target, { key: 'Enter' });
+
+    it('starts the survey from the intro', () => {
+      renderFixture(vi.fn());
+      expect(screen.getByText(fixture.steps.enterHintStart)).toBeInTheDocument();
+
+      enter();
+      expect(heading(fixture.section1[0].label)).toBeInTheDocument();
+    });
+
+    it('does nothing on a question that has not been answered, and says nothing either', () => {
+      renderFixture(vi.fn());
+      enter();
+
+      expect(screen.queryByText(fixture.steps.enterHint)).not.toBeInTheDocument();
+      enter();
+      expect(heading(fixture.section1[0].label)).toBeInTheDocument();
+    });
+
+    it('moves on from a picked option instead of toggling it off', () => {
+      renderFixture(vi.fn());
+      enter();
+      fireEvent.click(options()[0]);
+      expect(screen.getByText(fixture.steps.enterHint)).toBeInTheDocument();
+
+      enter(options()[0]);
+      expect(heading(fixture.section2[0].label)).toBeInTheDocument();
+    });
+
+    it('submits from the email step', async () => {
+      const submit = vi.fn().mockResolvedValue({ id: 'saved' });
+      renderFixture(submit);
+      enter();
+      answerAndAdvance(fixture.steps);
+      answerAndAdvance(fixture.steps);
+      answerAndAdvance(fixture.steps);
+      expect(screen.getByText(fixture.steps.enterHintSubmit)).toBeInTheDocument();
+
+      enter();
+      expect(await screen.findByRole('heading', { name: fixture.success.title })).toBeInTheDocument();
+      expect(submit).toHaveBeenCalledTimes(1);
+    });
+
+    it('submits once when Enter is pressed in the email field', async () => {
+      const submit = vi.fn().mockResolvedValue({ id: 'saved' });
+      renderFixture(submit);
+      enter();
+      answerAndAdvance(fixture.steps);
+      answerAndAdvance(fixture.steps);
+      answerAndAdvance(fixture.steps);
+
+      enter(emailField(fixture.steps));
+      expect(await screen.findByRole('heading', { name: fixture.success.title })).toBeInTheDocument();
+      expect(submit).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('a ranked question', () => {

@@ -156,7 +156,7 @@ describe('placemaking trends survey content', () => {
       const content = resolveSurveyContent();
 
       expect(content.cover.body.length).toBeGreaterThan(1);
-      expect(content.cover.body[1]).toMatch(/about 7 minutes/);
+      expect(content.cover.body[1]).toMatch(/about 5 minutes/);
     });
 
     it('rejects an empty body', () => {

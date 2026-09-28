@@ -6,7 +6,7 @@
  * testable without a DOM.
  */
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import posthog from 'posthog-js';
 
 import { SECTIONS } from './content';
@@ -237,6 +237,57 @@ export function useSurveyForm({ content, submit, source }) {
       setIsSubmitting(false);
     }
   };
+
+  /**
+   * What Enter means on the step we are on: start the survey, take the answer
+   * and move on, or submit. It does nothing when the step is not ready, which is
+   * the same rule the Next and Submit buttons follow.
+   */
+  const advance = () => {
+    if (isSubmitting) return;
+    if (step === 'intro') handleNext();
+    else if (step === 'email') onSubmit();
+    else if (isSectionStep(step) && currentQuestionValid) handleNext();
+  };
+
+  // Read by the listener below, so it can be registered once and still call the
+  // current step's rules rather than the ones that applied when it was added.
+  const advanceRef = useRef(advance);
+  useEffect(() => {
+    advanceRef.current = advance;
+  });
+
+  /**
+   * Enter continues, the way it does in a Typeform — the same listener the
+   * Placemaking Trends survey uses (placemakingSurvey/useSurveyForm.js). It is on
+   * the document because there is usually nothing focused to hang it off.
+   *
+   * Everything that already treats Enter as its own is left alone: links follow,
+   * Back, Next and the dialog's × are buttons the browser activates, and the email
+   * field submits through its own handler, which marks the event handled. An
+   * option button is the exception — Enter on one continues rather than toggling
+   * off the answer just chosen.
+   */
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key !== 'Enter' || event.defaultPrevented) return;
+      if (event.shiftKey || event.metaKey || event.ctrlKey || event.altKey) return;
+
+      const target = event.target;
+      const tag = target?.tagName?.toLowerCase();
+
+      if (tag === 'a' || tag === 'select' || tag === 'summary') return;
+      if (target?.closest?.('summary')) return;
+      if (target?.isContentEditable) return;
+      if (tag === 'button' && !target.hasAttribute('data-survey-option')) return;
+
+      event.preventDefault();
+      advanceRef.current();
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   /** Leaves the survey. A full navigation, so a reload cannot resubmit. */
   const reset = () => {

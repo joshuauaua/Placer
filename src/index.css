@@ -586,6 +586,40 @@ a {
   }
 }
 
+/* PLACER — a panel in the nav bar's glass (see HaveYourSay.jsx's survey dialog).
+ *
+ * The same stack as .placer-glass-nav — tint, saturating blur, bright top rim,
+ * sheen across the upper half — on a rounded panel rather than a full-width bar.
+ */
+.placer-glass-panel {
+  background: rgba(255, 255, 255, 0.42);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 24px 60px rgba(0, 0, 0, 0.18);
+}
+
+.placer-glass-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 55%);
+  pointer-events: none;
+}
+
+.placer-glass-panel > * {
+  position: relative;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .placer-glass-panel {
+    background: rgba(255, 255, 255, 0.92);
+  }
+}
+
 /* PLACER — the site menu inside the nav bar (see HamburgerMenu.jsx).
  *
  * The panel fills the viewport under the bar (top matches .placer-glass-nav's

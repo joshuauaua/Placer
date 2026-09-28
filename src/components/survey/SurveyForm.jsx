@@ -71,20 +71,61 @@ function Mark({ t, src }) {
  * The layout, the padding and the centring that survives an overflow all live in
  * .placer-survey-screen. Given no height it fills the visible viewport itself, which
  * is what the /survey route wants; the dialog passes '100%' and keeps its own. */
-function FullScreen({ t, height, children }) {
+function FullScreen({ t, height, glass, children }) {
   return (
     <div
       className={`placer-survey-screen${height ? '' : ' placer-viewport'}`}
       style={{
         width: '100%',
         height,
-        background: `linear-gradient(135deg, ${t.page} 0%, ${t.chrome} 100%)`,
+        // On glass the panel behind is the surface, so the gradient would only hide it.
+        background: glass ? 'transparent' : `linear-gradient(135deg, ${t.page} 0%, ${t.chrome} 100%)`,
       }}
     >
       <div style={{ maxWidth: 600, textAlign: 'center' }}>{children}</div>
     </div>
   );
 }
+
+/**
+ * "Enter ↵ to continue", shown wherever Enter will actually do something — the
+ * listener in useSurveyForm ignores a step that is not ready, so promising it on
+ * one would be a lie. The same hint the Placemaking Trends survey shows.
+ */
+function EnterHint({ t, labels, phrase }) {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        fontSize: 13,
+        color: t.inkDim,
+      }}
+    >
+      <kbd
+        className="placer-mono"
+        style={{
+          padding: '4px 8px',
+          borderRadius: 6,
+          border: `1px solid ${t.line}`,
+          background: t.chrome,
+          color: t.ink,
+          fontSize: 12,
+          fontWeight: 600,
+        }}
+      >
+        {labels.enterKeyLabel}
+      </kbd>
+      {phrase}
+    </span>
+  );
+}
+
+// The question screen's header and footer bands when the survey sits on glass: a
+// faint white wash over the blur rather than an opaque fill, so the bands still read
+// as bands.
+const GLASS_BAND = 'rgba(255, 255, 255, 0.35)';
 
 /**
  * @param content  a validated survey, from `resolveSurveyContent`
@@ -96,6 +137,8 @@ function FullScreen({ t, height, children }) {
  *                 has a definite height of its own
  * @param onClose  replaces the default "leave the survey" behaviour, which is a
  *                 navigation to / and no use to a caller already showing /
+ * @param glass    drops the survey's own opaque backgrounds so a glass panel
+ *                 behind it shows through (see HaveYourSay)
  */
 export function SurveyForm({
   t,
@@ -105,13 +148,14 @@ export function SurveyForm({
   idPrefix = 'survey',
   height,
   onClose,
+  glass = false,
 }) {
   const survey = useSurveyForm({ content, submit, source });
   const { step } = survey;
 
   if (step === 'intro') {
     return (
-      <FullScreen t={t} height={height}>
+      <FullScreen t={t} height={height} glass={glass}>
         <Mark t={t} src={markIntro} />
 
         <h1
@@ -133,6 +177,10 @@ export function SurveyForm({
         <Btn t={t} variant="accent" size="lg" icon="arrowRight" onClick={survey.handleNext}>
           {content.hero.startLabel}
         </Btn>
+
+        <div style={{ marginTop: 16 }}>
+          <EnterHint t={t} labels={content.steps} phrase={content.steps.enterHintStart} />
+        </div>
       </FullScreen>
     );
   }
@@ -142,7 +190,7 @@ export function SurveyForm({
       // No card: the thank-you screen is the whole surface it is shown on, the
       // same as the intro. Inside the dialog a bordered card would read as a
       // second panel within the panel.
-      <FullScreen t={t} height={height}>
+      <FullScreen t={t} height={height} glass={glass}>
         <Mark t={t} src={markSuccess} />
 
         <h1
@@ -190,6 +238,13 @@ export function SurveyForm({
 
   const emailId = `${idPrefix}-email`;
 
+  // Whether Enter would do anything here, which is what the hint promises.
+  const enterWorks = onEmailStep
+    ? survey.canSubmit && !survey.isSubmitting
+    : survey.currentQuestionValid;
+
+  const band = glass ? GLASS_BAND : t.surface;
+
   return (
     <div
       className={height ? undefined : 'placer-viewport'}
@@ -198,7 +253,7 @@ export function SurveyForm({
         height,
         display: 'flex',
         flexDirection: 'column',
-        background: t.page,
+        background: glass ? 'transparent' : t.page,
       }}
     >
       {/* Section heading, position in the survey, and progress */}
@@ -207,7 +262,7 @@ export function SurveyForm({
         style={{
           flex: '0 0 auto',
           borderBottom: `1px solid ${t.line}`,
-          background: t.surface,
+          background: band,
         }}
       >
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
@@ -362,7 +417,7 @@ export function SurveyForm({
         style={{
           flex: '0 0 auto',
           borderTop: `1px solid ${t.line}`,
-          background: t.surface,
+          background: band,
         }}
       >
         <div
@@ -384,27 +439,37 @@ export function SurveyForm({
             {content.steps.backLabel}
           </Btn>
 
-          {onEmailStep ? (
-            <Btn
-              t={t}
-              variant="accent"
-              icon="check"
-              onClick={survey.onSubmit}
-              disabled={!survey.canSubmit || survey.isSubmitting}
-            >
-              {survey.isSubmitting ? content.steps.submittingLabel : content.steps.submitLabel}
-            </Btn>
-          ) : (
-            <Btn
-              t={t}
-              variant="accent"
-              icon="arrowRight"
-              onClick={survey.handleNext}
-              disabled={!survey.currentQuestionValid}
-            >
-              {content.steps.nextLabel}
-            </Btn>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {enterWorks && (
+              <EnterHint
+                t={t}
+                labels={content.steps}
+                phrase={onEmailStep ? content.steps.enterHintSubmit : content.steps.enterHint}
+              />
+            )}
+
+            {onEmailStep ? (
+              <Btn
+                t={t}
+                variant="accent"
+                icon="check"
+                onClick={survey.onSubmit}
+                disabled={!survey.canSubmit || survey.isSubmitting}
+              >
+                {survey.isSubmitting ? content.steps.submittingLabel : content.steps.submitLabel}
+              </Btn>
+            ) : (
+              <Btn
+                t={t}
+                variant="accent"
+                icon="arrowRight"
+                onClick={survey.handleNext}
+                disabled={!survey.currentQuestionValid}
+              >
+                {content.steps.nextLabel}
+              </Btn>
+            )}
+          </div>
         </div>
       </div>
     </div>

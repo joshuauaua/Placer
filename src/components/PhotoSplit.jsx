@@ -18,8 +18,8 @@ export function PhotoSplit({ t, src, alt, children }) {
   );
 }
 
-/** The page's title, then a bolder subtitle under it. */
-export function PhotoSplitHeading({ t, title, subtitle }) {
+/** The page's title, then a bolder subtitle under it, set in italics where asked. */
+export function PhotoSplitHeading({ t, title, subtitle, subtitleItalic = false }) {
   return (
     <>
       <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, letterSpacing: '-0.03em',
@@ -27,7 +27,8 @@ export function PhotoSplitHeading({ t, title, subtitle }) {
         {title}
       </h1>
       {subtitle && (
-        <p style={{ marginTop: 16, fontSize: 21, fontWeight: 700, lineHeight: 1.4, color: t.ink }}>
+        <p style={{ marginTop: 16, fontSize: 21, fontWeight: 700, lineHeight: 1.4, color: t.ink,
+          fontStyle: subtitleItalic ? 'italic' : undefined }}>
           {subtitle}
         </p>
       )}

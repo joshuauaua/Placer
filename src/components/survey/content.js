@@ -28,6 +28,11 @@ const STEP_FIELDS = [
   'emailPlaceholder',
   'otherLabel',
   'otherPlaceholder',
+  // The Enter-to-continue hint, read by the intro as well as the question steps.
+  'enterKeyLabel',
+  'enterHintStart',
+  'enterHint',
+  'enterHintSubmit',
   'nextLabel',
   'backLabel',
   'submitLabel',

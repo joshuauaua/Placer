@@ -95,6 +95,9 @@ export function SurveyQuestion({
             <button
               key={option.value}
               type="button"
+              // Enter on a picked option continues rather than toggling it off
+              // again; see the listener in useSurveyForm.
+              data-survey-option
               disabled={blocked}
               aria-pressed={selected}
               // The position is shown in a decorative badge, so it is said here
