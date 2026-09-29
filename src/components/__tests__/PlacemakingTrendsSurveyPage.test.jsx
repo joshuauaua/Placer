@@ -61,7 +61,7 @@ describe('PlacemakingTrendsSurveyPage', () => {
     render(<PlacemakingTrendsSurveyPage t={THEME} />);
 
     expect(heading(content.cover.title)).toBeInTheDocument();
-    expect(screen.getByText(content.cover.subtitle)).toBeInTheDocument();
+    expect(screen.queryByText('Placemaking Trends Survey 2026/2027')).not.toBeInTheDocument();
     expect(screen.getByText(content.cover.body[0])).toBeInTheDocument();
   });
 
