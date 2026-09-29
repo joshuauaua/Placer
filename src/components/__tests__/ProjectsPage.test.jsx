@@ -36,12 +36,21 @@ describe('ProjectsPage', () => {
     expect(onOpenProjectDashboard).toHaveBeenCalledWith('p1');
   });
 
-  it('offers to start one when there are none', async () => {
+  it('offers to create one beside the heading, with projects or without', async () => {
+    readMyProjects.mockResolvedValue([{ id: 'p1', name: 'Harbour steps', description: '' }]);
     const { onNewProject } = setup();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Start a project' }));
+    await screen.findByRole('button', { name: /Harbour steps/ });
+    fireEvent.click(screen.getByRole('button', { name: 'Create a Project' }));
 
     expect(onNewProject).toHaveBeenCalledTimes(1);
+  });
+
+  it('has the one create button, not a second, when there are none yet', async () => {
+    setup();
+
+    expect(await screen.findByText(/Nothing yet/)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Create a Project|Start a project/ })).toHaveLength(1);
   });
 
   it('says so when your projects cannot be loaded', async () => {
@@ -58,5 +67,6 @@ describe('ProjectsPage', () => {
 
     expect(await screen.findByText('Projects are not available in this environment.')).toBeInTheDocument();
     expect(readMyProjects).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Create a Project' })).not.toBeInTheDocument();
   });
 });

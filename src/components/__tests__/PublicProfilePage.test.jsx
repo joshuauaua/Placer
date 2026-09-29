@@ -72,10 +72,12 @@ describe('PublicProfilePage', () => {
     expect(readImaginationsByUser).not.toHaveBeenCalled();
   });
 
-  it('tells you when you are looking at your own profile', async () => {
+  it('looks the same on your own profile, with only the empty bio speaking to you', async () => {
+    vi.mocked(readPublicProfile).mockResolvedValue({ ...MARA, bio: '' });
     setup({ accountId: 'user-1' });
 
-    expect(await screen.findByText('This is how others see your profile.')).toBeInTheDocument();
+    expect(await screen.findByText(/You have not written a bio yet/)).toBeInTheDocument();
+    expect(screen.queryByText(/how others see your profile/)).not.toBeInTheDocument();
   });
 
   it('says the profile is not found for an unknown account', async () => {

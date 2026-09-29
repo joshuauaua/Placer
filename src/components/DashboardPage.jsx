@@ -66,7 +66,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
 
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
-      padding: '48px 40px' }} className="placer-scroll">
+      padding: '96px 40px 48px' }} className="placer-scroll">
       {selected && (
         <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)}
           accountId={accountId} authorName={name} onSignIn={onSignIn}

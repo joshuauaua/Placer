@@ -1,8 +1,7 @@
 /* PLACER — Projects: every project this account owns or collaborates on.
  *
- * The same list the profile carries under "Your projects", given a page of its
- * own so the side nav has somewhere to send it. Opening one goes to its
- * dashboard. Projects need an account and a Supabase project either way — see
+ * Reached from the side nav. Opening one goes to its dashboard, and "Create a
+ * Project" at the top right starts a new one. Projects need an account and a Supabase project either way — see
  * services/projects.js's header — so a checkout without Supabase says so rather
  * than spending a request finding out.
  */
@@ -44,13 +43,23 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '48px 40px' }} className="placer-scroll">
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
-          letterSpacing: '-0.03em', marginBottom: 8 }}>
-          Projects
-        </h1>
-        <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, marginBottom: 40 }}>
-          The projects you run or collaborate on.
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+          gap: 20, flexWrap: 'wrap', marginBottom: 40 }}>
+          <div>
+            <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
+              letterSpacing: '-0.03em', marginBottom: 8 }}>
+              Projects
+            </h1>
+            <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6 }}>
+              The projects you run or collaborate on.
+            </p>
+          </div>
+          {projectsAvailable() && onNewProject && (
+            <Btn t={t} variant="primary" icon="plus" onClick={onNewProject}>
+              Create a Project
+            </Btn>
+          )}
+        </div>
 
         {!projectsAvailable() && (
           <p style={{ fontSize: 14, color: t.inkFaint }}>
@@ -70,15 +79,10 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
         )}
 
         {projectsAvailable() && status === 'ready' && projects.length === 0 && (
-          <div>
-            <p style={{ fontSize: 14, color: t.inkFaint, marginBottom: 16 }}>
-              Nothing yet. A project gets a dashboard, a public page, and lets people
-              collaborate with you on it.
-            </p>
-            <Btn t={t} variant="primary" size="sm" icon="plus" onClick={onNewProject}>
-              Start a project
-            </Btn>
-          </div>
+          <p style={{ fontSize: 14, color: t.inkFaint }}>
+            Nothing yet. A project gets a dashboard, a public page, and lets people
+            collaborate with you on it.
+          </p>
         )}
 
         {projectsAvailable() && status === 'ready' && projects.length > 0 && (

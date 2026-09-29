@@ -138,12 +138,6 @@ export function PublicProfilePage({ t, userId, accountId = null }) {
         </aside>
 
         <main className="placer-profile-main">
-          {isYou && (
-            <p style={{ fontSize: 14.5, color: t.inkDim, fontWeight: 500, marginBottom: 16 }}>
-              This is how others see your profile.
-            </p>
-          )}
-
           <h2 className="placer-disp" style={{ fontSize: 28, fontWeight: 700, color: t.ink,
             letterSpacing: '-0.02em', marginBottom: 12 }}>
             About
