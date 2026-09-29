@@ -116,7 +116,15 @@ describe('PlacemakingTrendsSurveyPage', () => {
       expect(button(content.steps.submitLabel)).not.toBeDisabled();
     });
 
-    it('clears and locks the details and other opt-ins when anonymous is ticked', () => {
+    it('puts the next steps first and your details below them', () => {
+      const checklist = heading(content.steps.optInChecklistTitle);
+      const details = heading(content.contact.title);
+
+      expect(checklist).toHaveTextContent(/^Next steps$/);
+      expect(checklist.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('drops the details and locks the other opt-ins when anonymous is ticked', () => {
       const anonymous = content.optIns.find((entry) => entry.anonymous);
       const others = content.optIns.filter((entry) => !entry.anonymous);
 
@@ -124,9 +132,9 @@ describe('PlacemakingTrendsSurveyPage', () => {
       fireEvent.click(optIn(others[0].label));
       fireEvent.click(optIn(anonymous.label));
 
+      expect(screen.queryByRole('heading', { name: content.contact.title })).not.toBeInTheDocument();
       content.contact.fields.forEach((entry) => {
-        expect(field(entry.label)).toHaveValue('');
-        expect(field(entry.label)).toBeDisabled();
+        expect(screen.queryByLabelText(entry.label)).not.toBeInTheDocument();
       });
       others.forEach((entry) => {
         expect(optIn(entry.label)).not.toBeChecked();
@@ -134,8 +142,9 @@ describe('PlacemakingTrendsSurveyPage', () => {
       });
       expect(button(content.steps.submitLabel)).not.toBeDisabled();
 
+      // Unticked, the details come back empty rather than with what was typed before.
       fireEvent.click(optIn(anonymous.label));
-      expect(field('Full Name')).not.toBeDisabled();
+      expect(field('Full Name')).toHaveValue('');
       others.forEach((entry) => expect(optIn(entry.label)).not.toBeDisabled());
     });
 

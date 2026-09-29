@@ -361,74 +361,9 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
 
           {onOptInStep ? (
             <div>
-              {/* Always shown — not gated behind an opt-in any more. Submit still
-                  stays available with all of it blank; typing anything here is
-                  what makes the fields required to be complete (see wantsContact
-                  in useSurveyForm). */}
-              <div>
-                <h3
-                  className="placer-disp"
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: t.ink,
-                    letterSpacing: '-0.01em',
-                    marginBottom: 4,
-                  }}
-                >
-                  {content.contact.title}
-                </h3>
-                {content.contact.description && (
-                  <p style={{ fontSize: 14, color: t.inkDim, marginBottom: 20 }}>
-                    {content.contact.description}
-                  </p>
-                )}
-
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                    gap: 16,
-                  }}
-                >
-                  {content.contact.fields.map((field) => {
-                    const fieldId = `${idPrefix}-${field.key}`;
-                    return (
-                      <div key={field.key}>
-                        <label
-                          htmlFor={fieldId}
-                          style={{
-                            display: 'block',
-                            fontSize: 14,
-                            fontWeight: 700,
-                            color: t.ink,
-                            marginBottom: 8,
-                          }}
-                        >
-                          {field.label}
-                        </label>
-                        <input
-                          id={fieldId}
-                          type={field.type === 'email' ? 'email' : 'text'}
-                          autoComplete={field.type === 'email' ? 'email' : 'off'}
-                          value={survey.contact[field.key]}
-                          disabled={survey.isAnonymous}
-                          placeholder={field.placeholder}
-                          onChange={(e) => survey.setContactField(field.key, e.target.value)}
-                          style={{
-                            ...inputStyle(t),
-                            ...(survey.isAnonymous && { opacity: 0.5, cursor: 'not-allowed' }),
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* A subheading above the checkboxes is optional content — a survey
                   whose opt-ins need no grouping label simply leaves it out. */}
-              <div style={{ marginTop: 32 }}>
+              <div>
                 {content.steps.optInChecklistTitle && (
                   <h3
                     className="placer-disp"
@@ -457,6 +392,70 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
                   ))}
                 </div>
               </div>
+
+              {/* Below the opt-ins, and gone altogether once somebody asks to take part
+                  anonymously — there is then nothing to fill in. Otherwise submit still
+                  stays available with all of it blank; typing anything here is what
+                  makes the fields required to be complete (see wantsContact in
+                  useSurveyForm). */}
+              {!survey.isAnonymous && (
+                <div style={{ marginTop: 32 }}>
+                  <h3
+                    className="placer-disp"
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: t.ink,
+                      letterSpacing: '-0.01em',
+                      marginBottom: 4,
+                    }}
+                  >
+                    {content.contact.title}
+                  </h3>
+                  {content.contact.description && (
+                    <p style={{ fontSize: 14, color: t.inkDim, marginBottom: 20 }}>
+                      {content.contact.description}
+                    </p>
+                  )}
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                      gap: 16,
+                    }}
+                  >
+                    {content.contact.fields.map((field) => {
+                      const fieldId = `${idPrefix}-${field.key}`;
+                      return (
+                        <div key={field.key}>
+                          <label
+                            htmlFor={fieldId}
+                            style={{
+                              display: 'block',
+                              fontSize: 14,
+                              fontWeight: 700,
+                              color: t.ink,
+                              marginBottom: 8,
+                            }}
+                          >
+                            {field.label}
+                          </label>
+                          <input
+                            id={fieldId}
+                            type={field.type === 'email' ? 'email' : 'text'}
+                            autoComplete={field.type === 'email' ? 'email' : 'off'}
+                            value={survey.contact[field.key]}
+                            placeholder={field.placeholder}
+                            onChange={(e) => survey.setContactField(field.key, e.target.value)}
+                            style={inputStyle(t)}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <TermsNotice t={t} labels={content.steps} />
 
