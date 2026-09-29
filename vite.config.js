@@ -48,9 +48,34 @@ function opencvAssetServePlugin() {
   }
 }
 
+// Link-preview crawlers need an absolute og:image URL, and each branch deploys
+// to its own host, so index.html's %SITE_ORIGIN% is resolved per build.
+// Branches with a custom domain use it; any other Vercel build falls back to
+// its branch URL, and a local build to the public site.
+const SITE_HOSTS = {
+  Development: 'staging.plcr.org',
+  main: 'beta.plcr.org',
+  landingpage: 'plcr.org',
+}
+
+function siteOrigin() {
+  const host =
+    SITE_HOSTS[process.env.VERCEL_GIT_COMMIT_REF] ??
+    process.env.VERCEL_BRANCH_URL ??
+    'plcr.org'
+  return `https://${host}`
+}
+
+function siteOriginPlugin() {
+  return {
+    name: 'site-origin',
+    transformIndexHtml: (html) => html.replaceAll('%SITE_ORIGIN%', siteOrigin()),
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), opencvAssetBuildPlugin(), opencvAssetServePlugin()],
+  plugins: [react(), opencvAssetBuildPlugin(), opencvAssetServePlugin(), siteOriginPlugin()],
   define: {
     __OPENCV_ASSET_PATH__: JSON.stringify(opencvAssetPath),
   },
