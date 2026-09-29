@@ -1,11 +1,16 @@
-/* PLACER — start or edit a project: dates, where it is, and what it is trying to do */
+/* PLACER — start or edit a project: what kind it is, what it is trying to do, and where.
+ *
+ * Starting one is five steps, one screen each: a cover saying what a project is, the
+ * kind of project (services/projects.js's PROJECT_TYPES, which work as templates for
+ * what follows), the basics, the place, and an image. Editing one is the same fields on
+ * a single page, since whoever is editing already knows what a project is. */
 
 import { useEffect, useState } from 'react';
 import { Btn } from './UI';
 import { ImagePicker } from './ImagePicker';
 import { LocationMapPicker } from './LocationMapPicker';
 import {
-  createProject, removeProjectImageFile, updateProject, uploadProjectImage,
+  PROJECT_TYPES, createProject, removeProjectImageFile, updateProject, uploadProjectImage,
 } from '../services/projects';
 import { checkPickedImage } from '../services/media';
 
@@ -41,6 +46,41 @@ function Field({ t, label, htmlFor, hint, children }) {
 const locationsToText = (locations) => (locations ?? []).join('\n');
 const textToLocations = (text) => text.split('\n').map((line) => line.trim()).filter(Boolean);
 
+/** The five steps of starting a project, in order. */
+const STEPS = ['What is a project', 'Project type', 'The basics', 'The place', 'An image'];
+const LAST_STEP = STEPS.length - 1;
+
+function ProjectTypeChoice({ t, value, onChange }) {
+  return (
+    <fieldset style={{ border: 0, padding: 0, margin: '0 0 26px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <legend style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 10, padding: 0 }}>
+        What kind of project is it?
+      </legend>
+      {PROJECT_TYPES.map((type) => {
+        const checked = value === type.key;
+        return (
+          <label key={type.key}
+            style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: 18, cursor: 'pointer',
+              borderRadius: 12, background: checked ? t.surfaceAlt : t.surface,
+              border: `1.5px solid ${checked ? t.ink : t.line}` }}>
+            <input type="radio" name="project-type" value={type.key} checked={checked}
+              onChange={() => onChange(type.key)}
+              style={{ marginTop: 3, accentColor: t.ink, flex: '0 0 auto' }} />
+            <span>
+              <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: 4 }}>
+                {type.title}
+              </span>
+              <span style={{ display: 'block', fontSize: 14, color: t.inkDim, lineHeight: 1.55 }}>
+                {type.description}
+              </span>
+            </span>
+          </label>
+        );
+      })}
+    </fieldset>
+  );
+}
+
 /**
  * `project` is null to start a new one, or an existing project (from services/projects'
  * fromRow shape) to edit it in place — the same field set either way, so this is the
@@ -59,6 +99,9 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   const [endDate, setEndDate] = useState(project?.endDate ?? '');
   const [locationsText, setLocationsText] = useState(locationsToText(project?.locations));
   const [locationShapes, setLocationShapes] = useState(project?.locationShapes ?? []);
+  const [projectType, setProjectType] = useState(project?.projectType ?? null);
+  // Which of the five steps a new project is on, 0 to 4. Editing has no steps.
+  const [step, setStep] = useState(0);
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'error'
   const [error, setError] = useState(null);
   // A new project has no id to name the image's folder until it is created, so the
@@ -100,6 +143,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
         endDate: endDate || null,
         locations: textToLocations(locationsText),
         locationShapes,
+        projectType,
       };
 
       let saved = editing
@@ -129,105 +173,223 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
     }
   };
 
-  return (
+  const goalsHint = PROJECT_TYPES.find(({ key }) => key === projectType)?.goalsHint
+    ?? 'What is this project trying to find out or bring about?';
+
+  // The fields, each once, so the steps and the single edit page lay out the same ones.
+  const basics = (
+    <>
+      <Field t={t} label="Name *" htmlFor="project-name">
+        <input id="project-name" type="text" value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g., Riverside Greenway" style={inputStyle(t)} />
+      </Field>
+
+      <Field t={t} label="Goals" htmlFor="project-description" hint={goalsHint}>
+        <textarea id="project-description" value={description} rows={5}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="What the project is for, and what success looks like."
+          style={{ ...inputStyle(t), resize: 'vertical' }} />
+      </Field>
+
+      <div style={{ display: 'flex', gap: 16, marginBottom: 0 }}>
+        <div style={{ flex: 1 }}>
+          <Field t={t} label="Start date" htmlFor="project-start">
+            <input id="project-start" type="date" value={startDate ?? ''}
+              onChange={(e) => setStartDate(e.target.value)} style={inputStyle(t)} />
+          </Field>
+        </div>
+        <div style={{ flex: 1 }}>
+          <Field t={t} label="End date" htmlFor="project-end">
+            <input id="project-end" type="date" value={endDate ?? ''}
+              onChange={(e) => setEndDate(e.target.value)} style={inputStyle(t)} />
+          </Field>
+        </div>
+      </div>
+    </>
+  );
+
+  const image = (
+    <Field t={t} label="Image"
+      hint="Shown at the top of the project's page and on its card, instead of the map of its area. A landscape photo works best. It is resized, and saved without its location data. Optional.">
+      {shownImage && (
+        <img src={shownImage} alt="" style={{ display: 'block', width: '100%', aspectRatio: '16 / 9',
+          objectFit: 'cover', borderRadius: 12, border: `1px solid ${t.line}`, marginBottom: 14 }} />
+      )}
+      {editing ? (
+        <ImagePicker t={t} hasImage={!!project.image} uploadLabel="Add an image"
+          replaceLabel="Replace image"
+          onUpload={async (file) => replaceImage(await uploadProjectImage(project.id, file))}
+          onRemove={() => replaceImage(null)} disabled={status === 'saving'} />
+      ) : (
+        <ImagePicker t={t} hasImage={!!pending} uploadLabel="Add an image"
+          replaceLabel="Choose another" onUpload={pickPendingImage}
+          onRemove={async () => setPending(null)} disabled={status === 'saving'} />
+      )}
+    </Field>
+  );
+
+  // The map picker reads its shapes once, when it mounts, so a new project hands back
+  // what was drawn before rather than the (empty) project's — stepping away and back
+  // to the place step keeps the outline.
+  const place = (
+    <>
+      <Field t={t} label="Locations" htmlFor="project-locations"
+        hint="Where this project is about — one place per line.">
+        <textarea id="project-locations" value={locationsText} rows={3}
+          onChange={(e) => setLocationsText(e.target.value)}
+          placeholder={'Malmö\nFolkets Park'}
+          style={{ ...inputStyle(t), resize: 'vertical' }} />
+      </Field>
+
+      <Field t={t} label="Location outline"
+        hint="Draw the area this project covers on the map — the polygon tool in its top-center control starts a shape, and clicking its last point closes it. You can draw more than one, and drag a corner afterwards to adjust it.">
+        <LocationMapPicker t={t} initialShapes={editing ? (project?.locationShapes ?? []) : locationShapes}
+          onChange={setLocationShapes} />
+      </Field>
+    </>
+  );
+
+  const errorBox = error && (
+    <div role="alert" style={{ marginBottom: 24, padding: 14, borderRadius: 12,
+      background: '#F5F5F5', borderLeft: '4px solid #B3261E', fontSize: 14, color: t.ink, fontWeight: 500 }}>
+      {error}
+    </div>
+  );
+
+  const page = (children) => (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
-      padding: '48px 40px 96px' }} className="placer-scroll">
+      padding: '96px 40px' }} className="placer-scroll">
+      {children}
+    </div>
+  );
+
+  const heading = (text) => (
+    <h1 className="placer-disp" style={{ fontSize: 40, fontWeight: 700, color: t.ink,
+      letterSpacing: '-0.03em', marginBottom: 12, lineHeight: 1.1 }}>
+      {text}
+    </h1>
+  );
+
+  if (editing) {
+    return page(
       <form onSubmit={handleSubmit} style={{ maxWidth: 640, margin: '0 auto' }}>
         <div style={{ marginBottom: 36 }}>
-          <h1 className="placer-disp" style={{ fontSize: 40, fontWeight: 700, color: t.ink,
-            letterSpacing: '-0.03em', marginBottom: 12, lineHeight: 1.1 }}>
-            {editing ? 'Edit project' : 'Start a project'}
-          </h1>
+          {heading('Edit project')}
           <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6 }}>
-            {editing
-              ? 'Change the setup. Collaborators, links and Sandbox sessions live on the dashboard.'
-              : 'A project gets a dashboard, a public page, and lets people collaborate with you on it.'}
+            Change the setup. Collaborators, links and Sandbox sessions live on the dashboard.
           </p>
         </div>
 
-        <Field t={t} label="Name *" htmlFor="project-name">
-          <input id="project-name" type="text" value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g., Riverside Greenway" style={inputStyle(t)} />
-        </Field>
+        <ProjectTypeChoice t={t} value={projectType} onChange={setProjectType} />
+        {basics}
+        {image}
+        {place}
 
-        <Field t={t} label="Goals" htmlFor="project-description"
-          hint="What is this project trying to find out or bring about?">
-          <textarea id="project-description" value={description} rows={5}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="What the project is for, and what success looks like."
-            style={{ ...inputStyle(t), resize: 'vertical' }} />
-        </Field>
+        <p style={{ fontSize: 13.5, color: t.inkFaint, marginTop: -10, marginBottom: 26, lineHeight: 1.5 }}>
+          Adding or removing collaborators, and attaching links, are on the project's dashboard.
+        </p>
 
-        <div style={{ display: 'flex', gap: 16, marginBottom: 0 }}>
-          <div style={{ flex: 1 }}>
-            <Field t={t} label="Start date" htmlFor="project-start">
-              <input id="project-start" type="date" value={startDate ?? ''}
-                onChange={(e) => setStartDate(e.target.value)} style={inputStyle(t)} />
-            </Field>
-          </div>
-          <div style={{ flex: 1 }}>
-            <Field t={t} label="End date" htmlFor="project-end">
-              <input id="project-end" type="date" value={endDate ?? ''}
-                onChange={(e) => setEndDate(e.target.value)} style={inputStyle(t)} />
-            </Field>
-          </div>
-        </div>
-
-        <Field t={t} label="Image"
-          hint="Shown at the top of the project's page and on its card, instead of the map of its area. A landscape photo works best. It is resized, and saved without its location data. Optional.">
-          {shownImage && (
-            <img src={shownImage} alt="" style={{ display: 'block', width: '100%', aspectRatio: '16 / 9',
-              objectFit: 'cover', borderRadius: 12, border: `1px solid ${t.line}`, marginBottom: 14 }} />
-          )}
-          {editing ? (
-            <ImagePicker t={t} hasImage={!!project.image} uploadLabel="Add an image"
-              replaceLabel="Replace image"
-              onUpload={async (file) => replaceImage(await uploadProjectImage(project.id, file))}
-              onRemove={() => replaceImage(null)} disabled={status === 'saving'} />
-          ) : (
-            <ImagePicker t={t} hasImage={!!pending} uploadLabel="Add an image"
-              replaceLabel="Choose another" onUpload={pickPendingImage}
-              onRemove={async () => setPending(null)} disabled={status === 'saving'} />
-          )}
-        </Field>
-
-        <Field t={t} label="Locations" htmlFor="project-locations"
-          hint="Where this project is about — one place per line.">
-          <textarea id="project-locations" value={locationsText} rows={3}
-            onChange={(e) => setLocationsText(e.target.value)}
-            placeholder={'Malmö\nFolkets Park'}
-            style={{ ...inputStyle(t), resize: 'vertical' }} />
-        </Field>
-
-        <Field t={t} label="Location outline"
-          hint="Draw the area this project covers on the map — the polygon tool in its top-center control starts a shape, and clicking its last point closes it. You can draw more than one, and drag a corner afterwards to adjust it.">
-          <LocationMapPicker t={t} initialShapes={project?.locationShapes ?? []} onChange={setLocationShapes} />
-        </Field>
-
-        {editing && (
-          <p style={{ fontSize: 13.5, color: t.inkFaint, marginTop: -10, marginBottom: 26, lineHeight: 1.5 }}>
-            Adding or removing collaborators, and attaching links, are on the project's dashboard.
-          </p>
-        )}
-
-        {error && (
-          <div role="alert" style={{ marginBottom: 24, padding: 14, borderRadius: 12,
-            background: '#F5F5F5', borderLeft: '4px solid #B3261E', fontSize: 14, color: t.ink, fontWeight: 500 }}>
-            {error}
-          </div>
-        )}
+        {errorBox}
 
         <div style={{ display: 'flex', gap: 12 }}>
           <Btn t={t} type="submit" variant="primary" icon="check" disabled={!complete || status === 'saving'}>
-            {status === 'saving' ? 'Saving…' : editing ? 'Save changes' : 'Start project'}
+            {status === 'saving' ? 'Saving…' : 'Save changes'}
           </Btn>
           {onCancel && (
-            <Btn t={t} variant="ghost" onClick={onCancel}>Cancel</Btn>
+            <Btn t={t} type="button" variant="ghost" onClick={onCancel}>Cancel</Btn>
           )}
         </div>
       </form>
-    </div>
+    );
+  }
+
+  // Step 1: the cover.
+  if (step === 0) {
+    return page(
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+        {heading('Start a project')}
+        <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, marginBottom: 28 }}>
+          A project brings people together around a place: to imagine what it could be,
+          and to decide or push for what happens to it.
+        </p>
+        <ul style={{ margin: '0 0 36px', paddingLeft: 20, fontSize: 16, color: t.ink, lineHeight: 1.7 }}>
+          <li>A dashboard to run it from, and a public page anyone can open from a link.</li>
+          <li>Collaborators who can help you set it up and run it.</li>
+          <li>Imaginations posted to it, and Sandbox rooms to gather people&rsquo;s views.</li>
+        </ul>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <Btn t={t} variant="primary" icon="plus" onClick={() => setStep(1)}>
+            Create a new project
+          </Btn>
+          {onCancel && (
+            <Btn t={t} type="button" variant="ghost" onClick={onCancel}>Cancel</Btn>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // What has to be filled in before a step lets you past it.
+  const stepReady = step === 1 ? !!projectType : step === 2 ? complete : true;
+
+  // Enter in a field moves on a step rather than starting the project early.
+  const onStepSubmit = (e) => {
+    if (step < LAST_STEP) {
+      e.preventDefault();
+      if (stepReady) setStep(step + 1);
+      return;
+    }
+    handleSubmit(e);
+  };
+
+  return page(
+    <form onSubmit={onStepSubmit} style={{ maxWidth: 640, margin: '0 auto' }}>
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: t.inkDim, marginBottom: 10 }}>
+          Step {step + 1} of {STEPS.length} · {STEPS[step]}
+        </div>
+        <div aria-hidden="true" style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
+          {STEPS.map((label, i) => (
+            <span key={label} style={{ flex: 1, height: 4, borderRadius: 2,
+              background: i <= step ? t.ink : t.line }} />
+          ))}
+        </div>
+        {heading(step === 1 ? 'What kind of project?' : step === 2 ? 'The basics'
+          : step === 3 ? 'Where is it?' : 'Add an image')}
+        {step === 1 && (
+          <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6 }}>
+            This shapes how the rest of the project is set up. You can change it later.
+          </p>
+        )}
+      </div>
+
+      {step === 1 && <ProjectTypeChoice t={t} value={projectType} onChange={setProjectType} />}
+      {step === 2 && basics}
+      {step === 3 && place}
+      {step === 4 && image}
+
+      {errorBox}
+
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <Btn t={t} type="button" variant="outline" onClick={() => setStep(step - 1)}
+          disabled={status === 'saving'}>
+          Back
+        </Btn>
+        {step < LAST_STEP ? (
+          <Btn t={t} type="submit" variant="primary" icon="arrowRight" disabled={!stepReady}>
+            Next
+          </Btn>
+        ) : (
+          <Btn t={t} type="submit" variant="primary" icon="check" disabled={!complete || status === 'saving'}>
+            {status === 'saving' ? 'Saving…' : 'Start project'}
+          </Btn>
+        )}
+        {onCancel && (
+          <Btn t={t} type="button" variant="ghost" onClick={onCancel}>Cancel</Btn>
+        )}
+      </div>
+    </form>
   );
 }
 

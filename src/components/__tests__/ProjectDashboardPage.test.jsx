@@ -21,7 +21,8 @@ import { THEME } from '../../theme';
 
 // ProjectSetupPage is rendered in place for "Edit setup" (see the test below) and
 // imports from this same module path, so its calls need covering here too.
-vi.mock('../../services/projects', () => ({
+vi.mock('../../services/projects', async (importOriginal) => ({
+  PROJECT_TYPES: (await importOriginal()).PROJECT_TYPES,
   readProject: vi.fn(),
   readStats: vi.fn(),
   readProjectViews: vi.fn(() => Promise.resolve({

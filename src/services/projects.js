@@ -33,8 +33,36 @@ async function client() {
   return supabase;
 }
 
+/**
+ * What kind of project it is, asked on the second step of starting one — see
+ * supabase/project-types.sql. `key` is what is stored; the rest is how the setup
+ * page asks the question and tailors what follows it.
+ */
+export const PROJECT_TYPES = [
+  {
+    key: 'steward',
+    title: 'I have a say over a place',
+    description: 'You own or look after a space, or have decision-making power over it, '
+      + 'and want to involve other people in what to do with it.',
+    goalsHint: 'What do you want to decide together with the people who use this place?',
+  },
+  {
+    key: 'advocate',
+    title: 'I want to push for change in a place',
+    description: 'You do not have decision-making power over the space, and want to get '
+      + 'other people involved to try and create change.',
+    goalsHint: 'What change do you want to see, and who needs to hear the case for it?',
+  },
+  {
+    key: 'other',
+    title: 'Something else',
+    description: 'Your project does not fit either of these.',
+    goalsHint: 'What is this project trying to find out or bring about?',
+  },
+];
+
 const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, description, start_date, end_date, '
-  + 'locations, location_shapes, image_path, created_at, updated_at';
+  + 'locations, location_shapes, image_path, project_type, created_at, updated_at';
 
 function fromRow(row) {
   return {
@@ -53,6 +81,8 @@ function fromRow(row) {
     // An uploaded picture, shown instead of the map of the area when there is one.
     imagePath: row.image_path ?? null,
     image: mediaUrl(row.image_path),
+    // One of PROJECT_TYPES' keys, or null for a project started before there was a choice.
+    projectType: row.project_type ?? null,
     createdAt: row.created_at ?? null,
     updatedAt: row.updated_at ?? null,
   };
@@ -64,7 +94,7 @@ function fromRow(row) {
  * refused write here rather than a policy violation there.
  */
 export async function createProject({ ownerId, ownerName, name, description = '',
-  startDate = null, endDate = null, locations = [], locationShapes = [] }) {
+  startDate = null, endDate = null, locations = [], locationShapes = [], projectType = null }) {
   if (!ownerId) throw new Error('Starting a project needs an account.');
 
   const supabase = await client();
@@ -79,6 +109,7 @@ export async function createProject({ ownerId, ownerName, name, description = ''
       end_date: endDate,
       locations,
       location_shapes: locationShapes,
+      project_type: projectType,
     })
     .select(PROJECT_COLUMNS)
     .single();
@@ -202,7 +233,7 @@ export async function updateProject(id, patch) {
   const columns = {
     ownerName: 'owner_name', name: 'name', description: 'description',
     startDate: 'start_date', endDate: 'end_date', locations: 'locations',
-    locationShapes: 'location_shapes', imagePath: 'image_path',
+    locationShapes: 'location_shapes', imagePath: 'image_path', projectType: 'project_type',
   };
   const row = {};
   for (const [key, column] of Object.entries(columns)) {

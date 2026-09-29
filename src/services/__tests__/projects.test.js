@@ -125,6 +125,7 @@ describe('starting a project', () => {
       description: 'Turn the old rail corridor into a park.',
       startDate: '2026-01-01', endDate: '2026-12-31', locations: ['Malmö', 'Folkets Park'],
       locationShapes: [{ path: [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }] }],
+      projectType: 'steward',
     });
 
     expect(from).toHaveBeenCalledWith('projects');
@@ -134,6 +135,7 @@ describe('starting a project', () => {
       description: 'Turn the old rail corridor into a park.',
       start_date: '2026-01-01', end_date: '2026-12-31', locations: ['Malmö', 'Folkets Park'],
       location_shapes: [{ path: [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }] }],
+      project_type: 'steward',
     }]]);
     expect(saved).toMatchObject({ id: 'proj-1', ownerId: 'user-1', name: 'Riverside Greenway' });
   });
