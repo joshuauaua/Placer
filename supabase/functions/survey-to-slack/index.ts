@@ -1,10 +1,12 @@
-// PLACER — posts each new survey response and bug report to a Slack channel.
+// PLACER — posts each new survey response, bug report and tool submission to a Slack channel.
 //
-// Called by insert triggers on public.survey_responses and public.bug_reports (see
-// supabase/README.md sections 15 and 16), never by the browser:
+// Called by insert triggers on public.survey_responses, public.bug_reports and
+// public.tool_submissions (see supabase/README.md sections 15 to 17), never by the
+// browser:
 //
 //   POST, header x-webhook-secret: <SURVEY_WEBHOOK_SECRET>,
-//         body: { type: 'INSERT', table: 'survey_responses' | 'bug_reports', record: {...} }
+//         body: { type: 'INSERT', table: 'survey_responses' | 'bug_reports' | 'tool_submissions',
+//                 record: {...} }
 //         ->  { ok: true }
 //
 // The platform's JWT check is off for this function (config.toml), because the
@@ -18,6 +20,7 @@
 // Secrets, set with `supabase secrets set`:
 //   SLACK_WEBHOOK_URL      the channel's Incoming Webhook URL
 //   SLACK_BUG_WEBHOOK_URL  optional; bug reports go here instead when set
+//   SLACK_TOOL_WEBHOOK_URL optional; tool submissions go here instead when set
 //   SURVEY_WEBHOOK_SECRET  any long random string; the triggers send the same
 
 const SOURCES: Record<string, string> = {
@@ -68,10 +71,21 @@ function bugMessage(record: Record<string, any>): string {
   ].join('\n');
 }
 
+function toolMessage(record: Record<string, any>): string {
+  return [
+    `:toolbox: *New Toolkit submission — ${esc(record.title)}*`,
+    // Quoted so a multi-line description stays visibly one block.
+    esc(record.description).split('\n').map((line) => `> ${line}`).join('\n'),
+    `*Email:* ${record.email ? esc(record.email) : '_not given_'}`,
+    `*Submitted:* ${esc(record.created_at)}  ·  id \`${esc(record.id)}\``,
+  ].join('\n');
+}
+
 Deno.serve(async (req) => {
   const secret = Deno.env.get('SURVEY_WEBHOOK_SECRET');
   const slackUrl = Deno.env.get('SLACK_WEBHOOK_URL');
   const bugSlackUrl = Deno.env.get('SLACK_BUG_WEBHOOK_URL') || slackUrl;
+  const toolSlackUrl = Deno.env.get('SLACK_TOOL_WEBHOOK_URL') || slackUrl;
   if (!secret || !slackUrl) {
     return Response.json({ error: 'not configured' }, { status: 500 });
   }
@@ -88,6 +102,8 @@ Deno.serve(async (req) => {
     [url, text] = [slackUrl, surveyMessage(payload.record)];
   } else if (payload.table === 'bug_reports') {
     [url, text] = [bugSlackUrl!, bugMessage(payload.record)];
+  } else if (payload.table === 'tool_submissions') {
+    [url, text] = [toolSlackUrl!, toolMessage(payload.record)];
   } else {
     return Response.json({ ok: true, skipped: true });
   }

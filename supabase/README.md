@@ -634,6 +634,32 @@ Send a report from the "Report a bug" button; a message should appear within a s
 or two. If not, check `net._http_response` as in step 15 — the status codes mean the
 same things.
 
+## 17. Toolkit submissions in Slack
+
+Optional. Requires step 15. The Sandbox's **Contribute** button opens a form asking for a
+tool's title, a description and an email address; each one is a row in
+`tool_submissions` (`tool-submissions.sql`, also a migration), posted by the same
+`survey-to-slack` function. The submitter's account is left out of the message.
+
+By default it posts to the survey channel. To send submissions to a channel of their
+own, add another Incoming Webhook for that channel and set it:
+
+```sh
+supabase secrets set SLACK_TOOL_WEBHOOK_URL=https://hooks.slack.com/services/…
+supabase functions deploy survey-to-slack
+```
+
+Then run `tool-submissions-slack.sql` in the SQL editor. It reuses `survey_webhook_secret`
+from Vault, so there is nothing new to store there.
+
+**Everyone in the channel sees submitters' emails**, the same as step 15.
+
+### Verify
+
+Send a submission from `/sandbox` -> Contribute; a message should appear within a second
+or two. If not, check `net._http_response` as in step 15 — the status codes mean the
+same things.
+
 ## Still to decide
 
 - **Projects have one role beyond the owner, not several.** A collaborator can edit
