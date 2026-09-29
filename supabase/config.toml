@@ -397,8 +397,8 @@ deno_version = 2
 [functions.media]
 verify_jwt = true
 
-# Posts new survey responses to Slack (supabase/functions/survey-to-slack). Called by a
-# Database Webhook, which has no user session, so the JWT check is off; the function
+# Posts new survey responses and bug reports to Slack (supabase/functions/survey-to-slack).
+# Called by insert triggers, which carry no user session, so the JWT check is off; the function
 # checks an x-webhook-secret header instead.
 [functions.survey-to-slack]
 verify_jwt = false

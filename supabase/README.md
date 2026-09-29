@@ -611,6 +611,29 @@ select created, status_code, content from net._http_response order by created de
 missing; `502` means Slack refused the post (usually a revoked webhook URL). Slack being
 down loses that one message but never the response itself, which is already saved.
 
+## 16. Bug reports in Slack
+
+Optional. Requires step 15. Each new row in `bug_reports` is posted by the same
+`survey-to-slack` function, with the message, the page it was sent from and the
+browser's user agent. The reporter's account is left out of the message.
+
+By default it posts to the survey channel. To send bug reports to a channel of their
+own, add a second Incoming Webhook for that channel and set it:
+
+```sh
+supabase secrets set SLACK_BUG_WEBHOOK_URL=https://hooks.slack.com/services/…
+supabase functions deploy survey-to-slack
+```
+
+Then run `bug-reports-slack.sql` in the SQL editor. It reuses `survey_webhook_secret`
+from Vault, so there is nothing new to store there.
+
+### Verify
+
+Send a report from the "Report a bug" button; a message should appear within a second
+or two. If not, check `net._http_response` as in step 15 — the status codes mean the
+same things.
+
 ## Still to decide
 
 - **Projects have one role beyond the owner, not several.** A collaborator can edit

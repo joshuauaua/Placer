@@ -1,10 +1,11 @@
-// PLACER — posts each new survey response to a Slack channel.
+// PLACER — posts each new survey response and bug report to a Slack channel.
 //
-// Called by a Database Webhook on INSERT into public.survey_responses (see
-// supabase/README.md section 15), never by the browser:
+// Called by insert triggers on public.survey_responses and public.bug_reports (see
+// supabase/README.md sections 15 and 16), never by the browser:
 //
 //   POST, header x-webhook-secret: <SURVEY_WEBHOOK_SECRET>,
-//         body: { type: 'INSERT', table: 'survey_responses', record: {...} }  ->  { ok: true }
+//         body: { type: 'INSERT', table: 'survey_responses' | 'bug_reports', record: {...} }
+//         ->  { ok: true }
 //
 // The platform's JWT check is off for this function (config.toml), because the
 // webhook carries no user session. The shared secret takes its place: without it
@@ -16,7 +17,8 @@
 //
 // Secrets, set with `supabase secrets set`:
 //   SLACK_WEBHOOK_URL      the channel's Incoming Webhook URL
-//   SURVEY_WEBHOOK_SECRET  any long random string; the Database Webhook sends the same
+//   SLACK_BUG_WEBHOOK_URL  optional; bug reports go here instead when set
+//   SURVEY_WEBHOOK_SECRET  any long random string; the triggers send the same
 
 const SOURCES: Record<string, string> = {
   community_survey: 'Community survey (/survey)',
@@ -40,7 +42,7 @@ function sameSecret(a: string, b: string): boolean {
   return diff === 0;
 }
 
-function message(record: Record<string, any>): string {
+function surveyMessage(record: Record<string, any>): string {
   const contact = record.answers?.contact ?? {};
   const optIns: string[] = Array.isArray(record.answers?.optIns) ? record.answers.optIns : [];
   const lines = [
@@ -55,9 +57,21 @@ function message(record: Record<string, any>): string {
   return lines.join('\n');
 }
 
+function bugMessage(record: Record<string, any>): string {
+  return [
+    ':beetle: *New bug report*',
+    // Quoted so a multi-line report stays visibly one block.
+    esc(record.message).split('\n').map((line) => `> ${line}`).join('\n'),
+    `*Page:* ${record.page ? `\`${esc(record.page)}\`` : '_not given_'}`,
+    `*Browser:* ${record.user_agent ? esc(record.user_agent) : '_not given_'}`,
+    `*Submitted:* ${esc(record.created_at)}  ·  id \`${esc(record.id)}\``,
+  ].join('\n');
+}
+
 Deno.serve(async (req) => {
   const secret = Deno.env.get('SURVEY_WEBHOOK_SECRET');
   const slackUrl = Deno.env.get('SLACK_WEBHOOK_URL');
+  const bugSlackUrl = Deno.env.get('SLACK_BUG_WEBHOOK_URL') || slackUrl;
   if (!secret || !slackUrl) {
     return Response.json({ error: 'not configured' }, { status: 500 });
   }
@@ -66,14 +80,22 @@ Deno.serve(async (req) => {
   }
 
   const payload = await req.json().catch(() => null);
-  if (payload?.type !== 'INSERT' || payload?.table !== 'survey_responses' || !payload.record) {
+  if (payload?.type !== 'INSERT' || !payload.record) {
+    return Response.json({ ok: true, skipped: true });
+  }
+  let url: string, text: string;
+  if (payload.table === 'survey_responses') {
+    [url, text] = [slackUrl, surveyMessage(payload.record)];
+  } else if (payload.table === 'bug_reports') {
+    [url, text] = [bugSlackUrl!, bugMessage(payload.record)];
+  } else {
     return Response.json({ ok: true, skipped: true });
   }
 
-  const res = await fetch(slackUrl, {
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: message(payload.record) }),
+    body: JSON.stringify({ text }),
   });
   if (!res.ok) {
     // Shows in the webhook's response log (net._http_response); the row itself is saved regardless.
