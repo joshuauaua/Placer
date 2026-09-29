@@ -480,7 +480,7 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'dashboard' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
-                  onNewProject={showNewProject} onOpenProjectDashboard={showProjectDashboard}
+                  onNewProject={showNewProject}
                   onSignIn={handleSignIn} onSignOut={handleSignOut} onExplore={handleExplore}
                   onOpenPublicProfile={showPublicProfile} />
               </Suspense>
@@ -544,8 +544,7 @@ function MainApp({ initialView = 'welcome' }) {
             {/* Public, like a project's page: anyone with the link can open it cold. */}
             {view === 'profilePublic' && (
               <Suspense fallback={<LoadingFallback />}>
-                <PublicProfilePage t={t} userId={personId} accountId={accountId}
-                  authorName={profile?.name ?? DEFAULT_NAME} onSignIn={handleSignIn} />
+                <PublicProfilePage t={t} userId={personId} accountId={accountId} />
               </Suspense>
             )}
 

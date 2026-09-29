@@ -16,10 +16,6 @@ vi.mock('../../services/auth', () => ({
 
 vi.mock('../../services/imaginations', () => ({
   readImaginationsByUser: vi.fn(() => Promise.resolve([])),
-  readComments: vi.fn(() => Promise.resolve([])),
-  readMyVote: vi.fn(() => Promise.resolve(null)),
-  postComment: vi.fn(),
-  voteImagination: vi.fn(),
 }));
 
 const MARA = { id: 'user-1', name: 'Mara Quinn', bio: 'Cyclist and tree enthusiast',
@@ -27,14 +23,13 @@ const MARA = { id: 'user-1', name: 'Mara Quinn', bio: 'Cyclist and tree enthusia
   website: 'https://mara.se/', cover: 'https://cdn.example/user-1/cover-1.jpg' };
 
 const setup = (props = {}) =>
-  render(<PublicProfilePage t={THEME} userId="user-1" authorName="You" {...props} />);
+  render(<PublicProfilePage t={THEME} userId="user-1" {...props} />);
 
 describe('PublicProfilePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(isSupabaseConfigured).mockReturnValue(true);
     vi.mocked(readPublicProfile).mockResolvedValue(MARA);
-    vi.mocked(readImaginationsByUser).mockResolvedValue([]);
   });
 
   it('shows the name, bio and location', async () => {
@@ -69,20 +64,12 @@ describe('PublicProfilePage', () => {
     expect(heading.closest('header').style.backgroundImage).toContain('cover-1.jpg');
   });
 
-  it('lists what they have posted', async () => {
-    vi.mocked(readImaginationsByUser).mockResolvedValue([
-      { id: 'a', userId: 'user-1', title: 'Pocket park on Lot 7', cat: 'green', upvotes: 3, comments: [] },
-    ]);
+  it('has no Imaginations section, and does not fetch what they posted', async () => {
     setup();
+    await screen.findByRole('heading', { level: 1, name: 'Mara Quinn' });
 
-    expect(await screen.findByText('Pocket park on Lot 7')).toBeInTheDocument();
-    expect(readImaginationsByUser).toHaveBeenCalledWith('user-1');
-  });
-
-  it('says so when nothing is posted yet', async () => {
-    setup();
-
-    expect(await screen.findByText('Nothing posted yet.')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Imaginations' })).not.toBeInTheDocument();
+    expect(readImaginationsByUser).not.toHaveBeenCalled();
   });
 
   it('tells you when you are looking at your own profile', async () => {

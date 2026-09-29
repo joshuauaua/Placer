@@ -1,7 +1,7 @@
 /* PLACER — somebody's public profile, at /people/<account id>.
  *
  * What anyone may see of an account: the display name, profile photo, bio and
- * location it chose to fill in, and everything it has posted to the map. Needs no
+ * location it chose to fill in. Needs no
  * session, the same as a project's public page — a profile link is something to
  * share. The profile comes from profile_public() (supabase/profiles-public.sql),
  * because the profiles table itself is readable only by its owner.
@@ -10,16 +10,11 @@
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { Avatar, LoadingMark } from './UI';
-import { ImaginationCard } from './ImaginationCard';
-import { ImaginationPreview } from './ImaginationPreview';
 import { ACCOUNT_TYPES, isSupabaseConfigured, readPublicProfile } from '../services/auth';
-import { readImaginationsByUser } from '../services/imaginations';
 
-export function PublicProfilePage({ t, userId, accountId = null, authorName, onSignIn }) {
+export function PublicProfilePage({ t, userId, accountId = null }) {
   const [person, setPerson] = useState(null);
-  const [imaginations, setImaginations] = useState([]);
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'notFound' | 'error'
-  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     // No Supabase project, no accounts — and so nobody to have a profile.
@@ -31,15 +26,14 @@ export function PublicProfilePage({ t, userId, accountId = null, authorName, onS
     let cancelled = false;
     setStatus('loading');
 
-    Promise.all([readPublicProfile(userId), readImaginationsByUser(userId)])
-      .then(([found, posted]) => {
+    readPublicProfile(userId)
+      .then((found) => {
         if (cancelled) return;
         if (!found) {
           setStatus('notFound');
           return;
         }
         setPerson(found);
-        setImaginations(posted);
         setStatus('ready');
       })
       .catch((err) => {
@@ -56,14 +50,6 @@ export function PublicProfilePage({ t, userId, accountId = null, authorName, onS
 
     return () => { cancelled = true; };
   }, [userId]);
-
-  // Escape closes the open imagination, matching the dashboard.
-  useEffect(() => {
-    if (!selected) return undefined;
-    const onKeyDown = (e) => { if (e.key === 'Escape') setSelected(null); };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selected]);
 
   const shell = (children) => (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
@@ -101,15 +87,6 @@ export function PublicProfilePage({ t, userId, accountId = null, authorName, onS
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page }}
       className="placer-scroll">
-      {selected && (
-        <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)}
-          accountId={accountId} authorName={authorName} onSignIn={onSignIn}
-          onDeleted={(id) => {
-            setImaginations((current) => current.filter((item) => item.id !== id));
-            setSelected(null);
-          }} />
-      )}
-
       {/* The cover, edge to edge, with the name and location on it. Without a cover it
         * is a plain grey band, and the text is ink rather than white. */}
       <header className={`placer-profile-cover${person.cover ? ' placer-profile-cover-image' : ''}`}
@@ -172,26 +149,9 @@ export function PublicProfilePage({ t, userId, accountId = null, authorName, onS
             About
           </h2>
           <p style={{ fontSize: 16, color: person.bio ? t.inkDim : t.inkFaint, lineHeight: 1.7,
-            marginBottom: 48, maxWidth: 680, whiteSpace: 'pre-line' }}>
+            maxWidth: 680, whiteSpace: 'pre-line' }}>
             {person.bio || (isYou ? 'You have not written a bio yet. Add one in Settings.' : 'No bio yet.')}
           </p>
-
-          <h2 className="placer-disp" style={{ fontSize: 28, fontWeight: 700, color: t.ink,
-            letterSpacing: '-0.02em', marginBottom: 20 }}>
-            Imaginations
-          </h2>
-
-          {imaginations.length === 0 ? (
-            <p style={{ fontSize: 15, color: t.inkDim }}>
-              {isYou ? 'You have not posted anything yet.' : 'Nothing posted yet.'}
-            </p>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
-              {imaginations.map((imagination) => (
-                <ImaginationCard key={imagination.id} t={t} imagination={imagination} onOpen={setSelected} />
-              ))}
-            </div>
-          )}
         </main>
       </div>
     </div>
