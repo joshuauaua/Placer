@@ -1,7 +1,8 @@
 /* PLACER — somebody's public profile, at /people/<account id>.
  *
  * What anyone may see of an account: the display name, profile photo, bio and
- * location it chose to fill in. Needs no
+ * location it chose to fill in, how many follow it and how many things it follows
+ * (each opening its list), and the organisations it is an admin of. Needs no
  * session, the same as a project's public page — a profile link is something to
  * share. The profile comes from profile_public() (supabase/profiles-public.sql),
  * because the profiles table itself is readable only by its owner.
@@ -11,11 +12,20 @@ import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { Avatar, LoadingMark } from './UI';
 import { FollowButton } from './FollowButton';
+import { FollowListDialog } from './FollowListDialog';
 import { isSupabaseConfigured, readPublicProfile } from '../services/auth';
+import { readFollowCounts } from '../services/follows';
+import { readProfileOrganisations } from '../services/organisations';
 
-export function PublicProfilePage({ t, userId, accountId = null }) {
+export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
   const [person, setPerson] = useState(null);
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'notFound' | 'error'
+  // Extras beside the profile itself: each is null until loaded, and stays null if it
+  // could not be — the page stands without them.
+  const [counts, setCounts] = useState(null);
+  const [organisations, setOrganisations] = useState(null);
+  // Which list is open over the page: 'followers', 'following', or null.
+  const [listOpen, setListOpen] = useState(null);
 
   useEffect(() => {
     // No Supabase project, no accounts — and so nobody to have a profile.
@@ -51,6 +61,20 @@ export function PublicProfilePage({ t, userId, accountId = null }) {
 
     return () => { cancelled = true; };
   }, [userId]);
+
+  useEffect(() => {
+    if (status !== 'ready') return undefined;
+    let cancelled = false;
+    setCounts(null);
+    setOrganisations(null);
+    readFollowCounts(userId)
+      .then((found) => { if (!cancelled) setCounts(found); })
+      .catch((err) => console.error('Could not load the follow counts:', err));
+    readProfileOrganisations(userId)
+      .then((found) => { if (!cancelled) setOrganisations(found); })
+      .catch((err) => console.error("Could not load this account's organisations:", err));
+    return () => { cancelled = true; };
+  }, [userId, status]);
 
   const shell = (children) => (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
@@ -106,10 +130,25 @@ export function PublicProfilePage({ t, userId, accountId = null }) {
                 {person.location}
               </p>
             )}
+            {counts && (
+              <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
+                {[['followers', counts.followers, counts.followers === 1 ? 'Follower' : 'Followers'],
+                  ['following', counts.following, 'Following']].map(([key, value, label]) => (
+                  <button key={key} type="button" onClick={() => setListOpen(key)}
+                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                      color: 'inherit', fontFamily: 'var(--placer-font)', fontSize: 15 }}>
+                    <strong style={{ fontWeight: 700 }}>{value}</strong>{' '}
+                    <span style={{ opacity: 0.85 }}>{label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           {/* Signed in, and somebody else — nobody follows themselves. */}
           {accountId && !isYou && (
-            <FollowButton t={t} type="user" targetId={person.id} label={person.name} size="sm" />
+            <FollowButton t={t} type="user" targetId={person.id} label={person.name} size="sm"
+              onChange={(nowFollowing) => setCounts((current) => current && {
+                ...current, followers: Math.max(0, current.followers + (nowFollowing ? 1 : -1)) })} />
           )}
         </div>
       </header>
@@ -135,6 +174,25 @@ export function PublicProfilePage({ t, userId, accountId = null }) {
                       style={{ color: t.ink }}>{websiteLabel}</a>
                   : <span style={{ color: t.inkFaint }}>Not shared</span>}
               </dd>
+              {organisations?.length > 0 && (
+                <>
+                  <dt style={{ color: t.inkFaint }}>
+                    {organisations.length === 1 ? 'Organisation' : 'Organisations'}
+                  </dt>
+                  <dd style={{ color: t.ink }}>
+                    {organisations.map((organisation, i) => (
+                      <span key={organisation.id}>
+                        {i > 0 && ', '}
+                        <a href={`/organisations/${organisation.id}`}
+                          onClick={(e) => { e.preventDefault(); onOpen?.('organisation', organisation.id); }}
+                          style={{ color: t.ink }}>
+                          {organisation.name}
+                        </a>
+                      </span>
+                    ))}
+                  </dd>
+                </>
+              )}
             </dl>
           </section>
         </aside>
@@ -150,6 +208,11 @@ export function PublicProfilePage({ t, userId, accountId = null }) {
           </p>
         </main>
       </div>
+
+      {listOpen && (
+        <FollowListDialog t={t} userId={person.id} name={person.name} initialTab={listOpen}
+          onOpen={onOpen} onClose={() => setListOpen(null)} />
+      )}
     </div>
   );
 }

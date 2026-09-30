@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { Btn } from './UI';
 import { follow, isFollowing, unfollow } from '../services/follows';
 
-export function FollowButton({ t, type, targetId, label, size = 'md' }) {
+export function FollowButton({ t, type, targetId, label, size = 'md', onChange }) {
   const [following, setFollowing] = useState(false);
   const [checked, setChecked] = useState(false);
 
@@ -30,6 +30,7 @@ export function FollowButton({ t, type, targetId, label, size = 'md' }) {
     try {
       if (next) await follow(type, targetId, label);
       else await unfollow(type, targetId);
+      onChange?.(next);
     } catch (err) {
       console.error('Could not update whether you follow this:', err);
       setFollowing(!next);

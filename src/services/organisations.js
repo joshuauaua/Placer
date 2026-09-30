@@ -246,3 +246,14 @@ export async function claimOrganisation(organisationId) {
   if (error) throw new Error(`Could not claim that organisation: ${error.message}`);
   return { success: true };
 }
+
+/**
+ * The organisations an account is an admin of, by name, for its public profile — only
+ * which ones, never who else runs them (supabase/profile-social.sql). Needs no session.
+ */
+export async function readProfileOrganisations(userId) {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('profile_organisations', { p_user_id: userId });
+  if (error) throw new Error(`Could not load this account's organisations: ${error.message}`);
+  return (data ?? []).map((row) => ({ id: row.id, name: row.name }));
+}

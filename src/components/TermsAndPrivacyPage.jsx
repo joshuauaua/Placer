@@ -351,10 +351,18 @@ export function TermsAndPrivacyPage({ t }) {
           or are made an admin of one, we store its name and whatever its admins fill in &mdash; a
           description, a location, a contact email and a website &mdash; all of which are public on
           its page, together with the projects run in its name. We also store who its admins
-          are. The list of admins is not public: the organisation&rsquo;s other admins see each
+          are. Which organisations you are an admin of is shown on your public profile. The full
+          list of an organisation&rsquo;s admins is not public: its other admins see each
           admin&rsquo;s display name and the email they sign in with, since that is how an admin
           is added. If you leave an organisation, we keep a record that you used to be an admin,
           so that you can claim it back should it ever be left without one.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Following.</strong> When you follow a person, an
+          organisation or a project, we store that you follow it and when you started. This is
+          public: your profile shows how many people follow you and how many people,
+          organisations and projects you follow, and anyone who opens it can see both lists.
+          Unfollowing removes the record.
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Imaginations you post.</strong> Pressing Post uploads

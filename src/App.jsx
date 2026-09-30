@@ -665,7 +665,7 @@ function MainApp({ initialView = 'welcome' }) {
             {/* Public, like a project's page: anyone with the link can open it cold. */}
             {view === 'profilePublic' && (
               <Suspense fallback={<LoadingFallback />}>
-                <PublicProfilePage t={t} userId={personId} accountId={accountId} />
+                <PublicProfilePage t={t} userId={personId} accountId={accountId} onOpen={showPublicPage} />
               </Suspense>
             )}
 

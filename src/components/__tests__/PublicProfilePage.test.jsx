@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { PublicProfilePage } from '../PublicProfilePage';
 import { isSupabaseConfigured, readPublicProfile } from '../../services/auth';
 import { readImaginationsByUser } from '../../services/imaginations';
@@ -14,6 +14,13 @@ vi.mock('../../services/follows', () => ({
   follow: vi.fn(() => Promise.resolve()),
   unfollow: vi.fn(() => Promise.resolve()),
   isFollowing: vi.fn(() => Promise.resolve(false)),
+  readFollowCounts: vi.fn(() => Promise.resolve({ followers: 3, following: 1 })),
+  readFollowers: vi.fn(() => Promise.resolve([{ type: 'user', id: 'user-2', name: 'Sam Berg', image: null }])),
+  readFollowing: vi.fn(() => Promise.resolve([{ type: 'organisation', id: 'org-1', name: 'Malmö Stad', image: null }])),
+}));
+
+vi.mock('../../services/organisations', () => ({
+  readProfileOrganisations: vi.fn(() => Promise.resolve([{ id: 'org-1', name: 'Malmö Stad' }])),
 }));
 
 vi.mock('../../services/imaginations', () => ({
@@ -121,5 +128,39 @@ describe('PublicProfilePage', () => {
     await screen.findByRole('heading', { level: 1, name: 'Mara Quinn' });
 
     expect(screen.queryByRole('button', { name: /^Follow$/ })).not.toBeInTheDocument();
+  });
+
+  it('shows how many follow the account and how many things it follows, and opens each list', async () => {
+    const onOpen = vi.fn();
+    setup({ onOpen });
+
+    fireEvent.click(await screen.findByRole('button', { name: /3 Followers/ }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(await within(dialog).findByRole('button', { name: /Sam Berg/ }));
+    expect(onOpen).toHaveBeenCalledWith('user', 'user-2');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /1 Following/ }));
+    expect(await within(await screen.findByRole('dialog')).findByText('Malmö Stad')).toBeInTheDocument();
+  });
+
+  it('counts a new follower as soon as the follow goes through', async () => {
+    setup({ accountId: 'user-2' });
+    const button = await screen.findByRole('button', { name: /^Follow$/ });
+    await screen.findByRole('button', { name: /3 Followers/ });
+    // Disabled until it knows whether this account already follows.
+    await waitFor(() => expect(button).toBeEnabled());
+
+    fireEvent.click(button);
+
+    expect(await screen.findByRole('button', { name: /4 Followers/ })).toBeInTheDocument();
+  });
+
+  it('lists the organisations the account is an admin of in its details', async () => {
+    const onOpen = vi.fn();
+    setup({ onOpen });
+
+    fireEvent.click(await screen.findByRole('link', { name: 'Malmö Stad' }));
+    expect(onOpen).toHaveBeenCalledWith('organisation', 'org-1');
   });
 });

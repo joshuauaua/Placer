@@ -19,6 +19,7 @@
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
+import { mediaUrl } from './media';
 
 export const FOLLOWS_TABLE = 'follows';
 
@@ -158,4 +159,35 @@ export async function unfollow(type, targetId) {
     .eq('followed_id', targetId);
 
   if (error) throw new Error(`Could not unfollow that: ${error.message}`);
+}
+
+/*
+ * A public profile's followers and following (supabase/profile-social.sql). These
+ * answer about any one account, not only the signed-in one, and need no session —
+ * the profile page they appear on is public. They read names and pictures live, and
+ * leave out anything followed that has since gone.
+ */
+
+/** How many follow this account, and how many people, organisations and projects it follows. */
+export async function readFollowCounts(userId) {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('profile_follow_counts', { p_user_id: userId }).single();
+  if (error) throw new Error(`Could not load the follow counts: ${error.message}`);
+  return { followers: data?.followers ?? 0, following: data?.following ?? 0 };
+}
+
+/** The accounts following this one, newest first, as `{ type: 'user', id, name, image }`. */
+export async function readFollowers(userId) {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('profile_followers', { p_user_id: userId });
+  if (error) throw new Error(`Could not load the followers: ${error.message}`);
+  return (data ?? []).map((row) => ({ type: 'user', id: row.id, name: row.name, image: mediaUrl(row.image_path) }));
+}
+
+/** The people, organisations and projects this account follows, newest first. */
+export async function readFollowing(userId) {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('profile_following', { p_user_id: userId });
+  if (error) throw new Error(`Could not load what this account follows: ${error.message}`);
+  return (data ?? []).map((row) => ({ type: row.kind, id: row.id, name: row.name, image: mediaUrl(row.image_path) }));
 }

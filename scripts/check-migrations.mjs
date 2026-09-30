@@ -80,6 +80,7 @@ const PLAN = [
   { name: '20260930100001_organisation_covers.sql', src: 'organisation-covers.sql' },
   { name: '20260930110001_search.sql', src: 'search.sql' },
   { name: '20260930120001_follows_organisations.sql', src: 'follows-organisations.sql' },
+  { name: '20260930130001_profile_social.sql', src: 'profile-social.sql' },
 ]
 
 const HAND_WRITTEN = [

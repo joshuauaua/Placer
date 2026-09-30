@@ -338,6 +338,12 @@ which lets them into `follows_type_known`, takes a closed organisation off every
 followed list, and tells an organisation's followers when a project is started in its
 name (an Activity notification — see step 13).
 
+**Followers and following are public** since `profile-social.sql`: a profile shows how
+many follow it and how many people, organisations and projects it follows, each opening
+a list, and which organisations it is an admin of. The `follows` and
+`organisation_admins` tables keep their owner-only policies; four security definer
+functions answer for one profile at a time, the same shape as `profile_public()`.
+
 ### Verify
 
 ```sql
