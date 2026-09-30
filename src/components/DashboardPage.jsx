@@ -5,6 +5,7 @@ import { Icon } from './Icon';
 import { Btn } from './UI';
 import { ImaginationCard } from './ImaginationCard';
 import { ImaginationPreview } from './ImaginationPreview';
+import { FollowingList } from './FollowingList';
 import { postsAreShared, readLocalImaginations } from '../services/imaginations';
 
 // One of the three things the dashboard offers to do next, as a card-sized button.
@@ -24,7 +25,7 @@ function Shortcut({ t, icon, label, onClick }) {
 }
 
 export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewProject,
-  onSignIn, onSignOut, onExplore, onOpenPublicProfile }) {
+  onSignIn, onSignOut, onExplore, onOpenPublicProfile, onOpenFollowed }) {
   // The imagination open in the modal, if any — set from any card on this page.
   const [selected, setSelected] = useState(null);
   // Imaginations still only in this browser, made before there were accounts: nobody
@@ -109,6 +110,10 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
             <Shortcut t={t} icon="plus" label="Create a Project" onClick={onNewProject} />
           )}
         </div>
+
+        {/* People and organisations only have pages with an account behind them, so in
+            the local, no-project mode there is nothing to have followed. */}
+        {accountId && onOpenFollowed && <FollowingList t={t} onOpen={onOpenFollowed} />}
 
         {/* Anything made before there were accounts. Left where it is rather than uploaded:
             it was made under a privacy policy that said it would never leave the device,

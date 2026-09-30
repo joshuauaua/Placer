@@ -1,4 +1,4 @@
-/* PLACER — following: users, imaginations, projects, and cities.
+/* PLACER — following: users, imaginations, projects, organisations and cities.
  *
  * One module, two stores, the same shape either way, matching services/imaginations.js.
  * With a Supabase project configured a follow is a row in public.follows, private to the
@@ -13,11 +13,9 @@
  * also why nothing here can tell you who follows a given thing — only what a given
  * follower follows.
  *
- * There is nowhere in the app yet that calls follow() for a project or a city: neither
- * has a page to follow one from. The functions below still work end to end — read, add,
- * remove — so that DashboardPage can show the (currently always empty) sections honestly,
- * and so that wiring up a "Follow" control anywhere in the app later is a call to an
- * already-tested function rather than a new feature.
+ * People, organisations and projects are followed from their public pages, and the
+ * dashboard lists what an account follows. Cities have no page to follow one from yet;
+ * the functions below work for them all the same.
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
@@ -25,7 +23,7 @@ import { getSupabase, isSupabaseConfigured } from './supabase';
 export const FOLLOWS_TABLE = 'follows';
 
 /** The kinds of thing PLACER lets somebody follow. */
-export const FOLLOW_TYPES = ['user', 'imagination', 'project', 'city'];
+export const FOLLOW_TYPES = ['user', 'imagination', 'project', 'city', 'organisation'];
 
 export { isSupabaseConfigured };
 

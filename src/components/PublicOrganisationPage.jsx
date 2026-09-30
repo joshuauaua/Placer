@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { Avatar, Btn, LoadingMark } from './UI';
 import { ProjectCard } from './ProjectCard';
+import { FollowButton } from './FollowButton';
 import {
   canClaimOrganisation, claimOrganisation, isSupabaseConfigured, readOrganisation,
 } from '../services/organisations';
@@ -158,6 +159,9 @@ export function PublicOrganisationPage({ t, organisationId, accountId = null, is
               </p>
             )}
           </div>
+          {accountId && (
+            <FollowButton t={t} type="organisation" targetId={organisation.id} label={organisation.name} size="sm" />
+          )}
           {isAdmin && onOpenDashboard && (
             <Btn t={t} variant="outline" size="sm" icon="arrowRight" onClick={() => onOpenDashboard(organisation.id)}>
               Open the dashboard

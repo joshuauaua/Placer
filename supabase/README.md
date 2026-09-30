@@ -331,9 +331,12 @@ profile either) — this way 'city' rows do not need a different shape from the 
 three. See the comment at the top of `follows.sql` and of `src/services/follows.js` for
 the full reasoning.
 
-Projects (step 12) do have a public page to follow one from now. Cities and a way to
-follow another user's profile directly still do not, so those two sections of the
-profile page stay honestly empty until something adds one.
+People, projects (step 12) and organisations (step 18) each have a Follow button on
+their public page, and the dashboard lists what an account follows. Cities still have
+no page to follow one from. Following organisations needs `follows-organisations.sql`,
+which lets them into `follows_type_known`, takes a closed organisation off everyone's
+followed list, and tells an organisation's followers when a project is started in its
+name (an Activity notification — see step 13).
 
 ### Verify
 

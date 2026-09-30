@@ -10,6 +10,12 @@ vi.mock('../../services/auth', () => ({
   readPublicProfile: vi.fn(),
 }));
 
+vi.mock('../../services/follows', () => ({
+  follow: vi.fn(() => Promise.resolve()),
+  unfollow: vi.fn(() => Promise.resolve()),
+  isFollowing: vi.fn(() => Promise.resolve(false)),
+}));
+
 vi.mock('../../services/imaginations', () => ({
   readImaginationsByUser: vi.fn(() => Promise.resolve([])),
 }));
@@ -98,5 +104,22 @@ describe('PublicProfilePage', () => {
 
     expect(await screen.findByText('Profile not found')).toBeInTheDocument();
     expect(readPublicProfile).not.toHaveBeenCalled();
+  });
+
+  it('offers somebody signed in a Follow button, but never on their own profile', async () => {
+    const { unmount } = setup({ accountId: 'user-2' });
+    expect(await screen.findByRole('button', { name: /^Follow$/ })).toBeInTheDocument();
+    unmount();
+
+    setup({ accountId: 'user-1' });
+    await screen.findByRole('heading', { level: 1, name: 'Mara Quinn' });
+    expect(screen.queryByRole('button', { name: /^Follow$/ })).not.toBeInTheDocument();
+  });
+
+  it('offers no Follow button to a visitor who is signed out', async () => {
+    setup();
+    await screen.findByRole('heading', { level: 1, name: 'Mara Quinn' });
+
+    expect(screen.queryByRole('button', { name: /^Follow$/ })).not.toBeInTheDocument();
   });
 });

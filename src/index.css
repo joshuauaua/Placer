@@ -310,6 +310,8 @@ a {
 
   .placer-profile-cover-inner {
     padding: 24px 20px;
+    /* Room for the Follow button to drop under the name rather than squeeze it. */
+    flex-wrap: wrap;
   }
 
   .placer-profile-title {

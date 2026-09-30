@@ -264,6 +264,13 @@ function MainApp({ initialView = 'welcome' }) {
   const showNewOrganisation = () => navigate('/organisations/new');
   const showOrganisationDashboard = (id) => navigate(`/organisations/${encodeURIComponent(id)}/dashboard`);
   const showOrganisationPublic = (id) => navigate(`/organisations/${encodeURIComponent(id)}`);
+  // A person's, organisation's or project's public page, from a search suggestion or a
+  // followed item. A person is 'person' to search and 'user' to follows.
+  const showPublicPage = (kind, id) => {
+    if (kind === 'person' || kind === 'user') showPublicProfile(id);
+    else if (kind === 'organisation') showOrganisationPublic(id);
+    else showProjectPublic(id);
+  };
   const showProjectDashboard = (id) => navigate(`/projects/${id}/dashboard`);
   const showProjectPublic = (id) => navigate(`/projects/${id}`);
   const showPublicProfile = (id) => navigate(`/people/${encodeURIComponent(id)}`);
@@ -472,11 +479,7 @@ function MainApp({ initialView = 'welcome' }) {
         onSignIn={handleLogIn}
         onCreateAccount={handleCreateAccount}
         onSignOut={handleSignOut}
-        onSearchSelect={({ kind, id }) => {
-          if (kind === 'person') showPublicProfile(id);
-          else if (kind === 'organisation') showOrganisationPublic(id);
-          else showProjectPublic(id);
-        }}
+        onSearchSelect={({ kind, id }) => showPublicPage(kind, id)}
       />
 
       {/* Main Content. The map fills it and has no footer. Every other view scrolls
@@ -566,7 +569,7 @@ function MainApp({ initialView = 'welcome' }) {
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
                   onNewProject={showNewProject}
                   onSignIn={handleSignIn} onSignOut={handleSignOut} onExplore={handleExplore}
-                  onOpenPublicProfile={showPublicProfile} />
+                  onOpenPublicProfile={showPublicProfile} onOpenFollowed={showPublicPage} />
               </Suspense>
             )}
 

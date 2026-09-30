@@ -10,6 +10,7 @@
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { Avatar, LoadingMark } from './UI';
+import { FollowButton } from './FollowButton';
 import { isSupabaseConfigured, readPublicProfile } from '../services/auth';
 
 export function PublicProfilePage({ t, userId, accountId = null }) {
@@ -96,7 +97,7 @@ export function PublicProfilePage({ t, userId, accountId = null }) {
           style={{ color: person.cover ? '#FFFFFF' : t.ink }}>
           <Avatar name={person.name} photo={person.photo} size={72}
             ring={person.cover ? '#FFFFFF' : t.line} />
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <h1 className="placer-disp placer-profile-title">{person.name}</h1>
             {person.location && (
               <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 16, fontWeight: 500,
@@ -106,6 +107,10 @@ export function PublicProfilePage({ t, userId, accountId = null }) {
               </p>
             )}
           </div>
+          {/* Signed in, and somebody else — nobody follows themselves. */}
+          {accountId && !isYou && (
+            <FollowButton t={t} type="user" targetId={person.id} label={person.name} size="sm" />
+          )}
         </div>
       </header>
 
