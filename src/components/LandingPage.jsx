@@ -77,13 +77,13 @@ export function LandingPage({ t }) {
           * credit. On a phone they sit straight under the pitch, full width,
           * and the credit and funder lockup below are hidden (see index.css). */}
         <div className="placer-landing-actions">
+          <HaveYourSay t={t} />
           <Link
             href="/user-labs"
             className="placer-labs-trigger"
             style={{ background: LABS_BG, color: LABS_FG, border: `1px solid ${LABS_BORDER}` }}>
             Apply to User Labs
           </Link>
-          <HaveYourSay t={t} />
         </div>
 
         <p className="placer-landing-credit" style={{ fontSize: 15.5, color: t.inkDim, lineHeight: 1.7 }}>
