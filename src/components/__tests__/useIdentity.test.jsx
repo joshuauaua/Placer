@@ -68,7 +68,7 @@ describe('useIdentity with no Supabase project', () => {
 
     // The rule from before accounts existed: no stored record is not the same as
     // being signed out, because there was nothing to be signed out of.
-    expect(result.current.profile).toEqual({ name: 'You There', bio: '', location: '',
+    expect(result.current.profile).toEqual({ name: 'You There', bio: '', location: '', locationPoint: null,
       accountType: 'individual', contactEmail: '', website: '', cover: null });
   });
 

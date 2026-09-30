@@ -4,7 +4,7 @@ import { readProfile, saveProfile, signIn, signOut, DEFAULT_NAME } from '../prof
 // The literal rather than the import, so renaming the key fails this test.
 const PROFILE_KEY = 'placemaking_profile';
 
-const DEFAULT_PROFILE = { name: DEFAULT_NAME, bio: '', location: '',
+const DEFAULT_PROFILE = { name: DEFAULT_NAME, bio: '', location: '', locationPoint: null,
   accountType: 'individual', contactEmail: '', website: '', cover: null };
 
 describe('profile', () => {

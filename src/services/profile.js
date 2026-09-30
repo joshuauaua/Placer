@@ -20,8 +20,10 @@ export const PROFILE_KEY = 'placemaking_profile';
 /** What an imagination is credited to before anyone renames themselves. */
 export const DEFAULT_NAME = 'You There';
 
-const DEFAULT_PROFILE = { name: DEFAULT_NAME, bio: '', location: '',
+const DEFAULT_PROFILE = { name: DEFAULT_NAME, bio: '', location: '', locationPoint: null,
   accountType: 'individual', contactEmail: '', website: '', cover: null };
+
+const isPoint = (point) => Number.isFinite(point?.lat) && Number.isFinite(point?.lng);
 
 // A visitor who has never touched the account menu is treated as signed in under
 // the default name, because that is how the app behaved before profiles existed.
@@ -33,6 +35,9 @@ const asProfile = (stored) => {
     name: typeof stored.name === 'string' && stored.name.trim() ? stored.name : DEFAULT_NAME,
     bio: typeof stored.bio === 'string' ? stored.bio : '',
     location: typeof stored.location === 'string' ? stored.location : '',
+    // Where Explore opens, when a suggested place was chosen for the location.
+    locationPoint: isPoint(stored.locationPoint)
+      ? { lat: stored.locationPoint.lat, lng: stored.locationPoint.lng } : null,
     accountType: stored.accountType === 'organisation' ? 'organisation' : 'individual',
     contactEmail: typeof stored.contactEmail === 'string' ? stored.contactEmail : '',
     website: typeof stored.website === 'string' ? stored.website : '',

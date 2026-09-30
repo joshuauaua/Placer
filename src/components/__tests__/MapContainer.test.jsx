@@ -738,6 +738,25 @@ describe('MapContainer', () => {
       expect(options.center).toEqual({ lat: 55.6054, lng: 12.9854 });
       expect(options.zoom).toBe(15);
     });
+
+    it('opens over the place chosen as the account location, zoomed out to the town', () => {
+      window.google = mockGoogleMaps();
+      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" homeCenter={{ lat: 59.33, lng: 18.07 }} />);
+
+      const options = window.google.maps.Map.mock.calls[0][1];
+      expect(options.center).toEqual({ lat: 59.33, lng: 18.07 });
+      expect(options.zoom).toBe(13);
+    });
+
+    it('still opens on a just-posted imagination rather than the account location', () => {
+      window.google = mockGoogleMaps();
+      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key"
+        initialCenter={{ lat: 55.61, lng: 12.99 }} homeCenter={{ lat: 59.33, lng: 18.07 }} />);
+
+      const options = window.google.maps.Map.mock.calls[0][1];
+      expect(options.center).toEqual({ lat: 55.61, lng: 12.99 });
+      expect(options.zoom).toBe(17);
+    });
   });
 
   describe('imagination preview on pin click', () => {

@@ -28,7 +28,12 @@ export const COVERS_FOLDER = 'covers';
 export const AVATARS_FOLDER = 'avatars';
 
 const PROFILE_COLUMNS = 'id, display_name, bio, location, account_type, contact_email,'
-  + ' website, cover_path, avatar_path';
+  + ' website, cover_path, avatar_path, location_lat, location_lng';
+
+/** `{ lat, lng }` from a row's two columns, or null when no place was chosen. */
+function pointFrom(lat, lng) {
+  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+}
 
 /** A profiles row, or a profile_public() row, in the shape the app speaks. */
 function profileFrom(supabase, row) {
@@ -45,6 +50,9 @@ function profileFrom(supabase, row) {
     // Shown in the avatar circle instead of the initials (Avatar in UI.jsx).
     photoPath: row.avatar_path ?? null,
     photo: mediaUrl(row.avatar_path),
+    // Where the chosen location is, for the Explore map to open over. Private — only
+    // the account's own row has it; profile_public() leaves it out.
+    locationPoint: pointFrom(row.location_lat, row.location_lng),
   };
 }
 
@@ -253,7 +261,7 @@ export async function readPublicProfile(id) {
  * from the caller. The policy scopes it to auth.uid() regardless, but the project
  * refuses any UPDATE without a WHERE clause, so the filter has to be there.
  */
-export async function saveOwnProfile({ name, bio, location, accountType, contactEmail,
+export async function saveOwnProfile({ name, bio, location, locationPoint, accountType, contactEmail,
   website, coverPath, photoPath }) {
   const supabase = await client();
   const { data: session } = await supabase.auth.getSession();
@@ -264,6 +272,11 @@ export async function saveOwnProfile({ name, bio, location, accountType, contact
   if (name !== undefined) patch.display_name = name;
   if (bio !== undefined) patch.bio = bio;
   if (location !== undefined) patch.location = location;
+  if (locationPoint !== undefined) {
+    const point = pointFrom(locationPoint?.lat, locationPoint?.lng);
+    patch.location_lat = point?.lat ?? null;
+    patch.location_lng = point?.lng ?? null;
+  }
   if (accountType !== undefined) patch.account_type = accountType;
   if (contactEmail !== undefined) patch.contact_email = contactEmail;
   if (website !== undefined) patch.website = normaliseWebsite(website);

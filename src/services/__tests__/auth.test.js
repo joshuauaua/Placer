@@ -187,7 +187,7 @@ describe('reading a public profile', () => {
 
     await expect(auth.readPublicProfile('user-2')).resolves.toEqual({
       id: 'user-2', name: 'Devon Park', bio: '', location: 'Lund',
-      accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null, photoPath: null, photo: null,
+      accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null, photoPath: null, photo: null, locationPoint: null,
     });
     expect(rpc).toHaveBeenCalledWith('profile_public', { p_id: 'user-2' });
     // Never the table: it is readable only by its owner.
@@ -333,7 +333,7 @@ describe('the profile', () => {
 
     await expect(auth.readOwnProfile())
       .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: 'Cyclist', location: 'Malmö',
-        accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null, photoPath: null, photo: null });
+        accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null, photoPath: null, photo: null, locationPoint: null });
   });
 
   it('defaults the location when the row has none', async () => {
@@ -344,7 +344,7 @@ describe('the profile', () => {
 
     await expect(auth.readOwnProfile())
       .resolves.toEqual({ id: 'user-1', name: 'Mara Quinn', bio: '', location: '',
-        accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null, photoPath: null, photo: null });
+        accountType: 'individual', contactEmail: '', website: '', coverPath: null, cover: null, photoPath: null, photo: null, locationPoint: null });
   });
 
   it('turns a cover path into its public URL', async () => {
@@ -371,6 +371,30 @@ describe('the profile', () => {
     expect(update).toHaveBeenCalledWith({
       account_type: 'organisation', contact_email: 'hi@mara.se', website: 'https://mara.se',
     });
+  });
+
+  it('saves a chosen place as two private columns, and reads it back as a point', async () => {
+    await load();
+    maybeSingle.mockResolvedValue({
+      data: { id: 'user-1', display_name: 'Mara', location: 'Malmö, Sweden', location_lat: 55.6, location_lng: 13 },
+      error: null,
+    });
+
+    signedIn();
+    const saved = await auth.saveOwnProfile({ location: 'Malmö, Sweden', locationPoint: { lat: 55.6, lng: 13 } });
+
+    expect(update).toHaveBeenCalledWith({ location: 'Malmö, Sweden', location_lat: 55.6, location_lng: 13 });
+    expect(saved.locationPoint).toEqual({ lat: 55.6, lng: 13 });
+  });
+
+  it('clears both columns when a location has no place', async () => {
+    await load();
+    maybeSingle.mockResolvedValue({ data: { id: 'user-1', display_name: 'Mara' }, error: null });
+
+    signedIn();
+    await auth.saveOwnProfile({ location: 'somewhere', locationPoint: null });
+
+    expect(update).toHaveBeenCalledWith({ location: 'somewhere', location_lat: null, location_lng: null });
   });
 
   it('is null when there is no row to read, rather than throwing', async () => {

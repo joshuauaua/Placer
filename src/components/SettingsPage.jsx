@@ -1,6 +1,6 @@
 /* PLACER — account settings: your name, and what the app is allowed to measure */
 
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Avatar, Btn, LoadingMark } from './UI';
 import { Icon } from './Icon';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
@@ -9,6 +9,7 @@ import {
   removeProfileImageFile, updatePassword, uploadCover, uploadProfilePhoto,
 } from '../services/auth';
 import { isSupabaseConfigured, readPreferences, savePreferences } from '../services/notifications';
+import { googleMapsApiKey, isGoogleMapsConfigured, loadGoogleMaps } from '../lib/googleMaps';
 
 // The same floor AuthPage and ResetPasswordPage ask for.
 const MIN_PASSWORD = 8;
@@ -150,6 +151,108 @@ function ProfileField({ t, profile, onSaveProfile, fieldKey, title, description,
           <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>
             Saved.
           </span>
+        )}
+        {status === 'error' && (
+          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 500 }}>
+            Could not save that. Try again.
+          </span>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+/**
+ * The location, with place suggestions as it is typed — the same Google Places search
+ * as the map's own box, but only towns, cities and regions, since what is typed here is
+ * shown on the public profile. Choosing a suggestion also keeps where it is
+ * (profile.locationPoint), which is where the Explore map opens; typed text that was
+ * not chosen from the list is saved as it is, with no place, and Explore opens where it
+ * always has. Without a Maps key it is a plain text field.
+ */
+function LocationField({ t, profile, onSaveProfile }) {
+  const [value, setValue] = useState(profile?.location ?? '');
+  // The place behind `value`, when it came from a suggestion; null once edited by hand.
+  const [point, setPoint] = useState(profile?.locationPoint ?? null);
+  const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!isGoogleMapsConfigured()) return undefined;
+    let cancelled = false;
+    let listener = null;
+
+    loadGoogleMaps(googleMapsApiKey())
+      .then(() => {
+        if (cancelled || !inputRef.current || !window.google?.maps?.places) return;
+        const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+          types: ['(regions)'],
+          fields: ['geometry', 'formatted_address', 'name'],
+        });
+        listener = autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          const location = place?.geometry?.location;
+          if (!location) return;
+          setValue(place.formatted_address || place.name || '');
+          setPoint({ lat: location.lat(), lng: location.lng() });
+          setStatus('idle');
+        });
+      })
+      .catch((err) => console.error('Could not load place suggestions:', err));
+
+    return () => {
+      cancelled = true;
+      listener?.remove?.();
+    };
+  }, []);
+
+  const trimmed = value.trim();
+  const saved = profile?.locationPoint ?? null;
+  const samePoint = (point?.lat === saved?.lat && point?.lng === saved?.lng);
+  const unchanged = trimmed === (profile?.location ?? '') && samePoint;
+
+  const handleSave = async () => {
+    setStatus('saving');
+    try {
+      // No text, no place: clearing the location clears where Explore opens too.
+      await onSaveProfile({ location: trimmed, locationPoint: trimmed ? point : null });
+      setStatus('saved');
+    } catch (err) {
+      console.error('Could not save your location:', err);
+      setStatus('error');
+    }
+  };
+
+  return (
+    <Card t={t} title="Location">
+      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
+        Where you&rsquo;re based, shown on your public profile under your name. Pick your town
+        or city from the suggestions and the Explore map will open there. Optional.
+      </p>
+      <label htmlFor="settings-location"
+        style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+        Location
+      </label>
+      <input id="settings-location" ref={inputRef} type="text" value={value} placeholder="e.g. Malmö, Sweden"
+        autoComplete="off"
+        onChange={(e) => { setValue(e.target.value); setPoint(null); setStatus('idle'); }}
+        // Enter picks a suggestion in the Places list; it must not do anything else here.
+        onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
+        style={{ ...inputStyle(t), maxWidth: 380, marginBottom: 12 }} />
+      <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: 20 }}>
+        {point
+          ? 'Explore opens here.'
+          : trimmed
+            ? 'Not a place from the suggestions, so Explore opens where it always does.'
+            : 'No location, so Explore opens where it always does.'}
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <Btn t={t} variant="primary" icon="check" onClick={handleSave}
+          disabled={unchanged || status === 'saving'}>
+          {status === 'saving' ? 'Saving…' : 'Save location'}
+        </Btn>
+        {status === 'saved' && (
+          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>Saved.</span>
         )}
         {status === 'error' && (
           <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 500 }}>
@@ -529,10 +632,7 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
           title="Bio" label="Bio" id="settings-bio" multiline
           description="A couple of lines about you, shown on your public profile. Optional."
           placeholder="What you're into, or what brought you here." />
-        <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="location"
-          title="Location" label="Location" id="settings-location"
-          description="Where you're based, shown on your public profile under your name. Optional."
-          placeholder="e.g. Malmö, Sweden" />
+        <LocationField t={t} profile={profile} onSaveProfile={onSaveProfile} />
         <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="contactEmail"
           title="Contact email" label="Contact email" id="settings-contact-email" inputType="email"
           description="An address people can reach you at, shown on your public profile. It does not have to be the one you sign in with, which is never shown. Optional."

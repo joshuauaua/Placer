@@ -48,12 +48,18 @@ const hasCoords = (position) =>
 /**
  * `initialCenter` opens the map somewhere other than the default — used after
  * posting, so the imagination that was just saved is on screen rather than a
- * continent away.
+ * continent away. Without one, `homeCenter` — the place chosen as the account's
+ * location in Settings — opens it over that town instead, zoomed out to show it.
  *
  * `accountId`, `authorName` and `onSignIn` are passed straight through to the pin
  * preview modal, which needs them to vote on and comment on whatever pin is open.
  */
-const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null,
+// Close enough for one imagination; far enough out to see a whole town.
+const PIN_ZOOM = 17;
+const HOME_ZOOM = 13;
+const DEFAULT_ZOOM = 15;
+
+const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCenter = null,
   accountId = null, authorName, onSignIn, onOpenProject }) => {
   const t = THEME;
   const mapRef = useRef(null);
@@ -70,7 +76,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null,
   const [currentPosition, setCurrentPosition] = useState(
     hasCoords(initialCenter)
       ? initialCenter
-      : {
+      : hasCoords(homeCenter) ? homeCenter : {
         lat: 55.6054,  // STPLN, Malmöhusvägen 5, Malmö — latitude
         lng: 12.9854   // STPLN, Malmöhusvägen 5, Malmö — longitude
       }
@@ -130,7 +136,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null,
     try {
       const googleMap = new window.google.maps.Map(mapRef.current, {
         center: currentPositionRef.current,
-        zoom: hasCoords(initialCenter) ? 17 : 15,
+        zoom: hasCoords(initialCenter) ? PIN_ZOOM : hasCoords(homeCenter) ? HOME_ZOOM : DEFAULT_ZOOM,
         mapTypeControl: true,
         streetViewControl: true,
         styles: MAP_STYLE,

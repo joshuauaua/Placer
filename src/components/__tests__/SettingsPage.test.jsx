@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { SettingsPage } from '../SettingsPage';
 import { saveProfile } from '../../services/profile';
 import { removeProfileImageFile, updatePassword, uploadCover, uploadProfilePhoto } from '../../services/auth';
@@ -219,7 +219,40 @@ describe('SettingsPage, bio and location', () => {
     fireEvent.click(screen.getByRole('button', { name: /Save location/ }));
 
     expect(await screen.findAllByRole('status')).not.toHaveLength(0);
-    expect(onSaveProfile).toHaveBeenCalledWith({ location: 'Malmö' });
+    // Typed rather than chosen from the suggestions, so there is no place to open Explore at.
+    expect(onSaveProfile).toHaveBeenCalledWith({ location: 'Malmö', locationPoint: null });
+    expect(screen.getByText(/Not a place from the suggestions/)).toBeInTheDocument();
+  });
+
+  it('keeps the place a suggestion was chosen from, and opens Explore there', async () => {
+    // A stand-in for Google Places: the Autocomplete it builds is handed back here so
+    // the test can "choose" a suggestion the way the real list would.
+    let placeChanged;
+    const place = { formatted_address: 'Malmö, Sweden',
+      geometry: { location: { lat: () => 55.6, lng: () => 13 } } };
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'maps-key');
+    window.google = { maps: { places: { Autocomplete: vi.fn(function Autocomplete() {
+      this.getPlace = () => place;
+      this.addListener = (event, handler) => { placeChanged = handler; return { remove: vi.fn() }; };
+    }) } } };
+
+    try {
+      const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: '', location: '' } });
+      await waitFor(() => expect(placeChanged).toBeTypeOf('function'));
+      expect(window.google.maps.places.Autocomplete).toHaveBeenCalledWith(
+        screen.getByLabelText('Location'), expect.objectContaining({ types: ['(regions)'] }));
+
+      act(() => placeChanged());
+      expect(screen.getByLabelText('Location')).toHaveValue('Malmö, Sweden');
+      expect(screen.getByText('Explore opens here.')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /Save location/ }));
+
+      await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({
+        location: 'Malmö, Sweden', locationPoint: { lat: 55.6, lng: 13 } }));
+    } finally {
+      delete window.google;
+      vi.unstubAllEnvs();
+    }
   });
 });
 

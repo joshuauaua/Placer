@@ -509,6 +509,7 @@ function MainApp({ initialView = 'welcome' }) {
                   onCaptureView={handleCaptureView}
                   apiKey={GOOGLE_MAPS_API_KEY}
                   initialCenter={mapFocus}
+                  homeCenter={profile?.locationPoint ?? null}
                   accountId={accountId}
                   authorName={profile?.name ?? DEFAULT_NAME}
                   onSignIn={handleSignIn}
