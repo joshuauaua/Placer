@@ -472,6 +472,11 @@ function MainApp({ initialView = 'welcome' }) {
         onSignIn={handleLogIn}
         onCreateAccount={handleCreateAccount}
         onSignOut={handleSignOut}
+        onSearchSelect={({ kind, id }) => {
+          if (kind === 'person') showPublicProfile(id);
+          else if (kind === 'organisation') showOrganisationPublic(id);
+          else showProjectPublic(id);
+        }}
       />
 
       {/* Main Content. The map fills it and has no footer. Every other view scrolls

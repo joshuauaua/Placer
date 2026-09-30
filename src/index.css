@@ -774,6 +774,35 @@ a {
   gap: 8px;
 }
 
+/* The search box beside the account menu (NavSearch.jsx). It gives way first when
+ * the bar is narrow; its suggestions stay readable either way. */
+.placer-nav-search-field {
+  width: 280px;
+}
+
+.placer-nav-search-list {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  width: 360px;
+}
+
+/* On a phone the box is narrow, so the list spans the window under the bar instead. */
+@media (max-width: 639px) {
+  .placer-nav-search-field {
+    width: 150px;
+  }
+
+  .placer-nav-search-list {
+    position: fixed;
+    top: 64px;
+    left: var(--placer-margin);
+    right: var(--placer-margin);
+    width: auto;
+  }
+}
+
 /* The content area under the bar. The bar floats over it rather than pushing it
    down, so what scrolls up passes under the glass; this padding is what keeps
    the top of every view clear of it at rest. */

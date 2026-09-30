@@ -343,6 +343,8 @@ export function TermsAndPrivacyPage({ t }) {
           publish &mdash; it does not have to be your real one &mdash; and leave the optional
           fields empty if you would rather not share them. The email you sign in with is
           never shown; the contact email is a separate address you choose to publish.
+          Anyone signed in to PLACER can find your profile by searching for your display
+          name, and sees your name, location and profile photo in the suggestions.
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Organisations.</strong> If you create an organisation

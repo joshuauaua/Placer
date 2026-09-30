@@ -7,15 +7,19 @@
  * in index.css (.placer-glass-nav).
  *
  * The right-hand end depends on who is there. Logged out, it is Create Account
- * and Log In and nothing else. Logged in, it is just the account menu — the side
- * nav and the footer carry the site links. While the session is still being read it stays empty,
+ * and Log In and nothing else. Logged in, it is the search box and the account menu
+ * — the side nav and the footer carry the site links. The search box needs a
+ * Supabase project to search, so without one it is left out. While the session is still being read it stays empty,
  * rather than flashing the logged-out buttons at someone who is signed in.
  */
 
 import { Btn } from './UI';
 import { UserMenu } from './UserMenu';
+import { NavSearch } from './NavSearch';
+import { isSupabaseConfigured } from '../services/search';
 
-export function GlassNavbar({ t, profile, loading, onNavigate, onSignIn, onCreateAccount, onSignOut }) {
+export function GlassNavbar({ t, profile, loading, onNavigate, onSignIn, onCreateAccount, onSignOut,
+  onSearchSelect }) {
   return (
     <header className="placer-glass-nav" style={{ color: t.ink }}>
       <button
@@ -28,7 +32,10 @@ export function GlassNavbar({ t, profile, loading, onNavigate, onSignIn, onCreat
 
       <div className="placer-glass-nav-end">
         {loading ? null : profile ? (
-          <UserMenu t={t} profile={profile} onNavigate={onNavigate} onSignIn={onSignIn} onSignOut={onSignOut} />
+          <>
+            {onSearchSelect && isSupabaseConfigured() && <NavSearch t={t} onSelect={onSearchSelect} />}
+            <UserMenu t={t} profile={profile} onNavigate={onNavigate} onSignIn={onSignIn} onSignOut={onSignOut} />
+          </>
         ) : (
           <>
             <Btn t={t} variant="primary" size="sm" onClick={onCreateAccount}>Create Account</Btn>
