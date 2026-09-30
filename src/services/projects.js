@@ -62,7 +62,7 @@ export const PROJECT_TYPES = [
 ];
 
 const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, description, start_date, end_date, '
-  + 'locations, location_shapes, image_path, project_type, created_at, updated_at';
+  + 'locations, location_shapes, image_path, project_type, organisation_id, created_at, updated_at';
 
 function fromRow(row) {
   return {
@@ -83,6 +83,9 @@ function fromRow(row) {
     image: mediaUrl(row.image_path),
     // One of PROJECT_TYPES' keys, or null for a project started before there was a choice.
     projectType: row.project_type ?? null,
+    // The organisation it is run in the name of, or null for one run by its owner
+    // alone — see supabase/organisations.sql section 6.
+    organisationId: row.organisation_id ?? null,
     createdAt: row.created_at ?? null,
     updatedAt: row.updated_at ?? null,
   };
@@ -94,7 +97,8 @@ function fromRow(row) {
  * refused write here rather than a policy violation there.
  */
 export async function createProject({ ownerId, ownerName, name, description = '',
-  startDate = null, endDate = null, locations = [], locationShapes = [], projectType = null }) {
+  startDate = null, endDate = null, locations = [], locationShapes = [], projectType = null,
+  organisationId = null }) {
   if (!ownerId) throw new Error('Starting a project needs an account.');
 
   const supabase = await client();
@@ -110,6 +114,7 @@ export async function createProject({ ownerId, ownerName, name, description = ''
       locations,
       location_shapes: locationShapes,
       project_type: projectType,
+      organisation_id: organisationId,
     })
     .select(PROJECT_COLUMNS)
     .single();
@@ -180,6 +185,19 @@ export async function readRelatedProjects(project, limit = 3) {
     .slice(0, limit);
 }
 
+/** Every project run in an organisation's name, newest first. Public, like readProject. */
+export async function readOrganisationProjects(organisationId) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECTS_TABLE)
+    .select(PROJECT_COLUMNS)
+    .eq('organisation_id', organisationId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(`Could not load the organisation's projects: ${error.message}`);
+  return (data ?? []).map(fromRow);
+}
+
 /**
  * Every project this account owns or collaborates on, newest first. Two queries
  * rather than one: `project_collaborators` only tells this account about its own
@@ -234,6 +252,7 @@ export async function updateProject(id, patch) {
     ownerName: 'owner_name', name: 'name', description: 'description',
     startDate: 'start_date', endDate: 'end_date', locations: 'locations',
     locationShapes: 'location_shapes', imagePath: 'image_path', projectType: 'project_type',
+    organisationId: 'organisation_id',
   };
   const row = {};
   for (const [key, column] of Object.entries(columns)) {

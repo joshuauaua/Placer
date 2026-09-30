@@ -21,6 +21,21 @@ describe('SideNav', () => {
       .toEqual(['Collapse side nav', 'New project', 'Dashboard', 'Explore', 'Projects', 'Sandbox', 'Settings']);
   });
 
+  it('shows Organisations only for an account that runs one', () => {
+    const { onNavigate } = setup({ showOrganisations: true });
+
+    expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label')))
+      .toEqual(['Collapse side nav', 'New project', 'Dashboard', 'Explore', 'Projects', 'Organisations', 'Sandbox', 'Settings']);
+    fireEvent.click(screen.getByRole('button', { name: 'Organisations' }));
+    expect(onNavigate).toHaveBeenCalledWith('organisations');
+  });
+
+  it('marks Organisations as the current place on an organisation dashboard', () => {
+    setup({ showOrganisations: true, view: 'organisationDashboard' });
+
+    expect(screen.getByRole('button', { name: 'Organisations' })).toHaveAttribute('aria-current', 'page');
+  });
+
   it('collapses to icons and back, and remembers which', () => {
     setup();
     const nav = screen.getByRole('navigation', { name: 'App' });

@@ -660,6 +660,41 @@ Send a submission from `/sandbox` -> Contribute; a message should appear within 
 or two. If not, check `net._http_response` as in step 15 — the status codes mean the
 same things.
 
+## 18. Organisations
+
+Requires steps 9 and 12 — an organisation is run by accounts, and projects can be run
+in its name. Run `organisations.sql` in the SQL editor after `projects.sql` (or
+`supabase db push`). It is re-runnable.
+
+It creates `public.organisations` (public to read, like a project), the
+`organisation_admins` roster, and `organisation_former_admins`, and adds a nullable
+`organisation_id` to `public.projects`. The rules are enforced in the database rather
+than the app: whoever creates an organisation is its first admin; any admin can add
+another by email, remove one, leave, edit it, or close it (delete it, which leaves its
+projects in place with no organisation); only an admin can start a project in its name;
+and an organisation always keeps at least one admin, so the last one cannot leave.
+
+The one way around that is the last admin's account being deleted. The organisation is
+then unadministered (`unadministered_since` is set), nobody can change it, and any
+account that used to be one of its admins can claim it back from its public page. If
+nobody who could claim it is left, closing it takes the SQL editor.
+
+It replaces the Individual / Organisation account type in Settings, which is gone from
+the app. `profiles.account_type` is left in place so nothing saved is lost.
+
+### Verify
+
+```sql
+select relrowsecurity from pg_class
+ where relname in ('organisations', 'organisation_admins', 'organisation_former_admins');
+select policyname, cmd, roles from pg_policies
+ where tablename in ('organisations', 'organisation_admins');
+```
+
+Expect `rls` true on all three; SELECT, INSERT, UPDATE and DELETE policies on
+`organisations`, one SELECT on `organisation_admins`, and none on
+`organisation_former_admins`, which only the functions read.
+
 ## Still to decide
 
 - **Projects have one role beyond the owner, not several.** A collaborator can edit
@@ -687,6 +722,7 @@ same things.
   covered — they live under `placemaking_follows`, in `STORAGE_KEYS` — an account's are not.
 - **Nor are notifications or notification preferences**, for the same reason again —
   both are rows in Supabase, and neither is in `exportAllData` or `eraseAllData`.
+  Neither are organisations or anyone's admin rows in them (step 18).
 - **Activity alerts do not cover cities.** `follows.followed_type` includes `'city'`,
   but nothing in `notifications.sql` posts to a city yet — there is nowhere in the app
   that publishes news for one, the same gap `follows.sql`'s header notes. The trigger

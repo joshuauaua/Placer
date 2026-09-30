@@ -76,6 +76,7 @@ const PLAN = [
   { name: '20260928120002_sandbox_room_delete.sql', src: 'rooms-delete.sql' },
   { name: '20260929090001_tool_submissions.sql', src: 'tool-submissions.sql' },
   { name: '20260929100001_project_types.sql', src: 'project-types.sql' },
+  { name: '20260930090001_organisations.sql', src: 'organisations.sql' },
 ]
 
 const HAND_WRITTEN = [

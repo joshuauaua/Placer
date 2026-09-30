@@ -334,7 +334,7 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Your profile.</strong> Alongside the login we store a
-          display name, whether the account is an individual or an organisation and, if you
+          display name and, if you
           fill them in, a short bio, a location, a contact email, a website, a profile photo
           and a cover image. All of these are public: they are shown on your public profile page,
           which anyone with its link can open, next to the imaginations you have posted. The
@@ -343,6 +343,16 @@ export function TermsAndPrivacyPage({ t }) {
           publish &mdash; it does not have to be your real one &mdash; and leave the optional
           fields empty if you would rather not share them. The email you sign in with is
           never shown; the contact email is a separate address you choose to publish.
+        </P>
+        <P t={t}>
+          <strong style={{ color: t.ink }}>Organisations.</strong> If you create an organisation
+          or are made an admin of one, we store its name and whatever its admins fill in &mdash; a
+          description, a location, a contact email and a website &mdash; all of which are public on
+          its page, together with the projects run in its name. We also store who its admins
+          are. The list of admins is not public: the organisation&rsquo;s other admins see each
+          admin&rsquo;s display name and the email they sign in with, since that is how an admin
+          is added. If you leave an organisation, we keep a record that you used to be an admin,
+          so that you can claim it back should it ever be left without one.
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Imaginations you post.</strong> Pressing Post uploads

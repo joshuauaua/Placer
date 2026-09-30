@@ -5,7 +5,7 @@ import { Avatar, Btn, LoadingMark } from './UI';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
 import { ImagePicker } from './ImagePicker';
 import {
-  ACCOUNT_TYPES, removeProfileImageFile, updatePassword, uploadCover, uploadProfilePhoto,
+  removeProfileImageFile, updatePassword, uploadCover, uploadProfilePhoto,
 } from '../services/auth';
 import { isSupabaseConfigured, readPreferences, savePreferences } from '../services/notifications';
 
@@ -214,49 +214,6 @@ function ProfilePhotoPicker({ t, profile, onSaveProfile }) {
         <ImagePicker t={t} hasImage={!!photo} uploadLabel="Upload a photo" replaceLabel="Replace photo"
           onUpload={async (file) => replace(await uploadProfilePhoto(file))} onRemove={() => replace(null)} />
       </div>
-    </Card>
-  );
-}
-
-function AccountTypePicker({ t, profile, onSaveProfile }) {
-  const current = profile?.accountType ?? 'individual';
-  const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'error'
-
-  const choose = async (key) => {
-    if (key === current || status === 'saving') return;
-    setStatus('saving');
-    try {
-      await onSaveProfile({ accountType: key });
-      setStatus('idle');
-    } catch (err) {
-      console.error('Could not save your account type:', err);
-      setStatus('error');
-    }
-  };
-
-  return (
-    <Card t={t} title="Account type">
-      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
-        Whether this account is you, or an organisation such as a municipality, studio or
-        association. Shown on your public profile.
-      </p>
-      <div role="radiogroup" aria-label="Account type" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        {ACCOUNT_TYPES.map(({ key, label }) => (
-          <button key={key} type="button" role="radio" aria-checked={current === key}
-            onClick={() => choose(key)} disabled={status === 'saving'}
-            style={{ height: 44, padding: '0 18px', borderRadius: 12, cursor: 'pointer',
-              fontFamily: 'var(--placer-font)', fontSize: 15, fontWeight: 500, color: t.ink,
-              background: current === key ? t.surfaceAlt : 'transparent',
-              border: `1.5px solid ${current === key ? t.accent : t.line}` }}>
-            {label}
-          </button>
-        ))}
-      </div>
-      {status === 'error' && (
-        <p role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 500, marginTop: 12 }}>
-          Could not save that. Try again.
-        </p>
-      )}
     </Card>
   );
 }
@@ -534,7 +491,6 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate }) {
         <DisplayName t={t} profile={profile} onSaveProfile={onSaveProfile} />
         {email && <CoverPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />}
         {email && <ProfilePhotoPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />}
-        <AccountTypePicker t={t} profile={profile} onSaveProfile={onSaveProfile} />
         <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="bio"
           title="Bio" label="Bio" id="settings-bio" multiline
           description="A couple of lines about you, shown on your public profile. Optional."

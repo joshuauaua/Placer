@@ -24,7 +24,7 @@ function Shortcut({ t, icon, label, onClick }) {
 }
 
 export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewProject,
-  onSignIn, onSignOut, onExplore, onOpenPublicProfile }) {
+  onNewOrganisation, onSignIn, onSignOut, onExplore, onOpenPublicProfile }) {
   // The imagination open in the modal, if any — set from any card on this page.
   const [selected, setSelected] = useState(null);
   // Imaginations still only in this browser, made before there were accounts: nobody
@@ -107,6 +107,11 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
             onClick={() => (onExplore ? onExplore() : onNavigate('map'))} />
           {onNewProject && (
             <Shortcut t={t} icon="plus" label="Create a Project" onClick={onNewProject} />
+          )}
+          {/* Organisations live in Supabase, so there are none in the local, no-project
+              mode — the same test as the public profile link above. */}
+          {accountId && onNewOrganisation && (
+            <Shortcut t={t} icon="building" label="Create an Organisation" onClick={onNewOrganisation} />
           )}
         </div>
 

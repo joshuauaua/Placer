@@ -6,10 +6,6 @@ import { removeProfileImageFile, updatePassword, uploadCover, uploadProfilePhoto
 import { THEME } from '../../theme';
 
 vi.mock('../../services/auth', () => ({
-  ACCOUNT_TYPES: [
-    { key: 'individual', label: 'Individual' },
-    { key: 'organisation', label: 'Organisation' },
-  ],
   updatePassword: vi.fn(() => Promise.resolve()),
   uploadCover: vi.fn(() => Promise.resolve('user-1/cover-2.jpg')),
   uploadProfilePhoto: vi.fn(() => Promise.resolve('avatars/user-1/avatar-2.jpg')),
@@ -124,13 +120,11 @@ describe('SettingsPage, bio and location', () => {
     vi.clearAllMocks();
   });
 
-  it('saves the account type as soon as one is picked', async () => {
-    const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: '', accountType: 'individual' } });
+  it('no longer asks whether the account is an organisation — organisations are their own pages', () => {
+    setup({ profile: { name: 'Mara Quinn', bio: '', accountType: 'organisation' } });
 
-    expect(screen.getByRole('radio', { name: 'Individual' })).toHaveAttribute('aria-checked', 'true');
-    fireEvent.click(screen.getByRole('radio', { name: 'Organisation' }));
-
-    await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ accountType: 'organisation' }));
+    expect(screen.queryByText('Account type')).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Organisation' })).not.toBeInTheDocument();
   });
 
   it('saves a contact email and a website', async () => {

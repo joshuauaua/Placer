@@ -27,11 +27,6 @@ export const PROFILES_TABLE = 'profiles';
 export const COVERS_FOLDER = 'covers';
 export const AVATARS_FOLDER = 'avatars';
 
-export const ACCOUNT_TYPES = [
-  { key: 'individual', label: 'Individual' },
-  { key: 'organisation', label: 'Organisation' },
-];
-
 const PROFILE_COLUMNS = 'id, display_name, bio, location, account_type, contact_email,'
   + ' website, cover_path, avatar_path';
 

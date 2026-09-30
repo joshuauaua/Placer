@@ -301,7 +301,7 @@ function DeleteProject({ t, project, onDeleted }) {
  * needs — everything else is read here. `isOwner` gates the roster and delete
  * controls; a plain collaborator sees everything else.
  */
-export function ProjectDashboardPage({ t, accountId, projectId,
+export function ProjectDashboardPage({ t, accountId, projectId, organisations = [],
   onOpenSandbox, onOpenRoom, onNavigateToPublic, onDeleted }) {
   const [project, setProject] = useState(null);
   const [status, setStatus] = useState('loading');
@@ -480,6 +480,8 @@ export function ProjectDashboardPage({ t, accountId, projectId,
       <ProjectSetupPage
         t={t}
         project={project}
+        accountName={project.ownerName}
+        organisations={organisations}
         onSaved={(saved) => { setProject(saved); setEditing(false); }}
         onCancel={() => setEditing(false)}
       />

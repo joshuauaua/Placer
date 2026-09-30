@@ -20,6 +20,7 @@ import {
   readLinks, readProject, readPublicSandboxActivity, readRelatedProjects, recordProjectView,
 } from '../services/projects';
 import { follow, isFollowing, unfollow } from '../services/follows';
+import { readOrganisation } from '../services/organisations';
 import { CHARACTER } from '../theme';
 
 // A fixed locale and UTC, so the label does not shift with the machine it renders on.
@@ -227,12 +228,15 @@ function TableOfContents({ t, sections, active, onPick }) {
  * this page is the one a shared link actually points at, so it has to work reached
  * cold with nothing but the id in the URL.
  */
-export function PublicProjectPage({ t, projectId, accountId, onImagineForProject, onBack, onOpenProject, onOpenSandbox }) {
+export function PublicProjectPage({ t, projectId, accountId, onImagineForProject, onBack, onOpenProject,
+  onOpenOrganisation, onOpenSandbox }) {
   const [project, setProject] = useState(null);
   const [imaginations, setImaginations] = useState([]);
   const [links, setLinks] = useState([]);
   const [sandboxActivity, setSandboxActivity] = useState(0);
   const [related, setRelated] = useState([]);
+  // The organisation it is run in the name of, if any — credited in place of the owner.
+  const [organisation, setOrganisation] = useState(null);
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error' | 'notFound'
   const [following, setFollowing] = useState(false);
   const topRef = useRef(null);
@@ -241,6 +245,7 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
     let cancelled = false;
     setStatus('loading');
     setRelated([]);
+    setOrganisation(null);
 
     Promise.all([
       readProject(projectId),
@@ -258,6 +263,14 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
         setStatus('ready');
         // Only once the project is known to exist, so a broken link is not a view.
         recordProjectView(proj.id);
+
+        // Extra, not essential: the page stands without it, so a failure here is
+        // logged and the byline falls back to the owner.
+        if (proj.organisationId) {
+          readOrganisation(proj.organisationId)
+            .then((found) => { if (!cancelled) setOrganisation(found); })
+            .catch((err) => console.error("Could not load this project's organisation:", err));
+        }
 
         // Extra, not essential: the page stands without it, so a failure here is
         // logged and the section simply does not appear.
@@ -361,7 +374,16 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
                   <Icon name="clock" size={16} stroke={2} />{date}
                 </span>
               )}
-              {project.ownerName && <span>By {project.ownerName}</span>}
+              {organisation ? (
+                <span>
+                  By{' '}
+                  <a href={`/organisations/${organisation.id}`}
+                    onClick={(e) => { e.preventDefault(); onOpenOrganisation?.(organisation.id); }}
+                    style={{ color: 'inherit', textDecoration: 'underline' }}>
+                    {organisation.name}
+                  </a>
+                </span>
+              ) : project.ownerName && <span>By {project.ownerName}</span>}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',

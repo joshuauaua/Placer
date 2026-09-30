@@ -10,7 +10,7 @@
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { Avatar, LoadingMark } from './UI';
-import { ACCOUNT_TYPES, isSupabaseConfigured, readPublicProfile } from '../services/auth';
+import { isSupabaseConfigured, readPublicProfile } from '../services/auth';
 
 export function PublicProfilePage({ t, userId, accountId = null }) {
   const [person, setPerson] = useState(null);
@@ -80,7 +80,6 @@ export function PublicProfilePage({ t, userId, accountId = null }) {
   }
 
   const isYou = accountId && accountId === person.id;
-  const accountType = ACCOUNT_TYPES.find(({ key }) => key === person.accountType)?.label ?? 'Individual';
   // The address as people read it, without the https:// or a trailing slash.
   const websiteLabel = person.website.replace(/^https?:\/\//i, '').replace(/\/$/, '');
 
@@ -118,8 +117,6 @@ export function PublicProfilePage({ t, userId, accountId = null }) {
             <dl className="placer-profile-dl">
               <dt style={{ color: t.inkFaint }}>Name</dt>
               <dd style={{ color: t.ink }}>{person.name}</dd>
-              <dt style={{ color: t.inkFaint }}>Account type</dt>
-              <dd style={{ color: t.ink }}>{accountType}</dd>
               <dt style={{ color: t.inkFaint }}>Email</dt>
               <dd style={{ color: t.ink }}>
                 {person.contactEmail

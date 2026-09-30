@@ -205,6 +205,14 @@ const ICON_ELEMENTS = {
       <path d="M15.1 8.9l2.5-2.5M8.9 8.9L6.4 6.4M8.9 15.1l-2.5 2.5M15.1 15.1l2.5 2.5" />
     </>
   ),
+  // An organisation: a building with a door and two rows of windows.
+  building: (
+    <>
+      <path d="M4.5 20.5V5.5l7.5-2.5 7.5 2.5v15" />
+      <path d="M3 20.5h18M10 20.5v-4h4v4" />
+      <path d="M8.5 8.5h.01M12 8.5h.01M15.5 8.5h.01M8.5 12.5h.01M12 12.5h.01M15.5 12.5h.01" />
+    </>
+  ),
   logout: (
     <>
       <path d="M9.5 19.5H6.5a2 2 0 01-2-2v-11a2 2 0 012-2h3" />

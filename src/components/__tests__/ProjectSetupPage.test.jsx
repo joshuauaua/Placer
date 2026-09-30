@@ -36,6 +36,11 @@ const setup = (overrides = {}) => {
   return props;
 };
 
+const ORGANISATIONS = [
+  { id: 'org-1', name: 'Malmö Stad' },
+  { id: 'org-2', name: 'Folkets Park Association' },
+];
+
 const next = () => fireEvent.click(screen.getByRole('button', { name: /^Next/ }));
 
 /** From the cover, through the type step, to the basics. */
@@ -127,6 +132,37 @@ describe('ProjectSetupPage, starting a project', () => {
     });
   });
 
+  it('offers no choice of who runs it to somebody with no organisation', () => {
+    setup();
+    toBasics();
+
+    expect(screen.queryByLabelText('Run by')).not.toBeInTheDocument();
+  });
+
+  it('can be run in the name of an organisation, preselected when started from one', async () => {
+    createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    setup({ organisations: ORGANISATIONS, initialOrganisationId: 'org-2' });
+
+    toBasics();
+    expect(screen.getByLabelText('Run by')).toHaveValue('org-2');
+    expect(screen.getByRole('option', { name: 'Just me (Mara Quinn)' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Run by'), { target: { value: 'org-1' } });
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    next();
+    next();
+    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+
+    await waitFor(() => expect(createProject).toHaveBeenCalledWith(
+      expect.objectContaining({ organisationId: 'org-1' })));
+  });
+
+  it('ignores an organisation it is not an admin of', () => {
+    setup({ organisations: ORGANISATIONS, initialOrganisationId: 'org-elsewhere' });
+    toBasics();
+
+    expect(screen.getByLabelText('Run by')).toHaveValue('');
+  });
+
   it('moves on a step, rather than starting the project, when Enter is pressed in a field', () => {
     setup();
     toBasics();
@@ -200,6 +236,17 @@ describe('ProjectSetupPage, editing a project', () => {
 
     await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1',
       expect.objectContaining({ projectType: 'other' })));
+  });
+
+  it('leaves the organisation alone when editing a project run by one this account does not run', async () => {
+    updateProject.mockResolvedValue(PROJECT);
+    setup({ project: { ...PROJECT, organisationId: 'org-elsewhere' }, organisations: ORGANISATIONS });
+
+    expect(screen.queryByLabelText('Run by')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalled());
+    expect(updateProject.mock.calls[0][1]).not.toHaveProperty('organisationId');
   });
 
   it('saves changes through updateProject rather than creating a new one', async () => {

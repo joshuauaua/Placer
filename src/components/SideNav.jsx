@@ -1,7 +1,7 @@
 /* PLACER — the side nav, down the left edge for anyone who is signed in.
  *
  * The places someone with an account goes back to: their dashboard, the map, their
- * projects and the Sandbox, under a primary button for starting a new project,
+ * projects, their organisations (once they run one) and the Sandbox, under a primary button for starting a new project,
  * with their settings apart from the rest at the bottom. It sits under the glass
  * nav bar rather than beside it, so the bar still spans the full width, and it
  * stops where the page does, so the footer does too. The button at its top
@@ -38,7 +38,7 @@ function writeCollapsed(collapsed) {
   }
 }
 
-export function SideNav({ view, onNavigate, onExplore, onNewProject }) {
+export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganisations = false }) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
 
   const toggle = () => {
@@ -53,6 +53,10 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject }) {
     { key: 'dashboard', label: 'Dashboard', icon: 'user', onSelect: () => onNavigate('dashboard'), active: ['dashboard'] },
     { key: 'map', label: 'Explore', icon: 'pin', onSelect: onExplore, active: ['map'] },
     { key: 'projects', label: 'Projects', icon: 'grid', onSelect: () => onNavigate('projects'), active: ['projects', 'projectDashboard'] },
+    // Only for an account that runs at least one organisation — until then there is
+    // nothing to go back to, and creating one starts from the dashboard.
+    ...(showOrganisations ? [{ key: 'organisations', label: 'Organisations', icon: 'building',
+      onSelect: () => onNavigate('organisations'), active: ['organisations', 'organisationNew', 'organisationDashboard'] }] : []),
     { key: 'sandbox', label: 'Sandbox', icon: 'flask', onSelect: () => onNavigate('sandbox'), active: ['sandbox'] },
     { key: 'settings', label: 'Settings', icon: 'gear', onSelect: () => onNavigate('settings'), active: ['settings'], bottom: true },
   ];

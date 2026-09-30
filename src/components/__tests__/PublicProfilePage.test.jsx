@@ -6,10 +6,6 @@ import { readImaginationsByUser } from '../../services/imaginations';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/auth', () => ({
-  ACCOUNT_TYPES: [
-    { key: 'individual', label: 'Individual' },
-    { key: 'organisation', label: 'Organisation' },
-  ],
   isSupabaseConfigured: vi.fn(() => true),
   readPublicProfile: vi.fn(),
 }));
@@ -45,7 +41,8 @@ describe('PublicProfilePage', () => {
     setup();
 
     expect(await screen.findByRole('heading', { name: 'Details' })).toBeInTheDocument();
-    expect(screen.getByText('Organisation')).toBeInTheDocument();
+    // Organisations are their own pages now, so a person's profile no longer claims to be one.
+    expect(screen.queryByText('Account type')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'hi@mara.se' })).toHaveAttribute('href', 'mailto:hi@mara.se');
     expect(screen.getByRole('link', { name: 'mara.se' })).toHaveAttribute('href', 'https://mara.se/');
   });

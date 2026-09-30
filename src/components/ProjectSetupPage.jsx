@@ -82,11 +82,31 @@ function ProjectTypeChoice({ t, value, onChange }) {
 }
 
 /**
+ * Who a project is run by: the account starting it, or one of the organisations it is
+ * an admin of. Only offered to somebody who runs at least one organisation.
+ */
+function RunByChoice({ t, accountName, organisations, value, onChange }) {
+  return (
+    <Field t={t} label="Run by" htmlFor="project-organisation"
+      hint="Run it in the name of an organisation you are an admin of, and it is credited to the organisation and listed on its page.">
+      <select id="project-organisation" value={value ?? ''}
+        onChange={(e) => onChange(e.target.value || null)} style={inputStyle(t)}>
+        <option value="">{accountName ? `Just me (${accountName})` : 'Just me'}</option>
+        {organisations.map((organisation) => (
+          <option key={organisation.id} value={organisation.id}>{organisation.name}</option>
+        ))}
+      </select>
+    </Field>
+  );
+}
+
+/**
  * `project` is null to start a new one, or an existing project (from services/projects'
  * fromRow shape) to edit it in place — the same field set either way, so this is the
  * one form both `/projects/new` and a dashboard's "Edit setup" reach.
  */
-export function ProjectSetupPage({ t, accountId, accountName, project: initialProject = null, onSaved, onCancel }) {
+export function ProjectSetupPage({ t, accountId, accountName, project: initialProject = null,
+  organisations = [], initialOrganisationId = null, onSaved, onCancel }) {
   // Normally the project being edited. Starting a new one can set it too: if the
   // project is created but its image then fails to upload, the form carries on as an
   // edit of that project, so trying again cannot start a second one.
@@ -100,6 +120,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   const [locationsText, setLocationsText] = useState(locationsToText(project?.locations));
   const [locationShapes, setLocationShapes] = useState(project?.locationShapes ?? []);
   const [projectType, setProjectType] = useState(project?.projectType ?? null);
+  const [organisationId, setOrganisationId] = useState(project ? project.organisationId : initialOrganisationId);
   // Which of the five steps a new project is on, 0 to 4. Editing has no steps.
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'error'
@@ -127,6 +148,17 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
 
   const shownImage = editing ? project.image : pending?.url;
 
+  // Only an organisation this account runs can be chosen — the database refuses any
+  // other (supabase/organisations.sql section 6). `organisations` can arrive after the
+  // form opens, so a `?organisation=` id is held as asked and only counts once it is
+  // in the list. A project already run by an organisation this account is not an admin
+  // of (a collaborator editing it) has nothing to choose, so the choice is not shown
+  // and the project keeps its organisation.
+  const runsOrganisation = (id) => organisations.some((organisation) => organisation.id === id);
+  const chosenOrganisationId = runsOrganisation(organisationId) ? organisationId : null;
+  const offerRunBy = organisations.length > 0
+    && (!editing || !project.organisationId || runsOrganisation(project.organisationId));
+
   const complete = name.trim().length > 0;
 
   const handleSubmit = async (e) => {
@@ -145,6 +177,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
         locationShapes,
         projectType,
       };
+      if (offerRunBy) patch.organisationId = chosenOrganisationId;
 
       let saved = editing
         ? await updateProject(project.id, patch)
@@ -179,6 +212,11 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   // The fields, each once, so the steps and the single edit page lay out the same ones.
   const basics = (
     <>
+      {offerRunBy && (
+        <RunByChoice t={t} accountName={accountName} organisations={organisations}
+          value={chosenOrganisationId} onChange={setOrganisationId} />
+      )}
+
       <Field t={t} label="Name *" htmlFor="project-name">
         <input id="project-name" type="text" value={name}
           onChange={(e) => setName(e.target.value)}

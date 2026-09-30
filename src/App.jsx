@@ -2,7 +2,7 @@
 
 import { useState, useEffect, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
-import { Switch, Route, useLocation } from 'wouter';
+import { Switch, Route, useLocation, useSearch } from 'wouter';
 import { THEME } from './theme';
 import { Btn, LoadingMark } from './components/UI';
 import { Icon } from './components/Icon';
@@ -18,6 +18,7 @@ import { SideNav } from './components/SideNav';
 import { DEFAULT_NAME } from './services/profile';
 import { clearPendingImagination, readPendingImagination, savePendingImagination } from './services/api';
 import { useIdentity } from './components/useIdentity';
+import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -42,6 +43,10 @@ const ProjectsPage = lazy(() => import('./components/ProjectsPage'));
 const ProjectDashboardPage = lazy(() => import('./components/ProjectDashboardPage'));
 const PublicProjectPage = lazy(() => import('./components/PublicProjectPage'));
 const PublicProfilePage = lazy(() => import('./components/PublicProfilePage'));
+const OrganisationsPage = lazy(() => import('./components/OrganisationsPage'));
+const OrganisationSetupPage = lazy(() => import('./components/OrganisationSetupPage'));
+const OrganisationDashboardPage = lazy(() => import('./components/OrganisationDashboardPage'));
+const PublicOrganisationPage = lazy(() => import('./components/PublicOrganisationPage'));
 
 const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
 
@@ -60,6 +65,7 @@ const FLOW_VIEWS = ['street', 'describe', 'post'];
 const ACCOUNT_PATHS = {
   dashboard: '/dashboard',
   projects: '/projects',
+  organisations: '/organisations',
   settings: '/settings',
   signin: '/signin',
   signup: '/signup',
@@ -69,6 +75,7 @@ const ACCOUNT_VIEWS = {
   // The dashboard's old address, so a bookmark from when it was the profile still works.
   '/profile': 'dashboard',
   '/projects': 'projects',
+  '/organisations': 'organisations',
   '/settings': 'settings',
   '/signin': 'signin',
   '/signup': 'signup',
@@ -102,6 +109,20 @@ function projectRouteFrom(path) {
 }
 
 /**
+ * `/organisations/new`, `/organisations/<id>` (the public page) or
+ * `/organisations/<id>/dashboard` — the same three shapes a project has, for the same
+ * reasons. Null for anything else, including a bare `/organisations`, which is the
+ * list of this account's own.
+ */
+function organisationRouteFrom(path) {
+  if (!path.startsWith('/organisations/')) return null;
+  if (path === '/organisations/new') return { mode: 'new' };
+  const match = /^\/organisations\/([^/]+)(\/dashboard)?$/.exec(path);
+  if (!match) return null;
+  return { mode: match[2] ? 'dashboard' : 'public', id: decodeURIComponent(match[1]) };
+}
+
+/**
  * `/people/<account id>`, somebody's public profile — read off the location for the
  * same reason a project's public page is. Null for anything else.
  */
@@ -127,6 +148,10 @@ function LoadingFallback() {
     </div>
   );
 }
+
+// Views that need an account, and say so to someone who has logged out.
+const SIGNED_IN_VIEWS = ['dashboard', 'settings', 'projects', 'organisations',
+  'projectNew', 'projectDashboard', 'organisationNew', 'organisationDashboard'];
 
 // What /dashboard, /projects and /settings show to someone who has logged out. Not a redirect,
 // so the URL still works once they log back in.
@@ -178,6 +203,30 @@ function MainApp({ initialView = 'welcome' }) {
     signOut: signOutOfPlacer, saveProfile: handleSaveProfile } = useIdentity();
   const identityLoading = identityStatus === 'loading';
 
+  // The organisations this account is an admin of. The side nav only shows
+  // Organisations once there is at least one, and a new project can be run in the
+  // name of any of them. Re-read whenever something here changes the answer —
+  // creating one, leaving one, closing one, claiming one.
+  const [organisations, setOrganisations] = useState([]);
+  const [organisationsVersion, setOrganisationsVersion] = useState(0);
+  const refreshOrganisations = () => setOrganisationsVersion((v) => v + 1);
+
+  useEffect(() => {
+    if (!accountId || !isSupabaseConfigured()) {
+      setOrganisations([]);
+      return undefined;
+    }
+    let cancelled = false;
+    readMyOrganisations(accountId)
+      .then((found) => { if (!cancelled) setOrganisations(found); })
+      .catch((err) => {
+        // Before organisations.sql has run there is no table to read. Nothing else
+        // depends on this, so the tab simply stays hidden.
+        if (!cancelled) console.error('Could not load your organisations:', err);
+      });
+    return () => { cancelled = true; };
+  }, [accountId, organisationsVersion]);
+
   // The Sandbox is the one view that lives in the URL, because every experiment has a
   // link worth sharing. So it is read off the location rather than held in state, and
   // `show` keeps the two in step: going to the Sandbox writes the URL, and leaving it
@@ -197,13 +246,24 @@ function MainApp({ initialView = 'welcome' }) {
   const staticView = STATIC_VIEWS[location];
   const projectRoute = projectRouteFrom(location);
   const projectView = projectRoute && { new: 'projectNew', public: 'projectPublic', dashboard: 'projectDashboard' }[projectRoute.mode];
+  const organisationRoute = organisationRouteFrom(location);
+  const organisationView = organisationRoute
+    && { new: 'organisationNew', public: 'organisationPublic', dashboard: 'organisationDashboard' }[organisationRoute.mode];
+  // `/projects/new?organisation=<id>`, from an organisation's dashboard: the new
+  // project starts out run in that organisation's name.
+  const newProjectOrganisationId = new URLSearchParams(useSearch()).get('organisation');
   const personId = personIdFrom(location);
   const resourceSlug = resourceSlugFrom(location);
   const view = accountView ?? staticView
-    ?? (inSandbox ? 'sandbox' : projectView ?? (personId ? 'profilePublic'
+    ?? (inSandbox ? 'sandbox' : projectView ?? organisationView ?? (personId ? 'profilePublic'
       : resourceSlug ? 'resourceArticle' : currentView));
 
   const showNewProject = () => navigate('/projects/new');
+  const showNewOrganisationProject = (organisationId) =>
+    navigate(`/projects/new?organisation=${encodeURIComponent(organisationId)}`);
+  const showNewOrganisation = () => navigate('/organisations/new');
+  const showOrganisationDashboard = (id) => navigate(`/organisations/${encodeURIComponent(id)}/dashboard`);
+  const showOrganisationPublic = (id) => navigate(`/organisations/${encodeURIComponent(id)}`);
   const showProjectDashboard = (id) => navigate(`/projects/${id}/dashboard`);
   const showProjectPublic = (id) => navigate(`/projects/${id}`);
   const showPublicProfile = (id) => navigate(`/people/${encodeURIComponent(id)}`);
@@ -232,7 +292,7 @@ function MainApp({ initialView = 'welcome' }) {
       navigate(STATIC_PATHS[next]);
       return;
     }
-    if (inSandbox || accountView || staticView || personId || resourceSlug) navigate('/');
+    if (inSandbox || accountView || staticView || personId || resourceSlug || organisationRoute) navigate('/');
     setCurrentView(next);
   };
 
@@ -426,7 +486,7 @@ function MainApp({ initialView = 'welcome' }) {
               the nav bar's right-hand end. */}
           {!identityLoading && profile && (
             <SideNav t={t} view={view} onNavigate={show} onExplore={handleExplore}
-              onNewProject={showNewProject} />
+              onNewProject={showNewProject} showOrganisations={organisations.length > 0} />
           )}
 
           <div className="placer-app-page">
@@ -490,16 +550,16 @@ function MainApp({ initialView = 'welcome' }) {
 
             {/* Reachable by URL, so both have to cope with arriving before the session has
                 been read, and with arriving logged out. */}
-            {(view === 'dashboard' || view === 'settings' || view === 'projects') && identityLoading && <LoadingFallback />}
+            {SIGNED_IN_VIEWS.includes(view) && identityLoading && <LoadingFallback />}
 
-            {(view === 'dashboard' || view === 'settings' || view === 'projects') && !identityLoading && !profile && (
+            {SIGNED_IN_VIEWS.includes(view) && !identityLoading && !profile && (
               <SignedOutNotice t={t} onSignIn={handleSignIn} />
             )}
 
             {view === 'dashboard' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
-                  onNewProject={showNewProject}
+                  onNewProject={showNewProject} onNewOrganisation={showNewOrganisation}
                   onSignIn={handleSignIn} onSignOut={handleSignOut} onExplore={handleExplore}
                   onOpenPublicProfile={showPublicProfile} />
               </Suspense>
@@ -509,6 +569,48 @@ function MainApp({ initialView = 'welcome' }) {
               <Suspense fallback={<LoadingFallback />}>
                 <ProjectsPage t={t} accountId={accountId} onNewProject={showNewProject}
                   onOpenProjectDashboard={showProjectDashboard} />
+              </Suspense>
+            )}
+
+            {view === 'organisations' && profile && (
+              <Suspense fallback={<LoadingFallback />}>
+                <OrganisationsPage t={t} organisations={organisations}
+                  onNewOrganisation={showNewOrganisation}
+                  onOpenOrganisationDashboard={showOrganisationDashboard} />
+              </Suspense>
+            )}
+
+            {view === 'organisationNew' && profile && (
+              <Suspense fallback={<LoadingFallback />}>
+                <OrganisationSetupPage t={t} accountId={accountId}
+                  onSaved={(organisation) => {
+                    refreshOrganisations();
+                    showOrganisationDashboard(organisation.id);
+                  }}
+                  onCancel={() => show('dashboard')} />
+              </Suspense>
+            )}
+
+            {view === 'organisationDashboard' && profile && (
+              <Suspense fallback={<LoadingFallback />}>
+                <OrganisationDashboardPage t={t} accountId={accountId}
+                  organisationId={organisationRoute.id}
+                  onNavigateToPublic={showOrganisationPublic}
+                  onNewProject={showNewOrganisationProject}
+                  onOpenProjectDashboard={showProjectDashboard}
+                  onChanged={refreshOrganisations}
+                  onLeft={() => { refreshOrganisations(); show('dashboard'); }} />
+              </Suspense>
+            )}
+
+            {/* Public, like a project's page: anyone with the link can open it cold. */}
+            {view === 'organisationPublic' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <PublicOrganisationPage t={t} organisationId={organisationRoute.id} accountId={accountId}
+                  isAdmin={organisations.some(({ id }) => id === organisationRoute.id)}
+                  onOpenDashboard={showOrganisationDashboard}
+                  onOpenProject={showProjectPublic}
+                  onClaimed={refreshOrganisations} />
               </Suspense>
             )}
 
@@ -525,34 +627,24 @@ function MainApp({ initialView = 'welcome' }) {
               </Suspense>
             )}
 
-            {/* projectNew and projectDashboard need an account, the same shape the dashboard and
-                settings are gated — starting or managing a project is not something a
-                signed-out visitor can do. projectPublic needs nothing: a project's public
-                page is exactly the thing anyone should be able to open cold, unsignedin,
-                from a shared link. */}
-            {view === 'projectNew' && identityLoading && <LoadingFallback />}
-
-            {view === 'projectNew' && !identityLoading && !profile && (
-              <SignedOutNotice t={t} onSignIn={handleSignIn} />
-            )}
-
+            {/* projectNew and projectDashboard need an account (SIGNED_IN_VIEWS) —
+                starting or managing a project is not something a signed-out visitor can
+                do. projectPublic needs nothing: a project's public page is exactly the
+                thing anyone should be able to open cold, unsignedin, from a shared link. */}
             {view === 'projectNew' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <ProjectSetupPage t={t} accountId={accountId} accountName={profile.name}
+                  organisations={organisations}
+                  initialOrganisationId={newProjectOrganisationId}
                   onSaved={(project) => showProjectDashboard(project.id)}
                   onCancel={() => show('dashboard')} />
               </Suspense>
             )}
 
-            {view === 'projectDashboard' && identityLoading && <LoadingFallback />}
-
-            {view === 'projectDashboard' && !identityLoading && !profile && (
-              <SignedOutNotice t={t} onSignIn={handleSignIn} />
-            )}
-
             {view === 'projectDashboard' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <ProjectDashboardPage t={t} accountId={accountId} projectId={projectRoute.id}
+                  organisations={organisations}
                   onOpenSandbox={showProjectSandbox}
                   onOpenRoom={showProjectRoom}
                   onNavigateToPublic={showProjectPublic}
@@ -573,6 +665,7 @@ function MainApp({ initialView = 'welcome' }) {
                   onImagineForProject={handleImagineForProject}
                   onBack={() => show('projects')}
                   onOpenProject={showProjectPublic}
+                  onOpenOrganisation={showOrganisationPublic}
                   onOpenSandbox={showProjectSandbox} />
               </Suspense>
             )}
