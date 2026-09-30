@@ -132,9 +132,12 @@ export async function follow(type, targetId, label) {
   const followerId = account?.user?.id;
   if (!followerId) throw new Error('Following needs an account.');
 
+  // ignoreDuplicates makes this ON CONFLICT DO NOTHING. A plain upsert is ON CONFLICT
+  // DO UPDATE, which needs UPDATE on the table even when nothing conflicts — and
+  // follows.sql grants no UPDATE at all, so every follow was refused.
   const { error } = await supabase.from(FOLLOWS_TABLE).upsert(
     { follower_id: followerId, followed_type: type, followed_id: String(targetId), followed_label: label },
-    { onConflict: 'follower_id,followed_type,followed_id' },
+    { onConflict: 'follower_id,followed_type,followed_id', ignoreDuplicates: true },
   );
 
   if (error) throw new Error(`Could not follow that: ${error.message}`);

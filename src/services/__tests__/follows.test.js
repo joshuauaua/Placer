@@ -147,7 +147,9 @@ describe('follows, with a Supabase project', () => {
 
     expect(upsert).toHaveBeenCalledWith(
       { follower_id: 'user-1', followed_type: 'imagination', followed_id: 'img-1', followed_label: 'Pocket park on Lot 7' },
-      { onConflict: 'follower_id,followed_type,followed_id' },
+      // Ignored rather than updated: the table grants no UPDATE, and an upsert that
+      // updates on conflict is refused outright for want of it.
+      { onConflict: 'follower_id,followed_type,followed_id', ignoreDuplicates: true },
     );
   });
 
