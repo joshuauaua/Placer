@@ -435,16 +435,14 @@ a {
   transform: translateX(-50%);
 }
 
-/* Centres the trigger between the pitch and the credit, without a rule to
- * mark the seam. Flex centring rather than absolute+transform, so the trigger
- * can become `position: fixed` on a phone (see the media query below) without
- * a transformed ancestor pulling it out of the viewport. */
-.placer-landing-divider {
-  height: 1px;
+/* Centres the two triggers, stacked with a gap between them, in the space
+ * between the pitch and the credit. */
+.placer-landing-actions {
   margin-bottom: 96px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 16px;
 }
 
 @media (max-width: 1023px) {
@@ -460,31 +458,31 @@ a {
     margin-bottom: 32px;
   }
 
-  /* The trigger takes its own height in the flow, straight under the pitch. */
-  .placer-landing-divider {
-    height: auto;
+  /* The triggers take their own height in the flow, straight under the pitch. */
+  .placer-landing-actions {
     margin-bottom: 0;
   }
 
-  /* Only the pitch and the trigger on a phone. */
+  /* Only the pitch and the triggers on a phone. */
   .placer-landing-credit,
   .placer-landing-funder {
     display: none;
   }
 }
 
-/* PLACER — the landing page's feedback trigger.
+/* PLACER — the landing page's feedback and User Labs triggers.
  *
- * On a wide screen it is a rectangle centred in the gap between the pitch and
- * the credit (see .placer-landing-divider). On a phone it sits in the flow
+ * On a wide screen each is a rectangle of the same size, stacked with a gap
+ * between them (see .placer-landing-actions). On a phone they sit in the flow
  * directly under the pitch, full width, rather than floating over the page.
  *
  * The geometry lives here rather than inline because an inline style cannot be
  * overridden by a media query. Only the colours are set in the component.
  */
-.placer-feedback-trigger {
+.placer-feedback-trigger,
+.placer-labs-trigger {
   z-index: 150;
-  width: auto;
+  width: 240px;
   height: 48px;
   padding: 0 24px;
   border-radius: 12px;
@@ -498,16 +496,22 @@ a {
   line-height: 20px;
   letter-spacing: 0.01em;
   text-align: center;
+  text-decoration: none;
   transition: background-color 0.15s ease;
 }
 
-/* A character button: the 100 fill, 300 on hover. */
+/* Character buttons: the 100 fill, 300 on hover. */
 .placer-feedback-trigger:hover {
   background: var(--placer-purple-300) !important;
 }
 
+.placer-labs-trigger:hover {
+  background: var(--placer-blue-300) !important;
+}
+
 @media (max-width: 1023px) {
-  .placer-feedback-trigger {
+  .placer-feedback-trigger,
+  .placer-labs-trigger {
     width: 100%;
     padding: 0 20px;
     min-height: 48px;
@@ -515,7 +519,8 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .placer-feedback-trigger {
+  .placer-feedback-trigger,
+  .placer-labs-trigger {
     transition: none;
   }
 }
