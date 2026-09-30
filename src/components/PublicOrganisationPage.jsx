@@ -135,12 +135,17 @@ export function PublicOrganisationPage({ t, organisationId, accountId = null, is
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page }}
       className="placer-scroll">
-      <header className="placer-profile-cover" style={{ background: t.surfaceAlt }}>
-        <div className="placer-profile-cover-inner" style={{ color: t.ink }}>
-          <Avatar name={organisation.name} size={72} ring={t.line} />
+      {/* The cover, edge to edge, with the name on it — the same band as a person's
+        * profile. Without a cover it is plain grey, and the text is ink rather than white. */}
+      <header className={`placer-profile-cover${organisation.cover ? ' placer-profile-cover-image' : ''}`}
+        style={organisation.cover
+          ? { backgroundImage: `url("${organisation.cover}")` }
+          : { background: t.surfaceAlt }}>
+        <div className="placer-profile-cover-inner" style={{ color: organisation.cover ? '#FFFFFF' : t.ink }}>
+          <Avatar name={organisation.name} size={72} ring={organisation.cover ? '#FFFFFF' : t.line} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 500,
-              color: t.inkDim, marginBottom: 6 }}>
+              opacity: 0.85, marginBottom: 6 }}>
               <Icon name="building" size={16} stroke={2} />
               Organisation
             </p>

@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState } from 'react';
 import { Avatar, Btn, LoadingMark } from './UI';
+import { Icon } from './Icon';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
 import { ImagePicker } from './ImagePicker';
 import {
@@ -214,6 +215,38 @@ function ProfilePhotoPicker({ t, profile, onSaveProfile }) {
         <ImagePicker t={t} hasImage={!!photo} uploadLabel="Upload a photo" replaceLabel="Replace photo"
           onUpload={async (file) => replace(await uploadProfilePhoto(file))} onRemove={() => replace(null)} />
       </div>
+    </Card>
+  );
+}
+
+// The organisations this account runs, and where to create one. Account path only:
+// organisations live in Supabase, and a local-only visitor has no account to run one.
+function Organisations({ t, organisations, onNewOrganisation, onOpenOrganisationDashboard }) {
+  return (
+    <Card t={t} title="Organisations">
+      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
+        A page for a municipality, studio, association or any other group you are part of,
+        with its own public page, admins, and projects run in its name. Once you run one, it
+        is under Organisations in the side menu.
+      </p>
+      {organisations.length > 0 && (
+        <ul style={{ listStyle: 'none', margin: '0 0 20px', padding: 0 }}>
+          {organisations.map((organisation) => (
+            <li key={organisation.id} style={{ borderTop: `1px solid ${t.line}` }}>
+              <a href={`/organisations/${organisation.id}/dashboard`}
+                onClick={(e) => { e.preventDefault(); onOpenOrganisationDashboard?.(organisation.id); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 0',
+                  fontSize: 15, fontWeight: 700, color: t.ink, textDecoration: 'none' }}>
+                <Icon name="building" size={18} stroke={2} />
+                {organisation.name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Btn t={t} variant="outline" size="sm" icon="plus" onClick={onNewOrganisation}>
+        Create an organisation
+      </Btn>
     </Card>
   );
 }
@@ -473,7 +506,8 @@ function YourData({ t, onNavigate }) {
   );
 }
 
-export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate }) {
+export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
+  organisations = [], onNewOrganisation, onOpenOrganisationDashboard }) {
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '48px 40px' }} className="placer-scroll">
@@ -507,6 +541,10 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate }) {
           title="Website" label="Website" id="settings-website" inputType="url"
           description="A link shown on your public profile. Optional."
           placeholder="e.g. example.com" />
+        {email && onNewOrganisation && (
+          <Organisations t={t} organisations={organisations} onNewOrganisation={onNewOrganisation}
+            onOpenOrganisationDashboard={onOpenOrganisationDashboard} />
+        )}
         {email && <ChangePassword t={t} />}
         {email && <NotificationPreferences t={t} />}
         <Analytics t={t} onNavigate={onNavigate} />

@@ -54,7 +54,9 @@ export function ImagePicker({ t, hasImage, uploadLabel, replaceLabel, onUpload, 
           style={{ display: 'none' }} />
       </label>
       {hasImage && (
-        <Btn t={t} variant="outline" icon="trash" disabled={busy}
+        // type="button": the picker sits inside the project and organisation forms,
+        // where a button with no type would submit the form as well.
+        <Btn t={t} variant="outline" icon="trash" type="button" disabled={busy}
           onClick={() => run('removing', onRemove, 'Could not remove it. Try again.')()}>
           {status === 'removing' ? 'Removing…' : 'Remove'}
         </Btn>

@@ -11,9 +11,13 @@
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
 import { normaliseWebsite } from './auth';
+import { mediaUrl, preparePhoto, removeMedia, uploadMedia } from './media';
 
 export const ORGANISATIONS_TABLE = 'organisations';
 export const ADMINS_TABLE = 'organisation_admins';
+// The folder organisation covers go under in the R2 bucket (supabase/functions/media).
+// Named after the organisation, not the uploader: any of its admins may replace it.
+export const ORGANISATION_COVERS_FOLDER = 'organisations';
 
 export { isSupabaseConfigured };
 
@@ -28,7 +32,7 @@ async function client() {
 }
 
 const ORGANISATION_COLUMNS = 'id, name, contact_email, website, location, description, '
-  + 'created_by, unadministered_since, created_at';
+  + 'cover_path, created_by, unadministered_since, created_at';
 
 function fromRow(row) {
   return {
@@ -38,6 +42,9 @@ function fromRow(row) {
     website: row.website ?? '',
     location: row.location ?? '',
     description: row.description ?? '',
+    // The picture across the top of its public page, or null for a plain band.
+    coverPath: row.cover_path ?? null,
+    cover: mediaUrl(row.cover_path),
     createdBy: row.created_by ?? null,
     // Set once its last admin's account is gone, until a former admin claims it.
     unadministeredSince: row.unadministered_since ?? null,
@@ -55,6 +62,8 @@ function toRow(patch) {
     if (patch[key] === undefined) continue;
     row[column] = key === 'website' ? normaliseWebsite(patch[key]) : (patch[key] ?? '').trim();
   }
+  // A key, or null to take the cover away — not text to trim.
+  if (patch.coverPath !== undefined) row.cover_path = patch.coverPath;
   return row;
 }
 
@@ -133,13 +142,54 @@ export async function updateOrganisation(id, patch) {
 }
 
 /**
- * Close an organisation: delete it. Admins only. Its projects stay, credited to
- * whoever started each one.
+ * Upload a cover for an organisation and return the path to save on it with
+ * updateOrganisation({ coverPath }). The organisation has to exist already, since its
+ * id names the folder, and the caller has to be one of its admins. Re-encoded first
+ * like a profile cover — at most 1920px across, without its metadata — and the media
+ * function refuses anything still over 3 MB.
+ */
+export async function uploadOrganisationCover(organisationId, file) {
+  const { blob, ext } = await preparePhoto(file, 'cover', 'A cover image');
+  const supabase = await client();
+  const path = `${ORGANISATION_COVERS_FOLDER}/${organisationId}/cover-${Date.now()}.${ext}`;
+  try {
+    return await uploadMedia(supabase, path, blob);
+  } catch (error) {
+    throw new Error(`Could not upload the cover image: ${error.message}`);
+  }
+}
+
+/** Delete a cover no longer in use. Best effort, like removeProjectImageFile. */
+export async function removeOrganisationCoverFile(path) {
+  if (!path) return;
+  const supabase = await client();
+  try {
+    await removeMedia(supabase, path);
+  } catch (error) {
+    console.error('Could not delete the old cover image:', error.message);
+  }
+}
+
+/**
+ * Close an organisation: delete it, and then its cover. Admins only. Its projects
+ * stay, credited to whoever started each one.
  */
 export async function closeOrganisation(id) {
   const supabase = await client();
+
+  // Read the path before the row that holds it is gone.
+  const { data: existing } = await supabase
+    .from(ORGANISATIONS_TABLE)
+    .select('cover_path')
+    .eq('id', id)
+    .maybeSingle();
+
   const { error } = await supabase.from(ORGANISATIONS_TABLE).delete().eq('id', id);
   if (error) throw new Error(`Could not close that organisation: ${error.message}`);
+
+  // After the row, not before: a refused close must not cost it its cover. The media
+  // function lets anyone clear the files of an organisation that no longer exists.
+  await removeOrganisationCoverFile(existing?.cover_path);
   return { success: true };
 }
 

@@ -18,7 +18,9 @@
 // an account, and a caller can only touch keys under their own id — the same rule
 // as `(storage.foldername(name))[1] = auth.uid()`, one level down. For project
 // images the owner is a project, and the caller has to be able to edit it
-// (project_can_edit() in supabase/media-photos.sql).
+// (project_can_edit() in supabase/media-photos.sql). For organisation covers the
+// owner is an organisation, and the caller has to be one of its admins
+// (organisation_is_admin() in supabase/organisations.sql).
 //
 // Secrets, set with `supabase secrets set` (see supabase/README.md section 14):
 //   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
@@ -46,7 +48,7 @@ const QUOTA_BYTES = 50 * MB;
 type Folder = {
   types: string[];
   maxBytes: number;
-  owner: 'account' | 'project';
+  owner: 'account' | 'project' | 'organisation';
   current?: { table: string; column: string };
 };
 const FOLDERS: Record<string, Folder> = {
@@ -57,6 +59,8 @@ const FOLDERS: Record<string, Folder> = {
     current: { table: 'profiles', column: 'avatar_path' } },
   projects: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'project',
     current: { table: 'projects', column: 'image_path' } },
+  organisations: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'organisation',
+    current: { table: 'organisations', column: 'cover_path' } },
 };
 const ACCOUNT_FOLDERS = Object.keys(FOLDERS).filter((name) => FOLDERS[name].owner === 'account');
 
@@ -96,19 +100,23 @@ type Caller = { id: string; supabase: SupabaseClient };
 
 /**
  * Whether this caller may write this key. An account folder has to be their own; a
- * project folder has to be a project they can edit. For a delete only, a project
+ * project folder has to be a project they can edit, and an organisation folder an
+ * organisation they are an admin of. For a delete only, a project or organisation
  * that no longer exists also passes: its files belong to nobody now, and removing
- * them is what deleting the project wants — it is what lets deleteProject clear the
- * image after the row is already gone.
+ * them is what deleting it wants — it is what lets deleteProject and
+ * closeOrganisation clear the picture after the row is already gone.
  */
 async function mayWrite(key: Key, caller: Caller, forDelete: boolean) {
   if (key.folder.owner === 'account') return key.ownerId === caller.id;
 
-  const { data: canEdit } = await caller.supabase.rpc('project_can_edit', { p_project_id: key.ownerId });
+  const { data: canEdit } = key.folder.owner === 'project'
+    ? await caller.supabase.rpc('project_can_edit', { p_project_id: key.ownerId })
+    : await caller.supabase.rpc('organisation_is_admin', { p_organisation_id: key.ownerId, p_user_id: caller.id });
   if (canEdit === true) return true;
   if (!forDelete) return false;
-  const { data: project } = await caller.supabase.from('projects').select('id').eq('id', key.ownerId).maybeSingle();
-  return !project;
+  const table = key.folder.owner === 'project' ? 'projects' : 'organisations';
+  const { data: row } = await caller.supabase.from(table).select('id').eq('id', key.ownerId).maybeSingle();
+  return !row;
 }
 
 /** The key the owning row points at right now, or null. */
@@ -173,10 +181,14 @@ async function listObjects({ r2, bucketUrl }: Store, prefix: string) {
 /**
  * The account an upload counts against: the caller for their own folders, the owner
  * for a project's — so a collaborator adding a project image uses the owner's room,
- * the same as the owner adding it.
+ * the same as the owner adding it. An organisation has no single owner, so the admin
+ * uploading its cover needs the room for it; the cover itself is not counted towards
+ * anyone afterwards, and the folder is bounded instead — one 3 MB picture, two for
+ * the moment one replaces the other (sweep).
  */
 async function chargedAccount(key: Key, caller: Caller) {
   if (key.folder.owner === 'account') return key.ownerId;
+  if (key.folder.owner === 'organisation') return caller.id;
   const { data } = await caller.supabase.from('projects').select('owner_id').eq('id', key.ownerId).maybeSingle();
   return (data as { owner_id: string } | null)?.owner_id ?? null;
 }

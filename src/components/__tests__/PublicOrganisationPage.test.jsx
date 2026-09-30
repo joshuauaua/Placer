@@ -46,6 +46,21 @@ describe('PublicOrganisationPage', () => {
     expect(onOpenProject).toHaveBeenCalledWith('proj-1');
   });
 
+  it('puts its cover across the top, and a plain band without one', async () => {
+    vi.mocked(readOrganisation).mockResolvedValue({ ...ORG, cover: 'https://media.example/organisations/org-1/cover-1.webp' });
+    const { container, unmount } = setup();
+    await screen.findByRole('heading', { level: 1, name: 'Malmö Stad' });
+
+    expect(container.querySelector('header')).toHaveClass('placer-profile-cover-image');
+    expect(container.querySelector('header').style.backgroundImage).toContain('cover-1.webp');
+    unmount();
+
+    vi.mocked(readOrganisation).mockResolvedValue(ORG);
+    const again = setup();
+    await screen.findByRole('heading', { level: 1, name: 'Malmö Stad' });
+    expect(again.container.querySelector('header')).not.toHaveClass('placer-profile-cover-image');
+  });
+
   it('offers its admins the dashboard, and nobody else', async () => {
     const onOpenDashboard = vi.fn();
     const { unmount } = setup({ isAdmin: true, onOpenDashboard });

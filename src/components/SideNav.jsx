@@ -54,7 +54,7 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganis
     { key: 'map', label: 'Explore', icon: 'pin', onSelect: onExplore, active: ['map'] },
     { key: 'projects', label: 'Projects', icon: 'grid', onSelect: () => onNavigate('projects'), active: ['projects', 'projectDashboard'] },
     // Only for an account that runs at least one organisation — until then there is
-    // nothing to go back to, and creating one starts from the dashboard.
+    // nothing to go back to, and creating one starts from Settings.
     ...(showOrganisations ? [{ key: 'organisations', label: 'Organisations', icon: 'building',
       onSelect: () => onNavigate('organisations'), active: ['organisations', 'organisationNew', 'organisationDashboard'] }] : []),
     { key: 'sandbox', label: 'Sandbox', icon: 'flask', onSelect: () => onNavigate('sandbox'), active: ['sandbox'] },

@@ -77,6 +77,7 @@ const PLAN = [
   { name: '20260929090001_tool_submissions.sql', src: 'tool-submissions.sql' },
   { name: '20260929100001_project_types.sql', src: 'project-types.sql' },
   { name: '20260930090001_organisations.sql', src: 'organisations.sql' },
+  { name: '20260930100001_organisation_covers.sql', src: 'organisation-covers.sql' },
 ]
 
 const HAND_WRITTEN = [

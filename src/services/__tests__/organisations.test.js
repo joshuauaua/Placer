@@ -24,6 +24,25 @@ const createClient = vi.fn(() => ({ from, rpc }));
 
 vi.mock('@supabase/supabase-js', () => ({ createClient }));
 
+// Pictures go through services/media (media.test.js covers it). Only the re-encode and
+// the transfer are faked, the same way projects.test.js fakes them.
+const encodeImage = vi.fn(() => Promise.resolve({
+  blob: new Blob(['webp'], { type: 'image/webp' }), type: 'image/webp', ext: 'webp',
+}));
+vi.mock('../../lib/imageEncode', async (importOriginal) => ({
+  ...(await importOriginal()),
+  encodeImage: (...a) => encodeImage(...a),
+}));
+
+const upload = vi.fn((supabase, path) => Promise.resolve(path));
+const remove = vi.fn(() => Promise.resolve());
+vi.mock('../media', async (importOriginal) => ({
+  ...(await importOriginal()),
+  uploadMedia: (...a) => upload(...a),
+  removeMedia: (...a) => remove(...a),
+  mediaUrl: (path) => (path ? `https://media.example/${path}` : null),
+}));
+
 let organisations;
 
 async function load({ configured = true } = {}) {
@@ -40,6 +59,7 @@ const ROW = {
   website: 'https://malmo.se',
   location: 'Malmö',
   description: 'The city.',
+  cover_path: null,
   created_by: 'user-1',
   unadministered_since: null,
   created_at: '2026-09-30T10:00:00.000Z',
@@ -47,9 +67,14 @@ const ROW = {
 
 beforeEach(() => {
   for (const key of Object.keys(fromChains)) delete fromChains[key];
-  from.mockClear();
+  // mockReset rather than mockClear: a test below overrides the implementation, and
+  // every other test needs the dispatch-by-table behaviour back.
+  from.mockReset();
+  from.mockImplementation((table) => fromChains[table] ?? makeChain());
   rpc.mockReset();
   rpc.mockImplementation(() => Promise.resolve({ data: null, error: null }));
+  upload.mockClear();
+  remove.mockClear();
   vi.unstubAllEnvs();
 });
 
@@ -89,7 +114,8 @@ describe('creating an organisation', () => {
     }]]);
     expect(saved).toEqual({
       id: 'org-1', name: 'Malmö Stad', contactEmail: 'hello@malmo.se', website: 'https://malmo.se',
-      location: 'Malmö', description: 'The city.', createdBy: 'user-1', unadministeredSince: null,
+      location: 'Malmö', description: 'The city.', coverPath: null, cover: null,
+      createdBy: 'user-1', unadministeredSince: null,
       createdAt: '2026-09-30T10:00:00.000Z',
     });
   });
@@ -153,5 +179,58 @@ describe('admins', () => {
     rpc.mockResolvedValue({ data: true, error: null });
 
     await expect(organisations.canClaimOrganisation('org-1')).resolves.toBe(true);
+  });
+});
+
+describe('the cover image', () => {
+  it('is re-encoded as a cover and uploaded into the organisation\'s own folder', async () => {
+    await load();
+    const file = new File(['x'], 'photo.jpg', { type: 'image/jpeg' });
+
+    const path = await organisations.uploadOrganisationCover('org-1', file);
+
+    expect(encodeImage).toHaveBeenCalledWith(file, expect.objectContaining({ maxSide: 1920 }));
+    expect(path).toMatch(/^organisations\/org-1\/cover-\d+\.webp$/);
+    expect(upload).toHaveBeenCalledWith(expect.anything(), path, expect.any(Blob));
+  });
+
+  it('refuses something that is not a photo before anything is sent', async () => {
+    await load();
+
+    await expect(organisations.uploadOrganisationCover('org-1', new File(['<svg/>'], 'x.svg', { type: 'image/svg+xml' })))
+      .rejects.toThrow('A cover image has to be a photo');
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('is saved as a key, and read back as an address', async () => {
+    await load();
+    const path = 'organisations/org-1/cover-1.webp';
+    fromChains.organisations = makeChain({ data: { ...ROW, cover_path: path }, error: null });
+
+    const saved = await organisations.updateOrganisation('org-1', { coverPath: path });
+
+    expect(fromChains.organisations.calls[0]).toEqual(['update', [{ cover_path: path }]]);
+    expect(saved).toMatchObject({ coverPath: path, cover: `https://media.example/${path}` });
+  });
+
+  it('goes with the organisation when it is closed, and only after it', async () => {
+    await load();
+    fromChains.organisations = makeChain({ data: { cover_path: 'organisations/org-1/cover-1.webp' }, error: null });
+
+    await organisations.closeOrganisation('org-1');
+
+    expect(fromChains.organisations.calls.map(([method]) => method)).toContain('delete');
+    expect(remove).toHaveBeenCalledWith(expect.anything(), 'organisations/org-1/cover-1.webp');
+  });
+
+  it('stays when closing is refused', async () => {
+    await load();
+    let call = 0;
+    from.mockImplementation(() => makeChain(call++ === 0
+      ? { data: { cover_path: 'organisations/org-1/cover-1.webp' }, error: null }
+      : { data: null, error: { message: 'permission denied' } }));
+
+    await expect(organisations.closeOrganisation('org-1')).rejects.toThrow('permission denied');
+    expect(remove).not.toHaveBeenCalled();
   });
 });

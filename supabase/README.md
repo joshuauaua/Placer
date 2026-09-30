@@ -504,8 +504,9 @@ files themselves live in an R2 bucket. The R2 keys never reach the browser.
 - **Checked on upload.** The browser writes through the `media` Edge Function
   (`supabase/functions/media`), which checks the Supabase session and only writes keys
   under the caller's own id (`previews/<user id>/…`, `covers/<user id>/…`,
-  `avatars/<user id>/…`) or under a project they can edit (`projects/<project id>/…`,
-  checked with `project_can_edit()`). It reads each upload's bytes: only a real JPEG,
+  `avatars/<user id>/…`), under a project they can edit (`projects/<project id>/…`,
+  checked with `project_can_edit()`), or under an organisation they are an admin of
+  (`organisations/<organisation id>/…`, see step 18). It reads each upload's bytes: only a real JPEG,
   PNG or WebP is stored, with the type the function found rather than the one the
   browser claimed, and within a size limit per folder (1 MB avatars, 3 MB covers and
   project images, 5 MB previews).
@@ -678,6 +679,18 @@ The one way around that is the last admin's account being deleted. The organisat
 then unadministered (`unadministered_since` is set), nobody can change it, and any
 account that used to be one of its admins can claim it back from its public page. If
 nobody who could claim it is left, closing it takes the SQL editor.
+
+Organisations are created from Settings, which also lists the ones you run.
+
+**Cover images.** Run `organisation-covers.sql` after `organisations.sql`, and redeploy
+the `media` function (`supabase functions deploy media`) — both are needed. It adds
+`organisations.cover_path`, pointing into `organisations/<organisation id>/` in the R2
+bucket, where any of the organisation's admins may write (the function asks
+`organisation_is_admin()`). The limits are the same as a profile cover's: the browser
+takes a file of up to 30 MB and re-encodes it to at most 1920px across, and the function
+refuses anything still over 3 MB. The folder keeps at most two, and closing the
+organisation deletes its cover. The uploading admin needs room under their own 50 MB
+for it, but it is not counted against anyone afterwards; the folder's own limit bounds it.
 
 It replaces the Individual / Organisation account type in Settings, which is gone from
 the app. `profiles.account_type` is left in place so nothing saved is lost.

@@ -286,3 +286,33 @@ describe('SettingsPage, changing a password', () => {
     consoleError.mockRestore();
   });
 });
+
+describe('SettingsPage, organisations', () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('lists the organisations this account runs, and opens one', () => {
+    const onOpenOrganisationDashboard = vi.fn();
+    setup({ email: 'mara@example.com', onNewOrganisation: vi.fn(), onOpenOrganisationDashboard,
+      organisations: [{ id: 'org-1', name: 'Malmö Stad' }] });
+
+    fireEvent.click(screen.getByRole('link', { name: 'Malmö Stad' }));
+    expect(onOpenOrganisationDashboard).toHaveBeenCalledWith('org-1');
+  });
+
+  it('is where an organisation is created', () => {
+    const onNewOrganisation = vi.fn();
+    setup({ email: 'mara@example.com', onNewOrganisation });
+
+    fireEvent.click(screen.getByRole('button', { name: /Create an organisation/ }));
+    expect(onNewOrganisation).toHaveBeenCalled();
+  });
+
+  it('is not offered without an account', () => {
+    setup({ onNewOrganisation: vi.fn() });
+
+    expect(screen.queryByRole('button', { name: /Create an organisation/ })).not.toBeInTheDocument();
+  });
+});

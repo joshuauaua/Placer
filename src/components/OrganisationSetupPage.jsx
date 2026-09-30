@@ -1,10 +1,14 @@
-/* PLACER — create or edit an organisation: its name, what it does, where it is, and
- * how to reach it. One page either way, and every field but the name optional. All of
- * it is shown on the organisation's public page. */
+/* PLACER — create or edit an organisation: its name, what it does, where it is, how
+ * to reach it, and a cover image. One page either way, and every field but the name
+ * optional. All of it is shown on the organisation's public page. */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Btn } from './UI';
-import { createOrganisation, updateOrganisation } from '../services/organisations';
+import { ImagePicker } from './ImagePicker';
+import {
+  createOrganisation, removeOrganisationCoverFile, updateOrganisation, uploadOrganisationCover,
+} from '../services/organisations';
+import { checkPickedImage } from '../services/media';
 
 // Matches ProjectSetupPage's form styling.
 const inputStyle = (t) => ({
@@ -39,7 +43,11 @@ function Field({ t, label, htmlFor, hint, children }) {
  * fromRow shape) to edit it in place — the one form both `/organisations/new` and a
  * dashboard's "Edit details" reach.
  */
-export function OrganisationSetupPage({ t, accountId, organisation = null, onSaved, onCancel }) {
+export function OrganisationSetupPage({ t, accountId, organisation: initialOrganisation = null, onSaved, onCancel }) {
+  // Normally the organisation being edited. Creating one can set it too: if it is
+  // created but its cover then fails to upload, the form carries on as an edit of it,
+  // so trying again cannot create a second one — the same as ProjectSetupPage.
+  const [organisation, setOrganisation] = useState(initialOrganisation);
   const editing = !!organisation;
 
   const [name, setName] = useState(organisation?.name ?? '');
@@ -49,6 +57,28 @@ export function OrganisationSetupPage({ t, accountId, organisation = null, onSav
   const [website, setWebsite] = useState(organisation?.website ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  // A new organisation has no id to name the cover's folder until it is created, so
+  // the picked file waits here, shown from a local preview, and is uploaded right after.
+  const [pending, setPending] = useState(null); // { file, url } | null
+
+  // The preview URL holds the file in memory until it is revoked.
+  useEffect(() => () => { if (pending) URL.revokeObjectURL(pending.url); }, [pending]);
+
+  // Editing: the cover saves straight away, like a profile cover in Settings, and the
+  // file it replaces is deleted once the organisation points at the new one.
+  const replaceCover = async (nextPath) => {
+    const previous = organisation.coverPath;
+    const saved = await updateOrganisation(organisation.id, { coverPath: nextPath });
+    setOrganisation(saved);
+    if (previous && previous !== nextPath) await removeOrganisationCoverFile(previous);
+  };
+
+  const pickPendingCover = async (file) => {
+    checkPickedImage(file, 'A cover image'); // Throws the same sentence the upload would.
+    setPending({ file, url: URL.createObjectURL(file) });
+  };
+
+  const shownCover = editing ? organisation.cover : pending?.url;
 
   const complete = name.trim().length > 0;
 
@@ -60,9 +90,25 @@ export function OrganisationSetupPage({ t, accountId, organisation = null, onSav
     setError(null);
     const fields = { name, description, location, contactEmail, website };
     try {
-      const saved = editing
+      let saved = editing
         ? await updateOrganisation(organisation.id, fields)
         : await createOrganisation({ createdBy: accountId, ...fields });
+
+      if (!editing && pending) {
+        try {
+          const coverPath = await uploadOrganisationCover(saved.id, pending.file);
+          saved = await updateOrganisation(saved.id, { coverPath });
+        } catch (coverError) {
+          console.error('Could not add the cover image:', coverError);
+          setOrganisation(saved);
+          setPending(null);
+          setError(`The organisation was created, but its cover image could not be added: ${coverError.message} `
+            + 'Try it again below, or save without one.');
+          setSaving(false);
+          return;
+        }
+      }
+
       onSaved(saved);
     } catch (err) {
       console.error(`Could not ${editing ? 'save' : 'create'} that organisation:`, err);
@@ -120,6 +166,25 @@ export function OrganisationSetupPage({ t, accountId, organisation = null, onSav
           <input id="organisation-website" type="url" value={website}
             onChange={(e) => setWebsite(e.target.value)}
             placeholder="e.g. example.com" style={inputStyle(t)} />
+        </Field>
+
+        <Field t={t} label="Cover image"
+          hint="The wide picture across the top of the public page. A landscape photo works best. It is resized to at most 1920 pixels across and saved without its location data; the file you pick can be up to 30 MB, and the resized picture has to come to 3 MB or less. Optional.">
+          <div style={{ height: 160, borderRadius: 12, marginBottom: 14, border: `1px solid ${t.line}`,
+            background: shownCover ? `center / cover no-repeat url("${shownCover}")` : t.surfaceAlt,
+            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {!shownCover && <span style={{ fontSize: 14, color: t.inkFaint }}>No cover yet</span>}
+          </div>
+          {editing ? (
+            <ImagePicker t={t} hasImage={!!organisation.cover} uploadLabel="Upload a cover"
+              replaceLabel="Replace cover"
+              onUpload={async (file) => replaceCover(await uploadOrganisationCover(organisation.id, file))}
+              onRemove={() => replaceCover(null)} disabled={saving} />
+          ) : (
+            <ImagePicker t={t} hasImage={!!pending} uploadLabel="Upload a cover"
+              replaceLabel="Choose another" onUpload={pickPendingCover}
+              onRemove={async () => setPending(null)} disabled={saving} />
+          )}
         </Field>
 
         {error && (

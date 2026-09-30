@@ -559,7 +559,7 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'dashboard' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
-                  onNewProject={showNewProject} onNewOrganisation={showNewOrganisation}
+                  onNewProject={showNewProject}
                   onSignIn={handleSignIn} onSignOut={handleSignOut} onExplore={handleExplore}
                   onOpenPublicProfile={showPublicProfile} />
               </Suspense>
@@ -587,7 +587,7 @@ function MainApp({ initialView = 'welcome' }) {
                     refreshOrganisations();
                     showOrganisationDashboard(organisation.id);
                   }}
-                  onCancel={() => show('dashboard')} />
+                  onCancel={() => show('settings')} />
               </Suspense>
             )}
 
@@ -617,7 +617,9 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'settings' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <SettingsPage t={t} profile={profile} email={accountEmail}
-                  onSaveProfile={handleSaveProfile} onNavigate={show} />
+                  onSaveProfile={handleSaveProfile} onNavigate={show}
+                  organisations={organisations} onNewOrganisation={showNewOrganisation}
+                  onOpenOrganisationDashboard={showOrganisationDashboard} />
               </Suspense>
             )}
 
