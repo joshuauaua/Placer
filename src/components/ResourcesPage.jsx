@@ -1,91 +1,115 @@
 /* PLACER — Resources Page */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'wouter';
 import { Icon } from './Icon';
-import { Chip } from './UI';
+import { Chip, LoadingMark } from './UI';
+import { isStoryblokConfigured, listResources } from '../services/storyblok';
+
+// What the page shows with no Storyblok token configured (services/storyblok.js).
+// None of these has an article behind it, so their cards do not open.
+const SAMPLE_POSTS = [
+  {
+    id: 1,
+    title: 'How to Design Better Public Spaces',
+    excerpt: 'Essential principles for creating vibrant, accessible community areas that serve everyone.',
+    image: { bg: '#C6DEF8', icon: 'layers' },
+    tags: ['Guide', 'Design'],
+    date: 'June 15, 2026',
+    readTime: '5 min read'
+  },
+  {
+    id: 2,
+    title: 'The Impact of Street Trees on Urban Life',
+    excerpt: 'Research shows how trees reduce heat, improve air quality, and boost property values.',
+    image: { bg: '#C6DEF8', icon: 'tree' },
+    tags: ['Research', 'Environment'],
+    date: 'June 10, 2026',
+    readTime: '8 min read'
+  },
+  {
+    id: 3,
+    title: 'Community Engagement Best Practices',
+    excerpt: 'Learn how to gather meaningful feedback and build consensus around urban improvements.',
+    image: { bg: '#DDD2FA', icon: 'users' },
+    tags: ['Guide', 'Community'],
+    date: 'June 5, 2026',
+    readTime: '6 min read'
+  },
+  {
+    id: 4,
+    title: 'Case Study: Transforming a Neighborhood Park',
+    excerpt: 'How one community used PLACER to redesign their local park and secure funding.',
+    image: { bg: '#FFD9B8', icon: 'award' },
+    tags: ['Case Study', 'Success Story'],
+    date: 'May 28, 2026',
+    readTime: '10 min read'
+  },
+  {
+    id: 5,
+    title: 'Getting Started with Asset Placement',
+    excerpt: 'A beginner-friendly tutorial on visualizing improvements with PLACER\'s asset library.',
+    image: { bg: '#DDD2FA', icon: 'box' },
+    tags: ['Tutorial', 'Basics'],
+    date: 'May 20, 2026',
+    readTime: '4 min read'
+  },
+  {
+    id: 6,
+    title: 'Urban Planning 101: The Basics',
+    excerpt: 'Understanding zoning, permits, and the approval process for public space changes.',
+    image: { bg: '#C6DEF8', icon: 'book' },
+    tags: ['Education', 'Planning'],
+    date: 'May 15, 2026',
+    readTime: '7 min read'
+  },
+  {
+    id: 7,
+    title: 'Accessible Design for All',
+    excerpt: 'Why universal design principles matter and how to incorporate them into your proposals.',
+    image: { bg: '#FFD9B8', icon: 'heart' },
+    tags: ['Guide', 'Accessibility'],
+    date: 'May 8, 2026',
+    readTime: '6 min read'
+  },
+  {
+    id: 8,
+    title: 'Measuring Success: Before & After',
+    excerpt: 'Tools and metrics for tracking the real-world impact of community-led improvements.',
+    image: { bg: '#C6DEF8', icon: 'trendingUp' },
+    tags: ['Research', 'Data'],
+    date: 'May 1, 2026',
+    readTime: '9 min read'
+  },
+];
+
+// The tile colours a card without a cover picture cycles through.
+const TILE_COLOURS = ['#C6DEF8', '#DDD2FA', '#FFD9B8'];
 
 export function ResourcesPage({ t }) {
-  const posts = [
-    {
-      id: 1,
-      title: 'How to Design Better Public Spaces',
-      excerpt: 'Essential principles for creating vibrant, accessible community areas that serve everyone.',
-      image: { bg: '#C6DEF8', icon: 'layers' },
-      tags: ['Guide', 'Design'],
-      date: 'June 15, 2026',
-      readTime: '5 min read'
-    },
-    {
-      id: 2,
-      title: 'The Impact of Street Trees on Urban Life',
-      excerpt: 'Research shows how trees reduce heat, improve air quality, and boost property values.',
-      image: { bg: '#C6DEF8', icon: 'tree' },
-      tags: ['Research', 'Environment'],
-      date: 'June 10, 2026',
-      readTime: '8 min read'
-    },
-    {
-      id: 3,
-      title: 'Community Engagement Best Practices',
-      excerpt: 'Learn how to gather meaningful feedback and build consensus around urban improvements.',
-      image: { bg: '#DDD2FA', icon: 'users' },
-      tags: ['Guide', 'Community'],
-      date: 'June 5, 2026',
-      readTime: '6 min read'
-    },
-    {
-      id: 4,
-      title: 'Case Study: Transforming a Neighborhood Park',
-      excerpt: 'How one community used PLACER to redesign their local park and secure funding.',
-      image: { bg: '#FFD9B8', icon: 'award' },
-      tags: ['Case Study', 'Success Story'],
-      date: 'May 28, 2026',
-      readTime: '10 min read'
-    },
-    {
-      id: 5,
-      title: 'Getting Started with Asset Placement',
-      excerpt: 'A beginner-friendly tutorial on visualizing improvements with PLACER\'s asset library.',
-      image: { bg: '#DDD2FA', icon: 'box' },
-      tags: ['Tutorial', 'Basics'],
-      date: 'May 20, 2026',
-      readTime: '4 min read'
-    },
-    {
-      id: 6,
-      title: 'Urban Planning 101: The Basics',
-      excerpt: 'Understanding zoning, permits, and the approval process for public space changes.',
-      image: { bg: '#C6DEF8', icon: 'book' },
-      tags: ['Education', 'Planning'],
-      date: 'May 15, 2026',
-      readTime: '7 min read'
-    },
-    {
-      id: 7,
-      title: 'Accessible Design for All',
-      excerpt: 'Why universal design principles matter and how to incorporate them into your proposals.',
-      image: { bg: '#FFD9B8', icon: 'heart' },
-      tags: ['Guide', 'Accessibility'],
-      date: 'May 8, 2026',
-      readTime: '6 min read'
-    },
-    {
-      id: 8,
-      title: 'Measuring Success: Before & After',
-      excerpt: 'Tools and metrics for tracking the real-world impact of community-led improvements.',
-      image: { bg: '#C6DEF8', icon: 'trendingUp' },
-      tags: ['Research', 'Data'],
-      date: 'May 1, 2026',
-      readTime: '9 min read'
-    },
-  ];
+  const [, navigate] = useLocation();
+  const fromStoryblok = isStoryblokConfigured();
+  const [posts, setPosts] = useState(fromStoryblok ? null : SAMPLE_POSTS);
+  const [loadError, setLoadError] = useState(null);
+
+  useEffect(() => {
+    if (!fromStoryblok) return;
+    let cancelled = false;
+    listResources()
+      .then((found) => { if (!cancelled) setPosts(found); })
+      .catch((error) => {
+        console.error('Could not load resources from Storyblok', error);
+        if (!cancelled) { setLoadError(error); setPosts([]); }
+      });
+    return () => { cancelled = true; };
+  }, [fromStoryblok]);
 
   const [selectedTag, setSelectedTag] = useState(null);
-  const allTags = ['All', 'Guide', 'Research', 'Tutorial', 'Case Study', 'Community', 'Design', 'Education'];
+  const allTags = ['All', ...new Set((posts ?? []).flatMap(post => post.tags))];
 
   const filteredPosts = selectedTag && selectedTag !== 'All'
     ? posts.filter(post => post.tags.includes(selectedTag))
-    : posts;
+    : posts ?? [];
 
   return (
     <div style={{
@@ -144,15 +168,19 @@ export function ResourcesPage({ t }) {
           gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
           gap: 24
         }}>
-          {filteredPosts.map(post => (
+          {filteredPosts.map((post, index) => (
             <article
               key={post.id}
+              role={post.slug ? 'link' : undefined}
+              tabIndex={post.slug ? 0 : undefined}
+              onClick={post.slug ? () => navigate(`/resources/${post.slug}`) : undefined}
+              onKeyDown={post.slug ? (e) => { if (e.key === 'Enter') navigate(`/resources/${post.slug}`); } : undefined}
               style={{
                 background: t.surface,
                 borderRadius: 12,
                 border: `1px solid ${t.line}`,
                 overflow: 'hidden',
-                cursor: 'pointer',
+                cursor: post.slug ? 'pointer' : 'default',
                 transition: 'transform 0.2s, box-shadow 0.2s',
                 boxShadow: t.shadow
               }}
@@ -169,13 +197,16 @@ export function ResourcesPage({ t }) {
               <div style={{
                 width: '100%',
                 height: 200,
-                background: post.image.bg,
+                background: post.image?.bg ?? TILE_COLOURS[index % TILE_COLOURS.length],
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative'
               }}>
-                <Icon name={post.image.icon} size={56} stroke={2} style={{ color: t.ink }} />
+                {post.cover
+                  ? <img src={post.cover.src} alt={post.cover.alt} loading="lazy"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <Icon name={post.image?.icon ?? 'layers'} size={56} stroke={2} style={{ color: t.ink }} />}
 
                 {/* Tags overlay */}
                 <div style={{
@@ -185,7 +216,7 @@ export function ResourcesPage({ t }) {
                   display: 'flex',
                   gap: 6
                 }}>
-                  {post.tags.map(tag => (
+                  {post.tags.slice(0, 3).map(tag => (
                     <span key={tag} style={{
                       padding: '4px 10px',
                       borderRadius: 12,
@@ -229,30 +260,44 @@ export function ResourcesPage({ t }) {
                   fontSize: 12,
                   color: t.inkDim
                 }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Icon name="calendar" size={14} stroke={2} />
-                    {post.date}
-                  </span>
-                  <span>•</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Icon name="clock" size={14} stroke={2} />
-                    {post.readTime}
-                  </span>
+                  {post.date && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Icon name="calendar" size={14} stroke={2} />
+                      {post.date}
+                    </span>
+                  )}
+                  {post.date && post.readTime && <span>•</span>}
+                  {post.readTime && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Icon name="clock" size={14} stroke={2} />
+                      {post.readTime}
+                    </span>
+                  )}
                 </div>
               </div>
             </article>
           ))}
         </div>
 
+        {posts === null && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 20px' }}>
+            <LoadingMark />
+          </div>
+        )}
+
         {/* Empty State */}
-        {filteredPosts.length === 0 && (
+        {posts !== null && filteredPosts.length === 0 && (
           <div style={{
             textAlign: 'center',
             padding: '80px 20px',
             color: t.inkDim
           }}>
             <Icon name="inbox" size={48} stroke={1.5} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
-            <p style={{ fontSize: 16 }}>No resources found for this filter.</p>
+            <p style={{ fontSize: 16 }}>
+              {loadError
+                ? 'The resources could not be loaded. Try again in a moment.'
+                : selectedTag ? 'No resources found for this filter.' : 'No resources have been published yet.'}
+            </p>
           </div>
         )}
       </div>

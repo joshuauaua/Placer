@@ -1123,3 +1123,13 @@ a {
     transition: none;
   }
 }
+
+/* Rich text from Storyblok (components/storyblok/blocks.jsx). The reset at the top
+ * strips every margin and list indent, which an article needs back. */
+.placer-richtext > * + * { margin-top: 1em; }
+.placer-richtext h2 { font-size: var(--placer-h2); line-height: var(--placer-h2-lh); margin-top: 1.5em; }
+.placer-richtext h3 { font-size: var(--placer-h3); line-height: var(--placer-h3-lh); margin-top: 1.25em; }
+.placer-richtext ul, .placer-richtext ol { padding-left: 1.5em; }
+.placer-richtext li + li { margin-top: 0.25em; }
+.placer-richtext a { color: var(--placer-blue-700); }
+.placer-richtext img { max-width: 100%; height: auto; border-radius: var(--placer-radius-sm); }

@@ -25,6 +25,7 @@ const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const MapContainer = lazy(() => import('./components/MapContainer'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
 const ResourcesPage = lazy(() => import('./components/ResourcesPage'));
+const ResourceArticlePage = lazy(() => import('./components/ResourceArticlePage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const DescribePage = lazy(() => import('./components/DescribePage'));
 const PostPage = lazy(() => import('./components/PostPage'));
@@ -109,6 +110,16 @@ function personIdFrom(path) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+/**
+ * `/resources/<slug>`, one article from Storyblok — read off the location for the
+ * same reason a person's public profile is. The slug is the story's full slug, so it
+ * may contain slashes when the story sits in a folder. Null for anything else.
+ */
+function resourceSlugFrom(path) {
+  const match = /^\/resources\/(.+)$/.exec(path);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 function LoadingFallback() {
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -187,8 +198,10 @@ function MainApp({ initialView = 'welcome' }) {
   const projectRoute = projectRouteFrom(location);
   const projectView = projectRoute && { new: 'projectNew', public: 'projectPublic', dashboard: 'projectDashboard' }[projectRoute.mode];
   const personId = personIdFrom(location);
+  const resourceSlug = resourceSlugFrom(location);
   const view = accountView ?? staticView
-    ?? (inSandbox ? 'sandbox' : projectView ?? (personId ? 'profilePublic' : currentView));
+    ?? (inSandbox ? 'sandbox' : projectView ?? (personId ? 'profilePublic'
+      : resourceSlug ? 'resourceArticle' : currentView));
 
   const showNewProject = () => navigate('/projects/new');
   const showProjectDashboard = (id) => navigate(`/projects/${id}/dashboard`);
@@ -219,7 +232,7 @@ function MainApp({ initialView = 'welcome' }) {
       navigate(STATIC_PATHS[next]);
       return;
     }
-    if (inSandbox || accountView || staticView || personId) navigate('/');
+    if (inSandbox || accountView || staticView || personId || resourceSlug) navigate('/');
     setCurrentView(next);
   };
 
@@ -445,6 +458,12 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'resources' && (
               <Suspense fallback={<LoadingFallback />}>
                 <ResourcesPage t={t} />
+              </Suspense>
+            )}
+
+            {view === 'resourceArticle' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <ResourceArticlePage t={t} slug={resourceSlug} />
               </Suspense>
             )}
 

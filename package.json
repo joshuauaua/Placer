@@ -16,6 +16,7 @@
     "migrations:check": "node scripts/check-migrations.mjs"
   },
   "dependencies": {
+    "@storyblok/react": "^7.3.1",
     "@supabase/supabase-js": "^2.116.0",
     "@techstark/opencv-js": "^5.0.0-release.1",
     "html-to-image": "^1.11.13",
