@@ -4,15 +4,25 @@
  * funds it. Shown as the home view only, with the nav bar hidden (see App.jsx).
  */
 
+import { Link } from 'wouter';
+
 import frameLeft from '../assets/frame-street-left.png';
 import frameRight from '../assets/frame-street-right.png';
 import logoSwedishInstitute from '../assets/logo-swedish-institute.png';
 import { HaveYourSay } from './HaveYourSay';
 import { ExternalLink } from './LegalLayout';
+import { CHARACTER } from '../theme';
 
 // Trimmed to its artwork and stored at 160px tall, so a height here is enough
 // to size it and the width stays in proportion.
 const FUNDER_HEIGHT = 52;
+
+// A second character button under the feedback trigger, to User Labs: the
+// city worker's blue, in the same 100-fill/700-hairline/300-hover pattern as
+// the practitioner purple used for "Follow the Project" (see HaveYourSay).
+const LABS_BG = CHARACTER.cityWorker.c100;
+const LABS_BORDER = CHARACTER.cityWorker.c700;
+const LABS_FG = '#111111';
 
 /* The two halves of the street-furniture border. Decorative: they carry no
  * meaning the copy does not, so they are hidden from assistive tech and cannot
@@ -62,12 +72,18 @@ export function LandingPage({ t }) {
           to all.
         </p>
 
-        {/* The feedback trigger sits centred here, in the gap that separates
-          * the pitch from the credit. On a phone it sits straight under the
-          * pitch, and the credit and funder lockup below are hidden (see
-          * index.css). */}
-        <div className="placer-landing-divider">
+        {/* The feedback trigger and the User Labs trigger, stacked with a gap
+          * between them, in the space that separates the pitch from the
+          * credit. On a phone they sit straight under the pitch, full width,
+          * and the credit and funder lockup below are hidden (see index.css). */}
+        <div className="placer-landing-actions">
           <HaveYourSay t={t} />
+          <Link
+            href="/user-labs"
+            className="placer-labs-trigger"
+            style={{ background: LABS_BG, color: LABS_FG, border: `1px solid ${LABS_BORDER}` }}>
+            Apply to User Labs
+          </Link>
         </div>
 
         <p className="placer-landing-credit" style={{ fontSize: 15.5, color: t.inkDim, lineHeight: 1.7 }}>
