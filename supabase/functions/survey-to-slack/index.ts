@@ -45,6 +45,28 @@ function sameSecret(a: string, b: string): boolean {
   return diff === 0;
 }
 
+// The form stores the lab as a slug (src/components/UserLabsPage.jsx, UPCOMING_LAB).
+const USER_LABS_CITIES: Record<string, string> = { malmo: 'Malmö', ankara: 'Ankara' };
+
+// A User Labs application keeps its fields flat in `answers`, not under `contact`.
+function userLabsLines(answers: Record<string, any>): string[] {
+  const lines: string[] = [];
+  if (answers.lab) {
+    const city = USER_LABS_CITIES[answers.lab] ?? answers.lab;
+    lines.push(`*City:* ${esc(city)}${answers.labDate ? `  ·  ${esc(answers.labDate)}` : ''}`);
+  }
+  if (answers.name) lines.push(`*Name:* ${esc(answers.name)}`);
+  if (answers.phone) lines.push(`*Phone:* ${esc(answers.phone)}`);
+  if (answers.role) lines.push(`*Role:* ${esc(answers.role)}`);
+  if (answers.motivation) {
+    // Quoted so a multi-line answer stays visibly one block.
+    lines.push('*Hopes to get out of it:*', esc(answers.motivation).split('\n').map((l) => `> ${l}`).join('\n'));
+  }
+  if (answers.dietary) lines.push(`*Dietary:* ${esc(answers.dietary)}`);
+  lines.push(`*Newsletter:* ${answers.newsletter ? 'yes' : 'no'}`);
+  return lines;
+}
+
 function surveyMessage(record: Record<string, any>): string {
   const contact = record.answers?.contact ?? {};
   const optIns: string[] = Array.isArray(record.answers?.optIns) ? record.answers.optIns : [];
@@ -56,6 +78,7 @@ function surveyMessage(record: Record<string, any>): string {
   if (contact.city) lines.push(`*City:* ${esc(contact.city)}`);
   if (contact.department) lines.push(`*Department:* ${esc(contact.department)}`);
   if (optIns.length) lines.push(`*Opted into:* ${optIns.map(esc).join(', ')}`);
+  if (record.source === 'user_labs_application') lines.push(...userLabsLines(record.answers ?? {}));
   lines.push(`*Submitted:* ${esc(record.submitted_at)}  ·  id \`${esc(record.id)}\``);
   return lines.join('\n');
 }
