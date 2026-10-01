@@ -967,7 +967,7 @@ a {
  * everything is one column, and a row's photo always comes first.
  */
 .placer-about .placer-split {
-  min-height: min(100vh, 760px);
+  min-height: 100vh;
 }
 
 .placer-about-section {
@@ -1017,10 +1017,13 @@ a {
   object-fit: cover;
 }
 
+.placer-about-section.placer-about-team {
+  max-width: none;
+}
+
 .placer-about-team-photo {
   display: block;
   width: 100%;
-  max-width: 760px;
   height: auto;
   margin-bottom: 56px;
 }

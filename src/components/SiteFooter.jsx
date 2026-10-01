@@ -29,7 +29,7 @@ export const FOOTER_COLUMNS = [
   {
     heading: 'About Us',
     links: [
-      { label: 'About', view: 'about' },
+      { label: 'Who We Are', view: 'about' },
       // Unlike Development, this branch has a real Contact page (ContactPage.jsx).
       { label: 'Contact Us', view: 'contact' },
     ],

@@ -143,7 +143,7 @@ export function AboutPage({ t }) {
         </section>
       ))}
 
-      <section className="placer-about-section" style={{ borderTop: `1px solid ${t.line}` }}>
+      <section className="placer-about-section placer-about-team" style={{ borderTop: `1px solid ${t.line}` }}>
         <img
           className="placer-about-team-photo"
           src={teamPhoto}
@@ -153,7 +153,7 @@ export function AboutPage({ t }) {
         <SectionTitle t={t}>
           Made with <span role="img" aria-label="love">♥</span> in Malmö and Ankara
         </SectionTitle>
-        <p style={{ marginTop: 16, maxWidth: 680, fontSize: 17, lineHeight: 1.65, color: t.inkDim }}>
+        <p style={{ marginTop: 16, fontSize: 17, lineHeight: 1.65, color: t.inkDim }}>
           PLACER is developed by STPLN in Malmö and Ankara Aks in Ankara as part of
           Participatory Urban Design Toolkit for Democratic and Inclusive City-building,
           funded by the Swedish Institute.
