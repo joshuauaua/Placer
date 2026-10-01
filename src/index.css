@@ -1023,9 +1023,9 @@ a {
 
 .placer-about-team-photo {
   display: block;
-  width: 100%;
+  width: 30%;
   height: auto;
-  margin-bottom: 56px;
+  margin: 0 auto 56px;
 }
 
 .placer-about-logos {
