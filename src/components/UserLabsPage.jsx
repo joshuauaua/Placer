@@ -279,9 +279,10 @@ export function UserLabsPage({ t }) {
         <>
           <PhotoSplitHeading t={t} title="Thank you for your interest" />
           <p style={{ marginTop: 20, fontSize: 17, lineHeight: 1.65, color: t.inkDim }}>
-            We&rsquo;ve received your application for the User Lab in{' '}
-            {UPCOMING_LAB.sessions.find((s) => s.value === sentTo?.lab)?.city}, and we&rsquo;ll get
-            back to you at <strong style={{ color: t.ink }}>{sentTo?.email}</strong> soon.
+            Thanks for submitting your interest to take part in the User Lab in{' '}
+            {UPCOMING_LAB.sessions.find((s) => s.value === sentTo?.lab)?.city}. We will confirm
+            your spot by email to <strong style={{ color: t.ink }}>{sentTo?.email}</strong> by
+            Thursday, October 8 at the latest.
           </p>
         </>
       )}
