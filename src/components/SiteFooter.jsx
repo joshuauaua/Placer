@@ -36,6 +36,9 @@ export const FOOTER_COLUMNS = [
   },
 ];
 
+const LICENSE_URL = 'https://www.gnu.org/licenses/agpl-3.0.html';
+const SOURCE_URL = 'https://github.com/joshuauaua/Placer';
+
 // The same address ContactPage.jsx shows.
 const CONTACT_EMAIL = 'info@plcr.org';
 
@@ -92,8 +95,7 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
               PLACER
             </span>
             <p style={{ marginTop: 16, maxWidth: 360, fontSize: 14, lineHeight: '20px', color: t.inkDim }}>
-              Reimagine your city. Sketch, share and vote on ideas for the streets and
-              places around you.
+              Reimagine your city. A toolkit for shaping shared spaces together.
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               {SOCIALS.map(({ icon, label, href }) => href ? (
@@ -136,7 +138,20 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
 
         <div className="placer-footer-bottom" style={{ marginTop: 40, paddingTop: 24, borderTop: `1px solid ${t.line}`,
           fontSize: 12, lineHeight: '16px', letterSpacing: '0.01em' }}>
-          <span style={{ color: t.inkDim }}>© 2026 PLACER. All rights reserved.</span>
+          {/* The AGPL asks that people using the site can get its source, so the
+              repository is linked beside the licence. */}
+          <span style={{ color: t.inkDim }}>
+            Open source under the{' '}
+            <a href={LICENSE_URL} target="_blank" rel="noopener noreferrer" className="placer-footer-link"
+              style={{ textDecoration: 'underline' }}>
+              AGPLv3 License
+            </a>
+            {' · '}
+            <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer" className="placer-footer-link"
+              style={{ textDecoration: 'underline' }}>
+              Source code
+            </a>
+          </span>
           {/* Privacy and terms are one page for now, so both open it. */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
             <FooterLink active={view === 'terms'} onClick={() => onNavigate('terms')}>Privacy Policy</FooterLink>
