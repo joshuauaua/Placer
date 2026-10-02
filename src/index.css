@@ -1164,3 +1164,188 @@ a {
 .placer-richtext li + li { margin-top: 0.25em; }
 .placer-richtext a { color: var(--placer-blue-700); }
 .placer-richtext img { max-width: 100%; height: auto; border-radius: var(--placer-radius-sm); }
+
+/* PLACER — a photo beside a block of copy (see PhotoSplit.jsx).
+ *
+ * Used by the About page. The photo fills the left, running up
+ * under the glass nav bar, and the copy sits centred on the right. On a phone
+ * they stack, photo first.
+ */
+.placer-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100%;
+}
+
+.placer-split-photo {
+  position: relative;
+  min-height: 420px;
+}
+
+.placer-split-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.placer-split-copy {
+  align-self: center;
+  max-width: 560px;
+  padding: 120px 56px 64px;
+}
+
+.placer-split-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 32px;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 12px;
+  font-family: var(--placer-font);
+  font-weight: 500;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+/* A primary button: ink, grey-700 on hover. */
+.placer-split-action:hover {
+  background: var(--placer-grey-700) !important;
+}
+
+@media (max-width: 1023px) {
+  .placer-split {
+    grid-template-columns: 1fr;
+  }
+
+  .placer-split-photo {
+    min-height: 0;
+    aspect-ratio: 3 / 2;
+  }
+
+  .placer-split-copy {
+    padding: 32px 24px 56px;
+  }
+}
+
+/* PLACER — the About page (see AboutPage.jsx).
+ *
+ * The PhotoSplit hero, then full-width sections on a centred measure: three
+ * pillars side by side, and photo-and-text rows that alternate sides. On a phone
+ * everything is one column, and a row's photo always comes first.
+ */
+.placer-about .placer-split {
+  min-height: 100vh;
+}
+
+.placer-about-section {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 96px 40px;
+}
+
+.placer-about-pillars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-top: 48px;
+}
+
+.placer-about-pillar-art {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+}
+
+/* The drawings are black lines on white, so multiply drops the white out onto
+   whatever sits behind them. */
+.placer-about-pillar-art img {
+  max-width: 70%;
+  max-height: 100%;
+  mix-blend-mode: multiply;
+}
+
+.placer-about-feature {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+
+.placer-about-feature-reverse .placer-about-feature-media {
+  order: 2;
+}
+
+.placer-about-feature-media img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+}
+
+.placer-about-section.placer-about-team {
+  max-width: none;
+}
+
+.placer-about-team-photo {
+  display: block;
+  width: 30%;
+  height: auto;
+  margin: 0 auto 56px;
+}
+
+.placer-about-logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 32px 56px;
+  margin-top: 40px;
+}
+
+.placer-about-logos img {
+  display: block;
+  height: 36px;
+  width: auto;
+}
+
+@media (max-width: 1023px) {
+  .placer-about .placer-split {
+    min-height: 0;
+  }
+
+  .placer-about-section {
+    padding: 64px 24px;
+  }
+
+  .placer-about-pillars,
+  .placer-about-feature {
+    grid-template-columns: 1fr;
+  }
+
+  .placer-about-feature {
+    gap: 28px;
+  }
+
+  .placer-about-feature-reverse .placer-about-feature-media {
+    order: 0;
+  }
+}
+
+/* PLACER — the FAQ page's questions (see FaqPage.jsx). The summary draws its own
+ * chevron, so the browser's marker goes, and the chevron turns over when open. */
+.placer-faq-item summary::-webkit-details-marker { display: none; }
+.placer-faq-item summary svg { transition: transform 0.15s ease; }
+.placer-faq-item[open] summary svg { transform: rotate(180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-faq-item summary svg { transition: none; }
+}

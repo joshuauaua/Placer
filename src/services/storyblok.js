@@ -1,7 +1,7 @@
 /* PLACER — the Storyblok client, which the Resources page reads its articles from.
  *
  * Optional in the same way Supabase is: with no VITE_STORYBLOK_TOKEN there is no
- * client, and the Resources page shows its built-in sample posts instead.
+ * client, and the Resources page shows that nothing has been published yet.
  *
  * The content model it reads, as set up in the Storyblok space: each article is a
  * story of the content type `case-study`, anywhere in the space, with the fields

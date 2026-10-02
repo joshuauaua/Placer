@@ -196,7 +196,7 @@ describe('inside the app', () => {
     const { location } = renderAt('/sandbox/street-mixer');
     await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' });
 
-    fireEvent.click(footer().getByText('About'));
+    fireEvent.click(footer().getByText('Who We Are'));
 
     // The About page is a photo of the team, so its alt text is what marks it.
     expect(

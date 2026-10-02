@@ -4,44 +4,38 @@ import { Logo } from './UI';
 import { Icon } from './Icon';
 import { NEUTRAL } from '../theme';
 
-// Each column's entries. One with a `view` opens that MainApp view; one without is
-// a placeholder for a page that does not exist yet, and renders as plain text so it
-// cannot be mistaken for a link that goes nowhere.
+// Each column's entries. Every one has a `view`, which is the MainApp view it opens.
 const COLUMNS = [
   {
-    heading: 'Product',
+    heading: 'Platform',
     links: [
-      { label: 'Explore the map', view: 'map' },
-      { label: 'Sandbox', view: 'sandbox' },
-      { label: 'Projects' },
-      { label: 'Pricing' },
+      { label: 'Explore the Map', view: 'map' },
+      { label: 'Create an Account', view: 'signup' },
     ],
   },
   {
     heading: 'Resources',
     links: [
       { label: 'Resources', view: 'resources' },
-      { label: 'FAQs' },
-      { label: 'Guides' },
-      { label: 'Community' },
+      { label: 'FAQ', view: 'faq' },
+      { label: 'Guides', view: 'guides' },
     ],
   },
   {
-    heading: 'Company',
+    heading: 'About Us',
     links: [
-      { label: 'About', view: 'about' },
-      { label: 'Contact Us' },
-      { label: 'Careers' },
+      { label: 'Who We Are', view: 'about' },
+      { label: 'Contact Us', view: 'contact' },
     ],
   },
 ];
 
-// Only Instagram has an account behind it so far; the rest are placeholders.
+// The same address ContactPage.jsx shows.
+const CONTACT_EMAIL = 'info@plcr.org';
+
 const SOCIALS = [
-  { icon: 'facebook', label: 'Facebook' },
-  { icon: 'x', label: 'X' },
+  { icon: 'mail', label: 'Email', href: `mailto:${CONTACT_EMAIL}` },
   { icon: 'instagram', label: 'Instagram', href: 'https://www.instagram.com/placertool' },
-  { icon: 'linkedin', label: 'LinkedIn' },
 ];
 
 // The footer is ink whatever the page is: white headings, grey-300 links that go
@@ -91,17 +85,13 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
               places around you.
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-              {SOCIALS.map(({ icon, label, href }) => href ? (
-                <a key={icon} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
+              {SOCIALS.map(({ icon, label, href }) => (
+                <a key={icon} href={href} aria-label={label}
+                  {...(href.startsWith('mailto:') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
                   className="placer-footer-link"
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44 }}>
                   <Icon name={icon} size={20} />
                 </a>
-              ) : (
-                <span key={icon} aria-label={label} title={`${label} — coming soon`}
-                  style={{ color: t.inkFaint, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44 }}>
-                  <Icon name={icon} size={20} />
-                </span>
               ))}
             </div>
           </div>
@@ -114,11 +104,7 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, lineHeight: '20px' }}>
                 {links.map(({ label, view: target }) => (
                   <li key={label}>
-                    {target ? (
-                      <FooterLink active={view === target} onClick={() => onNavigate(target)}>{label}</FooterLink>
-                    ) : (
-                      <Placeholder t={t}>{label}</Placeholder>
-                    )}
+                    <FooterLink active={view === target} onClick={() => onNavigate(target)}>{label}</FooterLink>
                   </li>
                 ))}
               </ul>
