@@ -1073,11 +1073,12 @@ a {
   }
 }
 
-/* The survey cover's "Enter ↵ to begin": on a phone there is no Enter to
- * press, so the hint would only mislead. Hidden at the same width the landing
- * page treats as mobile, and on any touchscreen besides. */
+/* The survey's "Enter ↵ to begin" and "Enter ↵ to continue": on a phone there
+ * is no Enter to press, so the hints would only mislead. Hidden at the same
+ * width the landing page treats as mobile, and on any touchscreen besides. */
 @media (max-width: 1023px), (hover: none) and (pointer: coarse) {
-  .placer-start-hint {
+  .placer-start-hint,
+  .placer-enter-hint {
     display: none;
   }
 }

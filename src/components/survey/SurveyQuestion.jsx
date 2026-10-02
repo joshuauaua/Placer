@@ -110,7 +110,8 @@ export function SurveyQuestion({
                 padding: scale ? '16px 20px' : '20px 24px',
                 flex: scale ? '1 1 auto' : '0 0 auto',
                 minWidth: scale ? 72 : undefined,
-                borderRadius: 12,
+                // Square at the top left only, the corner the text starts from.
+                borderRadius: '0 12px 12px 12px',
                 border: `2px solid ${selected ? t.accent : t.line}`,
                 background: selected ? t.surfaceAlt : t.surface,
                 textAlign: scale ? 'center' : 'left',

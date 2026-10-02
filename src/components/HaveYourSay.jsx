@@ -166,7 +166,8 @@ export function HaveYourSay({ t }) {
               maxWidth: 900,
               background: TRIGGER_BG,
               border: `1px solid ${t.line}`,
-              borderRadius: 16,
+              // Only the top right corner is rounded; the other three are square.
+              borderRadius: '0 16px 0 0',
               boxShadow: t.shadow,
               overflow: 'hidden',
               outline: 'none',

@@ -94,6 +94,8 @@ function FullScreen({ t, height, children }) {
 function EnterHint({ t, labels, phrase }) {
   return (
     <span
+      // Hidden on mobile, where there is no Enter to press (index.css).
+      className="placer-enter-hint"
       style={{
         display: 'inline-flex',
         alignItems: 'center',
