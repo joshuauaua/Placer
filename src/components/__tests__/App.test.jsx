@@ -46,7 +46,7 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: 'STPLN' })).toHaveAttribute('href', 'https://stpln.se/');
     expect(screen.getByRole('link', { name: 'Ankara Aks' })).toHaveAttribute('href', 'https://ankaraaks.com/');
     expect(screen.getByRole('img', { name: 'Funded by Swedish Institute' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Follow the Project' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Join the Waitlist' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 

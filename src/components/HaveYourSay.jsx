@@ -17,18 +17,31 @@ import { CHARACTER } from '../theme';
 // rather than bundled with the page.
 const SurveyPage = lazy(() => import('./SurveyPage'));
 
-const LABEL = 'Follow the Project';
+const LABEL = 'Join the Waitlist';
 
-// Same survey as /survey, but opened from the landing page's Follow the Project button
-// rather than found on its own page, so the cover page greets that intent instead of
-// the generic one.
+// Same survey as /survey, but opened from the landing page's Join the Waitlist button
+// rather than found on its own page, so the cover page, the email step and the
+// no-commitment answer speak to that intent instead of the generic one.
 export const LANDING_SURVEY_CONTENT = {
   ...defaultSurveyContent,
   hero: {
     ...defaultSurveyContent.hero,
-    title: 'Thanks for wanting to follow the project',
-    subtitle: 'First, can you answer a few questions to help us understand how you’d use PLACER? It takes about three minutes, and it shapes what we build next.',
+    title: 'Join the Waitlist',
+    subtitle: 'We’ve just got a few quick questions for you',
+    startLabel: 'Start',
   },
+  steps: {
+    ...defaultSurveyContent.steps,
+    emailDescription: 'Leave your email to join the waitlist, and we’ll let you know when PLACER is ready.',
+  },
+  section3: defaultSurveyContent.section3.map((question) =>
+    question.key !== 'coCreation' ? question : {
+      ...question,
+      options: question.options.map((option) =>
+        option.value !== 'survey-only' ? option : { ...option, label: 'Joining the Waitlist only' }
+      ),
+    }
+  ),
 };
 
 // The one call to action on the holding page, as a character button: the
@@ -37,6 +50,11 @@ export const LANDING_SURVEY_CONTENT = {
 const TRIGGER_BG = CHARACTER.practitioner.c100;
 const TRIGGER_BORDER = CHARACTER.practitioner.c700;
 const TRIGGER_FG = '#111111';
+
+// The survey it opens sits on the same purple, so the dialog reads as the
+// button's own. Only the page colour changes: the header, footer and inputs
+// stay white so the questions keep their contrast.
+const surveyTheme = (t) => ({ ...t, page: TRIGGER_BG });
 
 // Above the cookie banner (200), so an open survey is not overlapped by it.
 const DIALOG_Z = 300;
@@ -146,7 +164,7 @@ export function HaveYourSay({ t }) {
               position: 'relative',
               width: '100%',
               maxWidth: 900,
-              background: t.page,
+              background: TRIGGER_BG,
               border: `1px solid ${t.line}`,
               borderRadius: 16,
               boxShadow: t.shadow,
@@ -169,9 +187,9 @@ export function HaveYourSay({ t }) {
               <Icon name="close" size={18} stroke={2.4} />
             </button>
 
-            <Suspense fallback={<Fallback t={t} />}>
+            <Suspense fallback={<Fallback t={surveyTheme(t)} />}>
               <SurveyPage
-                t={t}
+                t={surveyTheme(t)}
                 content={LANDING_SURVEY_CONTENT}
                 height="100%"
                 // Distinguishes a response left here from one left on /survey.

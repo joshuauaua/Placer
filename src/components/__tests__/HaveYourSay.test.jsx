@@ -11,7 +11,7 @@ const { resolveSurveyContent } = await import('../survey/content');
 
 const content = resolveSurveyContent(LANDING_SURVEY_CONTENT);
 
-const LABEL = 'Follow the Project';
+const LABEL = 'Join the Waitlist';
 
 const trigger = () => screen.getByRole('button', { name: LABEL });
 const dialog = () => screen.queryByRole('dialog', { name: LABEL });

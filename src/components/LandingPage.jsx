@@ -19,7 +19,7 @@ const FUNDER_HEIGHT = 52;
 
 // A second character button under the feedback trigger, to User Labs: the
 // city worker's blue, in the same 100-fill/700-hairline/300-hover pattern as
-// the practitioner purple used for "Follow the Project" (see HaveYourSay).
+// the practitioner purple used for "Join the Waitlist" (see HaveYourSay).
 const LABS_BG = CHARACTER.cityWorker.c100;
 const LABS_BORDER = CHARACTER.cityWorker.c700;
 const LABS_FG = '#111111';

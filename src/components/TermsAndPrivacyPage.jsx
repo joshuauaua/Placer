@@ -288,7 +288,7 @@ export function TermsAndPrivacyPage({ t }) {
           <strong style={{ color: t.ink }}>Survey answers.</strong> When you submit a survey, your
           answers are sent to our database, hosted by Supabase. They are anonymous unless you add
           contact details, which are always optional: the short survey asks for an email address
-          only if you want to follow the project, and the Placemaking Trends survey can take your
+          only if you want to join the waitlist, and the Placemaking Trends survey can take your
           name, work email, municipality and department, and whether you would like beta access or
           an invitation to a User Lab.
         </P>

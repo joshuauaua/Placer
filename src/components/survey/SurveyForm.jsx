@@ -78,7 +78,7 @@ function FullScreen({ t, height, children }) {
       style={{
         width: '100%',
         height,
-        background: `linear-gradient(135deg, ${t.page} 0%, ${t.chrome} 100%)`,
+        background: t.page,
       }}
     >
       <div style={{ maxWidth: 600, textAlign: 'center' }}>{children}</div>
@@ -169,7 +169,8 @@ export function SurveyForm({
           {content.hero.startLabel}
         </Btn>
 
-        <div style={{ marginTop: 16 }}>
+        {/* A phone has no Enter key to press here, so the hint hides there (index.css). */}
+        <div className="placer-start-hint" style={{ marginTop: 16 }}>
           <EnterHint t={t} labels={content.steps} phrase={content.steps.enterHintStart} />
         </div>
       </FullScreen>
