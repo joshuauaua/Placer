@@ -1349,3 +1349,42 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .placer-faq-item summary svg { transition: none; }
 }
+
+/* PLACER — the dashboard's Quick Actions (see DashboardPage.jsx): grey tiles that
+ * darken a step on hover. */
+.placer-quick-action {
+  transition: background-color 0.15s ease;
+}
+
+.placer-quick-action:hover,
+.placer-quick-action:focus-visible {
+  background: var(--placer-grey-200) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-quick-action {
+    transition: none;
+  }
+}
+
+/* PLACER — the dashboard's "Getting Started" cards (see DashboardPage.jsx). */
+.placer-basics-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.placer-basics-card:hover,
+.placer-basics-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-basics-card {
+    transition: none;
+  }
+
+  .placer-basics-card:hover,
+  .placer-basics-card:focus-visible {
+    transform: none;
+  }
+}

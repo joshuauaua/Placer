@@ -185,6 +185,22 @@ export async function readRelatedProjects(project, limit = 3) {
     .slice(0, limit);
 }
 
+/**
+ * Projects across the whole platform, newest first, for the Project Examples page.
+ * Public, like readProject.
+ */
+export async function readAllProjects(limit = 60) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECTS_TABLE)
+    .select(PROJECT_COLUMNS)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(`Could not load projects: ${error.message}`);
+  return (data ?? []).map(fromRow);
+}
+
 /** Every project run in an organisation's name, newest first. Public, like readProject. */
 export async function readOrganisationProjects(organisationId) {
   const supabase = await client();

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { DashboardPage } from '../DashboardPage';
 import { postsAreShared, readImaginations, readLocalImaginations } from '../../services/imaginations';
 import { THEME } from '../../theme';
@@ -41,6 +41,33 @@ const setup = ({ saved = MINE, local = [], shared = false, handlers = {} } = {})
 describe('DashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('gets you started: a quickstart tutorial and project examples', () => {
+    const onNavigate = vi.fn();
+    render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={onNavigate} />);
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Getting Started' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Quickstart tutorial\s*Create your first Project/ }));
+    fireEvent.click(screen.getByRole('button',
+      { name: /Project Examples\s*Explore what other projects exist on the platform/ }));
+
+    expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['quickstart', 'projectExamples']);
+  });
+
+  it('lists the quick actions under their own label', () => {
+    const onNavigate = vi.fn();
+    const onNewProject = vi.fn();
+    render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={onNavigate}
+      onNewProject={onNewProject} />);
+
+    const section = screen.getByRole('region', { name: 'Quick Actions' });
+    expect(within(section).getAllByRole('button').map((button) => button.textContent))
+      .toEqual(['Edit my profile', 'Explore the map', 'Create a Project']);
+
+    fireEvent.click(within(section).getByRole('button', { name: 'Create a Project' }));
+    expect(onNewProject).toHaveBeenCalled();
   });
 
   it('welcomes you back by name, in place of a "Dashboard" title', () => {
@@ -97,6 +124,7 @@ describe('DashboardPage', () => {
     expect(screen.queryByText('Imaginations posted')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Your projects' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /^Followed/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Following' })).not.toBeInTheDocument();
     expect(readImaginations).not.toHaveBeenCalled();
   });
 });

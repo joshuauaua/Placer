@@ -29,6 +29,8 @@ const ResourcesPage = lazy(() => import('./components/ResourcesPage'));
 const ResourceArticlePage = lazy(() => import('./components/ResourceArticlePage'));
 const GuidesPage = lazy(() => import('./components/GuidesPage'));
 const FaqPage = lazy(() => import('./components/FaqPage'));
+const QuickstartPage = lazy(() => import('./components/QuickstartPage'));
+const ProjectExamplesPage = lazy(() => import('./components/ProjectExamplesPage'));
 const ContactPage = lazy(() => import('./components/ContactPage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const DescribePage = lazy(() => import('./components/DescribePage'));
@@ -93,6 +95,8 @@ const STATIC_PATHS = {
   resources: '/resources',
   guides: '/guides',
   faq: '/faq',
+  quickstart: '/quickstart',
+  projectExamples: '/project-examples',
   terms: '/terms-and-privacy',
 };
 const STATIC_VIEWS = Object.fromEntries(
@@ -548,6 +552,19 @@ function MainApp({ initialView = 'welcome' }) {
               </Suspense>
             )}
 
+            {view === 'quickstart' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <QuickstartPage t={t} onNewProject={showNewProject} />
+              </Suspense>
+            )}
+
+            {view === 'projectExamples' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <ProjectExamplesPage t={t} onOpenProject={showProjectPublic}
+                  onNewProject={profile ? showNewProject : undefined} />
+              </Suspense>
+            )}
+
             {view === 'faq' && (
               <Suspense fallback={<LoadingFallback />}>
                 <FaqPage t={t} />
@@ -594,7 +611,7 @@ function MainApp({ initialView = 'welcome' }) {
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
                   onNewProject={showNewProject}
                   onSignIn={handleSignIn} onSignOut={handleSignOut} onExplore={handleExplore}
-                  onOpenPublicProfile={showPublicProfile} onOpenFollowed={showPublicPage} />
+                  onOpenPublicProfile={showPublicProfile} />
               </Suspense>
             )}
 
