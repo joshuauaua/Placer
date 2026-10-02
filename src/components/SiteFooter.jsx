@@ -80,8 +80,7 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
               <Logo t={t} size={16} />
             </div>
             <p style={{ marginTop: 16, maxWidth: 360, fontSize: 14, lineHeight: '20px', color: t.inkDim }}>
-              Reimagine your city. Sketch, share and vote on ideas for the streets and
-              places around you.
+              Reimagine your city. A toolkit for shaping shared spaces together.
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               {SOCIALS.map(({ icon, label, href }) => (
