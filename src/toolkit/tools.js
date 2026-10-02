@@ -180,6 +180,31 @@ export const TOOLS = [
 
 const BY_ID = new Map(TOOLS.map((tool) => [tool.id, tool]));
 
+/** Every organisation with a tool in the register, alphabetically. */
+export const ORGANISATIONS = [...new Set(TOOLS.map((tool) => tool.createdBy))]
+  .sort((a, b) => a.localeCompare(b));
+
+/**
+ * The tools that match the Toolkit page's search and filters.
+ *
+ * `query` matches the name, tagline, description and organisation, ignoring case
+ * and accents, and every word in it has to match somewhere. `category` and
+ * `organisation` are exact, and null means any. `groupOnly` keeps the tools that
+ * can be run with a group in a room.
+ */
+export function filterTools(tools, { query = '', category = null, organisation = null, groupOnly = false } = {}) {
+  const fold = (text) => String(text ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const words = fold(query).split(/\s+/).filter(Boolean);
+
+  return tools.filter((tool) => {
+    if (category && tool.category !== category) return false;
+    if (organisation && tool.createdBy !== organisation) return false;
+    if (groupOnly && !tool.room) return false;
+    const haystack = fold([tool.name, tool.tagline, tool.blurb, tool.createdBy].join(' '));
+    return words.every((word) => haystack.includes(word));
+  });
+}
+
 /** The category with this id, or null. */
 export function findCategory(id) {
   return CATEGORIES.find((category) => category.id === id) ?? null;

@@ -1388,3 +1388,16 @@ a {
     transform: none;
   }
 }
+
+/* PLACER — the Toolkit's list view (see ToolkitPage.jsx). A row lifts to grey on
+ * hover, and on a phone the category and maker drop out so the name has room. */
+.placer-toolkit-row:hover,
+.placer-toolkit-row:focus-visible {
+  background: var(--placer-grey-100) !important;
+}
+
+@media (max-width: 640px) {
+  .placer-toolkit-row-meta {
+    display: none !important;
+  }
+}
