@@ -39,7 +39,7 @@ describe('App', () => {
     renderAt('/');
 
     expect(
-      screen.getByText(/PLACER is the digital toolkit that makes urban design participatory/i)
+      screen.getByText(/Placer is the open toolkit for co-designing shared spaces/i)
     ).toBeInTheDocument();
     expect(screen.queryByText('a toolkit for participatory placemaking')).not.toBeInTheDocument();
     expect(screen.getByText(/funded by the Swedish Institute/i)).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('App', () => {
     renderAt('/');
 
     expect(screen.getByRole('navigation')).toBeInTheDocument();
-    expect(screen.getByText(/PLACER is the digital toolkit that makes urban design participatory/i)).toBeInTheDocument();
+    expect(screen.getByText(/Placer is the open toolkit for co-designing shared spaces/i)).toBeInTheDocument();
   });
 
   it('renders SurveyPage at /survey', async () => {

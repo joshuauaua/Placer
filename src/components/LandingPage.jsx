@@ -65,12 +65,13 @@ export function LandingPage({ t }) {
           * phone can scale them down. */}
         <h1 className="placer-disp placer-landing-title" style={{ color: t.ink }}>PLACER</h1>
 
-        <p className="placer-landing-pitch" style={{ color: t.ink }}>
-          PLACER is the digital toolkit that makes urban design participatory. We
-          bring together community members, designers, and local authorities to
-          collaborate on public spaces that are active, accessible, and welcoming
-          to all.
-        </p>
+        <div className="placer-landing-pitch" style={{ color: t.ink }}>
+          <p>Placer is the open toolkit for co-designing shared spaces.</p>
+          <p style={{ marginTop: '1em' }}>
+            Understand how your community uses a place, imagine new possibilities, and
+            plan meaningful change: all in one shared workspace.
+          </p>
+        </div>
 
         {/* The feedback trigger and the User Labs trigger, stacked with a gap
           * between them, in the space that separates the pitch from the
