@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { PublicProjectPage } from '../PublicProjectPage';
 import { readImaginationsByProject } from '../../services/imaginations';
-import { readLinks, readProject, readPublicSandboxActivity, readRelatedProjects } from '../../services/projects';
+import { readLinks, readProject, readPublicToolkitActivity, readRelatedProjects } from '../../services/projects';
 import { follow, isFollowing, unfollow } from '../../services/follows';
 import { THEME } from '../../theme';
 
@@ -14,7 +14,7 @@ vi.mock('../../services/projects', () => ({
   readProject: vi.fn(),
   readLinks: vi.fn(() => Promise.resolve([])),
   recordProjectView: vi.fn(() => Promise.resolve()),
-  readPublicSandboxActivity: vi.fn(() => Promise.resolve(0)),
+  readPublicToolkitActivity: vi.fn(() => Promise.resolve(0)),
   readRelatedProjects: vi.fn(() => Promise.resolve([])),
 }));
 
@@ -33,7 +33,7 @@ const PROJECT = {
 const setup = (overrides = {}) => {
   const props = {
     t: THEME, projectId: 'proj-1', accountId: null,
-    onImagineForProject: vi.fn(), onBack: vi.fn(), onOpenProject: vi.fn(), onOpenSandbox: vi.fn(),
+    onImagineForProject: vi.fn(), onBack: vi.fn(), onOpenProject: vi.fn(), onOpenToolkit: vi.fn(),
     ...overrides,
   };
   render(<PublicProjectPage {...props} />);
@@ -44,7 +44,7 @@ describe('PublicProjectPage', () => {
   beforeEach(() => {
     vi.mocked(readImaginationsByProject).mockResolvedValue([]);
     vi.mocked(readLinks).mockResolvedValue([]);
-    vi.mocked(readPublicSandboxActivity).mockResolvedValue(0);
+    vi.mocked(readPublicToolkitActivity).mockResolvedValue(0);
     vi.mocked(readRelatedProjects).mockResolvedValue([]);
     vi.mocked(isFollowing).mockResolvedValue(false);
   });
@@ -113,13 +113,13 @@ describe('PublicProjectPage', () => {
     expect(await screen.findByRole('link', { name: /Council report/ })).toHaveAttribute('href', 'https://example.com/report');
   });
 
-  it('shows how many Sandbox sessions have run, once there are any', async () => {
+  it('shows how many Toolkit sessions have run, once there are any', async () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
-    vi.mocked(readPublicSandboxActivity).mockResolvedValue(2);
+    vi.mocked(readPublicToolkitActivity).mockResolvedValue(2);
 
     setup();
 
-    expect(await screen.findByText(/2 Sandbox sessions run/)).toBeInTheDocument();
+    expect(await screen.findByText(/2 Toolkit sessions run/)).toBeInTheDocument();
   });
 
   it('dates a project without dates by the day it was started', async () => {
@@ -140,13 +140,13 @@ describe('PublicProjectPage', () => {
     expect(onBack).toHaveBeenCalled();
   });
 
-  it('opens a Sandbox tool with the project attached', async () => {
+  it('opens a Toolkit tool with the project attached', async () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
-    const { onOpenSandbox } = setup();
+    const { onOpenToolkit } = setup();
 
     fireEvent.click(await screen.findByRole('button', { name: /Budget Ballot/ }));
 
-    expect(onOpenSandbox).toHaveBeenCalledWith('proj-1', 'budget-ballot');
+    expect(onOpenToolkit).toHaveBeenCalledWith('proj-1', 'budget-ballot');
   });
 
   it('has a table of contents for the sections on the page', async () => {
@@ -156,7 +156,7 @@ describe('PublicProjectPage', () => {
 
     const toc = within(await screen.findByRole('navigation', { name: 'On this page' }));
     expect(toc.getAllByRole('link').map((link) => link.textContent))
-      .toEqual(['Overview', 'Sandbox tools', 'Imaginations']);
+      .toEqual(['Overview', 'Tools', 'Imaginations']);
     expect(toc.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'location');
 
     fireEvent.click(toc.getByRole('link', { name: 'Imaginations' }));

@@ -20,7 +20,7 @@ const STORAGE_KEYS = {
   COMMENTS: 'placemaking_comments',
   SURVEY_RESPONSES: 'placemaking_survey_responses',
   PROFILE: 'placemaking_profile',
-  // Both owned by sandbox/rooms.js, which declares the same literals for the same
+  // Both owned by toolkit/rooms.js, which declares the same literals for the same
   // reason PROFILE does. ROOM_PARTICIPANT is the token that says which contribution
   // in a room is this browser's; ROOMS_HOSTED is what lets a facilitator close a
   // room they opened.

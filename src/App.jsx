@@ -2,7 +2,7 @@
 
 import { useState, useEffect, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
-import { Switch, Route, useLocation, useSearch } from 'wouter';
+import { Switch, Route, Redirect, useLocation, useSearch } from 'wouter';
 import { THEME } from './theme';
 import { Btn, LoadingMark } from './components/UI';
 import { Icon } from './components/Icon';
@@ -34,7 +34,7 @@ const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'
 const DescribePage = lazy(() => import('./components/DescribePage'));
 const PostPage = lazy(() => import('./components/PostPage'));
 const AdminImaginations = lazy(() => import('./components/AdminImaginations'));
-const SandboxPage = lazy(() => import('./components/SandboxPage'));
+const ToolkitPage = lazy(() => import('./components/ToolkitPage'));
 const JoinPage = lazy(() => import('./components/JoinPage'));
 const DashboardPage = lazy(() => import('./components/DashboardPage'));
 const SettingsPage = lazy(() => import('./components/SettingsPage'));
@@ -57,7 +57,7 @@ const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
 // bar and footer the other views sit inside.
 const FLOW_VIEWS = ['street', 'describe', 'post'];
 
-// The account views live in the URL, for the same reason the Sandbox does: a
+// The account views live in the URL, for the same reason the Toolkit does: a
 // settings page you cannot bookmark or refresh into is a worse settings page.
 //
 // Sign in and sign up are in here rather than being routes of their own, and that is
@@ -86,7 +86,7 @@ const ACCOUNT_VIEWS = {
 
 // About, Contact, Resources, Guides, the FAQ and Terms and Privacy each get a
 // bookmarkable link of their own, read off the location the same way the account
-// views and the Sandbox are.
+// views and the Toolkit are.
 const STATIC_PATHS = {
   about: '/about',
   contact: '/contact',
@@ -101,7 +101,7 @@ const STATIC_VIEWS = Object.fromEntries(
 
 /**
  * `/projects/new`, `/projects/<id>` (the public page) or `/projects/<id>/dashboard`,
- * read off the location the same way the Sandbox is — a project's dashboard and its
+ * read off the location the same way the Toolkit is — a project's dashboard and its
  * public page both need a link worth bookmarking or sharing. Null for anything else,
  * including a bare `/projects` with nothing after it.
  */
@@ -181,7 +181,7 @@ function SignedOutNotice({ t, onSignIn }) {
 function MainApp({ initialView = 'welcome' }) {
   const t = THEME;
   // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'contact', 'resources',
-  // 'guides', 'faq', 'sandbox', 'terms'
+  // 'guides', 'faq', 'toolkit', 'terms'
   const [currentView, setCurrentView] = useState(initialView);
   const [capturedView, setCapturedView] = useState(null);
   // The imagination being built. Held here rather than in StreetScreen so that
@@ -233,9 +233,9 @@ function MainApp({ initialView = 'welcome' }) {
     return () => { cancelled = true; };
   }, [accountId, organisationsVersion]);
 
-  // The Sandbox is the one view that lives in the URL, because every experiment has a
+  // The Toolkit is the one view that lives in the URL, because every tool has a
   // link worth sharing. So it is read off the location rather than held in state, and
-  // `show` keeps the two in step: going to the Sandbox writes the URL, and leaving it
+  // `show` keeps the two in step: going to the Toolkit writes the URL, and leaving it
   // writes the URL back.
   //
   // It is deliberately not its own <Route> with an initialView. Switch reconciles two
@@ -247,7 +247,7 @@ function MainApp({ initialView = 'welcome' }) {
   // location the same way, and for the same reason: every one of them is reachable
   // both from a link and from inside the app.
   const [location, navigate] = useLocation();
-  const inSandbox = location.startsWith('/sandbox');
+  const inToolkit = location.startsWith('/toolkit');
   const accountView = ACCOUNT_VIEWS[location];
   const staticView = STATIC_VIEWS[location];
   const projectRoute = projectRouteFrom(location);
@@ -261,7 +261,7 @@ function MainApp({ initialView = 'welcome' }) {
   const personId = personIdFrom(location);
   const resourceSlug = resourceSlugFrom(location);
   const view = accountView ?? staticView
-    ?? (inSandbox ? 'sandbox' : projectView ?? organisationView ?? (personId ? 'profilePublic'
+    ?? (inToolkit ? 'toolkit' : projectView ?? organisationView ?? (personId ? 'profilePublic'
       : resourceSlug ? 'resourceArticle' : currentView));
 
   const showNewProject = () => navigate('/projects/new');
@@ -280,21 +280,21 @@ function MainApp({ initialView = 'welcome' }) {
   const showProjectDashboard = (id) => navigate(`/projects/${id}/dashboard`);
   const showProjectPublic = (id) => navigate(`/projects/${id}`);
   const showPublicProfile = (id) => navigate(`/people/${encodeURIComponent(id)}`);
-  // Sent straight to the chosen experiment with the project attached, rather than
+  // Sent straight to the chosen tool with the project attached, rather than
   // to the gallery, because the gallery has nowhere to carry ?project= through into
   // picking one. Only 'budget-ballot' and 'open-vote' can actually host a room today —
-  // see supabase/rooms.sql's sandbox_rooms_experiment_known constraint — so ?project=
-  // is inert on any other experiment until it opts in too.
-  const showProjectSandbox = (id, experimentId) =>
-    navigate(`/sandbox/${encodeURIComponent(experimentId)}?project=${encodeURIComponent(id)}`);
+  // see supabase/rooms.sql's toolkit_rooms_tool_known constraint — so ?project=
+  // is inert on any other tool until it opts in too.
+  const showProjectToolkit = (id, toolId) =>
+    navigate(`/toolkit/${encodeURIComponent(toolId)}?project=${encodeURIComponent(id)}`);
   // A room the project already has, from its dashboard — the dashboard has already
   // told this browser it may run it, so it opens as the facilitator's view.
-  const showProjectRoom = (experimentId, roomId) =>
-    navigate(`/sandbox/${encodeURIComponent(experimentId)}?room=${encodeURIComponent(roomId)}`);
+  const showProjectRoom = (toolId, roomId) =>
+    navigate(`/toolkit/${encodeURIComponent(toolId)}?room=${encodeURIComponent(roomId)}`);
 
   const show = (next) => {
-    if (next === 'sandbox') {
-      navigate('/sandbox');
+    if (next === 'toolkit') {
+      navigate('/toolkit');
       return;
     }
     if (ACCOUNT_PATHS[next]) {
@@ -305,7 +305,7 @@ function MainApp({ initialView = 'welcome' }) {
       navigate(STATIC_PATHS[next]);
       return;
     }
-    if (inSandbox || accountView || staticView || personId || resourceSlug || organisationRoute) navigate('/');
+    if (inToolkit || accountView || staticView || personId || resourceSlug || organisationRoute) navigate('/');
     setCurrentView(next);
   };
 
@@ -560,12 +560,12 @@ function MainApp({ initialView = 'welcome' }) {
               </Suspense>
             )}
 
-            {view === 'sandbox' && (
+            {view === 'toolkit' && (
               <Suspense fallback={<LoadingFallback />}>
-                {/* Passed down rather than read from services/profile inside SandboxPage: with
+                {/* Passed down rather than read from services/profile inside ToolkitPage: with
                     accounts the name is behind a request, and a component cannot await one in
                     its render body. */}
-                <SandboxPage
+                <ToolkitPage
                   t={t}
                   displayName={profile?.name ?? null}
                   // Only opening a room is gated. Joining, contributing and reading are not.
@@ -680,7 +680,7 @@ function MainApp({ initialView = 'welcome' }) {
               <Suspense fallback={<LoadingFallback />}>
                 <ProjectDashboardPage t={t} accountId={accountId} projectId={projectRoute.id}
                   organisations={organisations}
-                  onOpenSandbox={showProjectSandbox}
+                  onOpenToolkit={showProjectToolkit}
                   onOpenRoom={showProjectRoom}
                   onNavigateToPublic={showProjectPublic}
                   onDeleted={() => show('projects')} />
@@ -701,7 +701,7 @@ function MainApp({ initialView = 'welcome' }) {
                   onBack={() => show('projects')}
                   onOpenProject={showProjectPublic}
                   onOpenOrganisation={showOrganisationPublic}
-                  onOpenSandbox={showProjectSandbox} />
+                  onOpenToolkit={showProjectToolkit} />
               </Suspense>
             )}
           </div>
@@ -738,6 +738,20 @@ function AdminGate({ children, t }) {
 
 export { AdminGate };
 
+/**
+ * The Toolkit used to be the Sandbox, at /sandbox. Links to it are out there in
+ * messages and project pages, so they are sent on to the same place under /toolkit,
+ * query string (a room or a project) and all.
+ */
+function SandboxRedirect() {
+  // Inside the nested /sandbox route, so the location is what came after it, and a
+  // leading ~ makes the target absolute rather than relative to /sandbox.
+  const [rest] = useLocation();
+  const search = useSearch();
+  const path = rest === '/' ? '' : rest;
+  return <Redirect to={`~/toolkit${path}${search ? `?${search}` : ''}`} replace />;
+}
+
 function App() {
   const t = THEME;
 
@@ -750,13 +764,14 @@ function App() {
           <Route path="/admin"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminDashboard t={t} /></AdminGate></Suspense></Route>
           {/* An entry point only — a scanned QR code or a typed PIN — so it is its
               own route rather than a view inside MainApp. */}
+          <Route path="/sandbox" nest><SandboxRedirect /></Route>
           <Route path="/join"><Suspense fallback={<LoadingFallback />}><JoinPage t={t} /></Suspense></Route>
           {/* Where every link Supabase mails out comes back to, and the screen that
               link leads to. Both are only ever arrived at cold, from another
               application, so unlike /signin they are routes rather than MainApp views. */}
           <Route path="/auth/callback"><Suspense fallback={<LoadingFallback />}><AuthCallback t={t} /></Suspense></Route>
           <Route path="/reset"><Suspense fallback={<LoadingFallback />}><ResetPasswordPage t={t} /></Suspense></Route>
-          {/* Everything else, /sandbox and the STATIC_PATHS pages included —
+          {/* Everything else, /toolkit and the STATIC_PATHS pages included —
               MainApp reads those off the location itself. */}
           <Route><MainApp /></Route>
         </Switch>

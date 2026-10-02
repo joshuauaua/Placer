@@ -6,7 +6,7 @@ import { Icon } from './Icon';
 import { Btn, LoadingMark } from './UI';
 import { ProjectViewsChart } from './ProjectViewsChart';
 import { ProjectSetupPage } from './ProjectSetupPage';
-import { EXPERIMENTS, findExperiment } from '../sandbox/experiments';
+import { TOOLS, findTool } from '../toolkit/tools';
 import {
   codeJoinUrl,
   formatPin,
@@ -15,7 +15,7 @@ import {
   joinUrl,
   rememberHostedRoom,
   timeRemaining,
-} from '../sandbox/rooms';
+} from '../toolkit/rooms';
 import { downloadQrSvg } from '../lib/qrDownload';
 import {
   addCollaborator,
@@ -86,7 +86,7 @@ function CollaboratorRow({ t, collaborator, onRemove }) {
   );
 }
 
-function ExperimentMenuItem({ t, experiment, onClick }) {
+function ToolMenuItem({ t, tool, onClick }) {
   return (
     <button
       role="menuitem"
@@ -97,18 +97,18 @@ function ExperimentMenuItem({ t, experiment, onClick }) {
         letterSpacing: '-0.01em', textAlign: 'left' }}
       onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-      <Icon name={experiment.icon} size={17} stroke={2} style={{ color: experiment.color, flex: '0 0 auto' }} />
-      {experiment.name}
+      <Icon name={tool.icon} size={17} stroke={2} style={{ color: tool.color, flex: '0 0 auto' }} />
+      {tool.name}
     </button>
   );
 }
 
 /**
- * "Open Sandbox for this project" needed to become a choice once the Sandbox held
- * more than one experiment — same dismissal shape as UserMenu's dropdown, which is
+ * "Open Toolkit for this project" needed to become a choice once the Toolkit held
+ * more than one tool — same dismissal shape as UserMenu's dropdown, which is
  * this app's first one.
  */
-function AddSandboxExperiment({ t, onChoose }) {
+function AddToolkitTool({ t, onChoose }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
@@ -139,21 +139,21 @@ function AddSandboxExperiment({ t, onChoose }) {
           color: t.accentInk, border: '1px solid transparent', fontFamily: 'var(--placer-font)',
           fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em' }}>
         <Icon name="sparkle" size={18} stroke={2.1} />
-        Add Sandbox Experiment
+        Add a Tool
         <Icon name={open ? 'chevUp' : 'chevDown'} size={15} stroke={2.2} />
       </button>
 
       {open && (
         <div
           role="menu"
-          aria-label="Sandbox experiments"
+          aria-label="Toolkit tools"
           style={{ position: 'absolute', top: '100%', left: 0, marginTop: 8, zIndex: 10,
             minWidth: 240, padding: '6px 0', background: t.surface,
             border: `1px solid ${t.line}`, borderRadius: 12, boxShadow: t.shadow,
             overflow: 'hidden' }}>
-          {EXPERIMENTS.map((experiment) => (
-            <ExperimentMenuItem key={experiment.id} t={t} experiment={experiment}
-              onClick={() => { setOpen(false); onChoose(experiment.id); }} />
+          {TOOLS.map((tool) => (
+            <ToolMenuItem key={tool.id} t={t} tool={tool}
+              onClick={() => { setOpen(false); onChoose(tool.id); }} />
           ))}
         </div>
       )}
@@ -172,11 +172,11 @@ function RoomRow({ t, room, onOpen, onClose, onDelete }) {
   const qrRef = useRef(null);
   const [confirming, setConfirming] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const experiment = findExperiment(room.experiment);
+  const tool = findTool(room.tool);
   const long = isLongRoom(room);
   const url = long ? codeJoinUrl(room.joinCode) : joinUrl(room.pin);
   const left = timeRemaining(room.expiresAt);
-  const name = experiment?.name ?? room.experiment;
+  const name = tool?.name ?? room.tool;
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0',
@@ -200,7 +200,7 @@ function RoomRow({ t, room, onOpen, onClose, onDelete }) {
           Open
         </Btn>
         <Btn t={t} variant="quiet" size="sm" icon="arrowDown"
-          onClick={() => downloadQrSvg(qrRef.current, `placer-${room.experiment}-qr.svg`)}>
+          onClick={() => downloadQrSvg(qrRef.current, `placer-${room.tool}-qr.svg`)}>
           Download QR
         </Btn>
         {/* The same two-step RoomBar's Close room uses: closing ends it for everybody. */}
@@ -273,7 +273,7 @@ function DeleteProject({ t, project, onDeleted }) {
       <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
         Removes the project, its public page, its image, its news and resources, its
         collaborators and its page views, and takes it off everyone's followed list. The
-        imaginations and Sandbox sessions made for it stay, no longer linked to it. This
+        imaginations and Toolkit sessions made for it stay, no longer linked to it. This
         cannot be undone.
       </p>
       <form onSubmit={handleDelete}>
@@ -302,7 +302,7 @@ function DeleteProject({ t, project, onDeleted }) {
  * controls; a plain collaborator sees everything else.
  */
 export function ProjectDashboardPage({ t, accountId, projectId, organisations = [],
-  onOpenSandbox, onOpenRoom, onNavigateToPublic, onDeleted }) {
+  onOpenToolkit, onOpenRoom, onNavigateToPublic, onDeleted }) {
   const [project, setProject] = useState(null);
   const [status, setStatus] = useState('loading');
   const [editing, setEditing] = useState(false);
@@ -432,7 +432,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
     // the facilitator's view — PIN or QR, count, Close — rather than a participant's.
     const long = isLongRoom(room);
     rememberHostedRoom(room.id, { pin: room.pin, token: room.facilitatorToken, code: long ? room.joinCode : null });
-    onOpenRoom?.(room.experiment, room.id);
+    onOpenRoom?.(room.tool, room.id);
   };
 
   const handleCloseRoom = async (room) => {
@@ -517,7 +517,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 32 }}>
           <StatTile t={t} icon="grid" label="Imaginations" value={stats?.imaginationsCount ?? 0} />
           <StatTile t={t} icon="arrowUp" label="Votes received" value={stats?.imaginationsUpvotes ?? 0} />
-          <StatTile t={t} icon="sparkle" label="Sandbox sessions" value={stats?.sandboxRoomsCount ?? 0} />
+          <StatTile t={t} icon="sparkle" label="Toolkit sessions" value={stats?.toolkitRoomsCount ?? 0} />
           {views !== false && (
             <StatTile t={t} icon="user" label="Page views" value={views ? views.total : '–'} />
           )}
@@ -549,12 +549,12 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
           </Card>
         )}
 
-        <Card t={t} title="Sandbox">
+        <Card t={t} title="Toolkit">
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
-            Open an experiment attached to this project — it shows up in the count
+            Open a tool attached to this project — it shows up in the count
             above, and on the public page once it has run.
           </p>
-          <AddSandboxExperiment t={t} onChoose={(experimentId) => onOpenSandbox(project.id, experimentId)} />
+          <AddToolkitTool t={t} onChoose={(toolId) => onOpenToolkit(project.id, toolId)} />
 
           {rooms && (
             <div style={{ marginTop: 24 }}>

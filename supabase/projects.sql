@@ -2,9 +2,9 @@
 --
 -- The shape: an account (or a small team of them) sets up a project — dates, where it
 -- is, what it is trying to do — and PLACER gives it three things in return: a place
--- to collect external documentation, a dashboard of how the imaginations and Sandbox
+-- to collect external documentation, a dashboard of how the imaginations and Toolkit
 -- sessions tied to it are going, and a public page that shows all of that off to
--- anyone who was not in the room. This file is what wires imaginations and Sandbox
+-- anyone who was not in the room. This file is what wires imaginations and Toolkit
 -- rooms into a project rather than leaving them freestanding.
 --
 -- Run this once in the Supabase SQL editor (Dashboard -> SQL Editor -> New query),
@@ -25,7 +25,7 @@
 --     account look up another's: there is no directory to search, so inviting someone
 --     means already knowing how to reach them.
 --   - Only the owner manages collaborators. A collaborator can edit the project's
---     setup, its links, and open a Sandbox room for it, but cannot add or remove
+--     setup, its links, and open a Toolkit room for it, but cannot add or remove
 --     other collaborators or delete the project. That is one boundary, not a full
 --     roles system, and is easy to widen later if a project turns out to need one.
 --
@@ -413,23 +413,23 @@ grant update (project_id) on public.imaginations to authenticated;
 create index if not exists imaginations_project_id_idx on public.imaginations (project_id);
 
 
--- 8. Linking a Sandbox room to a project.
+-- 8. Linking a Toolkit room to a project.
 --
--- Same shape as section 7, but sandbox_rooms has no grants to anon or authenticated
+-- Same shape as section 7, but toolkit_rooms has no grants to anon or authenticated
 -- at all (see rooms.sql's header) — every access goes through a function, so the
--- column only ever needs to be set inside sandbox_room_create, not granted.
-alter table public.sandbox_rooms
+-- column only ever needs to be set inside toolkit_room_create, not granted.
+alter table public.toolkit_rooms
   add column if not exists project_id uuid references public.projects (id) on delete set null;
 
-create index if not exists sandbox_rooms_project_id_idx on public.sandbox_rooms (project_id);
+create index if not exists toolkit_rooms_project_id_idx on public.toolkit_rooms (project_id);
 
 -- The return type is unchanged, but the parameter list is: a second, defaulted
 -- argument is a different signature, so the one-argument version has to be dropped
 -- explicitly rather than replaced in place, the same case rooms.sql's own header
--- note about sandbox_room_create describes.
-drop function if exists public.sandbox_room_create(text);
+-- note about toolkit_room_create describes.
+drop function if exists public.toolkit_room_create(text);
 
-create or replace function public.sandbox_room_create(p_experiment text, p_project_id uuid default null)
+create or replace function public.toolkit_room_create(p_tool text, p_project_id uuid default null)
 returns table (room_id uuid, pin text, facilitator_token uuid, expires_at timestamptz)
 language plpgsql
 security definer
@@ -470,9 +470,9 @@ begin
     v_pin := lpad((floor(random() * 1000000))::bigint::text, 6, '0');
 
     begin
-      insert into public.sandbox_rooms (pin, experiment, created_by, project_id)
-      values (v_pin, p_experiment, v_owner, p_project_id)
-      returning sandbox_rooms.id, sandbox_rooms.facilitator_token, sandbox_rooms.expires_at
+      insert into public.toolkit_rooms (pin, tool, created_by, project_id)
+      values (v_pin, p_tool, v_owner, p_project_id)
+      returning toolkit_rooms.id, toolkit_rooms.facilitator_token, toolkit_rooms.expires_at
         into v_id, v_token, v_expires;
 
       return query select v_id, v_pin, v_token, v_expires;
@@ -486,13 +486,13 @@ begin
 end;
 $$;
 
-revoke all on function public.sandbox_room_create(text, uuid) from public;
-grant execute on function public.sandbox_room_create(text, uuid) to authenticated;
+revoke all on function public.toolkit_room_create(text, uuid) from public;
+grant execute on function public.toolkit_room_create(text, uuid) to authenticated;
 
 
 -- 9. The dashboard's numbers.
 --
--- Owner-or-collaborator only, and a function rather than a view: sandbox_rooms has
+-- Owner-or-collaborator only, and a function rather than a view: toolkit_rooms has
 -- no select grant at all (section 8's header), so nothing else could read the room
 -- count. Running as the definer is what lets this see past that lockdown for the
 -- one project its caller is allowed to manage.
@@ -500,7 +500,7 @@ create or replace function public.project_stats(p_project_id uuid)
 returns table (
   imaginations_count  integer,
   imaginations_upvotes integer,
-  sandbox_rooms_count integer
+  toolkit_rooms_count integer
 )
 language plpgsql
 security definer
@@ -526,7 +526,7 @@ begin
     select
       (select count(*)::int from public.imaginations i where i.project_id = p_project_id),
       (select coalesce(sum(i.upvotes), 0)::int from public.imaginations i where i.project_id = p_project_id),
-      (select count(*)::int from public.sandbox_rooms r where r.project_id = p_project_id);
+      (select count(*)::int from public.toolkit_rooms r where r.project_id = p_project_id);
 end;
 $$;
 
@@ -536,26 +536,26 @@ grant execute on function public.project_stats(uuid) to authenticated;
 
 -- 10. The public page's one number from the locked-down table.
 --
--- A project's public page shows Sandbox activity too, and imagination counts and
+-- A project's public page shows Toolkit activity too, and imagination counts and
 -- votes are already reachable directly — the imaginations table is open to read
--- (section 7). The room count is not: sandbox_rooms has no grant to anon or
--- authenticated at all. This is the same shape as sandbox_room_is_open in
+-- (section 7). The room count is not: toolkit_rooms has no grant to anon or
+-- authenticated at all. This is the same shape as toolkit_room_is_open in
 -- rooms.sql — a narrow, public, security definer helper — rather than reusing
 -- project_stats, because a count of sessions run is not sensitive the way a PIN or a
 -- facilitator token is, and does not need the ownership check the dashboard's
 -- numbers do.
-create or replace function public.project_sandbox_activity(p_project_id uuid)
+create or replace function public.project_toolkit_activity(p_project_id uuid)
 returns integer
 language sql
 security definer
 set search_path = public
 stable
 as $$
-  select count(*)::int from public.sandbox_rooms where project_id = p_project_id;
+  select count(*)::int from public.toolkit_rooms where project_id = p_project_id;
 $$;
 
-revoke all on function public.project_sandbox_activity(uuid) from public;
-grant execute on function public.project_sandbox_activity(uuid) to anon, authenticated;
+revoke all on function public.project_toolkit_activity(uuid) from public;
+grant execute on function public.project_toolkit_activity(uuid) to anon, authenticated;
 
 
 -- Verify, after running the above:
@@ -565,11 +565,11 @@ grant execute on function public.project_sandbox_activity(uuid) to anon, authent
 --
 --   -- project_id reached both existing tables:
 --   select column_name from information_schema.columns
---    where table_name in ('imaginations', 'sandbox_rooms') and column_name = 'project_id';
+--    where table_name in ('imaginations', 'toolkit_rooms') and column_name = 'project_id';
 --
 -- Expect rls true on all three new tables; a public SELECT policy on projects and
 -- project_links; an owner-or-self SELECT on project_collaborators; and project_id
--- present on both imaginations and sandbox_rooms.
+-- present on both imaginations and toolkit_rooms.
 --
 -- Then, that reading a project really is public — with nothing but the anon key:
 --

@@ -72,7 +72,7 @@ function CommentRow({ t, comment }) {
 
 /**
  * The author's way to take an imagination down, with its picture. Asks once first —
- * the same two-step closing a Sandbox room uses — because there is no undo, and the
+ * the same two-step closing a Toolkit room uses — because there is no undo, and the
  * votes and comments on it go too.
  */
 function DeleteImagination({ t, imagination, onDeleted }) {

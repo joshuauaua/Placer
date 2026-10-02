@@ -1,4 +1,4 @@
-/* PLACER — sandbox rooms, the network half.
+/* PLACER — toolkit rooms, the network half.
  *
  * Five calls against Supabase. Four of them are RPCs rather than table queries,
  * because the rules in supabase/rooms.sql give the anon role no access to the
@@ -14,7 +14,7 @@
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
 
-export const CONTRIBUTIONS_TABLE = 'sandbox_contributions';
+export const CONTRIBUTIONS_TABLE = 'toolkit_contributions';
 
 export { isSupabaseConfigured };
 
@@ -22,24 +22,24 @@ async function client() {
   const supabase = await getSupabase();
   if (!supabase) {
     throw new Error(
-      'Sandbox rooms need a Supabase project: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
+      'Toolkit rooms need a Supabase project: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
     );
   }
   return supabase;
 }
 
 /**
- * Open a room on an experiment.
+ * Open a room on a tool.
  *
  * The PIN is chosen by the database, not here — it has to be unique, and only the
  * database can say so, and the same goes for the deadline: the browser's clock is
  * not to be trusted with when a room ends. Returns the facilitator token, which is
  * the one secret in this feature: whoever holds it can close the room early.
  *
- * Needs an account. sandbox_room_create is the one function in supabase/rooms.sql that
+ * Needs an account. toolkit_room_create is the one function in supabase/rooms.sql that
  * the anon role may not execute, so a signed-out caller is refused by Postgres rather
  * than by anything here — and what comes back is a message about function privileges,
- * which is true and no use to anybody. The Sandbox asks for a sign-in before it offers
+ * which is true and no use to anybody. The Toolkit asks for a sign-in before it offers
  * the button; this is for the case where something got past that.
  *
  * `projectId` is optional and attaches the room to a project — see supabase/projects.sql
@@ -47,17 +47,17 @@ async function client() {
  * ordinary, unattached room exactly as this always has; passing one refuses unless the
  * caller owns or collaborates on that project, which the database checks, not this.
  *
- * `lifetime` is one of ROOM_LIFETIMES in sandbox/rooms.js. Anything past two hours
+ * `lifetime` is one of ROOM_LIFETIMES in toolkit/rooms.js. Anything past two hours
  * needs a project, and comes back with a `joinCode` for its QR code — see
  * supabase/rooms-lifetime.sql. The default is left off the request entirely, so a
  * workshop room still opens against a database that has not had that file yet.
  */
-export async function createRoom(experimentId, projectId = null, lifetime = '2h') {
+export async function createRoom(toolId, projectId = null, lifetime = '2h') {
   const supabase = await client();
-  const params = { p_experiment: experimentId, p_project_id: projectId };
+  const params = { p_tool: toolId, p_project_id: projectId };
   if (lifetime && lifetime !== '2h') params.p_lifetime = lifetime;
 
-  const { data, error } = await supabase.rpc('sandbox_room_create', params).single();
+  const { data, error } = await supabase.rpc('toolkit_room_create', params).single();
 
   if (error) {
     // 42501 is insufficient_privilege, which PostgREST also reports as a 403.
@@ -84,13 +84,13 @@ export async function createRoom(experimentId, projectId = null, lifetime = '2h'
 export async function joinRoom(pin) {
   const supabase = await client();
   const { data, error } = await supabase
-    .rpc('sandbox_room_join', { p_pin: pin })
+    .rpc('toolkit_room_join', { p_pin: pin })
     .maybeSingle();
 
   if (error) throw new Error(`Could not join that room: ${error.message}`);
   if (!data) return null;
 
-  return { id: data.room_id, experiment: data.experiment };
+  return { id: data.room_id, tool: data.tool };
 }
 
 /**
@@ -102,17 +102,17 @@ export async function joinRoom(pin) {
 export async function joinRoomByCode(code) {
   const supabase = await client();
   const { data, error } = await supabase
-    .rpc('sandbox_room_join_code', { p_code: code })
+    .rpc('toolkit_room_join_code', { p_code: code })
     .maybeSingle();
 
   if (error) throw new Error(`Could not join that room: ${error.message}`);
   if (!data) return null;
 
-  return { id: data.room_id, experiment: data.experiment, status: data.status, endsAt: data.expires_at };
+  return { id: data.room_id, tool: data.tool, status: data.status, endsAt: data.expires_at };
 }
 
 /**
- * What a room is, given its id: which experiment it belongs to, whether it is
+ * What a room is, given its id: which tool it belongs to, whether it is
  * 'open', 'closed' or 'expired', and when it runs out. Null for a room that does
  * not exist.
  *
@@ -125,13 +125,13 @@ export async function joinRoomByCode(code) {
 export async function readRoom(roomId) {
   const supabase = await client();
   const { data, error } = await supabase
-    .rpc('sandbox_room_state', { p_room_id: roomId })
+    .rpc('toolkit_room_state', { p_room_id: roomId })
     .maybeSingle();
 
   if (error) throw new Error(`Could not read the room: ${error.message}`);
   if (!data) return null;
 
-  return { experiment: data.experiment, status: data.status, expiresAt: data.expires_at };
+  return { tool: data.tool, status: data.status, expiresAt: data.expires_at };
 }
 
 /**
@@ -141,7 +141,7 @@ export async function readRoom(roomId) {
  */
 export async function saveContribution({ roomId, participantToken, displayName, state }) {
   const supabase = await client();
-  const { data, error } = await supabase.rpc('sandbox_contribution_save', {
+  const { data, error } = await supabase.rpc('toolkit_contribution_save', {
     p_room_id: roomId,
     p_token: participantToken,
     p_name: displayName ?? null,
@@ -176,7 +176,7 @@ export async function readContributions(roomId) {
  */
 export async function closeRoom(roomId, facilitatorToken) {
   const supabase = await client();
-  const { data, error } = await supabase.rpc('sandbox_room_close', {
+  const { data, error } = await supabase.rpc('toolkit_room_close', {
     p_room_id: roomId,
     p_token: facilitatorToken,
   });
@@ -192,7 +192,7 @@ export async function closeRoom(roomId, facilitatorToken) {
  */
 export async function deleteRoom(roomId, facilitatorToken) {
   const supabase = await client();
-  const { data, error } = await supabase.rpc('sandbox_room_delete', {
+  const { data, error } = await supabase.rpc('toolkit_room_delete', {
     p_room_id: roomId,
     p_token: facilitatorToken,
   });
@@ -222,7 +222,7 @@ export function subscribeToRoom(roomId, onChange) {
     if (cancelled) return;
 
     const channel = supabase
-      .channel(`sandbox-room-${roomId}`)
+      .channel(`toolkit-room-${roomId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: CONTRIBUTIONS_TABLE, filter: `room_id=eq.${roomId}` },

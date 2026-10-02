@@ -1,12 +1,12 @@
-# Supabase — getting the survey, Sandbox rooms, accounts and the map live
+# Supabase — getting the survey, Toolkit rooms, accounts and the map live
 
 The survey works with no backend at all: with either environment variable below
 missing, responses stay in the browser's localStorage. Everything in steps 1 to 7
 is about switching that over to a real table.
 
-Three features cannot fall back that way. Sandbox rooms (step 8), because a room is
+Three features cannot fall back that way. Toolkit rooms (step 8), because a room is
 shared between devices; without a project they are simply not offered, and the
-Sandbox works as it always did. Accounts (step 9), because there is nowhere to keep
+Toolkit works as it always did. Accounts (step 9), because there is nowhere to keep
 one; without a project the app uses the localStorage identity it used before accounts
 existed — a display name on this device, no password, nothing to sign in to. And the
 community map (step 10): without a project, posting saves to this browser exactly as
@@ -87,12 +87,12 @@ first call returns 401 or a row-level security error, `schema.sql` has not run.
 `queries.sql` has the useful ones, including scoring the ranked question by the
 position each feature was placed in.
 
-## 8. Sandbox rooms
+## 8. Toolkit rooms
 
-Optional, and separate from the survey. A facilitator opens a room on a Sandbox
-experiment; people join it with a six-digit PIN or by scanning its QR code, and
-their answers are combined live. Without this the Sandbox still works — every
-experiment runs on its own in the browser, and the "Start a room" button simply
+Optional, and separate from the survey. A facilitator opens a room on a Toolkit
+tool; people join it with a six-digit PIN or by scanning its QR code, and
+their answers are combined live. Without this the Toolkit still works — every
+tool runs on its own in the browser, and the "Start a room" button simply
 never appears.
 
 **Opening a room takes an account. Joining one never does.** Opening creates
@@ -104,19 +104,19 @@ accounts configured, a signed-out facilitator gets "Sign in to start a room" and
 further.
 
 Run `rooms.sql` in the SQL editor, the same way as `schema.sql`. It is
-re-runnable. Only Budget Ballot can host a room today; the experiments allowed to
+re-runnable. Only Budget Ballot can host a room today; the tools allowed to
 are enumerated in a CHECK constraint in that file, and adding a second one means
-editing both it and `src/sandbox/experiments.js`.
+editing both it and `src/toolkit/tools.js`.
 
 The access rules are deliberately unlike the survey's. Joining a room needs a
 *read*, which nothing else here has, so instead of a select policy on the rooms
 table — which would make every PIN enumerable — all of it goes through
 `security definer` functions, and the anon role is granted nothing at all on
-`sandbox_rooms`.
+`toolkit_rooms`.
 
-Of those functions, `sandbox_room_create` is the only one the anon role may not
+Of those functions, `toolkit_room_create` is the only one the anon role may not
 execute — that grant is where "opening takes an account" is actually enforced, rather
-than in the button. `sandbox_rooms.created_by` records which account opened each room,
+than in the button. `toolkit_rooms.created_by` records which account opened each room,
 and is nulled rather than cascaded if that account is later deleted: a room holds other
 people's contributions, and those are not the facilitator's to take with them.
 
@@ -124,25 +124,25 @@ Verify with:
 
 ```bash
 # No rows, and no error: there is no select policy on this table at all.
-curl -s "$VITE_SUPABASE_URL/rest/v1/sandbox_rooms?select=id" \
+curl -s "$VITE_SUPABASE_URL/rest/v1/toolkit_rooms?select=id" \
   -H "apikey: $VITE_SUPABASE_ANON_KEY" \
   -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY"
 
 # An unknown PIN is an empty result, not an error. Joining needs no account, so this
 # works with nothing but the anon key.
-curl -s "$VITE_SUPABASE_URL/rest/v1/rpc/sandbox_room_join" \
+curl -s "$VITE_SUPABASE_URL/rest/v1/rpc/toolkit_room_join" \
   -H "apikey: $VITE_SUPABASE_ANON_KEY" \
   -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
   -H "Content-Type: application/json" \
   -d '{"p_pin":"000000"}'
 
 # Opening one does need an account, so the same key alone must be refused here —
-# expect a 403 and "permission denied for function sandbox_room_create".
-curl -s "$VITE_SUPABASE_URL/rest/v1/rpc/sandbox_room_create" \
+# expect a 403 and "permission denied for function toolkit_room_create".
+curl -s "$VITE_SUPABASE_URL/rest/v1/rpc/toolkit_room_create" \
   -H "apikey: $VITE_SUPABASE_ANON_KEY" \
   -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"p_experiment":"budget-ballot"}'
+  -d '{"p_tool":"budget-ballot"}'
 ```
 
 Live updates need the `supabase_realtime` publication, which `rooms.sql` adds the
@@ -171,8 +171,8 @@ non-binding tool — and a reason to close rooms rather than leave them open.
 
 ## 9. Accounts
 
-Optional, and separate from both the survey and the Sandbox. Without it people can
-still browse, draw, and open Sandbox rooms; what they cannot do is post an
+Optional, and separate from both the survey and the Toolkit. Without it people can
+still browse, draw, and open Toolkit rooms; what they cannot do is post an
 imagination, because a posted imagination belongs to an account.
 
 Run `auth.sql` in the SQL editor, the same way as `schema.sql`. It is re-runnable.
@@ -357,26 +357,26 @@ Expect `rls` true, and one SELECT, one INSERT and one DELETE policy, all for
 ## 12. Projects
 
 Requires steps 9, 10 and 8 (in that order — it references profiles, imaginations, and
-sandbox rooms) — see `projects.sql`'s own header for why. Run `projects.sql` in the SQL
-editor after all three. It is re-runnable, except for the caveat about `sandbox_rooms`
+toolkit rooms) — see `projects.sql`'s own header for why. Run `projects.sql` in the SQL
+editor after all three. It is re-runnable, except for the caveat about `toolkit_rooms`
 just below.
 
 It creates `public.projects`, `public.project_collaborators` and `public.project_links`,
-adds a nullable `project_id` to both `public.imaginations` and `public.sandbox_rooms`,
-and replaces `sandbox_room_create` with a version that takes an optional project id — a
-plain `sandbox_room_create(p_experiment)` call behaves exactly as before, which is what
-keeps the Sandbox gallery's ordinary, unattached rooms unaffected. It also adds
-`project_sandbox_activity`, a narrow public function that hands back a bare session
+adds a nullable `project_id` to both `public.imaginations` and `public.toolkit_rooms`,
+and replaces `toolkit_room_create` with a version that takes an optional project id — a
+plain `toolkit_room_create(p_tool)` call behaves exactly as before, which is what
+keeps the Toolkit gallery's ordinary, unattached rooms unaffected. It also adds
+`project_toolkit_activity`, a narrow public function that hands back a bare session
 count for a project's public page — the one number worth showing from a table
-(`sandbox_rooms`) that otherwise grants nothing to anon or authenticated at all.
+(`toolkit_rooms`) that otherwise grants nothing to anon or authenticated at all.
 
 Scope choices — the ones worth knowing about before reading the SQL — are in the file's
 own header: locations are free-text place names rather than geocoded points, and
 collaborators are invited by email through `project_add_collaborator` because nothing in
 PLACER lets one account look another up.
 
-**The `sandbox_room_create` re-run is not harmless if a room is open.** Dropping and
-recreating the function does not touch `sandbox_rooms` rows, so nothing already open is
+**The `toolkit_room_create` re-run is not harmless if a room is open.** Dropping and
+recreating the function does not touch `toolkit_rooms` rows, so nothing already open is
 lost — but a facilitator's browser is holding the *old* function's shape in memory only
 in the sense that it is about to call it; PostgREST resolves the call fresh every time,
 so this is safe to run at any moment, including mid-workshop. Mentioned here because
@@ -391,11 +391,11 @@ select relrowsecurity from pg_class where relname in ('projects', 'project_colla
 select policyname, cmd, roles from pg_policies where tablename in ('projects', 'project_collaborators', 'project_links');
 
 select column_name from information_schema.columns
- where table_name in ('imaginations', 'sandbox_rooms') and column_name = 'project_id';
+ where table_name in ('imaginations', 'toolkit_rooms') and column_name = 'project_id';
 ```
 
 Expect `rls` true on all three new tables, a public SELECT policy on `projects` and
-`project_links`, and `project_id` present on both `imaginations` and `sandbox_rooms`.
+`project_links`, and `project_id` present on both `imaginations` and `toolkit_rooms`.
 
 Then, that reading a project really is public — with nothing but the anon key this
 returns rows rather than an empty array:
@@ -421,8 +421,8 @@ enforced in the database:
   `project_rooms` (owner or collaborator only), with each room's QR code, response
   count, and Open, Download QR and Close — from any browser, not only the one that
   opened it.
-- A long room is joined through `sandbox_room_join_code` with a 32-character code,
-  which is what its QR link carries. `sandbox_room_join` no longer answers for a long
+- A long room is joined through `toolkit_room_join_code` with a 32-character code,
+  which is what its QR link carries. `toolkit_room_join` no longer answers for a long
   room's PIN, because six guessable digits are not fit to leave open for months (see
   "A PIN is guessable" in step 8). A code for a room that has ended says when it
   ended, so a poster scanned after its poll closed tells people so.
@@ -438,7 +438,7 @@ Requires step 11 and step 12. Run `project-delete.sql` in the SQL editor after
 
 An owner deletes a project from the bottom of its dashboard. The database already
 takes its collaborators, links and view counts with it, and leaves the imaginations
-and Sandbox rooms made for it in place, unlinked. The client removes its image from
+and Toolkit rooms made for it in place, unlinked. The client removes its image from
 R2. This file adds the one missing piece: a trigger that deletes everybody's follows
 of the project, which nothing cascades to because `follows.followed_id` is a string
 rather than a foreign key.
@@ -448,32 +448,32 @@ select tgname from pg_trigger where tgrelid = 'public.projects'::regclass
    and tgname = 'projects_delete_follows';
 ```
 
-### Deleting a Sandbox room
+### Deleting a Toolkit room
 
 Requires step 8. Run `rooms-delete.sql` in the SQL editor after `rooms.sql` (or
 `supabase db push`). It is re-runnable.
 
-It adds `sandbox_room_delete`, which removes a room and every contribution in it at
-once instead of waiting for the sweep. Like `sandbox_room_close` it takes the
+It adds `toolkit_room_delete`, which removes a room and every contribution in it at
+once instead of waiting for the sweep. Like `toolkit_room_close` it takes the
 facilitator token, so only the browser that opened the room, or the project dashboard
 of the project it belongs to, can delete it.
 
 ```sql
-select proname from pg_proc where proname = 'sandbox_room_delete';
+select proname from pg_proc where proname = 'toolkit_room_delete';
 ```
 
 ## 13. Notifications
 
 Requires steps 9, 10, 11 and 12 (in that order — it references profiles, imaginations,
-follows, projects and sandbox rooms). Run `notifications.sql` in the SQL editor after
+follows, projects and toolkit rooms). Run `notifications.sql` in the SQL editor after
 all four. It is re-runnable.
 
 It creates `public.notifications` and `public.notification_preferences`, and five
 trigger functions that write a notification the moment the thing it is about happens: a
 comment or an upvote on your own imagination (Engagement), somebody following your
 profile (Follower), and a followed user or project posting a new imagination or closing
-a Sandbox room (Activity). Nothing writes to `notifications` directly — like
-`sandbox_rooms`, it has row-level security on and no INSERT policy at all, so the
+a Toolkit room (Activity). Nothing writes to `notifications` directly — like
+`toolkit_rooms`, it has row-level security on and no INSERT policy at all, so the
 triggers, running security definer, are the only door in. System alerts have no trigger
 yet; the category exists in the check constraint for when something calls for one.
 
@@ -646,7 +646,7 @@ same things.
 
 ## 17. Toolkit submissions in Slack
 
-Optional. Requires step 15. The Sandbox's **Contribute** button opens a form asking for a
+Optional. Requires step 15. The Toolkit's **Contribute** button opens a form asking for a
 tool's title, a description and an email address; each one is a row in
 `tool_submissions` (`tool-submissions.sql`, also a migration), posted by the same
 `survey-to-slack` function. The submitter's account is left out of the message.
@@ -666,7 +666,7 @@ from Vault, so there is nothing new to store there.
 
 ### Verify
 
-Send a submission from `/sandbox` -> Contribute; a message should appear within a second
+Send a submission from `/toolkit` -> Contribute; a message should appear within a second
 or two. If not, check `net._http_response` as in step 15 — the status codes mean the
 same things.
 
@@ -720,11 +720,11 @@ Expect `rls` true on all three; SELECT, INSERT, UPDATE and DELETE policies on
 ## Still to decide
 
 - **Projects have one role beyond the owner, not several.** A collaborator can edit
-  setup, links and open a Sandbox room; only the owner manages the roster or deletes
+  setup, links and open a Toolkit room; only the owner manages the roster or deletes
   the project. Fine for a small team, and the schema in `projects.sql` would need
   widening (a `role` column on `project_collaborators`) before it says more than that.
 - **Deleting a project does not delete what was posted to it.** `project_id` is
-  `on delete set null` on both `imaginations` and `sandbox_rooms`, on purpose — an
+  `on delete set null` on both `imaginations` and `toolkit_rooms`, on purpose — an
   imagination somebody drew belongs to the person who posted it, not to the project
   it happened to be attached to, and removing a project should not take their work
   with it. It does mean a deleted project's imaginations quietly become unattached

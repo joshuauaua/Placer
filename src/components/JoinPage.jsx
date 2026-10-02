@@ -1,4 +1,4 @@
-/* PLACER — joining a sandbox room.
+/* PLACER — joining a toolkit room.
  *
  * The page a QR code lands on, and the page somebody types a PIN into. It is its
  * own route rather than a view inside the app because it is only ever an entry
@@ -17,8 +17,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import posthog from 'posthog-js';
 import { Btn, Logo } from './UI';
-import { findExperiment } from '../sandbox/experiments';
-import { PIN_LENGTH, formatPin, formatRoomDate, parseJoinCode, parsePin, roomPath } from '../sandbox/rooms';
+import { findTool } from '../toolkit/tools';
+import { PIN_LENGTH, formatPin, formatRoomDate, parseJoinCode, parsePin, roomPath } from '../toolkit/rooms';
 import { isSupabaseConfigured, joinRoom, joinRoomByCode } from '../services/rooms';
 
 export function JoinPage({ t }) {
@@ -51,17 +51,17 @@ export function JoinPage({ t }) {
           return;
         }
 
-        const experiment = findExperiment(room.experiment);
-        if (!experiment) {
-          // The room is for an experiment this build does not have — an old link
+        const tool = findTool(room.tool);
+        if (!tool) {
+          // The room is for a tool this build does not have — an old link
           // against a newer database, or the other way round.
-          setError('That room is for an experiment this version of PLACER does not have.');
+          setError('That room is for a tool this version of PLACER does not have.');
           setStatus('error');
           return;
         }
 
-        posthog.capture('sandbox_room_joined', { experiment: room.experiment });
-        navigate(roomPath(room.experiment, room.id));
+        posthog.capture('sandbox_room_joined', { experiment: room.tool });
+        navigate(roomPath(room.tool, room.id));
       } catch (cause) {
         setError(cause.message);
         setStatus('error');
@@ -86,14 +86,14 @@ export function JoinPage({ t }) {
           setStatus('ended');
           return;
         }
-        if (!findExperiment(room.experiment)) {
-          setError('That room is for an experiment this version of PLACER does not have.');
+        if (!findTool(room.tool)) {
+          setError('That room is for a tool this version of PLACER does not have.');
           setStatus('error');
           return;
         }
 
-        posthog.capture('sandbox_room_joined', { experiment: room.experiment, via: 'code' });
-        navigate(roomPath(room.experiment, room.id));
+        posthog.capture('sandbox_room_joined', { experiment: room.tool, via: 'code' });
+        navigate(roomPath(room.tool, room.id));
       } catch (cause) {
         setError(cause.message);
         setStatus('error');

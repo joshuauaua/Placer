@@ -1,4 +1,4 @@
-/* PLACER — tool submissions, from the Sandbox's "Contribute" form.
+/* PLACER — tool submissions, from the Toolkit's "Contribute" form.
  *
  * Somebody with a tool they would like in the PLACER Toolkit sends its name, a
  * description and an email address. With a Supabase project configured that is a row

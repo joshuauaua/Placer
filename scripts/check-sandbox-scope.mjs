@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Fails if a change reaches outside the Sandbox.
+// Fails if a change reaches outside the Toolkit.
 //
-// The Sandbox is the part of PLACER open to contributions; the rest of the app is
+// The Toolkit is the part of PLACER open to contributions; the rest of the app is
 // not. GitHub has no way to grant write access to a directory, so the boundary
 // cannot be a permission — it is this check, plus the code-owner review on the
 // branch. Neither is a security control on its own: a reviewer is. What this does
@@ -10,10 +10,10 @@
 //
 // Paths come from argv, or on stdin one per line:
 //
-//   node scripts/check-sandbox-scope.mjs src/sandbox/experiments.js
+//   node scripts/check-sandbox-scope.mjs src/toolkit/tools.js
 //   git diff --name-only main...HEAD | node scripts/check-sandbox-scope.mjs
 //
-// Exit 0 when every path is inside the Sandbox, 1 otherwise. An empty list passes:
+// Exit 0 when every path is inside the Toolkit, 1 otherwise. An empty list passes:
 // a pull request that changes nothing is not this script's problem.
 
 import { readFileSync } from 'node:fs'
@@ -22,22 +22,22 @@ import { pathToFileURL } from 'node:url'
 /*
  * What a contribution may touch.
  *
- * Enough to add a whole new experiment: a component, a pure logic module beside the
+ * Enough to add a whole new tool: a component, a pure logic module beside the
  * others, the register entry that makes it appear, and tests for all of it.
  */
 const ALLOWED = [
-  // The register, and the experiments themselves.
-  'src/sandbox/**',
-  'src/components/sandbox/**',
-  'src/components/SandboxPage.jsx',
-  'src/components/SandboxLayout.jsx',
-  'src/components/__tests__/Sandbox*.test.jsx',
-  // Where a NEW experiment's arithmetic goes. src/lib itself cannot be opened
+  // The register, and the tools themselves.
+  'src/toolkit/**',
+  'src/components/toolkit/**',
+  'src/components/ToolkitPage.jsx',
+  'src/components/ToolLayout.jsx',
+  'src/components/__tests__/Tool*.test.jsx',
+  // Where a NEW tool's arithmetic goes. src/lib itself cannot be opened
   // wholesale — it also holds the OpenCV image processing, the Street View geometry
   // and the maps code — and an allowlist that named only the modules that exist
   // today would reject the one thing a contributor is most likely to add. So new
   // pure modules get a directory of their own, and it is open.
-  'src/lib/sandbox/**',
+  'src/lib/toolkit/**',
   // The four that predate that split, and their tests.
   'src/lib/streetSection.js',
   'src/lib/desireLines.js',
@@ -51,15 +51,15 @@ const ALLOWED = [
 
 /*
  * Carved back out again. These sit inside the directories above but are not
- * experiment code: they are the room layer, and what they get wrong is not a
+ * tool code: they are the room layer, and what they get wrong is not a
  * wonky diagram but who can read a stranger's data. Row-level security lives in
  * supabase/rooms.sql and is reviewed with it.
  */
 const DENIED = [
-  'src/sandbox/rooms.js',
-  'src/sandbox/__tests__/rooms.test.js',
-  'src/components/sandbox/RoomBar.jsx',
-  'src/components/sandbox/useRoom.js',
+  'src/toolkit/rooms.js',
+  'src/toolkit/__tests__/rooms.test.js',
+  'src/components/toolkit/RoomBar.jsx',
+  'src/components/toolkit/useRoom.js',
 ]
 
 /** A glob with `*` (within a segment) and `**` (any depth) as a RegExp. */
@@ -92,7 +92,7 @@ function toRegExp(glob) {
 const allowed = ALLOWED.map(toRegExp)
 const denied = DENIED.map(toRegExp)
 
-/** True when this path is inside the contributable Sandbox. */
+/** True when this path is inside the contributable Toolkit. */
 export function isInScope(path) {
   // Denials win, so a file inside an allowed directory can still be held back.
   if (denied.some((pattern) => pattern.test(path))) return false
@@ -123,16 +123,16 @@ if (runAsScript) {
 
   if (outside.length > 0) {
     console.error(
-      `sandbox:scope: ${outside.length} of ${paths.length} changed file(s) are outside the Sandbox:`,
+      `toolkit:scope: ${outside.length} of ${paths.length} changed file(s) are outside the Toolkit:`,
     )
     for (const path of outside.slice(0, 40)) console.error(`  - ${path}`)
     if (outside.length > 40) console.error(`  ... and ${outside.length - 40} more`)
     console.error(
-      '\nContributions are limited to the Sandbox. See CONTRIBUTING.md for what that' +
+      '\nContributions are limited to the Toolkit. See CONTRIBUTING.md for what that' +
         '\ncovers, and open an issue for anything that needs a change outside it.',
     )
     process.exit(1)
   }
 
-  console.log(`sandbox:scope: OK — ${paths.length} changed file(s), all inside the Sandbox`)
+  console.log(`toolkit:scope: OK — ${paths.length} changed file(s), all inside the Toolkit`)
 }

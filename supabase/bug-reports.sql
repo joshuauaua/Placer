@@ -19,7 +19,7 @@ create table if not exists public.bug_reports (
   id         uuid        primary key default gen_random_uuid(),
   created_at timestamptz not null    default now(),
   message    text        not null,
-  -- The path the report was sent from, e.g. /sandbox/desire-lines.
+  -- The path the report was sent from, e.g. /toolkit/desire-lines.
   page       text        not null    default '',
   user_agent text        not null    default '',
   -- Filled from the session, never from the request body: the column grant below

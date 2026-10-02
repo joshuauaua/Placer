@@ -1,7 +1,7 @@
 /* PLACER — Street Section Mixer: the arithmetic of a street's cross-section.
  *
  * A street is a fixed number of metres wide, and that is the whole point of the
- * experiment: every metre given to one thing is taken from another. Everything
+ * tool: every metre given to one thing is taken from another. Everything
  * here is pure so the component only has to hold the current segment list.
  *
  * The throughput and canopy figures are deliberately rough — they are calibrated

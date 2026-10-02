@@ -6,7 +6,7 @@ import { beforeEach, afterEach, vi } from 'vite-plus/test'
 // <App />, and its "Terms and Privacy" link would sit alongside the footer's legal links. Tests
 // that are about the banner stub these back on themselves.
 // The same goes for Supabase: a developer with a project configured would get the
-// sandbox room controls in tests that a clean checkout does not, and the room tests
+// toolkit room controls in tests that a clean checkout does not, and the room tests
 // stub these back on themselves.
 beforeEach(() => {
   vi.stubEnv('VITE_POSTHOG_KEY', '')

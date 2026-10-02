@@ -18,14 +18,14 @@ describe('SideNav', () => {
     setup();
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label')))
-      .toEqual(['Collapse side nav', 'New project', 'Dashboard', 'Explore', 'Projects', 'Sandbox', 'Settings']);
+      .toEqual(['Collapse side nav', 'New project', 'Dashboard', 'Explore', 'Projects', 'Toolkit', 'Settings']);
   });
 
   it('shows Organisations only for an account that runs one', () => {
     const { onNavigate } = setup({ showOrganisations: true });
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label')))
-      .toEqual(['Collapse side nav', 'New project', 'Dashboard', 'Explore', 'Projects', 'Organisations', 'Sandbox', 'Settings']);
+      .toEqual(['Collapse side nav', 'New project', 'Dashboard', 'Explore', 'Projects', 'Organisations', 'Toolkit', 'Settings']);
     fireEvent.click(screen.getByRole('button', { name: 'Organisations' }));
     expect(onNavigate).toHaveBeenCalledWith('organisations');
   });
@@ -68,10 +68,10 @@ describe('SideNav', () => {
     expect(onNewProject).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole('button', { name: 'Projects' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Sandbox' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Toolkit' }));
     fireEvent.click(screen.getByRole('button', { name: 'Dashboard' }));
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['projects', 'sandbox', 'dashboard', 'settings']);
+    expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['projects', 'toolkit', 'dashboard', 'settings']);
   });
 
   it('marks the current view, and keeps Projects marked on a project dashboard', () => {

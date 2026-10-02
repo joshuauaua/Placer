@@ -163,10 +163,10 @@ describe('App', () => {
       const location = renderRecording('/dashboard');
       await screen.findByRole('heading', { level: 1, name: /^Welcome back/ });
 
-      fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Sandbox' }));
+      fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Toolkit' }));
 
-      expect(await screen.findByRole('heading', { level: 1, name: 'Sandbox' })).toBeInTheDocument();
-      expect(location.history.at(-1)).toBe('/sandbox');
+      expect(await screen.findByRole('heading', { level: 1, name: 'Toolkit' })).toBeInTheDocument();
+      expect(location.history.at(-1)).toBe('/toolkit');
     });
 
     it('offers Create Account and Log In after logging out, and nothing else', () => {

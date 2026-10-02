@@ -12,7 +12,7 @@ import {
   voteImagination,
 } from '../api';
 import { saveProfile } from '../profile';
-import { participantToken, rememberHostedRoom } from '../../sandbox/rooms';
+import { participantToken, rememberHostedRoom } from '../../toolkit/rooms';
 import { follow } from '../follows';
 
 // api.js and profile.js each declare this literal, so that mocking one in a test
@@ -44,14 +44,14 @@ describe('the GDPR data rights cover the profile', () => {
   });
 });
 
-// sandbox/rooms.js declares its two keys the same way and for the same reason. A
+// toolkit/rooms.js declares its two keys the same way and for the same reason. A
 // room token is not personal data on its own, but it is an identifier held in the
 // visitor's browser, and the GDPR page now says both are covered by the controls
 // on it — so these are what keep that sentence true.
 const ROOM_PARTICIPANT_KEY = 'placemaking_room_participant';
 const ROOMS_HOSTED_KEY = 'placemaking_rooms_hosted';
 
-describe('the GDPR data rights cover sandbox room tokens', () => {
+describe('the GDPR data rights cover toolkit room tokens', () => {
   afterEach(() => {
     localStorage.clear();
   });

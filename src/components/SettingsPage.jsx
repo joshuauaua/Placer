@@ -481,7 +481,7 @@ const NOTIFICATION_KINDS = [
   { inapp: 'engagement_inapp', email: 'engagement_email', title: 'Engagement',
     description: 'When someone comments on or votes for your imaginations.' },
   { inapp: 'activity_inapp', email: 'activity_email', title: 'Activity',
-    description: 'When a Project, City or User you follow posts news or new Sandbox results.' },
+    description: 'When a Project, City or User you follow posts news or new Toolkit results.' },
   { inapp: 'follower_inapp', email: 'follower_email', title: 'Followers',
     description: 'When someone follows your profile.' },
   { inapp: 'system_inapp', email: 'system_email', title: 'System',

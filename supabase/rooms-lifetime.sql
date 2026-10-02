@@ -1,4 +1,4 @@
--- PLACER — sandbox rooms that stay open for weeks.
+-- PLACER — toolkit rooms that stay open for weeks.
 --
 -- rooms.sql gives every room two hours, which is right for a workshop: somebody is
 -- standing at a screen, and a room nobody closed should not stay joinable. It is
@@ -16,7 +16,7 @@
 --     localStorage happens to hold the facilitator token.
 --   - A long room is joined by its join code, not its PIN. Six digits is a million
 --     combinations with nowhere to rate limit (supabase/README.md, section 8): an
---     accepted trade for two hours, not for three months. So sandbox_room_join stops
+--     accepted trade for two hours, not for three months. So toolkit_room_join stops
 --     answering for long rooms, and the QR code on the poster carries a 32-character
 --     code instead. Short rooms keep their PIN exactly as before.
 --
@@ -28,27 +28,27 @@
 --    gen_random_uuid() is core Postgres, so this needs no extension schema on the
 --    search path; with the dashes stripped it is 32 hex characters and 122 random bits.
 
-alter table public.sandbox_rooms
+alter table public.toolkit_rooms
   add column if not exists join_code text;
 
-update public.sandbox_rooms
+update public.toolkit_rooms
    set join_code = replace(gen_random_uuid()::text, '-', '')
  where join_code is null;
 
-alter table public.sandbox_rooms
+alter table public.toolkit_rooms
   alter column join_code set default replace(gen_random_uuid()::text, '-', '');
-alter table public.sandbox_rooms
+alter table public.toolkit_rooms
   alter column join_code set not null;
 
-create unique index if not exists sandbox_rooms_join_code_key
-  on public.sandbox_rooms (join_code);
+create unique index if not exists toolkit_rooms_join_code_key
+  on public.toolkit_rooms (join_code);
 
 
 -- 2. The cap. Ninety days is the longest lifetime section 3 offers, and this is what
 --    makes it a limit rather than a convention.
 
-alter table public.sandbox_rooms drop constraint if exists sandbox_rooms_lifetime_cap;
-alter table public.sandbox_rooms add constraint sandbox_rooms_lifetime_cap
+alter table public.toolkit_rooms drop constraint if exists toolkit_rooms_lifetime_cap;
+alter table public.toolkit_rooms add constraint toolkit_rooms_lifetime_cap
   check (expires_at <= created_at + interval '90 days');
 
 
@@ -57,10 +57,10 @@ alter table public.sandbox_rooms add constraint sandbox_rooms_lifetime_cap
 -- The parameter list and the return type both change (join_code is returned), so
 -- the previous version is dropped rather than replaced in place.
 
-drop function if exists public.sandbox_room_create(text, uuid);
+drop function if exists public.toolkit_room_create(text, uuid);
 
-create or replace function public.sandbox_room_create(
-  p_experiment text,
+create or replace function public.toolkit_room_create(
+  p_tool text,
   p_project_id uuid default null,
   p_lifetime   text default '2h'
 )
@@ -119,10 +119,10 @@ begin
     v_pin := lpad((floor(random() * 1000000))::bigint::text, 6, '0');
 
     begin
-      insert into public.sandbox_rooms (pin, experiment, created_by, project_id, expires_at)
-      values (v_pin, p_experiment, v_owner, p_project_id, now() + v_lifetime)
-      returning sandbox_rooms.id, sandbox_rooms.join_code, sandbox_rooms.facilitator_token,
-                sandbox_rooms.expires_at
+      insert into public.toolkit_rooms (pin, tool, created_by, project_id, expires_at)
+      values (v_pin, p_tool, v_owner, p_project_id, now() + v_lifetime)
+      returning toolkit_rooms.id, toolkit_rooms.join_code, toolkit_rooms.facilitator_token,
+                toolkit_rooms.expires_at
         into v_id, v_code, v_token, v_expires;
 
       return query select v_id, v_pin, v_code, v_token, v_expires;
@@ -136,29 +136,29 @@ begin
 end;
 $$;
 
-revoke all on function public.sandbox_room_create(text, uuid, text) from public;
-grant execute on function public.sandbox_room_create(text, uuid, text) to authenticated;
+revoke all on function public.toolkit_room_create(text, uuid, text) from public;
+grant execute on function public.toolkit_room_create(text, uuid, text) to authenticated;
 
 
 -- 4. Joining by PIN: short rooms only. A long room's PIN still exists (the column is
 --    not null, and it keeps PIN uniqueness simple) but no longer opens anything.
 
-create or replace function public.sandbox_room_join(p_pin text)
-returns table (room_id uuid, experiment text)
+create or replace function public.toolkit_room_join(p_pin text)
+returns table (room_id uuid, tool text)
 language sql
 security definer
 set search_path = public
 as $$
-  select r.id, r.experiment
-  from public.sandbox_rooms r
+  select r.id, r.tool
+  from public.toolkit_rooms r
   where r.pin = p_pin
     and r.closed_at is null
     and r.expires_at > now()
     and r.expires_at - r.created_at <= interval '2 hours';
 $$;
 
-revoke all on function public.sandbox_room_join(text) from public;
-grant execute on function public.sandbox_room_join(text) to anon;
+revoke all on function public.toolkit_room_join(text) from public;
+grant execute on function public.toolkit_room_join(text) to anon;
 
 
 -- 5. Joining by code. Unlike the PIN lookup this answers for a finished room too, with
@@ -167,8 +167,8 @@ grant execute on function public.sandbox_room_join(text) to anon;
 --    That reveals nothing: a finished room's contributions are unreadable (rooms.sql,
 --    section 4), and the code itself is not guessable.
 
-create or replace function public.sandbox_room_join_code(p_code text)
-returns table (room_id uuid, experiment text, status text, expires_at timestamptz)
+create or replace function public.toolkit_room_join_code(p_code text)
+returns table (room_id uuid, tool text, status text, expires_at timestamptz)
 language sql
 security definer
 set search_path = public
@@ -176,19 +176,19 @@ stable
 as $$
   select
     r.id,
-    r.experiment,
+    r.tool,
     case
       when r.closed_at is not null then 'closed'
       when r.expires_at <= now()  then 'expired'
       else 'open'
     end,
     coalesce(r.closed_at, r.expires_at)
-  from public.sandbox_rooms r
+  from public.toolkit_rooms r
   where r.join_code = p_code;
 $$;
 
-revoke all on function public.sandbox_room_join_code(text) from public;
-grant execute on function public.sandbox_room_join_code(text) to anon;
+revoke all on function public.toolkit_room_join_code(text) from public;
+grant execute on function public.toolkit_room_join_code(text) to anon;
 
 
 -- 6. A project's rooms, for its dashboard. Owner-or-collaborator only, the same test
@@ -199,7 +199,7 @@ grant execute on function public.sandbox_room_join_code(text) to anon;
 create or replace function public.project_rooms(p_project_id uuid)
 returns table (
   room_id           uuid,
-  experiment        text,
+  tool        text,
   pin               text,
   join_code         text,
   facilitator_token uuid,
@@ -231,7 +231,7 @@ begin
   return query
     select
       r.id,
-      r.experiment,
+      r.tool,
       r.pin,
       r.join_code,
       r.facilitator_token,
@@ -242,8 +242,8 @@ begin
         when r.expires_at <= now()  then 'expired'
         else 'open'
       end,
-      (select count(*)::int from public.sandbox_contributions c where c.room_id = r.id)
-    from public.sandbox_rooms r
+      (select count(*)::int from public.toolkit_contributions c where c.room_id = r.id)
+    from public.toolkit_rooms r
     where r.project_id = p_project_id
     order by r.created_at desc;
 end;
@@ -256,11 +256,11 @@ grant execute on function public.project_rooms(uuid) to authenticated;
 -- Verify, after running the above:
 --
 --   -- Every room has a code, and the cap is in place:
---   select count(*) filter (where join_code is null) as missing_codes from public.sandbox_rooms;
---   select conname from pg_constraint where conname = 'sandbox_rooms_lifetime_cap';
+--   select count(*) filter (where join_code is null) as missing_codes from public.toolkit_rooms;
+--   select conname from pg_constraint where conname = 'toolkit_rooms_lifetime_cap';
 --
 --   -- As a signed-in user: a long room without a project is refused.
---   select * from public.sandbox_room_create('open-vote', null, '30d');   -- expect an error
+--   select * from public.toolkit_room_create('open-vote', null, '30d');   -- expect an error
 --
 --   -- An unknown code is an empty result, not an error:
---   select * from public.sandbox_room_join_code('0000');
+--   select * from public.toolkit_room_join_code('0000');

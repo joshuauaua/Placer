@@ -40,12 +40,12 @@ describe('joining a long room by the code in its QR link', () => {
   const code = 'a'.repeat(32);
 
   it('follows the code straight into the room', async () => {
-    joinRoomByCode.mockResolvedValue({ id: 'room-1', experiment: 'open-vote', status: 'open', endsAt: null });
+    joinRoomByCode.mockResolvedValue({ id: 'room-1', tool: 'open-vote', status: 'open', endsAt: null });
 
     const location = renderAt(`code=${code}`);
 
     await waitFor(() => {
-      expect(location.history.at(-1)).toBe('/sandbox/open-vote?room=room-1');
+      expect(location.history.at(-1)).toBe('/toolkit/open-vote?room=room-1');
     });
     expect(joinRoomByCode).toHaveBeenCalledWith(code);
     expect(joinRoom).not.toHaveBeenCalled();
@@ -53,7 +53,7 @@ describe('joining a long room by the code in its QR link', () => {
 
   it('says when the poll closed, for a poster scanned after it ended', async () => {
     joinRoomByCode.mockResolvedValue({
-      id: 'room-1', experiment: 'open-vote', status: 'expired', endsAt: '2026-10-24T12:00:00Z',
+      id: 'room-1', tool: 'open-vote', status: 'expired', endsAt: '2026-10-24T12:00:00Z',
     });
 
     const location = renderAt(`code=${code}`);
@@ -73,12 +73,12 @@ describe('joining a long room by the code in its QR link', () => {
 
 describe('joining by a scanned code', () => {
   it('follows a PIN in the URL without anybody pressing anything', async () => {
-    joinRoom.mockResolvedValue({ id: 'room-1', experiment: 'budget-ballot' });
+    joinRoom.mockResolvedValue({ id: 'room-1', tool: 'budget-ballot' });
 
     const location = renderAt('pin=839201');
 
     await waitFor(() => {
-      expect(location.history.at(-1)).toBe('/sandbox/budget-ballot?room=room-1');
+      expect(location.history.at(-1)).toBe('/toolkit/budget-ballot?room=room-1');
     });
     expect(joinRoom).toHaveBeenCalledWith('839201');
   });
@@ -94,8 +94,8 @@ describe('joining by a scanned code', () => {
     expect(screen.getByLabelText('Room PIN')).toBeInTheDocument();
   });
 
-  it('says so when the room is for an experiment this build does not have', async () => {
-    joinRoom.mockResolvedValue({ id: 'room-1', experiment: 'from-the-future' });
+  it('says so when the room is for a tool this build does not have', async () => {
+    joinRoom.mockResolvedValue({ id: 'room-1', tool: 'from-the-future' });
 
     renderAt('pin=839201');
 
@@ -129,7 +129,7 @@ describe('joining by typing the PIN', () => {
   });
 
   it('joins the room once six digits are in', async () => {
-    joinRoom.mockResolvedValue({ id: 'room-2', experiment: 'budget-ballot' });
+    joinRoom.mockResolvedValue({ id: 'room-2', tool: 'budget-ballot' });
 
     const location = renderAt('');
 
@@ -137,7 +137,7 @@ describe('joining by typing the PIN', () => {
     fireEvent.click(screen.getByRole('button', { name: /join/i }));
 
     await waitFor(() => {
-      expect(location.history.at(-1)).toBe('/sandbox/budget-ballot?room=room-2');
+      expect(location.history.at(-1)).toBe('/toolkit/budget-ballot?room=room-2');
     });
     expect(joinRoom).toHaveBeenCalledWith('111222');
   });

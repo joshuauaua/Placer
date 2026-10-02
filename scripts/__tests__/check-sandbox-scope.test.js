@@ -19,44 +19,45 @@ function run(paths) {
   }
 }
 
-describe('what a Sandbox contribution may change', () => {
-  it('takes the register, so a new experiment can appear in the gallery', () => {
-    expect(isInScope('src/sandbox/experiments.js')).toBe(true)
-    expect(isInScope('src/sandbox/__tests__/experiments.test.js')).toBe(true)
+describe('what a Toolkit contribution may change', () => {
+  it('takes the register, so a new tool can appear in the gallery', () => {
+    expect(isInScope('src/toolkit/tools.js')).toBe(true)
+    expect(isInScope('src/toolkit/__tests__/tools.test.js')).toBe(true)
   })
 
-  it('takes the experiments themselves, including one that does not exist yet', () => {
-    expect(isInScope('src/components/sandbox/BudgetBallot.jsx')).toBe(true)
-    expect(isInScope('src/components/sandbox/TreeCanopy.jsx')).toBe(true)
+  it('takes the tools themselves, including one that does not exist yet', () => {
+    expect(isInScope('src/components/toolkit/BudgetBallot.jsx')).toBe(true)
+    expect(isInScope('src/components/toolkit/TreeCanopy.jsx')).toBe(true)
   })
 
-  it('takes the Sandbox chrome and its tests', () => {
-    expect(isInScope('src/components/SandboxPage.jsx')).toBe(true)
-    expect(isInScope('src/components/SandboxLayout.jsx')).toBe(true)
-    expect(isInScope('src/components/__tests__/SandboxTools.test.jsx')).toBe(true)
+  it('takes the Toolkit chrome and its tests', () => {
+    expect(isInScope('src/components/ToolkitPage.jsx')).toBe(true)
+    expect(isInScope('src/components/ToolLayout.jsx')).toBe(true)
+    expect(isInScope('src/components/__tests__/ToolkitTools.test.jsx')).toBe(true)
+    expect(isInScope('src/components/__tests__/ToolSiteMapping.test.jsx')).toBe(true)
   })
 
-  it('takes the four pure modules the experiments do their arithmetic in', () => {
+  it('takes the four pure modules the tools do their arithmetic in', () => {
     for (const name of ['streetSection', 'desireLines', 'reachGrid', 'budgetBallot']) {
       expect(isInScope(`src/lib/${name}.js`)).toBe(true)
       expect(isInScope(`src/lib/__tests__/${name}.test.js`)).toBe(true)
     }
   })
 
-  it('takes a new experiment\'s own pure module, which is the commonest change', () => {
-    expect(isInScope('src/lib/sandbox/treeCanopy.js')).toBe(true)
-    expect(isInScope('src/lib/sandbox/__tests__/treeCanopy.test.js')).toBe(true)
+  it('takes a new tool\'s own pure module, which is the commonest change', () => {
+    expect(isInScope('src/lib/toolkit/treeCanopy.js')).toBe(true)
+    expect(isInScope('src/lib/toolkit/__tests__/treeCanopy.test.js')).toBe(true)
   })
 
-  it('accepts a whole new experiment in one go', () => {
+  it('accepts a whole new tool in one go', () => {
     // Exactly the five files CONTRIBUTING.md asks for. If this ever fails, the
     // instructions and the boundary have drifted apart.
     for (const path of [
-      'src/components/sandbox/TreeCanopy.jsx',
-      'src/lib/sandbox/treeCanopy.js',
-      'src/lib/sandbox/__tests__/treeCanopy.test.js',
-      'src/sandbox/experiments.js',
-      'src/components/__tests__/SandboxTools.test.jsx',
+      'src/components/toolkit/TreeCanopy.jsx',
+      'src/lib/toolkit/treeCanopy.js',
+      'src/lib/toolkit/__tests__/treeCanopy.test.js',
+      'src/toolkit/tools.js',
+      'src/components/__tests__/ToolkitTools.test.jsx',
     ]) {
       expect(isInScope(path)).toBe(true)
     }
@@ -64,14 +65,14 @@ describe('what a Sandbox contribution may change', () => {
 })
 
 describe('what it may not', () => {
-  it('refuses the room layer, even though it sits among the experiments', () => {
+  it('refuses the room layer, even though it sits among the tools', () => {
     // These are the reason the check has a denylist at all: they are inside
     // directories that are otherwise open, and what they get wrong is who can read
     // somebody else's data.
-    expect(isInScope('src/components/sandbox/RoomBar.jsx')).toBe(false)
-    expect(isInScope('src/components/sandbox/useRoom.js')).toBe(false)
-    expect(isInScope('src/sandbox/rooms.js')).toBe(false)
-    expect(isInScope('src/sandbox/__tests__/rooms.test.js')).toBe(false)
+    expect(isInScope('src/components/toolkit/RoomBar.jsx')).toBe(false)
+    expect(isInScope('src/components/toolkit/useRoom.js')).toBe(false)
+    expect(isInScope('src/toolkit/rooms.js')).toBe(false)
+    expect(isInScope('src/toolkit/__tests__/rooms.test.js')).toBe(false)
   })
 
   it('refuses the row-level security rules', () => {
@@ -128,31 +129,31 @@ describe('what it may not', () => {
     }
   })
 
-  it('is not fooled by a path that merely looks like the Sandbox', () => {
-    expect(isInScope('src/sandboxes/thing.js')).toBe(false)
-    expect(isInScope('docs/src/sandbox/experiments.js')).toBe(false)
-    expect(isInScope('src/components/SandboxPage.jsx.bak')).toBe(false)
+  it('is not fooled by a path that merely looks like the Toolkit', () => {
+    expect(isInScope('src/toolkits/thing.js')).toBe(false)
+    expect(isInScope('docs/src/toolkit/tools.js')).toBe(false)
+    expect(isInScope('src/components/ToolkitPage.jsx.bak')).toBe(false)
     expect(isInScope('src/lib/budgetBallot.js.orig')).toBe(false)
   })
 })
 
 describe('the script the workflow runs', () => {
   it('passes a change that stays inside, and says how many files it saw', () => {
-    const { code, stdout } = run(['src/sandbox/experiments.js', 'src/lib/budgetBallot.js'])
+    const { code, stdout } = run(['src/toolkit/tools.js', 'src/lib/budgetBallot.js'])
 
     expect(code).toBe(0)
     expect(stdout).toMatch(/OK — 2 changed file\(s\)/)
   })
 
   it('fails a change that reaches out, and names only the offenders', () => {
-    const { code, stderr } = run(['src/sandbox/experiments.js', 'src/App.jsx', 'supabase/rooms.sql'])
+    const { code, stderr } = run(['src/toolkit/tools.js', 'src/App.jsx', 'supabase/rooms.sql'])
 
     expect(code).toBe(1)
-    expect(stderr).toContain('2 of 3 changed file(s) are outside the Sandbox')
+    expect(stderr).toContain('2 of 3 changed file(s) are outside the Toolkit')
     expect(stderr).toContain('src/App.jsx')
     expect(stderr).toContain('supabase/rooms.sql')
     // The one that was fine is not listed as a problem.
-    expect(stderr).not.toContain('- src/sandbox/experiments.js')
+    expect(stderr).not.toContain('- src/toolkit/tools.js')
   })
 
   it('points at CONTRIBUTING.md rather than just refusing', () => {

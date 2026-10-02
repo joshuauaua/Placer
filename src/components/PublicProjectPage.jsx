@@ -2,7 +2,7 @@
  *
  * Read top to bottom like an article: a way back to all projects, the date and who
  * started it, the title, an image (the project's area on the map), the description,
- * then the Sandbox tools to try for it, what people have imagined for it and its
+ * then the Toolkit tools to try for it, what people have imagined for it and its
  * news and resources. A floating card on the right carries a table of contents that
  * follows the reader down the page, and three related projects close it.
  *
@@ -14,10 +14,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn, CatTag, LoadingMark, Vote } from './UI';
 import { ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
-import { EXPERIMENTS } from '../sandbox/experiments';
+import { TOOLS } from '../toolkit/tools';
 import { readImaginationsByProject } from '../services/imaginations';
 import {
-  readLinks, readProject, readPublicSandboxActivity, readRelatedProjects, recordProjectView,
+  readLinks, readProject, readPublicToolkitActivity, readRelatedProjects, recordProjectView,
 } from '../services/projects';
 import { follow, isFollowing, unfollow } from '../services/follows';
 import { readOrganisation } from '../services/organisations';
@@ -116,20 +116,20 @@ function LinkRow({ t, link }) {
   );
 }
 
-/** One Sandbox experiment, opened with this project attached. */
-function ToolCard({ t, experiment, onOpen }) {
+/** One Toolkit tool, opened with this project attached. */
+function ToolCard({ t, tool, onOpen }) {
   return (
     <button onClick={onOpen} className="placer-card"
       style={{ textAlign: 'left', cursor: 'pointer', display: 'flex', gap: 16, alignItems: 'flex-start',
         padding: 16, fontFamily: 'var(--placer-font)', color: t.ink }}>
-      <span style={{ width: 40, height: 40, borderRadius: 12, flex: '0 0 auto', background: experiment.tint,
-        boxShadow: `inset 0 0 0 1px ${experiment.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name={experiment.icon} size={20} stroke={2} />
+      <span style={{ width: 40, height: 40, borderRadius: 12, flex: '0 0 auto', background: tool.tint,
+        boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={tool.icon} size={20} stroke={2} />
       </span>
       <span style={{ minWidth: 0 }}>
-        <span style={{ display: 'block', fontSize: 16, lineHeight: '24px', fontWeight: 700 }}>{experiment.name}</span>
+        <span style={{ display: 'block', fontSize: 16, lineHeight: '24px', fontWeight: 700 }}>{tool.name}</span>
         <span style={{ display: 'block', fontSize: 14, lineHeight: '20px', color: t.inkDim, marginTop: 2 }}>
-          {experiment.tagline}
+          {tool.tagline}
         </span>
       </span>
     </button>
@@ -229,11 +229,11 @@ function TableOfContents({ t, sections, active, onPick }) {
  * cold with nothing but the id in the URL.
  */
 export function PublicProjectPage({ t, projectId, accountId, onImagineForProject, onBack, onOpenProject,
-  onOpenOrganisation, onOpenSandbox }) {
+  onOpenOrganisation, onOpenToolkit }) {
   const [project, setProject] = useState(null);
   const [imaginations, setImaginations] = useState([]);
   const [links, setLinks] = useState([]);
-  const [sandboxActivity, setSandboxActivity] = useState(0);
+  const [toolkitActivity, setToolkitActivity] = useState(0);
   const [related, setRelated] = useState([]);
   // The organisation it is run in the name of, if any — credited in place of the owner.
   const [organisation, setOrganisation] = useState(null);
@@ -251,7 +251,7 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
       readProject(projectId),
       readImaginationsByProject(projectId),
       readLinks(projectId),
-      readPublicSandboxActivity(projectId),
+      readPublicToolkitActivity(projectId),
     ])
       .then(([proj, imgs, docs, activity]) => {
         if (cancelled) return;
@@ -259,7 +259,7 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
         setProject(proj);
         setImaginations(imgs);
         setLinks(docs);
-        setSandboxActivity(activity);
+        setToolkitActivity(activity);
         setStatus('ready');
         // Only once the project is known to exist, so a broken link is not a view.
         recordProjectView(proj.id);
@@ -303,7 +303,7 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
 
   const sections = [
     { id: 'project-overview', label: 'Overview' },
-    { id: 'project-sandbox', label: 'Sandbox tools' },
+    { id: 'project-toolkit', label: 'Tools' },
     { id: 'project-imaginations', label: 'Imaginations' },
     ...(links.length > 0 ? [{ id: 'project-resources', label: 'News & resources' }] : []),
     ...(related.length > 0 ? [{ id: 'project-related', label: 'Related projects' }] : []),
@@ -412,20 +412,20 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
             )}
           </header>
 
-          <section id="project-sandbox" className="placer-project-section" aria-labelledby="project-sandbox-heading">
-            <h2 id="project-sandbox-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 8 }}>
-              Sandbox tools
+          <section id="project-toolkit" className="placer-project-section" aria-labelledby="project-toolkit-heading">
+            <h2 id="project-toolkit-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 8 }}>
+              Tools
             </h2>
             <p style={{ fontSize: 16, color: t.inkDim, marginBottom: 20 }}>
               Try an idea for this project hands-on.
-              {sandboxActivity > 0 && (
-                <> {sandboxActivity} Sandbox {sandboxActivity === 1 ? 'session' : 'sessions'} run so far.</>
+              {toolkitActivity > 0 && (
+                <> {toolkitActivity} Toolkit {toolkitActivity === 1 ? 'session' : 'sessions'} run so far.</>
               )}
             </p>
             <div className="placer-project-grid">
-              {EXPERIMENTS.map((experiment) => (
-                <ToolCard key={experiment.id} t={t} experiment={experiment}
-                  onOpen={() => onOpenSandbox?.(project.id, experiment.id)} />
+              {TOOLS.map((tool) => (
+                <ToolCard key={tool.id} t={t} tool={tool}
+                  onOpen={() => onOpenToolkit?.(project.id, tool.id)} />
               ))}
             </div>
           </section>

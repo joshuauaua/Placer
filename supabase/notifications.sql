@@ -10,7 +10,7 @@
 -- Nothing here is written by the client. Every row is inserted by a trigger
 -- function running security definer, the moment the thing it is about happens —
 -- a comment lands, a vote comes in, a follow is made, an imagination is posted, a
--- Sandbox room closes. That is why this table, like sandbox_rooms (see rooms.sql's
+-- Toolkit room closes. That is why this table, like toolkit_rooms (see rooms.sql's
 -- header), has row-level security on and no INSERT policy at all: the only door in
 -- is the trigger functions below, not a client library call.
 --
@@ -349,7 +349,7 @@ create trigger imaginations_notify_followers
   after insert on public.imaginations
   for each row execute function public.notifications_on_imagination_posted();
 
--- 4e. Activity — new Sandbox results for a project you follow: a room attached to
+-- 4e. Activity — new Toolkit results for a project you follow: a room attached to
 -- that project closes, whether by the facilitator or by running out of time (both
 -- set closed_at — see rooms.sql).
 create or replace function public.notifications_on_room_closed()
@@ -368,8 +368,8 @@ begin
   select p.name into v_project_name from public.projects p where p.id = new.project_id;
 
   insert into public.notifications (user_id, category, title, body, link_type, link_id)
-  select f.follower_id, 'activity', 'New Sandbox results',
-    'A Sandbox session in ' || coalesce(v_project_name, 'a project you follow') || ' has closed',
+  select f.follower_id, 'activity', 'New Toolkit results',
+    'A Toolkit session in ' || coalesce(v_project_name, 'a project you follow') || ' has closed',
     'project', new.project_id::text
     from public.follows f
    where f.followed_type = 'project'
@@ -380,9 +380,9 @@ begin
 end;
 $$;
 
-drop trigger if exists sandbox_rooms_notify_followers on public.sandbox_rooms;
-create trigger sandbox_rooms_notify_followers
-  after update on public.sandbox_rooms
+drop trigger if exists toolkit_rooms_notify_followers on public.toolkit_rooms;
+create trigger toolkit_rooms_notify_followers
+  after update on public.toolkit_rooms
   for each row execute function public.notifications_on_room_closed();
 
 
@@ -395,4 +395,4 @@ create trigger sandbox_rooms_notify_followers
 -- Expect rls true on both; notifications with one SELECT, one UPDATE and one DELETE
 -- policy and no INSERT; notification_preferences with SELECT, INSERT and UPDATE;
 -- and five trigger functions installed on the other tables (comments, votes,
--- follows, imaginations, sandbox_rooms), none directly on notifications itself.
+-- follows, imaginations, toolkit_rooms), none directly on notifications itself.

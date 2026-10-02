@@ -217,7 +217,7 @@ export function formatEuros(amount) {
 /** A plain-text version of a ballot, for the copy button. */
 export function summaryText(result) {
   const lines = [
-    'My street budget — PLACER Sandbox',
+    'My street budget — PLACER Toolkit',
     `Spent ${formatEuros(result.spent)} of ${formatEuros(BUDGET)}`,
     '',
   ];

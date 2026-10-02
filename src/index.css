@@ -1022,9 +1022,9 @@ a {
   }
 }
 
-/* PLACER — a sandbox experiment's cover page (see sandbox/SandboxCover.jsx).
+/* PLACER — a toolkit tool's cover page (see toolkit/ToolCover.jsx).
  *
- * The experiment's character tint fills the left half and the copy sits centred
+ * The tool's character tint fills the left half and the copy sits centred
  * on the right. Below 1024px they stack, tint first.
  */
 .placer-cover {

@@ -40,8 +40,8 @@ Placer will be **the** definitive digital platform connecting citizens, urban pr
 
 **Real-world Scenarios:**
 
-1. **Digitizing On-Site Workshops:** Gabriel runs a neighborhood co-design workshop using paper maps. Afterward, instead of manually compiling paper notes into a lengthy report, he uses a Sandbox tool to digitize participant inputs directly into a public Project page.
-2. **Project Centralization:** Gabriel needs a single hub to keep residents updated on a 6-month plaza redesign. He sets up a public Project page containing background resources, live Sandbox results, linked research articles, and a feed of citizen-submitted Imaginations.
+1. **Digitizing On-Site Workshops:** Gabriel runs a neighborhood co-design workshop using paper maps. Afterward, instead of manually compiling paper notes into a lengthy report, he uses a Toolkit tool to digitize participant inputs directly into a public Project page.
+2. **Project Centralization:** Gabriel needs a single hub to keep residents updated on a 6-month plaza redesign. He sets up a public Project page containing background resources, live Toolkit results, linked research articles, and a feed of citizen-submitted Imaginations.
 
 ### User persona 3: Municipality
 
@@ -107,10 +107,10 @@ Placer will be **the** definitive digital platform connecting citizens, urban pr
 - **Project Setup:** Define start and end dates, geographic locations, descriptions (goals), and publishers/collaborators.
 - **Documentation Sharing:** Attach external news articles, links, and supporting web resources (links only, no file uploads).
 - **Project Dashboard:** Access internal analytics, including interaction metrics and engagement stats.
-- **Sandbox Access:** Unlock embedded interactive placemaking tools upon project creation.
-- **Public Project Page:** Display an external-facing page showing citizen imaginations, sandbox activities, results, and project news.
+- **Toolkit Access:** Unlock embedded interactive placemaking tools upon project creation.
+- **Public Project Page:** Display an external-facing page showing citizen imaginations, toolkit activities, results, and project news.
 
-### Sandbox
+### Toolkit
 
 - **Interactive Toolset:** Access a collection of open-source placemaking methods converted into interactive web apps.
 - **Collaboration Modes:** Utilize tools in solo mode (individual practitioner) or multiplayer mode (practitioners, citizens, and city officials).
@@ -121,7 +121,7 @@ Placer will be **the** definitive digital platform connecting citizens, urban pr
 ### Notifications
 
 - **Engagement Alerts:** Receive updates when users comment on or vote for your Imaginations.
-- **Activity Alerts:** Receive updates when followed Projects, Cities, or Users post news or new Sandbox results.
+- **Activity Alerts:** Receive updates when followed Projects, Cities, or Users post news or new Toolkit results.
 - **Follower Alerts:** Receive updates when a user follows your profile.
 - **System Alerts:** Receive platform announcements and account maintenance notifications.
 
@@ -136,7 +136,7 @@ Placer will be **the** definitive digital platform connecting citizens, urban pr
 ### Practitioner
 
 - US-04: As a Practitioner, I want to create a public Project page with geographic boundaries, dates, and supporting links, so that I can centralize all engagement efforts in one place.
-- US-05: As a Practitioner, I want to run multiplayer Sandbox tool sessions with community members, so that we can collaboratively run placemaking exercises digitally.
+- US-05: As a Practitioner, I want to run multiplayer Toolkit tool sessions with community members, so that we can collaboratively run placemaking exercises digitally.
 - US-06: As a Practitioner, I want access to a project analytics dashboard (tracking votes, interactions, and participant counts), so that I can report engagement impact to stakeholders.
 
 ### Municipality
@@ -148,7 +148,7 @@ Placer will be **the** definitive digital platform connecting citizens, urban pr
 
 1. **Spatial Asset Rendering:** When a user creates an Imagination, the canvas must lock the Google Street View frame orientation and allow drag-and-drop layering of vector assets with basic scaling and deletion controls.
 2. **Public Map Geocoding:** Publishing an Imagination pins the object to the exact latitude/longitude of the Street View capture, instantly rendering it visible on the global interactive map.
-3. **Multiplayer Synchronization:** When running a multiplayer Sandbox session, asset placements and input state changes must synchronize across all participants in under 500ms (real-time state management).
+3. **Multiplayer Synchronization:** When running a multiplayer Toolkit session, asset placements and input state changes must synchronize across all participants in under 500ms (real-time state management).
 4. **Content Moderation:** If an Imagination or comment receives 3 or more user reports, the system automatically flags the content and hides it pending moderator review.
 5. **Data Export:** When a user clicks "Download Data" under Settings, the system compiles their profile info, created Imaginations, and comments into a downloadable .zip (JSON + images) within 24 hours.
 
@@ -157,7 +157,7 @@ Placer will be **the** definitive digital platform connecting citizens, urban pr
 ### Performance
 
 - **Page Load Time:** Interactive map and street view canvas must load in under 2.5 seconds on standard 4G connections.
-- **Real-time Latency:** Multi-user Sandbox interactions must sync with <500ms latency.
+- **Real-time Latency:** Multi-user Toolkit interactions must sync with <500ms latency.
 
 ### Usability & Accessibility
 
@@ -185,7 +185,7 @@ Placer will be **the** definitive digital platform connecting citizens, urban pr
 - Interactive Public Map displaying Imaginations and Projects.
 - Practitioner Project Creation & Public Project Pages (link-only documentation).
 - Standard Project Dashboard (basic analytics: views, votes, comments).
-- 2 pre-built interactive web Sandbox tools (solo & multiplayer modes).
+- 2 pre-built interactive web Toolkit tools (solo & multiplayer modes).
 - Notification center (in-app notifications).
 
 ### Out-of-Scope (Deferred to Future Releases)
@@ -202,7 +202,7 @@ Placer will be **the** definitive digital platform connecting citizens, urban pr
 ### Technical Dependencies
 
 - Google Maps / Street View API: Relies on third-party API stability, licensing, and image coverage quality.
-- WebSockets / Real-time Infrastructure: Required to support multiplayer Sandbox tools smoothly.
+- WebSockets / Real-time Infrastructure: Required to support multiplayer Toolkit tools smoothly.
 
 ### Operational & Business Assumptions
 
