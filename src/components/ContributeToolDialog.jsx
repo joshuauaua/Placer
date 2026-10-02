@@ -1,4 +1,4 @@
-/* PLACER — the Sandbox's "Contribute" pop-up: offer a tool for the PLACER Toolkit.
+/* PLACER — the Toolkit's "Contribute" pop-up: offer a tool for the PLACER Toolkit.
  *
  * Three fields, all required: the tool's title, what it does, and an email address to
  * reach whoever sent it. Sending files it with services/toolSubmissions.js; with no

@@ -3,7 +3,7 @@
  * Optional in the same way PostHog is: with either variable missing there is no
  * client, and every caller has to cope with that. Most of the app stores what it
  * needs in localStorage and carries on; two features cannot, and say so plainly
- * rather than pretending to work. Sandbox rooms, because a room is shared between
+ * rather than pretending to work. Toolkit rooms, because a room is shared between
  * devices by definition (services/rooms.js). And accounts, because there is nowhere
  * to keep one — with no project configured the app falls back to the localStorage
  * identity in services/profile.js, which is what it used before accounts existed
@@ -18,7 +18,7 @@
  *
  * The SDK is imported on demand rather than at the top of this file. It is 70kB
  * gzipped, and most of what it can do this app never asks for — importing it
- * statically would put all of it on the Sandbox page for everybody, including the
+ * statically would put all of it on the Toolkit page for everybody, including the
  * visitors who never open a room. isSupabaseConfigured() stays synchronous, because
  * it only reads two environment variables and the UI needs the answer while it is
  * deciding what to render.

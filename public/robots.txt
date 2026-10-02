@@ -14,6 +14,7 @@ Disallow: /
 Noindex: /
 
 # Block every path explicitly so there is no ambiguity about intent.
+Disallow: /toolkit
 Disallow: /sandbox
 Disallow: /admin
 Disallow: /admin/imaginations

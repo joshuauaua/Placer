@@ -30,8 +30,12 @@ const QUESTIONS = [
     a: 'A picture of how a place could be. You pick a spot on the map, step into the street view, place things like benches, trees and planters, then describe your idea and post it to the map for others to see.',
   },
   {
-    q: 'What is the Sandbox?',
-    a: 'A set of tools for gathering input, such as polls and maps of how a space is used, that you can try out on their own or use in a workshop.',
+    q: 'What is the Toolkit?',
+    a: 'A collection of participatory methods, made by organisations working on public space, as tools you can use on your own or in a workshop. Understand tools show how a place is used today, Imagine tools explore how it could change, and Plan tools help a group decide on that change together.',
+  },
+  {
+    q: 'Can my organisation add a tool to the Toolkit?',
+    a: 'Yes. Use Contribute on the Toolkit page to tell us about your method, and we will get in touch about bringing it into PLACER, credited to your organisation.',
   },
   {
     q: 'Can my organisation use PLACER?',

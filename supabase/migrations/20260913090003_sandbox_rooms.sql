@@ -2,9 +2,9 @@
 -- That file remains the documented Dashboard -> SQL Editor path
 -- (see supabase/README.md); this is the same SQL under CLI control.
 
--- PLACER — sandbox rooms.
+-- PLACER — toolkit rooms.
 --
--- A facilitator opens a room on a sandbox experiment. People join it with a
+-- A facilitator opens a room on a toolkit tool. People join it with a
 -- six-digit PIN or by scanning its QR code, and each person's contribution is a
 -- row of its own, so the facilitator's screen can add them up live.
 --
@@ -33,17 +33,17 @@
 -- needs a *read*, which nothing else in this schema has. Rather than open a
 -- select policy on the rooms table — which would make every PIN in the system
 -- enumerable — all four operations go through security definer functions, and the
--- anon role is granted nothing at all on sandbox_rooms.
+-- anon role is granted nothing at all on toolkit_rooms.
 
 create extension if not exists pgcrypto;
 
 
 -- 1. The rooms.
 
-create table if not exists public.sandbox_rooms (
+create table if not exists public.toolkit_rooms (
   id                uuid        primary key default gen_random_uuid(),
   pin               text        not null    unique,
-  experiment        text        not null,
+  tool        text        not null,
   facilitator_token uuid        not null    default gen_random_uuid(),
   created_at        timestamptz not null    default now(),
   -- When the room stops working on its own. Set once, from the default below, and
@@ -65,43 +65,43 @@ create table if not exists public.sandbox_rooms (
 -- For a table created before rooms had a deadline. Setting the default as well as
 -- adding the column means the lifetime can be changed by editing the line above and
 -- re-running this file.
-alter table public.sandbox_rooms
+alter table public.toolkit_rooms
   add column if not exists expires_at timestamptz not null default now() + interval '2 hours';
-alter table public.sandbox_rooms
+alter table public.toolkit_rooms
   alter column expires_at set default now() + interval '2 hours';
 
 -- For a table created before opening a room needed an account.
-alter table public.sandbox_rooms
+alter table public.toolkit_rooms
   add column if not exists created_by uuid references auth.users (id) on delete set null;
 
 -- Enabled immediately after the table so no window exists without it. There are
 -- deliberately NO policies on this table: with RLS on and no policy, the anon
 -- role can do nothing here directly, and the functions below are the only way in.
-alter table public.sandbox_rooms enable row level security;
+alter table public.toolkit_rooms enable row level security;
 
-alter table public.sandbox_rooms drop constraint if exists sandbox_rooms_pin_shape;
-alter table public.sandbox_rooms add constraint sandbox_rooms_pin_shape
+alter table public.toolkit_rooms drop constraint if exists toolkit_rooms_pin_shape;
+alter table public.toolkit_rooms add constraint toolkit_rooms_pin_shape
   check (pin ~ '^[0-9]{6}$');
 
--- The experiments that may host a room. Extend this list when a second
--- experiment opts in (src/sandbox/experiments.js is the other half of the pair).
-alter table public.sandbox_rooms drop constraint if exists sandbox_rooms_experiment_known;
-alter table public.sandbox_rooms add constraint sandbox_rooms_experiment_known
-  check (experiment in ('budget-ballot', 'open-vote'));
+-- The tools that may host a room. Extend this list when a second
+-- tool opts in (src/toolkit/tools.js is the other half of the pair).
+alter table public.toolkit_rooms drop constraint if exists toolkit_rooms_tool_known;
+alter table public.toolkit_rooms add constraint toolkit_rooms_tool_known
+  check (tool in ('budget-ballot', 'open-vote'));
 
-revoke all on public.sandbox_rooms from anon;
+revoke all on public.toolkit_rooms from anon;
 
-comment on table public.sandbox_rooms is
-  'One row per sandbox room. Reachable only through the sandbox_room_* functions.';
+comment on table public.toolkit_rooms is
+  'One row per toolkit room. Reachable only through the toolkit_room_* functions.';
 
 
 -- 2. The contributions.
 
-create table if not exists public.sandbox_contributions (
+create table if not exists public.toolkit_contributions (
   id           uuid        primary key default gen_random_uuid(),
-  room_id      uuid        not null    references public.sandbox_rooms (id) on delete cascade,
+  room_id      uuid        not null    references public.toolkit_rooms (id) on delete cascade,
   -- Not the participant's token: sha256(room_id || ':' || token), computed inside
-  -- sandbox_contribution_save. The token is what proves a participant owns this
+  -- toolkit_contribution_save. The token is what proves a participant owns this
   -- row, so it must never be readable — and this table is published to Realtime,
   -- which does not apply column grants to the rows it broadcasts. Storing only
   -- the hash means there is no secret in the table to leak.
@@ -110,32 +110,32 @@ create table if not exists public.sandbox_contributions (
   state        jsonb       not null    default '{}'::jsonb,
   created_at   timestamptz not null    default now(),
   updated_at   timestamptz not null    default now(),
-  constraint sandbox_contributions_one_per_participant unique (room_id, participant)
+  constraint toolkit_contributions_one_per_participant unique (room_id, participant)
 );
 
-alter table public.sandbox_contributions enable row level security;
+alter table public.toolkit_contributions enable row level security;
 
 -- Bound the payloads. A ballot is a few hundred bytes; without a cap a single
 -- request could store megabytes, as many times as it likes.
-alter table public.sandbox_contributions drop constraint if exists sandbox_contributions_state_size;
-alter table public.sandbox_contributions add constraint sandbox_contributions_state_size
+alter table public.toolkit_contributions drop constraint if exists toolkit_contributions_state_size;
+alter table public.toolkit_contributions add constraint toolkit_contributions_state_size
   check (length(state::text) <= 4000);
 
-alter table public.sandbox_contributions drop constraint if exists sandbox_contributions_name_size;
-alter table public.sandbox_contributions add constraint sandbox_contributions_name_size
+alter table public.toolkit_contributions drop constraint if exists toolkit_contributions_name_size;
+alter table public.toolkit_contributions add constraint toolkit_contributions_name_size
   check (display_name is null or length(display_name) <= 60);
 
-create index if not exists sandbox_contributions_room_idx
-  on public.sandbox_contributions (room_id);
+create index if not exists toolkit_contributions_room_idx
+  on public.toolkit_contributions (room_id);
 
-comment on table public.sandbox_contributions is
-  'One row per participant per sandbox room. Written only through sandbox_contribution_save.';
+comment on table public.toolkit_contributions is
+  'One row per participant per toolkit room. Written only through toolkit_contribution_save.';
 
 
 -- 3. Is a room open? A security definer helper, so the select policy below can
 --    ask about a room without the anon role needing any grant on that table.
 
-create or replace function public.sandbox_room_is_open(p_room_id uuid)
+create or replace function public.toolkit_room_is_open(p_room_id uuid)
 returns boolean
 language sql
 security definer
@@ -143,33 +143,33 @@ set search_path = public
 stable
 as $$
   select exists (
-    select 1 from public.sandbox_rooms r
+    select 1 from public.toolkit_rooms r
     where r.id = p_room_id
       and r.closed_at is null
       and r.expires_at > now()
   );
 $$;
 
-revoke all on function public.sandbox_room_is_open(uuid) from public;
-grant execute on function public.sandbox_room_is_open(uuid) to anon;
+revoke all on function public.toolkit_room_is_open(uuid) from public;
+grant execute on function public.toolkit_room_is_open(uuid) to anon;
 
 
 -- 4. Reading the room. The only direct table access the anon role has: the rows
 --    of a room that is still open. Knowing the room's uuid is the capability, and
---    a uuid is only obtainable by calling sandbox_room_join with a valid PIN.
+--    a uuid is only obtainable by calling toolkit_room_join with a valid PIN.
 
-drop policy if exists "anon can read an open room's contributions" on public.sandbox_contributions;
+drop policy if exists "anon can read an open room's contributions" on public.toolkit_contributions;
 create policy "anon can read an open room's contributions"
-  on public.sandbox_contributions
+  on public.toolkit_contributions
   for select
   to anon
-  using (public.sandbox_room_is_open(room_id));
+  using (public.toolkit_room_is_open(room_id));
 
 -- Column grants as well as the policy: the anon role never needs the participant
 -- hash or the row's own id, so it is not given them.
-revoke all on public.sandbox_contributions from anon;
+revoke all on public.toolkit_contributions from anon;
 grant select (room_id, display_name, state, updated_at)
-  on public.sandbox_contributions to anon;
+  on public.toolkit_contributions to anon;
 
 
 -- 5. Creating a room. The PIN is generated here rather than in the browser, so
@@ -177,9 +177,9 @@ grant select (room_id, display_name, state, updated_at)
 
 -- The return type changes when a deadline is added to it, and a return type cannot
 -- be replaced in place.
-drop function if exists public.sandbox_room_create(text);
+drop function if exists public.toolkit_room_create(text);
 
-create or replace function public.sandbox_room_create(p_experiment text)
+create or replace function public.toolkit_room_create(p_tool text)
 returns table (room_id uuid, pin text, facilitator_token uuid, expires_at timestamptz)
 language plpgsql
 security definer
@@ -208,9 +208,9 @@ begin
     v_pin := lpad((floor(random() * 1000000))::bigint::text, 6, '0');
 
     begin
-      insert into public.sandbox_rooms (pin, experiment, created_by)
-      values (v_pin, p_experiment, v_owner)
-      returning sandbox_rooms.id, sandbox_rooms.facilitator_token, sandbox_rooms.expires_at
+      insert into public.toolkit_rooms (pin, tool, created_by)
+      values (v_pin, p_tool, v_owner)
+      returning toolkit_rooms.id, toolkit_rooms.facilitator_token, toolkit_rooms.expires_at
         into v_id, v_token, v_expires;
 
       return query select v_id, v_pin, v_token, v_expires;
@@ -231,29 +231,29 @@ $$;
 -- Everything else here stays open on purpose: a workshop participant scans a QR code
 -- or types a PIN, and stopping to make an account at that moment would cost the room
 -- the people it was opened for.
-revoke all on function public.sandbox_room_create(text) from public;
-grant execute on function public.sandbox_room_create(text) to authenticated;
+revoke all on function public.toolkit_room_create(text) from public;
+grant execute on function public.toolkit_room_create(text) to authenticated;
 
 
--- 6. Joining a room. Returns the room's id and experiment and nothing else —
+-- 6. Joining a room. Returns the room's id and tool and nothing else —
 --    never the facilitator token, which is what makes closing it privileged.
 --    An unknown, malformed or closed PIN returns no rows rather than an error.
 
-create or replace function public.sandbox_room_join(p_pin text)
-returns table (room_id uuid, experiment text)
+create or replace function public.toolkit_room_join(p_pin text)
+returns table (room_id uuid, tool text)
 language sql
 security definer
 set search_path = public
 as $$
-  select r.id, r.experiment
-  from public.sandbox_rooms r
+  select r.id, r.tool
+  from public.toolkit_rooms r
   where r.pin = p_pin
     and r.closed_at is null
     and r.expires_at > now();
 $$;
 
-revoke all on function public.sandbox_room_join(text) from public;
-grant execute on function public.sandbox_room_join(text) to anon;
+revoke all on function public.toolkit_room_join(text) from public;
+grant execute on function public.toolkit_room_join(text) to anon;
 
 
 -- 6b. What a room is, given its id: open, closed or expired, and when it goes.
@@ -263,17 +263,17 @@ grant execute on function public.sandbox_room_join(text) to anon;
 --     Reveals nothing a participant does not already hold: the id is the capability,
 --     and the facilitator token is not in the result.
 
-drop function if exists public.sandbox_room_state(uuid);
+drop function if exists public.toolkit_room_state(uuid);
 
-create or replace function public.sandbox_room_state(p_room_id uuid)
-returns table (experiment text, status text, expires_at timestamptz)
+create or replace function public.toolkit_room_state(p_room_id uuid)
+returns table (tool text, status text, expires_at timestamptz)
 language sql
 security definer
 set search_path = public
 stable
 as $$
   select
-    r.experiment,
+    r.tool,
     -- Closed beats expired: somebody ended it, and that is the truer thing to say.
     case
       when r.closed_at is not null then 'closed'
@@ -281,19 +281,19 @@ as $$
       else 'open'
     end,
     r.expires_at
-  from public.sandbox_rooms r
+  from public.toolkit_rooms r
   where r.id = p_room_id;
 $$;
 
-revoke all on function public.sandbox_room_state(uuid) from public;
-grant execute on function public.sandbox_room_state(uuid) to anon;
+revoke all on function public.toolkit_room_state(uuid) from public;
+grant execute on function public.toolkit_room_state(uuid) to anon;
 
 
 -- 7. Saving a contribution. Insert-or-update keyed on the participant hash, so a
 --    participant can revise their own answer and cannot touch anybody else's.
 --    Returns false when the room is closed or gone, rather than raising.
 
-create or replace function public.sandbox_contribution_save(
+create or replace function public.toolkit_contribution_save(
   p_room_id uuid,
   p_token   uuid,
   p_name    text,
@@ -307,7 +307,7 @@ as $$
 declare
   v_participant text;
 begin
-  if not public.sandbox_room_is_open(p_room_id) then
+  if not public.toolkit_room_is_open(p_room_id) then
     return false;
   end if;
 
@@ -320,7 +320,7 @@ begin
   -- what they chose to call themselves is long. The size cap on `state` below is a
   -- different matter: a real ballot is a couple of hundred bytes, so anything near
   -- the limit is abuse and should fail.
-  insert into public.sandbox_contributions (room_id, participant, display_name, state)
+  insert into public.toolkit_contributions (room_id, participant, display_name, state)
   values (p_room_id, v_participant, left(nullif(btrim(coalesce(p_name, '')), ''), 60), p_state)
   on conflict (room_id, participant) do update
     set state        = excluded.state,
@@ -331,14 +331,14 @@ begin
 end;
 $$;
 
-revoke all on function public.sandbox_contribution_save(uuid, uuid, text, jsonb) from public;
-grant execute on function public.sandbox_contribution_save(uuid, uuid, text, jsonb) to anon;
+revoke all on function public.toolkit_contribution_save(uuid, uuid, text, jsonb) from public;
+grant execute on function public.toolkit_contribution_save(uuid, uuid, text, jsonb) to anon;
 
 
 -- 8. Closing a room. The token is checked in here, so a client that knows a
 --    room's id — which every participant does — still cannot close it.
 
-create or replace function public.sandbox_room_close(p_room_id uuid, p_token uuid)
+create or replace function public.toolkit_room_close(p_room_id uuid, p_token uuid)
 returns boolean
 language plpgsql
 security definer
@@ -351,7 +351,7 @@ begin
   -- already expired changes nothing, so it reports false rather than claiming to
   -- have done something — and closed_at stays null on a room that ran out of time,
   -- which keeps the two endings distinguishable afterwards.
-  update public.sandbox_rooms
+  update public.toolkit_rooms
      set closed_at = now()
    where id = p_room_id
      and facilitator_token = p_token
@@ -363,8 +363,8 @@ begin
 end;
 $$;
 
-revoke all on function public.sandbox_room_close(uuid, uuid) from public;
-grant execute on function public.sandbox_room_close(uuid, uuid) to anon;
+revoke all on function public.toolkit_room_close(uuid, uuid) from public;
+grant execute on function public.toolkit_room_close(uuid, uuid) to anon;
 
 
 -- 9. Realtime. The client uses a change on this table only as a signal to re-read
@@ -377,9 +377,9 @@ begin
     select 1 from pg_publication_tables
     where pubname = 'supabase_realtime'
       and schemaname = 'public'
-      and tablename = 'sandbox_contributions'
+      and tablename = 'toolkit_contributions'
   ) then
-    alter publication supabase_realtime add table public.sandbox_contributions;
+    alter publication supabase_realtime add table public.toolkit_contributions;
   end if;
 exception
   when undefined_object then
@@ -392,14 +392,14 @@ $$;
 --
 --   -- RLS on, and no policy at all on the rooms table:
 --   select relname, relrowsecurity from pg_class
---    where relname in ('sandbox_rooms', 'sandbox_contributions');
+--    where relname in ('toolkit_rooms', 'toolkit_contributions');
 --   select tablename, policyname, cmd, roles from pg_policies
---    where tablename in ('sandbox_rooms', 'sandbox_contributions');
+--    where tablename in ('toolkit_rooms', 'toolkit_contributions');
 --
 --   -- Exactly one select grant, and no insert or update, for anon:
 --   select table_name, column_name, privilege_type
 --     from information_schema.column_privileges
---    where grantee = 'anon' and table_name = 'sandbox_contributions'
+--    where grantee = 'anon' and table_name = 'toolkit_contributions'
 --    order by privilege_type, column_name;
 --
 --   -- Who may open a room, and who may join one. Expect create to list only
@@ -408,16 +408,16 @@ $$;
 --     from pg_proc p
 --     join pg_namespace n on n.oid = p.pronamespace
 --     cross join unnest(array['anon', 'authenticated']) as r(rolname)
---    where n.nspname = 'public' and p.proname like 'sandbox%'
+--    where n.nspname = 'public' and p.proname like 'toolkit%'
 --      and has_function_privilege(r.rolname, p.oid, 'execute')
 --    order by p.proname, r.rolname;
 --
 --   -- End to end. Note the first only works as a signed-in user now; run as the anon
 --   -- role it should fail with "permission denied for function":
---   select * from public.sandbox_room_create('budget-ballot');
---   select * from public.sandbox_room_join('000000');   -- expect no rows
+--   select * from public.toolkit_room_create('budget-ballot');
+--   select * from public.toolkit_room_join('000000');   -- expect no rows
 --
 --   -- What is still live, and what is only waiting to be swept:
 --   select count(*) filter (where closed_at is null and expires_at > now()) as live,
 --          count(*) filter (where closed_at is not null or expires_at <= now()) as finished
---     from public.sandbox_rooms;
+--     from public.toolkit_rooms;

@@ -5,7 +5,7 @@
  * one browser would not be a project. So unlike services/imaginations.js and
  * services/profile.js there is no localStorage fallback here at all — every function
  * throws with no project configured, and the UI asks isSupabaseConfigured() before it
- * offers project creation the way SandboxPage already does for opening a room.
+ * offers project creation the way ToolkitPage already does for opening a room.
  *
  * Mirrors the shape of services/imaginations.js: camelCase in, camelCase out, and the
  * table's own column names never leak past this file's fromRow/toRow.
@@ -393,10 +393,10 @@ export async function removeLink(linkId) {
 }
 
 /**
- * The dashboard's numbers: how many imaginations and Sandbox rooms are tied to this
+ * The dashboard's numbers: how many imaginations and Toolkit rooms are tied to this
  * project, and the imaginations' total votes. Owner-or-collaborator only — the
  * project_stats function refuses anyone else, which is what lets it see past
- * sandbox_rooms having no select grant at all (rooms.sql's header).
+ * toolkit_rooms having no select grant at all (rooms.sql's header).
  */
 export async function readStats(projectId) {
   const supabase = await client();
@@ -408,7 +408,7 @@ export async function readStats(projectId) {
   return {
     imaginationsCount: data?.imaginations_count ?? 0,
     imaginationsUpvotes: data?.imaginations_upvotes ?? 0,
-    sandboxRoomsCount: data?.sandbox_rooms_count ?? 0,
+    toolkitRoomsCount: data?.toolkit_rooms_count ?? 0,
   };
 }
 
@@ -468,10 +468,10 @@ export async function readProjectViews(projectId, days = 30) {
 }
 
 /**
- * Every Sandbox room opened for this project, newest first, with how many people have
+ * Every Toolkit room opened for this project, newest first, with how many people have
  * contributed to each. Owner-or-collaborator only (project_rooms in
  * supabase/rooms-lifetime.sql), and it includes each room's facilitator token — the
- * dashboard hands that to the Sandbox so a room can be run from any browser, not only
+ * dashboard hands that to the Toolkit so a room can be run from any browser, not only
  * the one that opened it.
  */
 export async function readProjectRooms(projectId) {
@@ -481,7 +481,7 @@ export async function readProjectRooms(projectId) {
   if (error) throw new Error(`Could not load this project's rooms: ${error.message}`);
   return (data ?? []).map((row) => ({
     id: row.room_id,
-    experiment: row.experiment,
+    tool: row.tool,
     pin: row.pin,
     joinCode: row.join_code,
     facilitatorToken: row.facilitator_token,
@@ -493,15 +493,15 @@ export async function readProjectRooms(projectId) {
 }
 
 /**
- * How many Sandbox sessions have run for this project — the one number the public
+ * How many Toolkit sessions have run for this project — the one number the public
  * page needs from a table it otherwise cannot see into at all. Needs no account;
- * see project_sandbox_activity in supabase/projects.sql for why a plain count is
- * safe to expose where the rest of sandbox_rooms is not.
+ * see project_toolkit_activity in supabase/projects.sql for why a plain count is
+ * safe to expose where the rest of toolkit_rooms is not.
  */
-export async function readPublicSandboxActivity(projectId) {
+export async function readPublicToolkitActivity(projectId) {
   const supabase = await client();
-  const { data, error } = await supabase.rpc('project_sandbox_activity', { p_project_id: projectId });
+  const { data, error } = await supabase.rpc('project_toolkit_activity', { p_project_id: projectId });
 
-  if (error) throw new Error(`Could not load this project's Sandbox activity: ${error.message}`);
+  if (error) throw new Error(`Could not load this project's Toolkit activity: ${error.message}`);
   return typeof data === 'number' ? data : 0;
 }

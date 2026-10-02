@@ -16,7 +16,7 @@ import {
   updateProject,
 } from '../../services/projects';
 import { closeRoom, deleteRoom } from '../../services/rooms';
-import { hostedRoom } from '../../sandbox/rooms';
+import { hostedRoom } from '../../toolkit/rooms';
 import { THEME } from '../../theme';
 
 // ProjectSetupPage is rendered in place for "Edit setup" (see the test below) and
@@ -51,12 +51,12 @@ const PROJECT = {
   description: '', startDate: null, endDate: null, locations: [],
 };
 
-const STATS = { imaginationsCount: 4, imaginationsUpvotes: 19, sandboxRoomsCount: 2 };
+const STATS = { imaginationsCount: 4, imaginationsUpvotes: 19, toolkitRoomsCount: 2 };
 
 const setup = (overrides = {}) => {
   const props = {
     t: THEME, accountId: 'user-1', projectId: PROJECT.id,
-    onOpenSandbox: vi.fn(), onOpenRoom: vi.fn(), onNavigateToPublic: vi.fn(),
+    onOpenToolkit: vi.fn(), onOpenRoom: vi.fn(), onNavigateToPublic: vi.fn(),
     ...overrides,
   };
   render(<ProjectDashboardPage {...props} />);
@@ -160,16 +160,16 @@ describe('ProjectDashboardPage', () => {
     expect(await screen.findByRole('heading', { name: 'Riverside Greenway' })).toBeInTheDocument();
   });
 
-  it('lists the sandbox experiments and sends you to the one you pick, with the project attached', async () => {
-    const { onOpenSandbox } = setup();
+  it('lists the toolkit tools and sends you to the one you pick, with the project attached', async () => {
+    const { onOpenToolkit } = setup();
     await screen.findByText('Riverside Greenway');
 
-    fireEvent.click(screen.getByRole('button', { name: /Add Sandbox Experiment/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Add a Tool/ }));
     expect(screen.getByRole('menuitem', { name: 'Budget Ballot' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('menuitem', { name: 'Budget Ballot' }));
 
-    expect(onOpenSandbox).toHaveBeenCalledWith('proj-1', 'budget-ballot');
+    expect(onOpenToolkit).toHaveBeenCalledWith('proj-1', 'budget-ballot');
   });
 
   it('lists collaborators, defaulting to just the owner', async () => {
@@ -257,7 +257,7 @@ describe('ProjectDashboardPage', () => {
 describe('ProjectDashboardPage, a project\'s open rooms', () => {
   const now = Date.now();
   const LONG_ROOM = {
-    id: 'room-1', experiment: 'open-vote', pin: '839201', joinCode: 'a'.repeat(32),
+    id: 'room-1', tool: 'open-vote', pin: '839201', joinCode: 'a'.repeat(32),
     facilitatorToken: 'facilitator-1', createdAt: new Date(now).toISOString(),
     expiresAt: new Date(now + 30 * 86400000).toISOString(), status: 'open', contributions: 12,
   };

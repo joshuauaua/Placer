@@ -186,7 +186,7 @@ export function TermsAndPrivacyPage({ t }) {
       <Section t={t} title="Agreement to these terms">
         <P t={t}>
           These terms govern your use of PLACER, the web application operated by {OPERATOR.name}.
-          By opening PLACER, building on the canvas, answering a survey, joining a Sandbox room or
+          By opening PLACER, building on the canvas, answering a survey, joining a Toolkit room or
           posting an imagination, you agree to them. If you do not agree, do not use PLACER.
         </P>
         <P t={t}>
@@ -207,7 +207,7 @@ export function TermsAndPrivacyPage({ t }) {
       <Section t={t} title="Your account">
         <P t={t}>
           Posting an imagination requires an account; reading the map, building on the canvas,
-          answering the survey and joining a Sandbox room do not. You agree to give an accurate
+          answering the survey and joining a Toolkit room do not. You agree to give an accurate
           email address, to keep your password confidential, and to tell us if you believe your
           account has been used without your permission. You are responsible for what happens
           under your account, whether or not you were the one who did it.
@@ -223,8 +223,8 @@ export function TermsAndPrivacyPage({ t }) {
           'Impersonate another person or organisation, or misrepresent your affiliation with one.',
           'Scrape, mine or bulk-download imaginations, profiles or survey data.',
           'Probe, disable or bypass PLACER’s security, rate limits or authentication.',
-          'Interfere with the map, the Sandbox or another user’s ability to use either.',
-          'Automate account creation, posting, upvoting or Sandbox contributions.',
+          'Interfere with the map, the Toolkit or another user’s ability to use either.',
+          'Automate account creation, posting, upvoting or Toolkit contributions.',
           'Try to access another account, or data that is not yours, without authorisation.',
         ]} />
         <P t={t}>
@@ -253,7 +253,7 @@ export function TermsAndPrivacyPage({ t }) {
           PLACER shows map tiles and Street View imagery from Google Maps Platform, subject to
           Google&rsquo;s own terms; sends usage analytics to PostHog, if you accept them, subject to
           PostHog&rsquo;s own terms; and stores accounts, profiles, posted imaginations, survey
-          answers and Sandbox rooms with Supabase. We are not responsible for the availability,
+          answers and Toolkit rooms with Supabase. We are not responsible for the availability,
           accuracy or content of any third-party service PLACER relies on.
         </P>
       </Section>
@@ -330,7 +330,7 @@ export function TermsAndPrivacyPage({ t }) {
           confirmed, and, if you use Google, the fact that this account is linked to that Google
           identity. Choosing Google means Google learns that you signed in to PLACER. An account
           is needed to post an imagination and for nothing else: you can look at the map, build
-          on the canvas, answer the survey and join a Sandbox room without one.
+          on the canvas, answer the survey and join a Toolkit room without one.
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Your profile.</strong> Alongside the login we store a
@@ -417,9 +417,9 @@ export function TermsAndPrivacyPage({ t }) {
           stored exactly as written.
         </P>
         <P t={t}>
-          <strong style={{ color: t.ink }}>Sandbox rooms, if you join one.</strong> The Sandbox
-          experiments run entirely in your browser and save nothing — unless somebody opens a room
-          and you join it with a PIN or a QR code. Then what you allocate in that experiment is
+          <strong style={{ color: t.ink }}>Toolkit rooms, if you join one.</strong> The Toolkit
+          tools run entirely in your browser and save nothing — unless somebody opens a room
+          and you join it with a PIN or a QR code. Then what you allocate in that tool is
           stored in our database so the room can show everybody&rsquo;s answers combined, along with
           the display name your browser is set to, if you have set one. A room lasts two hours from
           being opened, unless a project opened it to run for longer — a week, 30 days or at most
@@ -450,7 +450,7 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Who else sees what we store.</strong> Accounts,
-          profiles, posted imaginations, survey answers, bug reports and Sandbox rooms are all
+          profiles, posted imaginations, survey answers, bug reports and Toolkit rooms are all
           stored for us by Supabase, which hosts the database in the EU and processes them only
           on our instructions. The pictures you upload — imagination previews and profile
           covers — are stored for us by Cloudflare, in its R2 storage in the EU, on the same
@@ -498,7 +498,7 @@ export function TermsAndPrivacyPage({ t }) {
           anyone else using the same browser profile can see it.
         </P>
         <P t={t}>
-          Survey answers are kept while this research runs. Sandbox rooms expire two hours after
+          Survey answers are kept while this research runs. Toolkit rooms expire two hours after
           being opened, or at most 90 days after for one a project opened to run longer, and are
           deleted within a day of ending. Analytics you have consented to are held for
           as long as our PostHog project is configured to keep them, and withdrawing consent stops
@@ -551,7 +551,7 @@ export function TermsAndPrivacyPage({ t }) {
         in your browser&rsquo;s local storage and you can export or erase it yourself in a couple of
         clicks. Once you post, the imagination and its picture are on our server and on a public
         map: readable by anyone, changeable and deletable only by you. Your account and profile
-        live there too, as do survey answers you submit and Sandbox rooms you join. Usage
+        live there too, as do survey answers you submit and Toolkit rooms you join. Usage
         analytics go to PostHog, and only if you accept them.
       </Callout>
 
@@ -611,8 +611,8 @@ export function TermsAndPrivacyPage({ t }) {
               'Until you ask us to remove it, or the closed beta programme ends',
             ],
             [
-              'Sandbox room contributions — what you allocate in a shared Sandbox experiment, and the name your browser is set to display, if any',
-              'Letting a roomful of people work through the same experiment together and see the result combined',
+              'Toolkit room contributions — what you allocate in a shared tool, and the name your browser is set to display, if any',
+              'Letting a roomful of people work through the same tool together and see the result combined',
               'Consent (Art. 6(1)(a)) — you choose to join a room, and only what you allocate is sent',
               'Two hours from the room being opened — or up to 90 days, for a room a project opened to run longer — or sooner if the facilitator closes it. After that it cannot be reached at all, and it is deleted within a day',
             ],
@@ -697,7 +697,7 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
         <P t={t}>
           Everything we store — accounts and profiles, the imaginations you post, survey answers
-          and Sandbox rooms — is held in a Postgres database hosted by Supabase in the EU, acting
+          and Toolkit rooms — is held in a Postgres database hosted by Supabase in the EU, acting
           as our processor. The pictures — imagination previews and profile covers — are held in
           Cloudflare R2 storage in the EU, with Cloudflare acting as our processor. Supabase Inc.
           and Cloudflare, Inc. are US companies, so support access from outside the EEA is likewise
@@ -729,7 +729,7 @@ export function TermsAndPrivacyPage({ t }) {
           Google may also set cookies of its own when serving map and Street View imagery.
           Submitting the survey sets nothing. Signing out clears the session token; the Erase
           button above clears PLACER&rsquo;s own keys and leaves you signed in, so use both if you want
-          the browser left with neither. Joining a Sandbox room stores two random identifiers in
+          the browser left with neither. Joining a Toolkit room stores two random identifiers in
           local storage — one so that editing your answer revises it rather than adding a second,
           one so that a room you opened is a room you can close. Neither is tied to you, both are
           covered by the export and erasure controls above, and neither is a sign-in.
@@ -742,7 +742,7 @@ export function TermsAndPrivacyPage({ t }) {
           'Nothing uploaded by default — the upload happens when you press Post, and until then the work is on your device. Imaginations saved before accounts existed are left there rather than migrated, because they were saved under a policy that promised they would not leave.',
           'Ownership enforced in the database — row-level security, not app code, is what makes a posted imagination readable by everyone and writable only by the account that posted it. A stolen or inspected browser key cannot change or delete somebody else’s work.',
           'Consent before capture — the analytics SDK is not even loaded until consent exists, so a visitor who rejects the banner, or never answers it, is never contacted or measured.',
-          'Storage limitation — deleting an imagination deletes its picture; deleting an account cascades to the profile and to everything posted under it; Sandbox rooms expire after two hours (at most 90 days for a project’s long-running room) and are deleted within a day.',
+          'Storage limitation — deleting an imagination deletes its picture; deleting an account cascades to the profile and to everything posted under it; Toolkit rooms expire after two hours (at most 90 days for a project’s long-running room) and are deleted within a day.',
           'No passwords of ours to lose — the login is held by Supabase Auth and we never see or store a password.',
           'Write-only submission — the key in your browser can add a survey response and cannot read, change or delete any response, including its own. Reading them needs a separate credential that never leaves our side.',
           'Local processing — Street View frames are analysed in your browser, not uploaded. The only image that reaches us is the one you post.',

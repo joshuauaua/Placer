@@ -1,6 +1,6 @@
 /* PLACER — shortest walking distances across a rectangular cell grid.
  *
- * Shared by the sandbox experiments: 15-Minute Reach measures how far an amenity
+ * Shared by the toolkit tools: 15-Minute Reach measures how far an amenity
  * is from every home, and Desire Lines measures how long the paved route between
  * two points is. Both questions are the same one — cheapest cost from a set of
  * starting cells to everywhere else — so they share one Dijkstra.

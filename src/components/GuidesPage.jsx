@@ -41,8 +41,8 @@ const GUIDES = [
   },
   {
     id: 5,
-    title: 'Running a Session with the Sandbox',
-    excerpt: 'Use the Sandbox tools to run polls, map how a space is used, and collect input in a workshop.',
+    title: 'Running a Session with the Toolkit',
+    excerpt: 'Use the Toolkit’s tools to run polls, map how a space is used, and collect input in a workshop.',
     image: { bg: '#DDD2FA', icon: 'flask' },
     tags: ['Understand', 'Workshops'],
     readTime: '7 min read'

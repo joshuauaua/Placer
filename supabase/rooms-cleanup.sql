@@ -1,4 +1,4 @@
--- PLACER — clearing out sandbox rooms.
+-- PLACER — clearing out toolkit rooms.
 --
 -- A room stops working when its time runs out — two hours after it is opened, or up
 -- to 90 days for a project's long-running room (rooms-lifetime.sql) — or the moment
@@ -21,13 +21,13 @@ select
   count(*) filter (where closed_at is not null)                 as closed_by_hand,
   count(*) filter (where closed_at is null and expires_at <= now()) as expired,
   min(expires_at) filter (where closed_at is null and expires_at > now()) as next_to_go
-from public.sandbox_rooms;
+from public.toolkit_rooms;
 
 
 -- 2. Everything that has finished, one way or the other. The day's grace is so that
 --    closing a room by accident, or a workshop overrunning its deadline, is
 --    recoverable from the database for a little while afterwards.
-delete from public.sandbox_rooms
+delete from public.toolkit_rooms
  where (closed_at is not null and closed_at  < now() - interval '24 hours')
     or (closed_at is null     and expires_at < now() - interval '24 hours');
 
@@ -35,7 +35,7 @@ delete from public.sandbox_rooms
 -- 3. Everything that has finished, right now, grace included. For an erasure
 --    request, or for clearing out a test.
 --
--- delete from public.sandbox_rooms
+-- delete from public.toolkit_rooms
 --  where closed_at is not null or expires_at <= now();
 
 
@@ -52,14 +52,14 @@ create extension if not exists pg_cron;
 
 -- Unschedule first so this file stays re-runnable: cron.schedule on an existing
 -- name updates it, but only on newer pg_cron, and failing here is not worth it.
-select cron.unschedule('placer-sweep-sandbox-rooms')
- where exists (select 1 from cron.job where jobname = 'placer-sweep-sandbox-rooms');
+select cron.unschedule('placer-sweep-toolkit-rooms')
+ where exists (select 1 from cron.job where jobname = 'placer-sweep-toolkit-rooms');
 
 select cron.schedule(
-  'placer-sweep-sandbox-rooms',
+  'placer-sweep-toolkit-rooms',
   '17 * * * *',                    -- hourly at :17; off the hour on purpose
   $$
-    delete from public.sandbox_rooms
+    delete from public.toolkit_rooms
      where (closed_at is not null and closed_at  < now() - interval '24 hours')
         or (closed_at is null     and expires_at < now() - interval '24 hours');
   $$
@@ -68,11 +68,11 @@ select cron.schedule(
 -- To see it, or stop it again:
 --
 -- select jobid, schedule, jobname from cron.job;
--- select cron.unschedule('placer-sweep-sandbox-rooms');
+-- select cron.unschedule('placer-sweep-toolkit-rooms');
 --
 -- And to check it has been running:
 --
 -- select status, return_message, start_time
 --   from cron.job_run_details
---  where jobname = 'placer-sweep-sandbox-rooms'
+--  where jobname = 'placer-sweep-toolkit-rooms'
 --  order by start_time desc limit 10;

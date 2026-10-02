@@ -9,7 +9,7 @@ const from = vi.fn(() => ({ insert }));
 vi.mock('@supabase/supabase-js', () => ({ createClient: () => ({ from }) }));
 
 import { ContributeToolDialog } from '../ContributeToolDialog';
-import { SandboxPage } from '../SandboxPage';
+import { ToolkitPage } from '../ToolkitPage';
 import { submitToolByEmailHref, validateToolSubmission } from '../../services/toolSubmissions';
 
 const fill = ({ title = 'Walkshop kit', description = 'A printable guide for neighbourhood walks.',
@@ -24,15 +24,15 @@ const withSupabase = () => {
   vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'anon');
 };
 
-describe('the Sandbox Contribute button', () => {
+describe('the Toolkit Contribute button', () => {
   it('opens the pop-up form, and Escape closes it', async () => {
-    const location = memoryLocation({ path: '/sandbox', record: true });
-    render(<Router hook={location.hook}><SandboxPage t={THEME} /></Router>);
+    const location = memoryLocation({ path: '/toolkit', record: true });
+    render(<Router hook={location.hook}><ToolkitPage t={THEME} /></Router>);
 
     fireEvent.click(await screen.findByRole('button', { name: /^Contribute/ }));
 
     expect(screen.getByRole('dialog', { name: 'Contribute a tool' })).toBeInTheDocument();
-    expect(location.history.at(-1)).toBe('/sandbox');
+    expect(location.history.at(-1)).toBe('/toolkit');
 
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).toBeNull();

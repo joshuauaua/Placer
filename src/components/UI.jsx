@@ -115,7 +115,7 @@ export function Btn({ t, children, variant = 'primary', icon, size = 'md', style
  * on claiming it copied something that has since been edited.
  *
  * `actions` sits beside the button, for anything belonging to the same row, matching
- * the slot of the same name on SandboxLayout.
+ * the slot of the same name on ToolLayout.
  */
 export function CopyButton({ t, value, label = 'Copy link', copiedLabel = 'Link copied', icon = 'link',
   variant = 'quiet', size = 'sm', fieldLabel, fieldWidth = '100%', multiline, actions, disabled, style }) {

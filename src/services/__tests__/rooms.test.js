@@ -54,7 +54,7 @@ beforeEach(() => {
   order.mockReturnValue(result({ data: [], error: null }));
 });
 
-describe('sandbox rooms without a project configured', () => {
+describe('toolkit rooms without a project configured', () => {
   beforeEach(async () => {
     await load({ configured: false });
   });
@@ -89,7 +89,7 @@ describe('opening a room', () => {
 
     const room = await rooms.createRoom('budget-ballot');
 
-    expect(rpc).toHaveBeenCalledWith('sandbox_room_create', { p_experiment: 'budget-ballot', p_project_id: null });
+    expect(rpc).toHaveBeenCalledWith('toolkit_room_create', { p_tool: 'budget-ballot', p_project_id: null });
     expect(room).toEqual({
       id: 'room-1',
       pin: '839201',
@@ -110,7 +110,7 @@ describe('opening a room', () => {
 
     await rooms.createRoom('budget-ballot', 'proj-1');
 
-    expect(rpc).toHaveBeenCalledWith('sandbox_room_create', { p_experiment: 'budget-ballot', p_project_id: 'proj-1' });
+    expect(rpc).toHaveBeenCalledWith('toolkit_room_create', { p_tool: 'budget-ballot', p_project_id: 'proj-1' });
   });
 
   it('asks for a longer lifetime only when there is one, and hands back its join code', async () => {
@@ -122,8 +122,8 @@ describe('opening a room', () => {
 
     const room = await rooms.createRoom('open-vote', 'proj-1', '30d');
 
-    expect(rpc).toHaveBeenCalledWith('sandbox_room_create',
-      { p_experiment: 'open-vote', p_project_id: 'proj-1', p_lifetime: '30d' });
+    expect(rpc).toHaveBeenCalledWith('toolkit_room_create',
+      { p_tool: 'open-vote', p_project_id: 'proj-1', p_lifetime: '30d' });
     expect(room.joinCode).toBe('a'.repeat(32));
     expect(room.expiresAt).toBe('2026-10-24T12:00:00Z');
   });
@@ -140,16 +140,16 @@ describe('joining a room', () => {
     await load();
   });
 
-  it('asks for the room by PIN and gets back only the id and the experiment', async () => {
+  it('asks for the room by PIN and gets back only the id and the tool', async () => {
     rpc.mockReturnValue(result({
-      data: { room_id: 'room-1', experiment: 'budget-ballot' },
+      data: { room_id: 'room-1', tool: 'budget-ballot' },
       error: null,
     }));
 
     const room = await rooms.joinRoom('839201');
 
-    expect(rpc).toHaveBeenCalledWith('sandbox_room_join', { p_pin: '839201' });
-    expect(room).toEqual({ id: 'room-1', experiment: 'budget-ballot' });
+    expect(rpc).toHaveBeenCalledWith('toolkit_room_join', { p_pin: '839201' });
+    expect(room).toEqual({ id: 'room-1', tool: 'budget-ballot' });
     // The token that closes a room is never part of joining one.
     expect(room).not.toHaveProperty('facilitatorToken');
   });
@@ -168,14 +168,14 @@ describe('joining a room by its code', () => {
 
   it('answers with the room and whether it is still open', async () => {
     rpc.mockReturnValue(result({
-      data: { room_id: 'room-1', experiment: 'open-vote', status: 'open', expires_at: '2026-10-24T12:00:00Z' },
+      data: { room_id: 'room-1', tool: 'open-vote', status: 'open', expires_at: '2026-10-24T12:00:00Z' },
       error: null,
     }));
 
     const room = await rooms.joinRoomByCode('a'.repeat(32));
 
-    expect(rpc).toHaveBeenCalledWith('sandbox_room_join_code', { p_code: 'a'.repeat(32) });
-    expect(room).toEqual({ id: 'room-1', experiment: 'open-vote', status: 'open', endsAt: '2026-10-24T12:00:00Z' });
+    expect(rpc).toHaveBeenCalledWith('toolkit_room_join_code', { p_code: 'a'.repeat(32) });
+    expect(room).toEqual({ id: 'room-1', tool: 'open-vote', status: 'open', endsAt: '2026-10-24T12:00:00Z' });
   });
 
   it('is null for a code that matches nothing', async () => {
@@ -192,7 +192,7 @@ describe('reading a room', () => {
   it('reads only the four columns the anon role is granted', async () => {
     await rooms.readContributions('room-1');
 
-    expect(from).toHaveBeenCalledWith('sandbox_contributions');
+    expect(from).toHaveBeenCalledWith('toolkit_contributions');
     expect(select).toHaveBeenCalledWith('room_id, display_name, state, updated_at');
     expect(eq).toHaveBeenCalledWith('room_id', 'room-1');
   });
@@ -219,12 +219,12 @@ describe('reading a room', () => {
 
   it('reports which of the three states a room is in, and when it goes', async () => {
     rpc.mockReturnValue(result({
-      data: { experiment: 'budget-ballot', status: 'expired', expires_at: '2026-09-11T12:00:00Z' },
+      data: { tool: 'budget-ballot', status: 'expired', expires_at: '2026-09-11T12:00:00Z' },
       error: null,
     }));
 
     await expect(rooms.readRoom('room-1')).resolves.toEqual({
-      experiment: 'budget-ballot',
+      tool: 'budget-ballot',
       status: 'expired',
       expiresAt: '2026-09-11T12:00:00Z',
     });
@@ -232,7 +232,7 @@ describe('reading a room', () => {
 
   it('keeps closed and expired apart, because they are told differently', async () => {
     rpc.mockReturnValue(result({
-      data: { experiment: 'budget-ballot', status: 'closed', expires_at: '2026-09-11T12:00:00Z' },
+      data: { tool: 'budget-ballot', status: 'closed', expires_at: '2026-09-11T12:00:00Z' },
       error: null,
     }));
 
@@ -261,7 +261,7 @@ describe('contributing to a room', () => {
       state: { benches: 2 },
     });
 
-    expect(rpc).toHaveBeenCalledWith('sandbox_contribution_save', {
+    expect(rpc).toHaveBeenCalledWith('toolkit_contribution_save', {
       p_room_id: 'room-1',
       p_token: 'participant-1',
       p_name: 'Mara',
@@ -283,7 +283,7 @@ describe('contributing to a room', () => {
 
     await rooms.saveContribution({ roomId: 'room-1', participantToken: 'p', state: {} });
 
-    expect(rpc).toHaveBeenCalledWith('sandbox_contribution_save', expect.objectContaining({
+    expect(rpc).toHaveBeenCalledWith('toolkit_contribution_save', expect.objectContaining({
       p_name: null,
     }));
   });
@@ -298,7 +298,7 @@ describe('closing a room', () => {
     rpc.mockReturnValue(result({ data: true, error: null }));
 
     await expect(rooms.closeRoom('room-1', 'facilitator-1')).resolves.toBe(true);
-    expect(rpc).toHaveBeenCalledWith('sandbox_room_close', {
+    expect(rpc).toHaveBeenCalledWith('toolkit_room_close', {
       p_room_id: 'room-1',
       p_token: 'facilitator-1',
     });
@@ -320,7 +320,7 @@ describe('deleting a room', () => {
     rpc.mockReturnValue(result({ data: true, error: null }));
 
     await expect(rooms.deleteRoom('room-1', 'facilitator-1')).resolves.toBe(true);
-    expect(rpc).toHaveBeenCalledWith('sandbox_room_delete', {
+    expect(rpc).toHaveBeenCalledWith('toolkit_room_delete', {
       p_room_id: 'room-1',
       p_token: 'facilitator-1',
     });
@@ -344,10 +344,10 @@ describe('following a room', () => {
     rooms.subscribeToRoom('room-1', onChange);
     await flush();
 
-    expect(channel).toHaveBeenCalledWith('sandbox-room-room-1');
+    expect(channel).toHaveBeenCalledWith('toolkit-room-room-1');
     expect(on).toHaveBeenCalledWith(
       'postgres_changes',
-      expect.objectContaining({ table: 'sandbox_contributions', filter: 'room_id=eq.room-1' }),
+      expect.objectContaining({ table: 'toolkit_contributions', filter: 'room_id=eq.room-1' }),
       expect.any(Function)
     );
 

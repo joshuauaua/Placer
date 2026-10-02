@@ -315,7 +315,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
         <div style={{ marginBottom: 36 }}>
           {heading('Edit project')}
           <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6 }}>
-            Change the setup. Collaborators, links and Sandbox sessions live on the dashboard.
+            Change the setup. Collaborators, links and Toolkit sessions live on the dashboard.
           </p>
         </div>
 
@@ -354,7 +354,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
         <ul style={{ margin: '0 0 36px', paddingLeft: 20, fontSize: 16, color: t.ink, lineHeight: 1.7 }}>
           <li>A dashboard to run it from, and a public page anyone can open from a link.</li>
           <li>Collaborators who can help you set it up and run it.</li>
-          <li>Imaginations posted to it, and Sandbox rooms to gather people&rsquo;s views.</li>
+          <li>Imaginations posted to it, and Toolkit rooms to gather people&rsquo;s views.</li>
         </ul>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <Btn t={t} variant="primary" icon="plus" onClick={() => setStep(1)}>
