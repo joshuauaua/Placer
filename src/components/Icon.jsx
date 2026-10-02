@@ -228,6 +228,12 @@ const ICON_ELEMENTS = {
       <path d="M17 7h.01" />
     </>
   ),
+  mail: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <path d="M3.7 6.5L12 12.5l8.3-6" />
+    </>
+  ),
   facebook: <path d="M17 3.5h-2.8a4.2 4.2 0 00-4.2 4.2v2.8H7.2v3.8H10v6.2h3.8v-6.2h2.8l.9-3.8h-3.7V8a.9.9 0 01.9-.9H17V3.5z" />,
   x: <path d="M4.5 4.5h4.2l10.8 15h-4.2L4.5 4.5zM19.3 4.5l-6.1 6.6M4.7 19.5l6.1-6.6" />,
   linkedin: (

@@ -27,6 +27,9 @@ const MapContainer = lazy(() => import('./components/MapContainer'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
 const ResourcesPage = lazy(() => import('./components/ResourcesPage'));
 const ResourceArticlePage = lazy(() => import('./components/ResourceArticlePage'));
+const GuidesPage = lazy(() => import('./components/GuidesPage'));
+const FaqPage = lazy(() => import('./components/FaqPage'));
+const ContactPage = lazy(() => import('./components/ContactPage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const DescribePage = lazy(() => import('./components/DescribePage'));
 const PostPage = lazy(() => import('./components/PostPage'));
@@ -81,18 +84,20 @@ const ACCOUNT_VIEWS = {
   '/signup': 'signup',
 };
 
-// About, Resources and Terms and Privacy each get a bookmarkable link of their own,
-// read off the location the same way the account views and the Sandbox are.
+// About, Contact, Resources, Guides, the FAQ and Terms and Privacy each get a
+// bookmarkable link of their own, read off the location the same way the account
+// views and the Sandbox are.
 const STATIC_PATHS = {
   about: '/about',
+  contact: '/contact',
   resources: '/resources',
+  guides: '/guides',
+  faq: '/faq',
   terms: '/terms-and-privacy',
 };
-const STATIC_VIEWS = {
-  '/about': 'about',
-  '/resources': 'resources',
-  '/terms-and-privacy': 'terms',
-};
+const STATIC_VIEWS = Object.fromEntries(
+  Object.entries(STATIC_PATHS).map(([view, path]) => [path, view]),
+);
 
 /**
  * `/projects/new`, `/projects/<id>` (the public page) or `/projects/<id>/dashboard`,
@@ -175,7 +180,8 @@ function SignedOutNotice({ t, onSignIn }) {
 
 function MainApp({ initialView = 'welcome' }) {
   const t = THEME;
-  // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'resources', 'sandbox', 'terms'
+  // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'contact', 'resources',
+  // 'guides', 'faq', 'sandbox', 'terms'
   const [currentView, setCurrentView] = useState(initialView);
   const [capturedView, setCapturedView] = useState(null);
   // The imagination being built. Held here rather than in StreetScreen so that
@@ -530,6 +536,24 @@ function MainApp({ initialView = 'welcome' }) {
               </Suspense>
             )}
 
+            {view === 'contact' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <ContactPage t={t} />
+              </Suspense>
+            )}
+
+            {view === 'guides' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <GuidesPage t={t} />
+              </Suspense>
+            )}
+
+            {view === 'faq' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <FaqPage t={t} />
+              </Suspense>
+            )}
+
             {view === 'resourceArticle' && (
               <Suspense fallback={<LoadingFallback />}>
                 <ResourceArticlePage t={t} slug={resourceSlug} />
@@ -732,8 +756,8 @@ function App() {
               application, so unlike /signin they are routes rather than MainApp views. */}
           <Route path="/auth/callback"><Suspense fallback={<LoadingFallback />}><AuthCallback t={t} /></Suspense></Route>
           <Route path="/reset"><Suspense fallback={<LoadingFallback />}><ResetPasswordPage t={t} /></Suspense></Route>
-          {/* Everything else, /sandbox, /about, /resources and /terms-and-privacy
-              included — MainApp reads those off the location itself. */}
+          {/* Everything else, /sandbox and the STATIC_PATHS pages included —
+              MainApp reads those off the location itself. */}
           <Route><MainApp /></Route>
         </Switch>
       </ErrorBoundary>
