@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { CATEGORIES, TOOLS, findCategory, findTool } from '../tools';
+import { CATEGORIES, ORGANISATIONS, TOOLS, filterTools, findCategory, findTool } from '../tools';
 import { BUDGET, emptyBallot, tally } from '../../lib/budgetBallot';
 import { emptyVote } from '../../lib/openVote';
 
@@ -36,6 +36,53 @@ describe('the register', () => {
       expect(typeof tool.room.empty).toBe('function');
       expect(typeof tool.room.combine).toBe('function');
     }
+  });
+});
+
+describe('filterTools', () => {
+  const ids = (filters) => filterTools(TOOLS, filters).map((tool) => tool.id);
+
+  it('returns every tool with no filters', () => {
+    expect(ids({})).toHaveLength(TOOLS.length);
+  });
+
+  it('searches names, taglines, descriptions and organisations, ignoring case', () => {
+    expect(ids({ query: 'BUDGET' })).toEqual(['budget-ballot']);
+    expect(ids({ query: 'gehl' })).toEqual(['social-space-survey']);
+    expect(ids({ query: 'cycle track' })).toContain('street-mixer');
+  });
+
+  it('ignores accents, so a plain query finds an accented word', () => {
+    const accented = [{ ...TOOLS[0], id: 'accented', name: 'Malmö mapping' }];
+    expect(filterTools(accented, { query: 'malmo' }).map((tool) => tool.id)).toEqual(['accented']);
+  });
+
+  it('needs every word of the query to match somewhere', () => {
+    expect(ids({ query: 'vote room-free-nonsense' })).toEqual([]);
+  });
+
+  it('filters by category', () => {
+    expect(ids({ category: 'plan' })).toEqual(['budget-ballot', 'open-vote']);
+    expect(ids({ category: 'imagine' })).toEqual(['street-mixer']);
+  });
+
+  it('filters by the organisation that made the tool', () => {
+    expect(ids({ organisation: 'Gehl Institute' })).toEqual(['social-space-survey']);
+  });
+
+  it('keeps only the tools that can run in a room when asked', () => {
+    expect(ids({ groupOnly: true })).toEqual(['budget-ballot', 'open-vote']);
+  });
+
+  it('combines filters', () => {
+    expect(ids({ category: 'understand', query: 'map' })).toEqual(
+      expect.arrayContaining(['site-spatial-mapping', 'stationary-activity-mapping']),
+    );
+    expect(ids({ category: 'imagine', groupOnly: true })).toEqual([]);
+  });
+
+  it('lists each organisation once, alphabetically', () => {
+    expect(ORGANISATIONS).toEqual(['Gehl Institute', 'PLACER']);
   });
 });
 

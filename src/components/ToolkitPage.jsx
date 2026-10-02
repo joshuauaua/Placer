@@ -19,13 +19,13 @@ import { useEffect, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import posthog from 'posthog-js';
 import { Icon } from './Icon';
-import { Btn } from './UI';
+import { Btn, Chip } from './UI';
 import { ToolLayout } from './ToolLayout';
 import { RoomBar } from './toolkit/RoomBar';
 import { ToolCover } from './toolkit/ToolCover';
 import { ContributeToolDialog } from './ContributeToolDialog';
 import { useRoom } from './toolkit/useRoom';
-import { CATEGORIES, TOOLS, findTool } from '../toolkit/tools';
+import { CATEGORIES, ORGANISATIONS, TOOLS, filterTools, findCategory, findTool } from '../toolkit/tools';
 import { DEFAULT_LIFETIME, ROOM_LIFETIMES, projectIdFrom, roomIdFrom, roomPath } from '../toolkit/rooms';
 import { isSupabaseConfigured } from '../services/rooms';
 
@@ -57,7 +57,10 @@ function Tile({ t, tool, onOpen }) {
         <Icon name={tool.icon} size={150} stroke={1.4} />
       </span>
 
-      <Icon name={tool.icon} size={30} stroke={2.1} />
+      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, position: 'relative' }}>
+        <Icon name={tool.icon} size={30} stroke={2.1} />
+        <CategoryLabel t={t} tool={tool} />
+      </span>
       <span className="placer-h3" style={{ position: 'relative' }}>
         {tool.name}
       </span>
@@ -74,6 +77,160 @@ function Tile({ t, tool, onOpen }) {
         Open <Icon name="arrowRight" size={14} stroke={2.4} />
       </span>
     </button>
+  );
+}
+
+/** The tool's category, small and in capitals, so it reads without the grouping. */
+function CategoryLabel({ t, tool }) {
+  return (
+    <span className="placer-caption" style={{ textTransform: 'uppercase', fontWeight: 700,
+      letterSpacing: '0.06em', color: t.ink }}>
+      {findCategory(tool.category)?.name}
+    </span>
+  );
+}
+
+/** One tool as a row, for the list view: the same facts as a tile, side by side. */
+function Row({ t, tool, onOpen }) {
+  return (
+    <button
+      onClick={onOpen}
+      className="placer-toolkit-row"
+      style={{ display: 'flex', alignItems: 'center', gap: 16, width: '100%', textAlign: 'left', cursor: 'pointer',
+        padding: '16px 20px', border: 'none', borderBottom: `1px solid ${t.line}`, background: 'transparent',
+        color: t.ink, fontFamily: 'var(--placer-font)' }}>
+      <span style={{ width: 44, height: 44, borderRadius: 12, background: tool.tint, flex: '0 0 auto',
+        boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={tool.icon} size={22} stroke={2.1} />
+      </span>
+      <span style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={{ fontSize: 17, fontWeight: 700 }}>{tool.name}</span>
+        <span style={{ fontSize: 14, color: t.inkDim }}>{tool.tagline}</span>
+      </span>
+      <span className="placer-toolkit-row-meta" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
+        gap: 2, flex: '0 0 auto' }}>
+        <CategoryLabel t={t} tool={tool} />
+        {tool.createdBy && (
+          <span className="placer-caption" style={{ color: t.inkDim }}>By {tool.createdBy}</span>
+        )}
+      </span>
+      <Icon name="arrowRight" size={18} stroke={2.2} style={{ color: t.inkDim }} />
+    </button>
+  );
+}
+
+/** Grid or list, as a pair of toggle buttons. */
+function ViewToggle({ t, view, onChange }) {
+  const option = (id, icon, label) => (
+    <button
+      type="button"
+      onClick={() => onChange(id)}
+      aria-pressed={view === id}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px',
+        border: 'none', borderRadius: 10, cursor: 'pointer', fontFamily: 'var(--placer-font)',
+        fontSize: 14, fontWeight: 500, color: t.ink,
+        background: view === id ? t.surface : 'transparent',
+        boxShadow: view === id ? `inset 0 0 0 1px ${t.lineStrong}` : 'none' }}>
+      <Icon name={icon} size={15} stroke={2} />
+      {label}
+    </button>
+  );
+
+  return (
+    <div role="group" aria-label="View" style={{ display: 'inline-flex', gap: 2, padding: 2, borderRadius: 12,
+      background: t.surfaceAlt, border: `1px solid ${t.line}` }}>
+      {option('grid', 'grid', 'Grid')}
+      {option('list', 'menu', 'List')}
+    </div>
+  );
+}
+
+// The view a visitor last picked, remembered in this browser only. Storage can be
+// missing or throw (a private window, blocked site data), and then it is just grid.
+const VIEW_KEY = 'placer_toolkit_view';
+
+function readView() {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid';
+  } catch {
+    return 'grid';
+  }
+}
+
+function saveView(view) {
+  try {
+    localStorage.setItem(VIEW_KEY, view);
+  } catch {
+    // Not remembered, which is fine.
+  }
+}
+
+const NO_FILTERS = { query: '', category: null, organisation: null, groupOnly: false };
+
+/**
+ * The search box and filter chips above the gallery. `filters` is the shape
+ * filterTools takes; every change hands back a whole new one.
+ */
+function ToolFilters({ t, filters, onChange }) {
+  const set = (change) => onChange({ ...filters, ...change });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 40, paddingBottom: 32,
+      borderBottom: `1px solid ${t.line}` }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 10, height: 52, width: '100%', padding: '0 16px',
+        borderRadius: 12, border: `1px solid ${t.lineStrong}`, background: t.surface, color: t.ink }}>
+        <Icon name="search" size={19} stroke={2} style={{ color: t.inkDim }} />
+        <input
+          type="search"
+          value={filters.query}
+          onChange={(event) => set({ query: event.target.value })}
+          placeholder="Search tools, methods or organisations"
+          aria-label="Search the Toolkit"
+          style={{ flex: 1, minWidth: 0, height: '100%', border: 'none', outline: 'none', background: 'transparent',
+            fontFamily: 'var(--placer-font)', fontSize: 15, color: t.ink }} />
+      </label>
+
+      <FilterRow t={t} label="Category">
+        <Chip t={t} active={!filters.category} ariaPressed={!filters.category}
+          onClick={() => set({ category: null })}>All</Chip>
+        {CATEGORIES.map((category) => (
+          <Chip key={category.id} t={t} active={filters.category === category.id}
+            ariaPressed={filters.category === category.id}
+            onClick={() => set({ category: filters.category === category.id ? null : category.id })}>
+            {category.name}
+          </Chip>
+        ))}
+      </FilterRow>
+
+      <FilterRow t={t} label="Made by">
+        <Chip t={t} active={!filters.organisation} ariaPressed={!filters.organisation}
+          onClick={() => set({ organisation: null })}>Anyone</Chip>
+        {ORGANISATIONS.map((organisation) => (
+          <Chip key={organisation} t={t} active={filters.organisation === organisation}
+            ariaPressed={filters.organisation === organisation}
+            onClick={() => set({ organisation: filters.organisation === organisation ? null : organisation })}>
+            {organisation}
+          </Chip>
+        ))}
+      </FilterRow>
+
+      <FilterRow t={t} label="Use">
+        <Chip t={t} icon="user" active={filters.groupOnly} ariaPressed={filters.groupOnly}
+          title="Tools that can be run in a room, with people joining by PIN or QR code"
+          onClick={() => set({ groupOnly: !filters.groupOnly })}>
+          Works with a group
+        </Chip>
+      </FilterRow>
+    </div>
+  );
+}
+
+function FilterRow({ t, label, children }) {
+  return (
+    <div role="group" aria-label={label} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <span className="placer-caption" style={{ width: 72, color: t.inkDim, fontWeight: 500 }}>{label}</span>
+      {children}
+    </div>
   );
 }
 
@@ -181,6 +338,15 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
   // The Contribute button's pop-up form, for offering a tool to the PLACER Toolkit.
   const [contributing, setContributing] = useState(false);
 
+  // The gallery's search and filters. Held here rather than in the URL: they are a
+  // way of browsing, not something worth a link of its own.
+  const [filters, setFilters] = useState(NO_FILTERS);
+  const matching = filterTools(TOOLS, filters);
+  const [view, setView] = useState(readView);
+  const changeView = (next) => { setView(next); saveView(next); };
+  const filtering = filters.query.trim() !== ''
+    || Boolean(filters.category || filters.organisation) || filters.groupOnly;
+
   const Tool = tool?.component;
   // Offered only where a room would mean something, and only with a database behind it.
   const roomIsPossible =
@@ -248,25 +414,47 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
               </p>
             )}
 
-            {CATEGORIES.map((category) => {
-              const tools = TOOLS.filter((entry) => entry.category === category.id);
-              if (tools.length === 0) return null;
-              return (
-                <section key={category.id} aria-labelledby={`toolkit-${category.id}`} style={{ marginBottom: 48 }}>
-                  <h2 id={`toolkit-${category.id}`} className="placer-h2" style={{ color: t.ink }}>
-                    {category.name}
-                  </h2>
-                  <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6, marginTop: 4, marginBottom: 20 }}>
-                    {category.description}
-                  </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
-                    {tools.map((entry) => (
-                      <Tile key={entry.id} t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
+            <ToolFilters t={t} filters={filters} onChange={setFilters} />
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              flexWrap: 'wrap', marginBottom: 24 }}>
+              <p aria-live="polite" style={{ fontSize: 14, color: t.inkDim,
+                display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                {filtering
+                  ? `${matching.length} of ${TOOLS.length} tools`
+                  : `${TOOLS.length} tools`}
+                {filtering && (
+                  <Btn t={t} variant="ghost" size="sm" onClick={() => setFilters(NO_FILTERS)}>
+                    Clear filters
+                  </Btn>
+                )}
+              </p>
+              <ViewToggle t={t} view={view} onChange={changeView} />
+            </div>
+
+            {matching.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '64px 20px', color: t.inkDim }}>
+                <Icon name="search" size={40} stroke={1.6} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+                <p style={{ fontSize: 16, marginBottom: 16 }}>No tools match those filters.</p>
+                <Btn t={t} variant="outline" onClick={() => setFilters(NO_FILTERS)}>Clear filters</Btn>
+              </div>
+            )}
+
+            {matching.length > 0 && view === 'grid' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+                {matching.map((entry) => (
+                  <Tile key={entry.id} t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
+                ))}
+              </div>
+            )}
+
+            {matching.length > 0 && view === 'list' && (
+              <div style={{ borderTop: `1px solid ${t.line}` }}>
+                {matching.map((entry) => (
+                  <Row key={entry.id} t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
+                ))}
+              </div>
+            )}
 
             {contributing && (
               <ContributeToolDialog t={t} onClose={() => setContributing(false)} />

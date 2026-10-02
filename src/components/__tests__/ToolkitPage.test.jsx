@@ -85,20 +85,46 @@ describe('the gallery', () => {
     expect(TOOLS).toHaveLength(8);
   });
 
-  it('lists each tool under its category, in Understand, Imagine, Plan order', async () => {
+  it('shows every tool as one set of cards, each labelled with its category', async () => {
     renderPageAt('/toolkit');
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
 
-    expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent))
-      .toEqual(['Understand', 'Imagine', 'Plan']);
-    for (const category of CATEGORIES) {
-      const section = within(screen.getByRole('region', { name: category.name }));
-      for (const tool of TOOLS) {
-        const tile = section.queryByRole('button', { name: new RegExp(tool.name, 'i') });
-        if (tool.category === category.id) expect(tile).toBeInTheDocument();
-        else expect(tile).not.toBeInTheDocument();
-      }
+    expect(screen.queryAllByRole('heading', { level: 2 })).toHaveLength(0);
+    for (const tool of TOOLS) {
+      const category = CATEGORIES.find((entry) => entry.id === tool.category);
+      expect(screen.getByRole('button', { name: new RegExp(tool.name, 'i') })).toHaveTextContent(category.name);
     }
+  });
+
+  it('switches between grid and list, and remembers the choice', async () => {
+    const { unmount } = renderPageAt('/toolkit');
+    await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
+    const view = () => within(screen.getByRole('group', { name: 'View' }));
+
+    expect(view().getByRole('button', { name: 'Grid' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(view().getByRole('button', { name: 'List' }));
+    expect(view().getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
+    // Still every tool, and still openable.
+    for (const tool of TOOLS) {
+      expect(screen.getByRole('button', { name: new RegExp(tool.name, 'i') })).toBeInTheDocument();
+    }
+
+    unmount();
+    renderPageAt('/toolkit');
+    await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
+    expect(view().getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
+    localStorage.clear();
+  });
+
+  it('opens a tool from the list view too', async () => {
+    const { location } = renderPageAt('/toolkit');
+    await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
+
+    fireEvent.click(within(screen.getByRole('group', { name: 'View' })).getByRole('button', { name: 'List' }));
+    fireEvent.click(screen.getByRole('button', { name: /Open Vote/i }));
+
+    expect(location.history.at(-1)).toBe('/toolkit/open-vote');
+    localStorage.clear();
   });
 
   it('credits each tool to the organisation that made it', async () => {
@@ -106,6 +132,49 @@ describe('the gallery', () => {
 
     expect(await screen.findByRole('button', { name: /The Social Space Survey/i }))
       .toHaveTextContent('By Gehl Institute');
+  });
+
+  it('narrows the gallery as you search', async () => {
+    renderPageAt('/toolkit');
+    await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
+
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search the Toolkit' }), { target: { value: 'ballot' } });
+
+    expect(screen.getByRole('button', { name: /Budget Ballot/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Desire Lines/i })).not.toBeInTheDocument();
+    expect(screen.getByText(`1 of ${TOOLS.length} tools`)).toBeInTheDocument();
+  });
+
+  it('filters by category, organisation and group use', async () => {
+    renderPageAt('/toolkit');
+    await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
+    const group = (name) => within(screen.getByRole('group', { name }));
+
+    fireEvent.click(group('Category').getByRole('button', { name: 'Understand' }));
+    expect(screen.queryByRole('button', { name: /Open Vote/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Desire Lines/i })).toBeInTheDocument();
+
+    fireEvent.click(group('Made by').getByRole('button', { name: 'Gehl Institute' }));
+    expect(screen.getByRole('button', { name: /The Social Space Survey/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Desire Lines/i })).not.toBeInTheDocument();
+
+    fireEvent.click(group('Use').getByRole('button', { name: /Works with a group/ }));
+    expect(screen.getByText('No tools match those filters.')).toBeInTheDocument();
+  });
+
+  it('clears every filter at once', async () => {
+    renderPageAt('/toolkit');
+    await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
+
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search the Toolkit' }), { target: { value: 'zzz' } });
+    expect(screen.getByText('No tools match those filters.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Clear filters' })[0]);
+
+    expect(screen.getByRole('searchbox', { name: 'Search the Toolkit' })).toHaveValue('');
+    for (const tool of TOOLS) {
+      expect(screen.getByRole('button', { name: new RegExp(tool.name, 'i') })).toBeInTheDocument();
+    }
   });
 
   it('opens a tool, and puts it in the URL', async () => {
