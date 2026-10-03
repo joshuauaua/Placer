@@ -16,11 +16,12 @@
  * tool as a prop, so every tool has a link that can be shared.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import posthog from 'posthog-js';
 import { Icon } from './Icon';
 import { PageHeader } from './PageHeader';
+import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from './GalleryToolbar';
 import { Btn } from './UI';
 import { ToolLayout } from './ToolLayout';
 import { RoomBar } from './toolkit/RoomBar';
@@ -121,190 +122,7 @@ function Row({ t, tool, onOpen }) {
   );
 }
 
-// The view a visitor last picked, and the tools they have favourited, remembered in
-// this browser only. Storage can be missing or throw (a private window, blocked site
-// data), and then it is just grid, and no favourites.
-const VIEW_KEY = 'placer_toolkit_view';
-const FAVOURITES_KEY = 'placer_toolkit_favourites';
-
-function readView() {
-  try {
-    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid';
-  } catch {
-    return 'grid';
-  }
-}
-
-function saveView(view) {
-  try {
-    localStorage.setItem(VIEW_KEY, view);
-  } catch {
-    // Not remembered, which is fine.
-  }
-}
-
-function readFavourites() {
-  try {
-    const ids = JSON.parse(localStorage.getItem(FAVOURITES_KEY) ?? '[]');
-    return Array.isArray(ids) ? ids : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveFavourites(ids) {
-  try {
-    localStorage.setItem(FAVOURITES_KEY, JSON.stringify(ids));
-  } catch {
-    // Not remembered, which is fine.
-  }
-}
-
 const NO_FILTERS = { category: null, groupOnly: false };
-
-/**
- * The bar under the Toolkit's title, stuck to the header with it: the category menu
- * on the left, the sort order in the middle, and favourites and the two views on the
- * right.
- */
-function ToolkitToolbar({ t, filters, onFilters, sort, onSort, favouritesOnly, onFavouritesOnly, view, onView }) {
-  return (
-    <div className="placer-toolkit-toolbar">
-      <CategoryMenu t={t} filters={filters} onChange={onFilters} />
-      <SortTabs t={t} sort={sort} onChange={onSort} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifySelf: 'end' }}>
-        <RevealButton t={t} icon="heart" label="Favourites" pressed={favouritesOnly}
-          iconFill={favouritesOnly ? 'currentColor' : 'none'}
-          onClick={() => onFavouritesOnly(!favouritesOnly)} />
-        <div role="group" aria-label="View" style={{ display: 'flex', gap: 4 }}>
-          <RevealButton t={t} icon="grid" label="Grid" title="Grid view" pressed={view === 'grid'}
-            onClick={() => onView('grid')} />
-          <RevealButton t={t} icon="menu" label="List" title="List view" pressed={view === 'list'}
-            onClick={() => onView('list')} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * An icon button whose label slides out beside it on hover or focus, pushing the
- * icon to the left. Named by `label` either way. The slide is in index.css
- * (.placer-reveal-btn).
- */
-function RevealButton({ t, icon, label, title, pressed, onClick, iconFill = 'none' }) {
-  return (
-    <button type="button" onClick={onClick} aria-pressed={pressed} aria-label={label}
-      className={`placer-reveal-btn${pressed ? ' is-pressed' : ''}`} style={{ color: t.ink }}>
-      <Icon name={icon} size={20} stroke={2} fill={iconFill} />
-      <span className="placer-reveal-btn-label" aria-hidden="true">{title ?? label}</span>
-    </button>
-  );
-}
-
-/** Which tools to show, as a menu off a button: every tool, or one category. */
-function CategoryMenu({ t, filters, onChange }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  // Closes on a click anywhere else, and on Escape.
-  useEffect(() => {
-    if (!open) return undefined;
-    const onPointer = (event) => { if (!ref.current?.contains(event.target)) setOpen(false); };
-    const onKey = (event) => { if (event.key === 'Escape') setOpen(false); };
-    document.addEventListener('mousedown', onPointer);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onPointer);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
-
-  const current = findCategory(filters.category)?.name ?? 'All tools';
-  const choose = (change) => { onChange({ ...filters, ...change }); setOpen(false); };
-  const item = (key, label, selected, onClick) => (
-    <button key={key} type="button" role="menuitemradio" aria-checked={selected} onClick={onClick}
-      className="placer-toolkit-menu-item" style={{ color: t.ink, fontWeight: selected ? 700 : 400 }}>
-      <span style={{ width: 16, display: 'inline-flex' }}>
-        {selected && <Icon name="check" size={16} stroke={2.4} />}
-      </span>
-      {label}
-    </button>
-  );
-
-  return (
-    <div ref={ref} style={{ position: 'relative', justifySelf: 'start' }}>
-      <button type="button" onClick={() => setOpen((was) => !was)} aria-haspopup="menu" aria-expanded={open}
-        aria-label={`Category: ${current}`}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 10, height: 40, padding: '0 14px 0 18px',
-          borderRadius: 999, border: `1px solid ${t.ink}`, background: t.surface, color: t.ink, cursor: 'pointer',
-          fontFamily: 'var(--placer-font)', fontSize: 14, fontWeight: 500 }}>
-        {current}
-        {filters.groupOnly && <Icon name="user" size={14} stroke={2.2} />}
-        <Icon name="chevDown" size={16} stroke={2.2} />
-      </button>
-      {open && (
-        <div role="menu" aria-label="Category" style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0,
-          zIndex: 20, minWidth: 220, padding: 6, borderRadius: 12, background: t.surface,
-          border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
-          {item('all', 'All tools', !filters.category, () => choose({ category: null }))}
-          {CATEGORIES.map((category) => item(category.id, category.name, filters.category === category.id,
-            () => choose({ category: category.id })))}
-          <div style={{ borderTop: `1px solid ${t.line}`, margin: '6px 0' }} />
-          <button type="button" role="menuitemcheckbox" aria-checked={filters.groupOnly}
-            title="Tools that can be run in a room, with people joining by PIN or QR code"
-            onClick={() => choose({ groupOnly: !filters.groupOnly })}
-            className="placer-toolkit-menu-item" style={{ color: t.ink, fontWeight: filters.groupOnly ? 700 : 400 }}>
-            <span style={{ width: 16, display: 'inline-flex' }}>
-              {filters.groupOnly && <Icon name="check" size={16} stroke={2.4} />}
-            </span>
-            Works with a group
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * The order the gallery is in. The current one is underlined, with an arrow for its
- * direction, and choosing it again turns it round.
- */
-function SortTabs({ t, sort, onChange }) {
-  return (
-    <div role="group" aria-label="Sort" style={{ display: 'flex', justifySelf: 'center', gap: 4 }}>
-      {SORTS.map((option) => {
-        const active = sort.id === option.id;
-        return (
-          <button key={option.id} type="button" aria-pressed={active}
-            onClick={() => onChange(active
-              ? { id: option.id, direction: sort.direction === 'asc' ? 'desc' : 'asc' }
-              : { id: option.id, direction: option.direction })}
-            className="placer-toolkit-sort"
-            style={{ color: active ? t.ink : t.inkDim, fontWeight: active ? 700 : 500,
-              borderBottomColor: active ? t.ink : 'transparent' }}>
-            {option.name}
-            {active && (
-              <Icon name={sort.direction === 'asc' ? 'arrowUp' : 'arrowDown'} size={15} stroke={2.2}
-                style={{ marginLeft: 6 }} />
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/** The heart on a tile or a row: favourites the tool in this browser, or stops. */
-function FavouriteButton({ t, tool, favourite, onToggle, style }) {
-  const label = favourite ? `Remove ${tool.name} from favourites` : `Add ${tool.name} to favourites`;
-  return (
-    <button type="button" onClick={onToggle} aria-pressed={favourite} aria-label={label} title={label}
-      className="placer-toolkit-favourite" style={{ color: t.ink, ...style }}>
-      <Icon name="heart" size={20} stroke={2} fill={favourite ? 'currentColor' : 'none'} />
-    </button>
-  );
-}
 
 /**
  * Offered on a tool that can host a room, when there is a database to host it in
@@ -414,20 +232,12 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
   // way of browsing, not something worth a link of its own.
   const [filters, setFilters] = useState(NO_FILTERS);
   const [sort, setSort] = useState({ id: SORTS[0].id, direction: SORTS[0].direction });
-  const [favourites, setFavourites] = useState(readFavourites);
+  const [favourites, toggleFavourite] = useFavourites('placer_toolkit_favourites');
   const [favouritesOnly, setFavouritesOnly] = useState(false);
   const matching = sortTools(
     filterTools(TOOLS, filters).filter((entry) => !favouritesOnly || favourites.includes(entry.id)),
     sort.id, sort.direction);
-  const [view, setView] = useState(readView);
-  const changeView = (next) => { setView(next); saveView(next); };
-  const toggleFavourite = (id) => {
-    setFavourites((current) => {
-      const next = current.includes(id) ? current.filter((each) => each !== id) : [...current, id];
-      saveFavourites(next);
-      return next;
-    });
-  };
+  const [view, changeView] = useGalleryView('placer_toolkit_view');
   const clearFilters = () => { setFilters(NO_FILTERS); setFavouritesOnly(false); };
 
   const Tool = tool?.component;
@@ -459,9 +269,28 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
             </Btn>
           )}
           toolbar={(
-            <ToolkitToolbar t={t} filters={filters} onFilters={setFilters} sort={sort} onSort={setSort}
+            <GalleryToolbar t={t} sorts={SORTS} sort={sort} onSort={setSort}
               favouritesOnly={favouritesOnly} onFavouritesOnly={setFavouritesOnly}
-              view={view} onView={changeView} />
+              view={view} onView={changeView}
+              menu={{
+                label: 'Category',
+                current: findCategory(filters.category)?.name ?? 'All tools',
+                badge: filters.groupOnly ? 'user' : null,
+                sections: [
+                  [
+                    { key: 'all', label: 'All tools', selected: !filters.category,
+                      onSelect: () => setFilters({ ...filters, category: null }) },
+                    ...CATEGORIES.map((category) => ({ key: category.id, label: category.name,
+                      selected: filters.category === category.id,
+                      onSelect: () => setFilters({ ...filters, category: category.id }) })),
+                  ],
+                  [
+                    { key: 'group', kind: 'checkbox', label: 'Works with a group', selected: filters.groupOnly,
+                      title: 'Tools that can be run in a room, with people joining by PIN or QR code',
+                      onSelect: () => setFilters({ ...filters, groupOnly: !filters.groupOnly }) },
+                  ],
+                ],
+              }} />
           )} />
       )}
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -505,7 +334,7 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
                 {matching.map((entry) => (
                   <div key={entry.id} style={{ position: 'relative', display: 'flex' }}>
                     <Tile t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
-                    <FavouriteButton t={t} tool={entry} favourite={favourites.includes(entry.id)}
+                    <FavouriteButton t={t} name={entry.name} favourite={favourites.includes(entry.id)}
                       onToggle={() => toggleFavourite(entry.id)}
                       style={{ position: 'absolute', right: 14, bottom: 14 }} />
                   </div>
@@ -519,7 +348,7 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
                   <div key={entry.id} style={{ display: 'flex', alignItems: 'center',
                     borderBottom: `1px solid ${t.line}` }}>
                     <Row t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
-                    <FavouriteButton t={t} tool={entry} favourite={favourites.includes(entry.id)}
+                    <FavouriteButton t={t} name={entry.name} favourite={favourites.includes(entry.id)}
                       onToggle={() => toggleFavourite(entry.id)} style={{ margin: '0 12px' }} />
                   </div>
                 ))}

@@ -1427,10 +1427,10 @@ a {
 
 /* PLACER — the Toolkit's list view (see ToolkitPage.jsx). A row lifts to grey on
  * hover, and on a phone the category and maker drop out so the name has room. */
-/* The Toolkit's toolbar, under its title (see ToolkitToolbar in ToolkitPage.jsx):
+/* A gallery's toolbar, under its title (see GalleryToolbar.jsx), on the Toolkit and Projects:
  * the category menu, the sort tabs centred, and the icon buttons at the right. On a
  * narrow screen the sort tabs drop to a line of their own. */
-.placer-toolkit-toolbar {
+.placer-gallery-toolbar {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
@@ -1438,18 +1438,24 @@ a {
 }
 
 @media (max-width: 720px) {
-  .placer-toolkit-toolbar {
+  .placer-gallery-toolbar {
     grid-template-columns: auto 1fr;
   }
 
-  .placer-toolkit-toolbar > [role='group'][aria-label='Sort'] {
+  .placer-gallery-toolbar > .placer-gallery-sorts {
     grid-row: 2;
     grid-column: 1 / -1;
     justify-self: start !important;
   }
 }
 
-.placer-toolkit-sort {
+.placer-gallery-sorts {
+  display: flex;
+  justify-self: center;
+  gap: 4px;
+}
+
+.placer-gallery-sort {
   all: unset;
   display: inline-flex;
   align-items: center;
@@ -1462,14 +1468,14 @@ a {
   transition: color 0.15s ease;
 }
 
-.placer-toolkit-sort:hover {
+.placer-gallery-sort:hover {
   color: var(--placer-ink) !important;
 }
 
-.placer-toolkit-sort:focus-visible,
+.placer-gallery-sort:focus-visible,
 .placer-reveal-btn:focus-visible,
-.placer-toolkit-favourite:focus-visible,
-.placer-toolkit-menu-item:focus-visible {
+.placer-gallery-favourite:focus-visible,
+.placer-gallery-menu-item:focus-visible {
   outline: 2px solid var(--placer-ink);
   outline-offset: 2px;
 }
@@ -1517,7 +1523,7 @@ a {
   opacity: 1;
 }
 
-.placer-toolkit-menu-item {
+.placer-gallery-menu-item {
   all: unset;
   box-sizing: border-box;
   width: 100%;
@@ -1532,12 +1538,12 @@ a {
   font-size: 14px;
 }
 
-.placer-toolkit-menu-item:hover {
+.placer-gallery-menu-item:hover {
   background: var(--placer-grey-100);
 }
 
 /* The heart on a tile or row. */
-.placer-toolkit-favourite {
+.placer-gallery-favourite {
   all: unset;
   box-sizing: border-box;
   width: 40px;
@@ -1551,7 +1557,7 @@ a {
   transition: background 0.15s ease;
 }
 
-.placer-toolkit-favourite:hover {
+.placer-gallery-favourite:hover {
   background: rgba(255, 255, 255, 0.7);
 }
 
