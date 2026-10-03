@@ -29,7 +29,7 @@ function renderBanner() {
   );
 }
 
-const banner = () => screen.queryByRole('region', { name: 'Cookie consent' });
+const banner = () => screen.queryByRole('region', { name: 'Analytics consent' });
 
 describe('CookieBanner', () => {
   beforeEach(async () => {
@@ -50,7 +50,7 @@ describe('CookieBanner', () => {
   it('asks before analytics run when no decision has been made', () => {
     renderBanner();
     expect(banner()).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Accept' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Accept analytics' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reject' })).toBeInTheDocument();
     // Showing the banner must not itself load PostHog.
     expect(posthog.init).not.toHaveBeenCalled();
@@ -80,7 +80,7 @@ describe('CookieBanner', () => {
 
   it('loads PostHog and opts in on Accept, remembering the decision', () => {
     renderBanner();
-    fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Accept analytics' }));
 
     expect(localStorage.getItem(CONSENT_KEY)).toBe('granted');
     expect(posthog.init).toHaveBeenCalledTimes(1);
@@ -103,7 +103,7 @@ describe('CookieBanner', () => {
   it('does not touch PostHog when it is unconfigured but a choice is somehow made', () => {
     renderBanner();
     vi.stubEnv('VITE_POSTHOG_KEY', '');
-    fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Accept analytics' }));
 
     expect(localStorage.getItem(CONSENT_KEY)).toBe('granted');
     expect(posthog.init).not.toHaveBeenCalled();
