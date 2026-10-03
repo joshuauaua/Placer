@@ -816,11 +816,12 @@ a {
  *
  * Desktop: a matte-glass panel 280px wide (72px collapsed), inset 12px from the
  * window, 16px corners, 48px items with 12px corners, 20px icons and 16px labels.
- * The current place is white at 60% and bold. It sticks below the top bar while
- * the page scrolls.
+ * The current place is white at 60% and bold, with an ink line down its left
+ * edge. It sticks below the top bar while the page scrolls.
  *
  * Below 1024px it becomes the glass tab bar along the bottom: 64px plus the safe
- * area, icons over 12px labels, the collapse toggle gone.
+ * area, icons over 12px labels, the collapse toggle and the current place's line
+ * gone.
  */
 .placer-side-nav {
   flex: 0 0 auto;
@@ -897,7 +898,6 @@ a {
 /* Settings, pushed to the foot of the column and ruled off from the places. */
 .placer-side-nav-bottom {
   margin-top: auto;
-  position: relative;
 }
 
 .placer-side-nav-bottom::before {
@@ -907,6 +907,23 @@ a {
   left: 0;
   right: 0;
   border-top: 1px solid var(--placer-grey-200);
+}
+
+/* The line left of the current place's icon. ::after, since Settings' ::before is
+   its rule. Not on New project, which is a button rather than a place. */
+.placer-side-nav-link {
+  position: relative;
+}
+
+.placer-side-nav-link[aria-current='page']:not(.placer-side-nav-primary)::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--placer-ink);
 }
 
 /* New project, above the places and set apart from them as the one action: a
@@ -1000,6 +1017,10 @@ a {
   /* Keep the last of the page and the footer clear of the tab bar. */
   .placer-under-glass-nav:has(.placer-side-nav) {
     padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  .placer-side-nav-link[aria-current='page']::after {
+    display: none;
+  }
+
   }
 }
 
