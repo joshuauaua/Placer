@@ -2,12 +2,11 @@ import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { SettingsPage } from '../SettingsPage';
 import { saveProfile } from '../../services/profile';
-import { removeProfileImageFile, updatePassword, uploadCover, uploadProfilePhoto } from '../../services/auth';
+import { removeProfileImageFile, updatePassword, uploadProfilePhoto } from '../../services/auth';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/auth', () => ({
   updatePassword: vi.fn(() => Promise.resolve()),
-  uploadCover: vi.fn(() => Promise.resolve('user-1/cover-2.jpg')),
   uploadProfilePhoto: vi.fn(() => Promise.resolve('avatars/user-1/avatar-2.jpg')),
   removeProfileImageFile: vi.fn(() => Promise.resolve()),
 }));
@@ -35,7 +34,7 @@ const setup = (overrides = {}) => {
 };
 
 const PROFILE = 'Edit your profile';
-const PICTURES = 'Profile photo and cover';
+const PICTURES = 'Profile photo';
 const PASSWORD = 'Change your password';
 const ORGANISATIONS = 'Manage your organisations';
 const ANALYTICS = 'Analytics';
@@ -181,26 +180,14 @@ describe('SettingsPage, bio and location', () => {
     await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ website: 'mara.se' }));
   });
 
-  it('offers no cover image for a local-only profile, which has nowhere to store one', () => {
-    setup();
+  it('offers no cover image at all, only the profile photo', () => {
+    setup({ option: PICTURES, email: 'mara@example.com' });
 
-    expect(screen.queryByRole('button', { name: PICTURES })).not.toBeInTheDocument();
+    expect(screen.queryByText('Cover image')).not.toBeInTheDocument();
+    expect(screen.queryByText('Upload a cover')).not.toBeInTheDocument();
   });
 
-  it('uploads a cover, points the profile at it, and deletes the old one', async () => {
-    const onSaveProfile = vi.fn(() => Promise.resolve());
-    setup({ option: PICTURES, email: 'mara@example.com', onSaveProfile,
-      profile: { name: 'Mara Quinn', bio: '', coverPath: 'user-1/cover-1.jpg', cover: 'https://cdn/x.jpg' } });
-
-    const file = new File(['x'], 'cover.jpg', { type: 'image/jpeg' });
-    fireEvent.change(screen.getByText('Replace cover').querySelector('input'), { target: { files: [file] } });
-
-    await waitFor(() => expect(removeProfileImageFile).toHaveBeenCalledWith('user-1/cover-1.jpg'));
-    expect(uploadCover).toHaveBeenCalledWith(file);
-    expect(onSaveProfile).toHaveBeenCalledWith({ coverPath: 'user-1/cover-2.jpg' });
-  });
-
-  it('offers no profile photo for a local-only profile either', () => {
+  it('offers no profile photo for a local-only profile', () => {
     setup();
 
     expect(screen.queryByText('Profile photo')).not.toBeInTheDocument();
@@ -224,7 +211,6 @@ describe('SettingsPage, bio and location', () => {
     setup({ option: PICTURES, email: 'mara@example.com', onSaveProfile,
       profile: { name: 'Mara Quinn', bio: '', photoPath: 'avatars/user-1/avatar-1.jpg', photo: 'https://cdn/a.jpg' } });
 
-    // The cover card has no cover, so the only Remove button is the photo's.
     fireEvent.click(screen.getByRole('button', { name: /Remove/ }));
 
     await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ photoPath: null }));
@@ -309,7 +295,7 @@ describe('SettingsPage, avatar', () => {
 
     expect(screen.queryByRole('radiogroup', { name: 'Avatar icon' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Save avatar/ })).not.toBeInTheDocument();
-    expect(screen.getByText('Profile photo')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Profile photo' })).toBeInTheDocument();
   });
 
   it('shows the initials in the photo circle until a photo is added', () => {

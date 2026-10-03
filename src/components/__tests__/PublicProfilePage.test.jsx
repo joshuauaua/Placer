@@ -67,11 +67,11 @@ describe('PublicProfilePage', () => {
     expect(await screen.findAllByText('Not shared')).toHaveLength(2);
   });
 
-  it('puts the cover image behind the name', async () => {
+  it('shows no cover image behind the name, even one saved before covers were dropped', async () => {
     setup();
 
     const heading = await screen.findByRole('heading', { level: 1, name: 'Mara Quinn' });
-    expect(heading.closest('header').style.backgroundImage).toContain('cover-1.jpg');
+    expect(heading.closest('header').style.backgroundImage).not.toContain('cover-1.jpg');
   });
 
   it('has no Imaginations section, and does not fetch what they posted', async () => {

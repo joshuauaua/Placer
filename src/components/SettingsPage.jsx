@@ -11,7 +11,7 @@ import { Icon } from './Icon';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
 import { ImagePicker } from './ImagePicker';
 import {
-  removeProfileImageFile, updatePassword, uploadCover, uploadProfilePhoto,
+  removeProfileImageFile, updatePassword, uploadProfilePhoto,
 } from '../services/auth';
 import { isSupabaseConfigured, readPreferences, savePreferences } from '../services/notifications';
 import { googleMapsApiKey, isGoogleMapsConfigured, loadGoogleMaps } from '../lib/googleMaps';
@@ -316,36 +316,11 @@ async function replaceProfileImage({ onSaveProfile, field, previous, nextPath })
   if (previous && previous !== nextPath) await removeProfileImageFile(previous);
 }
 
-// The picture across the top of the public profile. Uploading saves straight away —
-// there is nothing to review between choosing a file and wanting it — and the old
-// file is deleted once the profile points at the new one. Account path only: covers
-// live in the R2 bucket, and a local-only visitor has no account to upload one with.
-function CoverPicker({ t, profile, onSaveProfile }) {
-  const cover = profile?.cover ?? null;
-  const replace = (nextPath) => replaceProfileImage({
-    onSaveProfile, field: 'coverPath', previous: profile?.coverPath ?? null, nextPath });
-
-  return (
-    <Card t={t} title="Cover image">
-      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
-        The wide picture across the top of your public profile, with your name on it. A
-        landscape photo works best. It is resized, and saved without its location data.
-        Optional.
-      </p>
-      <div style={{ height: 140, borderRadius: 12, marginBottom: 20, border: `1px solid ${t.line}`,
-        background: cover ? `center / cover no-repeat url("${cover}")` : t.surfaceAlt,
-        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {!cover && <span style={{ fontSize: 14, color: t.inkFaint }}>No cover yet</span>}
-      </div>
-      <ImagePicker t={t} hasImage={!!cover} uploadLabel="Upload a cover" replaceLabel="Replace cover"
-        onUpload={async (file) => replace(await uploadCover(file))} onRemove={() => replace(null)} />
-    </Card>
-  );
-}
-
 // The photo in the avatar circle, shown instead of the initials a new account starts
-// with. Saves straight away, like the cover, and for the same reason is account path
-// only.
+// with. Uploading saves straight away — there is nothing to review between choosing a
+// file and wanting it — and the old file is deleted once the profile points at the new
+// one. Account path only: photos live in the R2 bucket, and a local-only visitor has
+// no account to upload one with.
 function ProfilePhotoPicker({ t, profile, onSaveProfile }) {
   const photo = profile?.photo ?? null;
   const replace = (nextPath) => replaceProfileImage({
@@ -670,15 +645,10 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
         </>
       ),
     },
-    pictures: {
-      category: 'Profile Settings', icon: 'image', title: 'Profile photo and cover', show: Boolean(email),
-      description: 'The photo in your avatar circle, and the picture across your public profile',
-      cards: (
-        <>
-          <ProfilePhotoPicker {...profileArgs} />
-          <CoverPicker {...profileArgs} />
-        </>
-      ),
+    photo: {
+      category: 'Profile Settings', icon: 'image', title: 'Profile photo', show: Boolean(email),
+      description: 'The photo in your avatar circle, in place of your initials',
+      cards: <ProfilePhotoPicker {...profileArgs} />,
     },
     password: {
       category: 'Account', icon: 'lock', title: 'Change your password', show: Boolean(email),

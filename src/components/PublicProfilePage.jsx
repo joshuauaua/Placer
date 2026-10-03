@@ -111,16 +111,12 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page }}
       className="placer-scroll">
-      {/* The cover, edge to edge, with the name and location on it. Without a cover it
-        * is a plain grey band, and the text is ink rather than white. */}
-      <header className={`placer-profile-cover${person.cover ? ' placer-profile-cover-image' : ''}`}
-        style={person.cover
-          ? { backgroundImage: `url("${person.cover}")` }
-          : { background: t.surfaceAlt }}>
-        <div className="placer-profile-cover-inner"
-          style={{ color: person.cover ? '#FFFFFF' : t.ink }}>
-          <Avatar name={person.name} photo={person.photo} size={72}
-            ring={person.cover ? '#FFFFFF' : t.line} />
+      {/* A plain grey band, edge to edge, with the name and location on it. People have
+        * no cover image (organisations still do), so a cover saved before they were
+        * dropped is not shown. */}
+      <header className="placer-profile-cover" style={{ background: t.surfaceAlt }}>
+        <div className="placer-profile-cover-inner" style={{ color: t.ink }}>
+          <Avatar name={person.name} photo={person.photo} size={72} ring={t.line} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <h1 className="placer-disp placer-profile-title">{person.name}</h1>
             {person.location && (
