@@ -6,14 +6,18 @@
  * is padded on either side; `inset` is that padding, which the header reaches back
  * out across so its background and rule run the page's full width. `maxWidth` lines
  * its text up with the page's column.
+ *
+ * `toolbar`, optional, is a row under the title that stays stuck with it — the
+ * Toolkit's filter, sort and view controls.
  */
 
 import { Icon } from './Icon';
 
-export function PageHeader({ t, icon, label, title, actions, inset = 40, maxWidth = 1200, style }) {
+export function PageHeader({ t, icon, label, title, actions, toolbar, inset = 40, maxWidth = 1200, style }) {
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 10, margin: `0 -${inset}px 32px`,
-      padding: `48px ${inset}px 24px`, background: t.page, borderBottom: `1px solid ${t.line}`, ...style }}>
+      padding: `48px ${inset}px ${toolbar ? 12 : 24}px`, background: t.page, borderBottom: `1px solid ${t.line}`,
+      ...style }}>
       <div style={{ maxWidth, margin: '0 auto', display: 'flex', alignItems: 'flex-end',
         justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
         <div style={{ minWidth: 0 }}>
@@ -29,6 +33,7 @@ export function PageHeader({ t, icon, label, title, actions, inset = 40, maxWidt
         </div>
         {actions && <div style={{ display: 'flex', gap: 12, flex: '0 0 auto' }}>{actions}</div>}
       </div>
+      {toolbar && <div style={{ maxWidth, margin: '24px auto 0' }}>{toolbar}</div>}
     </header>
   );
 }

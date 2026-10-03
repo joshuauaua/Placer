@@ -28,6 +28,9 @@ function renderPageAt(path) {
   return { ...result, location };
 }
 
+/** A tool's tile or row, by its name, and not the heart beside it that names it too. */
+const tile = (pattern) => (name) => pattern.test(name) && !name.endsWith('favourites');
+
 /** Past a tool's cover page, to the tool itself. */
 const start = () => fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
 
@@ -80,7 +83,7 @@ describe('the gallery', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Toolkit' })).toBeInTheDocument();
     for (const tool of TOOLS) {
-      expect(screen.getByRole('button', { name: new RegExp(tool.name, 'i') })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: tile(new RegExp(tool.name, 'i')) })).toBeInTheDocument();
     }
     expect(TOOLS).toHaveLength(8);
   });
@@ -92,7 +95,7 @@ describe('the gallery', () => {
     expect(screen.queryAllByRole('heading', { level: 2 })).toHaveLength(0);
     for (const tool of TOOLS) {
       const category = CATEGORIES.find((entry) => entry.id === tool.category);
-      expect(screen.getByRole('button', { name: new RegExp(tool.name, 'i') })).toHaveTextContent(category.name);
+      expect(screen.getByRole('button', { name: tile(new RegExp(tool.name, 'i')) })).toHaveTextContent(category.name);
     }
   });
 
@@ -106,7 +109,7 @@ describe('the gallery', () => {
     expect(view().getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
     // Still every tool, and still openable.
     for (const tool of TOOLS) {
-      expect(screen.getByRole('button', { name: new RegExp(tool.name, 'i') })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: tile(new RegExp(tool.name, 'i')) })).toBeInTheDocument();
     }
 
     unmount();
@@ -121,7 +124,7 @@ describe('the gallery', () => {
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
 
     fireEvent.click(within(screen.getByRole('group', { name: 'View' })).getByRole('button', { name: 'List' }));
-    fireEvent.click(screen.getByRole('button', { name: /Open Vote/i }));
+    fireEvent.click(screen.getByRole('button', { name: tile(/Open Vote/i) }));
 
     expect(location.history.at(-1)).toBe('/toolkit/open-vote');
     localStorage.clear();
@@ -130,57 +133,112 @@ describe('the gallery', () => {
   it('credits each tool to the organisation that made it', async () => {
     renderPageAt('/toolkit');
 
-    expect(await screen.findByRole('button', { name: /The Social Space Survey/i }))
+    expect(await screen.findByRole('button', { name: tile(/The Social Space Survey/i) }))
       .toHaveTextContent('By Gehl Institute');
   });
 
-  it('narrows the gallery as you search', async () => {
+  it('has no search box, description or tool count', async () => {
     renderPageAt('/toolkit');
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
 
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Search the Toolkit' }), { target: { value: 'ballot' } });
-
-    expect(screen.getByRole('button', { name: /Budget Ballot/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Desire Lines/i })).not.toBeInTheDocument();
-    expect(screen.getByText(`1 of ${TOOLS.length} tools`)).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Participatory placemaking methods/)).not.toBeInTheDocument();
+    expect(screen.queryByText(`${TOOLS.length} tools`)).not.toBeInTheDocument();
   });
 
-  it('filters by category, organisation and group use', async () => {
+  it('filters by category and group use from the category menu', async () => {
     renderPageAt('/toolkit');
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
-    const group = (name) => within(screen.getByRole('group', { name }));
+    const openMenu = () => fireEvent.click(screen.getByRole('button', { name: /^Category:/ }));
 
-    fireEvent.click(group('Category').getByRole('button', { name: 'Understand' }));
-    expect(screen.queryByRole('button', { name: /Open Vote/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Desire Lines/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Category: All tools' })).toBeInTheDocument();
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Understand' }));
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Category: Understand' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: tile(/Open Vote/i) })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: tile(/Desire Lines/i) })).toBeInTheDocument();
 
-    fireEvent.click(group('Made by').getByRole('button', { name: 'Gehl Institute' }));
-    expect(screen.getByRole('button', { name: /The Social Space Survey/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Desire Lines/i })).not.toBeInTheDocument();
-
-    fireEvent.click(group('Use').getByRole('button', { name: /Works with a group/ }));
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Works with a group' }));
     expect(screen.getByText('No tools match those filters.')).toBeInTheDocument();
+
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'All tools' }));
+    expect(screen.getByRole('button', { name: tile(/Open Vote/i) })).toBeInTheDocument();
+  });
+
+  it('sorts by Recent, A-Z or Organisation, and turns the current order round', async () => {
+    renderPageAt('/toolkit');
+    await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
+    const sorts = within(screen.getByRole('group', { name: 'Sort' }));
+    const names = () => screen.getAllByRole('button', { name: tile(/./) })
+      .map((button) => TOOLS.find((tool) => button.textContent.includes(tool.name))?.name)
+      .filter(Boolean);
+
+    // Newest first to begin with: Open Vote is the latest tool added.
+    expect(sorts.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
+    expect(names()[0]).toBe('Open Vote');
+
+    fireEvent.click(sorts.getByRole('button', { name: 'A-Z' }));
+    const alphabetical = TOOLS.map((tool) => tool.name).sort((a, b) => a.localeCompare(b));
+    expect(names()).toEqual(alphabetical);
+    fireEvent.click(sorts.getByRole('button', { name: 'A-Z' }));
+    expect(names()).toEqual([...alphabetical].reverse());
+
+    fireEvent.click(sorts.getByRole('button', { name: 'Organisation' }));
+    expect(names()[0]).toBe('The Social Space Survey');
+  });
+
+  it('keeps favourites in this browser, and shows only them on request', async () => {
+    const { unmount } = renderPageAt('/toolkit');
+    await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add Desire Lines to favourites' }));
+    expect(screen.getByRole('button', { name: 'Remove Desire Lines from favourites' }))
+      .toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Favourites' }));
+    expect(screen.getByRole('button', { name: tile(/Desire Lines/i) })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: tile(/Open Vote/i) })).not.toBeInTheDocument();
+
+    unmount();
+    renderPageAt('/toolkit');
+    await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
+    expect(screen.getByRole('button', { name: 'Remove Desire Lines from favourites' })).toBeInTheDocument();
+    localStorage.clear();
+  });
+
+  it('says how to add a favourite when there are none', async () => {
+    renderPageAt('/toolkit');
+    await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Favourites' }));
+    expect(screen.getByText(/No favourites yet/)).toBeInTheDocument();
   });
 
   it('clears every filter at once', async () => {
     renderPageAt('/toolkit');
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
 
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Search the Toolkit' }), { target: { value: 'zzz' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Category:/ }));
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Works with a group' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Category:/ }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Understand' }));
     expect(screen.getByText('No tools match those filters.')).toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Clear filters' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
 
-    expect(screen.getByRole('searchbox', { name: 'Search the Toolkit' })).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'Category: All tools' })).toBeInTheDocument();
     for (const tool of TOOLS) {
-      expect(screen.getByRole('button', { name: new RegExp(tool.name, 'i') })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: tile(new RegExp(tool.name, 'i')) })).toBeInTheDocument();
     }
   });
 
   it('opens a tool, and puts it in the URL', async () => {
     const { location } = renderPageAt('/toolkit');
 
-    fireEvent.click(screen.getByRole('button', { name: /Street Section Mixer/i }));
+    fireEvent.click(screen.getByRole('button', { name: tile(/Street Section Mixer/i) }));
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' })).toBeInTheDocument();
     expect(location.history.at(-1)).toBe('/toolkit/street-mixer');
@@ -209,7 +267,7 @@ describe('the gallery', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Toolkit' })).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('There is no tool called teleporter');
-    expect(screen.getByRole('button', { name: /Budget Ballot/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: tile(/Budget Ballot/i) })).toBeInTheDocument();
   });
 
   it('opens a tool on its cover page, and shows the tool after Get started', async () => {
@@ -233,7 +291,7 @@ describe('the gallery', () => {
     start();
 
     fireEvent.click(screen.getByRole('button', { name: /all tools/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /Desire Lines/i }));
+    fireEvent.click(await screen.findByRole('button', { name: tile(/Desire Lines/i) }));
 
     expect(await screen.findByRole('button', { name: 'Get started' })).toBeInTheDocument();
   });

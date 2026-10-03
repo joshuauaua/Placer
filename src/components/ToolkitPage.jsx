@@ -1,8 +1,9 @@
 /* PLACER — Toolkit: the participatory methods PLACER hosts, as tools to use.
  *
  * Each tool is a method made by an organisation, in one of three categories —
- * Understand, Imagine or Plan — and the gallery lists them under those headings.
- * Each is self-contained: no sign-in, nothing saved, and something moving within a
+ * Understand, Imagine or Plan. The gallery shows them as one set, under a header
+ * whose toolbar picks a category, an order (Recent, A-Z, Organisation), favourites
+ * and grid or list. Each is self-contained: no sign-in, nothing saved, and something moving within a
  * second of arriving. The register of tools is src/toolkit/tools.js.
  *
  * The exception to "nothing saved" is a room: a tool whose register entry has
@@ -15,18 +16,18 @@
  * tool as a prop, so every tool has a link that can be shared.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import posthog from 'posthog-js';
 import { Icon } from './Icon';
 import { PageHeader } from './PageHeader';
-import { Btn, Chip } from './UI';
+import { Btn } from './UI';
 import { ToolLayout } from './ToolLayout';
 import { RoomBar } from './toolkit/RoomBar';
 import { ToolCover } from './toolkit/ToolCover';
 import { ContributeToolDialog } from './ContributeToolDialog';
 import { useRoom } from './toolkit/useRoom';
-import { CATEGORIES, ORGANISATIONS, TOOLS, filterTools, findCategory, findTool } from '../toolkit/tools';
+import { CATEGORIES, SORTS, TOOLS, filterTools, findCategory, findTool, sortTools } from '../toolkit/tools';
 import { DEFAULT_LIFETIME, ROOM_LIFETIMES, projectIdFrom, roomIdFrom, roomPath } from '../toolkit/rooms';
 import { isSupabaseConfigured } from '../services/rooms';
 
@@ -45,7 +46,7 @@ function Tile({ t, tool, onOpen }) {
   return (
     <button
       onClick={onOpen}
-      style={{ position: 'relative', overflow: 'hidden', textAlign: 'left', cursor: 'pointer',
+      style={{ position: 'relative', overflow: 'hidden', textAlign: 'left', cursor: 'pointer', flex: 1,
         border: `1px solid ${tool.color}`, borderRadius: 16, padding: 24, minHeight: 220,
         background: tool.tint,
         color: t.ink, display: 'flex', flexDirection: 'column', gap: 8,
@@ -98,7 +99,7 @@ function Row({ t, tool, onOpen }) {
       onClick={onOpen}
       className="placer-toolkit-row"
       style={{ display: 'flex', alignItems: 'center', gap: 16, width: '100%', textAlign: 'left', cursor: 'pointer',
-        padding: '16px 20px', border: 'none', borderBottom: `1px solid ${t.line}`, background: 'transparent',
+        flex: 1, minWidth: 0, padding: '16px 20px', border: 'none', background: 'transparent',
         color: t.ink, fontFamily: 'var(--placer-font)' }}>
       <span style={{ width: 44, height: 44, borderRadius: 12, background: tool.tint, flex: '0 0 auto',
         boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -120,35 +121,11 @@ function Row({ t, tool, onOpen }) {
   );
 }
 
-/** Grid or list, as a pair of toggle buttons. */
-function ViewToggle({ t, view, onChange }) {
-  const option = (id, icon, label) => (
-    <button
-      type="button"
-      onClick={() => onChange(id)}
-      aria-pressed={view === id}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px',
-        border: 'none', borderRadius: 10, cursor: 'pointer', fontFamily: 'var(--placer-font)',
-        fontSize: 14, fontWeight: 500, color: t.ink,
-        background: view === id ? t.surface : 'transparent',
-        boxShadow: view === id ? `inset 0 0 0 1px ${t.lineStrong}` : 'none' }}>
-      <Icon name={icon} size={15} stroke={2} />
-      {label}
-    </button>
-  );
-
-  return (
-    <div role="group" aria-label="View" style={{ display: 'inline-flex', gap: 2, padding: 2, borderRadius: 12,
-      background: t.surfaceAlt, border: `1px solid ${t.line}` }}>
-      {option('grid', 'grid', 'Grid')}
-      {option('list', 'menu', 'List')}
-    </div>
-  );
-}
-
-// The view a visitor last picked, remembered in this browser only. Storage can be
-// missing or throw (a private window, blocked site data), and then it is just grid.
+// The view a visitor last picked, and the tools they have favourited, remembered in
+// this browser only. Storage can be missing or throw (a private window, blocked site
+// data), and then it is just grid, and no favourites.
 const VIEW_KEY = 'placer_toolkit_view';
+const FAVOURITES_KEY = 'placer_toolkit_favourites';
 
 function readView() {
   try {
@@ -166,72 +143,166 @@ function saveView(view) {
   }
 }
 
-const NO_FILTERS = { query: '', category: null, organisation: null, groupOnly: false };
+function readFavourites() {
+  try {
+    const ids = JSON.parse(localStorage.getItem(FAVOURITES_KEY) ?? '[]');
+    return Array.isArray(ids) ? ids : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveFavourites(ids) {
+  try {
+    localStorage.setItem(FAVOURITES_KEY, JSON.stringify(ids));
+  } catch {
+    // Not remembered, which is fine.
+  }
+}
+
+const NO_FILTERS = { category: null, groupOnly: false };
 
 /**
- * The search box and filter chips above the gallery. `filters` is the shape
- * filterTools takes; every change hands back a whole new one.
+ * The bar under the Toolkit's title, stuck to the header with it: the category menu
+ * on the left, the sort order in the middle, and favourites and the two views on the
+ * right.
  */
-function ToolFilters({ t, filters, onChange }) {
-  const set = (change) => onChange({ ...filters, ...change });
-
+function ToolkitToolbar({ t, filters, onFilters, sort, onSort, favouritesOnly, onFavouritesOnly, view, onView }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 40, paddingBottom: 32,
-      borderBottom: `1px solid ${t.line}` }}>
-      <label style={{ display: 'flex', alignItems: 'center', gap: 10, height: 52, width: '100%', padding: '0 16px',
-        borderRadius: 12, border: `1px solid ${t.lineStrong}`, background: t.surface, color: t.ink }}>
-        <Icon name="search" size={19} stroke={2} style={{ color: t.inkDim }} />
-        <input
-          type="search"
-          value={filters.query}
-          onChange={(event) => set({ query: event.target.value })}
-          placeholder="Search tools, methods or organisations"
-          aria-label="Search the Toolkit"
-          style={{ flex: 1, minWidth: 0, height: '100%', border: 'none', outline: 'none', background: 'transparent',
-            fontFamily: 'var(--placer-font)', fontSize: 15, color: t.ink }} />
-      </label>
-
-      <FilterRow t={t} label="Category">
-        <Chip t={t} active={!filters.category} ariaPressed={!filters.category}
-          onClick={() => set({ category: null })}>All</Chip>
-        {CATEGORIES.map((category) => (
-          <Chip key={category.id} t={t} active={filters.category === category.id}
-            ariaPressed={filters.category === category.id}
-            onClick={() => set({ category: filters.category === category.id ? null : category.id })}>
-            {category.name}
-          </Chip>
-        ))}
-      </FilterRow>
-
-      <FilterRow t={t} label="Made by">
-        <Chip t={t} active={!filters.organisation} ariaPressed={!filters.organisation}
-          onClick={() => set({ organisation: null })}>Anyone</Chip>
-        {ORGANISATIONS.map((organisation) => (
-          <Chip key={organisation} t={t} active={filters.organisation === organisation}
-            ariaPressed={filters.organisation === organisation}
-            onClick={() => set({ organisation: filters.organisation === organisation ? null : organisation })}>
-            {organisation}
-          </Chip>
-        ))}
-      </FilterRow>
-
-      <FilterRow t={t} label="Use">
-        <Chip t={t} icon="user" active={filters.groupOnly} ariaPressed={filters.groupOnly}
-          title="Tools that can be run in a room, with people joining by PIN or QR code"
-          onClick={() => set({ groupOnly: !filters.groupOnly })}>
-          Works with a group
-        </Chip>
-      </FilterRow>
+    <div className="placer-toolkit-toolbar">
+      <CategoryMenu t={t} filters={filters} onChange={onFilters} />
+      <SortTabs t={t} sort={sort} onChange={onSort} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifySelf: 'end' }}>
+        <RevealButton t={t} icon="heart" label="Favourites" pressed={favouritesOnly}
+          iconFill={favouritesOnly ? 'currentColor' : 'none'}
+          onClick={() => onFavouritesOnly(!favouritesOnly)} />
+        <div role="group" aria-label="View" style={{ display: 'flex', gap: 4 }}>
+          <RevealButton t={t} icon="grid" label="Grid" title="Grid view" pressed={view === 'grid'}
+            onClick={() => onView('grid')} />
+          <RevealButton t={t} icon="menu" label="List" title="List view" pressed={view === 'list'}
+            onClick={() => onView('list')} />
+        </div>
+      </div>
     </div>
   );
 }
 
-function FilterRow({ t, label, children }) {
+/**
+ * An icon button whose label slides out beside it on hover or focus, pushing the
+ * icon to the left. Named by `label` either way. The slide is in index.css
+ * (.placer-reveal-btn).
+ */
+function RevealButton({ t, icon, label, title, pressed, onClick, iconFill = 'none' }) {
   return (
-    <div role="group" aria-label={label} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-      <span className="placer-caption" style={{ width: 72, color: t.inkDim, fontWeight: 500 }}>{label}</span>
-      {children}
+    <button type="button" onClick={onClick} aria-pressed={pressed} aria-label={label}
+      className={`placer-reveal-btn${pressed ? ' is-pressed' : ''}`} style={{ color: t.ink }}>
+      <Icon name={icon} size={20} stroke={2} fill={iconFill} />
+      <span className="placer-reveal-btn-label" aria-hidden="true">{title ?? label}</span>
+    </button>
+  );
+}
+
+/** Which tools to show, as a menu off a button: every tool, or one category. */
+function CategoryMenu({ t, filters, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Closes on a click anywhere else, and on Escape.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onPointer = (event) => { if (!ref.current?.contains(event.target)) setOpen(false); };
+    const onKey = (event) => { if (event.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const current = findCategory(filters.category)?.name ?? 'All tools';
+  const choose = (change) => { onChange({ ...filters, ...change }); setOpen(false); };
+  const item = (key, label, selected, onClick) => (
+    <button key={key} type="button" role="menuitemradio" aria-checked={selected} onClick={onClick}
+      className="placer-toolkit-menu-item" style={{ color: t.ink, fontWeight: selected ? 700 : 400 }}>
+      <span style={{ width: 16, display: 'inline-flex' }}>
+        {selected && <Icon name="check" size={16} stroke={2.4} />}
+      </span>
+      {label}
+    </button>
+  );
+
+  return (
+    <div ref={ref} style={{ position: 'relative', justifySelf: 'start' }}>
+      <button type="button" onClick={() => setOpen((was) => !was)} aria-haspopup="menu" aria-expanded={open}
+        aria-label={`Category: ${current}`}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 10, height: 40, padding: '0 14px 0 18px',
+          borderRadius: 999, border: `1px solid ${t.ink}`, background: t.surface, color: t.ink, cursor: 'pointer',
+          fontFamily: 'var(--placer-font)', fontSize: 14, fontWeight: 500 }}>
+        {current}
+        {filters.groupOnly && <Icon name="user" size={14} stroke={2.2} />}
+        <Icon name="chevDown" size={16} stroke={2.2} />
+      </button>
+      {open && (
+        <div role="menu" aria-label="Category" style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+          zIndex: 20, minWidth: 220, padding: 6, borderRadius: 12, background: t.surface,
+          border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
+          {item('all', 'All tools', !filters.category, () => choose({ category: null }))}
+          {CATEGORIES.map((category) => item(category.id, category.name, filters.category === category.id,
+            () => choose({ category: category.id })))}
+          <div style={{ borderTop: `1px solid ${t.line}`, margin: '6px 0' }} />
+          <button type="button" role="menuitemcheckbox" aria-checked={filters.groupOnly}
+            title="Tools that can be run in a room, with people joining by PIN or QR code"
+            onClick={() => choose({ groupOnly: !filters.groupOnly })}
+            className="placer-toolkit-menu-item" style={{ color: t.ink, fontWeight: filters.groupOnly ? 700 : 400 }}>
+            <span style={{ width: 16, display: 'inline-flex' }}>
+              {filters.groupOnly && <Icon name="check" size={16} stroke={2.4} />}
+            </span>
+            Works with a group
+          </button>
+        </div>
+      )}
     </div>
+  );
+}
+
+/**
+ * The order the gallery is in. The current one is underlined, with an arrow for its
+ * direction, and choosing it again turns it round.
+ */
+function SortTabs({ t, sort, onChange }) {
+  return (
+    <div role="group" aria-label="Sort" style={{ display: 'flex', justifySelf: 'center', gap: 4 }}>
+      {SORTS.map((option) => {
+        const active = sort.id === option.id;
+        return (
+          <button key={option.id} type="button" aria-pressed={active}
+            onClick={() => onChange(active
+              ? { id: option.id, direction: sort.direction === 'asc' ? 'desc' : 'asc' }
+              : { id: option.id, direction: option.direction })}
+            className="placer-toolkit-sort"
+            style={{ color: active ? t.ink : t.inkDim, fontWeight: active ? 700 : 500,
+              borderBottomColor: active ? t.ink : 'transparent' }}>
+            {option.name}
+            {active && (
+              <Icon name={sort.direction === 'asc' ? 'arrowUp' : 'arrowDown'} size={15} stroke={2.2}
+                style={{ marginLeft: 6 }} />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The heart on a tile or a row: favourites the tool in this browser, or stops. */
+function FavouriteButton({ t, tool, favourite, onToggle, style }) {
+  const label = favourite ? `Remove ${tool.name} from favourites` : `Add ${tool.name} to favourites`;
+  return (
+    <button type="button" onClick={onToggle} aria-pressed={favourite} aria-label={label} title={label}
+      className="placer-toolkit-favourite" style={{ color: t.ink, ...style }}>
+      <Icon name="heart" size={20} stroke={2} fill={favourite ? 'currentColor' : 'none'} />
+    </button>
   );
 }
 
@@ -339,14 +410,25 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
   // The Contribute button's pop-up form, for offering a tool to the PLACER Toolkit.
   const [contributing, setContributing] = useState(false);
 
-  // The gallery's search and filters. Held here rather than in the URL: they are a
+  // The gallery's filters. Held here rather than in the URL: they are a
   // way of browsing, not something worth a link of its own.
   const [filters, setFilters] = useState(NO_FILTERS);
-  const matching = filterTools(TOOLS, filters);
+  const [sort, setSort] = useState({ id: SORTS[0].id, direction: SORTS[0].direction });
+  const [favourites, setFavourites] = useState(readFavourites);
+  const [favouritesOnly, setFavouritesOnly] = useState(false);
+  const matching = sortTools(
+    filterTools(TOOLS, filters).filter((entry) => !favouritesOnly || favourites.includes(entry.id)),
+    sort.id, sort.direction);
   const [view, setView] = useState(readView);
   const changeView = (next) => { setView(next); saveView(next); };
-  const filtering = filters.query.trim() !== ''
-    || Boolean(filters.category || filters.organisation) || filters.groupOnly;
+  const toggleFavourite = (id) => {
+    setFavourites((current) => {
+      const next = current.includes(id) ? current.filter((each) => each !== id) : [...current, id];
+      saveFavourites(next);
+      return next;
+    });
+  };
+  const clearFilters = () => { setFilters(NO_FILTERS); setFavouritesOnly(false); };
 
   const Tool = tool?.component;
   // Offered only where a room would mean something, and only with a database behind it.
@@ -375,6 +457,11 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
             <Btn t={t} variant="outline" icon="arrowRight" onClick={() => setContributing(true)}>
               Contribute
             </Btn>
+          )}
+          toolbar={(
+            <ToolkitToolbar t={t} filters={filters} onFilters={setFilters} sort={sort} onSort={setSort}
+              favouritesOnly={favouritesOnly} onFavouritesOnly={setFavouritesOnly}
+              view={view} onView={changeView} />
           )} />
       )}
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -394,12 +481,6 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
           </ToolLayout>
         ) : (
           <>
-            <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, maxWidth: 680, marginBottom: 40 }}>
-              Participatory placemaking methods from organisations around the world, as
-              tools you can use: to understand how a place is used, to imagine how it
-              could change, and to plan that change in one place.
-            </p>
-
             {missing && (
               <p role="status" style={{ marginBottom: 24, padding: '12px 16px', borderRadius: 12,
                 background: t.surfaceAlt, border: `1px solid ${t.line}`, fontSize: 14, color: t.ink }}>
@@ -407,36 +488,27 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
               </p>
             )}
 
-            <ToolFilters t={t} filters={filters} onChange={setFilters} />
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-              flexWrap: 'wrap', marginBottom: 24 }}>
-              <p aria-live="polite" style={{ fontSize: 14, color: t.inkDim,
-                display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                {filtering
-                  ? `${matching.length} of ${TOOLS.length} tools`
-                  : `${TOOLS.length} tools`}
-                {filtering && (
-                  <Btn t={t} variant="ghost" size="sm" onClick={() => setFilters(NO_FILTERS)}>
-                    Clear filters
-                  </Btn>
-                )}
-              </p>
-              <ViewToggle t={t} view={view} onChange={changeView} />
-            </div>
-
             {matching.length === 0 && (
               <div style={{ textAlign: 'center', padding: '64px 20px', color: t.inkDim }}>
                 <Icon name="search" size={40} stroke={1.6} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
-                <p style={{ fontSize: 16, marginBottom: 16 }}>No tools match those filters.</p>
-                <Btn t={t} variant="outline" onClick={() => setFilters(NO_FILTERS)}>Clear filters</Btn>
+                <p style={{ fontSize: 16, marginBottom: 16 }}>
+                  {favouritesOnly && favourites.length === 0
+                    ? 'No favourites yet. Tap the heart on a tool to keep it here.'
+                    : 'No tools match those filters.'}
+                </p>
+                <Btn t={t} variant="outline" onClick={clearFilters}>Clear filters</Btn>
               </div>
             )}
 
             {matching.length > 0 && view === 'grid' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
                 {matching.map((entry) => (
-                  <Tile key={entry.id} t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
+                  <div key={entry.id} style={{ position: 'relative', display: 'flex' }}>
+                    <Tile t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
+                    <FavouriteButton t={t} tool={entry} favourite={favourites.includes(entry.id)}
+                      onToggle={() => toggleFavourite(entry.id)}
+                      style={{ position: 'absolute', right: 14, bottom: 14 }} />
+                  </div>
                 ))}
               </div>
             )}
@@ -444,7 +516,12 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
             {matching.length > 0 && view === 'list' && (
               <div style={{ borderTop: `1px solid ${t.line}` }}>
                 {matching.map((entry) => (
-                  <Row key={entry.id} t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
+                  <div key={entry.id} style={{ display: 'flex', alignItems: 'center',
+                    borderBottom: `1px solid ${t.line}` }}>
+                    <Row t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
+                    <FavouriteButton t={t} tool={entry} favourite={favourites.includes(entry.id)}
+                      onToggle={() => toggleFavourite(entry.id)} style={{ margin: '0 12px' }} />
+                  </div>
                 ))}
               </div>
             )}

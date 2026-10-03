@@ -5,6 +5,9 @@
  * understanding how a place is used, imagining how it could change, or planning
  * that change in one place.
  *
+ * `added` is the day the tool joined the Toolkit (YYYY-MM-DD), which is what the
+ * gallery's Recent order goes by.
+ *
  * One entry per tool. Adding another means adding one object here and one
  * component under src/components/toolkit — the gallery, the routing and the copyable
  * link all read from this list.
@@ -63,6 +66,7 @@ export const CATEGORIES = [
 export const TOOLS = [
   {
     id: 'street-mixer',
+    added: '2026-08-27',
     category: 'imagine',
     name: 'Street Section Mixer',
     tagline: 'Twenty metres, and everything wants some.',
@@ -74,6 +78,7 @@ export const TOOLS = [
   },
   {
     id: 'desire-lines',
+    added: '2026-08-27',
     category: 'understand',
     name: 'Desire Lines',
     tagline: 'The path people take, not the one that got paved.',
@@ -85,6 +90,7 @@ export const TOOLS = [
   },
   {
     id: 'fifteen-minute',
+    added: '2026-08-27',
     category: 'understand',
     name: '15-Minute Reach',
     tagline: 'Everything within a quarter-hour walk. Everything.',
@@ -96,6 +102,7 @@ export const TOOLS = [
   },
   {
     id: 'budget-ballot',
+    added: '2026-08-27',
     category: 'plan',
     name: 'Budget Ballot',
     tagline: 'Two hundred and fifty thousand euros. Nine things. Choose.',
@@ -130,6 +137,7 @@ export const TOOLS = [
   },
   {
     id: 'open-vote',
+    added: '2026-09-22',
     category: 'plan',
     name: 'Open Vote',
     tagline: 'Ask anything. Yes, No, or Undecided.',
@@ -145,6 +153,7 @@ export const TOOLS = [
   },
   {
     id: 'social-space-survey',
+    added: '2026-09-17',
     category: 'understand',
     name: 'The Social Space Survey',
     tagline: 'Eighteen checks that read a space for strangers.',
@@ -156,6 +165,7 @@ export const TOOLS = [
   },
   {
     id: 'site-spatial-mapping',
+    added: '2026-09-17',
     category: 'understand',
     name: 'Site-Specific Spatial Mapping Tool',
     tagline: 'Pin a site on the map, answer eighteen cards, stay in touch.',
@@ -167,6 +177,7 @@ export const TOOLS = [
   },
   {
     id: 'stationary-activity-mapping',
+    added: '2026-09-17',
     category: 'understand',
     name: 'Stationary Activity Mapping',
     tagline: 'Posture and activity, one person at a time, plotted on the map.',
@@ -203,6 +214,32 @@ export function filterTools(tools, { query = '', category = null, organisation =
     const haystack = fold([tool.name, tool.tagline, tool.blurb, tool.createdBy].join(' '));
     return words.every((word) => haystack.includes(word));
   });
+}
+
+/** The orders the gallery can be put in, each with the direction it starts in. */
+export const SORTS = [
+  { id: 'recent', name: 'Recent', direction: 'desc' },
+  { id: 'az', name: 'A-Z', direction: 'asc' },
+  { id: 'organisation', name: 'Organisation', direction: 'asc' },
+];
+
+/**
+ * The tools in one of the SORTS orders, as a new array. Recent goes by `added`,
+ * A-Z by name, and Organisation by `createdBy` and then name. Tools added on the same
+ * day keep their register order, later entries counting as newer.
+ */
+export function sortTools(tools, sort = 'recent', direction = 'desc') {
+  const byName = (a, b) => a.tool.name.localeCompare(b.tool.name);
+  const compare = {
+    recent: (a, b) => a.tool.added.localeCompare(b.tool.added) || a.index - b.index,
+    az: byName,
+    organisation: (a, b) => a.tool.createdBy.localeCompare(b.tool.createdBy) || byName(a, b),
+  }[sort] ?? (() => 0);
+  const sign = direction === 'desc' ? -1 : 1;
+  return tools
+    .map((tool, index) => ({ tool, index }))
+    .sort((a, b) => sign * compare(a, b))
+    .map(({ tool }) => tool);
 }
 
 /** The category with this id, or null. */
