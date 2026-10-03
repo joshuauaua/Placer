@@ -27,9 +27,18 @@ const setup = (overrides = {}) => {
     onNavigate: vi.fn(),
     ...overrides,
   };
-  render(<SettingsPage {...props} />);
-  return props;
+  const { option, ...rest } = props;
+  render(<SettingsPage {...rest} />);
+  // Settings are edited behind the option that holds them, so open that one first.
+  if (option) fireEvent.click(screen.getByRole('button', { name: option }));
+  return rest;
 };
+
+const PROFILE = 'Edit your profile';
+const PICTURES = 'Profile photo and cover';
+const PASSWORD = 'Change your password';
+const ORGANISATIONS = 'Manage your organisations';
+const ANALYTICS = 'Analytics';
 
 const nameField = () => screen.getByLabelText('Your name');
 const saveButton = () => screen.getByRole('button', { name: /Save name/ });
@@ -41,19 +50,19 @@ describe('SettingsPage', () => {
   });
 
   it('shows the current display name', () => {
-    setup();
+    setup({ option: PROFILE });
 
     expect(nameField()).toHaveValue('Mara Quinn');
   });
 
   it('cannot be saved until the name actually changes', () => {
-    setup();
+    setup({ option: PROFILE });
 
     expect(saveButton()).toBeDisabled();
   });
 
   it('will not save a blank name', () => {
-    setup();
+    setup({ option: PROFILE });
 
     fireEvent.change(nameField(), { target: { value: '   ' } });
 
@@ -61,7 +70,7 @@ describe('SettingsPage', () => {
   });
 
   it('persists a new display name and hands it back up', async () => {
-    const { onSaveProfile } = setup();
+    const { onSaveProfile } = setup({ option: PROFILE });
 
     fireEvent.change(nameField(), { target: { value: 'Devon Park' } });
     fireEvent.click(saveButton());
@@ -74,7 +83,7 @@ describe('SettingsPage', () => {
   });
 
   it('says so when the save fails instead of pretending it worked', async () => {
-    setup({ onSaveProfile: vi.fn(() => Promise.reject(new Error('no network'))) });
+    setup({ option: PROFILE, onSaveProfile: vi.fn(() => Promise.reject(new Error('no network'))) });
 
     fireEvent.change(nameField(), { target: { value: 'Devon Park' } });
     fireEvent.click(saveButton());
@@ -84,7 +93,7 @@ describe('SettingsPage', () => {
   });
 
   it('records accepting analytics', () => {
-    setup();
+    setup({ option: ANALYTICS });
 
     fireEvent.click(screen.getByRole('button', { name: /Accept analytics/ }));
 
@@ -92,7 +101,7 @@ describe('SettingsPage', () => {
   });
 
   it('records rejecting analytics', () => {
-    setup();
+    setup({ option: ANALYTICS });
 
     fireEvent.click(screen.getByRole('button', { name: /Reject analytics/ }));
 
@@ -100,7 +109,7 @@ describe('SettingsPage', () => {
   });
 
   it('sends you to the Terms and Privacy page for the full data rights', () => {
-    const { onNavigate } = setup();
+    const { onNavigate } = setup({ option: ANALYTICS });
 
     fireEvent.click(screen.getByRole('link', { name: 'What is collected, and your rights' }));
 
@@ -110,7 +119,40 @@ describe('SettingsPage', () => {
   it('has no password to change for a local-only profile', () => {
     setup();
 
+    expect(screen.queryByRole('button', { name: PASSWORD })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('New password')).not.toBeInTheDocument();
+  });
+});
+
+describe('SettingsPage, options', () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('lists options under their categories rather than editing anything up front', () => {
+    setup({ email: 'mara@example.com', onNewOrganisation: vi.fn() });
+
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent))
+      .toEqual(['Profile Settings', 'Account', 'Data and Privacy']);
+    expect(screen.queryByLabelText('Your name')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: PROFILE })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: PASSWORD })).toBeInTheDocument();
+  });
+
+  it('opens an option and goes back to the list', () => {
+    setup({ option: PROFILE });
+
+    expect(screen.getByLabelText('Your name')).toHaveValue('Mara Quinn');
+    fireEvent.click(screen.getByRole('button', { name: /All settings/ }));
+    expect(screen.queryByLabelText('Your name')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: PROFILE })).toBeInTheDocument();
+  });
+
+  it('sends Your data straight to the Terms and Privacy page', () => {
+    const { onNavigate } = setup({ option: 'Your data' });
+
+    expect(onNavigate).toHaveBeenCalledWith('terms');
   });
 });
 
@@ -128,7 +170,7 @@ describe('SettingsPage, bio and location', () => {
   });
 
   it('saves a contact email and a website', async () => {
-    const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: '', contactEmail: '', website: '' } });
+    const { onSaveProfile } = setup({ option: PROFILE, profile: { name: 'Mara Quinn', bio: '', contactEmail: '', website: '' } });
 
     fireEvent.change(screen.getByLabelText('Contact email'), { target: { value: 'hi@mara.se' } });
     fireEvent.click(screen.getByRole('button', { name: /Save contact email/ }));
@@ -142,12 +184,12 @@ describe('SettingsPage, bio and location', () => {
   it('offers no cover image for a local-only profile, which has nowhere to store one', () => {
     setup();
 
-    expect(screen.queryByText('Cover image')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: PICTURES })).not.toBeInTheDocument();
   });
 
   it('uploads a cover, points the profile at it, and deletes the old one', async () => {
     const onSaveProfile = vi.fn(() => Promise.resolve());
-    setup({ email: 'mara@example.com', onSaveProfile,
+    setup({ option: PICTURES, email: 'mara@example.com', onSaveProfile,
       profile: { name: 'Mara Quinn', bio: '', coverPath: 'user-1/cover-1.jpg', cover: 'https://cdn/x.jpg' } });
 
     const file = new File(['x'], 'cover.jpg', { type: 'image/jpeg' });
@@ -166,7 +208,7 @@ describe('SettingsPage, bio and location', () => {
 
   it('uploads a profile photo, points the profile at it, and deletes the old one', async () => {
     const onSaveProfile = vi.fn(() => Promise.resolve());
-    setup({ email: 'mara@example.com', onSaveProfile,
+    setup({ option: PICTURES, email: 'mara@example.com', onSaveProfile,
       profile: { name: 'Mara Quinn', bio: '', photoPath: 'avatars/user-1/avatar-1.jpg', photo: 'https://cdn/a.jpg' } });
 
     const file = new File(['x'], 'me.jpg', { type: 'image/jpeg' });
@@ -179,7 +221,7 @@ describe('SettingsPage, bio and location', () => {
 
   it('removes the profile photo, falling back to the initials', async () => {
     const onSaveProfile = vi.fn(() => Promise.resolve());
-    setup({ email: 'mara@example.com', onSaveProfile,
+    setup({ option: PICTURES, email: 'mara@example.com', onSaveProfile,
       profile: { name: 'Mara Quinn', bio: '', photoPath: 'avatars/user-1/avatar-1.jpg', photo: 'https://cdn/a.jpg' } });
 
     // The cover card has no cover, so the only Remove button is the photo's.
@@ -190,21 +232,21 @@ describe('SettingsPage, bio and location', () => {
   });
 
   it('shows the current bio and location', () => {
-    setup({ profile: { name: 'Mara Quinn', bio: 'Cyclist', location: 'Malmö' } });
+    setup({ option: PROFILE, profile: { name: 'Mara Quinn', bio: 'Cyclist', location: 'Malmö' } });
 
     expect(screen.getByLabelText('Bio')).toHaveValue('Cyclist');
     expect(screen.getByLabelText('Location')).toHaveValue('Malmö');
   });
 
   it('cannot save a field until it actually changes', () => {
-    setup({ profile: { name: 'Mara Quinn', bio: 'Cyclist', location: '' } });
+    setup({ option: PROFILE, profile: { name: 'Mara Quinn', bio: 'Cyclist', location: '' } });
 
     expect(screen.getByRole('button', { name: /Save bio/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: /Save location/ })).toBeDisabled();
   });
 
   it('saves a bio, blank being a valid value since it is optional', async () => {
-    const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: 'Cyclist', location: '' } });
+    const { onSaveProfile } = setup({ option: PROFILE, profile: { name: 'Mara Quinn', bio: 'Cyclist', location: '' } });
 
     fireEvent.change(screen.getByLabelText('Bio'), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: /Save bio/ }));
@@ -213,7 +255,7 @@ describe('SettingsPage, bio and location', () => {
   });
 
   it('saves a location', async () => {
-    const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: '', location: '' } });
+    const { onSaveProfile } = setup({ option: PROFILE, profile: { name: 'Mara Quinn', bio: '', location: '' } });
 
     fireEvent.change(screen.getByLabelText('Location'), { target: { value: 'Malmö' } });
     fireEvent.click(screen.getByRole('button', { name: /Save location/ }));
@@ -237,7 +279,7 @@ describe('SettingsPage, bio and location', () => {
     }) } } };
 
     try {
-      const { onSaveProfile } = setup({ profile: { name: 'Mara Quinn', bio: '', location: '' } });
+      const { onSaveProfile } = setup({ option: PROFILE, profile: { name: 'Mara Quinn', bio: '', location: '' } });
       await waitFor(() => expect(placeChanged).toBeTypeOf('function'));
       expect(window.google.maps.places.Autocomplete).toHaveBeenCalledWith(
         screen.getByLabelText('Location'), expect.objectContaining({ types: ['(regions)'] }));
@@ -263,7 +305,7 @@ describe('SettingsPage, avatar', () => {
   });
 
   it('offers no avatar icons to pick from, only the profile photo', () => {
-    setup({ email: 'mara@example.com' });
+    setup({ option: PICTURES, email: 'mara@example.com' });
 
     expect(screen.queryByRole('radiogroup', { name: 'Avatar icon' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Save avatar/ })).not.toBeInTheDocument();
@@ -271,7 +313,7 @@ describe('SettingsPage, avatar', () => {
   });
 
   it('shows the initials in the photo circle until a photo is added', () => {
-    setup({ email: 'mara@example.com' });
+    setup({ option: PICTURES, email: 'mara@example.com' });
 
     expect(screen.getByText('MQ')).toBeInTheDocument();
   });
@@ -287,7 +329,7 @@ describe('SettingsPage, changing a password', () => {
   const saveNewPassword = () => screen.getByRole('button', { name: /Save new password/ });
 
   it('cannot be submitted until the password is long enough', () => {
-    setup({ email: 'mara@example.com' });
+    setup({ option: PASSWORD, email: 'mara@example.com' });
 
     expect(saveNewPassword()).toBeDisabled();
 
@@ -297,7 +339,7 @@ describe('SettingsPage, changing a password', () => {
   });
 
   it('changes the password', async () => {
-    setup({ email: 'mara@example.com' });
+    setup({ option: PASSWORD, email: 'mara@example.com' });
 
     fireEvent.change(newPassword(), { target: { value: 'longenough' } });
     fireEvent.click(saveNewPassword());
@@ -309,7 +351,7 @@ describe('SettingsPage, changing a password', () => {
   it('says so when the change fails instead of pretending it worked', async () => {
     vi.mocked(updatePassword).mockRejectedValue(new Error('Could not change your password: nope'));
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    setup({ email: 'mara@example.com' });
+    setup({ option: PASSWORD, email: 'mara@example.com' });
 
     fireEvent.change(newPassword(), { target: { value: 'longenough' } });
     fireEvent.click(saveNewPassword());
@@ -328,7 +370,7 @@ describe('SettingsPage, organisations', () => {
 
   it('lists the organisations this account runs, and opens one', () => {
     const onOpenOrganisationDashboard = vi.fn();
-    setup({ email: 'mara@example.com', onNewOrganisation: vi.fn(), onOpenOrganisationDashboard,
+    setup({ option: ORGANISATIONS, email: 'mara@example.com', onNewOrganisation: vi.fn(), onOpenOrganisationDashboard,
       organisations: [{ id: 'org-1', name: 'Malmö Stad' }] });
 
     fireEvent.click(screen.getByRole('link', { name: 'Malmö Stad' }));
@@ -337,7 +379,7 @@ describe('SettingsPage, organisations', () => {
 
   it('is where an organisation is created', () => {
     const onNewOrganisation = vi.fn();
-    setup({ email: 'mara@example.com', onNewOrganisation });
+    setup({ option: ORGANISATIONS, email: 'mara@example.com', onNewOrganisation });
 
     fireEvent.click(screen.getByRole('button', { name: /Create an organisation/ }));
     expect(onNewOrganisation).toHaveBeenCalled();
@@ -346,6 +388,6 @@ describe('SettingsPage, organisations', () => {
   it('is not offered without an account', () => {
     setup({ onNewOrganisation: vi.fn() });
 
-    expect(screen.queryByRole('button', { name: /Create an organisation/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: ORGANISATIONS })).not.toBeInTheDocument();
   });
 });

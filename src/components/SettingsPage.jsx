@@ -1,6 +1,11 @@
-/* PLACER — account settings: your name, and what the app is allowed to measure */
+/* PLACER — account settings: your name, and what the app is allowed to measure.
+ *
+ * A header that stays put while the page scrolls, then the settings grouped into
+ * categories. Nothing is edited on that first screen: each category is a list of
+ * options, and an option opens its group of settings in place of the list, with a
+ * way back. Which option is open is local state, not a route. */
 
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Avatar, Btn, LoadingMark } from './UI';
 import { Icon } from './Icon';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
@@ -32,9 +37,49 @@ function Card({ t, title, children }) {
   return (
     <section style={{ padding: 28, marginBottom: 24, background: t.surface, borderRadius: 12,
       border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: 8 }}>{title}</h2>
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: 8 }}>{title}</h3>
       {children}
     </section>
+  );
+}
+
+// A category: its heading over a rule, then its options. One whose options are all
+// account-only renders nothing on the local, no-account path.
+function Category({ t, title, children }) {
+  const options = [].concat(children).filter(Boolean);
+  if (options.length === 0) return null;
+  return (
+    <section style={{ marginBottom: 40 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: t.ink, letterSpacing: '-0.01em',
+        padding: '0 4px 12px', marginBottom: 16, borderBottom: `1px solid ${t.line}` }}>
+        {title}
+      </h2>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{options}</div>
+    </section>
+  );
+}
+
+// One option: an icon in its own cell, a title over what it covers, and a chevron.
+// The whole row is the button, named by its title.
+function OptionRow({ t, icon, title, description, onClick }) {
+  return (
+    <button type="button" onClick={onClick} aria-label={title} className="placer-settings-option"
+      style={{ all: 'unset', boxSizing: 'border-box', width: '100%', cursor: 'pointer',
+        display: 'grid', gridTemplateColumns: '80px 1fr 56px', alignItems: 'stretch', minHeight: 84,
+        background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, fontFamily: 'var(--placer-font)' }}>
+      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+        borderRight: `1px solid ${t.line}`, color: t.ink }}>
+        <Icon name={icon} size={28} stroke={1.8} />
+      </span>
+      <span style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4,
+        padding: '14px 20px', minWidth: 0 }}>
+        <span style={{ fontSize: 16, fontWeight: 500, color: t.ink }}>{title}</span>
+        <span style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.45 }}>{description}</span>
+      </span>
+      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.ink }}>
+        <Icon name="chevRight" size={20} stroke={2} />
+      </span>
+    </button>
   );
 }
 
@@ -532,7 +577,7 @@ function NotificationPreferences({ t }) {
   };
 
   return (
-    <Card t={t} title="Notifications">
+    <Card t={t} title="Notification preferences">
       <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
         What you hear about, and where. Email is sent through Resend, which is not wired
         up yet — the Email choice below is saved for when it is, but nothing is emailed
@@ -586,69 +631,136 @@ function NotificationPreferences({ t }) {
   );
 }
 
-function YourData({ t, onNavigate }) {
-  const link = (view, label) => (
-    <span
-      onClick={() => onNavigate(view)}
-      role="link"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate(view); }}
-      style={{ color: t.ink, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline' }}>
-      {label}
-    </span>
-  );
-
-  return (
-    <Card t={t} title="Your data">
-      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6 }}>
-        Downloading everything PLACER holds in this browser, and erasing it, are on the{' '}
-        {link('terms', 'Terms and Privacy page')} — including this profile, and what is kept and
-        why.
-      </p>
-    </Card>
-  );
-}
-
 export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
   organisations = [], onNewOrganisation, onOpenOrganisationDashboard }) {
+  // The open option's key, or null for the list of them.
+  const [open, setOpen] = useState(null);
+  const topRef = useRef(null);
+
+  // Opening an option, or going back, starts at the top rather than wherever the
+  // list had been scrolled to. scrollIntoView is missing under jsdom, hence the `?.`.
+  useLayoutEffect(() => {
+    topRef.current?.scrollIntoView?.({ block: 'start' });
+  }, [open]);
+
+  const profileArgs = { t, profile, onSaveProfile };
+  // Every option, in the order the categories list them. `show` leaves out the ones
+  // this account cannot use; `cards` is what opening it shows, and an option with
+  // `onSelect` instead goes somewhere else in the app.
+  const options = {
+    profile: {
+      category: 'Profile Settings', icon: 'user', title: 'Edit your profile', show: true,
+      description: 'Your name, bio, location, contact email and website',
+      cards: (
+        <>
+          <DisplayName {...profileArgs} />
+          <ProfileField {...profileArgs} fieldKey="bio"
+            title="Bio" label="Bio" id="settings-bio" multiline
+            description="A couple of lines about you, shown on your public profile. Optional."
+            placeholder="What you're into, or what brought you here." />
+          <LocationField {...profileArgs} />
+          <ProfileField {...profileArgs} fieldKey="contactEmail"
+            title="Contact email" label="Contact email" id="settings-contact-email" inputType="email"
+            description="An address people can reach you at, shown on your public profile. It does not have to be the one you sign in with, which is never shown. Optional."
+            placeholder="e.g. hello@example.com" />
+          <ProfileField {...profileArgs} fieldKey="website"
+            title="Website" label="Website" id="settings-website" inputType="url"
+            description="A link shown on your public profile. Optional."
+            placeholder="e.g. example.com" />
+        </>
+      ),
+    },
+    pictures: {
+      category: 'Profile Settings', icon: 'image', title: 'Profile photo and cover', show: Boolean(email),
+      description: 'The photo in your avatar circle, and the picture across your public profile',
+      cards: (
+        <>
+          <ProfilePhotoPicker {...profileArgs} />
+          <CoverPicker {...profileArgs} />
+        </>
+      ),
+    },
+    password: {
+      category: 'Account', icon: 'lock', title: 'Change your password', show: Boolean(email),
+      description: 'Set a new password to sign in with',
+      cards: <ChangePassword t={t} />,
+    },
+    organisations: {
+      category: 'Account', icon: 'building', title: 'Manage your organisations',
+      show: Boolean(email && onNewOrganisation),
+      description: organisations.length > 0
+        ? 'Open an organisation you run, or create another'
+        : 'Create a page for a municipality, studio or association',
+      cards: (
+        <Organisations t={t} organisations={organisations} onNewOrganisation={onNewOrganisation}
+          onOpenOrganisationDashboard={onOpenOrganisationDashboard} />
+      ),
+    },
+    notifications: {
+      category: 'Notifications', icon: 'bell', title: 'Notification preferences',
+      show: Boolean(email) && isSupabaseConfigured(),
+      description: 'What you hear about, in the app and by email',
+      cards: <NotificationPreferences t={t} />,
+    },
+    analytics: {
+      category: 'Data and Privacy', icon: 'chart', title: 'Analytics', show: true,
+      description: 'Accept or reject PostHog measuring how the app is used in this browser',
+      cards: <Analytics t={t} onNavigate={onNavigate} />,
+    },
+    data: {
+      category: 'Data and Privacy', icon: 'arrowDown', title: 'Your data', show: true,
+      description: 'Download or erase what PLACER holds, on the Terms and Privacy page',
+      onSelect: () => onNavigate('terms'),
+    },
+  };
+
+  const current = open ? options[open] : null;
+  const categories = ['Profile Settings', 'Account', 'Notifications', 'Data and Privacy'];
+
   return (
-    <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
-      padding: '48px 40px' }} className="placer-scroll">
-      <div style={{ maxWidth: 760, margin: '0 auto', paddingBottom: 40 }}>
-        <div style={{ marginBottom: 40 }}>
+    <div ref={topRef} style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
+      padding: '0 40px 48px', scrollMarginTop: 64 }} className="placer-scroll">
+      {/* Sticks to the top of the scrolling area, just under the nav bar, on the page's
+          own background so the options pass out of sight beneath it. */}
+      <header style={{ position: 'sticky', top: 0, zIndex: 10, margin: '0 -40px 32px',
+        padding: '48px 40px 24px', background: t.page, borderBottom: `1px solid ${t.line}` }}>
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+          <div className="placer-mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 11.5,
+            letterSpacing: '0.08em', textTransform: 'uppercase', color: t.inkDim, marginBottom: 14 }}>
+            <Icon name="gear" size={15} stroke={2.1} />
+            Change, Edit, Manage Your Placer Account
+          </div>
           <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
-            letterSpacing: '-0.03em', marginBottom: 16 }}>
+            letterSpacing: '-0.03em', lineHeight: 1.05 }}>
             Settings
           </h1>
-          <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6 }}>
-            Your name on the map, and what this browser is allowed to measure.
-          </p>
         </div>
+      </header>
 
-        <DisplayName t={t} profile={profile} onSaveProfile={onSaveProfile} />
-        {email && <CoverPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />}
-        {email && <ProfilePhotoPicker t={t} profile={profile} onSaveProfile={onSaveProfile} />}
-        <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="bio"
-          title="Bio" label="Bio" id="settings-bio" multiline
-          description="A couple of lines about you, shown on your public profile. Optional."
-          placeholder="What you're into, or what brought you here." />
-        <LocationField t={t} profile={profile} onSaveProfile={onSaveProfile} />
-        <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="contactEmail"
-          title="Contact email" label="Contact email" id="settings-contact-email" inputType="email"
-          description="An address people can reach you at, shown on your public profile. It does not have to be the one you sign in with, which is never shown. Optional."
-          placeholder="e.g. hello@example.com" />
-        <ProfileField t={t} profile={profile} onSaveProfile={onSaveProfile} fieldKey="website"
-          title="Website" label="Website" id="settings-website" inputType="url"
-          description="A link shown on your public profile. Optional."
-          placeholder="e.g. example.com" />
-        {email && onNewOrganisation && (
-          <Organisations t={t} organisations={organisations} onNewOrganisation={onNewOrganisation}
-            onOpenOrganisationDashboard={onOpenOrganisationDashboard} />
+      <div style={{ maxWidth: 760, margin: '0 auto', paddingBottom: 40 }}>
+        {current ? (
+          <>
+            <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={() => setOpen(null)}
+              style={{ marginLeft: -12, marginBottom: 12 }}>
+              All settings
+            </Btn>
+            <h2 style={{ fontSize: 28, fontWeight: 700, color: t.ink, letterSpacing: '-0.02em', marginBottom: 24 }}>
+              {current.title}
+            </h2>
+            {current.cards}
+          </>
+        ) : (
+          categories.map((category) => (
+            <Category key={category} t={t} title={category}>
+              {Object.entries(options)
+                .filter(([, option]) => option.category === category && option.show)
+                .map(([key, option]) => (
+                  <OptionRow key={key} t={t} icon={option.icon} title={option.title}
+                    description={option.description} onClick={option.onSelect ?? (() => setOpen(key))} />
+                ))}
+            </Category>
+          ))
         )}
-        {email && <ChangePassword t={t} />}
-        {email && <NotificationPreferences t={t} />}
-        <Analytics t={t} onNavigate={onNavigate} />
-        <YourData t={t} onNavigate={onNavigate} />
       </div>
     </div>
   );

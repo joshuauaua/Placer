@@ -812,6 +812,21 @@ a {
   padding-top: 64px;
 }
 
+/* PLACER — a settings option (see SettingsPage.jsx): a row that opens one group of
+ * settings. White, grey-100 on hover. */
+.placer-settings-option {
+  transition: background 0.15s ease;
+}
+
+.placer-settings-option:hover {
+  background: var(--placer-grey-100) !important;
+}
+
+.placer-settings-option:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
 /* PLACER — the sidebar (see SideNav.jsx), for anyone who is signed in.
  *
  * Desktop: a matte-glass panel 280px wide (72px collapsed), inset 12px from the
@@ -895,20 +910,6 @@ a {
   align-self: center;
 }
 
-/* Settings, pushed to the foot of the column and ruled off from the places. */
-.placer-side-nav-bottom {
-  margin-top: auto;
-}
-
-.placer-side-nav-bottom::before {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: 0;
-  right: 0;
-  border-top: 1px solid var(--placer-grey-200);
-}
-
 /* The line left of the current place's icon. ::after, since Settings' ::before is
    its rule. Not on New project, which is a button rather than a place. */
 .placer-side-nav-link {
@@ -924,6 +925,20 @@ a {
   width: 3px;
   border-radius: 2px;
   background: var(--placer-ink);
+}
+
+/* Settings, pushed to the foot of the column and ruled off from the places. */
+.placer-side-nav-bottom {
+  margin-top: auto;
+}
+
+.placer-side-nav-bottom::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--placer-grey-200);
 }
 
 /* New project, above the places and set apart from them as the one action: a
@@ -1002,6 +1017,10 @@ a {
     display: none !important;
   }
 
+  .placer-side-nav-link[aria-current='page']::after {
+    display: none;
+  }
+
   .placer-side-nav-primary {
     margin: 0;
   }
@@ -1017,10 +1036,6 @@ a {
   /* Keep the last of the page and the footer clear of the tab bar. */
   .placer-under-glass-nav:has(.placer-side-nav) {
     padding-bottom: calc(64px + env(safe-area-inset-bottom));
-  .placer-side-nav-link[aria-current='page']::after {
-    display: none;
-  }
-
   }
 }
 

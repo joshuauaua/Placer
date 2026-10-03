@@ -205,6 +205,15 @@ const ICON_ELEMENTS = {
       <path d="M15.1 8.9l2.5-2.5M8.9 8.9L6.4 6.4M8.9 15.1l-2.5 2.5M15.1 15.1l2.5 2.5" />
     </>
   ),
+  // A password: a padlock.
+  lock: (
+    <>
+      <rect x="5" y="10.5" width="14" height="10" rx="2" />
+      <path d="M8.5 10.5V7.5a3.5 3.5 0 017 0v3" />
+    </>
+  ),
+  // Analytics: three bars rising from a baseline.
+  chart: <path d="M4 20.5h16M7 17v-5M12 17V7M17 17v-8" />,
   // An organisation: a building with a door and two rows of windows.
   building: (
     <>
