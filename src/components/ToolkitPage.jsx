@@ -19,6 +19,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import posthog from 'posthog-js';
 import { Icon } from './Icon';
+import { PageHeader } from './PageHeader';
 import { Btn, Chip } from './UI';
 import { ToolLayout } from './ToolLayout';
 import { RoomBar } from './toolkit/RoomBar';
@@ -366,7 +367,16 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page, padding: '48px 40px 80px' }}>
+    <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
+      padding: tool && Tool ? '48px 40px 80px' : '0 40px 80px' }}>
+      {!(tool && Tool) && (
+        <PageHeader t={t} icon="flask" label="Methods for shaping shared spaces" title="Toolkit"
+          actions={(
+            <Btn t={t} variant="outline" icon="arrowRight" onClick={() => setContributing(true)}>
+              Contribute
+            </Btn>
+          )} />
+      )}
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         {tool && Tool ? (
           <ToolLayout
@@ -384,28 +394,11 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
           </ToolLayout>
         ) : (
           <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 40, gap: 20 }}>
-              <div>
-                <div className="placer-mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 11.5,
-                  letterSpacing: '0.08em', textTransform: 'uppercase', color: t.inkDim, marginBottom: 14 }}>
-                  <Icon name="flask" size={15} stroke={2.1} />
-                  Methods for shaping shared spaces
-                </div>
-                <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
-                  letterSpacing: '-0.03em', marginBottom: 16, lineHeight: 1.05 }}>
-                  Toolkit
-                </h1>
-                <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, maxWidth: 680 }}>
-                  Participatory placemaking methods from organisations around the world, as
-                  tools you can use: to understand how a place is used, to imagine how it
-                  could change, and to plan that change in one place.
-                </p>
-              </div>
-              <Btn t={t} variant="outline" icon="arrowRight"
-                onClick={() => setContributing(true)}>
-                Contribute
-              </Btn>
-            </div>
+            <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, maxWidth: 680, marginBottom: 40 }}>
+              Participatory placemaking methods from organisations around the world, as
+              tools you can use: to understand how a place is used, to imagine how it
+              could change, and to plan that change in one place.
+            </p>
 
             {missing && (
               <p role="status" style={{ marginBottom: 24, padding: '12px 16px', borderRadius: 12,

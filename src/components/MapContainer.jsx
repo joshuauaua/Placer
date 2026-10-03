@@ -21,6 +21,7 @@ import {
 import { tilingGain } from '../lib/panoGeometry';
 import { loadGoogleMaps } from '../lib/googleMaps';
 import { MAP_STYLE } from '../lib/mapStyle';
+import { PageHeader } from './PageHeader';
 
 // An imagination's pin, in the brand kit's pin style: a 24px circle in a character's
 // 100 with a 2px ring in its 700. Imaginations come from citizens, so orange.
@@ -497,6 +498,12 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: t.page }}>
+      {/* The map does not scroll, so the header stays put above it simply by being
+          outside it; the map takes the rest of the height. */}
+      <div style={{ flex: '0 0 auto', padding: '0 40px' }}>
+        <PageHeader t={t} icon="pin" label="What people imagine for the places around them" title="Explore"
+          style={{ marginBottom: 0 }} />
+      </div>
       {/* Map View */}
       <div style={{ flex: 1, minHeight: 0 }}>
         <div style={{ width: '100%', height: '100%', position: 'relative', background: t.surface }}>

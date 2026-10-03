@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { Btn } from './UI';
+import { PageHeader } from './PageHeader';
 import { ProjectCard } from './ProjectCard';
 import { isSupabaseConfigured as projectsAvailable, readMyProjects } from '../services/projects';
 
@@ -41,26 +42,14 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
 
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
-      padding: '48px 40px' }} className="placer-scroll">
+      padding: '0 40px 48px' }} className="placer-scroll">
+      <PageHeader t={t} icon="grid" label="The projects you run or collaborate on" title="Projects"
+        actions={projectsAvailable() && onNewProject ? (
+          <Btn t={t} variant="primary" icon="plus" onClick={onNewProject}>
+            Create a Project
+          </Btn>
+        ) : null} />
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-          gap: 20, flexWrap: 'wrap', marginBottom: 40 }}>
-          <div>
-            <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
-              letterSpacing: '-0.03em', marginBottom: 8 }}>
-              Projects
-            </h1>
-            <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6 }}>
-              The projects you run or collaborate on.
-            </p>
-          </div>
-          {projectsAvailable() && onNewProject && (
-            <Btn t={t} variant="primary" icon="plus" onClick={onNewProject}>
-              Create a Project
-            </Btn>
-          )}
-        </div>
-
         {!projectsAvailable() && (
           <p style={{ fontSize: 14, color: t.inkFaint }}>
             Projects are not available in this environment.

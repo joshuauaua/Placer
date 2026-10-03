@@ -8,6 +8,7 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Avatar, Btn, LoadingMark } from './UI';
 import { Icon } from './Icon';
+import { PageHeader } from './PageHeader';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
 import { ImagePicker } from './ImagePicker';
 import {
@@ -690,22 +691,8 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
   return (
     <div ref={topRef} style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '0 40px 48px', scrollMarginTop: 64 }} className="placer-scroll">
-      {/* Sticks to the top of the scrolling area, just under the nav bar, on the page's
-          own background so the options pass out of sight beneath it. */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 10, margin: '0 -40px 32px',
-        padding: '48px 40px 24px', background: t.page, borderBottom: `1px solid ${t.line}` }}>
-        <div style={{ maxWidth: 760, margin: '0 auto' }}>
-          <div className="placer-mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 11.5,
-            letterSpacing: '0.08em', textTransform: 'uppercase', color: t.inkDim, marginBottom: 14 }}>
-            <Icon name="gear" size={15} stroke={2.1} />
-            Change, Edit, Manage Your Placer Account
-          </div>
-          <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
-            letterSpacing: '-0.03em', lineHeight: 1.05 }}>
-            Settings
-          </h1>
-        </div>
-      </header>
+      <PageHeader t={t} icon="gear" label="Change, Edit, Manage Your Placer Account" title="Settings"
+        maxWidth={760} />
 
       <div style={{ maxWidth: 760, margin: '0 auto', paddingBottom: 40 }}>
         {current ? (
