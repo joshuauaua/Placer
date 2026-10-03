@@ -77,6 +77,14 @@ const ICON_ELEMENTS = {
       <path d="M5 20c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5" />
     </>
   ),
+  // Home: a house with a door.
+  home: (
+    <>
+      <path d="M3.5 11L12 4l8.5 7" />
+      <path d="M5.5 9.5v11h13v-11" />
+      <path d="M10 20.5v-5h4v5" />
+    </>
+  ),
   sparkle: <path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6L12 3z" />,
   camera: (
     <>
