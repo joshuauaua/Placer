@@ -151,7 +151,7 @@ describe('inside the app', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' })).toBeInTheDocument();
     expect(within(screen.getByRole('navigation')).getByText('About')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Terms of Service' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Privacy and Terms' })).toBeInTheDocument();
   });
 
   it('serves the gallery and an experiment from the one route', async () => {

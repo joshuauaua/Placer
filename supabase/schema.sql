@@ -17,6 +17,7 @@ create table if not exists public.survey_responses (
   --   `landing_survey`            the same survey, in the dialog on the landing page
   --   `placemaking_trends_survey` the municipal survey at /placemaking-trends-survey
   --   `user_labs_application`     the sign-up form on the User Labs page
+  --   `newsletter_signup`         the newsletter field in the site footer
   source       text        not null,
   -- Optional: only present when the visitor asked to be contacted.
   email        text,
@@ -26,6 +27,7 @@ create table if not exists public.survey_responses (
   --     (on screen the modules are titled Section 1-4; `optIns` holds
   --     "anonymous" when the respondent chose to leave no details)
   --   user_labs_application: the form's fields, flat (name, phone, lab, ...)
+  --   newsletter_signup: {} (the address is in `email`)
   answers      jsonb       not null,
   -- Free text typed against an `other` option, keyed by question.
   other_text   jsonb       not null    default '{}'::jsonb

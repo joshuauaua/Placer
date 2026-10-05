@@ -1,7 +1,8 @@
 /* PLACER — the site footer */
 
-import { Icon } from './Icon';
+import { useState } from 'react';
 import { NEUTRAL } from '../theme';
+import { saveSurveyResponse } from '../services/api';
 import { BrandLogo } from './UI';
 
 // Each column's entries. One with a `view` opens that MainApp view, one with an
@@ -55,9 +56,59 @@ const FOOTER_COLORS = {
 
 // Only Instagram and email are live so far.
 const SOCIALS = [
-  { icon: 'instagram', label: 'Instagram', href: 'https://www.instagram.com/placertool' },
-  { icon: 'mail', label: 'Email', href: `mailto:${CONTACT_EMAIL}` },
+  { label: 'Instagram', href: 'https://www.instagram.com/placertool' },
+  { label: 'Email', href: `mailto:${CONTACT_EMAIL}` },
 ];
+
+// Newsletter sign-ups land in survey_responses with only an email, under their
+// own source, beside the surveys' own newsletter opt-ins.
+const NEWSLETTER_SOURCE = 'newsletter_signup';
+
+function NewsletterSignup({ t }) {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState('idle'); // idle | sending | done | error
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus('sending');
+    try {
+      await saveSurveyResponse({ source: NEWSLETTER_SOURCE, email: email.trim() });
+      setStatus('done');
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  if (status === 'done') {
+    return (
+      <p role="status" style={{ marginTop: 16, fontSize: 14, lineHeight: '20px', color: t.ink }}>
+        Thanks — you're on the list.
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={{ marginTop: 16, maxWidth: 360 }}>
+      <label htmlFor="placer-footer-newsletter" style={{ display: 'block', fontSize: 14, lineHeight: '20px',
+        fontWeight: 700, marginBottom: 8 }}>
+        Follow our newsletter
+      </label>
+      <div className="placer-footer-newsletter">
+        <input id="placer-footer-newsletter" type="email" required autoComplete="email"
+          placeholder="you@example.com" value={email}
+          onChange={(e) => setEmail(e.target.value)} />
+        <button type="submit" disabled={status === 'sending'}>
+          {status === 'sending' ? 'Signing up…' : 'Sign up'}
+        </button>
+      </div>
+      {status === 'error' && (
+        <p role="alert" style={{ marginTop: 8, fontSize: 12, lineHeight: '16px', color: t.inkDim }}>
+          That did not go through. Please try again.
+        </p>
+      )}
+    </form>
+  );
+}
 
 function FooterLink({ active, onClick, children }) {
   return (
@@ -95,18 +146,13 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
             <p style={{ marginTop: 16, maxWidth: 360, fontSize: 14, lineHeight: '20px', color: t.inkDim }}>
               Reimagine your city. A toolkit for shaping shared spaces together.
             </p>
-            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-              {SOCIALS.map(({ icon, label, href }) => href ? (
-                <a key={icon} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
-                  className="placer-footer-link"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44 }}>
-                  <Icon name={icon} size={20} />
+            <NewsletterSignup t={t} />
+            <div style={{ display: 'flex', gap: 24, marginTop: 16, fontSize: 14, lineHeight: '20px' }}>
+              {SOCIALS.map(({ label, href }) => (
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+                  className="placer-footer-link">
+                  {label} ↗
                 </a>
-              ) : (
-                <span key={icon} aria-label={label} title={`${label} — coming soon`}
-                  style={{ color: t.inkFaint, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44 }}>
-                  <Icon name={icon} size={20} />
-                </span>
               ))}
             </div>
           </div>
@@ -150,11 +196,7 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
               Source code
             </a>
           </span>
-          {/* Privacy and terms are one page for now, so both open it. */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
-            <FooterLink active={view === 'terms'} onClick={() => onNavigate('terms')}>Privacy Policy</FooterLink>
-            <FooterLink active={view === 'terms'} onClick={() => onNavigate('terms')}>Terms of Service</FooterLink>
-          </div>
+          <FooterLink active={view === 'terms'} onClick={() => onNavigate('terms')}>Privacy and Terms</FooterLink>
         </div>
       </div>
     </footer>
