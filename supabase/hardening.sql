@@ -16,7 +16,8 @@
 -- 1. Only the app's own forms. Anything else is junk or someone poking.
 alter table public.survey_responses drop constraint if exists survey_responses_source_known;
 alter table public.survey_responses add constraint survey_responses_source_known
-  check (source in ('community_survey', 'landing_survey', 'placemaking_trends_survey', 'user_labs_application'));
+  check (source in ('community_survey', 'landing_survey', 'placemaking_trends_survey', 'user_labs_application',
+                    'toolkit_contribution', 'newsletter_signup'));
 
 -- 2. Bound the payloads. The real survey sends well under 2 kB; without a cap a
 --    single request could store megabytes, as many times as it likes.

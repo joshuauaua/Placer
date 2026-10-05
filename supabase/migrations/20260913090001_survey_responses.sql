@@ -21,8 +21,10 @@ create table if not exists public.survey_responses (
   submitted_at timestamptz not null    default now(),
   -- Which form it came from: `community_survey` is the /survey route,
   -- `landing_survey` the dialog on the landing page, and -- both served by the
-  -- landingpage branch -- `placemaking_trends_survey` the municipal survey and
-  -- `user_labs_application` the User Labs sign-up form.
+  -- landingpage branch -- `placemaking_trends_survey` the municipal survey,
+  -- `user_labs_application` the User Labs sign-up form and `newsletter_signup` the
+  -- newsletter field in the site footer (an email and empty answers).
+  -- `toolkit_contribution` is the Toolkit's Contribute dialog.
   source       text        not null,
   -- Optional: only present when the visitor asked to be contacted.
   email        text,
@@ -69,7 +71,8 @@ create policy "signed-in people can submit a survey response"
 -- them to a table that already exists.
 alter table public.survey_responses drop constraint if exists survey_responses_source_known;
 alter table public.survey_responses add constraint survey_responses_source_known
-  check (source in ('community_survey', 'landing_survey', 'placemaking_trends_survey', 'user_labs_application'));
+  check (source in ('community_survey', 'landing_survey', 'placemaking_trends_survey', 'user_labs_application',
+                    'toolkit_contribution', 'newsletter_signup'));
 
 alter table public.survey_responses drop constraint if exists survey_responses_answers_size;
 alter table public.survey_responses add constraint survey_responses_answers_size
