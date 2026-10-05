@@ -613,6 +613,9 @@ a {
 
 .placer-glass-nav-logo {
   all: unset;
+  /* Holds the logo SVG, centred in the bar rather than sat on a text baseline. */
+  display: flex;
+  align-items: center;
   cursor: pointer;
   color: var(--placer-ink);
   border-radius: var(--placer-radius-sm);

@@ -2,6 +2,7 @@
 
 import { Icon } from './Icon';
 import { NEUTRAL } from '../theme';
+import { BrandLogo } from './UI';
 
 // Each column's entries. One with a `view` opens that MainApp view, one with an
 // `href` opens outside the app, and one with neither is a placeholder for a page
@@ -87,13 +88,10 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
       <div className="placer-footer" style={{ maxWidth: 1440, margin: '0 auto' }}>
         <div className="placer-footer-grid">
           <div>
-            {/* The wordmark in white, at the footer's 16px cap height. */}
-            <span
-              className="placer-wordmark"
-              onClick={() => onNavigate('welcome')}
-              style={{ cursor: 'pointer', display: 'inline-block', fontSize: 22, color: t.ink }}>
-              PLACER
-            </span>
+            {/* The logo's black badge, its lettering at the footer's 16px cap height. */}
+            <div onClick={() => onNavigate('welcome')} style={{ cursor: 'pointer', display: 'inline-block' }}>
+              <BrandLogo variant="badge" height={56} label="PLACER" />
+            </div>
             <p style={{ marginTop: 16, maxWidth: 360, fontSize: 14, lineHeight: '20px', color: t.inkDim }}>
               Reimagine your city. A toolkit for shaping shared spaces together.
             </p>
