@@ -125,8 +125,8 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
 
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
-      padding: '0 40px 48px' }} className="placer-scroll">
-      <PageHeader t={t} title="Projects"
+      padding: '0 32px 48px' }} className="placer-scroll">
+      <PageHeader t={t} title="Projects" inset={32} maxWidth="none"
         actions={projectsAvailable() && onNewProject ? (
           <Btn t={t} variant="primary" icon="plus" onClick={onNewProject}>
             Create a Project
@@ -152,7 +152,7 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
               ],
             }} />
         ) : null} />
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+      <div>
         {!projectsAvailable() && (
           <p style={{ fontSize: 14, color: t.inkFaint }}>
             Projects are not available in this environment.

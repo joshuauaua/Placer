@@ -1594,9 +1594,14 @@ a {
   position: relative;
   display: flex;
   flex-direction: column;
-  /* The window under the nav bar, less the margin below the frame. */
-  height: calc(100vh - 64px - 32px);
-  min-height: 560px;
+  /* The window under the nav bar, less the page header (its title, breadcrumb and
+   * 24px margin) and the margin below the frame, so the whole map is in view on
+   * arrival and the header stays stuck over it on the way down to the footer. */
+  height: calc(100vh - 64px - 186px - 32px);
+  min-height: 480px;
+  /* Google's own controls carry z-indexes that would otherwise rise over the
+   * header as the frame scrolls under it. */
+  isolation: isolate;
   border: 1px solid;
   border-radius: var(--placer-radius-lg);
   overflow: hidden;
