@@ -154,6 +154,21 @@ export async function readProjectLocations() {
     .filter((project) => project.locationShapes.length > 0);
 }
 
+/**
+ * Every project with a drawn outline, in full, for Explore — which draws the outline
+ * like readProjectLocations' callers do, and also previews the project when it is
+ * picked, so it needs the picture, description and place names as well.
+ */
+export async function readMapProjects() {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECTS_TABLE)
+    .select(PROJECT_COLUMNS);
+
+  if (error) throw new Error(`Could not load projects for the map: ${error.message}`);
+  return (data ?? []).map(fromRow).filter((project) => project.locationShapes.length > 0);
+}
+
 // How many recent projects readRelatedProjects ranks before it picks its few.
 const RELATED_POOL = 24;
 

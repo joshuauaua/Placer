@@ -126,7 +126,7 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '0 40px 48px' }} className="placer-scroll">
-      <PageHeader t={t} icon="grid" label="The projects you run or collaborate on" title="Projects"
+      <PageHeader t={t} title="Projects"
         actions={projectsAvailable() && onNewProject ? (
           <Btn t={t} variant="primary" icon="plus" onClick={onNewProject}>
             Create a Project

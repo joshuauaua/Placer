@@ -10,6 +10,12 @@ vi.mock('../MapContainer', () => ({
   },
 }));
 
+vi.mock('../ExplorePage', () => ({
+  default: () => {
+    throw new Error('Map failed to load');
+  },
+}));
+
 function renderAt(path) {
   const { hook } = memoryLocation({ path });
   return render(
@@ -52,6 +58,21 @@ describe('App', () => {
 
     fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Explore' }));
 
+    expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
+  });
+
+  it('puts Explore at its own address, /explore', () => {
+    const { hook, history } = memoryLocation({ path: '/', record: true });
+    render(<Router hook={hook}><App /></Router>);
+
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Explore' }));
+
+    expect(history.at(-1)).toBe('/explore');
+  });
+
+  it('opens Explore on a direct visit to /explore', async () => {
+    renderAt('/explore');
+    // The mocked page throws, so reaching the boundary means /explore rendered it.
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
   });
 
