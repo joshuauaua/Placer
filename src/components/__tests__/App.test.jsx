@@ -50,20 +50,17 @@ describe('App', () => {
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 
-  it('frames the landing copy with the two street drawings, as decoration', () => {
+  it('sets the landing copy on a card over the city drawing, as decoration', () => {
     const { container } = renderAt('/');
 
-    const frames = container.querySelectorAll('.placer-landing-frame');
-    expect(frames).toHaveLength(2);
-    frames.forEach((frame) => {
-      // Decorative: no accessible name to read out, and not in the way of a click.
-      expect(frame).toHaveAttribute('aria-hidden', 'true');
-      expect(frame.querySelector('img')).toHaveAttribute('alt', '');
-    });
-
-    // One drawing per side, each clipped to its own edge.
-    expect(container.querySelector('.placer-landing-frame-left')).toBeInTheDocument();
-    expect(container.querySelector('.placer-landing-frame-right')).toBeInTheDocument();
+    // The drawings are a CSS background, so they never reach assistive tech:
+    // a landscape one, and a portrait one that index.css swaps in on a phone.
+    const page = container.querySelector('.placer-landing');
+    expect(page.style.getPropertyValue('--placer-landing-city')).toMatch(/landing-city\.svg/);
+    expect(page.style.getPropertyValue('--placer-landing-city-mobile')).toMatch(/landing-city-mobile\.svg/);
+    expect(page.querySelector('.placer-landing-column')).toHaveTextContent(
+      /Placer is the open toolkit for co-designing shared spaces/i
+    );
     // Nothing decorative should reach the accessibility tree as an image.
     expect(screen.queryAllByRole('img', { name: '' })).toHaveLength(0);
   });
