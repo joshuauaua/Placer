@@ -330,6 +330,26 @@ is joined by the code in its QR link instead of a PIN (`supabase/rooms-lifetime.
 Your tool needs nothing extra for this: `room.combined` and `room.publish` work
 the same, so do not assume everybody is in the room at the same time.
 
+### Setting the tool up for a room
+
+A room-capable tool can also have a `setup`: what the organiser chooses before the
+room opens, so a tool run for a project is about that project's place. The Budget
+Ballot's is its budget and which things are on the ballot.
+
+```js
+setup: {
+  defaults() { return { /* the setup a new room starts from */ }; },
+  problems(setup) { return [/* what is wrong, as sentences; empty when it can open */]; },
+  Form: MyToolSetup, // ({ t, tool, setup, onChange }) — edits it, nothing more
+},
+```
+
+"Start a room" then opens the setup in place of the tool, and the room opens with it.
+It is fixed for the room's whole life (`supabase/rooms-config.sql`) and reaches your
+component as `room.config` — null outside a room, and in a room opened without one, so
+the tool has to work either way. Keep `defaults()` to a setup `problems()` accepts; the
+registry tests check it.
+
 ## File structure
 
 ```

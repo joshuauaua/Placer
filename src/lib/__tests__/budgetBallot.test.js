@@ -6,8 +6,12 @@ import {
   INTERVENTIONS,
   INTERVENTION_LIST,
   OUTCOME_LIST,
+  MAX_BUDGET,
   affordableQuantity,
+  ballotSetupProblems,
   canAfford,
+  defaultBallotSetup,
+  restrictBallot,
   costOf,
   emptyBallot,
   formatEuros,
@@ -242,5 +246,57 @@ describe('formatEuros', () => {
   it('groups the thousands', () => {
     expect(formatEuros(250000)).toBe('€250,000');
     expect(formatEuros(0)).toBe('€0');
+  });
+});
+
+describe("a budget of the room's own", () => {
+  it('is what tally measures against when it is given', () => {
+    const result = tally({ trees: 10 }, 10000);
+    expect(result).toMatchObject({ spent: 14000, budget: 10000, remaining: -4000, over: true, overBy: 4000 });
+  });
+
+  it('is still €250,000 when it is not', () => {
+    expect(tally({}).budget).toBe(BUDGET);
+  });
+
+  it('caps what the sliders can reach', () => {
+    expect(affordableQuantity({}, 'trees', 10000)).toBe(7);
+    expect(canAfford({}, 'trees', 8, 10000)).toBe(false);
+  });
+
+  it('is the one the summary quotes', () => {
+    expect(summaryText(tally({ benches: 1 }, 50000))).toContain('Spent €900 of €50,000');
+  });
+});
+
+describe('setting a ballot up', () => {
+  it("starts from the Toolkit's own street, which is a setup it accepts", () => {
+    expect(defaultBallotSetup()).toEqual({ budget: BUDGET, items: Object.keys(INTERVENTIONS) });
+    expect(ballotSetupProblems(defaultBallotSetup())).toEqual([]);
+  });
+
+  it('wants a budget in whole euros, and not an absurd one', () => {
+    for (const budget of [0, -1, 1.5, '50000', NaN, MAX_BUDGET + 1]) {
+      expect(ballotSetupProblems({ budget, items: ['trees'] }), String(budget)).toHaveLength(1);
+    }
+  });
+
+  it('wants something on the ballot, from the catalogue, once', () => {
+    expect(ballotSetupProblems({ budget: 10000, items: [] })).toEqual(['Put at least one thing on the ballot.']);
+    expect(ballotSetupProblems({ budget: 10000, items: ['ponies'] })).toHaveLength(1);
+    expect(ballotSetupProblems({ budget: 10000, items: ['trees', 'trees'] })).toHaveLength(1);
+  });
+
+  it('wants the money to buy one of something', () => {
+    expect(ballotSetupProblems({ budget: 1000, items: ['footway'] }))
+      .toEqual(['The budget does not buy one of anything on the ballot.']);
+  });
+
+  it('survives being handed nothing at all', () => {
+    expect(ballotSetupProblems(null)).toHaveLength(2);
+  });
+
+  it('takes off a ballot whatever the setup left out', () => {
+    expect(restrictBallot({ trees: 3, benches: 2 }, ['benches'])).toMatchObject({ trees: 0, benches: 2 });
   });
 });

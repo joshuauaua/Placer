@@ -51,11 +51,16 @@ async function client() {
  * needs a project, and comes back with a `joinCode` for its QR code — see
  * supabase/rooms-lifetime.sql. The default is left off the request entirely, so a
  * workshop room still opens against a database that has not had that file yet.
+ *
+ * `config` is the tool's setup, for a tool that has one (`setup` in toolkit/tools.js),
+ * fixed for the room's whole life — see supabase/rooms-config.sql. Left off the
+ * request when there is none, for the same reason as the lifetime.
  */
-export async function createRoom(toolId, projectId = null, lifetime = '2h') {
+export async function createRoom(toolId, projectId = null, lifetime = '2h', config = null) {
   const supabase = await client();
   const params = { p_tool: toolId, p_project_id: projectId };
   if (lifetime && lifetime !== '2h') params.p_lifetime = lifetime;
+  if (config) params.p_config = config;
 
   const { data, error } = await supabase.rpc('toolkit_room_create', params).single();
 
@@ -113,8 +118,8 @@ export async function joinRoomByCode(code) {
 
 /**
  * What a room is, given its id: which tool it belongs to, whether it is
- * 'open', 'closed' or 'expired', and when it runs out. Null for a room that does
- * not exist.
+ * 'open', 'closed' or 'expired', when it runs out, and how the tool was set up for
+ * it (`config`, null when it was not). Null for a room that does not exist.
  *
  * A page reloaded on a room link has the id but not the PIN, and an empty open room
  * looks exactly like a finished one from the contributions alone — this is what
@@ -131,7 +136,7 @@ export async function readRoom(roomId) {
   if (error) throw new Error(`Could not read the room: ${error.message}`);
   if (!data) return null;
 
-  return { tool: data.tool, status: data.status, expiresAt: data.expires_at };
+  return { tool: data.tool, status: data.status, expiresAt: data.expires_at, config: data.config ?? null };
 }
 
 /**

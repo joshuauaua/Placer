@@ -22,9 +22,22 @@
  * The tool also has to be in the enumerated list in supabase/rooms.sql, which
  * is the other half of the pair: the database will not host a room for a tool
  * it has not been told about.
+ *
+ * `setup` is optional too, and only means something next to `room`: it is what the
+ * organiser chooses before the room opens, so that a tool run for a project is about
+ * that project's place rather than the Toolkit's made-up one. Three parts:
+ *
+ *   defaults()        — the setup a new room starts from
+ *   problems(setup)   — what is wrong with it, as sentences; empty when it can open
+ *   Form              — the component that edits it: { t, tool, setup, onChange }
+ *
+ * The setup is fixed when the room opens (supabase/rooms-config.sql) and reaches the
+ * tool as `room.config`. A room opened without one — or before there was such a
+ * thing — has a null `room.config`, and the tool behaves as it does outside a room.
  */
 
 import { BudgetBallot } from '../components/toolkit/BudgetBallot';
+import { BudgetBallotSetup } from '../components/toolkit/BudgetBallotSetup';
 import { DesireLines } from '../components/toolkit/DesireLines';
 import { FifteenMinute } from '../components/toolkit/FifteenMinute';
 import { OpenVote } from '../components/toolkit/OpenVote';
@@ -33,7 +46,7 @@ import { SocialSpaceSurvey } from '../components/toolkit/SocialSpaceSurvey';
 import { StationaryActivityMap } from '../components/toolkit/StationaryActivityMap';
 import { StreetMixer } from '../components/toolkit/StreetMixer';
 import { CHARACTER } from '../theme';
-import { emptyBallot, normalise } from '../lib/budgetBallot';
+import { ballotSetupProblems, defaultBallotSetup, emptyBallot, normalise } from '../lib/budgetBallot';
 import { emptyVote, tally as tallyVotes } from '../lib/openVote';
 
 // Each tool wears one of the three character colours: `color` is the 700,
@@ -111,6 +124,11 @@ export const TOOLS = [
     icon: 'coins',
     createdBy: 'PLACER',
     component: BudgetBallot,
+    setup: {
+      defaults: defaultBallotSetup,
+      problems: ballotSetupProblems,
+      Form: BudgetBallotSetup,
+    },
     room: {
       empty: emptyBallot,
       /*
@@ -119,7 +137,7 @@ export const TOOLS = [
        * A ballot is one fixed budget spent one way, so adding twenty of them
        * together gives a five-million-euro wishlist and throws away the only thing
        * the tool is about. The mean is itself a ballot somebody could have
-       * cast: it says what the room would fund, and it still has to fit in €250,000.
+       * cast: it says what the room would fund, and it still fits the room's budget.
        */
       combine: (states) => {
         if (states.length === 0) return emptyBallot();

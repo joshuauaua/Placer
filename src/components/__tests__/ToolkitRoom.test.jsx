@@ -4,6 +4,7 @@ import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { THEME } from '../../theme';
 import { rememberHostedRoom } from '../../toolkit/rooms';
+import { defaultBallotSetup } from '../../lib/budgetBallot';
 import ToolkitPage from '../ToolkitPage';
 
 const createRoom = vi.fn();
@@ -103,11 +104,12 @@ describe('opening a room', () => {
     const location = renderAt('/toolkit/budget-ballot');
 
     fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open the room' }));
 
     await waitFor(() => {
       expect(location.history.at(-1)).toBe('/toolkit/budget-ballot?room=room-1');
     });
-    expect(createRoom).toHaveBeenCalledWith('budget-ballot', null, '2h');
+    expect(createRoom).toHaveBeenCalledWith('budget-ballot', null, '2h', defaultBallotSetup());
   });
 
   it('attaches the room to a project named in the URL', async () => {
@@ -119,8 +121,89 @@ describe('opening a room', () => {
     renderAt('/toolkit/budget-ballot', 'project=proj-1');
 
     fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open the room' }));
 
-    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('budget-ballot', 'proj-1', '2h'));
+    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('budget-ballot', 'proj-1', '2h', defaultBallotSetup()));
+  });
+});
+
+describe('setting a room up before it opens', () => {
+  const ballotSetup = { budget: 50000, items: ['benches', 'lighting'] };
+
+  it('shows the setup in place of the tool, and Cancel puts the tool back', () => {
+    renderAt('/toolkit/budget-ballot');
+
+    fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
+
+    expect(screen.getByText('Set up the room')).toBeInTheDocument();
+    expect(screen.getByLabelText('Budget, in euros')).toHaveValue(250000);
+    expect(screen.queryByText('What the street could have')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByText('Set up the room')).not.toBeInTheDocument();
+    expect(screen.getByText('What the street could have')).toBeInTheDocument();
+  });
+
+  it('opens the room with the budget and the ballot the organiser chose', async () => {
+    createRoom.mockResolvedValue({
+      id: 'room-1', pin: '839201', joinCode: 'a'.repeat(32), facilitatorToken: 'facilitator-1',
+      expiresAt: hours(24 * 30),
+    });
+    readRoom.mockResolvedValue({ ...openRoom(), expiresAt: hours(24 * 30), config: ballotSetup });
+
+    renderAt('/toolkit/budget-ballot', 'project=proj-1');
+    fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
+
+    fireEvent.change(screen.getByLabelText('Budget, in euros'), { target: { value: '50000' } });
+    for (const checkbox of screen.getAllByRole('checkbox')) {
+      if (!/benches with backs|street lighting/i.test(checkbox.closest('label').textContent)) fireEvent.click(checkbox);
+    }
+    fireEvent.change(screen.getByLabelText(/open for/i), { target: { value: '30d' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Open the room' }));
+
+    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('budget-ballot', 'proj-1', '30d', ballotSetup));
+  });
+
+  it('will not open until the setup is complete, and says why', () => {
+    renderAt('/toolkit/budget-ballot');
+    fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    for (const checkbox of screen.getAllByRole('checkbox')) fireEvent.click(checkbox);
+    fireEvent.click(screen.getByRole('button', { name: 'Open the room' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Put at least one thing on the ballot.');
+    expect(createRoom).not.toHaveBeenCalled();
+  });
+
+  it('shows everybody in the room the ballot as it was set up', async () => {
+    readRoom.mockResolvedValue({ ...openRoom(), config: ballotSetup });
+
+    renderAt('/toolkit/budget-ballot', 'room=room-1');
+
+    expect(await screen.findByText('€50,000')).toBeInTheDocument();
+    expect(screen.getByLabelText('Benches with backs')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Street trees')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: "The council's draft" })).not.toBeInTheDocument();
+  });
+
+  it('shows the tool as it ships in a room opened without a setup', async () => {
+    readRoom.mockResolvedValue({ ...openRoom(), config: {} });
+
+    renderAt('/toolkit/budget-ballot', 'room=room-1');
+
+    expect(await screen.findByText("The room's ballot")).toBeInTheDocument();
+    expect(screen.getByText('€250,000')).toBeInTheDocument();
+    expect(screen.getByLabelText('Street trees')).toBeInTheDocument();
+  });
+
+  it('refuses a setup the tool does not accept rather than guessing', async () => {
+    readRoom.mockResolvedValue({ ...openRoom(), config: { budget: -1, items: [] } });
+
+    renderAt('/toolkit/budget-ballot', 'room=room-1');
+
+    expect(await screen.findByText(/set up in a way this version of the tool cannot show/i)).toBeInTheDocument();
   });
 });
 
