@@ -3,18 +3,34 @@
 import { useState } from 'react';
 import { Icon } from './Icon';
 import { copyText } from '../lib/clipboard';
-import { CAT, CHARACTER_LIST } from '../theme';
+import { CAT, CHARACTER_LIST, NEUTRAL } from '../theme';
 
-/**
- * The loading state: the favicon's bench mark — white bench on the #111111
- * square, at the kit's 22% app-icon radius — turning in place. The text stays
- * in the tree, visually hidden, so screen readers still hear what is happening.
+/* The loading state: the PLACER letters from the brand file LOADING WB.svg, P L
+ * over C R, each turning in place one after the next, clockwise, then a beat
+ * before they go round again (see .placer-loading-mark in index.css). They take
+ * the surrounding text colour. The text stays in the tree, visually hidden, so
+ * screen readers still hear what is happening.
  */
+const LOADING_LETTERS = [
+  // P, top left
+  'M112.69,69.37c10.01,0,16.06,6.41,16.06,16.49,0,8.93-5.98,16.56-16.06,16.56h-12.82v18.65h-10.8v-51.7h23.62ZM110.17,93.49c4.68,0,7.78-2.23,7.78-8.06,0-5.11-2.88-7.13-9.14-7.13h-8.93v15.19h10.3Z',
+  // L, top right
+  'M153.3,69.37v42.34h25.71v9.36h-36.51v-51.7h10.8Z',
+  // R, bottom right
+  'M164.5,129.37c9.94,0,15.7,6.84,15.7,14.62,0,5.69-2.81,10.58-7.99,12.31l1.73.86c4.39,2.16,4.83,7.34,4.83,11.67v4.83c0,1.73.07,5.47,2.3,6.05v1.37h-11.95c-.58-1.66-1.08-4.75-1.08-7.34l-.07-5.62c-.07-6.98-4.1-7.27-8.5-7.27h-11.09v20.23h-10.58v-51.7h26.71ZM161.33,152.12c5.18,0,8.06-1.8,8.06-7.06,0-4.1-2.88-6.77-7.27-6.77h-13.75v13.83h12.96Z',
+  // C, bottom left
+  'M118.78,146.29c-1.51-6.55-5.76-8.93-11.23-8.93-7.85,0-13.03,6.26-13.03,18,0,10.66,4.54,17.71,12.82,17.71,6.05,0,10.08-3.38,11.45-9.72h10.8c-2.38,12.38-10.66,19.08-22.47,19.08-14.54,0-23.62-10.37-23.62-27.15s9.65-27.29,23.83-27.29c12.53,0,21.24,7.78,22.25,18.29h-10.8Z',
+];
+
 export function LoadingMark({ size = 56, label = 'Loading…' }) {
   return (
     <div role="status" className="placer-loading-mark">
-      <img src="/apple-touch-icon.png" alt="" width={size} height={size}
-        style={{ borderRadius: size * 0.22 }} />
+      {/* Cropped to the letters: the artboard is 262 square with them in the middle. */}
+      <svg viewBox="81 63 105 129" width={size * (105 / 129)} height={size} aria-hidden="true" focusable="false">
+        {LOADING_LETTERS.map((d, index) => (
+          <path key={index} d={d} fill="currentColor" style={{ animationDelay: `${index * 0.12}s` }} />
+        ))}
+      </svg>
       <span className="placer-visually-hidden">{label}</span>
     </div>
   );
@@ -26,6 +42,50 @@ export function LoadingMark({ size = 56, label = 'Loading…' }) {
  * Left unset it follows the kit — 20px caps on desktop, 16px on mobile (see
  * .placer-wordmark in index.css).
  */
+/* The PLACER logo, from the brand files LOGO WB.svg and LOGO BB.svg.
+ *
+ * Drawn inline rather than loaded as an image: the files set PLACER as live text
+ * in Helvetica LT Pro, which an <img> cannot fetch, so it fell back to a serif. In
+ * the page it takes the site's own Helvetica stack (--placer-font) instead, at the
+ * files' size, weight and spacing.
+ *
+ *   plain  black lettering and nothing else (WB), cropped to the lettering so its
+ *          height is the capitals' height. For a light background; it takes the
+ *          surrounding text colour.
+ *   badge  white lettering on a black box (BB), the whole artboard. For the footer;
+ *          the box is the footer's own ink rather than the file's #000, so the two
+ *          read as one surface.
+ *
+ * Decorative by default, for a control that names itself (the nav bar's
+ * "PLACER home"); pass `label` where the logo stands alone.
+ */
+const LOGO_VIEWBOX = { plain: '91 99 416 73', badge: '0 0 589.29 262' };
+
+export function BrandLogo({ variant = 'plain', height, label }) {
+  const badge = variant === 'badge';
+  const [, , width, tall] = LOGO_VIEWBOX[variant].split(' ').map(Number);
+  return (
+    <svg
+      viewBox={LOGO_VIEWBOX[variant]}
+      height={height}
+      width={(height * width) / tall}
+      style={{ display: 'block' }}
+      {...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true, focusable: 'false' })}
+    >
+      {badge && <rect x="-4.6" y="-5.02" width="600.92" height="267" fill={NEUTRAL.ink} />}
+      <text
+        transform="translate(91.05 171.78)"
+        fill={badge ? '#fff' : 'currentColor'}
+        style={{ fontFamily: 'var(--placer-font)', fontSize: 102, fontWeight: 700 }}
+      >
+        <tspan x="0" y="0">PL</tspan>
+        <tspan x="130.35" y="0" letterSpacing="-0.04em">A</tspan>
+        <tspan x="199.92" y="0">CER</tspan>
+      </text>
+    </svg>
+  );
+}
+
 export function Logo({ t, size }) {
   return (
     <span className="placer-wordmark"

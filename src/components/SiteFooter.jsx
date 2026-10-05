@@ -1,6 +1,6 @@
 /* PLACER — the site footer */
 
-import { Logo } from './UI';
+import { BrandLogo } from './UI';
 import { Icon } from './Icon';
 import { NEUTRAL } from '../theme';
 
@@ -77,8 +77,9 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
       <div className="placer-footer" style={{ maxWidth: 1440, margin: '0 auto' }}>
         <div className="placer-footer-grid">
           <div>
+            {/* The logo's black badge, its lettering at the footer's 16px cap height. */}
             <div onClick={() => onNavigate('welcome')} style={{ cursor: 'pointer', display: 'inline-block' }}>
-              <Logo t={t} size={16} />
+              <BrandLogo variant="badge" height={56} label="PLACER" />
             </div>
             <p style={{ marginTop: 16, maxWidth: 360, fontSize: 14, lineHeight: '20px', color: t.inkDim }}>
               Reimagine your city. Sketch, share and vote on ideas for the streets and
