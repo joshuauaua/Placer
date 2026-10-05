@@ -99,6 +99,23 @@ export async function readOrganisation(id) {
 }
 
 /**
+ * Every organisation that says where it is, for Explore. Its location is free text
+ * rather than a point, so Explore geocodes it — see lib/geocode.js. Public, the same
+ * as readOrganisation.
+ */
+export async function readMapOrganisations() {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(ORGANISATIONS_TABLE)
+    .select(ORGANISATION_COLUMNS)
+    .neq('location', '')
+    .order('name', { ascending: true });
+
+  if (error) throw new Error(`Could not load organisations for the map: ${error.message}`);
+  return (data ?? []).map(fromRow).filter((organisation) => organisation.location.trim());
+}
+
+/**
  * Every organisation this account is an admin of, by name. Two queries, the same
  * reason readMyProjects gives: the roster's read policy only tells an account about
  * its own rows.

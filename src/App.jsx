@@ -24,6 +24,7 @@ const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const MapContainer = lazy(() => import('./components/MapContainer'));
+const ExplorePage = lazy(() => import('./components/ExplorePage'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
 const ResourcesPage = lazy(() => import('./components/ResourcesPage'));
 const ResourceArticlePage = lazy(() => import('./components/ResourceArticlePage'));
@@ -86,10 +87,12 @@ const ACCOUNT_VIEWS = {
   '/signup': 'signup',
 };
 
-// About, Contact, Resources, Guides, the FAQ and Terms and Privacy each get a
+// Explore, About, Contact, Resources, Guides, the FAQ and Terms and Privacy each get a
 // bookmarkable link of their own, read off the location the same way the account
-// views and the Toolkit are.
+// views and the Toolkit are. Explore is still 'map' inside the app, which is what
+// the side nav, the footer and the dashboard all ask for.
 const STATIC_PATHS = {
+  map: '/explore',
   about: '/about',
   contact: '/contact',
   resources: '/resources',
@@ -184,8 +187,10 @@ function SignedOutNotice({ t, onSignIn }) {
 
 function MainApp({ initialView = 'welcome' }) {
   const t = THEME;
-  // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'contact', 'resources',
-  // 'guides', 'faq', 'toolkit', 'terms'
+  // 'welcome', 'map', 'imagine', 'street', 'describe', 'post', 'about', 'contact',
+  // 'resources', 'guides', 'faq', 'toolkit', 'terms'. 'map' is Explore; 'imagine' is
+  // the map an imagination is captured from, which is not Explore's and has no URL,
+  // since the capture flow it starts lives in this state too.
   const [currentView, setCurrentView] = useState(initialView);
   const [capturedView, setCapturedView] = useState(null);
   // The imagination being built. Held here rather than in StreetScreen so that
@@ -268,6 +273,10 @@ function MainApp({ initialView = 'welcome' }) {
     ?? (inToolkit ? 'toolkit' : projectView ?? organisationView ?? (personId ? 'profilePublic'
       : resourceSlug ? 'resourceArticle' : currentView));
 
+  // The imagine map fills the window and does not scroll, so it has no footer. Explore
+  // scrolls like a page, its map in a frame of its own, with the footer under it.
+  const fullHeight = view === 'imagine';
+
   const showNewProject = () => navigate('/projects/new');
   const showNewOrganisationProject = (organisationId) =>
     navigate(`/projects/new?organisation=${encodeURIComponent(organisationId)}`);
@@ -315,7 +324,7 @@ function MainApp({ initialView = 'welcome' }) {
 
   const handleImagineForProject = (id) => {
     setActiveProjectId(id);
-    show('map');
+    show('imagine');
   };
 
   const handleCaptureView = (viewData) => {
@@ -328,7 +337,7 @@ function MainApp({ initialView = 'welcome' }) {
   };
 
   const handleBackToMap = () => {
-    show('map');
+    show('imagine');
   };
 
   const handleNextStep = (canvasPreview) => {
@@ -389,7 +398,7 @@ function MainApp({ initialView = 'welcome' }) {
     setDraft(EMPTY_DRAFT);
     setPreview(null);
     setActiveProjectId(null);
-    show('map');
+    show('imagine');
   };
 
   const handleExplore = () => {
@@ -492,12 +501,12 @@ function MainApp({ initialView = 'welcome' }) {
         onSearchSelect={({ kind, id }) => showPublicPage(kind, id)}
       />
 
-      {/* Main Content. The map fills it and has no footer. Every other view scrolls
+      {/* Main Content. The imagine map fills it and has no footer. Every other view scrolls
           here, with the footer after it — see .placer-scroll-view in index.css. The
           side nav shares a row with the page rather than with the whole area, so it
           ends where the page does and the footer runs the full width beneath both. */}
-      <div className={`placer-under-glass-nav${view === 'map' ? '' : ' placer-scroll-view'}`}
-        style={{ flex: 1, minHeight: 0, position: 'relative', overflow: view === 'map' ? 'hidden' : undefined }}>
+      <div className={`placer-under-glass-nav${fullHeight ? '' : ' placer-scroll-view'}`}
+        style={{ flex: 1, minHeight: 0, position: 'relative', overflow: fullHeight ? 'hidden' : undefined }}>
         <div className="placer-app-row">
           {/* Only once somebody is signed in: everything on it is a place an account
               goes back to. Held back while the session is still being read, the same as
@@ -514,6 +523,19 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'welcome' && !identityLoading && <LandingPage t={t} />}
 
             {view === 'map' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <ExplorePage
+                  apiKey={GOOGLE_MAPS_API_KEY}
+                  homeCenter={profile?.locationPoint ?? null}
+                  accountId={accountId}
+                  onSignIn={handleSignIn}
+                  onOpenProject={showProjectPublic}
+                  onOpenOrganisation={showOrganisationPublic}
+                />
+              </Suspense>
+            )}
+
+            {view === 'imagine' && (
               <Suspense fallback={<LoadingFallback />}>
                 <MapContainer
                   onCaptureView={handleCaptureView}
@@ -723,7 +745,7 @@ function MainApp({ initialView = 'welcome' }) {
             )}
           </div>
         </div>
-        {view !== 'map' && (
+        {!fullHeight && (
           <SiteFooter t={t} view={view}
             onNavigate={(next) => (next === 'map' ? handleExplore() : show(next))} />
         )}

@@ -8,6 +8,7 @@
 
 import { Btn } from './UI';
 import { Icon } from './Icon';
+import { Breadcrumb } from './PageHeader';
 
 function OrganisationCard({ t, organisation, onOpen }) {
   return (
@@ -46,6 +47,7 @@ export function OrganisationsPage({ t, organisations = [], onNewOrganisation, on
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
           gap: 20, flexWrap: 'wrap', marginBottom: 40 }}>
           <div>
+            <Breadcrumb t={t} current="Organisations" style={{ marginBottom: 14 }} />
             <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
               letterSpacing: '-0.03em', marginBottom: 8 }}>
               Organisations

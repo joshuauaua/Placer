@@ -691,7 +691,7 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
   return (
     <div ref={topRef} style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '0 40px 48px', scrollMarginTop: 64 }} className="placer-scroll">
-      <PageHeader t={t} icon="gear" label="Change, Edit, Manage Your Placer Account" title="Settings"
+      <PageHeader t={t} title="Settings"
         maxWidth={760} />
 
       <div style={{ maxWidth: 760, margin: '0 auto', paddingBottom: 40 }}>

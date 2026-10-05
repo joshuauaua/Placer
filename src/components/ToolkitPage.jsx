@@ -262,7 +262,7 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: tool && Tool ? '48px 40px 80px' : '0 40px 80px' }}>
       {!(tool && Tool) && (
-        <PageHeader t={t} icon="flask" label="Methods for shaping shared spaces" title="Toolkit"
+        <PageHeader t={t} title="Toolkit"
           actions={(
             <Btn t={t} variant="outline" icon="arrowRight" onClick={() => setContributing(true)}>
               Contribute

@@ -1577,3 +1577,214 @@ a {
     display: none !important;
   }
 }
+
+/* PLACER — Explore (see ExplorePage.jsx). A page that scrolls, with the footer
+ * under it: the map in a frame as wide as the page — which is whatever the side nav,
+ * open or closed, leaves of the window — and nearly a window tall. The frame has a
+ * header of its own with the search at its left end, and the two cards float over
+ * the map's left edge under it. Below 1024px there is no room for the cards on the
+ * map, so they drop under it instead. */
+.placer-explore {
+  --placer-explore-bar: 64px;
+  box-sizing: border-box;
+  padding: 0 32px 32px;
+}
+
+.placer-explore-frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* The window under the nav bar, less the margin below the frame. */
+  height: calc(100vh - 64px - 32px);
+  min-height: 560px;
+  border: 1px solid;
+  border-radius: var(--placer-radius-lg);
+  overflow: hidden;
+}
+
+.placer-explore-bar {
+  flex: 0 0 var(--placer-explore-bar);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-bottom: 1px solid;
+  /* Over the map and the cards, so the search's list can drop down across both. */
+  position: relative;
+  z-index: 6;
+}
+
+.placer-explore-map {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.placer-explore-side {
+  position: absolute;
+  top: calc(var(--placer-explore-bar) + 16px);
+  left: 16px;
+  bottom: 16px;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  /* The gap between and below the cards is map, and stays draggable. */
+  pointer-events: none;
+  z-index: 4;
+}
+
+.placer-explore-side > * {
+  pointer-events: auto;
+}
+
+.placer-explore-card {
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  border-radius: var(--placer-radius-lg);
+  box-shadow: var(--placer-shadow);
+  padding: 20px;
+  flex: 0 0 auto;
+}
+
+.placer-explore-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 10px;
+  margin: 0 -10px;
+  border-radius: var(--placer-radius-sm);
+}
+
+.placer-explore-filter:has(input:not(:disabled)):hover {
+  background: var(--placer-grey-100);
+}
+
+.placer-explore-filter input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--placer-ink);
+}
+
+.placer-explore-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--placer-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.placer-explore-link:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* The width of the cards under it, so the two line up down the left. */
+.placer-explore-search {
+  position: relative;
+  width: 352px;
+  max-width: 100%;
+}
+
+.placer-explore-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: max(100%, 420px);
+  max-width: calc(100vw - 48px);
+  box-sizing: border-box;
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 6px;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  border-radius: var(--placer-radius-sm);
+  box-shadow: var(--placer-shadow);
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.placer-explore-results li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+@media (max-width: 1023px) {
+  .placer-explore {
+    padding: 0 20px 32px;
+  }
+
+  .placer-explore > header {
+    margin-left: -20px !important;
+    margin-right: -20px !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  /* The frame holds its header and the map; the cards follow it, outside. */
+  .placer-explore-frame {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    border: none;
+  }
+
+  .placer-explore-bar {
+    border: 1px solid var(--placer-grey-200) !important;
+    border-radius: var(--placer-radius-lg) var(--placer-radius-lg) 0 0;
+  }
+
+  .placer-explore-search {
+    width: 100%;
+  }
+
+  .placer-explore-map {
+    flex: 0 0 auto;
+    height: min(60vh, 520px);
+    border: 1px solid var(--placer-grey-200);
+    border-top: none;
+    border-radius: 0 0 var(--placer-radius-lg) var(--placer-radius-lg);
+    overflow: hidden;
+  }
+
+  .placer-explore-side {
+    position: static;
+    width: auto;
+    margin-top: 16px;
+    overflow: visible;
+    pointer-events: auto;
+  }
+
+  .placer-explore-card {
+    box-shadow: none;
+  }
+}
+
+/* My Workspace in a page header's breadcrumb (PageHeader.jsx). */
+.placer-breadcrumb-link {
+  color: inherit;
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.placer-breadcrumb-link:hover {
+  color: var(--placer-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.placer-breadcrumb-link:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}

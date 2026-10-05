@@ -3,14 +3,15 @@
  * Reads whether this account already follows the thing, then toggles it through
  * services/follows.js, showing the new state straight away and putting it back if the
  * change is refused. `label` is the name the dashboard's Following list will show,
- * snapshotted now (see follows.js's header for why).
+ * snapshotted now (see follows.js's header for why). `saveLabels` words it as Save /
+ * Saved instead, for Explore's preview card, where following a place is keeping it.
  */
 
 import { useEffect, useState } from 'react';
 import { Btn } from './UI';
 import { follow, isFollowing, unfollow } from '../services/follows';
 
-export function FollowButton({ t, type, targetId, label, size = 'md', onChange }) {
+export function FollowButton({ t, type, targetId, label, size = 'md', onChange, saveLabels = false }) {
   const [following, setFollowing] = useState(false);
   const [checked, setChecked] = useState(false);
 
@@ -38,9 +39,10 @@ export function FollowButton({ t, type, targetId, label, size = 'md', onChange }
   };
 
   return (
-    <Btn t={t} size={size} variant={following ? 'outline' : 'primary'} icon={following ? 'check' : 'plus'}
-      onClick={toggle} disabled={!checked}>
-      {following ? 'Following' : 'Follow'}
+    <Btn t={t} size={size} variant={following ? 'outline' : 'primary'}
+      icon={following ? 'check' : saveLabels ? 'bookmark' : 'plus'}
+      onClick={toggle} disabled={!checked} ariaPressed={saveLabels ? following : undefined}>
+      {saveLabels ? (following ? 'Saved' : 'Save') : following ? 'Following' : 'Follow'}
     </Btn>
   );
 }

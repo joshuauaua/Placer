@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 function makeChain(result = { data: null, error: null }) {
   const calls = [];
   const chain = { calls };
-  for (const method of ['select', 'insert', 'update', 'delete', 'eq', 'in', 'order']) {
+  for (const method of ['select', 'insert', 'update', 'delete', 'eq', 'neq', 'in', 'order']) {
     chain[method] = (...args) => { calls.push([method, args]); return chain; };
   }
   chain.single = () => Promise.resolve(result);
@@ -148,6 +148,26 @@ describe('listing my organisations', () => {
 
     await expect(organisations.readMyOrganisations('user-1')).resolves.toEqual([]);
     expect(from).not.toHaveBeenCalledWith('organisations');
+  });
+});
+
+describe('organisations for the map', () => {
+  it('reads the ones that say where they are, leaving out a blank location', async () => {
+    await load();
+    const chain = makeChain({ data: [ROW, { ...ROW, id: 'org-2', location: '   ' }], error: null });
+    fromChains.organisations = chain;
+
+    const found = await organisations.readMapOrganisations();
+
+    expect(found.map(({ id }) => id)).toEqual(['org-1']);
+    expect(chain.calls).toContainEqual(['neq', ['location', '']]);
+  });
+
+  it('surfaces a failure as a readable error', async () => {
+    await load();
+    fromChains.organisations = makeChain({ data: null, error: { message: 'network down' } });
+
+    await expect(organisations.readMapOrganisations()).rejects.toThrow('network down');
   });
 });
 

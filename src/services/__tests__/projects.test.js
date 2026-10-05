@@ -180,6 +180,26 @@ describe('reading a project', () => {
   });
 });
 
+describe('projects for Explore', () => {
+  it('reads every project with a drawn shape in full, leaving the rest out', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: [ROW, { ...ROW, id: 'proj-2', location_shapes: [] }], error: null });
+
+    const found = await projects.readMapProjects();
+
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({ id: ROW.id, name: ROW.name, locationShapes: ROW.location_shapes,
+      description: ROW.description });
+  });
+
+  it('surfaces a failure as a readable error', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: null, error: { message: 'network down' } });
+
+    await expect(projects.readMapProjects()).rejects.toThrow('network down');
+  });
+});
+
 describe('project locations, for the community map', () => {
   it('reads every project with a drawn shape, leaving the rest out', async () => {
     await load();
