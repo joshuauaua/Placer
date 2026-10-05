@@ -116,6 +116,12 @@ describe('staticMapUrl', () => {
     });
   });
 
+  it('puts a pin at the centre only when asked to', () => {
+    expect(paramsOf(staticMapUrl({ apiKey: KEY, center: LOCATION })).markers).toBeUndefined();
+    expect(paramsOf(staticMapUrl({ apiKey: KEY, center: LOCATION, marker: true, pathColor: '#123F73' })).markers)
+      .toBe('color:0x123f73|55.6054,12.9854');
+  });
+
   it('defaults to roadmap, since satellite and hybrid are refused under EEA terms', () => {
     const url = staticMapUrl({ apiKey: KEY, center: LOCATION });
     expect(paramsOf(url).maptype).toBe('roadmap');

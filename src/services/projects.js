@@ -17,6 +17,7 @@ import { mediaUrl, preparePhoto, removeMedia, uploadMedia } from './media';
 export const PROJECTS_TABLE = 'projects';
 export const COLLABORATORS_TABLE = 'project_collaborators';
 export const LINKS_TABLE = 'project_links';
+export const PROJECT_TOOLS_TABLE = 'project_tools';
 // The folder project images go under in the R2 bucket (supabase/functions/media).
 // Named after the project, not the uploader: any collaborator may replace it.
 export const PROJECT_IMAGES_FOLDER = 'projects';
@@ -67,7 +68,8 @@ export const PROJECT_TYPE_NAMES = {
 };
 
 const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, description, start_date, end_date, '
-  + 'locations, location_shapes, image_path, project_type, organisation_id, created_at, updated_at';
+  + 'locations, location_shapes, address, location_lat, location_lng, image_path, project_type, '
+  + 'organisation_id, created_at, updated_at';
 
 function fromRow(row) {
   return {
@@ -83,6 +85,12 @@ function fromRow(row) {
     // Additive to `locations`, not a replacement for it: a place name and its shape
     // on the map are two different things about the same location.
     locationShapes: row.location_shapes ?? [],
+    // The address it is about, picked from Google Places, and where that is — see
+    // supabase/project-setup.sql. What the maps place it by when it has no outline.
+    address: row.address ?? '',
+    locationPoint: row.location_lat == null || row.location_lng == null
+      ? null
+      : { lat: row.location_lat, lng: row.location_lng },
     // An uploaded picture, shown instead of the map of the area when there is one.
     imagePath: row.image_path ?? null,
     image: mediaUrl(row.image_path),
@@ -102,8 +110,8 @@ function fromRow(row) {
  * refused write here rather than a policy violation there.
  */
 export async function createProject({ ownerId, ownerName, name, description = '',
-  startDate = null, endDate = null, locations = [], locationShapes = [], projectType = null,
-  organisationId = null }) {
+  startDate = null, endDate = null, locations = [], locationShapes = [], address = '',
+  locationPoint = null, projectType = null, organisationId = null }) {
   if (!ownerId) throw new Error('Starting a project needs an account.');
 
   const supabase = await client();
@@ -118,6 +126,9 @@ export async function createProject({ ownerId, ownerName, name, description = ''
       end_date: endDate,
       locations,
       location_shapes: locationShapes,
+      address,
+      location_lat: locationPoint?.lat ?? null,
+      location_lng: locationPoint?.lng ?? null,
       project_type: projectType,
       organisation_id: organisationId,
     })
@@ -160,9 +171,10 @@ export async function readProjectLocations() {
 }
 
 /**
- * Every project with a drawn outline, in full, for Explore — which draws the outline
- * like readProjectLocations' callers do, and also previews the project when it is
- * picked, so it needs the picture, description and place names as well.
+ * Every project with somewhere to put it, in full, for Explore — a drawn outline, or
+ * the point of its address for a project set up since outlines gave way to addresses.
+ * Explore previews the project when it is picked, so it needs the picture,
+ * description and place names as well.
  */
 export async function readMapProjects() {
   const supabase = await client();
@@ -171,7 +183,8 @@ export async function readMapProjects() {
     .select(PROJECT_COLUMNS);
 
   if (error) throw new Error(`Could not load projects for the map: ${error.message}`);
-  return (data ?? []).map(fromRow).filter((project) => project.locationShapes.length > 0);
+  return (data ?? []).map(fromRow)
+    .filter((project) => project.locationShapes.length > 0 || project.locationPoint);
 }
 
 // How many recent projects readRelatedProjects ranks before it picks its few.
@@ -293,6 +306,11 @@ export async function updateProject(id, patch) {
   const row = {};
   for (const [key, column] of Object.entries(columns)) {
     if (patch[key] !== undefined) row[column] = patch[key];
+  }
+  if (patch.address !== undefined) row.address = patch.address;
+  if (patch.locationPoint !== undefined) {
+    row.location_lat = patch.locationPoint?.lat ?? null;
+    row.location_lng = patch.locationPoint?.lng ?? null;
   }
 
   const { data, error } = await supabase
@@ -426,6 +444,54 @@ export async function removeLink(linkId) {
   const { error } = await supabase.from(LINKS_TABLE).delete().eq('id', linkId);
   if (error) throw new Error(`Could not remove that link: ${error.message}`);
   return { success: true };
+}
+
+/**
+ * The Toolkit tools a project has chosen, as registry ids, in the order they were
+ * added. Public, like its links. Choosing is all this is — each tool is set up when
+ * its room is opened — see supabase/project-setup.sql.
+ */
+export async function readProjectTools(projectId) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECT_TOOLS_TABLE)
+    .select('tool, created_at')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(`Could not load the project's tools: ${error.message}`);
+  return (data ?? []).map((row) => row.tool);
+}
+
+/**
+ * Make a project's tools exactly `toolIds`: the new ones added, the ones no longer
+ * chosen removed, and the rest left alone so they keep when they were added.
+ * `addedBy` is checked against auth.uid() by the insert policy. Owner or collaborator
+ * only. Returns the tools as saved.
+ */
+export async function saveProjectTools(projectId, toolIds, addedBy) {
+  const current = await readProjectTools(projectId);
+  const wanted = [...new Set(toolIds)];
+  const adding = wanted.filter((tool) => !current.includes(tool));
+  const removing = current.filter((tool) => !wanted.includes(tool));
+
+  const supabase = await client();
+  if (adding.length > 0) {
+    const { error } = await supabase
+      .from(PROJECT_TOOLS_TABLE)
+      .insert(adding.map((tool) => ({ project_id: projectId, tool, added_by: addedBy })));
+    if (error) throw new Error(`Could not add those tools: ${error.message}`);
+  }
+  if (removing.length > 0) {
+    const { error } = await supabase
+      .from(PROJECT_TOOLS_TABLE)
+      .delete()
+      .eq('project_id', projectId)
+      .in('tool', removing);
+    if (error) throw new Error(`Could not remove those tools: ${error.message}`);
+  }
+
+  return [...current.filter((tool) => !removing.includes(tool)), ...adding];
 }
 
 /**

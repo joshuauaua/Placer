@@ -39,6 +39,8 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   removeLink: vi.fn(() => Promise.resolve({ success: true })),
   createProject: vi.fn(),
   updateProject: vi.fn(),
+  readProjectTools: vi.fn(() => Promise.resolve([])),
+  saveProjectTools: vi.fn((projectId, tools) => Promise.resolve(tools)),
   deleteProject: vi.fn(() => Promise.resolve({ success: true })),
 }));
 

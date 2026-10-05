@@ -3,15 +3,15 @@
  * optional. All of it is shown on the organisation's public page, except the exact
  * address, which places its pin on the Explore map instead. */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Btn } from './UI';
 import { ImagePicker } from './ImagePicker';
 import {
   createOrganisation, removeOrganisationCoverFile, updateOrganisation, uploadOrganisationCover,
 } from '../services/organisations';
 import { checkPickedImage } from '../services/media';
-import { googleMapsApiKey, isGoogleMapsConfigured, loadGoogleMaps } from '../lib/googleMaps';
-import { townAndCountry } from '../lib/address';
+import { AddressInput } from './AddressInput';
+import { isGoogleMapsConfigured } from '../lib/googleMaps';
 
 // Matches ProjectSetupPage's form styling.
 const inputStyle = (t) => ({
@@ -38,60 +38,6 @@ function Field({ t, label, htmlFor, hint, children }) {
       )}
       {children}
     </div>
-  );
-}
-
-/**
- * The exact address, with Google Places suggestions as it is typed — the same service
- * as Settings' location, but any address or place rather than only towns. Choosing a
- * suggestion reports the address, where it is, and the town and country worked out
- * from it (lib/address.js) through `onPick`. Typing by hand afterwards drops the point
- * again, through `onChange`, since the text no longer says where it was. Without a
- * Maps key it is a plain text field.
- */
-function AddressInput({ t, value, onChange, onPick }) {
-  const inputRef = useRef(null);
-  // The listener is set up once, so it reads today's onPick through here.
-  const onPickRef = useRef(onPick);
-  onPickRef.current = onPick;
-
-  useEffect(() => {
-    if (!isGoogleMapsConfigured()) return undefined;
-    let cancelled = false;
-    let listener = null;
-
-    loadGoogleMaps(googleMapsApiKey())
-      .then(() => {
-        if (cancelled || !inputRef.current || !window.google?.maps?.places) return;
-        const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-          fields: ['address_components', 'geometry', 'formatted_address', 'name'],
-        });
-        listener = autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          const location = place?.geometry?.location;
-          if (!location) return;
-          onPickRef.current({
-            address: place.formatted_address || place.name || '',
-            point: { lat: location.lat(), lng: location.lng() },
-            townAndCountry: townAndCountry(place.address_components),
-          });
-        });
-      })
-      .catch((err) => console.error('Could not load address suggestions:', err));
-
-    return () => {
-      cancelled = true;
-      listener?.remove?.();
-    };
-  }, []);
-
-  return (
-    <input id="organisation-address" ref={inputRef} type="text" value={value} maxLength={200}
-      autoComplete="off"
-      onChange={(e) => onChange(e.target.value)}
-      // Enter picks a suggestion in the Places list; it must not submit the form.
-      onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
-      placeholder="e.g. Malmöhusvägen 5, Malmö" style={inputStyle(t)} />
   );
 }
 
@@ -216,7 +162,8 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
           hint={isGoogleMapsConfigured()
             ? 'Where it is based, exactly. Pick the address from the suggestions and the organisation is pinned there on the Explore map, and its town and country fill in below. Optional.'
             : 'Where it is based, exactly. The organisation is pinned there on the Explore map. Optional.'}>
-          <AddressInput t={t} value={address}
+          <AddressInput id="organisation-address" value={address}
+            placeholder="e.g. Malmöhusvägen 5, Malmö" style={inputStyle(t)}
             onChange={(next) => { setAddress(next); setPoint(null); }}
             onPick={(picked) => {
               setAddress(picked.address);

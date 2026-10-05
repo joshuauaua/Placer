@@ -102,6 +102,8 @@ export function staticMapUrl({
   // there is no bounds math to duplicate here.
   paths,
   pathColor = '1D5FA8',
+  // A pin at `center`, for a place given as a point rather than an outline.
+  marker = false,
 }) {
   const { width, height } = clampSize(size)
   const params = new URLSearchParams({
@@ -124,6 +126,9 @@ export function staticMapUrl({
   } else {
     params.set('center', `${center.lat},${center.lng}`)
     params.set('zoom', String(zoom))
+    if (marker) {
+      params.append('markers', `color:0x${pathColor.replace('#', '').toLowerCase()}|${center.lat},${center.lng}`)
+    }
   }
 
   return `${STATIC_MAP_ENDPOINT}?${params.toString()}`
