@@ -281,3 +281,23 @@ describe('the cover image', () => {
     expect(remove).not.toHaveBeenCalled();
   });
 });
+
+describe('every organisation', () => {
+  it('reads all of them, by name, whether or not they say where they are', async () => {
+    await load();
+    const chain = makeChain({ data: [ROW, { ...ROW, id: 'org-2', location: '' }], error: null });
+    fromChains.organisations = chain;
+
+    const found = await organisations.readAllOrganisations();
+
+    expect(found.map(({ id }) => id)).toEqual(['org-1', 'org-2']);
+    expect(chain.calls).toContainEqual(['order', ['name', { ascending: true }]]);
+  });
+
+  it('surfaces a failure as a readable error', async () => {
+    await load();
+    fromChains.organisations = makeChain({ data: null, error: { message: 'network down' } });
+
+    await expect(organisations.readAllOrganisations()).rejects.toThrow('network down');
+  });
+});
