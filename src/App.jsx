@@ -40,6 +40,7 @@ const AdminImaginations = lazy(() => import('./components/AdminImaginations'));
 const ToolkitPage = lazy(() => import('./components/ToolkitPage'));
 const JoinPage = lazy(() => import('./components/JoinPage'));
 const DashboardPage = lazy(() => import('./components/DashboardPage'));
+const ActivityPage = lazy(() => import('./components/ActivityPage'));
 const SettingsPage = lazy(() => import('./components/SettingsPage'));
 const AuthPage = lazy(() => import('./components/AuthPage'));
 const AuthCallback = lazy(() => import('./components/AuthCallback'));
@@ -70,6 +71,7 @@ const FLOW_VIEWS = ['street', 'describe', 'post'];
 // and the draft they left in MainApp's state. A sibling Route would throw all of it away.
 const ACCOUNT_PATHS = {
   dashboard: '/dashboard',
+  activity: '/activity',
   projects: '/projects',
   organisations: '/organisations',
   settings: '/settings',
@@ -80,6 +82,7 @@ const ACCOUNT_VIEWS = {
   '/dashboard': 'dashboard',
   // The dashboard's old address, so a bookmark from when it was the profile still works.
   '/profile': 'dashboard',
+  '/activity': 'activity',
   '/projects': 'projects',
   '/organisations': 'organisations',
   '/settings': 'settings',
@@ -162,7 +165,7 @@ function LoadingFallback() {
 }
 
 // Views that need an account, and say so to someone who has logged out.
-const SIGNED_IN_VIEWS = ['dashboard', 'settings', 'projects', 'organisations',
+const SIGNED_IN_VIEWS = ['dashboard', 'activity', 'settings', 'projects', 'organisations',
   'projectNew', 'projectDashboard', 'organisationNew', 'organisationDashboard'];
 
 // What /dashboard, /projects and /settings show to someone who has logged out. Not a redirect,
@@ -633,7 +636,14 @@ function MainApp({ initialView = 'welcome' }) {
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
                   onNewProject={showNewProject}
                   onSignIn={handleSignIn} onSignOut={handleSignOut} onExplore={handleExplore}
-                  onOpenPublicProfile={showPublicProfile} />
+                  onOpenPublicProfile={showPublicProfile}
+                  onOpenProject={showProjectDashboard} onOpenProjectPage={showProjectPublic} />
+              </Suspense>
+            )}
+
+            {view === 'activity' && profile && (
+              <Suspense fallback={<LoadingFallback />}>
+                <ActivityPage t={t} onOpenProject={showProjectPublic} />
               </Suspense>
             )}
 

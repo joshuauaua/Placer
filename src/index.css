@@ -1788,3 +1788,19 @@ a {
   outline: 2px solid var(--placer-ink);
   outline-offset: 2px;
 }
+
+/* The dashboard's project cards, and the rows of its Next Steps and of any list of
+ * notifications (NotificationItem.jsx). */
+.placer-dashboard-project {
+  transition: box-shadow 0.15s ease;
+}
+
+.placer-dashboard-project:hover,
+.placer-dashboard-project:focus-visible {
+  box-shadow: var(--placer-shadow);
+}
+
+.placer-notification-row:hover,
+.placer-notification-row:focus-visible {
+  background: var(--placer-grey-100) !important;
+}
