@@ -276,6 +276,7 @@ create trigger imagination_votes_notify
   for each row execute function public.notifications_on_vote();
 
 -- 4c. Follower — somebody follows your profile.
+-- Replaced by notifications-projects.sql, which runs after this file: edit it there.
 create or replace function public.notifications_on_follow()
 returns trigger
 language plpgsql
@@ -352,6 +353,7 @@ create trigger imaginations_notify_followers
 -- 4e. Activity — new Toolkit results for a project you follow: a room attached to
 -- that project closes, whether by the facilitator or by running out of time (both
 -- set closed_at — see rooms.sql).
+-- Replaced by notifications-projects.sql, which runs after this file: edit it there.
 create or replace function public.notifications_on_room_closed()
 returns trigger
 language plpgsql

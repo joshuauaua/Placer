@@ -85,6 +85,7 @@ const PLAN = [
   // Dated after 20261005090001, the newest migration applied when it was written:
   // `db push` refuses one older than that.
   { name: '20261005100001_organisation_address.sql', src: 'organisation-address.sql' },
+  { name: '20261005110001_notifications_projects.sql', src: 'notifications-projects.sql' },
 ]
 
 const HAND_WRITTEN = [

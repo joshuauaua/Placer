@@ -31,6 +31,8 @@ import {
   removeLink,
 } from '../services/projects';
 import { closeRoom, deleteRoom } from '../services/rooms';
+import { readPreferences, readProjectResponses, saveProjectResponses } from '../services/notifications';
+import { ProjectResponsesChoice } from './ProjectResponsesChoice';
 
 // The alert red used across the app.
 const DANGER = '#B3261E';
@@ -53,6 +55,65 @@ function Card({ t, title, children }) {
       <h2 style={{ fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: 16 }}>{title}</h2>
       {children}
     </section>
+  );
+}
+
+/* How loud answers in this project's Toolkit sessions are for whoever is looking:
+ * their own choice for this project, or their default from Settings. Each member
+ * sets their own; nobody else's changes. */
+function ProjectNotifications({ t, projectId }) {
+  // undefined while loading; a level, or null for "use my default", once loaded.
+  const [level, setLevel] = useState(undefined);
+  const [defaultLevel, setDefaultLevel] = useState('every');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([readProjectResponses(projectId), readPreferences()])
+      .then(([own, prefs]) => {
+        if (cancelled) return;
+        setLevel(own);
+        setDefaultLevel(prefs.project_responses ?? 'every');
+      })
+      .catch((err) => {
+        console.error("Could not load this project's notification settings:", err);
+        if (!cancelled) setError('Your notification settings for this project could not be loaded.');
+      });
+    return () => { cancelled = true; };
+  }, [projectId]);
+
+  const choose = async (next) => {
+    const previous = level;
+    setLevel(next);
+    setSaving(true);
+    setError(null);
+    try {
+      await saveProjectResponses(projectId, next);
+    } catch (err) {
+      console.error("Could not save this project's notification settings:", err);
+      setError('Could not save that. Try again.');
+      setLevel(previous);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card t={t} title="Notifications">
+      <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
+        What you hear when people answer this project&rsquo;s tools. Just for you: everyone
+        who runs the project chooses their own.
+      </p>
+      {error && (
+        <p role="alert" style={{ fontSize: 13.5, color: DANGER, fontWeight: 500, marginBottom: 12 }}>{error}</p>
+      )}
+      {level === undefined && !error && <LoadingMark size={28} />}
+      {level !== undefined && (
+        <ProjectResponsesChoice t={t} name="project-responses" legend="Responses"
+          value={level} defaultLevel={defaultLevel} disabled={saving} onChange={choose} />
+      )}
+    </Card>
   );
 }
 
@@ -574,6 +635,8 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
             </div>
           )}
         </Card>
+
+        <ProjectNotifications t={t} projectId={project.id} />
 
         <Card t={t} title="Documentation">
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>

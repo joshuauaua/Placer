@@ -14,7 +14,7 @@ import { isSupabaseConfigured, listNotifications, markAllRead } from '../service
 
 const FEED_LIMIT = 100;
 
-export function ActivityPage({ t, onOpenProject }) {
+export function ActivityPage({ t, onOpenProject, onOpenOrganisation }) {
   const [notifications, setNotifications] = useState([]);
   const [status, setStatus] = useState(() => (isSupabaseConfigured() ? 'loading' : 'unavailable'));
 
@@ -73,7 +73,8 @@ export function ActivityPage({ t, onOpenProject }) {
           <ul aria-label="Activity" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {notifications.map((notification) => (
               <li key={notification.id} style={{ borderBottom: `1px solid ${t.line}` }}>
-                <NotificationItem t={t} notification={notification} onOpenProject={onOpenProject} />
+                <NotificationItem t={t} notification={notification} onOpenProject={onOpenProject}
+                  onOpenOrganisation={onOpenOrganisation} />
               </li>
             ))}
           </ul>

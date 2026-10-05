@@ -646,13 +646,14 @@ function MainApp({ initialView = 'welcome' }) {
                   onNewProject={showNewProject}
                   onSignIn={handleSignIn} onSignOut={handleSignOut} onExplore={handleExplore}
                   onOpenPublicProfile={showPublicProfile}
-                  onOpenProject={showProjectDashboard} onOpenProjectPage={showProjectPublic} />
+                  onOpenProject={showProjectDashboard} onOpenProjectPage={showProjectPublic}
+                  onOpenOrganisationPage={showOrganisationPublic} />
               </Suspense>
             )}
 
             {view === 'activity' && profile && (
               <Suspense fallback={<LoadingFallback />}>
-                <ActivityPage t={t} onOpenProject={showProjectPublic} />
+                <ActivityPage t={t} onOpenProject={showProjectPublic} onOpenOrganisation={showOrganisationPublic} />
               </Suspense>
             )}
 

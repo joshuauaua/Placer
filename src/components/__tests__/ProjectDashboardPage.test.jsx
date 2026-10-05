@@ -16,6 +16,7 @@ import {
   updateProject,
 } from '../../services/projects';
 import { closeRoom, deleteRoom } from '../../services/rooms';
+import { readPreferences, readProjectResponses, saveProjectResponses } from '../../services/notifications';
 import { hostedRoom } from '../../toolkit/rooms';
 import { THEME } from '../../theme';
 
@@ -39,6 +40,15 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   createProject: vi.fn(),
   updateProject: vi.fn(),
   deleteProject: vi.fn(() => Promise.resolve({ success: true })),
+}));
+
+// The Notifications card's: the account default is every answer, and this project
+// follows it until a test says otherwise.
+vi.mock('../../services/notifications', async (importOriginal) => ({
+  ...(await importOriginal()),
+  readPreferences: vi.fn(() => Promise.resolve({ project_responses: 'every' })),
+  readProjectResponses: vi.fn(() => Promise.resolve(null)),
+  saveProjectResponses: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock('../../services/rooms', () => ({
@@ -381,5 +391,56 @@ describe('ProjectDashboardPage, deleting the project', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not remove that project');
     expect(onDeleted).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProjectDashboardPage, notifications', () => {
+  beforeEach(() => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    vi.mocked(readStats).mockResolvedValue(STATS);
+    vi.mocked(readCollaborators).mockResolvedValue([]);
+    vi.mocked(readLinks).mockResolvedValue([]);
+    vi.mocked(readProjectRooms).mockResolvedValue([]);
+  });
+
+  afterEach(() => vi.clearAllMocks());
+
+  const responses = () => screen.findByRole('group', { name: 'Responses' });
+
+  it('follows the default from Settings until this project is set otherwise', async () => {
+    vi.mocked(readPreferences).mockResolvedValueOnce({ project_responses: 'session' });
+    setup();
+
+    const group = await responses();
+    expect(readProjectResponses).toHaveBeenCalledWith('proj-1');
+    expect(screen.getByRole('radio', { name: /Use my default/ })).toBeChecked();
+    // What the default is, in words, so "Use my default" is not a mystery.
+    expect(group).toHaveTextContent('When a session closes, as set in Settings.');
+  });
+
+  it('saves a choice for this project, and clears it again with the default', async () => {
+    setup();
+    await responses();
+
+    fireEvent.click(screen.getByRole('radio', { name: /^Off/ }));
+    await waitFor(() => expect(saveProjectResponses).toHaveBeenCalledWith('proj-1', 'off'));
+    expect(screen.getByRole('radio', { name: /^Off/ })).toBeChecked();
+
+    fireEvent.click(screen.getByRole('radio', { name: /Use my default/ }));
+    await waitFor(() => expect(saveProjectResponses).toHaveBeenCalledWith('proj-1', null));
+  });
+
+  it('puts the choice back and says so when it cannot be saved', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(readProjectResponses).mockResolvedValueOnce('every');
+    vi.mocked(saveProjectResponses).mockRejectedValueOnce(new Error('network down'));
+    setup();
+    await responses();
+
+    fireEvent.click(screen.getByRole('radio', { name: /^Off/ }));
+
+    expect(await screen.findByText('Could not save that. Try again.')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /^Every response/ })).toBeChecked();
+    consoleError.mockRestore();
   });
 });

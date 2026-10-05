@@ -10,7 +10,8 @@ const limit = vi.fn();
 const order = vi.fn(() => ({ limit }));
 const isUnread = vi.fn();
 const maybeSingle = vi.fn();
-const eqPreferences = vi.fn(() => ({ maybeSingle }));
+// Chainable, for a query keyed on more than one column (a project's settings row).
+const eqPreferences = vi.fn(() => ({ maybeSingle, eq: eqPreferences }));
 const select = vi.fn(() => ({ order, is: isUnread, eq: eqPreferences }));
 
 const isAfterIn = vi.fn();
@@ -18,7 +19,9 @@ const inUpdate = vi.fn(() => ({ is: isAfterIn }));
 const isUpdate = vi.fn();
 const update = vi.fn(() => ({ in: inUpdate, is: isUpdate }));
 
-const eqDelete = vi.fn();
+// The second .eq() ends a delete keyed on two columns; one .eq() ends dismissing.
+const eqDeleteSecond = vi.fn();
+const eqDelete = vi.fn(() => ({ eq: eqDeleteSecond }));
 const del = vi.fn(() => ({ eq: eqDelete }));
 
 const upsert = vi.fn();
@@ -186,5 +189,58 @@ describe('notifications, with a Supabase project', () => {
 
     await expect(notifications.savePreferences({ system_inapp: false }))
       .rejects.toThrow('Could not save your notification settings: nope');
+  });
+
+  it('reads the new default for answers on your projects', async () => {
+    await load();
+    maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+
+    const prefs = await notifications.readPreferences();
+
+    expect(prefs.project_responses).toBe('every');
+    expect(select).toHaveBeenCalledWith(expect.stringContaining('project_responses'));
+  });
+
+  it('reads one project\'s setting, or null for the account default', async () => {
+    await load();
+    maybeSingle.mockResolvedValueOnce({ data: { responses: 'session' }, error: null });
+    expect(await notifications.readProjectResponses('project-1')).toBe('session');
+    expect(from).toHaveBeenCalledWith('project_notification_settings');
+    expect(eqPreferences).toHaveBeenCalledWith('user_id', 'user-1');
+    expect(eqPreferences).toHaveBeenCalledWith('project_id', 'project-1');
+
+    maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    expect(await notifications.readProjectResponses('project-1')).toBeNull();
+  });
+
+  it('saves one project\'s setting as an upsert keyed on account and project', async () => {
+    await load();
+    upsert.mockResolvedValueOnce({ error: null });
+
+    await notifications.saveProjectResponses('project-1', 'off');
+
+    expect(upsert).toHaveBeenCalledWith(
+      { user_id: 'user-1', project_id: 'project-1', responses: 'off', updated_at: expect.any(String) },
+      { onConflict: 'user_id,project_id' },
+    );
+  });
+
+  it('goes back to the account default by removing the project\'s row', async () => {
+    await load();
+    eqDeleteSecond.mockResolvedValueOnce({ error: null });
+
+    await notifications.saveProjectResponses('project-1', null);
+
+    expect(from).toHaveBeenCalledWith('project_notification_settings');
+    expect(eqDelete).toHaveBeenCalledWith('user_id', 'user-1');
+    expect(eqDeleteSecond).toHaveBeenCalledWith('project_id', 'project-1');
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it('refuses a level it does not know, without reaching Supabase', async () => {
+    await load();
+
+    await expect(notifications.saveProjectResponses('project-1', 'loud')).rejects.toThrow('Unknown notification level');
+    expect(from).not.toHaveBeenCalled();
   });
 });

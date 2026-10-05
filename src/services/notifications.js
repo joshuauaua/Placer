@@ -20,6 +20,14 @@ import { getSupabase, isSupabaseConfigured } from './supabase';
 
 export const NOTIFICATIONS_TABLE = 'notifications';
 export const PREFERENCES_TABLE = 'notification_preferences';
+export const PROJECT_SETTINGS_TABLE = 'project_notification_settings';
+
+/**
+ * How loud answers in a project's Toolkit sessions are, for the people who run it —
+ * see supabase/notifications-projects.sql. Every answer as it comes in, one summary
+ * when a session is closed, or none.
+ */
+export const PROJECT_RESPONSE_LEVELS = ['every', 'session', 'off'];
 
 /** The four kinds of alert PLACER sends, in the order Settings shows them. */
 export const NOTIFICATION_CATEGORIES = ['engagement', 'activity', 'follower', 'system'];
@@ -32,6 +40,8 @@ export const DEFAULT_PREFERENCES = {
   activity_inapp: true, activity_email: true,
   follower_inapp: true, follower_email: true,
   system_inapp: true, system_email: true,
+  // Not a category: answers on your projects, for every project at once.
+  project_responses: 'every',
 };
 
 export { isSupabaseConfigured };
@@ -126,7 +136,7 @@ export async function readPreferences() {
     .from(PREFERENCES_TABLE)
     .select(
       'engagement_inapp, engagement_email, activity_inapp, activity_email, ' +
-      'follower_inapp, follower_email, system_inapp, system_email'
+      'follower_inapp, follower_email, system_inapp, system_email, project_responses'
     )
     .eq('user_id', userId)
     .maybeSingle();
@@ -147,4 +157,49 @@ export async function savePreferences(patch) {
     .upsert({ user_id: userId, ...patch, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
 
   if (error) throw new Error(`Could not save your notification settings: ${error.message}`);
+}
+
+/**
+ * How loud answers in one project are for this account: one of
+ * PROJECT_RESPONSE_LEVELS, or null when it follows the account's own default.
+ */
+export async function readProjectResponses(projectId) {
+  const supabase = await client();
+  const { data: account } = await supabase.auth.getUser();
+  const userId = account?.user?.id;
+  if (!userId) throw new Error('Reading project notifications needs an account.');
+
+  const { data, error } = await supabase
+    .from(PROJECT_SETTINGS_TABLE)
+    .select('responses')
+    .eq('user_id', userId)
+    .eq('project_id', projectId)
+    .maybeSingle();
+
+  if (error) throw new Error(`Could not load this project's notification settings: ${error.message}`);
+  return data?.responses ?? null;
+}
+
+/**
+ * Set how loud answers in one project are for this account, or pass null to go back
+ * to the account's own default, which removes the project's row.
+ */
+export async function saveProjectResponses(projectId, level) {
+  if (level !== null && !PROJECT_RESPONSE_LEVELS.includes(level)) {
+    throw new Error(`Unknown notification level: ${level}`);
+  }
+
+  const supabase = await client();
+  const { data: account } = await supabase.auth.getUser();
+  const userId = account?.user?.id;
+  if (!userId) throw new Error('Saving project notifications needs an account.');
+
+  const { error } = level === null
+    ? await supabase.from(PROJECT_SETTINGS_TABLE).delete().eq('user_id', userId).eq('project_id', projectId)
+    : await supabase.from(PROJECT_SETTINGS_TABLE).upsert(
+      { user_id: userId, project_id: projectId, responses: level, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,project_id' },
+    );
+
+  if (error) throw new Error(`Could not save this project's notification settings: ${error.message}`);
 }

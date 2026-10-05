@@ -1,8 +1,9 @@
 /* PLACER — one notification, as a row: what kind it is, what happened, and when.
  * Shared by the dashboard's Your Activity card and the full feed at /activity.
  *
- * A notification that links to a project opens that project's public page. One that
- * links to an imagination has nowhere of its own to go yet, so it is a plain row.
+ * A notification that links to a project or an organisation opens its public page.
+ * One that links to an imagination has nowhere of its own to go yet, so it is a
+ * plain row.
  */
 
 import { Icon } from './Icon';
@@ -25,9 +26,16 @@ export function timeAgo(value, now = new Date()) {
   return then.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export function NotificationItem({ t, notification, onOpenProject, compact = false }) {
+// Where each kind of link goes: its page's path, and which handler opens it in the app.
+const LINKS = {
+  project: { path: (id) => `/projects/${encodeURIComponent(id)}`, handler: 'onOpenProject' },
+  organisation: { path: (id) => `/organisations/${encodeURIComponent(id)}`, handler: 'onOpenOrganisation' },
+};
+
+export function NotificationItem({ t, notification, onOpenProject, onOpenOrganisation, compact = false }) {
   const unread = !notification.readAt;
-  const opensProject = notification.linkType === 'project' && notification.linkId && onOpenProject;
+  const link = LINKS[notification.linkType];
+  const open = link && notification.linkId ? { onOpenProject, onOpenOrganisation }[link.handler] : null;
 
   const content = (
     <>
@@ -59,12 +67,12 @@ export function NotificationItem({ t, notification, onOpenProject, compact = fal
   const rowStyle = { display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 10px',
     margin: '0 -10px', borderRadius: 12, width: 'calc(100% + 20px)', textAlign: 'left' };
 
-  return opensProject ? (
-    <a href={`/projects/${encodeURIComponent(notification.linkId)}`} className="placer-notification-row"
+  return open ? (
+    <a href={link.path(notification.linkId)} className="placer-notification-row"
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
         e.preventDefault();
-        onOpenProject(notification.linkId);
+        open(notification.linkId);
       }}
       style={{ ...rowStyle, color: 'inherit', textDecoration: 'none' }}>
       {content}
