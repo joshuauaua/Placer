@@ -4,6 +4,7 @@
  * funds it. Shown as the home view only, with the nav bar hidden (see App.jsx).
  */
 
+import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
 
 import cityDrawing from '../assets/landing-city.svg';
@@ -11,9 +12,10 @@ import cityDrawingMobile from '../assets/landing-city-mobile.svg';
 import logoSwedishInstitute from '../assets/logo-swedish-institute.png';
 import photoWaitlist from '../assets/about-malmo.jpg';
 import photoUserLabs from '../assets/user-labs.webp';
+import photoSurvey from '../assets/placemaking-trends-cover.webp';
 import { HaveYourSay } from './HaveYourSay';
 import { ExternalLink } from './LegalLayout';
-import { CHARACTER } from '../theme';
+import { CHARACTER, NEUTRAL } from '../theme';
 
 // Trimmed to its artwork and stored at 160px tall, so a height here is enough
 // to size it and the width stays in proportion.
@@ -26,22 +28,124 @@ const LABS_BG = CHARACTER.cityWorker.c100;
 const LABS_BORDER = CHARACTER.cityWorker.c700;
 const LABS_FG = '#111111';
 
-/* One of the two smaller cards on the right of the landing card: a photo, a
- * title and the button that acts on it. The photo is decoration, the title
- * says what the button is for. On a phone only the button is left, so the
- * card's colours go in as custom properties that index.css can drop there. */
-function LandingOption({ t, photo, title, children }) {
+// A third, to the Placemaking Trends survey: the citizen orange, same pattern.
+const SURVEY_BG = CHARACTER.citizen.c100;
+const SURVEY_BORDER = CHARACTER.citizen.c700;
+const SURVEY_FG = '#111111';
+
+// How long each card stays up before the next one rotates in.
+const ROTATE_MS = 6000;
+
+/* The three things a visitor can do, one card each: a photo, the title that
+ * says what the button is for, and the button. Each is a render function so
+ * the card can hand it the theme. */
+const OPTIONS = [
+  {
+    key: 'waitlist',
+    photo: photoWaitlist,
+    title: 'Be the first to use PLACER',
+    action: (t) => <HaveYourSay t={t} />,
+  },
+  {
+    key: 'userLabs',
+    photo: photoUserLabs,
+    title: 'Help shape what we build',
+    action: () => (
+      <Link
+        href="/user-labs"
+        className="placer-labs-trigger"
+        style={{ background: LABS_BG, color: LABS_FG, border: `1px solid ${LABS_BORDER}` }}>
+        Apply to User Labs
+      </Link>
+    ),
+  },
+  {
+    key: 'survey',
+    photo: photoSurvey,
+    title: 'Tell us about placemaking in your city',
+    action: () => (
+      <Link
+        href="/placemaking-trends-survey"
+        className="placer-labs-trigger placer-survey-trigger"
+        style={{ background: SURVEY_BG, color: SURVEY_FG, border: `1px solid ${SURVEY_BORDER}` }}>
+        Take the Placemaking Trends survey
+      </Link>
+    ),
+  },
+];
+
+function prefersReducedMotion() {
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/* The right of the landing card: the three option cards stacked in one place,
+ * one showing at a time, rotating on their own every few seconds, with a dot
+ * for each underneath to jump to it. Rotation pauses while the pointer or
+ * focus is on the carousel, which also keeps the waitlist dialog (rendered
+ * inside its card) from being rotated away while it is open, and is off
+ * entirely for anyone who prefers reduced motion. The hidden cards are inert,
+ * so neither a tab nor a screen reader lands on them. */
+function LandingCarousel({ t }) {
+  const [active, setActive] = useState(0);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const paused = hovered || focused;
+
+  useEffect(() => {
+    if (paused || prefersReducedMotion()) return undefined;
+    const id = setTimeout(() => setActive((i) => (i + 1) % OPTIONS.length), ROTATE_MS);
+    return () => clearTimeout(id);
+  }, [active, paused]);
+
   return (
-    <div className="placer-landing-option" style={{
-      '--placer-landing-option-bg': t.surface,
-      '--placer-landing-option-line': t.line,
-    }}>
-      <img className="placer-landing-option-photo" src={photo} alt="" />
-      <div className="placer-landing-option-body">
-        <h2 className="placer-landing-option-title" style={{ color: t.ink }}>{title}</h2>
-        {children}
+    <section
+      className="placer-landing-actions"
+      aria-roledescription="carousel"
+      aria-label="Get involved"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false); }}>
+      <div className="placer-landing-slides">
+        {OPTIONS.map((option, i) => (
+          <div
+            key={option.key}
+            className="placer-landing-option"
+            data-active={i === active}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`${i + 1} of ${OPTIONS.length}`}
+            aria-hidden={i !== active}
+            inert={i !== active}
+            style={{
+              '--placer-landing-option-bg': t.surface,
+              '--placer-landing-option-line': t.line,
+            }}>
+            <img className="placer-landing-option-photo" src={option.photo} alt="" />
+            <div className="placer-landing-option-body">
+              <h2 className="placer-landing-option-title" style={{ color: t.ink }}>{option.title}</h2>
+              {option.action(t)}
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
+
+      <div className="placer-landing-dots">
+        {OPTIONS.map((option, i) => (
+          <button
+            key={option.key}
+            type="button"
+            className="placer-landing-dot"
+            aria-label={`Show card ${i + 1}: ${option.title}`}
+            aria-current={i === active ? 'true' : undefined}
+            onClick={() => setActive(i)}
+            style={{ backgroundColor: i === active ? t.ink : NEUTRAL.grey500 }}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -71,8 +175,8 @@ export function LandingPage({ t }) {
       </div>
 
       {/* The card over the drawing: what PLACER is on the left, and on the right
-        * the two things a visitor can do about it, each on a smaller card of its
-        * own, with the credit along the bottom. A phone stacks them, the pitch
+        * the three things a visitor can do about it, on smaller cards that take
+        * turns, with the credit along the bottom. A phone stacks them, the pitch
         * first. */}
       <div className="placer-landing-column" style={{
         position: 'relative',
@@ -94,19 +198,7 @@ export function LandingPage({ t }) {
           </div>
         </div>
 
-        <div className="placer-landing-actions">
-          <LandingOption t={t} photo={photoWaitlist} title="Be the first to use PLACER">
-            <HaveYourSay t={t} />
-          </LandingOption>
-          <LandingOption t={t} photo={photoUserLabs} title="Help shape what we build">
-            <Link
-              href="/user-labs"
-              className="placer-labs-trigger"
-              style={{ background: LABS_BG, color: LABS_FG, border: `1px solid ${LABS_BORDER}` }}>
-              Apply to User Labs
-            </Link>
-          </LandingOption>
-        </div>
+        <LandingCarousel t={t} />
 
         {/* The credit and the funder lockup run the full width of the card,
           * under a rule. Hidden below 1024px (see index.css). */}
