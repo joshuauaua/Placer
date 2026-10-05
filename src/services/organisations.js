@@ -131,6 +131,21 @@ export async function readMapOrganisations() {
 }
 
 /**
+ * Every organisation on the platform, by name, for the Organisations page. Public, the
+ * same as readOrganisation: an organisation's row is what its public page shows.
+ */
+export async function readAllOrganisations() {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(ORGANISATIONS_TABLE)
+    .select(ORGANISATION_COLUMNS)
+    .order('name', { ascending: true });
+
+  if (error) throw new Error(`Could not load organisations: ${error.message}`);
+  return (data ?? []).map(fromRow);
+}
+
+/**
  * Every organisation this account is an admin of, by name. Two queries, the same
  * reason readMyProjects gives: the roster's read policy only tells an account about
  * its own rows.

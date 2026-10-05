@@ -224,9 +224,8 @@ function MainApp({ initialView = 'welcome' }) {
     signOut: signOutOfPlacer, saveProfile: handleSaveProfile } = useIdentity();
   const identityLoading = identityStatus === 'loading';
 
-  // The organisations this account is an admin of. The side nav only shows
-  // Organisations once there is at least one, and a new project can be run in the
-  // name of any of them. Re-read whenever something here changes the answer —
+  // The organisations this account is an admin of, which the Organisations page lists
+  // first, and in the name of any of which a new project can be run. Re-read whenever something here changes the answer —
   // creating one, leaving one, closing one, claiming one.
   const [organisations, setOrganisations] = useState([]);
   const [organisationsVersion, setOrganisationsVersion] = useState(0);
@@ -242,7 +241,7 @@ function MainApp({ initialView = 'welcome' }) {
       .then((found) => { if (!cancelled) setOrganisations(found); })
       .catch((err) => {
         // Before organisations.sql has run there is no table to read. Nothing else
-        // depends on this, so the tab simply stays hidden.
+        // depends on this, so the page simply shows none as yours.
         if (!cancelled) console.error('Could not load your organisations:', err);
       });
     return () => { cancelled = true; };
@@ -519,7 +518,7 @@ function MainApp({ initialView = 'welcome' }) {
               the nav bar's right-hand end. */}
           {!identityLoading && profile && (
             <SideNav t={t} view={view} onNavigate={show} onExplore={handleExplore}
-              onNewProject={showNewProject} showOrganisations={organisations.length > 0} />
+              onNewProject={showNewProject} showOrganisations={isSupabaseConfigured()} />
           )}
 
           <div className="placer-app-page">
@@ -668,7 +667,8 @@ function MainApp({ initialView = 'welcome' }) {
               <Suspense fallback={<LoadingFallback />}>
                 <OrganisationsPage t={t} organisations={organisations}
                   onNewOrganisation={showNewOrganisation}
-                  onOpenOrganisationDashboard={showOrganisationDashboard} />
+                  onOpenOrganisationDashboard={showOrganisationDashboard}
+                  onOpenOrganisation={showOrganisationPublic} />
               </Suspense>
             )}
 
