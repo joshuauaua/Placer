@@ -135,6 +135,7 @@ describe('starting a project', () => {
       description: 'Turn the old rail corridor into a park.',
       start_date: '2026-01-01', end_date: '2026-12-31', locations: ['Malmö', 'Folkets Park'],
       location_shapes: [{ path: [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }] }],
+      address: '', location_lat: null, location_lng: null,
       project_type: 'steward', organisation_id: null,
     }]]);
     expect(saved).toMatchObject({ id: 'proj-1', ownerId: 'user-1', name: 'Riverside Greenway' });
@@ -190,6 +191,19 @@ describe('projects for Explore', () => {
     expect(found).toHaveLength(1);
     expect(found[0]).toMatchObject({ id: ROW.id, name: ROW.name, locationShapes: ROW.location_shapes,
       description: ROW.description });
+  });
+
+  it('includes a project with no outline when it has the point of an address', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: [
+      { ...ROW, id: 'proj-2', location_shapes: [], address: 'Folkets Park, Malmö', location_lat: 55.59, location_lng: 13.01 },
+    ], error: null });
+
+    const found = await projects.readMapProjects();
+
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({ id: 'proj-2', address: 'Folkets Park, Malmö',
+      locationPoint: { lat: 55.59, lng: 13.01 } });
   });
 
   it('surfaces a failure as a readable error', async () => {
@@ -528,5 +542,75 @@ describe('page views', () => {
       daily: [{ day: '2026-09-26', views: 3 }, { day: '2026-09-27', views: 0 }],
     });
     expect(rpc).toHaveBeenCalledWith('project_views_daily', { p_project_id: 'proj-1', p_days: 7 });
+  });
+});
+
+describe('the address', () => {
+  it('saves the address and its point when starting a project', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: ROW, error: null });
+
+    await projects.createProject({ ownerId: 'user-1', ownerName: 'Mara', name: 'x',
+      address: 'Folkets Park, Malmö', locationPoint: { lat: 55.59, lng: 13.01 } });
+
+    expect(fromChains.projects.calls[0][1][0]).toMatchObject({
+      address: 'Folkets Park, Malmö', location_lat: 55.59, location_lng: 13.01,
+    });
+  });
+
+  it('clears the point along with the address', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: ROW, error: null });
+
+    await projects.updateProject('proj-1', { address: '', locationPoint: null });
+
+    expect(fromChains.projects.calls[0]).toEqual(['update', [{ address: '', location_lat: null, location_lng: null }]]);
+  });
+
+  it('reads no point for a project without one', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: ROW, error: null });
+
+    await expect(projects.readProject('proj-1')).resolves.toMatchObject({ address: '', locationPoint: null });
+  });
+});
+
+describe("a project's tools", () => {
+  it('reads them as registry ids, oldest first', async () => {
+    await load();
+    fromChains.project_tools = makeChain({ data: [{ tool: 'open-vote' }, { tool: 'budget-ballot' }], error: null });
+
+    await expect(projects.readProjectTools('proj-1')).resolves.toEqual(['open-vote', 'budget-ballot']);
+    expect(fromChains.project_tools.calls).toContainEqual(['eq', ['project_id', 'proj-1']]);
+  });
+
+  it('adds what is new and removes what is gone, leaving the rest alone', async () => {
+    await load();
+    fromChains.project_tools = makeChain({ data: [{ tool: 'open-vote' }, { tool: 'desire-lines' }], error: null });
+
+    const saved = await projects.saveProjectTools('proj-1', ['open-vote', 'budget-ballot'], 'user-1');
+
+    const { calls } = fromChains.project_tools;
+    expect(calls).toContainEqual(['insert', [[{ project_id: 'proj-1', tool: 'budget-ballot', added_by: 'user-1' }]]]);
+    expect(calls).toContainEqual(['in', ['tool', ['desire-lines']]]);
+    expect(saved).toEqual(['open-vote', 'budget-ballot']);
+  });
+
+  it('writes nothing when nothing changed', async () => {
+    await load();
+    fromChains.project_tools = makeChain({ data: [{ tool: 'open-vote' }], error: null });
+
+    await projects.saveProjectTools('proj-1', ['open-vote'], 'user-1');
+
+    const methods = fromChains.project_tools.calls.map(([method]) => method);
+    expect(methods).not.toContain('insert');
+    expect(methods).not.toContain('delete');
+  });
+
+  it('surfaces a failure as a readable error', async () => {
+    await load();
+    fromChains.project_tools = makeChain({ data: null, error: { message: 'permission denied' } });
+
+    await expect(projects.readProjectTools('proj-1')).rejects.toThrow('permission denied');
   });
 });

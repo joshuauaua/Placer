@@ -1,18 +1,31 @@
-/* PLACER — start or edit a project: what kind it is, what it is trying to do, and where.
+/* PLACER — start or edit a project: what kind it is, what it is trying to do, where,
+ * and which tools it will use.
  *
- * Starting one is five steps, one screen each: a cover saying what a project is, the
+ * Starting one is six steps, one screen each: a cover saying what a project is, the
  * kind of project (services/projects.js's PROJECT_TYPES, which work as templates for
- * what follows), the basics, the place, and an image. Editing one is the same fields on
- * a single page, since whoever is editing already knows what a project is. */
+ * what follows), the basics, the place, the tools, and an image. Editing one is the
+ * same fields on a single page, since whoever is editing already knows what a project
+ * is.
+ *
+ * The place is an address picked from Google Places suggestions (AddressInput), kept
+ * with its point so the maps can pin the project there (supabase/project-setup.sql).
+ * It replaced an outline drawn on a map; a project that already has one keeps it, and
+ * the maps still draw it.
+ *
+ * The tools are only chosen here. Each one is set up later, when its room is opened. */
 
 import { useEffect, useState } from 'react';
 import { Btn } from './UI';
+import { Icon } from './Icon';
 import { ImagePicker } from './ImagePicker';
-import { LocationMapPicker } from './LocationMapPicker';
+import { AddressInput } from './AddressInput';
 import {
-  PROJECT_TYPES, createProject, removeProjectImageFile, updateProject, uploadProjectImage,
+  PROJECT_TYPES, createProject, readProjectTools, removeProjectImageFile, saveProjectTools,
+  updateProject, uploadProjectImage,
 } from '../services/projects';
 import { checkPickedImage } from '../services/media';
+import { isGoogleMapsConfigured } from '../lib/googleMaps';
+import { TOOLS, findCategory } from '../toolkit/tools';
 
 // Matches DescribePage's form styling.
 const inputStyle = (t) => ({
@@ -42,13 +55,69 @@ function Field({ t, label, htmlFor, hint, children }) {
   );
 }
 
-/** locations <-> one line each, so the form needs no add/remove-row plumbing. */
-const locationsToText = (locations) => (locations ?? []).join('\n');
-const textToLocations = (text) => text.split('\n').map((line) => line.trim()).filter(Boolean);
-
-/** The five steps of starting a project, in order. */
-const STEPS = ['What is a project', 'Project type', 'The basics', 'The place', 'An image'];
+/** The six steps of starting a project, in order. */
+const STEPS = ['What is a project', 'Project type', 'The basics', 'The place', 'Tools', 'An image'];
 const LAST_STEP = STEPS.length - 1;
+
+/**
+ * The place names a project is listed under — the public page's pin line, and what
+ * "related projects" matches on. The town and country of a picked address, or the
+ * address itself when it was typed by hand.
+ */
+const placeNames = (address, town) => {
+  const name = town || address.trim();
+  return name ? [name] : [];
+};
+
+/**
+ * The Toolkit, as a grid to choose a project's tools from. Each card is a toggle.
+ * Nothing is set up here — that happens when the tool's room is opened — so all this
+ * holds is which ones are chosen.
+ */
+function ToolPicker({ t, value, onChange }) {
+  const toggle = (id) => onChange(value.includes(id) ? value.filter((tool) => tool !== id) : [...value, id]);
+
+  return (
+    <ul aria-label="Toolkit tools" style={{ listStyle: 'none', padding: 0, margin: '0 0 26px', display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+      {TOOLS.map((tool) => {
+        const chosen = value.includes(tool.id);
+        return (
+          <li key={tool.id}>
+            <button type="button" aria-pressed={chosen} onClick={() => toggle(tool.id)}
+              style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: 10,
+                padding: 16, textAlign: 'left', cursor: 'pointer', borderRadius: 12,
+                background: chosen ? tool.wash : t.surface,
+                border: `1.5px solid ${chosen ? tool.color : t.line}`, color: t.ink,
+                fontFamily: 'var(--placer-font)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+                <span style={{ width: 36, height: 36, borderRadius: 10, flex: '0 0 auto', background: tool.tint,
+                  boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', color: tool.color }}>
+                  <Icon name={tool.icon} size={18} stroke={2} />
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>{tool.name}</span>
+                  <span className="placer-mono" style={{ display: 'block', fontSize: 11, color: t.inkDim,
+                    textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {findCategory(tool.category)?.name}
+                  </span>
+                </span>
+                <span aria-hidden="true" style={{ width: 22, height: 22, borderRadius: 11, flex: '0 0 auto',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: chosen ? tool.color : 'transparent',
+                  border: `1.5px solid ${chosen ? tool.color : t.lineStrong}`, color: '#fff' }}>
+                  {chosen && <Icon name="check" size={14} stroke={2.6} />}
+                </span>
+              </span>
+              <span style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.5 }}>{tool.tagline}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 function ProjectTypeChoice({ t, value, onChange }) {
   return (
@@ -117,17 +186,39 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   const [description, setDescription] = useState(project?.description ?? '');
   const [startDate, setStartDate] = useState(project?.startDate ?? '');
   const [endDate, setEndDate] = useState(project?.endDate ?? '');
-  const [locationsText, setLocationsText] = useState(locationsToText(project?.locations));
-  const [locationShapes, setLocationShapes] = useState(project?.locationShapes ?? []);
+  const [address, setAddress] = useState(project?.address ?? '');
+  // Where `address` is, and its town and country, when it came from a suggestion; both
+  // dropped once it is edited by hand, since the text no longer says where it was.
+  const [point, setPoint] = useState(project?.locationPoint ?? null);
+  const [town, setTown] = useState('');
+  // The tools chosen for it. Editing, they are loaded first, and `toolsReady` stays
+  // false until they are, so a failed load can never save over them with nothing.
+  const [tools, setTools] = useState([]);
+  const [toolsReady, setToolsReady] = useState(!initialProject);
   const [projectType, setProjectType] = useState(project?.projectType ?? null);
   const [organisationId, setOrganisationId] = useState(project ? project.organisationId : initialOrganisationId);
-  // Which of the five steps a new project is on, 0 to 4. Editing has no steps.
+  // Which of the six steps a new project is on, 0 to 5. Editing has no steps.
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'error'
   const [error, setError] = useState(null);
   // A new project has no id to name the image's folder until it is created, so the
   // picked file waits here, shown from a local preview, and is uploaded right after.
   const [pending, setPending] = useState(null); // { file, url } | null
+
+  // Only for a project opened to edit. One started here already holds its choice, and
+  // reloading would throw it away if the tools failed to save the first time.
+  useEffect(() => {
+    if (!initialProject) return undefined;
+    let cancelled = false;
+    readProjectTools(initialProject.id)
+      .then((saved) => {
+        if (cancelled) return;
+        setTools(saved);
+        setToolsReady(true);
+      })
+      .catch((err) => console.error('Could not load the project\'s tools:', err));
+    return () => { cancelled = true; };
+  }, [initialProject]);
 
   // The preview URL holds the file in memory until it is revoked.
   useEffect(() => () => { if (pending) URL.revokeObjectURL(pending.url); }, [pending]);
@@ -173,10 +264,15 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
         description: description.trim(),
         startDate: startDate || null,
         endDate: endDate || null,
-        locations: textToLocations(locationsText),
-        locationShapes,
+        address: address.trim(),
+        locationPoint: address.trim() ? point : null,
         projectType,
       };
+      // A project edited without touching its address keeps the place names it has —
+      // which, for one set up before addresses, may be several typed by hand.
+      if (!editing || address.trim() !== (project.address ?? '')) {
+        patch.locations = placeNames(address, town);
+      }
       if (offerRunBy) patch.organisationId = chosenOrganisationId;
 
       let saved = editing
@@ -193,6 +289,20 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
           setPending(null);
           setError(`The project was started, but its image could not be added: ${imageError.message} `
             + 'Try it again below, or save without one.');
+          setStatus('idle');
+          return;
+        }
+      }
+
+      if (toolsReady && (editing || tools.length > 0)) {
+        try {
+          await saveProjectTools(saved.id, tools, accountId);
+        } catch (toolsError) {
+          console.error('Could not save the project\'s tools:', toolsError);
+          setProject(saved);
+          setPending(null);
+          setError(`The project was saved, but its tools could not be: ${toolsError.message} `
+            + 'Save again to try once more.');
           setStatus('idle');
           return;
         }
@@ -267,25 +377,33 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
     </Field>
   );
 
-  // The map picker reads its shapes once, when it mounts, so a new project hands back
-  // what was drawn before rather than the (empty) project's — stepping away and back
-  // to the place step keeps the outline.
   const place = (
-    <>
-      <Field t={t} label="Locations" htmlFor="project-locations"
-        hint="Where this project is about — one place per line.">
-        <textarea id="project-locations" value={locationsText} rows={3}
-          onChange={(e) => setLocationsText(e.target.value)}
-          placeholder={'Malmö\nFolkets Park'}
-          style={{ ...inputStyle(t), resize: 'vertical' }} />
-      </Field>
+    <Field t={t} label="Address" htmlFor="project-address"
+      hint={isGoogleMapsConfigured()
+        ? 'The place this project is about. Pick it from the suggestions and the project is pinned there on the map.'
+        : 'The place this project is about.'}>
+      <AddressInput id="project-address" value={address}
+        placeholder="e.g. Folkets Park, Malmö" style={inputStyle(t)}
+        onChange={(next) => { setAddress(next); setPoint(null); setTown(''); }}
+        onPick={(picked) => {
+          setAddress(picked.address);
+          setPoint(picked.point);
+          setTown(picked.townAndCountry);
+        }} />
+      {isGoogleMapsConfigured() && address.trim() && (
+        <div style={{ fontSize: 13, color: t.inkFaint, marginTop: 8 }}>
+          {point
+            ? 'Pinned on the map at this address.'
+            : 'Not pinned yet: pick the address from the suggestions to put it on the map.'}
+        </div>
+      )}
+    </Field>
+  );
 
-      <Field t={t} label="Location outline"
-        hint="Draw the area this project covers on the map — the polygon tool in its top-center control starts a shape, and clicking its last point closes it. You can draw more than one, and drag a corner afterwards to adjust it.">
-        <LocationMapPicker t={t} initialShapes={editing ? (project?.locationShapes ?? []) : locationShapes}
-          onChange={setLocationShapes} />
-      </Field>
-    </>
+  const toolsField = toolsReady ? (
+    <ToolPicker t={t} value={tools} onChange={setTools} />
+  ) : (
+    <p style={{ fontSize: 14, color: t.inkDim, marginBottom: 26 }}>Loading the project&rsquo;s tools…</p>
   );
 
   const errorBox = error && (
@@ -323,6 +441,12 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
         {basics}
         {image}
         {place}
+
+        <h2 style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>Tools</h2>
+        <p style={{ fontSize: 13, color: t.inkDim, marginBottom: 14, lineHeight: 1.5 }}>
+          The tools this project will use. Each one is set up when you open it for people to take part.
+        </p>
+        {toolsField}
 
         <p style={{ fontSize: 13.5, color: t.inkFaint, marginTop: -10, marginBottom: 26, lineHeight: 1.5 }}>
           Adding or removing collaborators, and attaching links, are on the project's dashboard.
@@ -394,10 +518,16 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
           ))}
         </div>
         {heading(step === 1 ? 'What kind of project?' : step === 2 ? 'The basics'
-          : step === 3 ? 'Where is it?' : 'Add an image')}
+          : step === 3 ? 'Where is it?' : step === 4 ? 'Add tools' : 'Add an image')}
         {step === 1 && (
           <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6 }}>
             This shapes how the rest of the project is set up. You can change it later.
+          </p>
+        )}
+        {step === 4 && (
+          <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6 }}>
+            Choose the tools this project will use. You set each one up later, when you open it
+            for people to take part — and you can change which ones from the project&rsquo;s setup.
           </p>
         )}
       </div>
@@ -405,7 +535,8 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
       {step === 1 && <ProjectTypeChoice t={t} value={projectType} onChange={setProjectType} />}
       {step === 2 && basics}
       {step === 3 && place}
-      {step === 4 && image}
+      {step === 4 && toolsField}
+      {step === 5 && image}
 
       {errorBox}
 

@@ -326,7 +326,10 @@ export function ExplorePage({ apiKey = '', homeCenter = null, accountId = null, 
     let cancelled = false;
     readMapProjects()
       .then((rows) => {
-        if (!cancelled) setProjects(rows.map((row) => toPlace('project', row, shapeCentre(row.locationShapes))));
+        // An outline, where one was drawn; otherwise the point of its address.
+        if (!cancelled) {
+          setProjects(rows.map((row) => toPlace('project', row, shapeCentre(row.locationShapes) ?? row.locationPoint)));
+        }
       })
       .catch((error) => console.error('Could not load projects for the map:', error));
     readMapOrganisations()

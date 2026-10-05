@@ -1,25 +1,32 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { ProjectSetupPage } from '../ProjectSetupPage';
-import { createProject, updateProject } from '../../services/projects';
+import { createProject, readProjectTools, saveProjectTools, updateProject } from '../../services/projects';
 import { THEME } from '../../theme';
+import { TOOLS } from '../../toolkit/tools';
 
 vi.mock('../../services/projects', async (importOriginal) => ({
   // The real PROJECT_TYPES, so the choices on screen are the ones that ship.
   PROJECT_TYPES: (await importOriginal()).PROJECT_TYPES,
   createProject: vi.fn(),
   updateProject: vi.fn(),
+  readProjectTools: vi.fn(() => Promise.resolve([])),
+  saveProjectTools: vi.fn((projectId, tools) => Promise.resolve(tools)),
 }));
 
-// LocationMapPicker needs a real Google Maps script this suite has no business loading —
-// its own tests cover it. Stubbed to a stand-in that just proves ProjectSetupPage wires
-// its onChange through to the saved patch, the same way MapContainer's tests are stubbed
-// out wherever they are not the thing under test.
-vi.mock('../LocationMapPicker', () => ({
-  LocationMapPicker: ({ onChange }) => (
-    <button type="button" onClick={() => onChange([{ path: [{ lat: 1, lng: 2 }, { lat: 1, lng: 3 }, { lat: 2, lng: 3 }] }])}>
-      Draw shape
-    </button>
+// The Places suggestions need a real Google Maps script this suite has no business
+// loading. Stubbed to the field plus a stand-in for choosing a suggestion, which is
+// all ProjectSetupPage sees of it.
+const PICKED = {
+  address: 'Folkets Park, Amiralsgatan 35, Malmö', point: { lat: 55.59, lng: 13.01 },
+  townAndCountry: 'Malmö, Sweden',
+};
+vi.mock('../AddressInput', () => ({
+  AddressInput: ({ id, value, onChange, onPick }) => (
+    <>
+      <input id={id} value={value} onChange={(e) => onChange(e.target.value)} />
+      <button type="button" onClick={() => onPick(PICKED)}>Pick the suggestion</button>
+    </>
   ),
 }));
 
@@ -67,7 +74,7 @@ describe('ProjectSetupPage, starting a project', () => {
     setup();
     fireEvent.click(screen.getByRole('button', { name: /Create a new project/ }));
 
-    expect(screen.getByText('Step 2 of 5 · Project type')).toBeInTheDocument();
+    expect(screen.getByText('Step 2 of 6 · Project type')).toBeInTheDocument();
     expect(screen.getAllByRole('radio')).toHaveLength(3);
     expect(screen.getByRole('radio', { name: /I have a say over a place/ })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /I want to push for change/ })).toBeInTheDocument();
@@ -106,7 +113,7 @@ describe('ProjectSetupPage, starting a project', () => {
     expect(screen.getByLabelText('Name *')).toHaveValue('Riverside Greenway');
   });
 
-  it('starts a project with what was filled in across the five steps', async () => {
+  it('starts a project with what was filled in across the six steps', async () => {
     createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
     const { onSaved } = setup();
 
@@ -114,11 +121,14 @@ describe('ProjectSetupPage, starting a project', () => {
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
     fireEvent.change(screen.getByLabelText('Goals'), { target: { value: 'Turn the old rail corridor into a park.' } });
     next();
-    expect(screen.getByText('Step 4 of 5 · The place')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Locations'), { target: { value: 'Malmö\nFolkets Park' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Draw shape' }));
+    expect(screen.getByText('Step 4 of 6 · The place')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
     next();
-    expect(screen.getByText('Step 5 of 5 · An image')).toBeInTheDocument();
+    expect(screen.getByText('Step 5 of 6 · Tools')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Budget Ballot/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Desire Lines/ }));
+    next();
+    expect(screen.getByText('Step 6 of 6 · An image')).toBeInTheDocument();
     expect(createProject).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
 
@@ -126,10 +136,97 @@ describe('ProjectSetupPage, starting a project', () => {
     expect(createProject).toHaveBeenCalledWith({
       ownerId: 'user-1', ownerName: 'Mara Quinn', name: 'Riverside Greenway',
       description: 'Turn the old rail corridor into a park.',
-      startDate: null, endDate: null, locations: ['Malmö', 'Folkets Park'],
-      locationShapes: [{ path: [{ lat: 1, lng: 2 }, { lat: 1, lng: 3 }, { lat: 2, lng: 3 }] }],
+      startDate: null, endDate: null,
+      address: 'Folkets Park, Amiralsgatan 35, Malmö', locationPoint: { lat: 55.59, lng: 13.01 },
+      locations: ['Malmö, Sweden'],
       projectType: 'steward',
     });
+    expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['budget-ballot', 'desire-lines'], 'user-1');
+  });
+
+  it('asks for the place as an address, with no outline to draw', () => {
+    setup();
+    toBasics();
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    next();
+
+    expect(screen.getByLabelText('Address')).toBeInTheDocument();
+    expect(screen.queryByText('Location outline')).not.toBeInTheDocument();
+  });
+
+  it('keeps an address typed by hand, unpinned, as the place name', async () => {
+    createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    setup();
+
+    toBasics();
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    next();
+    fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
+    // Edited by hand after picking: the point no longer says where the text is.
+    fireEvent.change(screen.getByLabelText('Address'), { target: { value: 'The old rail yard' } });
+    next();
+    next();
+    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+
+    await waitFor(() => expect(createProject).toHaveBeenCalledWith(expect.objectContaining({
+      address: 'The old rail yard', locationPoint: null, locations: ['The old rail yard'],
+    })));
+  });
+
+  it('shows every Toolkit tool to choose from, and lets one be unchosen', () => {
+    setup();
+    toBasics();
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    next();
+    next();
+
+    const tools = within(screen.getByRole('list', { name: 'Toolkit tools' })).getAllByRole('button');
+    expect(tools).toHaveLength(TOOLS.length);
+    const ballot = screen.getByRole('button', { name: /Budget Ballot/ });
+    expect(ballot).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(ballot);
+    expect(ballot).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(ballot);
+    expect(ballot).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('saves no tools when none were chosen', async () => {
+    createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    const { onSaved } = setup();
+
+    toBasics();
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    next();
+    next();
+    next();
+    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(saveProjectTools).not.toHaveBeenCalled();
+  });
+
+  it('keeps the project and the choice when the tools fail to save, so saving again retries', async () => {
+    createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    updateProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    saveProjectTools.mockRejectedValueOnce(new Error('network down'));
+    const { onSaved } = setup();
+
+    toBasics();
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    next();
+    next();
+    fireEvent.click(screen.getByRole('button', { name: /Budget Ballot/ }));
+    next();
+    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('its tools could not be: network down');
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /Budget Ballot/ })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(createProject).toHaveBeenCalledTimes(1);
+    expect(saveProjectTools).toHaveBeenLastCalledWith('proj-1', ['budget-ballot'], 'user-1');
   });
 
   it('offers no choice of who runs it to somebody with no organisation', () => {
@@ -148,6 +245,7 @@ describe('ProjectSetupPage, starting a project', () => {
     expect(screen.getByRole('option', { name: 'Just me (Mara Quinn)' })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Run by'), { target: { value: 'org-1' } });
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    next();
     next();
     next();
     fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
@@ -170,7 +268,7 @@ describe('ProjectSetupPage, starting a project', () => {
 
     fireEvent.submit(screen.getByLabelText('Name *').closest('form'));
 
-    expect(screen.getByText('Step 4 of 5 · The place')).toBeInTheDocument();
+    expect(screen.getByText('Step 4 of 6 · The place')).toBeInTheDocument();
     expect(createProject).not.toHaveBeenCalled();
   });
 
@@ -180,6 +278,7 @@ describe('ProjectSetupPage, starting a project', () => {
 
     toBasics();
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'x'.repeat(200) } });
+    next();
     next();
     next();
     fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
@@ -207,14 +306,17 @@ describe('ProjectSetupPage, editing a project', () => {
     id: 'proj-1', ownerId: 'user-1', ownerName: 'Mara Quinn', name: 'Riverside Greenway',
     description: 'Turn the old rail corridor into a park.', startDate: '2026-01-01', endDate: '2026-12-31',
     locations: ['Malmö', 'Folkets Park'], projectType: 'advocate',
+    address: 'Folkets Park, Amiralsgatan 35, Malmö', locationPoint: { lat: 55.59, lng: 13.01 },
   };
 
-  it('starts filled in with the project already there', () => {
+  it('starts filled in with the project already there, its tools included', async () => {
+    readProjectTools.mockResolvedValueOnce(['open-vote']);
     setup({ project: PROJECT });
 
     expect(screen.getByLabelText('Name *')).toHaveValue('Riverside Greenway');
     expect(screen.getByLabelText('Start date')).toHaveValue('2026-01-01');
-    expect(screen.getByLabelText('Locations')).toHaveValue('Malmö\nFolkets Park');
+    expect(screen.getByLabelText('Address')).toHaveValue('Folkets Park, Amiralsgatan 35, Malmö');
+    expect(await screen.findByRole('button', { name: /Open Vote/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('radio', { name: /I want to push for change/ })).toBeChecked();
     expect(screen.getByRole('button', { name: /Save changes/ })).toBeInTheDocument();
   });
@@ -224,7 +326,40 @@ describe('ProjectSetupPage, editing a project', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Edit project' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Create a new project/ })).not.toBeInTheDocument();
-    expect(screen.queryByText(/Step \d of 5/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Step \d of 6/)).not.toBeInTheDocument();
+  });
+
+  it('keeps the place names of a project whose address was not touched', async () => {
+    updateProject.mockResolvedValue(PROJECT);
+    setup({ project: { ...PROJECT, address: '', locationPoint: null } });
+
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalled());
+    expect(updateProject.mock.calls[0][1]).not.toHaveProperty('locations');
+    expect(updateProject.mock.calls[0][1]).not.toHaveProperty('locationShapes');
+  });
+
+  it('saves a change to the tools', async () => {
+    updateProject.mockResolvedValue(PROJECT);
+    readProjectTools.mockResolvedValueOnce(['open-vote']);
+    setup({ project: PROJECT });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Budget Ballot/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['open-vote', 'budget-ballot'], 'user-1'));
+  });
+
+  it('never saves over the tools when they could not be loaded', async () => {
+    updateProject.mockResolvedValue(PROJECT);
+    readProjectTools.mockRejectedValueOnce(new Error('offline'));
+    const { onSaved } = setup({ project: PROJECT });
+
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(saveProjectTools).not.toHaveBeenCalled();
   });
 
   it('can change the kind of project', async () => {
