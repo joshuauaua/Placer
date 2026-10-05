@@ -14,7 +14,9 @@ import { Icon } from './Icon';
 import { PageHeader } from './PageHeader';
 import { ProjectCard } from './ProjectCard';
 import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from './GalleryToolbar';
-import { PROJECT_TYPES, isSupabaseConfigured as projectsAvailable, readMyProjects } from '../services/projects';
+import {
+  PROJECT_TYPES, PROJECT_TYPE_NAMES, isSupabaseConfigured as projectsAvailable, readMyProjects,
+} from '../services/projects';
 
 // The menu's two questions: whose project it is, and what kind (PROJECT_TYPES' keys,
 // named shortly enough for a menu).
@@ -23,8 +25,6 @@ const ROLES = [
   { id: 'owner', name: 'Run by you' },
   { id: 'collaborator', name: 'Collaborating on' },
 ];
-
-const TYPE_NAMES = { steward: 'Have a say over a place', advocate: 'Pushing for change', other: 'Something else' };
 
 const SORTS = [
   { id: 'recent', name: 'Recent', direction: 'desc' },
@@ -138,14 +138,14 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
             view={view} onView={changeView}
             menu={{
               label: 'Show',
-              current: filters.type ? `${roleName} · ${TYPE_NAMES[filters.type]}` : roleName,
+              current: filters.type ? `${roleName} · ${PROJECT_TYPE_NAMES[filters.type]}` : roleName,
               sections: [
                 ROLES.map((role) => ({ key: role.id ?? 'all', label: role.name, selected: filters.role === role.id,
                   onSelect: () => setFilters({ ...filters, role: role.id }) })),
                 [
                   { key: 'any', label: 'Any kind', selected: !filters.type,
                     onSelect: () => setFilters({ ...filters, type: null }) },
-                  ...PROJECT_TYPES.map((type) => ({ key: type.key, label: TYPE_NAMES[type.key] ?? type.title,
+                  ...PROJECT_TYPES.map((type) => ({ key: type.key, label: PROJECT_TYPE_NAMES[type.key] ?? type.title,
                     title: type.description, selected: filters.type === type.key,
                     onSelect: () => setFilters({ ...filters, type: type.key }) })),
                 ],

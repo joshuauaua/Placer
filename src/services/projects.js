@@ -61,6 +61,11 @@ export const PROJECT_TYPES = [
   },
 ];
 
+/** Each of PROJECT_TYPES' keys as a short name, for a menu or a card's label. */
+export const PROJECT_TYPE_NAMES = {
+  steward: 'Have a say over a place', advocate: 'Pushing for change', other: 'Something else',
+};
+
 const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, description, start_date, end_date, '
   + 'locations, location_shapes, image_path, project_type, organisation_id, created_at, updated_at';
 

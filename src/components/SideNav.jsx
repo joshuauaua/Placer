@@ -50,7 +50,7 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganis
 
   const items = [
     // First, straight under New project: the dashboard is home for a signed-in account.
-    { key: 'dashboard', label: 'Dashboard', icon: 'home', onSelect: () => onNavigate('dashboard'), active: ['dashboard'] },
+    { key: 'dashboard', label: 'Dashboard', icon: 'home', onSelect: () => onNavigate('dashboard'), active: ['dashboard', 'activity'] },
     { key: 'map', label: 'Explore', icon: 'pin', onSelect: onExplore, active: ['map'] },
     { key: 'projects', label: 'Projects', icon: 'grid', onSelect: () => onNavigate('projects'), active: ['projects', 'projectDashboard'] },
     // Only for an account that runs at least one organisation — until then there is

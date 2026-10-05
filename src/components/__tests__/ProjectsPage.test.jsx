@@ -7,6 +7,7 @@ import { THEME } from '../../theme';
 vi.mock('../../services/projects', () => ({
   isSupabaseConfigured: vi.fn(() => true),
   readMyProjects: vi.fn(() => Promise.resolve([])),
+  PROJECT_TYPE_NAMES: { steward: 'Have a say over a place', advocate: 'Pushing for change', other: 'Something else' },
   PROJECT_TYPES: [
     { key: 'steward', title: 'I have a say over a place', description: '' },
     { key: 'advocate', title: 'I want to push for change in a place', description: '' },
