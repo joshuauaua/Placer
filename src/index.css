@@ -339,73 +339,72 @@ a {
   overflow: hidden;
 }
 
-/* PLACER — the landing page's isometric border.
+/* PLACER — the landing page's isometric city.
  *
- * Two complementary frames: one carries the street furniture down the left, the
- * other down the right, and each shares half of the top and bottom rows. Each is
- * clipped to its own outer edge so the pair reads as a single border around the
- * copy rather than two separate drawings.
- *
- * Decoration only. Below the breakpoint there is no room for it beside the text,
- * so it goes rather than crowding the words.
+ * One drawing behind the whole page, covering it at any size and centred so the
+ * crossroads in the middle stays in view. It slowly zooms in and, once it is all
+ * the way in, back out again, clipped to the page by the backdrop around it. A
+ * phone gets a portrait drawing instead. The image URLs come from the component
+ * as custom properties; which one shows, its fit and its motion live here.
  */
-.placer-landing-frame {
+.placer-landing-backdrop {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  /* The copy needs 668px clear (a 620px column plus its padding), so the pair
-     may never take more than the viewport minus that: 22% capped at 300px keeps
-     them clear from the breakpoint upwards. */
-  width: 22%;
-  max-width: 300px;
+  inset: 0;
   overflow: hidden;
   pointer-events: none;
 }
 
-.placer-landing-frame img {
+.placer-landing-city {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 100%;
-  width: auto;
-  /* Wider than its container on purpose — the clip is what makes it a border. */
-  max-width: none;
+  inset: 0;
+  background-image: var(--placer-landing-city);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  will-change: transform;
+  animation: placer-landing-zoom 40s ease-in-out infinite alternate;
 }
 
-.placer-landing-frame-left {
-  left: 0;
+@keyframes placer-landing-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.25); }
 }
 
-.placer-landing-frame-left img {
-  left: 0;
-}
-
-.placer-landing-frame-right {
-  right: 0;
-}
-
-.placer-landing-frame-right img {
-  right: 0;
-}
-
-@media (max-width: 1199px) {
-  .placer-landing-frame {
-    display: none;
+@media (prefers-reduced-motion: reduce) {
+  .placer-landing-city {
+    animation: none;
   }
 }
 
-/* PLACER — the landing copy.
+.placer-landing {
+  /* The nav bar floats over the top 64px, so the card centres in what is left. */
+  padding: 88px 24px 24px;
+}
+
+/* PLACER — the landing card.
  *
  * The spacing lives here rather than inline because a phone rearranges it and an
  * inline style cannot be overridden by a media query. Only the colours are set in
- * the component, the rule's through --placer-landing-line.
+ * the component.
  *
- * On a phone the pitch shrinks and is followed directly by the trigger, sitting
- * in the flow under it. The credit and the funder lockup are dropped there.
+ * A wide rectangle centred in the space under the nav bar: the wordmark and
+ * pitch on the left, and on the right two smaller cards one above the other,
+ * each a photo beside its title and button. The credit and funder lockup run
+ * the full width along the bottom, under a rule.
+ *
+ * Below 1024px only the pitch and the two buttons are left, stacked full width:
+ * the smaller cards lose everything but their buttons, and the credit row goes.
  */
-/* More room above than below, so the column sits lower than centred. */
 .placer-landing-column {
-  padding: 160px 24px 64px;
+  width: 100%;
+  max-width: 1120px;
+  padding: 48px;
+  border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(17, 17, 17, 0.12);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 40px 48px;
+  align-items: center;
 }
 
 .placer-landing-title {
@@ -415,66 +414,111 @@ a {
   font-weight: 700 !important;
   letter-spacing: 0.08em !important;
   text-transform: uppercase;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .placer-landing-pitch {
   font-size: var(--placer-body-lg);
   font-weight: 400;
   line-height: var(--placer-body-lg-lh);
-  margin-bottom: 56px;
 }
 
-.placer-landing-credit {
-  margin-bottom: 48px;
-  /* One line, even though it is a little wider than the column: it may spill
-   * past both edges of the column equally, staying centred. Hidden on a phone. */
-  white-space: nowrap;
-  width: max-content;
-  margin-left: 50%;
-  transform: translateX(-50%);
-}
-
-/* Centres the two triggers, stacked with a gap between them, in the space
- * between the pitch and the credit. */
 .placer-landing-actions {
-  margin-bottom: 96px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
+.placer-landing-option {
+  background: var(--placer-landing-option-bg);
+  border: 1px solid var(--placer-landing-option-line);
+  border-radius: 16px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 40% minmax(0, 1fr);
+}
+
+.placer-landing-option-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+  object-fit: cover;
+}
+
+/* Spans both columns of the card, the credit at one end, the lockup the other. */
+.placer-landing-footer {
+  grid-column: 1 / -1;
+  padding-top: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.placer-landing-option-body {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.placer-landing-option-title {
+  font-size: var(--placer-h3);
+  line-height: var(--placer-h3-lh);
+  font-weight: 700;
+}
+
+/* The buttons fill their card rather than keeping their own width. */
+.placer-landing-option .placer-feedback-trigger,
+.placer-landing-option .placer-labs-trigger {
+  width: 100%;
+  padding: 0 12px;
+}
+
 @media (max-width: 1023px) {
+  .placer-landing-city {
+    background-image: var(--placer-landing-city-mobile);
+  }
+
+  .placer-landing {
+    padding: 88px 16px 24px;
+  }
+
   .placer-landing-column {
-    padding-top: 112px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+    padding: 32px 24px;
+    border-radius: 16px;
   }
 
-  .placer-landing-title {
-    margin-bottom: 24px;
+  /* Only the pitch and the two buttons on a phone: each smaller card gives up
+   * its fill, hairline, photo and title, leaving its button in the flow. */
+  .placer-landing-option {
+    display: block;
+    background: none;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
   }
 
-  .placer-landing-pitch {
-    margin-bottom: 32px;
-  }
-
-  /* The triggers take their own height in the flow, straight under the pitch. */
-  .placer-landing-actions {
-    margin-bottom: 0;
-  }
-
-  /* Only the pitch and the triggers on a phone. */
-  .placer-landing-credit,
-  .placer-landing-funder {
+  .placer-landing-option-photo,
+  .placer-landing-option-title,
+  .placer-landing-footer {
     display: none;
+  }
+
+  .placer-landing-option-body {
+    padding: 0;
   }
 }
 
 /* PLACER — the landing page's feedback and User Labs triggers.
  *
- * On a wide screen each is a rectangle of the same size, stacked with a gap
- * between them (see .placer-landing-actions). On a phone they sit in the flow
- * directly under the pitch, full width, rather than floating over the page.
+ * Each sits at the foot of its own smaller card on the landing card, filling
+ * its width (see .placer-landing-option).
  *
  * The geometry lives here rather than inline because an inline style cannot be
  * overridden by a media query. Only the colours are set in the component.
