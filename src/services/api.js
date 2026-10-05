@@ -6,6 +6,11 @@
  * in a real backend without changing UI components.
  */
 
+import { getSupabase } from './supabase';
+
+/** The table survey responses are appended to. */
+export const SURVEY_TABLE = 'survey_responses';
+
 // The one registry of everything PLACER keeps in the browser: exportAllData and
 // eraseAllData walk it, so a key listed here is covered by the GDPR portability
 // and erasure requests for free — and a key that is not is silently missed by
@@ -273,10 +278,40 @@ export const fetchSurveyResponses = async () => {
 };
 
 /**
+ * One response as a survey_responses row. The answers stay nested under their
+ * sections in a single jsonb value, so rewording a survey needs no migration;
+ * only the tag, the address and the free text get columns of their own.
+ */
+const asSurveyRow = ({ email, otherText, source, ...answers }) => ({
+  source,
+  // An empty address is no address; the column is nullable.
+  email: email || null,
+  answers,
+  other_text: otherText ?? {}
+});
+
+/**
  * Save a completed survey response. Throws if it could not be stored, so the
  * survey can tell the visitor rather than showing a thank-you for nothing.
+ *
+ * Goes to Supabase when a project is configured, and otherwise stays in this
+ * browser — which is what makes the survey work with no backend at all, and what
+ * keeps the tests off the network.
  */
 export const saveSurveyResponse = async (response) => {
+  const supabase = await getSupabase();
+
+  if (supabase) {
+    const row = asSurveyRow(response);
+    // Deliberately no .select(): neither role may read the table, so asking for
+    // the row back would fail the insert it just made.
+    const { error } = await supabase.from(SURVEY_TABLE).insert(row);
+    if (error) {
+      throw new Error(`Could not save the survey response: ${error.message}`);
+    }
+    return { ...row, submittedAt: new Date().toISOString() };
+  }
+
   await simulateDelay();
 
   const responses = await fetchSurveyResponses();

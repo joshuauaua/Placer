@@ -1,0 +1,192 @@
+{
+  "hero": {
+    "title": "Help us build PLACER",
+    "subtitle": "Five questions about how you run community engagement today, and what would actually help. It takes about three minutes, and it shapes what we build next.",
+    "startLabel": "Start the survey"
+  },
+  "steps": {
+    "section1Title": "Section 1: Who you are",
+    "section2Title": "Section 2: How you work today",
+    "section3Title": "Section 3: What PLACER should be",
+    "emailTitle": "Stay connected",
+    "emailDescription": "Want to follow our progress or join the closed beta? This part is optional.",
+    "emailRequiredDescription": "You asked to be involved beyond this survey, so we need an address to reach you on.",
+    "emailLabel": "Email Address",
+    "emailPlaceholder": "Enter your email address",
+    "otherLabel": "Tell us which",
+    "otherPlaceholder": "The feature you would love to see",
+    "enterKeyLabel": "Enter ↵",
+    "enterHintStart": "to begin",
+    "enterHint": "to continue",
+    "enterHintSubmit": "to submit",
+    "nextLabel": "Next",
+    "backLabel": "Back",
+    "submitLabel": "Submit & Complete",
+    "submittingLabel": "Submitting…",
+    "termsNotice": "By submitting, I acknowledge the",
+    "termsLinkLabel": "Terms and Privacy"
+  },
+  "section1": [
+    {
+      "key": "persona",
+      "label": "I am a...",
+      "options": [
+        {
+          "value": "urban-planner",
+          "label": "Urban Planner / Urban Designer"
+        },
+        {
+          "value": "community-organizer",
+          "label": "Community Organizer / NGO Representative"
+        },
+        {
+          "value": "resident",
+          "label": "Local Resident / Active Citizen"
+        },
+        {
+          "value": "official",
+          "label": "Municipal / Local Government Official"
+        }
+      ]
+    }
+  ],
+  "section2": [
+    {
+      "key": "toolStack",
+      "label": "Which digital tools do you currently rely on most for community engagement?",
+      "multiple": true,
+      "options": [
+        {
+          "value": "spatial-gis",
+          "label": "Spatial & GIS Platforms: Maptionnaire, Felt, ArcGIS, etc."
+        },
+        {
+          "value": "visual-boards",
+          "label": "Visual Collaboration Boards: Miro, Mural, Figma, etc."
+        },
+        {
+          "value": "survey-tools",
+          "label": "Standard Survey Tools: Typeform, Google Forms, SurveyMonkey, etc."
+        },
+        {
+          "value": "social-messaging",
+          "label": "Social & Messaging Channels: WhatsApp, Instagram, Facebook Groups, etc."
+        },
+        {
+          "value": "custom-software",
+          "label": "Custom / Proprietary Software: In-house or specialized municipal platforms"
+        }
+      ]
+    },
+    {
+      "key": "frictionPoints",
+      "label": "What are your biggest challenges in placemaking?",
+      "multiple": true,
+      "options": [
+        {
+          "value": "demographic-reach",
+          "label": "Demographic Reach",
+          "description": "Reaching diverse ages, online and in person"
+        },
+        {
+          "value": "data-structuring",
+          "label": "Data Structuring",
+          "description": "Turning sticky notes and comments into GIS data"
+        },
+        {
+          "value": "visual-communication",
+          "label": "Visual Communication",
+          "description": "Helping non-experts read complex 2D and 3D plans"
+        },
+        {
+          "value": "conflict-resolution",
+          "label": "Conflict Resolution",
+          "description": "Navigating opposing views between stakeholder groups"
+        },
+        {
+          "value": "sustaining-momentum",
+          "label": "Sustaining Momentum",
+          "description": "Keeping residents engaged over long timelines"
+        },
+        {
+          "value": "executive-buy-in",
+          "label": "Executive Buy-in",
+          "description": "Reports that convince councils and decision-makers"
+        },
+        {
+          "value": "resource-limits",
+          "label": "Resource Limits",
+          "description": "No budget or technical setup for custom tools"
+        }
+      ]
+    }
+  ],
+  "section3": [
+    {
+      "key": "featurePriorities",
+      "label": "What would you love to see in PLACER?",
+      "multiple": true,
+      "options": [
+        {
+          "value": "participatory-mapping",
+          "label": "Real-time participatory mapping"
+        },
+        {
+          "value": "spatial-visualization",
+          "label": "Interactive spatial visualizations"
+        },
+        {
+          "value": "discussion-threads",
+          "label": "Structured, topic-based discussion threads"
+        },
+        {
+          "value": "council-reports",
+          "label": "Instant PDF summary reports for city councils"
+        },
+        {
+          "value": "voting",
+          "label": "Community voting & project prioritization modules"
+        },
+        {
+          "value": "cobudgeting",
+          "label": "Cobudgeting: allocating a real budget together"
+        },
+        {
+          "value": "other",
+          "label": "Other",
+          "other": true
+        }
+      ]
+    },
+    {
+      "key": "coCreation",
+      "label": "How would you like to participate in co-creating PLACER?",
+      "multiple": true,
+      "options": [
+        {
+          "value": "survey-only",
+          "label": "Just by submitting this survey (No further commitment required)",
+          "noCommitment": true
+        },
+        {
+          "value": "prototype-testing",
+          "label": "Testing early prototypes and providing feedback"
+        },
+        {
+          "value": "interview",
+          "label": "Joining a 15-minute interview to share specific workflow needs"
+        },
+        {
+          "value": "case-study",
+          "label": "Submitting a real project as a test case study"
+        }
+      ]
+    }
+  ],
+  "success": {
+    "title": "Thank You!",
+    "body": "Your answers are in. We'll be in touch as the closed beta opens up.",
+    "closeLabel": "Return to Home"
+  },
+  "errorMessage": "Something went wrong saving your answers. Please try again."
+}

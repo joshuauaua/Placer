@@ -571,59 +571,334 @@ a {
   }
 }
 
-/* PLACER — the landing page's street-furniture border.
+/* PLACER — the landing page's isometric city.
  *
- * Two complementary frames: one carries the street furniture down the left, the
- * other down the right, and each shares half of the top and bottom rows. Each is
- * clipped to its own outer edge so the pair reads as a single border around the
- * copy rather than two separate drawings.
- *
- * Decoration only. Below the breakpoint there is no room for it beside the text,
- * so it goes rather than crowding the words.
+ * One drawing behind the whole page, covering it at any size and centred so the
+ * crossroads in the middle stays in view. It slowly zooms in and, once it is all
+ * the way in, back out again, clipped to the page by the backdrop around it. A
+ * phone gets a portrait drawing instead. The image URLs come from the component
+ * as custom properties; which one shows, its fit and its motion live here.
  */
-.placer-landing-frame {
+.placer-landing-backdrop {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  /* The copy needs 668px clear (a 620px column plus its padding), so the pair
-     may never take more than the viewport minus that: 22% capped at 300px keeps
-     them clear from the breakpoint upwards. */
-  width: 22%;
-  max-width: 300px;
+  inset: 0;
   overflow: hidden;
   pointer-events: none;
 }
 
-.placer-landing-frame img {
+.placer-landing-city {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  inset: 0;
+  background-image: var(--placer-landing-city);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  will-change: transform;
+  animation: placer-landing-zoom 40s ease-in-out infinite alternate;
+}
+
+@keyframes placer-landing-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.25); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-landing-city {
+    animation: none;
+  }
+}
+
+.placer-landing {
+  padding: 48px 24px;
+}
+
+/* PLACER — the landing card.
+ *
+ * The spacing lives here rather than inline because a phone rearranges it and an
+ * inline style cannot be overridden by a media query. Only the colours are set in
+ * the component.
+ *
+ * A wide rectangle centred in the space under the nav bar: the wordmark and
+ * pitch on the left, and on the right two smaller cards one above the other,
+ * each a photo beside its title and button. The credit and funder lockup run
+ * the full width along the bottom, under a rule.
+ *
+ * Below 1024px only the pitch and the two buttons are left, stacked full width:
+ * the smaller cards lose everything but their buttons, and the credit row goes.
+ */
+.placer-landing-column {
+  width: 100%;
+  max-width: 1120px;
+  padding: 48px;
+  border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(17, 17, 17, 0.12);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 40px 48px;
+  align-items: center;
+}
+
+.placer-landing-title {
+  /* The wordmark at Display size: uppercase Helvetica Bold, +8% tracking. */
+  font-size: var(--placer-display) !important;
+  line-height: var(--placer-display-lh) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+.placer-landing-pitch {
+  font-size: var(--placer-body-lg);
+  font-weight: 400;
+  line-height: var(--placer-body-lg-lh);
+}
+
+.placer-landing-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.placer-landing-option {
+  background: var(--placer-landing-option-bg);
+  border: 1px solid var(--placer-landing-option-line);
+  border-radius: 16px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 40% minmax(0, 1fr);
+}
+
+.placer-landing-option-photo {
+  display: block;
+  width: 100%;
   height: 100%;
+  min-height: 160px;
+  object-fit: cover;
+}
+
+/* Spans both columns of the card, the credit at one end, the lockup the other. */
+.placer-landing-footer {
+  grid-column: 1 / -1;
+  padding-top: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.placer-landing-option-body {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.placer-landing-option-title {
+  font-size: var(--placer-h3);
+  line-height: var(--placer-h3-lh);
+  font-weight: 700;
+}
+
+/* The buttons fill their card rather than keeping their own width. */
+.placer-landing-option .placer-feedback-trigger,
+.placer-landing-option .placer-labs-trigger {
+  width: 100%;
+  padding: 0 12px;
+}
+
+@media (max-width: 1023px) {
+  .placer-landing-city {
+    background-image: var(--placer-landing-city-mobile);
+  }
+
+  .placer-landing {
+    padding: 24px 16px;
+  }
+
+  .placer-landing-column {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+    padding: 32px 24px;
+    border-radius: 16px;
+  }
+
+  /* Only the pitch and the two buttons on a phone: each smaller card gives up
+   * its fill, hairline, photo and title, leaving its button in the flow. */
+  .placer-landing-option {
+    display: block;
+    background: none;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .placer-landing-option-photo,
+  .placer-landing-option-title,
+  .placer-landing-footer {
+    display: none;
+  }
+
+  .placer-landing-option-body {
+    padding: 0;
+  }
+}
+
+/* PLACER — the landing page's feedback and User Labs triggers.
+ *
+ * Each sits at the foot of its own smaller card on the landing card, filling
+ * its width (see .placer-landing-option).
+ *
+ * The geometry lives here rather than inline because an inline style cannot be
+ * overridden by a media query. Only the colours are set in the component.
+ */
+.placer-feedback-trigger,
+.placer-labs-trigger {
+  z-index: 150;
+  width: 240px;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: var(--placer-font);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 20px;
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+/* Character buttons: the 100 fill, 300 on hover. */
+.placer-feedback-trigger:hover {
+  background: var(--placer-purple-300) !important;
+}
+
+.placer-labs-trigger:hover {
+  background: var(--placer-blue-300) !important;
+}
+
+@media (max-width: 1023px) {
+  .placer-feedback-trigger,
+  .placer-labs-trigger {
+    width: 100%;
+    padding: 0 20px;
+    min-height: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-feedback-trigger,
+  .placer-labs-trigger {
+    transition: none;
+  }
+}
+
+
+/* PLACER — the survey on a narrow screen.
+ *
+ * The waitlist survey (see waitlistSurvey/) is the one thing on the landing page a
+ * visitor can complete, so it has to work on a phone. Its geometry lives here rather than inline for the same reason
+ * the feedback trigger's does: a media query cannot override an inline style. Colours
+ * stay in the component.
+ *
+ * The sizes scale with clamp() rather than switching at a breakpoint. Nothing in the
+ * survey needs to rearrange below a certain width — the measurements simply need to
+ * shrink — and one declaration per property is easier to keep honest than a second
+ * copy of it inside a media query. In each clamp the minimum is the phone value and
+ * the maximum is what the property was before this change, so a desktop is unaffected.
+ */
+
+/* The intro and thank-you surface.
+ *
+ * Centred with `margin: auto` on the child rather than `align-items: center`, and that
+ * is what makes it scrollable. A centred flex item taller than its container cannot be
+ * scrolled back up to; auto margins collapse to zero once the content overflows, so it
+ * starts at the top and scrolls instead. The intro does overflow a short viewport, once
+ * a drawing, a heading wrapped over three lines and the copy are stacked. */
+.placer-survey-screen {
+  display: flex;
+  overflow-y: auto;
+  padding: clamp(16px, 4vw, 20px);
+}
+
+.placer-survey-screen > * {
+  margin: auto;
+}
+
+/* The drawings were drawn for 132px. Below roughly 92 their detail stops reading, so
+   that is the floor rather than something proportional. */
+.placer-survey-mark {
+  height: clamp(92px, 20vw, 132px);
   width: auto;
-  /* Wider than its container on purpose — the clip is what makes it a border. */
-  max-width: none;
+  display: block;
+  margin: 0 auto 24px;
 }
 
-.placer-landing-frame-left {
-  left: 0;
+/* 32px of side padding costs 64px of a 375px screen. */
+.placer-survey-head,
+.placer-survey-foot {
+  padding: clamp(16px, 3vw, 24px) clamp(16px, 5vw, 32px);
 }
 
-.placer-landing-frame-left img {
-  left: 0;
+.placer-survey-body {
+  padding: clamp(28px, 6vw, 48px) clamp(16px, 5vw, 32px);
 }
 
-.placer-landing-frame-right {
-  right: 0;
+/* 40px -> 28px. A fixed 40px heading wraps to three lines at 375px. */
+.placer-survey-title {
+  font-size: clamp(1.75rem, 6vw, 2.5rem);
 }
 
-.placer-landing-frame-right img {
-  right: 0;
+/* 36px -> 26px. */
+.placer-survey-title-success {
+  font-size: clamp(1.625rem, 5.5vw, 2.25rem);
 }
 
-/* Measured against the content area rather than the viewport, because the side
-   nav takes a column out of it for anyone signed in. */
-@container (max-width: 1199px) {
-  .placer-landing-frame {
+/* 28px -> 21px. The question is the longest text in the flow. */
+.placer-survey-question {
+  font-size: clamp(1.3125rem, 4.5vw, 1.75rem);
+}
+
+/* The panel the survey sits in inside the landing page's dialog. Same reasoning as
+   .placer-viewport, but the height is computed, so it cannot reuse that class. */
+.placer-survey-dialog {
+  height: min(880px, calc(100dvh - 48px));
+}
+
+
+/* The visible viewport, for the waitlist survey when it is given no height of its
+ * own. `100vh` on a phone includes the browser's toolbars; `100dvh` is the viewport
+ * actually visible. A class rather than an inline style, so the fallback below can
+ * restate it. */
+.placer-viewport {
+  height: 100dvh;
+}
+
+/* Everything sized by dvh, restated for browsers that lack it: Safari before 15.4,
+   Chrome before 108, Firefox before 101. */
+@supports not (height: 100dvh) {
+  .placer-viewport {
+    height: 100vh;
+  }
+
+  .placer-survey-dialog {
+    height: min(880px, calc(100vh - 48px));
+  }
+}
+
+/* The survey's "Enter ↵ to begin" and "Enter ↵ to continue": on a phone there
+ * is no Enter to press, so the hints would only mislead. Hidden at the same
+ * width the landing page treats as mobile, and on any touchscreen besides. */
+@media (max-width: 1023px), (hover: none) and (pointer: coarse) {
+  .placer-start-hint,
+  .placer-enter-hint {
     display: none;
   }
 }
@@ -653,8 +928,6 @@ a {
   flex: 1;
   min-width: 0;
   position: relative;
-  /* What the landing frames measure themselves against — see .placer-landing-frame. */
-  container-type: inline-size;
   display: flex;
   flex-direction: column;
 }
