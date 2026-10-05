@@ -928,6 +928,52 @@ a {
   outline-color: var(--placer-white);
 }
 
+/* The newsletter sign-up: a grey-700 outlined field with a white button. */
+.placer-footer-newsletter {
+  display: flex;
+  gap: 8px;
+}
+
+.placer-footer-newsletter input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--placer-grey-700);
+  border-radius: 0;
+  background: transparent;
+  color: var(--placer-white);
+  font: inherit;
+  font-size: 14px;
+}
+
+.placer-footer-newsletter input::placeholder {
+  color: var(--placer-grey-500);
+}
+
+.placer-footer-newsletter input:focus-visible {
+  outline: 1px solid var(--placer-white);
+  border-color: var(--placer-white);
+}
+
+.placer-footer-newsletter button {
+  height: 44px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 0;
+  background: var(--placer-white);
+  color: var(--placer-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.placer-footer-newsletter button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 @media (max-width: 1023px) {
   .placer-footer {
     padding: 40px 20px;

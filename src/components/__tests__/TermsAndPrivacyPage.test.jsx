@@ -35,7 +35,7 @@ describe('terms and privacy page', () => {
   it('reaches the page from the footer link', async () => {
     renderAt('/');
 
-    fireEvent.click(screen.getByRole('link', { name: 'Terms of Service' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Privacy and Terms' }));
     expect(await screen.findByText('Agreement to these terms')).toBeInTheDocument();
     expect(screen.getByText('Who this policy applies to')).toBeInTheDocument();
     expect(screen.getByText('Your rights')).toBeInTheDocument();
