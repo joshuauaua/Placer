@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { OrganisationSetupPage } from '../OrganisationSetupPage';
 import {
   createOrganisation, removeOrganisationCoverFile, updateOrganisation, uploadOrganisationCover,
@@ -13,7 +13,8 @@ vi.mock('../../services/organisations', () => ({
   removeOrganisationCoverFile: vi.fn(() => Promise.resolve()),
 }));
 
-const ORG = { id: 'org-1', name: 'Malmö Stad', description: '', location: '', contactEmail: '', website: '',
+const ORG = { id: 'org-1', name: 'Malmö Stad', description: '', location: '', address: '', locationPoint: null,
+  contactEmail: '', website: '',
   coverPath: 'organisations/org-1/cover-1.webp', cover: 'https://media.example/organisations/org-1/cover-1.webp' };
 
 const photo = () => new File(['x'], 'photo.jpg', { type: 'image/jpeg' });
@@ -92,5 +93,92 @@ describe('OrganisationSetupPage', () => {
 
     await waitFor(() => expect(removeOrganisationCoverFile).toHaveBeenCalledWith('organisations/org-1/cover-1.webp'));
     expect(updateOrganisation).toHaveBeenCalledWith('org-1', { coverPath: 'organisations/org-1/cover-2.webp' });
+  });
+});
+
+describe('OrganisationSetupPage, address', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  // A stand-in for Google Places: the Autocomplete it builds is handed back so the test
+  // can "choose" a suggestion the way the real list would.
+  const withPlaces = async (place, run) => {
+    let placeChanged;
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'maps-key');
+    window.google = { maps: { places: { Autocomplete: vi.fn(function Autocomplete() {
+      this.getPlace = () => place;
+      this.addListener = (event, handler) => { placeChanged = handler; return { remove: vi.fn() }; };
+    }) } } };
+    try {
+      await run(async () => {
+        await waitFor(() => expect(placeChanged).toBeTypeOf('function'));
+        act(() => placeChanged());
+      });
+    } finally {
+      delete window.google;
+      vi.unstubAllEnvs();
+    }
+  };
+
+  const STPLN = {
+    formatted_address: 'Malmöhusvägen 5, 211 18 Malmö, Sweden',
+    geometry: { location: { lat: () => 55.6054, lng: () => 12.9854 } },
+    address_components: [
+      { long_name: '5', types: ['street_number'] },
+      { long_name: 'Malmöhusvägen', types: ['route'] },
+      { long_name: 'Malmö', types: ['locality', 'political'] },
+      { long_name: 'Sweden', types: ['country', 'political'] },
+    ],
+  };
+
+  it('saves a chosen address with its point, and fills in the town and country from it', async () => {
+    vi.mocked(createOrganisation).mockResolvedValue(ORG);
+    let onSaved;
+
+    await withPlaces(STPLN, async (choose) => {
+      ({ onSaved } = setup());
+      await choose();
+      // Any address, not only towns, and with the parts the town and country come from.
+      expect(window.google.maps.places.Autocomplete).toHaveBeenCalledWith(
+        screen.getByLabelText('Address'), expect.objectContaining({
+          fields: expect.arrayContaining(['address_components', 'geometry']) }));
+    });
+
+    expect(screen.getByLabelText('Address')).toHaveValue('Malmöhusvägen 5, 211 18 Malmö, Sweden');
+    expect(screen.getByLabelText('Town and country')).toHaveValue('Malmö, Sweden');
+
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'STPLN' } });
+    fireEvent.click(screen.getByRole('button', { name: /Create organisation/ }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(createOrganisation).toHaveBeenCalledWith(expect.objectContaining({
+      address: 'Malmöhusvägen 5, 211 18 Malmö, Sweden',
+      locationPoint: { lat: 55.6054, lng: 12.9854 },
+      location: 'Malmö, Sweden',
+    }));
+  });
+
+  it('drops the point once the address is edited by hand, keeping the town and country', async () => {
+    vi.mocked(updateOrganisation).mockResolvedValue(ORG);
+    setup({ organisation: { ...ORG, address: 'Malmöhusvägen 5, Malmö', location: 'Malmö, Sweden',
+      locationPoint: { lat: 55.6054, lng: 12.9854 } } });
+
+    fireEvent.change(screen.getByLabelText('Address'), { target: { value: 'Malmöhusvägen 7, Malmö' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(updateOrganisation).toHaveBeenCalledWith('org-1', expect.objectContaining({
+      address: 'Malmöhusvägen 7, Malmö', locationPoint: null, location: 'Malmö, Sweden',
+    })));
+  });
+
+  it('lets the town and country be corrected by hand', async () => {
+    vi.mocked(updateOrganisation).mockResolvedValue(ORG);
+    setup({ organisation: ORG });
+
+    fireEvent.change(screen.getByLabelText('Town and country'), { target: { value: 'Rosengård, Malmö' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(updateOrganisation).toHaveBeenCalledWith('org-1', expect.objectContaining({
+      location: 'Rosengård, Malmö', address: '', locationPoint: null,
+    })));
   });
 });

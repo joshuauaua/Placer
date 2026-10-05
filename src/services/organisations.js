@@ -31,8 +31,8 @@ async function client() {
   return supabase;
 }
 
-const ORGANISATION_COLUMNS = 'id, name, contact_email, website, location, description, '
-  + 'cover_path, created_by, unadministered_since, created_at';
+const ORGANISATION_COLUMNS = 'id, name, contact_email, website, location, address, '
+  + 'location_lat, location_lng, description, cover_path, created_by, unadministered_since, created_at';
 
 function fromRow(row) {
   return {
@@ -40,7 +40,14 @@ function fromRow(row) {
     name: row.name,
     contactEmail: row.contact_email ?? '',
     website: row.website ?? '',
+    // The town and country, as the public page shows it.
     location: row.location ?? '',
+    // The exact address, and where it is when it was chosen from the suggestions
+    // (supabase/organisation-address.sql); null when it was not.
+    address: row.address ?? '',
+    locationPoint: row.location_lat == null || row.location_lng == null
+      ? null
+      : { lat: row.location_lat, lng: row.location_lng },
     description: row.description ?? '',
     // The picture across the top of its public page, or null for a plain band.
     coverPath: row.cover_path ?? null,
@@ -55,7 +62,7 @@ function fromRow(row) {
 function toRow(patch) {
   const columns = {
     name: 'name', contactEmail: 'contact_email', website: 'website',
-    location: 'location', description: 'description',
+    location: 'location', address: 'address', description: 'description',
   };
   const row = {};
   for (const [key, column] of Object.entries(columns)) {
@@ -64,6 +71,11 @@ function toRow(patch) {
   }
   // A key, or null to take the cover away — not text to trim.
   if (patch.coverPath !== undefined) row.cover_path = patch.coverPath;
+  // A point, or null for none; the database wants both halves or neither.
+  if (patch.locationPoint !== undefined) {
+    row.location_lat = patch.locationPoint?.lat ?? null;
+    row.location_lng = patch.locationPoint?.lng ?? null;
+  }
   return row;
 }
 
@@ -99,20 +111,23 @@ export async function readOrganisation(id) {
 }
 
 /**
- * Every organisation that says where it is, for Explore. Its location is free text
- * rather than a point, so Explore geocodes it — see lib/geocode.js. Public, the same
- * as readOrganisation.
+ * Every organisation that says where it is, for Explore: one with a point from a
+ * chosen address, or else an address or a location as text, which Explore geocodes —
+ * see lib/geocode.js. Public, the same as readOrganisation.
+ *
+ * Filtered here rather than in the query: any one of three columns will do, and
+ * there are few enough organisations that reading the rest costs nothing.
  */
 export async function readMapOrganisations() {
   const supabase = await client();
   const { data, error } = await supabase
     .from(ORGANISATIONS_TABLE)
     .select(ORGANISATION_COLUMNS)
-    .neq('location', '')
     .order('name', { ascending: true });
 
   if (error) throw new Error(`Could not load organisations for the map: ${error.message}`);
-  return (data ?? []).map(fromRow).filter((organisation) => organisation.location.trim());
+  return (data ?? []).map(fromRow).filter((organisation) =>
+    organisation.locationPoint || organisation.address.trim() || organisation.location.trim());
 }
 
 /**

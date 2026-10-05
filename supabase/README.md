@@ -701,6 +701,14 @@ refuses anything still over 3 MB. The folder keeps at most two, and closing the
 organisation deletes its cover. The uploading admin needs room under their own 50 MB
 for it, but it is not counted against anyone afterwards; the folder's own limit bounds it.
 
+**Addresses.** Run `organisation-address.sql` after `organisations.sql`. It adds
+`organisations.address` and the point it is at (`location_lat`, `location_lng`, both
+or neither). The setup form suggests addresses from Google Places as one is typed; the
+one chosen is kept with its point, and its town and country fill in `location`, which
+the public page shows. Explore pins an organisation on that point, and falls back to
+geocoding the address or `location` text for one saved without it. All of it is public,
+like the rest of the row.
+
 It replaces the Individual / Organisation account type in Settings, which is gone from
 the app. `profiles.account_type` is left in place so nothing saved is lost.
 

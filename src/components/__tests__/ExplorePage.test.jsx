@@ -147,6 +147,28 @@ describe('ExplorePage', () => {
     expect(markerFor('STPLN').position).toEqual({ lat: 55.6, lng: 13 });
   });
 
+  it('pins an organisation at the point of the address it chose, without geocoding', async () => {
+    vi.mocked(readMapOrganisations).mockResolvedValue([{ ...ORGANISATION,
+      address: 'Malmöhusvägen 5, Malmö', locationPoint: { lat: 55.6054, lng: 12.9854 } }]);
+    renderPage();
+
+    await waitFor(() => expect(markerFor('STPLN')).toBeDefined());
+    expect(markerFor('STPLN').position).toEqual({ lat: 55.6054, lng: 12.9854 });
+    expect(window.google.maps.Geocoder).not.toHaveBeenCalled();
+  });
+
+  it('geocodes the address rather than the town when there is no point', async () => {
+    vi.mocked(readMapOrganisations).mockResolvedValue([{ ...ORGANISATION,
+      address: 'Stapelbäddsgatan 3, Malmö', locationPoint: null }]);
+    geocodeResult = { lat: 55.61, lng: 12.97 };
+    renderPage();
+
+    await waitFor(() => expect(markerFor('STPLN')).toBeDefined());
+    const [geocoder] = window.google.maps.Geocoder.mock.results.map(({ value }) => value);
+    expect(geocoder.geocode).toHaveBeenCalledWith({ address: 'Stapelbäddsgatan 3, Malmö' }, expect.any(Function));
+    expect(markerFor('STPLN').position).toEqual({ lat: 55.61, lng: 12.97 });
+  });
+
   it('leaves an organisation off the map when its location cannot be found', async () => {
     vi.mocked(readMapOrganisations).mockResolvedValue([ORGANISATION]);
     geocodeResult = null;

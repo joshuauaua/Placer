@@ -82,6 +82,9 @@ const PLAN = [
   { name: '20260930120001_follows_organisations.sql', src: 'follows-organisations.sql' },
   { name: '20260930130001_profile_social.sql', src: 'profile-social.sql' },
   { name: '20260930140001_profile_home.sql', src: 'profile-home.sql' },
+  // Dated after 20261005090001, the newest migration applied when it was written:
+  // `db push` refuses one older than that.
+  { name: '20261005100001_organisation_address.sql', src: 'organisation-address.sql' },
 ]
 
 const HAND_WRITTEN = [
