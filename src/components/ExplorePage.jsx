@@ -7,8 +7,9 @@
  *
  * Projects are drawn where they have outlined themselves, the same outline their own
  * page shows, with a pin in the middle so a small one can still be found zoomed out.
- * Organisations only say where they are in words, so they are pinned wherever Google
- * places those words — see lib/geocode.js. Case studies have nowhere to come from yet
+ * Organisations are pinned at the address they chose from the suggestions on their
+ * setup form; one saved without that point is pinned wherever Google places its address
+ * or town — see lib/geocode.js. Case studies have nowhere to come from yet
  * and wait as a filter that cannot be turned on.
  *
  * Imaginations are not here: they have their own map, MapContainer, which is also where
@@ -71,7 +72,7 @@ function toPlace(kind, item, position) {
       location: (item.locations ?? []).join(', '), line: shortLine(item.description),
       href: `/projects/${encodeURIComponent(item.id)}`, shapes: item.locationShapes }
     : { kind, id: item.id, title: item.name, image: item.cover, position,
-      location: item.location, line: shortLine(item.description),
+      location: item.location, address: item.address, line: shortLine(item.description),
       href: `/organisations/${encodeURIComponent(item.id)}` };
 }
 
@@ -329,20 +330,23 @@ export function ExplorePage({ apiKey = '', homeCenter = null, accountId = null, 
       })
       .catch((error) => console.error('Could not load projects for the map:', error));
     readMapOrganisations()
-      .then((rows) => { if (!cancelled) setOrganisations(rows.map((row) => toPlace('organisation', row, null))); })
+      // An organisation with a chosen address already has its point; the rest are
+      // geocoded below.
+      .then((rows) => { if (!cancelled) setOrganisations(rows.map((row) => toPlace('organisation', row, row.locationPoint))); })
       .catch((error) => console.error('Could not load organisations for the map:', error));
     return () => { cancelled = true; };
   }, []);
 
-  // Organisations get their point once Maps is there to ask. Each is set as it comes
-  // back, so one slow or unknown place does not hold up the rest.
+  // Organisations without a point get one once Maps is there to ask: from the address
+  // when there is one, which is the more exact of the two, or else the town. Each is
+  // set as it comes back, so one slow or unknown place does not hold up the rest.
   const organisationCount = organisations.length;
   useEffect(() => {
     if (!googleLoaded || organisationCount === 0) return undefined;
     let cancelled = false;
     organisations.forEach((organisation) => {
       if (organisation.position) return;
-      geocodePlace(organisation.location).then((position) => {
+      geocodePlace(organisation.address || organisation.location).then((position) => {
         if (cancelled || !position) return;
         setOrganisations((current) => current.map((item) =>
           (item.id === organisation.id ? { ...item, position } : item)));

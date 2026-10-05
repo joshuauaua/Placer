@@ -58,6 +58,9 @@ const ROW = {
   contact_email: 'hello@malmo.se',
   website: 'https://malmo.se',
   location: 'Malmö',
+  address: '',
+  location_lat: null,
+  location_lng: null,
   description: 'The city.',
   cover_path: null,
   created_by: 'user-1',
@@ -114,9 +117,28 @@ describe('creating an organisation', () => {
     }]]);
     expect(saved).toEqual({
       id: 'org-1', name: 'Malmö Stad', contactEmail: 'hello@malmo.se', website: 'https://malmo.se',
-      location: 'Malmö', description: 'The city.', coverPath: null, cover: null,
-      createdBy: 'user-1', unadministeredSince: null,
+      location: 'Malmö', address: '', locationPoint: null, description: 'The city.',
+      coverPath: null, cover: null, createdBy: 'user-1', unadministeredSince: null,
       createdAt: '2026-09-30T10:00:00.000Z',
+    });
+  });
+
+  it('sends a chosen address with its point, and a cleared one with neither', async () => {
+    await load();
+    fromChains.organisations = makeChain({ data: ROW, error: null });
+
+    await organisations.createOrganisation({
+      createdBy: 'user-1', name: 'Malmö Stad', address: ' Malmöhusvägen 5, Malmö ',
+      locationPoint: { lat: 55.6054, lng: 12.9854 },
+    });
+    expect(fromChains.organisations.calls[0][1][0]).toMatchObject({
+      address: 'Malmöhusvägen 5, Malmö', location_lat: 55.6054, location_lng: 12.9854,
+    });
+
+    fromChains.organisations = makeChain({ data: ROW, error: null });
+    await organisations.createOrganisation({ createdBy: 'user-1', name: 'Malmö Stad', address: '', locationPoint: null });
+    expect(fromChains.organisations.calls[0][1][0]).toMatchObject({
+      address: '', location_lat: null, location_lng: null,
     });
   });
 
@@ -152,15 +174,20 @@ describe('listing my organisations', () => {
 });
 
 describe('organisations for the map', () => {
-  it('reads the ones that say where they are, leaving out a blank location', async () => {
+  it('reads the ones that say where they are, by point, address or location', async () => {
     await load();
-    const chain = makeChain({ data: [ROW, { ...ROW, id: 'org-2', location: '   ' }], error: null });
+    const chain = makeChain({ data: [
+      ROW,
+      { ...ROW, id: 'org-2', location: '   ' },
+      { ...ROW, id: 'org-3', location: '', address: 'Malmöhusvägen 5, Malmö' },
+      { ...ROW, id: 'org-4', location: '', location_lat: 55.6, location_lng: 12.98 },
+    ], error: null });
     fromChains.organisations = chain;
 
     const found = await organisations.readMapOrganisations();
 
-    expect(found.map(({ id }) => id)).toEqual(['org-1']);
-    expect(chain.calls).toContainEqual(['neq', ['location', '']]);
+    expect(found.map(({ id }) => id)).toEqual(['org-1', 'org-3', 'org-4']);
+    expect(found[2].locationPoint).toEqual({ lat: 55.6, lng: 12.98 });
   });
 
   it('surfaces a failure as a readable error', async () => {

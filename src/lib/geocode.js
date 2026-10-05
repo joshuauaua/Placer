@@ -1,8 +1,8 @@
 /* PLACER — turning a place written as text into a point on the map.
  *
- * Organisations say where they are in a free-text field ("Malmö", "Rosengård, Malmö"),
- * not as coordinates, so Explore asks Google's geocoder where that is before it can
- * pin one. The geocoder is rate limited and billed per request, and many organisations
+ * An organisation that picked its address from the suggestions has its coordinates
+ * already. One that did not says where it is only in words ("Malmö", "Rosengård,
+ * Malmö"), so Explore asks Google's geocoder where that is before it can pin one. The geocoder is rate limited and billed per request, and many organisations
  * share a town, so each distinct place is asked about once per page load, and the
  * answer — a miss included — is kept and handed to everyone who asks after.
  *

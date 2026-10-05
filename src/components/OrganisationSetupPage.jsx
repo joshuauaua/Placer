@@ -1,14 +1,17 @@
 /* PLACER — create or edit an organisation: its name, what it does, where it is, how
  * to reach it, and a cover image. One page either way, and every field but the name
- * optional. All of it is shown on the organisation's public page. */
+ * optional. All of it is shown on the organisation's public page, except the exact
+ * address, which places its pin on the Explore map instead. */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Btn } from './UI';
 import { ImagePicker } from './ImagePicker';
 import {
   createOrganisation, removeOrganisationCoverFile, updateOrganisation, uploadOrganisationCover,
 } from '../services/organisations';
 import { checkPickedImage } from '../services/media';
+import { googleMapsApiKey, isGoogleMapsConfigured, loadGoogleMaps } from '../lib/googleMaps';
+import { townAndCountry } from '../lib/address';
 
 // Matches ProjectSetupPage's form styling.
 const inputStyle = (t) => ({
@@ -39,6 +42,60 @@ function Field({ t, label, htmlFor, hint, children }) {
 }
 
 /**
+ * The exact address, with Google Places suggestions as it is typed — the same service
+ * as Settings' location, but any address or place rather than only towns. Choosing a
+ * suggestion reports the address, where it is, and the town and country worked out
+ * from it (lib/address.js) through `onPick`. Typing by hand afterwards drops the point
+ * again, through `onChange`, since the text no longer says where it was. Without a
+ * Maps key it is a plain text field.
+ */
+function AddressInput({ t, value, onChange, onPick }) {
+  const inputRef = useRef(null);
+  // The listener is set up once, so it reads today's onPick through here.
+  const onPickRef = useRef(onPick);
+  onPickRef.current = onPick;
+
+  useEffect(() => {
+    if (!isGoogleMapsConfigured()) return undefined;
+    let cancelled = false;
+    let listener = null;
+
+    loadGoogleMaps(googleMapsApiKey())
+      .then(() => {
+        if (cancelled || !inputRef.current || !window.google?.maps?.places) return;
+        const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+          fields: ['address_components', 'geometry', 'formatted_address', 'name'],
+        });
+        listener = autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          const location = place?.geometry?.location;
+          if (!location) return;
+          onPickRef.current({
+            address: place.formatted_address || place.name || '',
+            point: { lat: location.lat(), lng: location.lng() },
+            townAndCountry: townAndCountry(place.address_components),
+          });
+        });
+      })
+      .catch((err) => console.error('Could not load address suggestions:', err));
+
+    return () => {
+      cancelled = true;
+      listener?.remove?.();
+    };
+  }, []);
+
+  return (
+    <input id="organisation-address" ref={inputRef} type="text" value={value} maxLength={200}
+      autoComplete="off"
+      onChange={(e) => onChange(e.target.value)}
+      // Enter picks a suggestion in the Places list; it must not submit the form.
+      onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
+      placeholder="e.g. Malmöhusvägen 5, Malmö" style={inputStyle(t)} />
+  );
+}
+
+/**
  * `organisation` is null to create a new one, or an existing one (services/organisations'
  * fromRow shape) to edit it in place — the one form both `/organisations/new` and a
  * dashboard's "Edit details" reach.
@@ -53,6 +110,9 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
   const [name, setName] = useState(organisation?.name ?? '');
   const [description, setDescription] = useState(organisation?.description ?? '');
   const [location, setLocation] = useState(organisation?.location ?? '');
+  const [address, setAddress] = useState(organisation?.address ?? '');
+  // Where `address` is, when it came from a suggestion; null once edited by hand.
+  const [point, setPoint] = useState(organisation?.locationPoint ?? null);
   const [contactEmail, setContactEmail] = useState(organisation?.contactEmail ?? '');
   const [website, setWebsite] = useState(organisation?.website ?? '');
   const [saving, setSaving] = useState(false);
@@ -88,7 +148,9 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
 
     setSaving(true);
     setError(null);
-    const fields = { name, description, location, contactEmail, website };
+    // No address, no point: clearing the address takes the pin off the map's exact spot.
+    const fields = { name, description, location, address, contactEmail, website,
+      locationPoint: address.trim() ? point : null };
     try {
       let saved = editing
         ? await updateOrganisation(organisation.id, fields)
@@ -128,10 +190,12 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
           </h1>
           <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6 }}>
             {editing
-              ? 'Everything here is shown on the organisation’s public page.'
+              ? 'Everything here but the exact address is shown on the organisation’s public '
+                + 'page; the address places it on the Explore map.'
               : 'A page for a municipality, studio, association or any other group. You will be '
                 + 'its first admin, you can add others, and projects can be run in its name. '
-                + 'Everything here is shown on its public page.'}
+                + 'Everything here but the exact address is shown on its public page; the address '
+                + 'places it on the Explore map.'}
           </p>
         </div>
 
@@ -148,8 +212,28 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
             style={{ ...inputStyle(t), resize: 'vertical' }} />
         </Field>
 
-        <Field t={t} label="Location" htmlFor="organisation-location"
-          hint="Where it is based. Optional.">
+        <Field t={t} label="Address" htmlFor="organisation-address"
+          hint={isGoogleMapsConfigured()
+            ? 'Where it is based, exactly. Pick the address from the suggestions and the organisation is pinned there on the Explore map, and its town and country fill in below. Optional.'
+            : 'Where it is based, exactly. The organisation is pinned there on the Explore map. Optional.'}>
+          <AddressInput t={t} value={address}
+            onChange={(next) => { setAddress(next); setPoint(null); }}
+            onPick={(picked) => {
+              setAddress(picked.address);
+              setPoint(picked.point);
+              if (picked.townAndCountry) setLocation(picked.townAndCountry);
+            }} />
+          {isGoogleMapsConfigured() && address.trim() && (
+            <div style={{ fontSize: 13, color: t.inkFaint, marginTop: 8 }}>
+              {point
+                ? 'Pinned on the Explore map at this address.'
+                : 'Not picked from the suggestions, so the map places it from the text as best it can.'}
+            </div>
+          )}
+        </Field>
+
+        <Field t={t} label="Town and country" htmlFor="organisation-location"
+          hint="Shown on the public page. Filled in from the address; change it if it is not right. Optional.">
           <input id="organisation-location" type="text" value={location} maxLength={120}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="e.g. Malmö, Sweden" style={inputStyle(t)} />
