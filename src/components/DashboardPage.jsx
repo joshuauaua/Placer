@@ -139,7 +139,8 @@ function PanelCard({ t, id, title, action, children }) {
 }
 
 export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewProject,
-  onSignIn, onSignOut, onExplore, onOpenPublicProfile, onOpenProject, onOpenProjectPage }) {
+  onSignIn, onSignOut, onExplore, onOpenPublicProfile, onOpenProject, onOpenProjectPage,
+  onOpenOrganisationPage }) {
   // The imagination open in the modal, if any — set from any card on this page.
   const [selected, setSelected] = useState(null);
   // Imaginations still only in this browser, made before there were accounts: nobody
@@ -388,7 +389,8 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
               <ul aria-label="Recent activity" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {activity.map((notification) => (
                   <li key={notification.id} style={{ borderTop: `1px solid ${t.line}` }}>
-                    <NotificationItem t={t} notification={notification} onOpenProject={onOpenProjectPage} compact />
+                    <NotificationItem t={t} notification={notification} onOpenProject={onOpenProjectPage}
+                      onOpenOrganisation={onOpenOrganisationPage} compact />
                   </li>
                 ))}
               </ul>

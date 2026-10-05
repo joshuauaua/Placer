@@ -15,6 +15,7 @@ import {
   removeProfileImageFile, updatePassword, uploadProfilePhoto,
 } from '../services/auth';
 import { isSupabaseConfigured, readPreferences, savePreferences } from '../services/notifications';
+import { ProjectResponsesChoice } from './ProjectResponsesChoice';
 import { googleMapsApiKey, isGoogleMapsConfigured, loadGoogleMaps } from '../lib/googleMaps';
 
 // The same floor AuthPage and ResetPasswordPage ask for.
@@ -502,9 +503,9 @@ const NOTIFICATION_KINDS = [
   { inapp: 'engagement_inapp', email: 'engagement_email', title: 'Engagement',
     description: 'When someone comments on or votes for your imaginations.' },
   { inapp: 'activity_inapp', email: 'activity_email', title: 'Activity',
-    description: 'When a Project, City or User you follow posts news or new Toolkit results.' },
+    description: 'When someone you follow starts a project or posts an imagination, or a project or organisation you follow has news or new Toolkit results.' },
   { inapp: 'follower_inapp', email: 'follower_email', title: 'Followers',
-    description: 'When someone follows your profile.' },
+    description: 'When someone follows your profile, a project you run, or an organisation you are an admin of.' },
   { inapp: 'system_inapp', email: 'system_email', title: 'System',
     description: 'Platform announcements and account maintenance.' },
 ];
@@ -534,8 +535,8 @@ function NotificationPreferences({ t }) {
 
   if (!isSupabaseConfigured()) return null;
 
-  const toggle = (key) => async (e) => {
-    const value = e.target.checked;
+  const save = async (key, value) => {
+    const previous = prefs[key];
     setPrefs((current) => ({ ...current, [key]: value }));
     setSavingKey(key);
     setError(null);
@@ -544,13 +545,15 @@ function NotificationPreferences({ t }) {
     } catch (err) {
       console.error('Could not save your notification settings:', err);
       setError('Could not save that. Try again.');
-      // Roll the checkbox back — a toggle that silently did not save is worse
-      // than one that visibly reverts.
-      setPrefs((current) => ({ ...current, [key]: !value }));
+      // Roll the choice back — a toggle that silently did not save is worse than
+      // one that visibly reverts.
+      setPrefs((current) => ({ ...current, [key]: previous }));
     } finally {
       setSavingKey(null);
     }
   };
+
+  const toggle = (key) => (e) => save(key, e.target.checked);
 
   return (
     <Card t={t} title="Notification preferences">
@@ -600,6 +603,21 @@ function NotificationPreferences({ t }) {
                 </label>
               </Fragment>
             ))}
+          </div>
+
+          {/* Not a category: answers in your projects' Toolkit sessions can be many, so
+            * how many alerts they send is a choice of its own. A project's dashboard
+            * can set it differently for that project. */}
+          <div style={{ borderTop: `1px solid ${t.line}`, paddingTop: 18 }}>
+            <ProjectResponsesChoice t={t} name="settings-project-responses"
+              legend="Responses on your projects"
+              value={prefs.project_responses}
+              disabled={savingKey === 'project_responses'}
+              onChange={(level) => save('project_responses', level)} />
+            <p style={{ fontSize: 12.5, color: t.inkFaint, lineHeight: 1.5, marginTop: 12 }}>
+              Answers to the tools in the Toolkit sessions of projects you run. You can choose
+              differently for one project from its dashboard.
+            </p>
           </div>
         </div>
       )}

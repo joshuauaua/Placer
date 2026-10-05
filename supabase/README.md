@@ -482,6 +482,22 @@ Every trigger checks `notification_wants()` first, so a category switched off in
 preferences row (nobody has opened Settings) defaults every category on, matching the
 column defaults.
 
+**Projects and organisations.** Run `notifications-projects.sql` after this file,
+`organisations.sql`, `media-photos.sql` and `follows-organisations.sql`. It adds three
+more alerts: somebody you follow starting a project (Activity); somebody following a
+project you run or an organisation you are an admin of (Follower, which this file only
+sent for a profile); and somebody answering a Toolkit tool in a project you run
+(Engagement), to its owner and collaborators. It replaces `notifications_on_follow` and
+`notifications_on_room_closed` from this file in place, so edit them there.
+
+Answers are governed by a choice of their own rather than the Engagement switch:
+`notification_preferences.project_responses` is `every` (each new answer, the
+default), `session` (one summary when a session is closed by hand) or `off`, and
+`project_notification_settings` overrides it for one account on one project, from the
+project's dashboard. Only a new answer counts; a participant changing theirs does not.
+A session that runs out of time never records a close, so it sends no summary, as it
+already sent followers no "new results".
+
 **Email is not sent.** `notification_preferences` has an `_email` column next to every
 `_inapp` one so Settings has somewhere to save the choice, but nothing in this file, or
 in `src/services/notifications.js`, sends mail. Resend is wired up later against these
