@@ -10,30 +10,40 @@ import { Btn } from './UI';
 import { Icon } from './Icon';
 import { Breadcrumb } from './PageHeader';
 
+/* One organisation: its cover edge to edge across the top, the way a ProjectCard
+ * shows a project's image, then the building mark beside its name, town and the start
+ * of its description. Without a cover it is just that row. */
 function OrganisationCard({ t, organisation, onOpen }) {
   return (
     <button onClick={() => onOpen(organisation.id)} style={{ textAlign: 'left', padding: 20,
       background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, boxShadow: t.shadow,
-      cursor: 'pointer', fontFamily: 'var(--placer-font)', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-      <span style={{ width: 44, height: 44, borderRadius: 12, background: t.surfaceAlt, flex: '0 0 auto',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.ink }}>
-        <Icon name="building" size={22} stroke={2} />
-      </span>
-      <span style={{ minWidth: 0 }}>
-        <span style={{ display: 'block', fontSize: 17, fontWeight: 700, color: t.ink, marginBottom: 4 }}>
-          {organisation.name}
+      cursor: 'pointer', fontFamily: 'var(--placer-font)', overflow: 'hidden' }}>
+      {/* The negative margins undo the card's padding. */}
+      {organisation.cover && (
+        <img src={organisation.cover} alt="" style={{ display: 'block', width: 'calc(100% + 40px)',
+          margin: '-20px -20px 16px', aspectRatio: '16 / 9', objectFit: 'cover' }} />
+      )}
+      <span style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+        <span style={{ width: 44, height: 44, borderRadius: 12, background: t.surfaceAlt, flex: '0 0 auto',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.ink }}>
+          <Icon name="building" size={22} stroke={2} />
         </span>
-        {organisation.location && (
-          <span style={{ display: 'block', fontSize: 13.5, color: t.inkDim, marginBottom: 6 }}>
-            {organisation.location}
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: 'block', fontSize: 17, fontWeight: 700, color: t.ink, marginBottom: 4 }}>
+            {organisation.name}
           </span>
-        )}
-        {organisation.description && (
-          <span style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.5,
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            {organisation.description}
-          </span>
-        )}
+          {organisation.location && (
+            <span style={{ display: 'block', fontSize: 13.5, color: t.inkDim, marginBottom: 6 }}>
+              {organisation.location}
+            </span>
+          )}
+          {organisation.description && (
+            <span style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.5,
+              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {organisation.description}
+            </span>
+          )}
+        </span>
       </span>
     </button>
   );
