@@ -10,6 +10,11 @@
  * this person's own ballot. What changes is that it is published to everybody else,
  * and that a second panel appears showing what the room as a whole would fund — the
  * average of every ballot cast, which is itself a ballot that fits the budget.
+ *
+ * A room can also have been set up by its organiser (`room.config`, see `setup` in
+ * toolkit/tools.js): its own budget, and only some of the nine things on the ballot.
+ * Then the ballot is theirs, and the council's draft — a draft for the Toolkit's
+ * made-up street, not this one — is left out of it.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -37,6 +42,13 @@ const PRESETS = [
 ];
 
 export function BudgetBallot({ t, tool, room }) {
+  const config = room?.config ?? null;
+  const budget = config?.budget ?? BUDGET;
+  const offered = useMemo(
+    () => (config ? INTERVENTION_LIST.filter((item) => config.items.includes(item.key)) : INTERVENTION_LIST),
+    [config]
+  );
+
   const [quantities, setQuantities] = useState(() => emptyBallot());
   const [preset, setPreset] = useState('empty');
   // Until somebody has actually allocated something there is nothing worth sending:
@@ -44,9 +56,19 @@ export function BudgetBallot({ t, tool, room }) {
   // drag the average down with them.
   const [touched, setTouched] = useState(false);
 
-  const result = useMemo(() => tally(quantities), [quantities]);
+  // A setup arrives once the room has loaded, after the sliders are already on screen.
+  // Whatever was chosen before then was chosen against the wrong budget, so the
+  // ballot starts again rather than being sent half-fitting.
+  useEffect(() => {
+    if (!config) return;
+    setQuantities(emptyBallot());
+    setPreset('empty');
+    setTouched(false);
+  }, [config]);
+
+  const result = useMemo(() => tally(quantities, budget), [quantities, budget]);
   const draft = useMemo(() => tally(COUNCIL_DRAFT), []);
-  const spentShare = result.spent / BUDGET;
+  const spentShare = result.spent / budget;
 
   // Held in a ref rather than an effect dependency: the room object is rebuilt on
   // every render, so depending on it would republish on every incoming change and
@@ -62,8 +84,8 @@ export function BudgetBallot({ t, tool, room }) {
 
   const inRoom = room?.status === 'open';
   const roomResult = useMemo(
-    () => (room?.combined ? tally(room.combined) : null),
-    [room?.combined]
+    () => (room?.combined ? tally(room.combined, budget) : null),
+    [room?.combined, budget]
   );
 
   function setQuantity(key, quantity) {
@@ -91,20 +113,22 @@ export function BudgetBallot({ t, tool, room }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 16 }}>
             <Readout t={t} label="Committed" value={formatEuros(result.spent)}
               tone={result.remaining === 0 ? tool.color : undefined} />
-            <Readout t={t} label="Of a budget of" value={formatEuros(BUDGET)} />
+            <Readout t={t} label="Of a budget of" value={formatEuros(budget)} />
           </div>
           <Meter t={t} label="Budget used" value={spentShare} color={tool.color}
             caption={`${Math.round(spentShare * 100)}%`} />
-          <PresetRow t={t} presets={PRESETS} active={preset} onPick={pickPreset} color={tool.color} />
+          {!config && (
+            <PresetRow t={t} presets={PRESETS} active={preset} onPick={pickPreset} color={tool.color} />
+          )}
         </Panel>
 
         <Panel t={t} title="What the street could have">
           <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {INTERVENTION_LIST.map((item) => {
+            {offered.map((item) => {
               const quantity = result.quantities[item.key];
               // The slider stops where the money does, so it cannot overspend — and the
               // row says which of the two limits it has run into.
-              const affordable = affordableQuantity(quantities, item.key);
+              const affordable = affordableQuantity(quantities, item.key, budget);
               const ceiling = Math.max(quantity, affordable);
               const atBudget = ceiling < item.max;
 
@@ -183,7 +207,7 @@ export function BudgetBallot({ t, tool, room }) {
                 ))}
                 <p style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.6, marginTop: 12 }}>
                   The average of every ballot in the room, which is why it still fits inside
-                  &euro;250,000. Where it differs from yours is the argument worth having.
+                  {' '}{formatEuros(budget)}. Where it differs from yours is the argument worth having.
                 </p>
               </>
             ) : (
@@ -194,9 +218,9 @@ export function BudgetBallot({ t, tool, room }) {
           </Panel>
         )}
 
-        <Panel t={t} title="What it achieves" aside={
+        <Panel t={t} title="What it achieves" aside={config ? null : (
           <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>vs the draft</span>
-        }>
+        )}>
           {OUTCOME_LIST.map((outcome) => (
             <Meter
               key={outcome.key}
@@ -204,7 +228,9 @@ export function BudgetBallot({ t, tool, room }) {
               label={outcome.label}
               value={result.outcomes[outcome.key] / 100}
               color={outcome.color}
-              caption={`${result.outcomes[outcome.key]} · draft ${draft.outcomes[outcome.key]}`}
+              caption={config
+                ? `${result.outcomes[outcome.key]}`
+                : `${result.outcomes[outcome.key]} · draft ${draft.outcomes[outcome.key]}`}
             />
           ))}
         </Panel>
@@ -225,8 +251,12 @@ export function BudgetBallot({ t, tool, room }) {
             );
           })}
           <p style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.6, marginTop: 12 }}>
-            Turning parking into parklets is the sharpest split in the list: measured trade goes up,
-            and the shopkeepers who asked for the parking are still worse off by their own reckoning.
+            {offered.some((item) => item.key === 'parklets') && (
+              <>
+                Turning parking into parklets is the sharpest split in the list: measured trade goes up,
+                and the shopkeepers who asked for the parking are still worse off by their own reckoning.{' '}
+              </>
+            )}
             A scheme that scores well everywhere usually has not chosen anything.
           </p>
         </Panel>
@@ -234,7 +264,9 @@ export function BudgetBallot({ t, tool, room }) {
         <Panel t={t} title="Your ballot">
           {result.items.length === 0 ? (
             <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
-              Nothing chosen yet. Move a slider, or start from the council's draft and argue with it.
+              {config
+                ? 'Nothing chosen yet. Move a slider to start spending.'
+                : "Nothing chosen yet. Move a slider, or start from the council's draft and argue with it."}
             </p>
           ) : (
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>

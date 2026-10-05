@@ -128,6 +128,20 @@ describe('opening a room', () => {
     expect(room.expiresAt).toBe('2026-10-24T12:00:00Z');
   });
 
+  it("sends the tool's setup when there is one, and only then", async () => {
+    rpc.mockReturnValue(result({
+      data: { room_id: 'room-1', pin: '839201', facilitator_token: 'facilitator-1',
+        expires_at: '2026-09-11T12:00:00Z' },
+      error: null,
+    }));
+
+    await rooms.createRoom('budget-ballot', 'proj-1', '2h', { budget: 50000, items: ['benches'] });
+
+    expect(rpc).toHaveBeenCalledWith('toolkit_room_create', {
+      p_tool: 'budget-ballot', p_project_id: 'proj-1', p_config: { budget: 50000, items: ['benches'] },
+    });
+  });
+
   it('surfaces a failure as an error rather than a room that is not there', async () => {
     rpc.mockReturnValue(result({ data: null, error: { message: 'no PIN free' } }));
 
@@ -227,7 +241,18 @@ describe('reading a room', () => {
       tool: 'budget-ballot',
       status: 'expired',
       expiresAt: '2026-09-11T12:00:00Z',
+      config: null,
     });
+  });
+
+  it('passes on how the room was set up', async () => {
+    rpc.mockReturnValue(result({
+      data: { tool: 'budget-ballot', status: 'open', expires_at: '2026-09-11T12:00:00Z',
+        config: { budget: 50000, items: ['benches'] } },
+      error: null,
+    }));
+
+    await expect(rooms.readRoom('room-1')).resolves.toMatchObject({ config: { budget: 50000, items: ['benches'] } });
   });
 
   it('keeps closed and expired apart, because they are told differently', async () => {

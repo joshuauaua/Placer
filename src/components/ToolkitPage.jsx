@@ -12,6 +12,10 @@
  * page owns the room the way it owns the tool — off the URL, in ?room= — and
  * hands it to the tool as a prop.
  *
+ * A tool with a `setup` is set up before its room opens — the budget and the ballot,
+ * say, for the place the room is about. "Start a room" on one of those opens
+ * RoomSetup in place of the tool, and the room opens from there with the setup fixed.
+ *
  * The page owns the /toolkit part of the URL itself rather than taking the selected
  * tool as a prop, so every tool has a link that can be shared.
  */
@@ -23,7 +27,7 @@ import { Icon } from './Icon';
 import { PageHeader } from './PageHeader';
 import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from './GalleryToolbar';
 import { Btn } from './UI';
-import { ToolLayout } from './ToolLayout';
+import { Panel, ToolLayout } from './ToolLayout';
 import { RoomBar } from './toolkit/RoomBar';
 import { ToolCover } from './toolkit/ToolCover';
 import { ContributeToolDialog } from './ContributeToolDialog';
@@ -134,27 +138,38 @@ const NO_FILTERS = { category: null, groupOnly: false };
  * and close it, and the database refuses one that has no project behind it
  * (supabase/rooms-lifetime.sql).
  */
-function StartRoom({ t, tool, onStart, busy, canStayOpen }) {
+function LifetimeSelect({ t, lifetime, onChange, busy }) {
+  return (
+    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13,
+      fontWeight: 500, color: t.inkDim }}>
+      Open for
+      <select
+        value={lifetime}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={busy}
+        style={{ height: 40, padding: '0 12px', borderRadius: 12, border: `1px solid ${t.lineStrong}`,
+          background: t.surface, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 14,
+          fontWeight: 500 }}>
+        {ROOM_LIFETIMES.map((option) => (
+          <option key={option.id} value={option.id}>{option.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+/**
+ * The button that opens a room. For a tool with a `setup`, it opens RoomSetup
+ * instead, and the choice of how long the room stays open moves there with it.
+ */
+function StartRoom({ t, tool, onStart, onSetUp, busy, canStayOpen }) {
   const [lifetime, setLifetime] = useState(DEFAULT_LIFETIME);
+  const setsUp = Boolean(tool.setup);
 
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-      {canStayOpen && (
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13,
-          fontWeight: 500, color: t.inkDim }}>
-          Open for
-          <select
-            value={lifetime}
-            onChange={(event) => setLifetime(event.target.value)}
-            disabled={busy}
-            style={{ height: 40, padding: '0 12px', borderRadius: 12, border: `1px solid ${t.lineStrong}`,
-              background: t.surface, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 14,
-              fontWeight: 500 }}>
-            {ROOM_LIFETIMES.map((option) => (
-              <option key={option.id} value={option.id}>{option.label}</option>
-            ))}
-          </select>
-        </label>
+      {canStayOpen && !setsUp && (
+        <LifetimeSelect t={t} lifetime={lifetime} onChange={setLifetime} busy={busy} />
       )}
       <Btn
         t={t}
@@ -162,11 +177,62 @@ function StartRoom({ t, tool, onStart, busy, canStayOpen }) {
         icon="user"
         variant="character"
         tone={tool}
-        onClick={() => onStart(lifetime)}
+        onClick={() => (setsUp ? onSetUp() : onStart(lifetime))}
         disabled={busy}>
         {busy ? 'Opening…' : 'Start a room'}
       </Btn>
     </div>
+  );
+}
+
+/**
+ * Setting a tool up for the room about to open: the tool's own form, how long the
+ * room stays open when there is a project to keep it open for, and what still has to
+ * be fixed before it can open. Shown in place of the tool, so what the organiser sees
+ * is what they are deciding.
+ *
+ * Problems are only listed once somebody has tried to open the room — a form that
+ * starts out shouting at you has not let you fill it in yet.
+ */
+function RoomSetup({ t, tool, canStayOpen, busy, onCancel, onOpen }) {
+  const [setup, setSetup] = useState(() => tool.setup.defaults());
+  const [lifetime, setLifetime] = useState(DEFAULT_LIFETIME);
+  const [tried, setTried] = useState(false);
+  const problems = tool.setup.problems(setup);
+  const Form = tool.setup.Form;
+
+  const open = () => {
+    setTried(true);
+    if (problems.length === 0) onOpen(lifetime, setup);
+  };
+
+  return (
+    <Panel t={t} title="Set up the room">
+      <p style={{ fontSize: 14.5, color: t.inkDim, lineHeight: 1.6, marginBottom: 20, maxWidth: 640 }}>
+        Everybody who joins sees the tool the way you set it up here, and it stays that way
+        until the room closes — so their answers are all about the same thing.
+      </p>
+
+      <Form t={t} tool={tool} setup={setup} onChange={setSetup} />
+
+      {tried && problems.length > 0 && (
+        <ul role="alert" style={{ listStyle: 'none', marginTop: 20, padding: '12px 16px', borderRadius: 12,
+          background: t.surfaceAlt, border: `1px solid ${t.line}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {problems.map((problem) => (
+            <li key={problem} style={{ fontSize: 14, color: t.ink }}>{problem}</li>
+          ))}
+        </ul>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 24 }}>
+        {canStayOpen && <LifetimeSelect t={t} lifetime={lifetime} onChange={setLifetime} busy={busy} />}
+        <div style={{ flex: 1 }} />
+        <Btn t={t} size="sm" variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Btn>
+        <Btn t={t} size="sm" icon="user" variant="character" tone={tool} onClick={open} disabled={busy}>
+          {busy ? 'Opening…' : 'Open the room'}
+        </Btn>
+      </div>
+    </Panel>
   );
 }
 
@@ -225,6 +291,10 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
   // and opening a room (which only changes the query string) does not bring it back.
   const [startedId, setStartedId] = useState(null);
 
+  // Which tool is being set up for a room, the same way as startedId: an id, so
+  // moving to another tool does not carry a half-finished setup with it.
+  const [settingUpId, setSettingUpId] = useState(null);
+
   // The Contribute button's pop-up form, for offering a tool to the PLACER Toolkit.
   const [contributing, setContributing] = useState(false);
 
@@ -247,6 +317,7 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
   // Opening one also takes an account. Joining one does not — nothing on this page is
   // gated for a participant who arrived with a PIN or a QR code.
   const canStartRoom = roomIsPossible && !needsAccount;
+  const settingUp = Boolean(tool?.setup) && settingUpId === tool.id && canStartRoom;
 
   // Every tool opens on its cover, full-bleed rather than inside the padded
   // column the tool itself sits in.
@@ -301,14 +372,26 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
             t={t}
             tool={tool}
             onBack={() => navigate('/toolkit')}
-            actions={canStartRoom ? (
-              <StartRoom t={t} tool={tool} onStart={room.start} busy={room.status === 'opening'}
-                canStayOpen={Boolean(projectId)} />
+            actions={settingUp ? null : canStartRoom ? (
+              <StartRoom t={t} tool={tool} onStart={room.start} onSetUp={() => setSettingUpId(tool.id)}
+                busy={room.status === 'opening'} canStayOpen={Boolean(projectId)} />
             ) : roomIsPossible ? (
               <StartRoomSignedOut t={t} onSignIn={onSignIn} />
             ) : null}>
-            <RoomBar t={t} tool={tool} room={room} />
-            <Tool t={t} tool={tool} room={room} />
+            {settingUp ? (
+              <RoomSetup t={t} tool={tool} canStayOpen={Boolean(projectId)}
+                busy={room.status === 'opening'}
+                onCancel={() => setSettingUpId(null)}
+                onOpen={async (lifetime, setup) => {
+                  await room.start(lifetime, setup);
+                  setSettingUpId(null);
+                }} />
+            ) : (
+              <>
+                <RoomBar t={t} tool={tool} room={room} />
+                <Tool t={t} tool={tool} room={room} />
+              </>
+            )}
           </ToolLayout>
         ) : (
           <>

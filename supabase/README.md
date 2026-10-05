@@ -462,6 +462,24 @@ of the project it belongs to, can delete it.
 select proname from pg_proc where proname = 'toolkit_room_delete';
 ```
 
+### Setting a tool up before its room opens
+
+Requires the section above. Run `rooms-config.sql` in the SQL editor after
+`rooms-lifetime.sql` (or `supabase db push`). It is re-runnable.
+
+A tool with a `setup` in `src/toolkit/tools.js` — the Budget Ballot so far — is set up
+before its room opens: for the Budget Ballot, the budget and which things are on the
+ballot. The room keeps it in `toolkit_rooms.config`, fixed for the room's whole life,
+and `toolkit_room_state` hands it to everybody who joins. The database checks only that
+it is a JSON object under 16 KB; what it means is checked by the tool in the browser.
+Until this file has run, the app still opens rooms on tools without a setup, but opening
+one on the Budget Ballot fails, because it sends a setup the older function does not take.
+
+```sql
+select pg_get_function_identity_arguments('public.toolkit_room_create'::regproc);
+-- p_tool text, p_project_id uuid, p_lifetime text, p_config jsonb
+```
+
 ## 13. Notifications
 
 Requires steps 9, 10, 11 and 12 (in that order — it references profiles, imaginations,

@@ -37,6 +37,23 @@ describe('the register', () => {
       expect(typeof tool.room.combine).toBe('function');
     }
   });
+
+  it('gives every tool with a setup a room to use it in, and all three parts', () => {
+    // A setup is fixed when a room opens, so on a tool with no room it would never
+    // be asked for.
+    for (const tool of TOOLS.filter((entry) => entry.setup)) {
+      expect(tool.room, tool.id).toBeTruthy();
+      expect(typeof tool.setup.defaults, tool.id).toBe('function');
+      expect(typeof tool.setup.problems, tool.id).toBe('function');
+      expect(typeof tool.setup.Form, tool.id).toBe('function');
+    }
+  });
+
+  it('starts every setup from one the tool accepts', () => {
+    for (const tool of TOOLS.filter((entry) => entry.setup)) {
+      expect(tool.setup.problems(tool.setup.defaults()), tool.id).toEqual([]);
+    }
+  });
 });
 
 describe('filterTools', () => {

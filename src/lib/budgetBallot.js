@@ -146,7 +146,7 @@ export function costOf(key, quantity) {
  * refuse the change or show the number in red, and silently trimming somebody's
  * choice is the one thing a participatory tool must not do.
  */
-export function tally(quantities) {
+export function tally(quantities, budget = BUDGET) {
   const chosen = normalise(quantities);
   const rawOutcomes = Object.fromEntries(Object.keys(OUTCOMES).map((key) => [key, 0]));
   const rawGroups = Object.fromEntries(Object.keys(GROUPS).map((key) => [key, 0]));
@@ -172,9 +172,10 @@ export function tally(quantities) {
     quantities: chosen,
     items,
     spent,
-    remaining: BUDGET - spent,
-    over: spent > BUDGET,
-    overBy: Math.max(0, spent - BUDGET),
+    budget,
+    remaining: budget - spent,
+    over: spent > budget,
+    overBy: Math.max(0, spent - budget),
     outcomes: Object.fromEntries(
       Object.keys(rawOutcomes).map((key) => [key, clamp(Math.round((rawOutcomes[key] / OUTCOME_SCALE[key]) * 100), 0, 100)])
     ),
@@ -187,18 +188,18 @@ export function tally(quantities) {
 }
 
 /** Whether a change fits the budget, for disabling a control before it misleads. */
-export function canAfford(quantities, key, quantity) {
+export function canAfford(quantities, key, quantity, budget = BUDGET) {
   const next = { ...normalise(quantities), [key]: quantity };
-  return tally(next).spent <= BUDGET;
+  return tally(next).spent <= budget;
 }
 
 /** The largest quantity of one thing the remaining money will buy. */
-export function affordableQuantity(quantities, key) {
+export function affordableQuantity(quantities, key, budget = BUDGET) {
   const intervention = INTERVENTIONS[key];
   if (!intervention) return 0;
   const current = normalise(quantities);
   const others = tally({ ...current, [key]: 0 }).spent;
-  return clamp(Math.floor((BUDGET - others) / intervention.unitCost), 0, intervention.max);
+  return clamp(Math.floor((budget - others) / intervention.unitCost), 0, intervention.max);
 }
 
 /**
@@ -218,7 +219,7 @@ export function formatEuros(amount) {
 export function summaryText(result) {
   const lines = [
     'My street budget — PLACER Toolkit',
-    `Spent ${formatEuros(result.spent)} of ${formatEuros(BUDGET)}`,
+    `Spent ${formatEuros(result.spent)} of ${formatEuros(result.budget)}`,
     '',
   ];
 
@@ -242,4 +243,50 @@ export function summaryText(result) {
   }
 
   return lines.join('\n');
+}
+
+/*
+ * Setting a ballot up for a room.
+ *
+ * An organiser opening a room on a project chooses how much money there is and which
+ * of the catalogue is on the ballot — their street, not the Toolkit's imaginary one.
+ * The setup is fixed when the room opens (supabase/rooms-config.sql), so everybody in
+ * the room argues over the same money.
+ */
+
+/** The largest budget a room can be set up with. Past this it is not a street. */
+export const MAX_BUDGET = 100_000_000;
+
+/** What a new room starts from: the Toolkit's own €250,000, with everything on offer. */
+export function defaultBallotSetup() {
+  return { budget: BUDGET, items: Object.keys(INTERVENTIONS) };
+}
+
+/** What is wrong with a setup, as sentences for the organiser. Empty when it is ready. */
+export function ballotSetupProblems(setup) {
+  const problems = [];
+  const budget = setup?.budget;
+  if (!Number.isInteger(budget) || budget <= 0 || budget > MAX_BUDGET) {
+    problems.push(`Set a budget in whole euros, up to ${formatEuros(MAX_BUDGET)}.`);
+  }
+
+  const items = setup?.items;
+  if (!Array.isArray(items) || items.length === 0) {
+    problems.push('Put at least one thing on the ballot.');
+  } else if (items.some((key) => !INTERVENTIONS[key]) || new Set(items).size !== items.length) {
+    problems.push('The ballot lists something that is not in the catalogue, or lists it twice.');
+  } else if (Number.isInteger(budget) && budget > 0
+    && items.every((key) => INTERVENTIONS[key].unitCost > budget)) {
+    problems.push('The budget does not buy one of anything on the ballot.');
+  }
+  return problems;
+}
+
+/** A ballot with everything not on this setup's list taken off it. */
+export function restrictBallot(quantities, items) {
+  const chosen = normalise(quantities);
+  for (const key of Object.keys(chosen)) {
+    if (!items.includes(key)) chosen[key] = 0;
+  }
+  return chosen;
 }

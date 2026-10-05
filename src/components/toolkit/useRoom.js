@@ -16,6 +16,11 @@
  *               longer when a project opens it for weeks (supabase/rooms-lifetime.sql)
  *   'error'   — `error` says what went wrong, in a sentence fit to show somebody
  *
+ * `config` is how the organiser set the tool up for this room (`setup` in
+ * toolkit/tools.js, supabase/rooms-config.sql), or null for a room opened without
+ * one. A setup the tool does not accept is an error rather than something to guess
+ * around: showing a ballot with the wrong budget would be worse than showing none.
+ *
  * The deadline always comes from the database. The browser's clock is used only to
  * decide when to stop believing it, so a page left open past the deadline says the
  * room is over rather than sitting there looking live.
@@ -41,6 +46,16 @@ const PUBLISH_DELAY = 500;
  */
 const MAX_TIMER_DELAY = 2 ** 31 - 1;
 
+/**
+ * The setup a room's tool should use: null when the tool takes none or the room was
+ * opened without one (an empty object), and undefined when it is there but the tool
+ * does not accept it.
+ */
+export function roomSetup(tool, raw) {
+  if (!tool?.setup || raw == null || typeof raw !== 'object' || Object.keys(raw).length === 0) return null;
+  return tool.setup.problems(raw).length === 0 ? raw : undefined;
+}
+
 export function useRoom({ tool, roomId, displayName, onOpened, projectId = null, service = roomService }) {
   const capable = Boolean(tool?.room) && service.isSupabaseConfigured();
 
@@ -51,6 +66,7 @@ export function useRoom({ tool, roomId, displayName, onOpened, projectId = null,
   const [isHost, setIsHost] = useState(false);
   const [contributions, setContributions] = useState([]);
   const [expiresAt, setExpiresAt] = useState(null);
+  const [config, setConfig] = useState(null);
 
   // Kept in refs so the debounced publish and the unmount cleanup can see the
   // current values without re-arming their effects on every keystroke.
@@ -80,6 +96,7 @@ export function useRoom({ tool, roomId, displayName, onOpened, projectId = null,
       setPin(null);
       setJoinCode(null);
       setExpiresAt(null);
+      setConfig(null);
       return undefined;
     }
 
@@ -104,6 +121,14 @@ export function useRoom({ tool, roomId, displayName, onOpened, projectId = null,
           setStatus('error');
           return;
         }
+
+        const setup = roomSetup(tool, room.config);
+        if (setup === undefined) {
+          setError('This room was set up in a way this version of the tool cannot show.');
+          setStatus('error');
+          return;
+        }
+        setConfig(setup);
 
         const hosted = hostedRoom(roomId);
         setIsHost(Boolean(hosted));
@@ -134,7 +159,9 @@ export function useRoom({ tool, roomId, displayName, onOpened, projectId = null,
       live = false;
       if (unsubscribe) unsubscribe();
     };
-  }, [roomId, capable, tool?.id, refresh, service]);
+    // `tool` rather than `tool?.id`: roomSetup reads its setup. A registry entry is a
+    // module-level object, so this changes only when the tool does.
+  }, [roomId, capable, tool, refresh, service]);
 
   // Nothing half-published should outlive the component.
   useEffect(
@@ -166,18 +193,22 @@ export function useRoom({ tool, roomId, displayName, onOpened, projectId = null,
   /**
    * Open a room on this tool and hand its id back to the caller to navigate to.
    * `lifetime` is one of ROOM_LIFETIMES; anything past two hours needs `projectId`,
-   * which the database enforces.
+   * which the database enforces. `setup` is the tool's setup, for a tool that has
+   * one, already checked by the caller.
    */
-  const start = useCallback(async (lifetime) => {
+  const start = useCallback(async (lifetime, setup = null) => {
     setStatus('opening');
     setError(null);
     try {
-      const room = await service.createRoom(tool.id, projectId, lifetime ?? DEFAULT_LIFETIME);
+      const args = [tool.id, projectId, lifetime ?? DEFAULT_LIFETIME];
+      if (setup) args.push(setup);
+      const room = await service.createRoom(...args);
       rememberHostedRoom(room.id, { pin: room.pin, token: room.facilitatorToken, code: room.joinCode ?? null });
       setPin(room.pin);
       setJoinCode(room.joinCode ?? null);
       setIsHost(true);
       setExpiresAt(room.expiresAt ?? null);
+      setConfig(setup);
       if (onOpened) onOpened(room.id);
       return room;
     } catch (cause) {
@@ -273,6 +304,7 @@ export function useRoom({ tool, roomId, displayName, onOpened, projectId = null,
     pin,
     joinCode,
     expiresAt,
+    config,
     isHost,
     contributions,
     participantCount: contributions.length,
