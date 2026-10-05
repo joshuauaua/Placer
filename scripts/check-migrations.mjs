@@ -100,6 +100,7 @@ const HAND_WRITTEN = [
   '20260928100001_profiles_cover_path_r2_folder.sql',
   '20261002090001_toolkit_rename.sql',
   '20261005090001_survey_responses_authenticated.sql',
+  '20261005140001_survey_responses_newsletter_signup.sql',
 ]
 
 export function render({ src, slice, note }, read = (f) => readFileSync(`${DIR}/${f}`, 'utf8')) {
