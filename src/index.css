@@ -522,19 +522,39 @@ a {
   }
 }
 
-/* LoadingMark (UI.jsx): the bench mark turning while a page or the session loads.
+/* LoadingMark (UI.jsx): the PLACER letters turning one by one while a page or the session loads.
  * With reduced motion it breathes instead of spinning. */
 .placer-loading-mark {
   display: flex;
 }
 
-.placer-loading-mark img {
+.placer-loading-mark svg {
   display: block;
-  animation: placer-spin 1.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  overflow: visible;
+}
+
+/* Each letter turns about its own centre rather than the drawing's. The delays
+ * that set them going one after the next are inline (see LoadingMark); every
+ * letter's cycle is the same length, so they stay in step, and the turn takes
+ * the first half of it, leaving the rest as the pause. */
+.placer-loading-mark path {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: placer-letter-spin 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes placer-letter-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  50%,
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .placer-loading-mark img {
+  .placer-loading-mark path {
     animation: placer-breathe 1.6s ease-in-out infinite alternate;
   }
 }
@@ -1032,6 +1052,9 @@ a {
 
 .placer-glass-nav-logo {
   all: unset;
+  /* Holds the logo SVG, centred in the bar rather than sat on a text baseline. */
+  display: flex;
+  align-items: center;
   cursor: pointer;
   color: var(--placer-ink);
   border-radius: var(--placer-radius-sm);

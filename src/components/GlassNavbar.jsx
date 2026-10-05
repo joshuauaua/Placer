@@ -13,7 +13,7 @@
  * rather than flashing the logged-out buttons at someone who is signed in.
  */
 
-import { Btn } from './UI';
+import { BrandLogo, Btn } from './UI';
 import { UserMenu } from './UserMenu';
 import { NavSearch } from './NavSearch';
 import { isSupabaseConfigured } from '../services/search';
@@ -25,9 +25,9 @@ export function GlassNavbar({ t, profile, loading, onNavigate, onSignIn, onCreat
       <button
         onClick={() => onNavigate('welcome')}
         aria-label="PLACER home"
-        className="placer-glass-nav-logo placer-wordmark"
+        className="placer-glass-nav-logo"
       >
-        PLACER
+        <BrandLogo height={18} />
       </button>
 
       <div className="placer-glass-nav-end">
