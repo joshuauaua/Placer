@@ -8,6 +8,7 @@
  */
 
 import { HamburgerMenu } from './HamburgerMenu';
+import { BrandLogo } from './UI';
 
 export function GlassNavbar({ t, view, onNavigate }) {
   return (
@@ -15,9 +16,9 @@ export function GlassNavbar({ t, view, onNavigate }) {
       <button
         onClick={() => onNavigate('welcome')}
         aria-label="PLACER home"
-        className="placer-glass-nav-logo placer-wordmark"
+        className="placer-glass-nav-logo"
       >
-        PLACER
+        <BrandLogo height={18} />
       </button>
 
       <div className="placer-glass-nav-end">
