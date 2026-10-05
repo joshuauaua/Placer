@@ -47,7 +47,16 @@ create policy "anon can submit a survey response"
   to anon
   with check (true);
 
--- No select, update or delete policy for anon, on purpose. Responses cannot be
+-- And the same for somebody signed in, whose browser talks to PostgREST as
+-- `authenticated` rather than `anon` (20261005090001).
+drop policy if exists "signed-in people can submit a survey response" on public.survey_responses;
+create policy "signed-in people can submit a survey response"
+  on public.survey_responses
+  for insert
+  to authenticated
+  with check (true);
+
+-- No select, update or delete policy for either role, on purpose. Responses cannot be
 -- read back, edited or removed with the key in the browser. Read them from the
 -- SQL editor or with a service_role key, which must never reach the client.
 
@@ -78,6 +87,8 @@ alter table public.survey_responses add constraint survey_responses_email_shape
 -- forged submitted_at would quietly corrupt any analysis of the results.
 revoke insert on public.survey_responses from anon;
 grant insert (source, email, answers, other_text) on public.survey_responses to anon;
+revoke insert on public.survey_responses from authenticated;
+grant insert (source, email, answers, other_text) on public.survey_responses to authenticated;
 
 comment on table public.survey_responses is
   'One row per completed PLACER survey. Append-only from the browser.';

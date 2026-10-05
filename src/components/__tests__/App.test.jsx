@@ -38,7 +38,31 @@ describe('App', () => {
 
   it('renders MainApp welcome view at root path', () => {
     renderAt('/');
-    expect(screen.getByText('a toolkit for participatory placemaking')).toBeInTheDocument();
+    expect(screen.getByText(/Placer is the open toolkit for co-designing shared spaces/)).toBeInTheDocument();
+  });
+
+  it('sets the landing copy on a card over the city drawing, as decoration', () => {
+    const { container } = renderAt('/');
+
+    // The drawings are a CSS background, so they never reach assistive tech:
+    // a landscape one, and a portrait one that index.css swaps in on a phone.
+    const page = container.querySelector('.placer-landing');
+    expect(page.style.getPropertyValue('--placer-landing-city')).toMatch(/landing-city\.svg/);
+    expect(page.style.getPropertyValue('--placer-landing-city-mobile')).toMatch(/landing-city-mobile\.svg/);
+    expect(page.querySelector('.placer-landing-column')).toHaveTextContent(
+      /Placer is the open toolkit for co-designing shared spaces/i
+    );
+    expect(screen.getByText(/funded by the Swedish Institute/i)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Funded by Swedish Institute' })).toBeInTheDocument();
+  });
+
+  it('offers the waitlist and User Labs from the landing page', async () => {
+    renderAt('/');
+
+    expect(screen.getByRole('button', { name: 'Join the Waitlist' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Apply to User Labs' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'User Labs' })).toBeInTheDocument();
   });
 
   it('renders SurveyPage at /survey', async () => {

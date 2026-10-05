@@ -26,6 +26,7 @@ const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const MapContainer = lazy(() => import('./components/MapContainer'));
 const ExplorePage = lazy(() => import('./components/ExplorePage'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
+const UserLabsPage = lazy(() => import('./components/UserLabsPage'));
 const ResourcesPage = lazy(() => import('./components/ResourcesPage'));
 const ResourceArticlePage = lazy(() => import('./components/ResourceArticlePage'));
 const GuidesPage = lazy(() => import('./components/GuidesPage'));
@@ -90,8 +91,8 @@ const ACCOUNT_VIEWS = {
   '/signup': 'signup',
 };
 
-// Explore, About, Contact, Resources, Guides, the FAQ and Terms and Privacy each get a
-// bookmarkable link of their own, read off the location the same way the account
+// Explore, About, Contact, Resources, Guides, the FAQ, Terms and Privacy and User
+// Labs each get a bookmarkable link of their own, read off the location the same way the account
 // views and the Toolkit are. Explore is still 'map' inside the app, which is what
 // the side nav, the footer and the dashboard all ask for.
 const STATIC_PATHS = {
@@ -104,6 +105,8 @@ const STATIC_PATHS = {
   quickstart: '/quickstart',
   projectExamples: '/project-examples',
   terms: '/terms-and-privacy',
+  // Linked from the landing page's Apply to User Labs card.
+  userLabs: '/user-labs',
 };
 const STATIC_VIEWS = Object.fromEntries(
   Object.entries(STATIC_PATHS).map(([view, path]) => [path, view]),
@@ -556,6 +559,12 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'about' && (
               <Suspense fallback={<LoadingFallback />}>
                 <AboutPage t={t} />
+              </Suspense>
+            )}
+
+            {view === 'userLabs' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <UserLabsPage t={t} />
               </Suspense>
             )}
 

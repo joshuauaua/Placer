@@ -120,7 +120,7 @@ describe('an imagination parked while signing in', () => {
 
     renderApp();
 
-    expect(await screen.findByText('a toolkit for participatory placemaking')).toBeInTheDocument();
+    expect(await screen.findByText(/Placer is the open toolkit for co-designing shared spaces/)).toBeInTheDocument();
     // Still theirs to come back to, rather than thrown away on the way past.
     expect(localStorage.getItem(PENDING_KEY)).not.toBeNull();
   });
@@ -172,7 +172,7 @@ describe('where somebody signed in starts', () => {
     const location = renderRecording('/');
 
     expect(await screen.findByRole('heading', { level: 1, name: /^Welcome back/ })).toBeInTheDocument();
-    expect(screen.queryByText('a toolkit for participatory placemaking')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Placer is the open toolkit for co-designing shared spaces/)).not.toBeInTheDocument();
     expect(location.history.at(-1)).toBe('/dashboard');
   });
 
@@ -180,7 +180,7 @@ describe('where somebody signed in starts', () => {
     identity({ profile: null, status: 'signedOut', accountId: null, email: null });
     const location = renderRecording('/');
 
-    expect(await screen.findByText('a toolkit for participatory placemaking')).toBeInTheDocument();
+    expect(await screen.findByText(/Placer is the open toolkit for co-designing shared spaces/)).toBeInTheDocument();
     expect(location.history.at(-1)).toBe('/');
   });
 });
