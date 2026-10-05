@@ -445,8 +445,7 @@ export function ExplorePage({ apiKey = '', homeCenter = null, accountId = null, 
 
   return (
     <div className="placer-explore" style={{ background: t.page }}>
-      {/* Not stuck to the top like other pages' headers: it would ride down over the map. */}
-      <PageHeader t={t} title="Explore" inset={32} maxWidth="none" style={{ marginBottom: 24, position: 'static' }} />
+      <PageHeader t={t} title="Explore" inset={32} maxWidth="none" style={{ marginBottom: 24 }} />
       <div className="placer-explore-frame" style={{ borderColor: t.line }}>
         {/* The frame's own header, with the search at its left end. */}
         <div className="placer-explore-bar" style={{ borderColor: t.line, background: t.surface }}>

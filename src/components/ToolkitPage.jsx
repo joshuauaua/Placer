@@ -260,9 +260,9 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
 
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
-      padding: tool && Tool ? '48px 40px 80px' : '0 40px 80px' }}>
+      padding: tool && Tool ? '48px 40px 80px' : '0 32px 80px' }}>
       {!(tool && Tool) && (
-        <PageHeader t={t} title="Toolkit"
+        <PageHeader t={t} title="Toolkit" inset={32} maxWidth="none"
           actions={(
             <Btn t={t} variant="outline" icon="arrowRight" onClick={() => setContributing(true)}>
               Contribute
@@ -293,7 +293,9 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
               }} />
           )} />
       )}
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+      {/* An open tool keeps to a centred column; the gallery runs the page's width, under
+          a header that does too. */}
+      <div style={tool && Tool ? { maxWidth: 1200, margin: '0 auto' } : undefined}>
         {tool && Tool ? (
           <ToolLayout
             t={t}
