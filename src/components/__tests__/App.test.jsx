@@ -61,6 +61,8 @@ describe('App', () => {
 
     expect(screen.getByRole('button', { name: 'Join the Waitlist' })).toBeInTheDocument();
 
+    // User Labs is the carousel's second card, so bring it round first.
+    fireEvent.click(screen.getByRole('button', { name: 'Show card 2: Help shape what we build' }));
     fireEvent.click(screen.getByRole('link', { name: 'Apply to User Labs' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'User Labs' })).toBeInTheDocument();
   });
