@@ -38,6 +38,22 @@ function writeCollapsed(collapsed) {
   }
 }
 
+/**
+ * A label in the side nav, and the shorter one the phone's tab bar shows when the
+ * full one would not fit in a tab (index.css swaps them below 1024px). The button's
+ * aria-label carries the full name either way, so neither span is what a screen
+ * reader announces.
+ */
+function NavLabel({ label, short }) {
+  if (!short) return <span className="placer-side-nav-label">{label}</span>;
+  return (
+    <span className="placer-side-nav-label">
+      <span className="placer-side-nav-label-long">{label}</span>
+      <span className="placer-side-nav-label-short">{short}</span>
+    </span>
+  );
+}
+
 export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganisations = false }) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
 
@@ -50,12 +66,12 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganis
 
   const items = [
     // First, straight under New project: the dashboard is home for a signed-in account.
-    { key: 'dashboard', label: 'Dashboard', icon: 'home', onSelect: () => onNavigate('dashboard'), active: ['dashboard', 'activity'] },
+    { key: 'dashboard', label: 'Dashboard', short: 'Home', icon: 'home', onSelect: () => onNavigate('dashboard'), active: ['dashboard', 'activity'] },
     { key: 'map', label: 'Explore', icon: 'pin', onSelect: onExplore, active: ['map'] },
     { key: 'projects', label: 'Projects', icon: 'grid', onSelect: () => onNavigate('projects'), active: ['projects', 'projectDashboard'] },
     // Only for an account that runs at least one organisation — until then there is
     // nothing to go back to, and creating one starts from Settings.
-    ...(showOrganisations ? [{ key: 'organisations', label: 'Organisations', icon: 'building',
+    ...(showOrganisations ? [{ key: 'organisations', label: 'Organisations', short: 'Orgs', icon: 'building',
       onSelect: () => onNavigate('organisations'), active: ['organisations', 'organisationNew', 'organisationDashboard'] }] : []),
     { key: 'toolkit', label: 'Toolkit', icon: 'flask', onSelect: () => onNavigate('toolkit'), active: ['toolkit'] },
     { key: 'settings', label: 'Settings', icon: 'gear', onSelect: () => onNavigate('settings'), active: ['settings'], bottom: true },
@@ -82,7 +98,7 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganis
         className="placer-side-nav-link placer-side-nav-primary"
       >
         <Icon name="plus" size={20} stroke={2.2} />
-        <span className="placer-side-nav-label">New project</span>
+        <NavLabel label="New project" short="New" />
       </button>
 
       {items.map((item) => {
@@ -97,7 +113,7 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganis
             className={`placer-side-nav-link${item.bottom ? ' placer-side-nav-bottom' : ''}`}
           >
             <Icon name={item.icon} size={20} stroke={2} />
-            <span className="placer-side-nav-label">{item.label}</span>
+            <NavLabel label={item.label} short={item.short} />
           </button>
         );
       })}

@@ -1075,7 +1075,12 @@ a {
 /* The search box beside the account menu (NavSearch.jsx). It gives way first when
  * the bar is narrow; its suggestions stay readable either way. */
 .placer-nav-search-field {
+  display: flex;
   width: 280px;
+}
+
+.placer-search-panel-field {
+  display: flex;
 }
 
 .placer-nav-search-list {
@@ -1234,6 +1239,11 @@ a {
   transition: background 0.15s ease;
 }
 
+/* The phone's tab bar shows the short form of a long label (SideNav's NavLabel). */
+.placer-side-nav-label-short {
+  display: none;
+}
+
 .placer-side-nav-link:hover {
   background: rgba(255, 255, 255, 0.6);
 }
@@ -1336,11 +1346,12 @@ a {
     margin: 0;
     width: auto;
     height: calc(64px + env(safe-area-inset-bottom));
-    padding: 0 8px env(safe-area-inset-bottom);
+    padding: 0 4px env(safe-area-inset-bottom);
     flex-direction: row;
     align-items: center;
     justify-content: space-around;
-    gap: 8px;
+    /* Seven tabs on a 360px phone leave each about 50px, so no gap between them. */
+    gap: 0;
     border-radius: 0;
     border-width: 1px 0 0;
     overflow: visible;
@@ -1360,9 +1371,25 @@ a {
     letter-spacing: 0.01em;
   }
 
+  /* Each label stays inside its tab: the short form where there is one, and an
+   * ellipsis rather than spilling into the next tab if even that will not fit. */
   .placer-side-nav .placer-side-nav-label,
   .placer-side-nav.is-collapsed .placer-side-nav-label {
     display: block;
+    max-width: 100%;
+    padding: 0 2px;
+    box-sizing: border-box;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .placer-side-nav-label-long {
+    display: none;
+  }
+
+  .placer-side-nav-label-short {
+    display: inline;
   }
 
   .placer-side-nav-toggle {
