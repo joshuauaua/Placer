@@ -640,9 +640,9 @@ a {
  *
  * A wide rectangle centred in the space under the nav bar: the wordmark and
  * pitch on the left, and on the right a carousel of three smaller cards, each
- * mostly photo with its title and button underneath, one showing at a time
- * with a row of dots below. The credit and funder lockup run the full width
- * along the bottom, under a rule.
+ * in one character's colour with a square photo at the top, its title and a
+ * text link underneath, one showing at a time with a row of dots below. The
+ * credit and funder lockup run the full width along the bottom, under a rule.
  *
  * Below 1024px the pitch and the carousel stack full width, and the credit row
  * goes.
@@ -675,15 +675,42 @@ a {
   line-height: var(--placer-body-lg-lh);
 }
 
+/* Understand, Imagine, Plan: an icon for each, the line beside it. */
+.placer-landing-features {
+  list-style: none;
+  margin: 28px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: var(--placer-body-lg);
+  line-height: var(--placer-body-lg-lh);
+}
+
+.placer-landing-feature {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.placer-landing-feature strong {
+  font-weight: 700;
+}
+
+.placer-landing-feature-icon {
+  flex: 0 0 auto;
+}
+
 .placer-landing-actions {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-/* All three cards share one grid cell, so the stack is as tall as the tallest
- * and the cards cross-fade in place. Only opacity changes: a transform would
- * trap the waitlist dialog, which is position:fixed inside its card. */
+/* All three slides share one grid cell, so the stack is as tall as the tallest
+ * and the slides, colour and all, cross-fade in place. Only opacity changes: a
+ * transform would trap the waitlist dialog, which is position:fixed inside its
+ * slide. */
 .placer-landing-slides {
   display: grid;
 }
@@ -691,11 +718,12 @@ a {
 .placer-landing-option {
   grid-area: 1 / 1;
   background: var(--placer-landing-option-bg);
-  border: 1px solid var(--placer-landing-option-line);
   border-radius: 16px;
-  overflow: hidden;
+  padding: 32px;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.6s ease, visibility 0s linear 0.6s;
@@ -707,11 +735,65 @@ a {
   transition: opacity 0.6s ease, visibility 0s;
 }
 
+/* Out to the card's top and sides, about the top two thirds of it, cropped to
+ * fit. Its corners follow the card's own: the card cannot clip them, as
+ * overflow or containment on it would trap the waitlist dialog inside. The
+ * height keeps to what a centred square of 72% of the card's width (to 320px)
+ * plus the padding above it would take. */
 .placer-landing-option-photo {
   display: block;
-  width: 100%;
-  aspect-ratio: 16 / 10;
+  width: calc(100% + 64px);
+  margin: -32px -32px 0;
+  aspect-ratio: 1.45;
+  max-height: 352px;
   object-fit: cover;
+  border-radius: 16px 16px 0 0;
+}
+
+.placer-landing-option-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.placer-landing-option-title {
+  font-size: var(--placer-h3);
+  line-height: var(--placer-h3-lh);
+  font-weight: 700;
+  color: #111111;
+}
+
+/* The call to action as underlined text in the panel's deepest shade, a link
+ * or (for the waitlist, which opens a dialog) a button dressed as one. */
+.placer-landing-option-link {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--placer-font);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 24px;
+  text-align: left;
+  color: var(--placer-landing-option-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+}
+
+.placer-landing-option-link::after {
+  content: " →";
+}
+
+.placer-landing-option-link:hover {
+  text-decoration-thickness: 2.5px;
+}
+
+.placer-landing-option-link:focus-visible {
+  outline: 2px solid var(--placer-landing-option-ink);
+  outline-offset: 4px;
+  border-radius: 2px;
 }
 
 .placer-landing-dots {
@@ -738,7 +820,7 @@ a {
 }
 
 .placer-landing-dot:focus-visible {
-  outline: 2px solid var(--placer-blue-700);
+  outline: 2px solid #111111;
   outline-offset: -2px;
 }
 
@@ -760,28 +842,6 @@ a {
   gap: 32px;
 }
 
-.placer-landing-option-body {
-  flex: 1;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.placer-landing-option-title {
-  font-size: var(--placer-h3);
-  line-height: var(--placer-h3-lh);
-  font-weight: 700;
-}
-
-/* The buttons fill their card rather than keeping their own width. */
-.placer-landing-option .placer-feedback-trigger,
-.placer-landing-option .placer-labs-trigger {
-  width: 100%;
-  padding: 0 12px;
-}
-
 @media (max-width: 1023px) {
   .placer-landing-city {
     background-image: var(--placer-landing-city-mobile);
@@ -798,19 +858,25 @@ a {
     border-radius: 16px;
   }
 
-  .placer-landing-footer {
-    display: none;
+  .placer-landing-option {
+    padding: 24px;
   }
 
-  .placer-landing-option-body {
-    padding: 16px;
+  .placer-landing-option-photo {
+    width: calc(100% + 48px);
+    margin: -24px -24px 0;
+    max-height: 344px;
+  }
+
+  .placer-landing-footer {
+    display: none;
   }
 }
 
 /* PLACER — the landing page's feedback, User Labs and survey triggers.
  *
- * Each sits at the foot of its own smaller card on the landing card, filling
- * its width (see .placer-landing-option).
+ * The landing card shows its calls to action as text links now (see
+ * .placer-landing-option-link); these are the character-button look.
  *
  * The geometry lives here rather than inline because an inline style cannot be
  * overridden by a media query. Only the colours are set in the component.
