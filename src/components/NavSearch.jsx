@@ -163,9 +163,12 @@ export function NavSearch({ t, onSelect }) {
   // The field, once in the bar and once in the panel. Only one of the two is ever
   // showing — index.css hides the bar's below 640px, and the panel only opens there —
   // so they can share the one listbox id.
+  //
+  // Its display is left to index.css rather than set here: an inline display would
+  // beat the rule that hides the bar's field on a phone, and show both.
   const field = ({ className, inputRef, size = 40 }) => (
     <label className={className}
-      style={{ display: 'flex', alignItems: 'center', gap: 8, height: size, padding: '0 12px',
+      style={{ alignItems: 'center', gap: 8, height: size, padding: '0 12px',
         borderRadius: 12, border: `1px solid ${t.lineStrong}`, background: t.surface, color: t.ink }}>
       <Icon name="search" size={18} stroke={2} style={{ color: t.inkDim, flex: '0 0 auto' }} />
       <input
