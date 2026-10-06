@@ -33,7 +33,7 @@ const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
 // state (see MainApp). The Placemaking Trends survey is the longer, five-module
 // municipal-practitioner survey, ported from Development — see
 // PlacemakingTrendsSurveyPage's own header — and is linked from the footer's
-// Resources. User Labs is linked from the footer too.
+// Project News, as User Labs is.
 const VIEW_PATHS = {
   placemakingTrendsSurvey: '/placemaking-trends-survey',
   userLabs: '/user-labs',

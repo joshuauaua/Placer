@@ -20,11 +20,6 @@ export const FOOTER_COLUMNS = [
         href: 'https://si.se/en/projects-granted-funding/designing-participatory-spaces-innovation-in-placemaking-and-capacity-building/',
       },
       { label: 'User Labs', view: 'userLabs' },
-    ],
-  },
-  {
-    heading: 'Resources',
-    links: [
       { label: 'Placemaking Trends Survey 2026/2027', view: 'placemakingTrendsSurvey' },
     ],
   },
@@ -42,7 +37,7 @@ export const FOOTER_COLUMNS = [
 // newsletter column on the right: one inner array per column, its sections stacked
 // top to bottom. A section left out here is not shown, so a new one has to be placed.
 const FOOTER_LAYOUT = [
-  ['Project News', 'Resources'],
+  ['Project News'],
   ['About Us'],
 ];
 
