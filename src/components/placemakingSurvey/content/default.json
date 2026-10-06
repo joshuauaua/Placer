@@ -3,8 +3,7 @@
     "title": "Participatory Urban Design/Placemaking Survey",
     "body": [
       "We are inviting city officials and municipal planning professionals worldwide to share their experience with citizen engagement in public space development. Your answers will help to shape our upcoming Placemaking Trends 2026–2027 Report.",
-      "It takes about 5 minutes. All responses are confidential and reported only in aggregate. At the end you can opt in to receive the report, or to test an early version of our digital toolkit.",
-      "Thanks!"
+      "It takes about 5 minutes. All responses are confidential and reported only in aggregate. At the end you can opt in to receive the report, or to test an early version of our digital toolkit."
     ],
     "startLabel": "Start the survey"
   },
@@ -169,7 +168,7 @@
     },
     {
       "key": "beta",
-      "label": "Sign up for early beta access and product testing"
+      "label": "Sign up to beta test an early version of our Digital Toolkit for Participatory Urban Design"
     },
     {
       "key": "anonymous",
@@ -181,7 +180,7 @@
     "title": "Your Details",
     "fields": [
       { "key": "name", "label": "Full Name", "placeholder": "Your full name" },
-      { "key": "email", "label": "Work Email Address", "placeholder": "you@city.gov", "type": "email" },
+      { "key": "email", "label": "Email Address", "placeholder": "you@email.com", "type": "email" },
       {
         "key": "municipality",
         "label": "Municipality / City & Country",
