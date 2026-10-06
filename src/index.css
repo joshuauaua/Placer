@@ -2058,6 +2058,110 @@ a {
   }
 }
 
+/* PLACER — a tool's card in the Toolkit's grid (see ToolkitPage's Tile). */
+.placer-toolkit-tile {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--placer-font);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.placer-toolkit-tile-frame {
+  position: relative;
+  display: block;
+  margin: 8px 8px 10px 0;
+  aspect-ratio: 16 / 10;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 0 0 0 var(--tile-shadow);
+  transition: box-shadow 0.25s ease;
+}
+
+.placer-toolkit-tile-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.placer-toolkit-tile-tag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 4px 10px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.placer-toolkit-tile-arrow {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  color: #111111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placer-toolkit-tile-arrow svg {
+  transition: transform 0.25s ease;
+}
+
+.placer-toolkit-tile:hover .placer-toolkit-tile-frame,
+.placer-toolkit-tile:focus-visible .placer-toolkit-tile-frame {
+  box-shadow: 8px -8px 0 0 var(--tile-shadow);
+}
+
+.placer-toolkit-tile:hover .placer-toolkit-tile-image,
+.placer-toolkit-tile:focus-visible .placer-toolkit-tile-image {
+  transform: scale(1.06);
+}
+
+.placer-toolkit-tile:hover .placer-toolkit-tile-arrow svg,
+.placer-toolkit-tile:focus-visible .placer-toolkit-tile-arrow svg {
+  transform: rotate(-45deg);
+}
+
+.placer-toolkit-tile:focus-visible {
+  outline: none;
+}
+
+.placer-toolkit-tile:focus-visible .placer-toolkit-tile-frame {
+  outline: 2px solid #111111;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-toolkit-tile-frame,
+  .placer-toolkit-tile-image,
+  .placer-toolkit-tile-arrow svg {
+    transition: none;
+  }
+
+  .placer-toolkit-tile:hover .placer-toolkit-tile-image {
+    transform: none;
+  }
+}
+
 .placer-toolkit-row:hover,
 .placer-toolkit-row:focus-visible {
   background: var(--placer-grey-100) !important;

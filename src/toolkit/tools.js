@@ -6,7 +6,10 @@
  * that change in one place.
  *
  * `added` is the day the tool joined the Toolkit (YYYY-MM-DD), which is what the
- * gallery's Recent order goes by.
+ * gallery's Recent order goes by, and what its card gives as the published date.
+ *
+ * `image` is optional: an imported picture for the tool's card in the gallery.
+ * Without one, the card draws a cover from the tool's icon on its category's colour.
  *
  * One entry per tool. Adding another means adding one object here and one
  * component under src/components/toolkit — the gallery, the routing and the copyable
@@ -75,23 +78,27 @@ const tone = (character) => ({ color: character.c700, tint: character.c100, hove
 
 /**
  * The three kinds of tool, in the order the Toolkit lists them. Every tool's
- * `category` is one of these ids.
+ * `category` is one of these ids. Each has a character's colour, for its tag and
+ * its cards' hover: blue to understand, orange to imagine, purple to plan.
  */
 export const CATEGORIES = [
   {
     id: 'understand',
     name: 'Understand',
     description: 'Tools for understanding how a place is used today.',
+    colour: CHARACTER.cityWorker,
   },
   {
     id: 'imagine',
     name: 'Imagine',
     description: 'Tools for imagining how a place could change.',
+    colour: CHARACTER.citizen,
   },
   {
     id: 'plan',
     name: 'Plan',
     description: 'Tools for planning the change, together, in one place.',
+    colour: CHARACTER.practitioner,
   },
 ];
 
