@@ -208,7 +208,7 @@ Used for: map panels, sidebar, mobile tab bar, bottom sheet, map search bar, gla
 
 ## Favicon
 
-Bench illustration on a #111111 square.
+The site's favicon is the bench illustration in black on a white square (`public/favicon.svg`, with PNG fallbacks drawn from it).
 
 | Account | Bench colour |
 |---|---|
