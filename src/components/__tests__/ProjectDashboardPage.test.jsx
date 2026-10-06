@@ -24,6 +24,9 @@ import { THEME } from '../../theme';
 // imports from this same module path, so its calls need covering here too.
 vi.mock('../../services/projects', async (importOriginal) => ({
   PROJECT_TYPES: (await importOriginal()).PROJECT_TYPES,
+  BUDGET_CURRENCIES: (await importOriginal()).BUDGET_CURRENCIES,
+  readProjectBudget: vi.fn(() => Promise.resolve(null)),
+  saveProjectBudget: vi.fn(() => Promise.resolve()),
   readProject: vi.fn(),
   readStats: vi.fn(),
   readProjectViews: vi.fn(() => Promise.resolve({

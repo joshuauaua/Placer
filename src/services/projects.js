@@ -18,6 +18,10 @@ export const PROJECTS_TABLE = 'projects';
 export const COLLABORATORS_TABLE = 'project_collaborators';
 export const LINKS_TABLE = 'project_links';
 export const PROJECT_TOOLS_TABLE = 'project_tools';
+export const PROJECT_BUDGETS_TABLE = 'project_budgets';
+
+/** The currencies a budget can be given in — the same list supabase/project-budget.sql checks. */
+export const BUDGET_CURRENCIES = ['EUR', 'SEK', 'DKK', 'NOK', 'GBP', 'USD'];
 // The folder project images go under in the R2 bucket (supabase/functions/media).
 // Named after the project, not the uploader: any collaborator may replace it.
 export const PROJECT_IMAGES_FOLDER = 'projects';
@@ -492,6 +496,48 @@ export async function saveProjectTools(projectId, toolIds, addedBy) {
   }
 
   return [...current.filter((tool) => !removing.includes(tool)), ...adding];
+}
+
+/**
+ * Whether a project has a budget and how much — { hasBudget, amount, currency } — or
+ * null when the question was never answered. Owner or collaborator only: the table is
+ * private (supabase/project-budget.sql), so anybody else simply reads null.
+ */
+export async function readProjectBudget(projectId) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECT_BUDGETS_TABLE)
+    .select('has_budget, amount, currency')
+    .eq('project_id', projectId)
+    .maybeSingle();
+
+  if (error) throw new Error(`Could not load the project's budget: ${error.message}`);
+  if (!data) return null;
+  return {
+    hasBudget: data.has_budget,
+    // numeric comes back from PostgREST as a number or a string, depending on its size.
+    amount: data.amount == null ? null : Number(data.amount),
+    currency: data.currency,
+  };
+}
+
+/**
+ * Record whether a project has a budget, and how much. The amount is dropped when the
+ * answer is no, the same rule the table's check enforces. Owner or collaborator only.
+ */
+export async function saveProjectBudget(projectId, { hasBudget, amount = null, currency = 'EUR' }) {
+  const supabase = await client();
+  const { error } = await supabase
+    .from(PROJECT_BUDGETS_TABLE)
+    .upsert({
+      project_id: projectId,
+      has_budget: hasBudget,
+      amount: hasBudget ? amount : null,
+      currency,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'project_id' });
+
+  if (error) throw new Error(`Could not save the project's budget: ${error.message}`);
 }
 
 /**
