@@ -7,9 +7,17 @@
  *
  * It follows the ARIA combobox pattern: the input owns a listbox, and the highlighted
  * option is announced through aria-activedescendant while focus stays in the input.
+ *
+ * On a phone the box would crowd the bar, so it collapses to its magnifier (index.css
+ * swaps the two below 640px). Pressing that opens the search as a panel under the bar,
+ * in the same glass as the landing page's menu, with the field across its middle and
+ * the suggestions under it rather than dropping down. Escape, the button again (now a
+ * cross), or choosing a suggestion closes it. Like that menu, the panel is portalled
+ * to <body>: the bar's backdrop-filter would otherwise clip a fixed child to the bar.
  */
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Avatar } from './UI';
 import { Icon } from './Icon';
 import { MIN_QUERY_LENGTH, search } from '../services/search';
@@ -40,7 +48,12 @@ export function NavSearch({ t, onSelect }) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'searching' | 'ready' | 'error'
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
+  // The phone's search panel. Only its trigger is shown above 639px, so it never opens there.
+  const [panel, setPanel] = useState(false);
   const wrapRef = useRef(null);
+  const panelRef = useRef(null);
+  const panelInputRef = useRef(null);
+  const triggerRef = useRef(null);
   const listId = useId();
 
   const trimmed = query.trim();
@@ -79,18 +92,36 @@ export function NavSearch({ t, onSelect }) {
     };
   }, [trimmed, searchable]);
 
-  // A click anywhere outside closes the list, the same dismissal as UserMenu's.
+  // A click anywhere outside closes the list, the same dismissal as UserMenu's. The
+  // panel is portalled out of wrapRef, so a click in it counts as inside too; it
+  // covers the page under the bar, so a click outside both is a click on the bar.
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open && !panel) return undefined;
     const handlePointerDown = (e) => {
-      if (!wrapRef.current?.contains(e.target)) setOpen(false);
+      if (wrapRef.current?.contains(e.target) || panelRef.current?.contains(e.target)) return;
+      setOpen(false);
+      setPanel(false);
     };
     window.addEventListener('mousedown', handlePointerDown);
     return () => window.removeEventListener('mousedown', handlePointerDown);
-  }, [open]);
+  }, [open, panel]);
+
+  // The panel opens ready to type into, with its suggestions showing.
+  useEffect(() => {
+    if (!panel) return;
+    setOpen(true);
+    panelInputRef.current?.focus();
+  }, [panel]);
+
+  const closePanel = () => {
+    setPanel(false);
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
 
   const choose = (result) => {
     setOpen(false);
+    setPanel(false);
     setQuery('');
     setResults([]);
     onSelect(result);
@@ -98,7 +129,10 @@ export function NavSearch({ t, onSelect }) {
 
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
-      if (open) {
+      if (panel) {
+        e.preventDefault();
+        closePanel();
+      } else if (open) {
         e.preventDefault();
         setOpen(false);
       } else {
@@ -126,38 +160,43 @@ export function NavSearch({ t, onSelect }) {
   const showList = open && searchable;
   const optionId = (index) => `${listId}-option-${index}`;
 
-  return (
-    <div ref={wrapRef} className="placer-nav-search" style={{ position: 'relative' }}>
-      <label className="placer-nav-search-field"
-        style={{ display: 'flex', alignItems: 'center', gap: 8, height: 40, padding: '0 12px',
-          borderRadius: 12, border: `1px solid ${t.lineStrong}`, background: t.surface, color: t.ink }}>
-        <Icon name="search" size={18} stroke={2} style={{ color: t.inkDim, flex: '0 0 auto' }} />
-        <input
-          type="search"
-          role="combobox"
-          aria-label="Search people, organisations and projects"
-          aria-expanded={showList}
-          aria-controls={listId}
-          aria-autocomplete="list"
-          aria-activedescendant={showList && active >= 0 ? optionId(active) : undefined}
-          value={query}
-          placeholder="Search"
-          autoComplete="off"
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
-          onFocus={() => setOpen(true)}
-          onKeyDown={handleKeyDown}
-          style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent',
-            color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 14.5 }}
-        />
-      </label>
+  // The field, once in the bar and once in the panel. Only one of the two is ever
+  // showing — index.css hides the bar's below 640px, and the panel only opens there —
+  // so they can share the one listbox id.
+  const field = ({ className, inputRef, size = 40 }) => (
+    <label className={className}
+      style={{ display: 'flex', alignItems: 'center', gap: 8, height: size, padding: '0 12px',
+        borderRadius: 12, border: `1px solid ${t.lineStrong}`, background: t.surface, color: t.ink }}>
+      <Icon name="search" size={18} stroke={2} style={{ color: t.inkDim, flex: '0 0 auto' }} />
+      <input
+        ref={inputRef}
+        type="search"
+        role="combobox"
+        aria-label="Search people, organisations and projects"
+        aria-expanded={showList}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={showList && active >= 0 ? optionId(active) : undefined}
+        value={query}
+        placeholder="Search"
+        autoComplete="off"
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={handleKeyDown}
+        style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent',
+          // 16px in the panel: iOS zooms the page into any field set smaller than that.
+          color: t.ink, fontFamily: 'var(--placer-font)', fontSize: size >= 48 ? 16 : 14.5 }}
+      />
+    </label>
+  );
 
-      {showList && (
+  const list = (className) => showList && (
         <div
           id={listId}
           role="listbox"
           aria-label="Search suggestions"
-          className="placer-nav-search-list"
-          // Where it sits is in index.css (.placer-nav-search-list), since a phone needs it placed differently.
+          className={className}
+          // Where it sits is in index.css (.placer-nav-search-list, .placer-search-panel-list).
           style={{ zIndex: 70,
             padding: '6px 0', background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12,
             boxShadow: t.shadow, maxHeight: 'min(70vh, 480px)', overflowY: 'auto' }}>
@@ -214,6 +253,34 @@ export function NavSearch({ t, onSelect }) {
             );
           })}
         </div>
+  );
+
+  return (
+    <div ref={wrapRef} className="placer-nav-search" style={{ position: 'relative' }}>
+      {field({ className: 'placer-nav-search-field' })}
+      {!panel && list('placer-nav-search-list')}
+
+      <button
+        ref={triggerRef}
+        type="button"
+        className="placer-nav-search-trigger"
+        aria-label={panel ? 'Close search' : 'Search'}
+        aria-expanded={panel}
+        aria-controls={panel ? `${listId}-panel` : undefined}
+        onClick={() => (panel ? closePanel() : setPanel(true))}
+        style={{ color: t.ink }}>
+        <Icon name={panel ? 'close' : 'search'} size={20} stroke={2} />
+      </button>
+
+      {panel && createPortal(
+        <div id={`${listId}-panel`} ref={panelRef} role="dialog" aria-label="Search"
+          className="placer-search-panel" style={{ color: t.ink }}>
+          <div className="placer-search-panel-inner">
+            {field({ className: 'placer-search-panel-field', inputRef: panelInputRef, size: 48 })}
+            {list('placer-search-panel-list')}
+          </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
