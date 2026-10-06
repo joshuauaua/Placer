@@ -51,11 +51,16 @@ const inputStyle = (t) => ({
   outline: 'none',
 });
 
-function Card({ t, title, children }) {
+// `action`, when given, sits at the far right of the title's row.
+function Card({ t, title, action, children }) {
   return (
     <section style={{ padding: 24, marginBottom: 24, background: t.surface, borderRadius: 12,
       border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: 16 }}>{title}</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+        flexWrap: 'wrap', marginBottom: 16 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: t.ink, margin: 0 }}>{title}</h2>
+        {action}
+      </div>
       {children}
     </section>
   );
@@ -205,12 +210,26 @@ function ProjectAccess({ t, projectId }) {
   );
 }
 
-function StatTile({ t, icon, label, value }) {
+/* The project's numbers as one small table: a column each, the label in
+ * capitals along the top, the number under it, hairlines between. */
+function StatTable({ t, stats }) {
   return (
-    <div style={{ flex: 1, minWidth: 140, padding: 18, background: t.surfaceAlt, borderRadius: 12 }}>
-      <Icon name={icon} size={18} stroke={2} style={{ color: t.inkDim, marginBottom: 8 }} />
-      <div className="placer-disp" style={{ fontSize: 26, fontWeight: 700, color: t.ink }}>{value}</div>
-      <div style={{ fontSize: 12.5, color: t.inkDim, fontWeight: 500 }}>{label}</div>
+    <div style={{ display: 'flex', marginBottom: 32, border: `1px solid ${t.ink}`, borderRadius: 10,
+      overflow: 'hidden', background: t.surface }}>
+      {stats.map(({ label, value }, i) => (
+        <div key={label} style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column',
+          borderLeft: i === 0 ? 'none' : `1px solid ${t.ink}` }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '14px 8px', borderBottom: `1px solid ${t.ink}`, fontSize: 12, fontWeight: 500,
+            letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center', color: t.ink }}>
+            {label}
+          </div>
+          <div className="placer-disp" style={{ padding: '20px 8px', fontSize: 26, fontWeight: 700,
+            textAlign: 'center', color: t.ink }}>
+            {value}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -296,7 +315,8 @@ function AddToolkitTool({ t, onChoose }) {
         <div
           role="menu"
           aria-label="Toolkit tools"
-          style={{ position: 'absolute', top: '100%', left: 0, marginTop: 8, zIndex: 10,
+          // Hangs from the button's right edge, as the button sits at the card's.
+          style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, zIndex: 10,
             minWidth: 240, padding: '6px 0', background: t.surface,
             border: `1px solid ${t.line}`, borderRadius: 12, boxShadow: t.shadow,
             overflow: 'hidden' }}>
@@ -389,17 +409,41 @@ function LinkRow({ t, link, onRemove }) {
 }
 
 /**
- * The owner's way to remove the project for good. Typing its name unlocks the button,
- * because a second click on a confirm is too easy to make without reading — and there
- * is no undo. What goes and what stays is spelled out, since the imaginations posted
- * to it are other people's and are kept.
+ * The owner's way to remove the project for good: a button that opens a dialog, where
+ * typing the project's name unlocks the delete, because a second click on a confirm is
+ * too easy to make without reading — and there is no undo. What goes and what stays is
+ * spelled out, since the imaginations posted to it are other people's and are kept.
  */
 function DeleteProject({ t, project, onDeleted }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Btn t={t} variant="outline" size="sm" icon="trash" onClick={() => setOpen(true)}
+        style={{ color: DANGER, borderColor: DANGER }}>
+        Delete project
+      </Btn>
+      {open && <DeleteProjectDialog t={t} project={project} onDeleted={onDeleted}
+        onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+function DeleteProjectDialog({ t, project, onDeleted, onClose }) {
   const [typed, setTyped] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(null);
+  const fieldRef = useRef(null);
 
   const matches = typed.trim() === project.name.trim();
+
+  // Escape closes it, unless the delete is already under way.
+  useEffect(() => {
+    fieldRef.current?.focus();
+    const handleKeyDown = (e) => { if (e.key === 'Escape' && !deleting) onClose(); };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [deleting, onClose]);
 
   const handleDelete = async (e) => {
     e.preventDefault();
@@ -418,30 +462,40 @@ function DeleteProject({ t, project, onDeleted }) {
   };
 
   return (
-    <Card t={t} title="Delete project">
-      <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
-        Removes the project, its public page, its image, its news and resources, its
-        collaborators and its page views, and takes it off everyone's followed list. The
-        imaginations and Toolkit sessions made for it stay, no longer linked to it. This
-        cannot be undone.
-      </p>
-      <form onSubmit={handleDelete}>
-        <label htmlFor="delete-project-name"
-          style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
-          {`Type “${project.name}” to confirm`}
-        </label>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <input id="delete-project-name" value={typed} autoComplete="off"
+    <div onMouseDown={(e) => { if (e.target === e.currentTarget && !deleting) onClose(); }}
+      style={{ position: 'fixed', inset: 0, zIndex: 180, background: 'rgba(0, 0, 0, 0.4)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div role="dialog" aria-modal="true" aria-labelledby="delete-project-title"
+        style={{ width: '100%', maxWidth: 480, padding: 24, background: t.surface, borderRadius: 16,
+          boxShadow: t.shadow }}>
+        <h2 id="delete-project-title" style={{ fontSize: 18, fontWeight: 700, color: t.ink, marginBottom: 12 }}>
+          Delete project
+        </h2>
+        <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
+          Removes the project, its public page, its image, its news and resources, its
+          collaborators and its page views, and takes it off everyone's followed list. The
+          imaginations and Toolkit sessions made for it stay, no longer linked to it. This
+          cannot be undone.
+        </p>
+        <form onSubmit={handleDelete}>
+          <label htmlFor="delete-project-name"
+            style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+            {`Type “${project.name}” to confirm`}
+          </label>
+          <input id="delete-project-name" ref={fieldRef} value={typed} autoComplete="off"
             onChange={(e) => { setTyped(e.target.value); setError(null); }}
-            style={{ ...inputStyle(t), flex: '1 1 240px' }} />
-          <Btn t={t} variant="outline" size="sm" icon="trash" type="submit" disabled={!matches || deleting}
-            style={{ color: DANGER, borderColor: DANGER }}>
-            {deleting ? 'Deleting…' : 'Delete project'}
-          </Btn>
-        </div>
-      </form>
-      {error && <p role="alert" style={{ fontSize: 13, color: DANGER, marginTop: 10 }}>{error}</p>}
-    </Card>
+            style={{ ...inputStyle(t), width: '100%', boxSizing: 'border-box' }} />
+          {error && <p role="alert" style={{ fontSize: 13, color: DANGER, marginTop: 10 }}>{error}</p>}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
+            <Btn t={t} variant="outline" size="sm" type="button" onClick={onClose} disabled={deleting}>Cancel</Btn>
+            <Btn t={t} variant="outline" size="sm" icon="trash" type="submit" disabled={!matches || deleting}
+              style={{ color: DANGER, borderColor: DANGER }}>
+              {deleting ? 'Deleting…' : 'Delete project'}
+            </Btn>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 
@@ -663,14 +717,12 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
           )}
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 32 }}>
-          <StatTile t={t} icon="grid" label="Imaginations" value={stats?.imaginationsCount ?? 0} />
-          <StatTile t={t} icon="arrowUp" label="Votes received" value={stats?.imaginationsUpvotes ?? 0} />
-          <StatTile t={t} icon="sparkle" label="Toolkit sessions" value={stats?.toolkitRoomsCount ?? 0} />
-          {views !== false && (
-            <StatTile t={t} icon="user" label="Page views" value={views ? views.total : '–'} />
-          )}
-        </div>
+        <StatTable t={t} stats={[
+          { label: 'Imaginations', value: stats?.imaginationsCount ?? 0 },
+          { label: 'Votes received', value: stats?.imaginationsUpvotes ?? 0 },
+          { label: 'Toolkit sessions', value: stats?.toolkitRoomsCount ?? 0 },
+          ...(views !== false ? [{ label: 'Page views', value: views ? views.total : '–' }] : []),
+        ]} />
 
         {views && (
           <Card t={t} title="Page views">
@@ -698,12 +750,12 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
           </Card>
         )}
 
-        <Card t={t} title="Toolkit">
-          <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
+        <Card t={t} title="Toolkit"
+          action={<AddToolkitTool t={t} onChoose={(toolId) => onOpenToolkit(project.id, toolId)} />}>
+          <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
             Open a tool attached to this project — it shows up in the count
             above, and on the public page once it has run.
           </p>
-          <AddToolkitTool t={t} onChoose={(toolId) => onOpenToolkit(project.id, toolId)} />
 
           {rooms && (
             <div style={{ marginTop: 24 }}>

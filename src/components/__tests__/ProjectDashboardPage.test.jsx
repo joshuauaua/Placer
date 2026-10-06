@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { ProjectDashboardPage } from '../ProjectDashboardPage';
 import {
   addCollaborator,
@@ -359,7 +359,13 @@ describe('ProjectDashboardPage, deleting the project', () => {
     vi.clearAllMocks();
   });
 
-  const deleteButton = () => screen.getByRole('button', { name: /Delete project/ });
+  // The button on the page opens the dialog; the one inside it does the deleting.
+  const openDialog = async () => {
+    fireEvent.click(await screen.findByRole('button', { name: /Delete project/ }));
+    return screen.getByRole('dialog', { name: 'Delete project' });
+  };
+  const deleteButton = () =>
+    within(screen.getByRole('dialog')).getByRole('button', { name: /Delete project/ });
   const nameField = () => screen.getByLabelText(/to confirm/);
 
   it('is offered to the owner only', async () => {
@@ -369,9 +375,22 @@ describe('ProjectDashboardPage, deleting the project', () => {
     expect(screen.queryByRole('button', { name: /Delete project/ })).not.toBeInTheDocument();
   });
 
+  it('asks in a dialog, which Cancel closes without deleting', async () => {
+    setup();
+    await screen.findByRole('heading', { name: PROJECT.name });
+
+    expect(screen.queryByLabelText(/to confirm/)).not.toBeInTheDocument();
+    const dialog = await openDialog();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(deleteProject).not.toHaveBeenCalled();
+  });
+
   it('stays locked until the project name is typed exactly', async () => {
     setup();
     await screen.findByRole('heading', { name: PROJECT.name });
+    await openDialog();
 
     expect(deleteButton()).toBeDisabled();
     fireEvent.change(nameField(), { target: { value: 'Riverside' } });
@@ -383,6 +402,7 @@ describe('ProjectDashboardPage, deleting the project', () => {
   it('deletes the project and hands back to the caller', async () => {
     const { onDeleted } = setup({ onDeleted: vi.fn() });
     await screen.findByRole('heading', { name: PROJECT.name });
+    await openDialog();
 
     fireEvent.change(nameField(), { target: { value: PROJECT.name } });
     fireEvent.click(deleteButton());
@@ -395,6 +415,7 @@ describe('ProjectDashboardPage, deleting the project', () => {
     vi.mocked(deleteProject).mockRejectedValueOnce(new Error('Could not remove that project: denied'));
     const { onDeleted } = setup({ onDeleted: vi.fn() });
     await screen.findByRole('heading', { name: PROJECT.name });
+    await openDialog();
 
     fireEvent.change(nameField(), { target: { value: PROJECT.name } });
     fireEvent.click(deleteButton());
