@@ -20,11 +20,6 @@ export const FOOTER_COLUMNS = [
         href: 'https://si.se/en/projects-granted-funding/designing-participatory-spaces-innovation-in-placemaking-and-capacity-building/',
       },
       { label: 'User Labs', view: 'userLabs' },
-    ],
-  },
-  {
-    heading: 'Resources',
-    links: [
       { label: 'Placemaking Trends Survey 2026/2027', view: 'placemakingTrendsSurvey' },
     ],
   },
@@ -36,6 +31,14 @@ export const FOOTER_COLUMNS = [
       { label: 'Contact Us', view: 'contact' },
     ],
   },
+];
+
+// How the footer lays FOOTER_COLUMNS out between its brand column on the left and its
+// newsletter column on the right: one inner array per column, its sections stacked
+// top to bottom. A section left out here is not shown, so a new one has to be placed.
+const FOOTER_LAYOUT = [
+  ['Project News'],
+  ['About Us'],
 ];
 
 const LICENSE_URL = 'https://www.gnu.org/licenses/agpl-3.0.html';
@@ -81,14 +84,14 @@ function NewsletterSignup({ t }) {
 
   if (status === 'done') {
     return (
-      <p role="status" style={{ marginTop: 16, fontSize: 14, lineHeight: '20px', color: t.ink }}>
+      <p role="status" style={{ fontSize: 14, lineHeight: '20px', color: t.ink }}>
         Thanks — you're on the list.
       </p>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginTop: 16, maxWidth: 360 }}>
+    <form onSubmit={handleSubmit} style={{ maxWidth: 360 }}>
       <label htmlFor="placer-footer-newsletter" style={{ display: 'block', fontSize: 14, lineHeight: '20px',
         fontWeight: 700, marginBottom: 8 }}>
         Follow our newsletter
@@ -146,6 +149,38 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
             <p style={{ marginTop: 16, maxWidth: 360, fontSize: 14, lineHeight: '20px', color: t.inkDim }}>
               Reimagine your city. A toolkit for shaping shared spaces together.
             </p>
+          </div>
+
+          {FOOTER_LAYOUT.map((headings) => (
+            <div key={headings.join()} style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+              {headings.map((heading) => FOOTER_COLUMNS.find((column) => column.heading === heading))
+                .filter(Boolean)
+                .map(({ heading, links }) => (
+                  <div key={heading}>
+                    <div style={{ fontSize: 14, lineHeight: '20px', fontWeight: 700, marginBottom: 16 }}>
+                      {heading}
+                    </div>
+                    <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, lineHeight: '20px' }}>
+                      {links.map(({ label, view: target, href }) => (
+                        <li key={label}>
+                          {target ? (
+                            <FooterLink active={view === target} onClick={() => onNavigate(target)}>{label}</FooterLink>
+                          ) : href ? (
+                            <a href={href} target="_blank" rel="noopener noreferrer"
+                              className="placer-footer-link">{label}</a>
+                          ) : (
+                            <Placeholder t={t}>{label}</Placeholder>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+            </div>
+          ))}
+
+          {/* The newsletter and the socials, in the far-right column. */}
+          <div>
             <NewsletterSignup t={t} />
             <div style={{ display: 'flex', gap: 24, marginTop: 16, fontSize: 14, lineHeight: '20px' }}>
               {SOCIALS.map(({ label, href }) => (
@@ -156,28 +191,6 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
               ))}
             </div>
           </div>
-
-          {FOOTER_COLUMNS.map(({ heading, links }) => (
-            <div key={heading}>
-              <div style={{ fontSize: 14, lineHeight: '20px', fontWeight: 700, marginBottom: 16 }}>
-                {heading}
-              </div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, lineHeight: '20px' }}>
-                {links.map(({ label, view: target, href }) => (
-                  <li key={label}>
-                    {target ? (
-                      <FooterLink active={view === target} onClick={() => onNavigate(target)}>{label}</FooterLink>
-                    ) : href ? (
-                      <a href={href} target="_blank" rel="noopener noreferrer"
-                        className="placer-footer-link">{label}</a>
-                    ) : (
-                      <Placeholder t={t}>{label}</Placeholder>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
         </div>
 
         <div className="placer-footer-bottom" style={{ marginTop: 40, paddingTop: 24, borderTop: `1px solid ${t.line}`,
