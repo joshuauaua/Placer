@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 function makeChain(result = { data: null, error: null }) {
   const calls = [];
   const chain = { calls };
-  for (const method of ['select', 'insert', 'update', 'delete', 'eq', 'in']) {
+  for (const method of ['select', 'insert', 'update', 'upsert', 'delete', 'eq', 'in']) {
     chain[method] = (...args) => { calls.push([method, args]); return chain; };
   }
   chain.order = (...args) => { calls.push(['order', args]); return Promise.resolve(result); };
@@ -612,5 +612,51 @@ describe("a project's tools", () => {
     fromChains.project_tools = makeChain({ data: null, error: { message: 'permission denied' } });
 
     await expect(projects.readProjectTools('proj-1')).rejects.toThrow('permission denied');
+  });
+});
+
+describe("a project's budget", () => {
+  it('reads the answer, the amount and the currency', async () => {
+    await load();
+    fromChains.project_budgets = makeChain({ data: { has_budget: true, amount: '250000.00', currency: 'SEK' }, error: null });
+
+    await expect(projects.readProjectBudget('proj-1'))
+      .resolves.toEqual({ hasBudget: true, amount: 250000, currency: 'SEK' });
+    expect(fromChains.project_budgets.calls).toContainEqual(['eq', ['project_id', 'proj-1']]);
+  });
+
+  it('is null when the question was never answered, or the reader may not see it', async () => {
+    await load();
+    fromChains.project_budgets = makeChain({ data: null, error: null });
+
+    await expect(projects.readProjectBudget('proj-1')).resolves.toBeNull();
+  });
+
+  it('saves with one write per project, replacing the last answer', async () => {
+    await load();
+    fromChains.project_budgets = makeChain({ data: null, error: null });
+
+    await projects.saveProjectBudget('proj-1', { hasBudget: true, amount: 50000, currency: 'DKK' });
+
+    const [method, [row, options]] = fromChains.project_budgets.calls[0];
+    expect(method).toBe('upsert');
+    expect(row).toMatchObject({ project_id: 'proj-1', has_budget: true, amount: 50000, currency: 'DKK' });
+    expect(options).toEqual({ onConflict: 'project_id' });
+  });
+
+  it('drops the amount of a no, as the table requires', async () => {
+    await load();
+    fromChains.project_budgets = makeChain({ data: null, error: null });
+
+    await projects.saveProjectBudget('proj-1', { hasBudget: false, amount: 50000 });
+
+    expect(fromChains.project_budgets.calls[0][1][0]).toMatchObject({ has_budget: false, amount: null });
+  });
+
+  it('surfaces a failure as a readable error', async () => {
+    await load();
+    fromChains.project_budgets = makeChain({ data: null, error: { message: 'permission denied' } });
+
+    await expect(projects.saveProjectBudget('proj-1', { hasBudget: true })).rejects.toThrow('permission denied');
   });
 });

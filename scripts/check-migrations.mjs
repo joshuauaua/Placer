@@ -88,6 +88,7 @@ const PLAN = [
   { name: '20261005110001_notifications_projects.sql', src: 'notifications-projects.sql' },
   { name: '20261005120001_toolkit_rooms_config.sql', src: 'rooms-config.sql' },
   { name: '20261005130001_project_address_and_tools.sql', src: 'project-setup.sql' },
+  { name: '20261006090001_project_budgets.sql', src: 'project-budget.sql' },
 ]
 
 const HAND_WRITTEN = [

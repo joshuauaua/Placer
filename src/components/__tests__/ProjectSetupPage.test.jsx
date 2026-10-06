@@ -1,13 +1,18 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { ProjectSetupPage } from '../ProjectSetupPage';
-import { createProject, readProjectTools, saveProjectTools, updateProject } from '../../services/projects';
+import { ProjectSetupPage, parseBudgetAmount } from '../ProjectSetupPage';
+import {
+  createProject, readProjectBudget, readProjectTools, saveProjectBudget, saveProjectTools, updateProject,
+} from '../../services/projects';
 import { THEME } from '../../theme';
 import { TOOLS } from '../../toolkit/tools';
 
 vi.mock('../../services/projects', async (importOriginal) => ({
-  // The real PROJECT_TYPES, so the choices on screen are the ones that ship.
+  // The real PROJECT_TYPES and currencies, so the choices on screen are the ones that ship.
   PROJECT_TYPES: (await importOriginal()).PROJECT_TYPES,
+  BUDGET_CURRENCIES: (await importOriginal()).BUDGET_CURRENCIES,
+  readProjectBudget: vi.fn(() => Promise.resolve(null)),
+  saveProjectBudget: vi.fn(() => Promise.resolve()),
   createProject: vi.fn(),
   updateProject: vi.fn(),
   readProjectTools: vi.fn(() => Promise.resolve([])),
@@ -394,5 +399,138 @@ describe('ProjectSetupPage, editing a project', () => {
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith({ ...PROJECT, name: 'New name' }));
     expect(updateProject).toHaveBeenCalledWith('proj-1', expect.objectContaining({ name: 'New name' }));
     expect(createProject).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProjectSetupPage, the budget question', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const budgetQuestion = () => screen.getByRole('group', { name: 'Do you have a budget for this project?' });
+
+  /** From the basics, past every later step, to starting the project. */
+  const startFromBasics = () => {
+    next();
+    next();
+    next();
+    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+  };
+
+  it('asks it in the basics, with no amount until the answer is yes', () => {
+    setup();
+    toBasics();
+
+    expect(budgetQuestion()).toBeInTheDocument();
+    expect(screen.queryByLabelText('Amount')).not.toBeInTheDocument();
+
+    fireEvent.click(within(budgetQuestion()).getByRole('radio', { name: 'Yes' }));
+    expect(screen.getByLabelText('Amount')).toBeInTheDocument();
+    expect(screen.getByLabelText('Currency')).toHaveValue('EUR');
+
+    fireEvent.click(within(budgetQuestion()).getByRole('radio', { name: 'No' }));
+    expect(screen.queryByLabelText('Amount')).not.toBeInTheDocument();
+  });
+
+  it('saves the amount and currency of a yes', async () => {
+    createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    const { onSaved } = setup();
+
+    toBasics();
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    fireEvent.click(within(budgetQuestion()).getByRole('radio', { name: 'Yes' }));
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '250 000' } });
+    fireEvent.change(screen.getByLabelText('Currency'), { target: { value: 'SEK' } });
+    startFromBasics();
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(saveProjectBudget).toHaveBeenCalledWith('proj-1', { hasBudget: true, amount: 250000, currency: 'SEK' });
+  });
+
+  it('saves a no', async () => {
+    createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    const { onSaved } = setup();
+
+    toBasics();
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    fireEvent.click(within(budgetQuestion()).getByRole('radio', { name: 'No' }));
+    startFromBasics();
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(saveProjectBudget).toHaveBeenCalledWith('proj-1', expect.objectContaining({ hasBudget: false }));
+  });
+
+  it('saves nothing when the question was skipped', async () => {
+    createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    const { onSaved } = setup();
+
+    toBasics();
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    startFromBasics();
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(saveProjectBudget).not.toHaveBeenCalled();
+  });
+
+  it('will not go on with an amount that is not a number', () => {
+    setup();
+    toBasics();
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    fireEvent.click(within(budgetQuestion()).getByRole('radio', { name: 'Yes' }));
+
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: 'lots' } });
+    expect(screen.getByText(/Enter the amount as a number/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Next/ })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '' } });
+    expect(screen.getByRole('button', { name: /^Next/ })).toBeEnabled();
+  });
+
+  it('starts filled in when editing, and saves a change', async () => {
+    readProjectBudget.mockResolvedValueOnce({ hasBudget: true, amount: 50000, currency: 'DKK' });
+    updateProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    setup({ project: { id: 'proj-1', name: 'Riverside Greenway', locations: [] } });
+
+    expect(await screen.findByLabelText('Amount')).toHaveValue('50000');
+    expect(screen.getByLabelText('Currency')).toHaveValue('DKK');
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '60000' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(saveProjectBudget)
+      .toHaveBeenCalledWith('proj-1', { hasBudget: true, amount: 60000, currency: 'DKK' }));
+  });
+
+  it('never saves over a budget that could not be loaded', async () => {
+    readProjectBudget.mockRejectedValueOnce(new Error('offline'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    updateProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    const { onSaved } = setup({ project: { id: 'proj-1', name: 'Riverside Greenway', locations: [] } });
+
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(saveProjectBudget).not.toHaveBeenCalled();
+    expect(screen.queryByRole('group', { name: 'Do you have a budget for this project?' })).not.toBeInTheDocument();
+  });
+});
+
+describe('parseBudgetAmount', () => {
+  it('reads a plain or grouped amount, whichever way round it is written', () => {
+    expect(parseBudgetAmount('250000')).toBe(250000);
+    expect(parseBudgetAmount(' 250 000 ')).toBe(250000);
+    expect(parseBudgetAmount('250,000')).toBe(250000);
+    expect(parseBudgetAmount('1,250.50')).toBe(1250.5);
+    expect(parseBudgetAmount('250.000')).toBe(250000);
+    expect(parseBudgetAmount('1.250,50')).toBe(1250.5);
+    expect(parseBudgetAmount('1250,50')).toBe(1250.5);
+    expect(parseBudgetAmount('1250.50')).toBe(1250.5);
+  });
+
+  it('is null when left empty, and NaN when it is not an amount', () => {
+    expect(parseBudgetAmount('')).toBeNull();
+    expect(parseBudgetAmount('lots')).toBeNaN();
+    expect(parseBudgetAmount('-5')).toBeNaN();
+    expect(parseBudgetAmount('1,2,3')).toBeNaN();
+    expect(parseBudgetAmount('€500')).toBeNaN();
   });
 });

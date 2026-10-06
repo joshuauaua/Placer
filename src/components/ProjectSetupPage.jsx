@@ -20,7 +20,8 @@ import { Icon } from './Icon';
 import { ImagePicker } from './ImagePicker';
 import { AddressInput } from './AddressInput';
 import {
-  PROJECT_TYPES, createProject, readProjectTools, removeProjectImageFile, saveProjectTools,
+  BUDGET_CURRENCIES, PROJECT_TYPES, createProject, readProjectBudget, readProjectTools,
+  removeProjectImageFile, saveProjectBudget, saveProjectTools,
   updateProject, uploadProjectImage,
 } from '../services/projects';
 import { checkPickedImage } from '../services/media';
@@ -68,6 +69,87 @@ const placeNames = (address, town) => {
   const name = town || address.trim();
   return name ? [name] : [];
 };
+
+/**
+ * The budget question's amount as typed, as a number — null when left empty, which is
+ * allowed (there is a budget, but they would rather not say), and NaN when it is not a
+ * usable amount.
+ *
+ * Amounts are written both ways round across the places PLACER is used, so both are
+ * read: "250,000" and "1,250.50" group with commas, "250.000" and "1.250,50" with dots,
+ * and a lone comma is a decimal point ("1250,50"). Spaces, as in "250 000", are ignored.
+ */
+export function parseBudgetAmount(text) {
+  let trimmed = String(text ?? '').replace(/[\s\u00a0']/g, '');
+  if (!trimmed) return null;
+  if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(trimmed)) trimmed = trimmed.replace(/,/g, '');
+  else if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(trimmed)) trimmed = trimmed.replace(/\./g, '').replace(',', '.');
+  else trimmed = trimmed.replace(',', '.');
+  const amount = /^\d+(\.\d+)?$/.test(trimmed) ? Number(trimmed) : NaN;
+  return Number.isFinite(amount) ? amount : NaN;
+}
+
+/**
+ * "Do you have a budget for this project?", and how much when the answer is yes.
+ * Optional: a project can be started without answering. Private to the project's
+ * owner and collaborators (supabase/project-budget.sql), which the hint says, since
+ * the rest of the setup is public.
+ */
+function BudgetQuestion({ t, hasBudget, onHasBudget, amount, onAmount, currency, onCurrency }) {
+  const invalid = hasBudget && Number.isNaN(parseBudgetAmount(amount));
+  const choice = (value, label) => {
+    const checked = hasBudget === value;
+    return (
+      <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
+        cursor: 'pointer', borderRadius: 12, background: checked ? t.surfaceAlt : t.surface,
+        border: `1.5px solid ${checked ? t.ink : t.line}`, fontSize: 15, fontWeight: 500, color: t.ink }}>
+        <input type="radio" name="project-has-budget" checked={checked} onChange={() => onHasBudget(value)}
+          style={{ accentColor: t.ink }} />
+        {label}
+      </label>
+    );
+  };
+
+  return (
+    <fieldset style={{ border: 0, padding: 0, margin: '0 0 26px' }}>
+      <legend style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8, padding: 0 }}>
+        Do you have a budget for this project?
+      </legend>
+      <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 10, lineHeight: 1.5 }}>
+        Only you and your collaborators can see this. Optional.
+      </div>
+      <div style={{ display: 'flex', gap: 12 }}>
+        {choice(true, 'Yes')}
+        {choice(false, 'No')}
+      </div>
+
+      {hasBudget && (
+        <div style={{ marginTop: 16 }}>
+          <label htmlFor="project-budget-amount"
+            style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+            Amount
+          </label>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <input id="project-budget-amount" type="text" inputMode="decimal" value={amount}
+              onChange={(e) => onAmount(e.target.value)} placeholder="e.g. 250000"
+              aria-invalid={invalid || undefined}
+              aria-describedby={invalid ? 'project-budget-amount-error' : undefined}
+              style={{ ...inputStyle(t), flex: 1, border: `1.5px solid ${invalid ? '#B3261E' : t.line}` }} />
+            <select aria-label="Currency" value={currency} onChange={(e) => onCurrency(e.target.value)}
+              style={{ ...inputStyle(t), width: 110 }}>
+              {BUDGET_CURRENCIES.map((code) => <option key={code} value={code}>{code}</option>)}
+            </select>
+          </div>
+          {invalid && (
+            <div id="project-budget-amount-error" style={{ fontSize: 13, color: '#B3261E', marginTop: 8 }}>
+              Enter the amount as a number, like 250000.
+            </div>
+          )}
+        </div>
+      )}
+    </fieldset>
+  );
+}
 
 /**
  * The Toolkit, as a grid to choose a project's tools from. Each card is a toggle.
@@ -195,6 +277,12 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   // false until they are, so a failed load can never save over them with nothing.
   const [tools, setTools] = useState([]);
   const [toolsReady, setToolsReady] = useState(!initialProject);
+  // The budget question: null until answered. Loaded first when editing, with the same
+  // guard as the tools, so a failed read never saves over it.
+  const [hasBudget, setHasBudget] = useState(null);
+  const [budgetAmount, setBudgetAmount] = useState('');
+  const [budgetCurrency, setBudgetCurrency] = useState('EUR');
+  const [budgetReady, setBudgetReady] = useState(!initialProject);
   const [projectType, setProjectType] = useState(project?.projectType ?? null);
   const [organisationId, setOrganisationId] = useState(project ? project.organisationId : initialOrganisationId);
   // Which of the six steps a new project is on, 0 to 5. Editing has no steps.
@@ -217,6 +305,17 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
         setToolsReady(true);
       })
       .catch((err) => console.error('Could not load the project\'s tools:', err));
+    readProjectBudget(initialProject.id)
+      .then((budget) => {
+        if (cancelled) return;
+        if (budget) {
+          setHasBudget(budget.hasBudget);
+          setBudgetAmount(budget.amount == null ? '' : String(budget.amount));
+          setBudgetCurrency(budget.currency);
+        }
+        setBudgetReady(true);
+      })
+      .catch((err) => console.error('Could not load the project\'s budget:', err));
     return () => { cancelled = true; };
   }, [initialProject]);
 
@@ -250,7 +349,8 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   const offerRunBy = organisations.length > 0
     && (!editing || !project.organisationId || runsOrganisation(project.organisationId));
 
-  const complete = name.trim().length > 0;
+  const budgetValid = !hasBudget || !Number.isNaN(parseBudgetAmount(budgetAmount));
+  const complete = name.trim().length > 0 && budgetValid;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -308,6 +408,22 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
         }
       }
 
+      if (budgetReady && hasBudget !== null) {
+        try {
+          await saveProjectBudget(saved.id, {
+            hasBudget, amount: parseBudgetAmount(budgetAmount), currency: budgetCurrency,
+          });
+        } catch (budgetError) {
+          console.error('Could not save the project\'s budget:', budgetError);
+          setProject(saved);
+          setPending(null);
+          setError(`The project was saved, but its budget could not be: ${budgetError.message} `
+            + 'Save again to try once more.');
+          setStatus('idle');
+          return;
+        }
+      }
+
       onSaved(saved);
     } catch (err) {
       console.error(`Could not ${editing ? 'save' : 'start'} that project:`, err);
@@ -354,6 +470,12 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
           </Field>
         </div>
       </div>
+
+      {budgetReady && (
+        <BudgetQuestion t={t} hasBudget={hasBudget} onHasBudget={setHasBudget}
+          amount={budgetAmount} onAmount={setBudgetAmount}
+          currency={budgetCurrency} onCurrency={setBudgetCurrency} />
+      )}
     </>
   );
 
