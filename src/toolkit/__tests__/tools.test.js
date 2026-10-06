@@ -80,7 +80,7 @@ describe('filterTools', () => {
 
   it('filters by category', () => {
     expect(ids({ category: 'plan' })).toEqual(['budget-ballot', 'open-vote']);
-    expect(ids({ category: 'imagine' })).toEqual(['street-mixer']);
+    expect(ids({ category: 'imagine' })).toEqual(['street-mixer', 'reimagine-a-space']);
   });
 
   it('filters by the organisation that made the tool', () => {

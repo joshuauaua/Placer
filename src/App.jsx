@@ -62,6 +62,9 @@ const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
 // bar and footer the other views sit inside.
 const FLOW_VIEWS = ['street', 'describe', 'post'];
 
+// The Toolkit tool the imagination flow belongs to (toolkit/tools.js).
+const REIMAGINE_TOOL = 'reimagine-a-space';
+
 // The account views live in the URL, for the same reason the Toolkit does: a
 // settings page you cannot bookmark or refresh into is a worse settings page.
 //
@@ -327,8 +330,15 @@ function MainApp({ initialView = 'welcome' }) {
     setCurrentView(next);
   };
 
-  const handleImagineForProject = (id) => {
-    setActiveProjectId(id);
+  // Imagining is the Toolkit's Reimagine a Space now. A project's "Imagine something
+  // for this project" goes to that tool with the project attached, and the tool's Get
+  // started hands back here (handleLaunchTool) to run the flow.
+  const handleImagineForProject = (id) => showProjectToolkit(id, REIMAGINE_TOOL);
+
+  const handleLaunchTool = (toolId, projectId) => {
+    if (toolId !== REIMAGINE_TOOL) return;
+    posthog.capture('imagination_started', { project: Boolean(projectId) });
+    setActiveProjectId(projectId ?? null);
     show('imagine');
   };
 
@@ -621,6 +631,7 @@ function MainApp({ initialView = 'welcome' }) {
                   // Only opening a room is gated. Joining, contributing and reading are not.
                   needsAccount={identityStatus === 'signedOut'}
                   onSignIn={handleSignIn}
+                  onLaunchTool={handleLaunchTool}
                 />
               </Suspense>
             )}

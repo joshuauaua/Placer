@@ -34,6 +34,12 @@
  * The setup is fixed when the room opens (supabase/rooms-config.sql) and reaches the
  * tool as `room.config`. A room opened without one — or before there was such a
  * thing — has a null `room.config`, and the tool behaves as it does outside a room.
+ *
+ * `launch` marks a tool that is a flow of App's own rather than a component on the
+ * Toolkit's page: Get started on its cover hands over to that flow (ToolkitPage's
+ * onLaunchTool), carrying the project it was opened for. Reimagine a Space is one —
+ * the imagination flow runs full-bleed, step by step, and keeps its draft in App.
+ * Its `component` is only what shows where nothing takes the hand-over.
  */
 
 import { BudgetBallot } from '../components/toolkit/BudgetBallot';
@@ -41,6 +47,7 @@ import { BudgetBallotSetup } from '../components/toolkit/BudgetBallotSetup';
 import { DesireLines } from '../components/toolkit/DesireLines';
 import { FifteenMinute } from '../components/toolkit/FifteenMinute';
 import { OpenVote } from '../components/toolkit/OpenVote';
+import { ReimagineASpace } from '../components/toolkit/ReimagineASpace';
 import { SiteMapping } from '../components/toolkit/SiteMapping';
 import { SocialSpaceSurvey } from '../components/toolkit/SocialSpaceSurvey';
 import { StationaryActivityMap } from '../components/toolkit/StationaryActivityMap';
@@ -204,6 +211,20 @@ export const TOOLS = [
     icon: 'grid',
     createdBy: 'PLACER',
     component: StationaryActivityMap,
+  },
+  {
+    id: 'reimagine-a-space',
+    added: '2026-10-06',
+    category: 'imagine',
+    name: 'Reimagine a Space',
+    tagline: 'A tool to help anyone quickly create a visual render of an idea they have.',
+    blurb: 'Pick a spot on the map and step into its Street View. Place benches, trees, lighting and more where they would go, say what the idea is and why, and post it to the map for others to see.',
+    ...tone(CHARACTER.citizen),
+    icon: 'sparkle',
+    createdBy: 'PLACER',
+    duration: 'About 5 minutes',
+    component: ReimagineASpace,
+    launch: true,
   },
 ];
 

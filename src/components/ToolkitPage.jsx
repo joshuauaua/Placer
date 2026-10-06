@@ -255,7 +255,12 @@ function StartRoomSignedOut({ t, onSignIn }) {
   );
 }
 
-export function ToolkitPage({ t, displayName = null, needsAccount = false, onSignIn }) {
+/**
+ * `onLaunchTool(toolId, projectId)` takes over from a tool marked `launch` (see
+ * toolkit/tools.js) when its cover's Get started is pressed — App, which runs that
+ * tool's flow. Without it, such a tool opens like any other.
+ */
+export function ToolkitPage({ t, displayName = null, needsAccount = false, onSignIn, onLaunchTool }) {
   const [location, navigate] = useLocation();
   const search = useSearch();
   const requestedId = toolIdFrom(location);
@@ -324,7 +329,10 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
   if (tool && Tool && startedId !== tool.id) {
     return (
       <ToolCover t={t} tool={tool}
-        onStart={() => setStartedId(tool.id)}
+        onStart={() => {
+          if (tool.launch && onLaunchTool) onLaunchTool(tool.id, projectId);
+          else setStartedId(tool.id);
+        }}
         onBack={() => navigate('/toolkit')} />
     );
   }
@@ -389,7 +397,8 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
             ) : (
               <>
                 <RoomBar t={t} tool={tool} room={room} />
-                <Tool t={t} tool={tool} room={room} />
+                <Tool t={t} tool={tool} room={room}
+              onLaunch={tool.launch && onLaunchTool ? () => onLaunchTool(tool.id, projectId) : undefined} />
               </>
             )}
           </ToolLayout>
