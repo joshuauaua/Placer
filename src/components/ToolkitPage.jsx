@@ -47,41 +47,49 @@ export function toolIdFrom(path) {
   }
 }
 
+/** A tool's `added` date as the card shows it: 27 Aug 2026. */
+function publishedOn(added) {
+  return new Date(`${added}T00:00:00Z`).toLocaleDateString('en-GB',
+    { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+/**
+ * One tool as a card, for the grid: its picture with the category's tag at the top
+ * left and an arrow at the top right, then its name, its tagline and when it was
+ * published. On hover the picture zooms a little, the arrow turns up to the right
+ * and a shadow in the category's colour shows along the picture's top and right
+ * (index.css). A tool without a picture gets a cover drawn from its icon.
+ */
 function Tile({ t, tool, onOpen }) {
+  const colour = findCategory(tool.category)?.colour;
   return (
     <button
       onClick={onOpen}
-      style={{ position: 'relative', overflow: 'hidden', textAlign: 'left', cursor: 'pointer', flex: 1,
-        border: `1px solid ${tool.color}`, borderRadius: 16, padding: 24, minHeight: 220,
-        background: tool.tint,
-        color: t.ink, display: 'flex', flexDirection: 'column', gap: 8,
-        fontFamily: 'var(--placer-font)', boxShadow: 'none',
-        transition: 'box-shadow 0.2s' }}
-      onMouseEnter={(event) => { event.currentTarget.style.boxShadow = t.shadow; }}
-      onMouseLeave={(event) => { event.currentTarget.style.boxShadow = 'none'; }}>
-      {/* The tool's own mark, oversized and half out of frame. */}
-      <span aria-hidden="true" style={{ position: 'absolute', right: -18, bottom: -22, opacity: 0.18 }}>
-        <Icon name={tool.icon} size={150} stroke={1.4} />
+      className="placer-toolkit-tile"
+      style={{ '--tile-shadow': colour?.c300 ?? tool.hover, color: t.ink }}>
+      <span className="placer-toolkit-tile-frame">
+        {tool.image ? (
+          <img className="placer-toolkit-tile-image" src={tool.image} alt="" />
+        ) : (
+          <span className="placer-toolkit-tile-image" aria-hidden="true"
+            style={{ background: colour?.c100 ?? tool.tint, color: colour?.c700 ?? tool.color }}>
+            <Icon name={tool.icon} size={88} stroke={1.4} />
+          </span>
+        )}
+        <span className="placer-toolkit-tile-tag"
+          style={{ background: colour?.c100, color: colour?.c900, borderColor: colour?.c700 }}>
+          {findCategory(tool.category)?.name}
+        </span>
+        <span className="placer-toolkit-tile-arrow" aria-hidden="true">
+          <Icon name="arrowRight" size={18} stroke={2.2} />
+        </span>
       </span>
 
-      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, position: 'relative' }}>
-        <Icon name={tool.icon} size={30} stroke={2.1} />
-        <CategoryLabel t={t} tool={tool} />
-      </span>
-      <span className="placer-h3" style={{ position: 'relative' }}>
-        {tool.name}
-      </span>
-      <span style={{ fontSize: 16, lineHeight: '24px', position: 'relative', maxWidth: 320 }}>
-        {tool.tagline}
-      </span>
-      {tool.createdBy && (
-        <span className="placer-caption" style={{ color: t.inkDim, position: 'relative' }}>
-          By {tool.createdBy}
-        </span>
-      )}
-      <div style={{ flex: 1 }} />
-      <span className="placer-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, position: 'relative' }}>
-        Open <Icon name="arrowRight" size={14} stroke={2.4} />
+      <span className="placer-h3">{tool.name}</span>
+      <span style={{ fontSize: 15, lineHeight: '22px', color: t.inkDim }}>{tool.tagline}</span>
+      {/* Room on the right for the heart, which sits over the card (see the grid). */}
+      <span className="placer-caption" style={{ color: t.inkDim, paddingRight: 44 }}>
+        {publishedOn(tool.added)}{tool.createdBy && ` · By ${tool.createdBy}`}
       </span>
     </button>
   );
@@ -426,11 +434,11 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
             {matching.length > 0 && view === 'grid' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
                 {matching.map((entry) => (
-                  <div key={entry.id} style={{ position: 'relative', display: 'flex' }}>
+                  <div key={entry.id} style={{ position: 'relative', display: 'flex', alignSelf: 'start' }}>
                     <Tile t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
                     <FavouriteButton t={t} name={entry.name} favourite={favourites.includes(entry.id)}
                       onToggle={() => toggleFavourite(entry.id)}
-                      style={{ position: 'absolute', right: 14, bottom: 14 }} />
+                      style={{ position: 'absolute', right: 0, bottom: -7 }} />
                   </div>
                 ))}
               </div>
