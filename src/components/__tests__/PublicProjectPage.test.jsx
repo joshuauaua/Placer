@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { PublicProjectPage } from '../PublicProjectPage';
 import { readImaginationsByProject } from '../../services/imaginations';
-import { readLinks, readProject, readPublicToolkitActivity, readRelatedProjects } from '../../services/projects';
+import {
+  readLinks, readProject, readProjectTools, readPublicToolkitActivity, readRelatedProjects,
+} from '../../services/projects';
 import { follow, isFollowing, unfollow } from '../../services/follows';
 import { THEME } from '../../theme';
 
@@ -16,6 +18,7 @@ vi.mock('../../services/projects', () => ({
   recordProjectView: vi.fn(() => Promise.resolve()),
   readPublicToolkitActivity: vi.fn(() => Promise.resolve(0)),
   readRelatedProjects: vi.fn(() => Promise.resolve([])),
+  readProjectTools: vi.fn(() => Promise.resolve([])),
 }));
 
 vi.mock('../../services/follows', () => ({
@@ -33,7 +36,7 @@ const PROJECT = {
 const setup = (overrides = {}) => {
   const props = {
     t: THEME, projectId: 'proj-1', accountId: null,
-    onImagineForProject: vi.fn(), onBack: vi.fn(), onOpenProject: vi.fn(), onOpenToolkit: vi.fn(),
+    onBack: vi.fn(), onOpenProject: vi.fn(), onOpenToolkit: vi.fn(),
     ...overrides,
   };
   render(<PublicProjectPage {...props} />);
@@ -46,6 +49,8 @@ describe('PublicProjectPage', () => {
     vi.mocked(readLinks).mockResolvedValue([]);
     vi.mocked(readPublicToolkitActivity).mockResolvedValue(0);
     vi.mocked(readRelatedProjects).mockResolvedValue([]);
+    // Two tools added, so the tools section has something in it by default.
+    vi.mocked(readProjectTools).mockResolvedValue(['budget-ballot', 'reimagine-a-space']);
     vi.mocked(isFollowing).mockResolvedValue(false);
   });
 
@@ -83,7 +88,7 @@ describe('PublicProjectPage', () => {
     consoleError.mockRestore();
   });
 
-  it('lists the imaginations posted to it', async () => {
+  it('lists the imaginations posted to it, under Reimagine a Space', async () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
     vi.mocked(readImaginationsByProject).mockResolvedValue([
       { id: 'img-1', title: 'Pocket park', cat: 'green', upvotes: 4 },
@@ -92,14 +97,74 @@ describe('PublicProjectPage', () => {
     setup();
 
     expect(await screen.findByText('Pocket park')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Imagined with Reimagine a Space' })).toBeInTheDocument();
+    // Not a section of its own any more.
+    expect(screen.queryByRole('heading', { level: 2, name: /imaginations/i })).not.toBeInTheDocument();
   });
 
-  it('says so when nothing has been posted yet', async () => {
+  it('says so when nothing has been imagined yet', async () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
 
     setup();
 
-    expect(await screen.findByText(/Nothing posted to this project yet/)).toBeInTheDocument();
+    expect(await screen.findByText(/Nothing imagined for this project yet/)).toBeInTheDocument();
+  });
+
+  it('shows no imaginations when the project has not added Reimagine a Space', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    vi.mocked(readProjectTools).mockResolvedValue(['budget-ballot']);
+    vi.mocked(readImaginationsByProject).mockResolvedValue([
+      { id: 'img-1', title: 'Pocket park', cat: 'green', upvotes: 4 },
+    ]);
+
+    setup();
+
+    await screen.findByRole('button', { name: /Budget Ballot/ });
+    expect(screen.queryByText('Pocket park')).not.toBeInTheDocument();
+  });
+
+  it('shows only the tools the project added, in the order they were added', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    vi.mocked(readProjectTools).mockResolvedValue(['reimagine-a-space', 'open-vote']);
+
+    setup();
+
+    const tools = within(await screen.findByRole('region', { name: 'Tools' }));
+    await tools.findByRole('button', { name: /Open Vote/ });
+    expect(tools.getAllByRole('button').map((button) => button.textContent))
+      .toEqual([expect.stringContaining('Reimagine a Space'), expect.stringContaining('Open Vote')]);
+    expect(tools.queryByRole('button', { name: /Budget Ballot/ })).not.toBeInTheDocument();
+  });
+
+  it('says so when the project has not added any tools', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    vi.mocked(readProjectTools).mockResolvedValue([]);
+
+    setup();
+
+    expect(await screen.findByText('This project has not added any tools yet.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Budget Ballot/ })).not.toBeInTheDocument();
+  });
+
+  it('skips a tool the Toolkit no longer has', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    vi.mocked(readProjectTools).mockResolvedValue(['gone-tool', 'open-vote']);
+
+    setup();
+
+    expect(await screen.findByRole('button', { name: /Open Vote/ })).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Tools' })).getAllByRole('button')).toHaveLength(1);
+  });
+
+  it('still shows the project when its tools cannot be read', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    vi.mocked(readProjectTools).mockRejectedValue(new Error('relation does not exist'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    setup();
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' })).toBeInTheDocument();
+    expect(screen.getByText('This project has not added any tools yet.')).toBeInTheDocument();
   });
 
   it('lists news and resource links', async () => {
@@ -156,11 +221,11 @@ describe('PublicProjectPage', () => {
 
     const toc = within(await screen.findByRole('navigation', { name: 'On this page' }));
     expect(toc.getAllByRole('link').map((link) => link.textContent))
-      .toEqual(['Overview', 'Tools', 'Imaginations']);
+      .toEqual(['Overview', 'Tools']);
     expect(toc.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'location');
 
-    fireEvent.click(toc.getByRole('link', { name: 'Imaginations' }));
-    expect(toc.getByRole('link', { name: 'Imaginations' })).toHaveAttribute('aria-current', 'location');
+    fireEvent.click(toc.getByRole('link', { name: 'Tools' }));
+    expect(toc.getByRole('link', { name: 'Tools' })).toHaveAttribute('aria-current', 'location');
   });
 
   it('ends with related projects, which open', async () => {
@@ -219,13 +284,14 @@ describe('PublicProjectPage', () => {
     await waitFor(() => expect(unfollow).toHaveBeenCalledWith('project', 'proj-1'));
   });
 
-  it('sends you into the capture flow to imagine something for the project', async () => {
+  it('imagines for the project through Reimagine a Space, with no separate button for it', async () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
-    const { onImagineForProject } = setup();
+    const { onOpenToolkit } = setup();
 
-    fireEvent.click(await screen.findByRole('button', { name: /Imagine something for this project/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Reimagine a Space/ }));
 
-    expect(onImagineForProject).toHaveBeenCalledWith('proj-1');
+    expect(onOpenToolkit).toHaveBeenCalledWith('proj-1', 'reimagine-a-space');
+    expect(screen.queryByRole('button', { name: /Imagine something for this project/ })).not.toBeInTheDocument();
   });
 
   it('shows a map of the drawn location outline at the top, when the project has one', async () => {

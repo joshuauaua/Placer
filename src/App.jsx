@@ -211,9 +211,9 @@ function MainApp({ initialView = 'welcome' }) {
   // Where the map should open. Set when an imagination is posted, so the map comes
   // back centred on the new pin instead of the default location.
   const [mapFocus, setMapFocus] = useState(null);
-  // Set by a project's public page's "Imagine something for this project" button, so
-  // the imagination that comes out the other end of the capture flow is attached to
-  // it. Cleared by posting, and by starting a capture any other way (handleExplore) —
+  // Set when Reimagine a Space is started for a project (opened from the project's
+  // page, so its URL carries ?project=), so the imagination that comes out the other
+  // end of the capture flow is attached to it. Cleared by posting, and by starting a capture any other way (handleExplore) —
   // otherwise a project visited earlier in the session could tag something unrelated.
   const [activeProjectId, setActiveProjectId] = useState(null);
 
@@ -330,11 +330,9 @@ function MainApp({ initialView = 'welcome' }) {
     setCurrentView(next);
   };
 
-  // Imagining is the Toolkit's Reimagine a Space now. A project's "Imagine something
-  // for this project" goes to that tool with the project attached, and the tool's Get
-  // started hands back here (handleLaunchTool) to run the flow.
-  const handleImagineForProject = (id) => showProjectToolkit(id, REIMAGINE_TOOL);
-
+  // Imagining is the Toolkit's Reimagine a Space now, opened like any tool — from the
+  // Toolkit, or from a project's page with the project attached. Its Get started hands
+  // back here to run the flow.
   const handleLaunchTool = (toolId, projectId) => {
     if (toolId !== REIMAGINE_TOOL) return;
     posthog.capture('imagination_started', { project: Boolean(projectId) });
@@ -767,7 +765,6 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'projectPublic' && (
               <Suspense fallback={<LoadingFallback />}>
                 <PublicProjectPage t={t} projectId={projectRoute.id} accountId={accountId}
-                  onImagineForProject={handleImagineForProject}
                   onBack={() => show('projects')}
                   onOpenProject={showProjectPublic}
                   onOpenOrganisation={showOrganisationPublic}
