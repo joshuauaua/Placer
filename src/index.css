@@ -639,12 +639,13 @@ a {
  * the component.
  *
  * A wide rectangle centred in the space under the nav bar: the wordmark and
- * pitch on the left, and on the right two smaller cards one above the other,
- * each a photo beside its title and button. The credit and funder lockup run
- * the full width along the bottom, under a rule.
+ * pitch on the left, and on the right a carousel of three smaller cards, each
+ * mostly photo with its title and button underneath, one showing at a time
+ * with a row of dots below. The credit and funder lockup run the full width
+ * along the bottom, under a rule.
  *
- * Below 1024px only the pitch and the two buttons are left, stacked full width:
- * the smaller cards lose everything but their buttons, and the credit row goes.
+ * Below 1024px the pitch and the carousel stack full width, and the credit row
+ * goes.
  */
 .placer-landing-column {
   width: 100%;
@@ -675,26 +676,78 @@ a {
 }
 
 .placer-landing-actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
+/* All three cards share one grid cell, so the stack is as tall as the tallest
+ * and the cards cross-fade in place. Only opacity changes: a transform would
+ * trap the waitlist dialog, which is position:fixed inside its card. */
+.placer-landing-slides {
+  display: grid;
+}
+
 .placer-landing-option {
+  grid-area: 1 / 1;
   background: var(--placer-landing-option-bg);
   border: 1px solid var(--placer-landing-option-line);
   border-radius: 16px;
   overflow: hidden;
-  display: grid;
-  grid-template-columns: 40% minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.6s ease, visibility 0s linear 0.6s;
+}
+
+.placer-landing-option[data-active="true"] {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.6s ease, visibility 0s;
 }
 
 .placer-landing-option-photo {
   display: block;
   width: 100%;
-  height: 100%;
-  min-height: 160px;
+  aspect-ratio: 16 / 10;
   object-fit: cover;
+}
+
+.placer-landing-dots {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* A 10px dot inside a 24px hit area; the current one stretches to a pill. */
+.placer-landing-dot {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 7px solid transparent;
+  border-radius: 999px;
+  box-sizing: border-box;
+  background-clip: padding-box;
+  cursor: pointer;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.placer-landing-dot[aria-current="true"] {
+  width: 40px;
+}
+
+.placer-landing-dot:focus-visible {
+  outline: 2px solid var(--placer-blue-700);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-landing-option,
+  .placer-landing-option[data-active="true"],
+  .placer-landing-dot {
+    transition: none;
+  }
 }
 
 /* Spans both columns of the card, the credit at one end, the lockup the other. */
@@ -709,7 +762,7 @@ a {
 
 .placer-landing-option-body {
   flex: 1;
-  padding: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -745,28 +798,16 @@ a {
     border-radius: 16px;
   }
 
-  /* Only the pitch and the two buttons on a phone: each smaller card gives up
-   * its fill, hairline, photo and title, leaving its button in the flow. */
-  .placer-landing-option {
-    display: block;
-    background: none;
-    border: none;
-    border-radius: 0;
-    overflow: visible;
-  }
-
-  .placer-landing-option-photo,
-  .placer-landing-option-title,
   .placer-landing-footer {
     display: none;
   }
 
   .placer-landing-option-body {
-    padding: 0;
+    padding: 16px;
   }
 }
 
-/* PLACER — the landing page's feedback and User Labs triggers.
+/* PLACER — the landing page's feedback, User Labs and survey triggers.
  *
  * Each sits at the foot of its own smaller card on the landing card, filling
  * its width (see .placer-landing-option).
@@ -804,6 +845,10 @@ a {
   background: var(--placer-blue-300) !important;
 }
 
+.placer-survey-trigger:hover {
+  background: var(--placer-orange-300) !important;
+}
+
 @media (max-width: 1023px) {
   .placer-feedback-trigger,
   .placer-labs-trigger {
@@ -819,7 +864,6 @@ a {
     transition: none;
   }
 }
-
 
 /* PLACER — the survey on a narrow screen.
  *
@@ -1028,7 +1072,6 @@ a {
   background: rgba(255, 255, 255, 0.12);
   -webkit-backdrop-filter: blur(24px) saturate(140%);
   backdrop-filter: blur(24px) saturate(140%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
   box-shadow: var(--placer-shadow);
 }
 
@@ -1042,6 +1085,9 @@ a {
   line-height: 1;
   font-size: 22px;
   min-width: 72px;
+  /* Heavier than Helvetica Bold, which is the heaviest weight the system font
+   * offers: a hairline outline in the text's own colour thickens each stroke. */
+  -webkit-text-stroke: 0.04em currentColor;
 }
 
 @media (min-width: 1024px) {
