@@ -62,10 +62,6 @@ function FooterLink({ active, onClick, children }) {
   );
 }
 
-function Placeholder({ t, children }) {
-  return <span style={{ color: t.inkFaint }}>{children}</span>;
-}
-
 /**
  * The footer under every MainApp view except the map. `view` is the one showing, so
  * its link can read as the current page; `onNavigate` is MainApp's `show`.
@@ -115,12 +111,18 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
 
         <div className="placer-footer-bottom" style={{ marginTop: 40, paddingTop: 24, borderTop: `1px solid ${t.line}`,
           fontSize: 12, lineHeight: '16px', letterSpacing: '0.01em' }}>
-          <span style={{ color: t.inkDim }}>© 2026 PLACER. All rights reserved.</span>
+          <span style={{ color: t.inkDim }}>
+            Open source under the{' '}
+            <a className="placer-footer-link" href="https://www.gnu.org/licenses/agpl-3.0.html"
+              target="_blank" rel="noopener noreferrer">AGPLv3 License</a>
+            {' · '}
+            <a className="placer-footer-link" href="https://github.com/joshuauaua/Placer"
+              target="_blank" rel="noopener noreferrer">Source code</a>
+          </span>
           {/* Privacy and terms are one page for now, so both open it. */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
             <FooterLink active={view === 'terms'} onClick={() => onNavigate('terms')}>Privacy Policy</FooterLink>
             <FooterLink active={view === 'terms'} onClick={() => onNavigate('terms')}>Terms of Service</FooterLink>
-            <Placeholder t={t}>Security</Placeholder>
           </div>
         </div>
       </div>

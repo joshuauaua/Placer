@@ -1,202 +1,191 @@
-# Placemaking Tool
+# PLACER
 
-An interactive web application for reimagining public spaces using Google Maps Street View and HTML5 Canvas manipulation.
+Placer is the open toolkit for co-designing shared spaces. It gives residents,
+placemakers and cities one place to understand how a space is used today, imagine how
+it could change, and plan that change together.
 
-## Features
+It is a React single-page app. Supabase holds accounts and data, Cloudflare R2 holds
+uploaded pictures, and Google Maps provides the maps and Street View. Every backend is
+optional: with none configured, the app still runs and keeps everything in the
+browser.
 
-- **Google Maps & Street View Integration**: Navigate to any location and capture the view
-- **Interactive Canvas Editor**: Drag, resize, and rotate visual assets (trees, benches, etc.) on top of Street View
-- **Before/After Comparison**: Interactive slider to compare original and reimagined spaces
-- **Project Management**: Save, upvote, comment, and share your placemaking visions
-- **Asset Library**: Pre-loaded visual assets for common placemaking elements
+## What you can do
 
-## Tech Stack
+### Imagine a space
 
-- **React** (Vite) - Fast, modern React development
-- **Tailwind CSS** - Utility-first CSS framework
-- **React-Konva** - React wrapper for HTML5 Canvas manipulation
-- **Google Maps JavaScript API** - Maps and Street View integration
-- **localStorage** - Mock persistence layer (easily swappable for real backend)
+Reimagine a Space turns an idea for a street corner into a picture, in three steps:
 
-## Getting Started
+1. **Place.** Pick a spot on the map, open it in Street View, and capture the view.
+   Then drag, resize and rotate benches, trees and other assets onto it.
+2. **Describe.** Say what is wrong with the place today and what you propose.
+3. **Post.** Review the before and after, then post it to the community map.
+
+### Run a project
+
+A project is the home for one place and the change it is working towards. Starting one
+takes a few short screens:
+
+- the kind of project: you have a say over a place, you want to push for change in
+  one, or something else
+- the basics: its name and goals, who can see it, and whether it has a budget (the
+  budget is shown only to its organisers)
+- the address
+- the tools it will use
+- a cover image
+
+Organisers then get a **project dashboard** with views, a roster and documentation.
+Everyone else gets a **public project page**, where each chosen tool appears in its own
+section: an Open Vote's poll, for example, appears right on the page.
+
+Projects are public by default. A **private** project can be seen only by people its
+organisers let in, and anybody else can ask for access.
+
+### Use the Toolkit
+
+The Toolkit at `/toolkit` is a gallery of small tools, grouped by what they help with:
+
+| Understand | Imagine | Plan |
+| --- | --- | --- |
+| Desire Lines | Street Section Mixer | Budget Ballot |
+| 15-Minute Reach | Reimagine a Space | Open Vote |
+| The Social Space Survey | | |
+| Site-Specific Spatial Mapping Tool | | |
+| Stationary Activity Mapping | | |
+
+Some tools can run in a **room**: a facilitator opens one, participants join from their
+own phones with a PIN or QR code, and their answers combine live. A project can attach
+rooms so that the results sit on its page.
+
+### Everything around it
+
+- **Explore** (`/explore`): a map of projects and organisations near you, with search
+  and saved places.
+- **Organisations**: a public page, a dashboard for its admins, and the projects
+  running under it.
+- **Dashboard** (`/dashboard`): your projects, suggested next steps, and recent
+  activity.
+- **People and following**: public profiles, following people, projects and
+  organisations, and notifications.
+- **Resources, Guides, Quickstart, Project examples and FAQ**: reading material. The
+  Resources articles come from Storyblok.
+- **User Labs** (`/user-labs`): apply to an in-person testing session.
+- **Settings**: your profile and your analytics consent. You can download or erase
+  your data from the Terms and Privacy page.
+
+## Tech stack
+
+- **React 19** with [Vite+](https://github.com/voidzero-dev/vite-plus) (`vp`) for dev,
+  build, lint and tests (Vitest with Testing Library)
+- **wouter** for routing
+- **React-Konva** for the imagination canvas, and **OpenCV.js** for stitching Street
+  View captures
+- **Google Maps JavaScript API**, with Street View, Places and the Static APIs
+- **Supabase** for accounts, Postgres with row-level security, realtime rooms and Edge
+  Functions
+- **Cloudflare R2** for imagination previews, covers and photos
+- **Storyblok** for Resources articles
+- **PostHog** for analytics, loaded only after the visitor accepts cookies
+- **Vercel** for hosting
+
+## Getting started
 
 ### Prerequisites
 
-- Node.js (v18 or higher recommended)
-- npm or yarn
-- Google Maps API Key with Maps JavaScript API and Street View enabled
+- Node.js 20.19+, 22.18+ or 24.11+
+- A Google Maps API key, if you want the maps. You can work on the Toolkit without one.
 
 ### Installation
 
-1. Clone the repository:
 ```bash
-git clone <your-repo-url>
-cd Plot
+git clone https://github.com/joshuauaua/Placer.git
+cd Placer
+npm ci
+cp .env.example .env
+npm run dev          # http://localhost:5173
 ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+Re-run `npm ci` after pulling a commit that changes `package-lock.json`. `npm audit`
+reads the lockfile, not `node_modules`, so it reports a clean tree even while an
+outdated (and possibly vulnerable) build stays installed. Run `npm run deps:check` at
+any time to confirm that `node_modules` matches the lockfile.
 
-Re-run `npm ci` after pulling a commit that changes `package-lock.json` — `npm audit`
-reads the lockfile, not `node_modules`, so it reports a clean tree even while an outdated
-(and possibly vulnerable) build stays installed. Run `npm run deps:check` at any time to
-confirm `node_modules` matches the lockfile.
+Opt in to the repository's git hooks, which do nothing until you run this:
 
-Opt in to the repository's git hooks, which do nothing at all until you run this:
 ```bash
 git config core.hooksPath .githooks
 ```
-That enables four hooks. `post-merge` runs the check above after every `git pull`/`git
-merge` and only ever prints a warning. `pre-commit`, `pre-merge-commit` and `pre-push` do
-block, and only ever for one thing: keeping the `landingpage` holding page out of the app
-branches (see [Branches](#branches)). Nothing else in `.githooks/` stops a commit, a
-merge or a push.
 
-3. Set up environment variables:
-```bash
-cp .env.example .env
+That enables four hooks. `post-merge` runs the check above after every `git pull` or
+`git merge`, and it only ever prints a warning. `pre-commit`, `pre-merge-commit` and
+`pre-push` do block, and only ever for one reason: to keep the `landingpage` holding
+page out of the app branches (see [Branches](#branches)). Nothing else in `.githooks/`
+stops a commit, a merge or a push.
+
+### Environment variables
+
+Each variable is documented in [`.env.example`](.env.example). They are all optional,
+and each one switches on one part of the app:
+
+| Variable | Turns on |
+| --- | --- |
+| `VITE_GOOGLE_MAPS_API_KEY` | maps, Street View and capture (needs Maps JavaScript, Street View Static and Maps Static) |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | accounts, projects, organisations, the community map, Toolkit rooms, following and notifications |
+| `VITE_MEDIA_URL` | uploaded pictures (the public address of the R2 bucket) |
+| `VITE_STORYBLOK_TOKEN` | Resources articles |
+| `VITE_POSTHOG_KEY`, `VITE_POSTHOG_HOST` | analytics, behind the cookie banner |
+| `VITE_ADMIN_ENABLED` | `/admin` and `/admin/imaginations` (a build-time flag, not authentication) |
+
+Without Supabase, identity falls back to a display name stored on this device, and
+anything posted stays in this browser. Setting up the database, accounts, R2 uploads
+and the Slack notifications is covered step by step in
+[`supabase/README.md`](supabase/README.md).
+
+Vite reads `VITE_` variables at build time, so restart the dev server after changing
+them, and redeploy after changing them on Vercel.
+
+## Scripts
+
+| Command | Does |
+| --- | --- |
+| `npm run dev` | starts the dev server |
+| `npm test` / `npm run test:run` | runs the tests in watch mode / runs them once |
+| `npm run lint` | lints the code |
+| `npm run build` | builds into `dist/`, after checking dependencies and migrations |
+| `npm run preview` | serves the built `dist/` |
+| `npm run deps:check` | checks that `node_modules` matches the lockfile |
+| `npm run migrations:check` | checks that `supabase/migrations/` matches the SQL it is generated from |
+| `npm run toolkit:scope` | checks that a change stays inside the Toolkit sandbox |
+
+On Node 25 and later, run the tests with `NODE_OPTIONS=--no-experimental-webstorage`.
+Without it, Node's built-in `localStorage` shadows jsdom's and around 150 tests fail
+for no real reason.
+
+## Project structure
+
+```
+src/
+├── App.jsx              # routes and the main app shell
+├── components/          # pages and shared UI
+│   ├── toolkit/         # the Toolkit tools
+│   └── survey/          # the placemaking survey
+├── toolkit/             # the tool register (tools.js) and room helpers
+├── services/            # Supabase, R2, Storyblok and localStorage data access
+├── lib/                 # pure logic: maps, image stitching, the tools' arithmetic
+└── theme.js             # design tokens
+supabase/
+├── *.sql                # schema and row-level security, one file per feature
+├── migrations/          # the same SQL, for `supabase db push`
+└── functions/           # Edge Functions: media uploads, survey → Slack
+scripts/                 # the deps, migrations and sandbox checks
+docs/PRD.md              # the product requirements
 ```
 
-4. Add your Google Maps API key to `.env`:
-```
-VITE_GOOGLE_MAPS_API_KEY=your_actual_api_key_here
-```
+## Contributing
 
-### Getting a Google Maps API Key
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the following APIs:
-   - Maps JavaScript API
-   - Street View Static API (optional)
-4. Create credentials (API Key)
-5. Copy the API key to your `.env` file
-
-### Running the Development Server
-
-```bash
-npm run dev
-```
-
-The application will be available at `http://localhost:5173`
-
-## Project Structure
-
-```
-Plot/
-├── src/
-│   ├── components/
-│   │   ├── MapContainer.jsx          # Google Maps & Street View
-│   │   ├── ImaginationCanvas.jsx     # React-Konva canvas editor
-│   │   ├── SidebarForm.jsx           # Project metadata form
-│   │   └── BeforeAfterSlider.jsx     # Before/After comparison slider
-│   ├── services/
-│   │   └── api.js                    # localStorage mock API layer
-│   ├── App.jsx                       # Main application orchestrator
-│   ├── main.jsx                      # React entry point
-│   └── index.css                     # Tailwind CSS imports
-├── public/                           # Static assets
-├── .env.example                      # Environment variables template
-└── package.json
-```
-
-## Architecture Highlights
-
-### No Backend - Mock API Service
-
-All data persistence is handled through `src/services/api.js`, which uses `localStorage` and async/await patterns. This design allows you to:
-
-- Develop the full UI without a backend
-- Easily swap to real API calls later by replacing the service implementation
-- Test all features locally without network dependencies
-
-Example service function:
-```javascript
-export const saveImagination = async (imaginationData) => {
-  await simulateDelay(); // Mimics network latency
-  // localStorage operations...
-  return savedData;
-};
-```
-
-### React-Konva Canvas Architecture
-
-The `ImaginationCanvas` component uses React-Konva for powerful canvas manipulation:
-
-- **Stage**: The main canvas container
-- **Layer**: Canvas drawing layer
-- **Image**: Individual asset nodes
-- **Transformer**: Handles resize, rotate, and transform operations
-
-Each asset is independently selectable, draggable, and transformable using Konva's built-in transformer handles.
-
-### Component Communication
-
-The App.jsx orchestrates all components through props and callbacks:
-
-- **State Management**: Centralized in App.jsx using React hooks
-- **View Routing**: Simple state-based view switching (map → canvas → comparison)
-- **Data Flow**: Unidirectional, props down, callbacks up
-
-## Usage Workflow
-
-1. **Navigate**: Use Google Maps and Street View to find your location
-2. **Capture**: Click "Capture View for Imagination" to lock the current view
-3. **Edit**: Add assets from the library by clicking them, then drag/resize/rotate on canvas
-4. **Compare**: Switch to Before/After view to see your changes
-5. **Save**: Fill in project details and save to localStorage
-6. **Share**: Export your imagination as a JSON file
-
-## Customization
-
-### Adding New Assets
-
-Edit `src/services/api.js` and add to the `defaultAssets` array:
-
-```javascript
-{
-  id: 'asset-7',
-  name: 'Fountain',
-  category: 'features',
-  imageUrl: 'https://example.com/fountain.png',
-  width: 150,
-  height: 150
-}
-```
-
-### Swapping to Real Backend
-
-Replace the functions in `src/services/api.js` with actual HTTP calls:
-
-```javascript
-export const saveImagination = async (imaginationData) => {
-  const response = await fetch('/api/imaginations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(imaginationData)
-  });
-  return response.json();
-};
-```
-
-No changes needed in UI components!
-
-## Development Tips
-
-### Canvas Performance
-
-For better performance with many assets:
-- Use `pixelPerfect={false}` on Konva Stage for faster hit detection
-- Implement virtualization for large asset libraries
-- Cache images using the `use-image` hook
-
-### Google Maps Optimization
-
-- Load the Maps API script only once
-- Use appropriate zoom levels to reduce API calls
-- Consider implementing Street View panorama caching
+Contributions are welcome **in the Toolkit**: new tools, or improvements to existing
+ones. The rest of the app is not open to pull requests, so please open an issue
+first. [CONTRIBUTING.md](CONTRIBUTING.md) explains what is in scope and how to add a
+tool.
 
 ## Branches
 
@@ -205,59 +194,37 @@ Three branches are long-lived, and two of them are deliberately not the same cod
 | Branch | Serves | Role |
 | --- | --- | --- |
 | `landingpage` | the apex domain | the PLACER holding page, shown while the app is in beta |
-| `main` | the `beta.` subdomain | production — the app itself |
+| `main` | the `beta.` subdomain | production: the app itself |
 | `Development` | — | staging and the working branch; promoted to `main` |
 
-`landingpage` is temporary and **must never be merged**. It exists so the public domain
-can show a holding page while the app stays reachable for testing, and it ends by being
-deleted once the app is stable enough to serve the apex itself — not by being merged
-back. Merging it would replace the app's home view with the holding page. To move a
+`landingpage` is temporary and **must never be merged**. It exists so that the public
+domain can show a holding page while the app stays reachable for testing. It will be
+deleted, not merged back, once the app is stable enough to serve the apex domain
+itself. Merging it would replace the app's home view with the holding page. To move a
 single change off it, cherry-pick that commit onto `Development`.
 
-Four guards enforce that, because no one of them is sufficient:
+Four guards enforce that, because none of them is enough on its own:
 
 - **`pre-commit`** refuses the commit that concludes a merge of the branch. This is the
   one that fires in practice: `landingpage` and `Development` always conflict, and git
-  skips `pre-merge-commit` on the conflicting path.
-- **`pre-merge-commit`** covers the same merge in the case where it applies cleanly.
-- **`pre-push`** refuses a push that would put its commits on `main` or `Development`,
-  whatever route they took to get there.
-- **the `landingpage is not merged` CI job** fails any pull request opened from the
-  branch, or from a branch cut off it.
+  skips `pre-merge-commit` when a merge conflicts.
+- **`pre-merge-commit`** covers the same merge when it applies cleanly.
+- **`pre-push`** refuses a push that would put the branch's commits on `main` or
+  `Development`, whatever route they took to get there.
+- **The `landingpage is not merged` CI job** fails any pull request opened from the
+  branch, or from a branch cut from it.
 
 The hooks need `core.hooksPath` set (see [Installation](#installation)). The CI job is
-the only guard that works in a fresh clone, and the hooks are the only guards the
-repository owner cannot bypass — the rulesets on `main` and `Development` exempt the
-admin role unconditionally, so a required status check is a red light the owner can still
-drive through.
-
-## Building for Production
-
-```bash
-npm run build
-```
-
-The optimized build will be in the `dist/` directory.
-
-## Future Enhancements
-
-- [ ] Real-time collaboration (multiple users editing same space)
-- [ ] Advanced asset manipulation (opacity, filters, shadows)
-- [ ] Asset upload from user's device
-- [ ] Export as high-resolution image
-- [ ] Social features (community feed, trending reimaginations)
-- [ ] Integration with city planning APIs
-- [ ] AR preview mode
-- [ ] AI-powered asset suggestions
+the only guard that works in a fresh clone. The hooks are the only guards the
+repository owner cannot bypass, because the rulesets on `main` and `Development` exempt
+the admin role unconditionally: a required status check is a red light the owner can
+still drive through.
 
 ## License
 
-MIT
-
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request.
+Placer is open source under the [GNU Affero General Public License v3.0](LICENSE).
 
 ## Support
 
-For issues and questions, please open an issue on GitHub.
+For bugs and questions, open an issue on GitHub, use the bug report button in the app,
+or email [info@plcr.org](mailto:info@plcr.org).
