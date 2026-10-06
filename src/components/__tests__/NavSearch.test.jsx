@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { NavSearch } from '../NavSearch';
 import { search } from '../../services/search';
 import { THEME } from '../../theme';
@@ -113,5 +113,70 @@ describe('NavSearch', () => {
     fireEvent.change(input, { target: { value: 'mal' } });
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Could not search'));
+  });
+});
+
+describe('NavSearch on a phone', () => {
+  // jsdom applies no stylesheet, so the box and its magnifier are both in the page
+  // here; on a real phone index.css shows only the magnifier.
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(search).mockResolvedValue(RESULTS);
+  });
+
+  const openPanel = () => {
+    const onSelect = vi.fn();
+    render(<NavSearch t={THEME} onSelect={onSelect} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    return { onSelect, panel: screen.getByRole('dialog', { name: 'Search' }) };
+  };
+
+  it('opens the search as a panel, ready to type into', () => {
+    const { panel } = openPanel();
+
+    const input = within(panel).getByRole('combobox', { name: /Search people, organisations and projects/ });
+    expect(input).toHaveFocus();
+    expect(panel).toHaveClass('placer-search-panel');
+    // Portalled out of the bar, whose backdrop-filter would clip it.
+    expect(panel.parentElement).toBe(document.body);
+    expect(screen.getByRole('button', { name: 'Close search' })).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('lists the suggestions inside the panel', async () => {
+    const { panel } = openPanel();
+
+    fireEvent.change(within(panel).getByRole('combobox'), { target: { value: 'mal' } });
+
+    expect(await within(panel).findByRole('option', { name: /Mara Quinn/ })).toBeInTheDocument();
+    expect(screen.getAllByRole('listbox')).toHaveLength(1);
+  });
+
+  it('closes once a suggestion is chosen, and opens it', async () => {
+    const { panel, onSelect } = openPanel();
+
+    fireEvent.change(within(panel).getByRole('combobox'), { target: { value: 'mal' } });
+    fireEvent.mouseDown(await within(panel).findByRole('option', { name: /^Malmö Stad/ }));
+
+    expect(onSelect).toHaveBeenCalledWith(RESULTS[1]);
+    expect(screen.queryByRole('dialog', { name: 'Search' })).not.toBeInTheDocument();
+  });
+
+  it('closes on Escape, handing focus back to the magnifier', () => {
+    const { panel } = openPanel();
+
+    fireEvent.keyDown(within(panel).getByRole('combobox'), { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog', { name: 'Search' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Search' })).toHaveFocus();
+  });
+
+  it('closes from its button, and from a press outside it', () => {
+    openPanel();
+    fireEvent.click(screen.getByRole('button', { name: 'Close search' }));
+    expect(screen.queryByRole('dialog', { name: 'Search' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByRole('dialog', { name: 'Search' })).not.toBeInTheDocument();
   });
 });

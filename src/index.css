@@ -1086,18 +1086,74 @@ a {
   width: 360px;
 }
 
-/* On a phone the box is narrow, so the list spans the window under the bar instead. */
+/* Its magnifier, which stands in for the box on a phone and opens the search panel. */
+.placer-nav-search-trigger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.placer-nav-search-trigger:hover {
+  background: var(--placer-grey-100);
+}
+
+.placer-nav-search-trigger:focus-visible {
+  outline: 2px solid var(--placer-blue-700);
+  outline-offset: 2px;
+}
+
 @media (max-width: 639px) {
   .placer-nav-search-field {
-    width: 150px;
+    display: none;
   }
 
-  .placer-nav-search-list {
-    position: fixed;
-    top: 64px;
-    left: var(--placer-margin);
-    right: var(--placer-margin);
-    width: auto;
+  .placer-nav-search-trigger {
+    display: flex;
+  }
+}
+
+/* The search panel on a phone: everything under the bar, in the same glass as the
+ * landing page's menu panel. The bar above is glass already, and the kit never stacks
+ * glass on glass, so this is the glass fallback, white at 85% over the blur. The field
+ * sits across the middle, a little way down, with its suggestions straight under it. */
+.placer-search-panel {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 159;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  padding: 15vh var(--placer-margin) 40px;
+  background: rgba(255, 255, 255, 0.85);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+}
+
+.placer-search-panel-inner {
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.placer-search-panel-list {
+  position: static;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .placer-search-panel {
+    background: rgba(255, 255, 255, 0.92);
   }
 }
 
