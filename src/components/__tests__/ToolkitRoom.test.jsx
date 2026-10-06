@@ -222,10 +222,14 @@ describe('opening a room that stays open for weeks', () => {
 
     renderAt('/toolkit/open-vote', 'project=proj-1');
 
-    fireEvent.change(screen.getByLabelText(/open for/i), { target: { value: '30d' } });
+    // Open Vote is set up first, and how long it stays open is chosen there.
     fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
+    fireEvent.change(screen.getByLabelText('The question'), { target: { value: 'Should the square be car-free?' } });
+    fireEvent.change(screen.getByLabelText(/open for/i), { target: { value: '30d' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Open the room' }));
 
-    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('open-vote', 'proj-1', '30d'));
+    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('open-vote', 'proj-1', '30d',
+      { question: 'Should the square be car-free?' }));
   });
 });
 

@@ -49,10 +49,22 @@ describe('the register', () => {
     }
   });
 
-  it('starts every setup from one the tool accepts', () => {
+  it('starts every setup from one the tool can check', () => {
+    // Not necessarily one it accepts: an Open Vote has no question until the organiser
+    // writes one.
     for (const tool of TOOLS.filter((entry) => entry.setup)) {
-      expect(tool.setup.problems(tool.setup.defaults()), tool.id).toEqual([]);
+      const problems = tool.setup.problems(tool.setup.defaults());
+      expect(Array.isArray(problems), tool.id).toBe(true);
+      for (const problem of problems) expect(typeof problem, tool.id).toBe('string');
     }
+  });
+
+  it('asks the organiser for the Open Vote question, and keeps it within bounds', () => {
+    const { setup } = TOOLS.find((tool) => tool.id === 'open-vote');
+    expect(setup.problems(setup.defaults())).toEqual(['Write the question you want people to vote on.']);
+    expect(setup.problems({ question: '   ' })).toHaveLength(1);
+    expect(setup.problems({ question: 'x'.repeat(201) })).toHaveLength(1);
+    expect(setup.problems({ question: 'Should the square be car-free?' })).toEqual([]);
   });
 });
 

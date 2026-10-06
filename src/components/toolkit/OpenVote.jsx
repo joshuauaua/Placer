@@ -5,6 +5,10 @@
  * never published anywhere; only the vote a person picks is sent to the room, so its
  * tally is exactly the three-way split people actually cast.
  *
+ * A room set up for a project (`room.config`, see `setup` in toolkit/tools.js) has its
+ * question fixed: the organiser wrote it before opening the room, so it is shown
+ * rather than typed.
+ *
  * The counting is in src/lib/openVote.js.
  */
 
@@ -32,6 +36,7 @@ function VoteMeters({ t, result }) {
 
 export function OpenVote({ t, tool, room }) {
   const [question, setQuestion] = useState('');
+  const fixedQuestion = room?.config?.question ?? null;
   const [choice, setChoice] = useState(null);
 
   // Held in a ref rather than an effect dependency: the room object is rebuilt on
@@ -54,6 +59,13 @@ export function OpenVote({ t, tool, room }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(280px, 1fr)', gap: 20, alignItems: 'start' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+        {fixedQuestion ? (
+          <Panel t={t} title="The question">
+            <p style={{ fontSize: 22, fontWeight: 700, color: t.ink, lineHeight: 1.35, letterSpacing: '-0.02em' }}>
+              {fixedQuestion}
+            </p>
+          </Panel>
+        ) : (
         <Panel t={t} title="Ask something">
           <label htmlFor="open-vote-question"
             style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: t.inkDim, marginBottom: 8 }}>
@@ -74,6 +86,7 @@ export function OpenVote({ t, tool, room }) {
             counted is the vote below, not the wording.
           </p>
         </Panel>
+        )}
 
         <Panel t={t} title="Cast your vote">
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>

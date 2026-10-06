@@ -13,7 +13,10 @@
  *     and is the only thing that can close it. One per room, and only the room's
  *     creator ever has it.
  *
- * Both live in localStorage, and both are therefore listed in STORAGE_KEYS in
+ * A third key, ANSWERS_KEY, remembers what this browser answered in a room from a
+ * project's page, so coming back shows the results rather than the question again.
+ *
+ * All three live in localStorage, and all are therefore listed in STORAGE_KEYS in
  * services/api.js — a key missing from that registry is silently skipped by the
  * GDPR export and erasure requests. The literals are declared here rather than
  * imported, matching services/profile.js; services/__tests__/api.test.js holds the
@@ -24,6 +27,8 @@
 const PARTICIPANT_KEY = 'placemaking_room_participant';
 /** Rooms this browser opened: { [roomId]: { pin, token, code } }. */
 const HOSTED_KEY = 'placemaking_rooms_hosted';
+/** What this browser answered in a room from a project's page: { [roomId]: state }. */
+const ANSWERS_KEY = 'placemaking_room_answers';
 
 export const PIN_LENGTH = 6;
 
@@ -224,4 +229,21 @@ export function forgetHostedRoom(roomId) {
   if (!hosted || !(roomId in hosted)) return;
   delete hosted[roomId];
   writeJson(HOSTED_KEY, hosted);
+}
+
+/**
+ * Remember what this browser answered in a room, so a project's page can show the
+ * results instead of the question when somebody comes back. Only a convenience: the
+ * one-answer-per-browser rule itself is the participant token, which makes a second
+ * answer replace the first rather than add to it (toolkit_contribution_save).
+ */
+export function rememberAnswer(roomId, state) {
+  const answers = readJson(ANSWERS_KEY) ?? {};
+  answers[roomId] = state;
+  writeJson(ANSWERS_KEY, answers);
+}
+
+/** What this browser answered in a room, or null if it has not. */
+export function rememberedAnswer(roomId) {
+  return readJson(ANSWERS_KEY)?.[roomId] ?? null;
 }

@@ -12,7 +12,7 @@ import {
   voteImagination,
 } from '../api';
 import { saveProfile } from '../profile';
-import { participantToken, rememberHostedRoom } from '../../toolkit/rooms';
+import { participantToken, rememberAnswer, rememberHostedRoom } from '../../toolkit/rooms';
 import { follow } from '../follows';
 
 // api.js and profile.js each declare this literal, so that mocking one in a test
@@ -50,6 +50,7 @@ describe('the GDPR data rights cover the profile', () => {
 // on it — so these are what keep that sentence true.
 const ROOM_PARTICIPANT_KEY = 'placemaking_room_participant';
 const ROOMS_HOSTED_KEY = 'placemaking_rooms_hosted';
+const ROOM_ANSWERS_KEY = 'placemaking_room_answers';
 
 describe('the GDPR data rights cover toolkit room tokens', () => {
   afterEach(() => {
@@ -66,6 +67,16 @@ describe('the GDPR data rights cover toolkit room tokens', () => {
     expect(data[ROOMS_HOSTED_KEY]).toMatchObject({
       'room-1': { pin: '839201', token: 'facilitator-1' },
     });
+  });
+
+  it('includes, and erases, what this browser answered on a project page', async () => {
+    rememberAnswer('room-1', { choice: 'yes' });
+
+    const { data } = await exportAllData();
+    expect(data[ROOM_ANSWERS_KEY]).toEqual({ 'room-1': { choice: 'yes' } });
+
+    await eraseAllData();
+    expect(localStorage.getItem(ROOM_ANSWERS_KEY)).toBeNull();
   });
 
   it('erases both room keys along with everything else', async () => {
