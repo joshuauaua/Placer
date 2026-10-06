@@ -74,7 +74,9 @@ function Fallback({ t }) {
   );
 }
 
-export function HaveYourSay({ t }) {
+// `className` swaps the character button for another look, such as the landing
+// card's text link, and drops the button's own colours with it.
+export function HaveYourSay({ t, className }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const panelRef = useRef(null);
@@ -130,11 +132,12 @@ export function HaveYourSay({ t }) {
     <>
       <button
         ref={triggerRef}
-        className="placer-feedback-trigger"
+        className={className ?? 'placer-feedback-trigger'}
         onClick={() => setOpen(true)}
         // Shape and place live in index.css: a phone gets a full-width bar, and
         // a media query cannot override an inline style.
-        style={{ background: TRIGGER_BG, color: TRIGGER_FG, border: `1px solid ${TRIGGER_BORDER}` }}
+        style={className ? undefined
+          : { background: TRIGGER_BG, color: TRIGGER_FG, border: `1px solid ${TRIGGER_BORDER}` }}
       >
         {LABEL}
       </button>
