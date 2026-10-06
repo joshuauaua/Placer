@@ -1,5 +1,50 @@
 /* PLACER — icon set */
 
+import {
+  CiBeaker1,
+  CiBellOn,
+  CiBookmark,
+  CiCalendar,
+  CiCamera,
+  CiChat1,
+  CiClock2,
+  CiCoins1,
+  CiEdit,
+  CiFacebook,
+  CiFilter,
+  CiFlag1,
+  CiGps,
+  CiGrid41,
+  CiHeart,
+  CiHome,
+  CiImageOn,
+  CiInboxIn,
+  CiInstagram,
+  CiLight,
+  CiLink,
+  CiLinkedin,
+  CiLocationOn,
+  CiLock,
+  CiLogout,
+  CiMail,
+  CiMenuBurger,
+  CiMenuKebab,
+  CiPalette,
+  CiPaperplane,
+  CiPlay1,
+  CiRedo,
+  CiRoute,
+  CiSearch,
+  CiSettings,
+  CiShare1,
+  CiShoppingCart,
+  CiTrash,
+  CiUndo,
+  CiUser,
+  CiWarning,
+} from 'react-icons/ci';
+
+
 const ICON_ELEMENTS = {
   search: (
     <>
@@ -262,7 +307,64 @@ const ICON_ELEMENTS = {
   ),
 };
 
+/* Circum icons (react-icons/ci). Names Circum has no plain glyph for fall back
+   to the hand-drawn paths in ICON_ELEMENTS, which share its thin rounded line. */
+const CIRCUM_ICONS = {
+  search: CiSearch,
+  menu: CiMenuBurger,
+  heart: CiHeart,
+  comment: CiChat1,
+  share: CiShare1,
+  filter: CiFilter,
+  pin: CiLocationOn,
+  crosshair: CiGps,
+  undo: CiUndo,
+  redo: CiRedo,
+  trash: CiTrash,
+  user: CiUser,
+  home: CiHome,
+  camera: CiCamera,
+  grid: CiGrid41,
+  image: CiImageOn,
+  bookmark: CiBookmark,
+  flag: CiFlag1,
+  pencil: CiEdit,
+  send: CiPaperplane,
+  dot3: CiMenuKebab,
+  bell: CiBellOn,
+  art: CiPalette,
+  play: CiPlay1,
+  light: CiLight,
+  cart: CiShoppingCart,
+  flask: CiBeaker1,
+  path: CiRoute,
+  coins: CiCoins1,
+  link: CiLink,
+  clock: CiClock2,
+  gear: CiSettings,
+  lock: CiLock,
+  logout: CiLogout,
+  instagram: CiInstagram,
+  mail: CiMail,
+  facebook: CiFacebook,
+  linkedin: CiLinkedin,
+  calendar: CiCalendar,
+  inbox: CiInboxIn,
+  alert: CiWarning,
+};
+
 export function Icon({ name, size = 22, stroke = 1.7, fill = 'none', style, color }) {
+  const CircumIcon = CIRCUM_ICONS[name];
+  // Circum glyphs are outline-only, so a filled request (e.g. a favourited heart) keeps the drawn path.
+  if (CircumIcon && fill === 'none') {
+    return (
+      <CircumIcon
+        size={size}
+        aria-hidden="true"
+        style={{ display: 'block', color, flex: '0 0 auto', ...style }}
+      />
+    );
+  }
   const elements = ICON_ELEMENTS[name] || null;
   return (
     <svg
