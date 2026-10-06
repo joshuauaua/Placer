@@ -1,7 +1,9 @@
 /* PLACER — landing page
  *
  * The holding page for the project: what it is, who is building it, and who
- * funds it. Shown as the home view only, with the nav bar hidden (see App.jsx).
+ * funds it, with a way onto the waitlist, into User Labs and through the
+ * Placemaking Trends survey. Shown as the home view only, with the nav bar
+ * hidden (see App.jsx). The same hero as the Development branch's.
  */
 
 import { useEffect, useState } from 'react';
@@ -14,64 +16,52 @@ import photoWaitlist from '../assets/about-malmo.jpg';
 import photoUserLabs from '../assets/user-labs.webp';
 import photoSurvey from '../assets/placemaking-trends-cover.webp';
 import { HaveYourSay } from './HaveYourSay';
+import { Icon } from './Icon';
 import { ExternalLink } from './LegalLayout';
-import { CHARACTER, NEUTRAL } from '../theme';
+import { CHARACTER } from '../theme';
 
 // Trimmed to its artwork and stored at 160px tall, so a height here is enough
 // to size it and the width stays in proportion.
 const FUNDER_HEIGHT = 52;
 
-// A second character button under the feedback trigger, to User Labs: the
-// city worker's blue, in the same 100-fill/700-hairline/300-hover pattern as
-// the practitioner purple used for "Join the Waitlist" (see HaveYourSay).
-const LABS_BG = CHARACTER.cityWorker.c100;
-const LABS_BORDER = CHARACTER.cityWorker.c700;
-const LABS_FG = '#111111';
-
-// A third, to the Placemaking Trends survey: the citizen orange, same pattern.
-const SURVEY_BG = CHARACTER.citizen.c100;
-const SURVEY_BORDER = CHARACTER.citizen.c700;
-const SURVEY_FG = '#111111';
-
 // How long each card stays up before the next one rotates in.
 const ROTATE_MS = 6000;
 
-/* The three things a visitor can do, one card each: a photo, the title that
- * says what the button is for, and the button. Each is a render function so
- * the card can hand it the theme. */
+/* The three things a visitor can do, one card each, and each on one of the
+ * three characters' colours in turn: a photo, the title that says what the link
+ * is for, and the link. Each action is a render function so the card can hand
+ * it the theme. */
 const OPTIONS = [
   {
     key: 'waitlist',
+    colour: CHARACTER.practitioner,
     photo: photoWaitlist,
     title: 'Be the first to use PLACER',
-    action: (t) => <HaveYourSay t={t} />,
+    action: (t) => <HaveYourSay t={t} className="placer-landing-option-link" />,
   },
   {
     key: 'userLabs',
+    colour: CHARACTER.cityWorker,
     photo: photoUserLabs,
     title: 'Help shape what we build',
-    action: () => (
-      <Link
-        href="/user-labs"
-        className="placer-labs-trigger"
-        style={{ background: LABS_BG, color: LABS_FG, border: `1px solid ${LABS_BORDER}` }}>
-        Apply to User Labs
-      </Link>
-    ),
+    action: () => <Link href="/user-labs" className="placer-landing-option-link">Apply to User Labs</Link>,
   },
   {
     key: 'survey',
+    colour: CHARACTER.citizen,
     photo: photoSurvey,
     title: 'Tell us about placemaking in your city',
     action: () => (
-      <Link
-        href="/placemaking-trends-survey"
-        className="placer-labs-trigger placer-survey-trigger"
-        style={{ background: SURVEY_BG, color: SURVEY_FG, border: `1px solid ${SURVEY_BORDER}` }}>
-        Take the Placemaking Trends survey
-      </Link>
+      <Link href="/placemaking-trends-survey" className="placer-landing-option-link">Take the Placemaking Trends survey</Link>
     ),
   },
+];
+
+/* What PLACER is for, under the pitch: an icon and a line for each. */
+const FEATURES = [
+  { icon: 'search', title: 'Understand', text: 'how your community uses a place' },
+  { icon: 'sparkle', title: 'Imagine', text: 'new possibilities' },
+  { icon: 'layers', title: 'Plan', text: 'meaningful change' },
 ];
 
 function prefersReducedMotion() {
@@ -120,12 +110,12 @@ function LandingCarousel({ t }) {
             aria-hidden={i !== active}
             inert={i !== active}
             style={{
-              '--placer-landing-option-bg': t.surface,
-              '--placer-landing-option-line': t.line,
+              '--placer-landing-option-bg': option.colour.c100,
+              '--placer-landing-option-ink': option.colour.c900,
             }}>
             <img className="placer-landing-option-photo" src={option.photo} alt="" />
             <div className="placer-landing-option-body">
-              <h2 className="placer-landing-option-title" style={{ color: t.ink }}>{option.title}</h2>
+              <h2 className="placer-landing-option-title">{option.title}</h2>
               {option.action(t)}
             </div>
           </div>
@@ -141,7 +131,7 @@ function LandingCarousel({ t }) {
             aria-label={`Show card ${i + 1}: ${option.title}`}
             aria-current={i === active ? 'true' : undefined}
             onClick={() => setActive(i)}
-            style={{ backgroundColor: i === active ? t.ink : NEUTRAL.grey500 }}
+            style={{ backgroundColor: i === active ? OPTIONS[active].colour.c900 : OPTIONS[active].colour.c300 }}
           />
         ))}
       </div>
@@ -191,11 +181,23 @@ export function LandingPage({ t }) {
 
           <div className="placer-landing-pitch" style={{ color: t.ink }}>
             <p>Placer is the open toolkit for co-designing shared spaces.</p>
-            <p style={{ marginTop: '1em' }}>
-              Understand how your community uses a place, imagine new possibilities, and
-              plan meaningful change: all in one shared workspace.
-            </p>
           </div>
+
+          {/* What it does, in three steps, each with an icon. */}
+          <ul className="placer-landing-features">
+            {FEATURES.map((feature) => (
+              <li key={feature.title} className="placer-landing-feature">
+                <span className="placer-landing-feature-icon" aria-hidden="true" style={{ color: t.ink }}>
+                  <Icon name={feature.icon} size={28} stroke={1.8} />
+                </span>
+                <span style={{ color: t.ink }}>
+                  <strong>{feature.title}</strong> {feature.text}
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          <p className="placer-landing-pitch" style={{ color: t.ink }}>All in one shared workspace.</p>
         </div>
 
         <LandingCarousel t={t} />

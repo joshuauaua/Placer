@@ -18,7 +18,7 @@ describe('LandingPage carousel', () => {
     vi.useRealTimers();
   });
 
-  it('has three cards, each with a photo, a title and a button, the first showing', () => {
+  it('has three cards, each with a photo, a title and a link, the first showing', () => {
     const { container } = render(<LandingPage t={THEME} />);
 
     const cards = container.querySelectorAll('.placer-landing-option');
