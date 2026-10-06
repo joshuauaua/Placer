@@ -22,6 +22,9 @@ import {
   addLink,
   deleteProject,
   readCollaborators,
+  readAccessRequests,
+  decideAccess,
+  removeAccess,
   readLinks,
   readProject,
   readProjectRooms,
@@ -113,6 +116,91 @@ function ProjectNotifications({ t, projectId }) {
         <ProjectResponsesChoice t={t} name="project-responses" legend="Responses"
           value={level} defaultLevel={defaultLevel} disabled={saving} onChange={choose} />
       )}
+    </Card>
+  );
+}
+
+/**
+ * Who may see a private project beyond its collaborators: the people waiting to be let
+ * in, with Let in and Decline, and the people already in, who can be taken off again.
+ * Only on a private project — a public one is open to everybody. Declined requests are
+ * kept but not listed, so a no is not asked again.
+ */
+function ProjectAccess({ t, projectId }) {
+  const [requests, setRequests] = useState(null);
+  const [error, setError] = useState(null);
+
+  const load = useCallback(() => readAccessRequests(projectId)
+    .then(setRequests)
+    .catch((err) => {
+      console.error('Could not load who has asked to see the project:', err);
+      setError('Could not load who has asked to see this project.');
+    }), [projectId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const act = async (action) => {
+    setError(null);
+    try {
+      await action();
+      await load();
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+    }
+  };
+
+  const pending = (requests ?? []).filter((request) => request.status === 'pending');
+  const approved = (requests ?? []).filter((request) => request.status === 'approved');
+  const linkButton = { background: 'none', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0 };
+
+  return (
+    <Card t={t} title="Who can see this project">
+      <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.55, marginBottom: 16 }}>
+        It is private: only collaborators and the people you let in can see it and take part. Share its
+        page&rsquo;s link, and people can ask to be let in.
+      </p>
+      {requests === null && !error && <p style={{ fontSize: 13.5, color: t.inkFaint }}>Loading…</p>}
+
+      {pending.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: t.inkDim, marginBottom: 4 }}>Asking to be let in</h3>
+          {pending.map((request) => (
+            <div key={request.userId} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '10px 0',
+              borderTop: `1px solid ${t.line}` }}>
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: t.ink }}>{request.displayName}</span>
+              <button onClick={() => act(() => decideAccess(projectId, request.userId, true))}
+                style={{ ...linkButton, color: t.ink }}>
+                Let in
+              </button>
+              <button onClick={() => act(() => decideAccess(projectId, request.userId, false))}
+                style={{ ...linkButton, color: t.inkDim }}>
+                Decline
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {requests !== null && (
+        <div>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: t.inkDim, marginBottom: 4 }}>Let in</h3>
+          {approved.length === 0 ? (
+            <p style={{ fontSize: 13.5, color: t.inkFaint }}>Nobody yet.</p>
+          ) : approved.map((request) => (
+            <div key={request.userId} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '10px 0',
+              borderTop: `1px solid ${t.line}` }}>
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: t.ink }}>{request.displayName}</span>
+              <button onClick={() => act(() => removeAccess(projectId, request.userId))}
+                style={{ ...linkButton, color: t.inkDim }}>
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {error && <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{error}</p>}
     </Card>
   );
 }
@@ -693,6 +781,8 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
           )}
           {inviteError && <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{inviteError}</p>}
         </Card>
+
+        {project.visibility === 'private' && <ProjectAccess t={t} projectId={project.id} />}
 
         {isOwner && <DeleteProject t={t} project={project} onDeleted={onDeleted} />}
       </div>

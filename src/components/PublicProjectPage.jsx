@@ -26,7 +26,7 @@ import { ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
 import { findTool } from '../toolkit/tools';
 import { readImaginationsByProject } from '../services/imaginations';
 import {
-  readLinks, readProject, readProjectTools, readPublicToolkitActivity, readRelatedProjects, recordProjectView,
+  readLinks, readProject, readProjectAccess, readProjectTools, requestProjectAccess, readPublicToolkitActivity, readRelatedProjects, recordProjectView,
 } from '../services/projects';
 
 // The tool whose results are the project's imaginations (toolkit/tools.js).
@@ -241,7 +241,63 @@ function TableOfContents({ t, sections, active, onPick }) {
  * this page is the one a shared link actually points at, so it has to work reached
  * cold with nothing but the id in the URL.
  */
-export function PublicProjectPage({ t, projectId, accountId, onBack, onOpenProject,
+/**
+ * What a private project's link shows somebody who cannot see it: the name, and a way
+ * to ask to be let in — signing in first, if they have not. The database decides what
+ * they may know (project_access_preview in supabase/project-privacy.sql); nothing else
+ * about the project reaches this browser.
+ */
+function LockedProject({ t, preview, accountId, accountName, onSignIn, projectId }) {
+  const [status, setStatus] = useState(preview.requestStatus);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState(null);
+
+  const ask = async () => {
+    setSending(true);
+    setError(null);
+    try {
+      setStatus(await requestProjectAccess(projectId, accountName));
+    } catch (err) {
+      console.error('Could not ask to see the project:', err);
+      setError('That did not go through. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="placer-card" style={{ maxWidth: 560, margin: '48px auto', textAlign: 'center', padding: 32 }}>
+      <span style={{ width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px', background: t.surfaceAlt,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.ink }}>
+        <Icon name="lock" size={26} stroke={2} />
+      </span>
+      <h1 style={{ color: t.ink, marginBottom: 8 }}>{preview.name}</h1>
+      <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6, marginBottom: 24 }}>
+        This is a private project. Only the people its organisers let in can see it and take part.
+      </p>
+
+      {!accountId ? (
+        <Btn t={t} variant="primary" icon="user" onClick={onSignIn}>Sign in to ask to see it</Btn>
+      ) : status === 'pending' ? (
+        <p role="status" style={{ fontSize: 15, color: t.ink, fontWeight: 500 }}>
+          You have asked to see this project. Its organisers will let you know.
+        </p>
+      ) : status === 'declined' ? (
+        <p role="status" style={{ fontSize: 15, color: t.ink, fontWeight: 500 }}>
+          Its organisers have not let you in.
+        </p>
+      ) : (
+        <Btn t={t} variant="primary" icon="lock" onClick={ask} disabled={sending}>
+          {sending ? 'Asking…' : 'Ask to see this project'}
+        </Btn>
+      )}
+
+      {error && <p role="alert" style={{ fontSize: 14, color: t.ink, marginTop: 12 }}>{error}</p>}
+    </div>
+  );
+}
+
+export function PublicProjectPage({ t, projectId, accountId, accountName = null, onSignIn, onBack, onOpenProject,
   onOpenOrganisation, onOpenToolkit, onOpenRoom }) {
   const [project, setProject] = useState(null);
   // The tools its organisers added, as registry entries. A tool no longer in the
@@ -256,7 +312,9 @@ export function PublicProjectPage({ t, projectId, accountId, onBack, onOpenProje
   const [related, setRelated] = useState([]);
   // The organisation it is run in the name of, if any — credited in place of the owner.
   const [organisation, setOrganisation] = useState(null);
-  const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error' | 'notFound'
+  const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error' | 'notFound' | 'locked'
+  // For 'locked': what the visitor may know about a private project they cannot see.
+  const [preview, setPreview] = useState(null);
   const [following, setFollowing] = useState(false);
   const topRef = useRef(null);
 
@@ -285,7 +343,22 @@ export function PublicProjectPage({ t, projectId, accountId, onBack, onOpenProje
     ])
       .then(([proj, imgs, docs, activity, toolIds, rooms]) => {
         if (cancelled) return;
-        if (!proj) { setStatus('notFound'); return; }
+        if (!proj) {
+          // A private project reads as no project at all to somebody who cannot see
+          // it, so ask which of the two this is.
+          readProjectAccess(projectId)
+            .then((found) => {
+              if (cancelled) return;
+              if (found && !found.canView) {
+                setPreview(found);
+                setStatus('locked');
+              } else {
+                setStatus('notFound');
+              }
+            })
+            .catch(() => { if (!cancelled) setStatus('notFound'); });
+          return;
+        }
         setProject(proj);
         setTools(toolIds.map(findTool).filter(Boolean));
         setOpenRooms(rooms);
@@ -380,6 +453,16 @@ export function PublicProjectPage({ t, projectId, accountId, onBack, onOpenProje
     return <div ref={topRef} style={{ padding: 48, display: 'flex', justifyContent: 'center' }}><LoadingMark /></div>;
   }
 
+  if (status === 'locked') {
+    return (
+      <div ref={topRef} className="placer-project" style={{ background: t.page }}>
+        {backButton}
+        <LockedProject t={t} preview={preview} projectId={projectId} accountId={accountId}
+          accountName={accountName} onSignIn={onSignIn} />
+      </div>
+    );
+  }
+
   if (status === 'notFound') {
     return (
       <div ref={topRef} className="placer-project" style={{ background: t.page }}>
@@ -426,6 +509,11 @@ export function PublicProjectPage({ t, projectId, accountId, onBack, onOpenProje
                   </a>
                 </span>
               ) : project.ownerName && <span>By {project.ownerName}</span>}
+              {project.visibility === 'private' && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="lock" size={16} stroke={2} />Private project
+                </span>
+              )}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',

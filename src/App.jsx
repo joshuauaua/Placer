@@ -765,6 +765,7 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'projectPublic' && (
               <Suspense fallback={<LoadingFallback />}>
                 <PublicProjectPage t={t} projectId={projectRoute.id} accountId={accountId}
+                  accountName={profile?.name ?? null} onSignIn={handleSignIn}
                   onBack={() => show('projects')}
                   onOpenProject={showProjectPublic}
                   onOpenOrganisation={showOrganisationPublic}

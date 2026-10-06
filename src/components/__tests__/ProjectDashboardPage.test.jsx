@@ -16,6 +16,7 @@ import {
   updateProject,
 } from '../../services/projects';
 import { closeRoom, deleteRoom } from '../../services/rooms';
+import { decideAccess, readAccessRequests, removeAccess } from '../../services/projects';
 import { readPreferences, readProjectResponses, saveProjectResponses } from '../../services/notifications';
 import { hostedRoom } from '../../toolkit/rooms';
 import { THEME } from '../../theme';
@@ -27,6 +28,7 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   BUDGET_CURRENCIES: (await importOriginal()).BUDGET_CURRENCIES,
   readProjectBudget: vi.fn(() => Promise.resolve(null)),
   saveProjectBudget: vi.fn(() => Promise.resolve()),
+  VISIBILITIES: (await importOriginal()).VISIBILITIES,
   readProject: vi.fn(),
   readStats: vi.fn(),
   readProjectViews: vi.fn(() => Promise.resolve({
@@ -43,6 +45,9 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   createProject: vi.fn(),
   updateProject: vi.fn(),
   readProjectTools: vi.fn(() => Promise.resolve([])),
+  readAccessRequests: vi.fn(() => Promise.resolve([])),
+  decideAccess: vi.fn(() => Promise.resolve()),
+  removeAccess: vi.fn(() => Promise.resolve()),
   saveProjectTools: vi.fn((projectId, tools) => Promise.resolve(tools)),
   deleteProject: vi.fn(() => Promise.resolve({ success: true })),
 }));
@@ -447,5 +452,59 @@ describe('ProjectDashboardPage, notifications', () => {
     expect(await screen.findByText('Could not save that. Try again.')).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /^Every response/ })).toBeChecked();
     consoleError.mockRestore();
+  });
+});
+
+describe('ProjectDashboardPage, a private project', () => {
+  beforeEach(() => {
+    vi.mocked(readProject).mockResolvedValue({ ...PROJECT, visibility: 'private' });
+    vi.mocked(readStats).mockResolvedValue(STATS);
+    vi.mocked(readCollaborators).mockResolvedValue([]);
+    vi.mocked(readLinks).mockResolvedValue([]);
+    vi.mocked(readProjectRooms).mockResolvedValue([]);
+    vi.mocked(readAccessRequests).mockResolvedValue([
+      { userId: 'user-2', displayName: 'Ana', status: 'pending' },
+      { userId: 'user-3', displayName: 'Ben', status: 'approved' },
+      { userId: 'user-4', displayName: 'Cy', status: 'declined' },
+    ]);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('lists who is waiting and who is in, but not who was declined', async () => {
+    setup();
+
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(screen.getByText('Ben')).toBeInTheDocument();
+    expect(screen.queryByText('Cy')).not.toBeInTheDocument();
+  });
+
+  it('lets somebody in, or declines them', async () => {
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Let in' }));
+    await waitFor(() => expect(decideAccess).toHaveBeenCalledWith('proj-1', 'user-2', true));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Decline' }));
+    await waitFor(() => expect(decideAccess).toHaveBeenCalledWith('proj-1', 'user-2', false));
+  });
+
+  it('takes somebody\'s access away', async () => {
+    setup();
+
+    await screen.findByText('Ben');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Remove' }).at(-1));
+
+    await waitFor(() => expect(removeAccess).toHaveBeenCalledWith('proj-1', 'user-3'));
+  });
+
+  it('has no access card on a public project', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    setup();
+
+    await screen.findByText('4');
+    expect(screen.queryByText('Who can see this project')).not.toBeInTheDocument();
   });
 });

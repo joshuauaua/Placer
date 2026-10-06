@@ -11,6 +11,7 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   // The real PROJECT_TYPES and currencies, so the choices on screen are the ones that ship.
   PROJECT_TYPES: (await importOriginal()).PROJECT_TYPES,
   BUDGET_CURRENCIES: (await importOriginal()).BUDGET_CURRENCIES,
+  VISIBILITIES: (await importOriginal()).VISIBILITIES,
   readProjectBudget: vi.fn(() => Promise.resolve(null)),
   saveProjectBudget: vi.fn(() => Promise.resolve()),
   createProject: vi.fn(),
@@ -145,6 +146,7 @@ describe('ProjectSetupPage, starting a project', () => {
       address: 'Folkets Park, Amiralsgatan 35, Malmö', locationPoint: { lat: 55.59, lng: 13.01 },
       locations: ['Malmö, Sweden'],
       projectType: 'steward',
+      visibility: 'public',
     });
     expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['budget-ballot', 'desire-lines'], 'user-1');
   });
@@ -532,5 +534,39 @@ describe('parseBudgetAmount', () => {
     expect(parseBudgetAmount('-5')).toBeNaN();
     expect(parseBudgetAmount('1,2,3')).toBeNaN();
     expect(parseBudgetAmount('€500')).toBeNaN();
+  });
+});
+
+describe('ProjectSetupPage, public or private', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('is public unless the organiser makes it private', async () => {
+    createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    const { onSaved } = setup();
+
+    toBasics();
+    expect(screen.getByRole('radio', { name: /^Public/ })).toBeChecked();
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    fireEvent.click(screen.getByRole('radio', { name: /^Private/ }));
+    next();
+    next();
+    next();
+    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(createProject).toHaveBeenCalledWith(expect.objectContaining({ visibility: 'private' }));
+  });
+
+  it('can be changed when editing', async () => {
+    updateProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    setup({ project: { id: 'proj-1', name: 'Riverside Greenway', locations: [], visibility: 'private' } });
+
+    expect(screen.getByRole('radio', { name: /^Private/ })).toBeChecked();
+    fireEvent.click(screen.getByRole('radio', { name: /^Public/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1', expect.objectContaining({ visibility: 'public' })));
   });
 });

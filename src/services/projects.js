@@ -22,6 +22,20 @@ export const PROJECT_BUDGETS_TABLE = 'project_budgets';
 
 /** The currencies a budget can be given in — the same list supabase/project-budget.sql checks. */
 export const BUDGET_CURRENCIES = ['EUR', 'SEK', 'DKK', 'NOK', 'GBP', 'USD'];
+
+export const ACCESS_REQUESTS_TABLE = 'project_access_requests';
+
+/**
+ * Who a project is for — see supabase/project-privacy.sql. A private one is seen, and
+ * taken part in, only by its owner, collaborators and the people they let in, and is
+ * listed nowhere.
+ */
+export const VISIBILITIES = [
+  { key: 'public', title: 'Public', description: 'Anyone can find the project, see its page and take part.' },
+  { key: 'private', title: 'Private',
+    description: 'Only you, your collaborators and people you let in can see it and take part. It is not listed '
+      + 'anywhere; people you share its link with can ask to be let in.' },
+];
 // The folder project images go under in the R2 bucket (supabase/functions/media).
 // Named after the project, not the uploader: any collaborator may replace it.
 export const PROJECT_IMAGES_FOLDER = 'projects';
@@ -73,7 +87,7 @@ export const PROJECT_TYPE_NAMES = {
 
 const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, description, start_date, end_date, '
   + 'locations, location_shapes, address, location_lat, location_lng, image_path, project_type, '
-  + 'organisation_id, created_at, updated_at';
+  + 'organisation_id, visibility, created_at, updated_at';
 
 function fromRow(row) {
   return {
@@ -103,6 +117,8 @@ function fromRow(row) {
     // The organisation it is run in the name of, or null for one run by its owner
     // alone — see supabase/organisations.sql section 6.
     organisationId: row.organisation_id ?? null,
+    // 'public' or 'private' (VISIBILITIES).
+    visibility: row.visibility ?? 'public',
     createdAt: row.created_at ?? null,
     updatedAt: row.updated_at ?? null,
   };
@@ -115,7 +131,7 @@ function fromRow(row) {
  */
 export async function createProject({ ownerId, ownerName, name, description = '',
   startDate = null, endDate = null, locations = [], locationShapes = [], address = '',
-  locationPoint = null, projectType = null, organisationId = null }) {
+  locationPoint = null, projectType = null, organisationId = null, visibility = 'public' }) {
   if (!ownerId) throw new Error('Starting a project needs an account.');
 
   const supabase = await client();
@@ -135,6 +151,7 @@ export async function createProject({ ownerId, ownerName, name, description = ''
       location_lng: locationPoint?.lng ?? null,
       project_type: projectType,
       organisation_id: organisationId,
+      visibility,
     })
     .select(PROJECT_COLUMNS)
     .single();
@@ -305,7 +322,7 @@ export async function updateProject(id, patch) {
     ownerName: 'owner_name', name: 'name', description: 'description',
     startDate: 'start_date', endDate: 'end_date', locations: 'locations',
     locationShapes: 'location_shapes', imagePath: 'image_path', projectType: 'project_type',
-    organisationId: 'organisation_id',
+    organisationId: 'organisation_id', visibility: 'visibility',
   };
   const row = {};
   for (const [key, column] of Object.entries(columns)) {
@@ -448,6 +465,72 @@ export async function removeLink(linkId) {
   const { error } = await supabase.from(LINKS_TABLE).delete().eq('id', linkId);
   if (error) throw new Error(`Could not remove that link: ${error.message}`);
   return { success: true };
+}
+
+/**
+ * What somebody holding a project's link may know about it when they cannot see it:
+ * { name, visibility, canView, requestStatus } — requestStatus is their own request,
+ * 'pending', 'approved' or 'declined', or null. Null for a project that does not exist.
+ * Public, so a locked page can say what it is locked.
+ */
+export async function readProjectAccess(projectId) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .rpc('project_access_preview', { p_project_id: projectId })
+    .maybeSingle();
+
+  if (error) throw new Error(`Could not check that project: ${error.message}`);
+  if (!data) return null;
+  return {
+    name: data.name, visibility: data.visibility, canView: data.can_view === true,
+    requestStatus: data.request_status ?? null,
+  };
+}
+
+/** Ask to see a private project. Signed in. Resolves to where the request stands. */
+export async function requestProjectAccess(projectId, displayName) {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('project_request_access', {
+    p_project_id: projectId, p_display_name: displayName ?? '',
+  });
+
+  if (error) throw new Error(`Could not ask to see that project: ${error.message}`);
+  return data;
+}
+
+/**
+ * Everybody who has asked to see a project, and the answer, oldest first. Owner or
+ * collaborator only; anybody else reads only their own row.
+ */
+export async function readAccessRequests(projectId) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(ACCESS_REQUESTS_TABLE)
+    .select('user_id, display_name, status, created_at, decided_at')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(`Could not load who has asked to see the project: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    userId: row.user_id, displayName: row.display_name || 'Somebody', status: row.status,
+    createdAt: row.created_at, decidedAt: row.decided_at ?? null,
+  }));
+}
+
+/** Let somebody in, or not. Owner or collaborator only. */
+export async function decideAccess(projectId, userId, approve) {
+  const supabase = await client();
+  const { error } = await supabase.rpc('project_decide_access', {
+    p_project_id: projectId, p_user_id: userId, p_approve: approve,
+  });
+  if (error) throw new Error(`Could not answer that request: ${error.message}`);
+}
+
+/** Take somebody's access away, or withdraw your own request. */
+export async function removeAccess(projectId, userId) {
+  const supabase = await client();
+  const { error } = await supabase.rpc('project_remove_access', { p_project_id: projectId, p_user_id: userId });
+  if (error) throw new Error(`Could not take that access away: ${error.message}`);
 }
 
 /**

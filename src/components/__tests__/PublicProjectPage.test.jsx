@@ -3,7 +3,8 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { PublicProjectPage } from '../PublicProjectPage';
 import { readImaginationsByProject } from '../../services/imaginations';
 import {
-  readLinks, readProject, readProjectTools, readPublicToolkitActivity, readRelatedProjects,
+  readLinks, readProject, readProjectAccess, readProjectTools, readPublicToolkitActivity, readRelatedProjects,
+  requestProjectAccess,
 } from '../../services/projects';
 import { follow, isFollowing, unfollow } from '../../services/follows';
 import { readContributions, readProjectOpenRooms, saveContribution } from '../../services/rooms';
@@ -20,6 +21,8 @@ vi.mock('../../services/projects', () => ({
   readPublicToolkitActivity: vi.fn(() => Promise.resolve(0)),
   readRelatedProjects: vi.fn(() => Promise.resolve([])),
   readProjectTools: vi.fn(() => Promise.resolve([])),
+  readProjectAccess: vi.fn(() => Promise.resolve(null)),
+  requestProjectAccess: vi.fn(() => Promise.resolve('pending')),
 }));
 
 vi.mock('../../services/rooms', () => ({
@@ -395,5 +398,68 @@ describe('PublicProjectPage, taking part', () => {
     setup();
 
     expect(await screen.findByText(/2 Toolkit sessions run for this project/)).toBeInTheDocument();
+  });
+});
+
+describe('PublicProjectPage, a private project', () => {
+  const LOCKED = { name: 'Folkets Park Square', visibility: 'private', canView: false, requestStatus: null };
+
+  beforeEach(() => {
+    vi.mocked(readProject).mockResolvedValue(null);
+    vi.mocked(readImaginationsByProject).mockResolvedValue([]);
+    vi.mocked(readLinks).mockResolvedValue([]);
+    vi.mocked(readPublicToolkitActivity).mockResolvedValue(0);
+    vi.mocked(readRelatedProjects).mockResolvedValue([]);
+    vi.mocked(readProjectTools).mockResolvedValue([]);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([]);
+    vi.mocked(isFollowing).mockResolvedValue(false);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows only its name to somebody who cannot see it, and asks them to sign in', async () => {
+    vi.mocked(readProjectAccess).mockResolvedValue(LOCKED);
+    const onSignIn = vi.fn();
+    setup({ onSignIn });
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Folkets Park Square' })).toBeInTheDocument();
+    expect(screen.getByText(/This is a private project/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in to ask to see it' }));
+    expect(onSignIn).toHaveBeenCalled();
+  });
+
+  it('lets somebody signed in ask, and says the request is waiting', async () => {
+    vi.mocked(readProjectAccess).mockResolvedValue(LOCKED);
+    setup({ accountId: 'user-2', accountName: 'Ana' });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Ask to see this project' }));
+
+    expect(await screen.findByText(/You have asked to see this project/)).toBeInTheDocument();
+    expect(requestProjectAccess).toHaveBeenCalledWith('proj-1', 'Ana');
+  });
+
+  it('remembers a request already made, and one declined', async () => {
+    vi.mocked(readProjectAccess).mockResolvedValueOnce({ ...LOCKED, requestStatus: 'declined' });
+    setup({ accountId: 'user-2' });
+
+    expect(await screen.findByText('Its organisers have not let you in.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ask to see this project' })).not.toBeInTheDocument();
+  });
+
+  it('says not found for a project that does not exist at all', async () => {
+    vi.mocked(readProjectAccess).mockResolvedValue(null);
+    setup();
+
+    expect(await screen.findByText('Project not found')).toBeInTheDocument();
+  });
+
+  it('marks a private project as private for the people who can see it', async () => {
+    vi.mocked(readProject).mockResolvedValue({ ...PROJECT, visibility: 'private' });
+    setup({ accountId: 'user-1' });
+
+    expect(await screen.findByText('Private project')).toBeInTheDocument();
+    expect(readProjectAccess).not.toHaveBeenCalled();
   });
 });
