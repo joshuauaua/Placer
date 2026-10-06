@@ -140,6 +140,24 @@ export async function readRoom(roomId) {
 }
 
 /**
+ * The rooms a project has open, newest first, for its public page: each one's id,
+ * tool, closing time and setup (supabase/project-open-rooms.sql). Public. Never the
+ * PIN, the join code or the facilitator token.
+ */
+export async function readProjectOpenRooms(projectId) {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('project_open_rooms', { p_project_id: projectId });
+
+  if (error) throw new Error(`Could not read the project's open rooms: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    id: row.room_id,
+    tool: row.tool,
+    expiresAt: row.expires_at,
+    config: row.config ?? null,
+  }));
+}
+
+/**
  * Add or replace this participant's contribution. Resolves false when the room ended
  * underneath them — closed or run out of time — which is a normal thing to happen
  * rather than an error.

@@ -94,6 +94,18 @@ describe('App', () => {
     expect(history.at(-1)).toBe('/explore');
   });
 
+  it('starts an imagination from the Toolkit\'s Reimagine a Space, on its own map', async () => {
+    const { hook, history } = memoryLocation({ path: '/toolkit/reimagine-a-space', record: true });
+    render(<Router hook={hook}><App /></Router>);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Get started' }));
+
+    // The mocked map throws, so reaching the boundary means the imagine map rendered —
+    // and the Toolkit's URL has been left, since that flow has none.
+    expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
+    expect(history.at(-1)).toBe('/');
+  });
+
   it('opens Explore on a direct visit to /explore', async () => {
     renderAt('/explore');
     // The mocked page throws, so reaching the boundary means /explore rendered it.

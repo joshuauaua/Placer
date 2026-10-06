@@ -34,6 +34,22 @@
  * The setup is fixed when the room opens (supabase/rooms-config.sql) and reaches the
  * tool as `room.config`. A room opened without one — or before there was such a
  * thing — has a null `room.config`, and the tool behaves as it does outside a room.
+ *
+ * `launch` marks a tool that is a flow of App's own rather than a component on the
+ * Toolkit's page: Get started on its cover hands over to that flow (ToolkitPage's
+ * onLaunchTool), carrying the project it was opened for. Reimagine a Space is one —
+ * the imagination flow runs full-bleed, step by step, and keeps its draft in App.
+ * Its `component` is only what shows where nothing takes the hand-over.
+ *
+ * `onProjectPage` is how a project's public page presents the tool once its organisers
+ * have added it and, for a room-capable tool, opened a room for it — which is what
+ * setting it up for the project means. A tool added but not yet opened is not shown
+ * there at all. Two parts, both optional:
+ *
+ *   heading  — the section's title, said to the visitor ("We want your opinion"),
+ *              rather than the tool's name; the name is the fallback
+ *   Embed    — the tool itself, set into the page: { t, tool, room }, where `room` is
+ *              { id, expiresAt, config }. Without one, the page links to the room.
  */
 
 import { BudgetBallot } from '../components/toolkit/BudgetBallot';
@@ -41,13 +57,16 @@ import { BudgetBallotSetup } from '../components/toolkit/BudgetBallotSetup';
 import { DesireLines } from '../components/toolkit/DesireLines';
 import { FifteenMinute } from '../components/toolkit/FifteenMinute';
 import { OpenVote } from '../components/toolkit/OpenVote';
+import { OpenVoteSetup } from '../components/toolkit/OpenVoteSetup';
+import { OpenVoteOnPage } from '../components/toolkit/OpenVoteOnPage';
+import { ReimagineASpace } from '../components/toolkit/ReimagineASpace';
 import { SiteMapping } from '../components/toolkit/SiteMapping';
 import { SocialSpaceSurvey } from '../components/toolkit/SocialSpaceSurvey';
 import { StationaryActivityMap } from '../components/toolkit/StationaryActivityMap';
 import { StreetMixer } from '../components/toolkit/StreetMixer';
 import { CHARACTER } from '../theme';
 import { ballotSetupProblems, defaultBallotSetup, emptyBallot, normalise } from '../lib/budgetBallot';
-import { emptyVote, tally as tallyVotes } from '../lib/openVote';
+import { defaultVoteSetup, emptyVote, tally as tallyVotes, voteSetupProblems } from '../lib/openVote';
 
 // Each tool wears one of the three character colours: `color` is the 700,
 // for text, icons and outlines on white, and `tint` the 100, for fills with ink
@@ -124,6 +143,9 @@ export const TOOLS = [
     icon: 'coins',
     createdBy: 'PLACER',
     component: BudgetBallot,
+    onProjectPage: {
+      heading: 'How would you spend the budget?',
+    },
     setup: {
       defaults: defaultBallotSetup,
       problems: ballotSetupProblems,
@@ -159,11 +181,20 @@ export const TOOLS = [
     category: 'plan',
     name: 'Open Vote',
     tagline: 'Ask anything. Yes, No, or Undecided.',
-    blurb: 'Type whatever you want to put to a room, then let people vote. There is no scale to calibrate and nothing to configure — just a question, three options, and a live tally as people pick.',
+    blurb: 'Type whatever you want to put to a room, then let people vote. There is no scale to calibrate — just a question, three options, and a live tally as people pick.',
     ...tone(CHARACTER.cityWorker),
     icon: 'flag',
     createdBy: 'PLACER',
     component: OpenVote,
+    setup: {
+      defaults: defaultVoteSetup,
+      problems: voteSetupProblems,
+      Form: OpenVoteSetup,
+    },
+    onProjectPage: {
+      heading: 'We want your opinion',
+      Embed: OpenVoteOnPage,
+    },
     room: {
       empty: emptyVote,
       combine: tallyVotes,
@@ -204,6 +235,23 @@ export const TOOLS = [
     icon: 'grid',
     createdBy: 'PLACER',
     component: StationaryActivityMap,
+  },
+  {
+    id: 'reimagine-a-space',
+    added: '2026-10-06',
+    category: 'imagine',
+    name: 'Reimagine a Space',
+    tagline: 'A tool to help anyone quickly create a visual render of an idea they have.',
+    blurb: 'Pick a spot on the map and step into its Street View. Place benches, trees, lighting and more where they would go, say what the idea is and why, and post it to the map for others to see.',
+    ...tone(CHARACTER.citizen),
+    icon: 'sparkle',
+    createdBy: 'PLACER',
+    duration: 'About 5 minutes',
+    component: ReimagineASpace,
+    launch: true,
+    onProjectPage: {
+      heading: 'Share your idea for this place',
+    },
   },
 ];
 

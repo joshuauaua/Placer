@@ -2,9 +2,18 @@
  *
  * Read top to bottom like an article: a way back to all projects, the date and who
  * started it, the title, an image (the project's area on the map), the description,
- * then the Toolkit tools to try for it, what people have imagined for it and its
- * news and resources. A floating card on the right carries a table of contents that
- * follows the reader down the page, and three related projects close it.
+ * then the tools the project has added and its news and resources. A floating card on
+ * the right carries a table of contents that follows the reader down the page, and
+ * three related projects close it.
+ *
+ * The tools are only the ones its organisers chose for it (project_tools, see
+ * supabase/project-setup.sql) and have set up, not the whole Toolkit, and each is
+ * presented in its own section under a heading said to the visitor rather than a
+ * "Tools" list: an Open Vote is "We want your opinion" with the poll right there
+ * (onProjectPage in toolkit/tools.js). A tool that runs in a room counts as set up
+ * once a room is open for it (supabase/project-open-rooms.sql). What people have
+ * imagined is not a section of its own either: imagining is Reimagine a Space, so the
+ * imaginations show in that tool's section, and only once the project has added it.
  *
  * The layout lives in index.css (.placer-project-*), since the card's stickiness and
  * the single column on a phone need a media query.
@@ -14,13 +23,17 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn, CatTag, LoadingMark, Vote } from './UI';
 import { ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
-import { TOOLS } from '../toolkit/tools';
+import { findTool } from '../toolkit/tools';
 import { readImaginationsByProject } from '../services/imaginations';
 import {
-  readLinks, readProject, readPublicToolkitActivity, readRelatedProjects, recordProjectView,
+  readLinks, readProject, readProjectAccess, readProjectTools, requestProjectAccess, readPublicToolkitActivity, readRelatedProjects, recordProjectView,
 } from '../services/projects';
+
+// The tool whose results are the project's imaginations (toolkit/tools.js).
+const REIMAGINE_TOOL = 'reimagine-a-space';
 import { follow, isFollowing, unfollow } from '../services/follows';
 import { readOrganisation } from '../services/organisations';
+import { readProjectOpenRooms } from '../services/rooms';
 import { CHARACTER } from '../theme';
 
 // A fixed locale and UTC, so the label does not shift with the machine it renders on.
@@ -228,16 +241,80 @@ function TableOfContents({ t, sections, active, onPick }) {
  * this page is the one a shared link actually points at, so it has to work reached
  * cold with nothing but the id in the URL.
  */
-export function PublicProjectPage({ t, projectId, accountId, onImagineForProject, onBack, onOpenProject,
-  onOpenOrganisation, onOpenToolkit }) {
+/**
+ * What a private project's link shows somebody who cannot see it: the name, and a way
+ * to ask to be let in — signing in first, if they have not. The database decides what
+ * they may know (project_access_preview in supabase/project-privacy.sql); nothing else
+ * about the project reaches this browser.
+ */
+function LockedProject({ t, preview, accountId, accountName, onSignIn, projectId }) {
+  const [status, setStatus] = useState(preview.requestStatus);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState(null);
+
+  const ask = async () => {
+    setSending(true);
+    setError(null);
+    try {
+      setStatus(await requestProjectAccess(projectId, accountName));
+    } catch (err) {
+      console.error('Could not ask to see the project:', err);
+      setError('That did not go through. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="placer-card" style={{ maxWidth: 560, margin: '48px auto', textAlign: 'center', padding: 32 }}>
+      <span style={{ width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px', background: t.surfaceAlt,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.ink }}>
+        <Icon name="lock" size={26} stroke={2} />
+      </span>
+      <h1 style={{ color: t.ink, marginBottom: 8 }}>{preview.name}</h1>
+      <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6, marginBottom: 24 }}>
+        This is a private project. Only the people its organisers let in can see it and take part.
+      </p>
+
+      {!accountId ? (
+        <Btn t={t} variant="primary" icon="user" onClick={onSignIn}>Sign in to ask to see it</Btn>
+      ) : status === 'pending' ? (
+        <p role="status" style={{ fontSize: 15, color: t.ink, fontWeight: 500 }}>
+          You have asked to see this project. Its organisers will let you know.
+        </p>
+      ) : status === 'declined' ? (
+        <p role="status" style={{ fontSize: 15, color: t.ink, fontWeight: 500 }}>
+          Its organisers have not let you in.
+        </p>
+      ) : (
+        <Btn t={t} variant="primary" icon="lock" onClick={ask} disabled={sending}>
+          {sending ? 'Asking…' : 'Ask to see this project'}
+        </Btn>
+      )}
+
+      {error && <p role="alert" style={{ fontSize: 14, color: t.ink, marginTop: 12 }}>{error}</p>}
+    </div>
+  );
+}
+
+export function PublicProjectPage({ t, projectId, accountId, accountName = null, onSignIn, onBack, onOpenProject,
+  onOpenOrganisation, onOpenToolkit, onOpenRoom }) {
   const [project, setProject] = useState(null);
+  // The tools its organisers added, as registry entries. A tool no longer in the
+  // registry is skipped rather than shown broken.
+  const [tools, setTools] = useState([]);
+  // The rooms opened for it that are still open: what "set up" means for a tool that
+  // runs in a room.
+  const [openRooms, setOpenRooms] = useState([]);
   const [imaginations, setImaginations] = useState([]);
   const [links, setLinks] = useState([]);
   const [toolkitActivity, setToolkitActivity] = useState(0);
   const [related, setRelated] = useState([]);
   // The organisation it is run in the name of, if any — credited in place of the owner.
   const [organisation, setOrganisation] = useState(null);
-  const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error' | 'notFound'
+  const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error' | 'notFound' | 'locked'
+  // For 'locked': what the visitor may know about a private project they cannot see.
+  const [preview, setPreview] = useState(null);
   const [following, setFollowing] = useState(false);
   const topRef = useRef(null);
 
@@ -252,11 +329,39 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
       readImaginationsByProject(projectId),
       readLinks(projectId),
       readPublicToolkitActivity(projectId),
+      // Before project-setup.sql has run there is no table to read, and a project page
+      // with no tools listed is better than no project page.
+      readProjectTools(projectId).catch((err) => {
+        console.error("Could not load this project's tools:", err);
+        return [];
+      }),
+      // The same before project-open-rooms.sql: the page stands, with nothing open on it.
+      readProjectOpenRooms(projectId).catch((err) => {
+        console.error("Could not load this project's open rooms:", err);
+        return [];
+      }),
     ])
-      .then(([proj, imgs, docs, activity]) => {
+      .then(([proj, imgs, docs, activity, toolIds, rooms]) => {
         if (cancelled) return;
-        if (!proj) { setStatus('notFound'); return; }
+        if (!proj) {
+          // A private project reads as no project at all to somebody who cannot see
+          // it, so ask which of the two this is.
+          readProjectAccess(projectId)
+            .then((found) => {
+              if (cancelled) return;
+              if (found && !found.canView) {
+                setPreview(found);
+                setStatus('locked');
+              } else {
+                setStatus('notFound');
+              }
+            })
+            .catch(() => { if (!cancelled) setStatus('notFound'); });
+          return;
+        }
         setProject(proj);
+        setTools(toolIds.map(findTool).filter(Boolean));
+        setOpenRooms(rooms);
         setImaginations(imgs);
         setLinks(docs);
         setToolkitActivity(activity);
@@ -301,10 +406,20 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
     return () => { cancelled = true; };
   }, [accountId, projectId, status]);
 
+  // How the tools it added are put to the visitor: each in a section of its own, under
+  // a heading said to them (onProjectPage in toolkit/tools.js). A tool that runs in a
+  // room is only shown once a room is open for it — until then it has been added but
+  // not set up. Reimagine a Space needs no room. Any other tool is there to try.
+  const presented = tools.flatMap((tool) => {
+    const room = openRooms.find((candidate) => candidate.tool === tool.id) ?? null;
+    if (tool.room && !room) return [];
+    return [{ id: `project-tool-${tool.id}`, heading: tool.onProjectPage?.heading ?? `Try ${tool.name}`, tool, room }];
+  });
+
   const sections = [
     { id: 'project-overview', label: 'Overview' },
-    { id: 'project-toolkit', label: 'Tools' },
-    { id: 'project-imaginations', label: 'Imaginations' },
+    ...(presented.length === 0 ? [{ id: 'project-take-part', label: 'Take part' }]
+      : presented.map(({ id, heading }) => ({ id, label: heading }))),
     ...(links.length > 0 ? [{ id: 'project-resources', label: 'News & resources' }] : []),
     ...(related.length > 0 ? [{ id: 'project-related', label: 'Related projects' }] : []),
   ];
@@ -336,6 +451,16 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
 
   if (status === 'loading') {
     return <div ref={topRef} style={{ padding: 48, display: 'flex', justifyContent: 'center' }}><LoadingMark /></div>;
+  }
+
+  if (status === 'locked') {
+    return (
+      <div ref={topRef} className="placer-project" style={{ background: t.page }}>
+        {backButton}
+        <LockedProject t={t} preview={preview} projectId={projectId} accountId={accountId}
+          accountName={accountName} onSignIn={onSignIn} />
+      </div>
+    );
   }
 
   if (status === 'notFound') {
@@ -384,6 +509,11 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
                   </a>
                 </span>
               ) : project.ownerName && <span>By {project.ownerName}</span>}
+              {project.visibility === 'private' && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="lock" size={16} stroke={2} />Private project
+                </span>
+              )}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
@@ -412,47 +542,53 @@ export function PublicProjectPage({ t, projectId, accountId, onImagineForProject
             )}
           </header>
 
-          <section id="project-toolkit" className="placer-project-section" aria-labelledby="project-toolkit-heading">
-            <h2 id="project-toolkit-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 8 }}>
-              Tools
-            </h2>
-            <p style={{ fontSize: 16, color: t.inkDim, marginBottom: 20 }}>
-              Try an idea for this project hands-on.
-              {toolkitActivity > 0 && (
-                <> {toolkitActivity} Toolkit {toolkitActivity === 1 ? 'session' : 'sessions'} run so far.</>
-              )}
-            </p>
-            <div className="placer-project-grid">
-              {TOOLS.map((tool) => (
-                <ToolCard key={tool.id} t={t} tool={tool}
-                  onOpen={() => onOpenToolkit?.(project.id, tool.id)} />
-              ))}
-            </div>
-          </section>
-
-          <section id="project-imaginations" className="placer-project-section" aria-labelledby="project-imaginations-heading">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-              flexWrap: 'wrap', marginBottom: 20 }}>
-              <h2 id="project-imaginations-heading" className="placer-h2" style={{ color: t.ink }}>
-                Citizen imaginations
+          {presented.length === 0 && (
+            <section id="project-take-part" className="placer-project-section" aria-labelledby="project-take-part-heading">
+              <h2 id="project-take-part-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 12 }}>
+                Take part
               </h2>
-              <Btn t={t} icon="sparkle" onClick={() => onImagineForProject(project.id)}>
-                Imagine something for this project
-              </Btn>
-            </div>
-
-            {imaginations.length === 0 ? (
               <div className="placer-card" style={{ textAlign: 'center' }}>
-                <p style={{ fontSize: 16, color: t.inkDim }}>Nothing posted to this project yet.</p>
+                <p style={{ fontSize: 16, color: t.inkDim }}>Nothing to take part in yet. Check back soon.</p>
               </div>
-            ) : (
-              <div className="placer-project-grid">
-                {imaginations.map((imagination) => (
-                  <ImaginationCard key={imagination.id} t={t} imagination={imagination} />
-                ))}
-              </div>
-            )}
-          </section>
+            </section>
+          )}
+
+          {presented.map(({ id, heading, tool, room }) => (
+            <section key={id} id={id} className="placer-project-section" aria-labelledby={`${id}-heading`}>
+              <h2 id={`${id}-heading`} className="placer-h2" style={{ color: t.ink, marginBottom: 20 }}>
+                {heading}
+              </h2>
+
+              {tool.id === REIMAGINE_TOOL ? (
+                <>
+                  <ToolCard t={t} tool={tool} onOpen={() => onOpenToolkit?.(project.id, tool.id)} />
+                  <div style={{ marginTop: 24 }}>
+                    {imaginations.length === 0 ? (
+                      <p style={{ fontSize: 16, color: t.inkDim }}>Nothing imagined for this project yet.</p>
+                    ) : (
+                      <div className="placer-project-grid">
+                        {imaginations.map((imagination) => (
+                          <ImaginationCard key={imagination.id} t={t} imagination={imagination} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : room && tool.onProjectPage?.Embed ? (
+                <tool.onProjectPage.Embed t={t} tool={tool} room={room} />
+              ) : room ? (
+                <ToolCard t={t} tool={tool} onOpen={() => onOpenRoom?.(tool.id, room.id)} />
+              ) : (
+                <ToolCard t={t} tool={tool} onOpen={() => onOpenToolkit?.(project.id, tool.id)} />
+              )}
+            </section>
+          ))}
+
+          {toolkitActivity > 0 && (
+            <p className="placer-caption" style={{ color: t.inkFaint, marginTop: -8, marginBottom: 32 }}>
+              {toolkitActivity} Toolkit {toolkitActivity === 1 ? 'session' : 'sessions'} run for this project so far.
+            </p>
+          )}
 
           {links.length > 0 && (
             <section id="project-resources" className="placer-project-section" aria-labelledby="project-resources-heading">

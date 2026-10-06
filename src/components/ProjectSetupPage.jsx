@@ -20,7 +20,7 @@ import { Icon } from './Icon';
 import { ImagePicker } from './ImagePicker';
 import { AddressInput } from './AddressInput';
 import {
-  BUDGET_CURRENCIES, PROJECT_TYPES, createProject, readProjectBudget, readProjectTools,
+  BUDGET_CURRENCIES, PROJECT_TYPES, VISIBILITIES, createProject, readProjectBudget, readProjectTools,
   removeProjectImageFile, saveProjectBudget, saveProjectTools,
   updateProject, uploadProjectImage,
 } from '../services/projects';
@@ -69,6 +69,38 @@ const placeNames = (address, town) => {
   const name = town || address.trim();
   return name ? [name] : [];
 };
+
+/** Public or private (services/projects.js's VISIBILITIES). */
+function VisibilityChoice({ t, value, onChange }) {
+  return (
+    <fieldset style={{ border: 0, padding: 0, margin: '0 0 26px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <legend style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 10, padding: 0 }}>
+        Who is it for?
+      </legend>
+      {VISIBILITIES.map((option) => {
+        const checked = value === option.key;
+        return (
+          <label key={option.key}
+            style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: 16, cursor: 'pointer',
+              borderRadius: 12, background: checked ? t.surfaceAlt : t.surface,
+              border: `1.5px solid ${checked ? t.ink : t.line}` }}>
+            <input type="radio" name="project-visibility" value={option.key} checked={checked}
+              onChange={() => onChange(option.key)}
+              style={{ marginTop: 3, accentColor: t.ink, flex: '0 0 auto' }} />
+            <span>
+              <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: 4 }}>
+                {option.title}
+              </span>
+              <span style={{ display: 'block', fontSize: 14, color: t.inkDim, lineHeight: 1.55 }}>
+                {option.description}
+              </span>
+            </span>
+          </label>
+        );
+      })}
+    </fieldset>
+  );
+}
 
 /**
  * The budget question's amount as typed, as a number — null when left empty, which is
@@ -284,6 +316,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   const [budgetCurrency, setBudgetCurrency] = useState('EUR');
   const [budgetReady, setBudgetReady] = useState(!initialProject);
   const [projectType, setProjectType] = useState(project?.projectType ?? null);
+  const [visibility, setVisibility] = useState(project?.visibility ?? 'public');
   const [organisationId, setOrganisationId] = useState(project ? project.organisationId : initialOrganisationId);
   // Which of the six steps a new project is on, 0 to 5. Editing has no steps.
   const [step, setStep] = useState(0);
@@ -367,6 +400,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
         address: address.trim(),
         locationPoint: address.trim() ? point : null,
         projectType,
+        visibility,
       };
       // A project edited without touching its address keeps the place names it has —
       // which, for one set up before addresses, may be several typed by hand.
@@ -476,6 +510,8 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
           amount={budgetAmount} onAmount={setBudgetAmount}
           currency={budgetCurrency} onCurrency={setBudgetCurrency} />
       )}
+
+      <VisibilityChoice t={t} value={visibility} onChange={setVisibility} />
     </>
   );
 

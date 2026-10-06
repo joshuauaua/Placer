@@ -31,6 +31,9 @@ const STORAGE_KEYS = {
   // room they opened.
   ROOM_PARTICIPANT: 'placemaking_room_participant',
   ROOMS_HOSTED: 'placemaking_rooms_hosted',
+  // Also toolkit/rooms.js's: what this browser answered in a poll on a project's page,
+  // so it is shown the results when it comes back.
+  ROOM_ANSWERS: 'placemaking_room_answers',
   // Owned by services/follows.js, which declares the same literal for the same
   // reason PROFILE does. Who and what this browser follows before there are
   // accounts to hold that.

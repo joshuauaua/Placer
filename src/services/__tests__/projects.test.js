@@ -136,7 +136,7 @@ describe('starting a project', () => {
       start_date: '2026-01-01', end_date: '2026-12-31', locations: ['Malmö', 'Folkets Park'],
       location_shapes: [{ path: [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }] }],
       address: '', location_lat: null, location_lng: null,
-      project_type: 'steward', organisation_id: null,
+      project_type: 'steward', organisation_id: null, visibility: 'public',
     }]]);
     expect(saved).toMatchObject({ id: 'proj-1', ownerId: 'user-1', name: 'Riverside Greenway' });
   });
@@ -658,5 +658,56 @@ describe("a project's budget", () => {
     fromChains.project_budgets = makeChain({ data: null, error: { message: 'permission denied' } });
 
     await expect(projects.saveProjectBudget('proj-1', { hasBudget: true })).rejects.toThrow('permission denied');
+  });
+});
+
+describe('private projects', () => {
+  it('reads what a locked page may show', async () => {
+    await load();
+    rpc.mockReturnValue({ maybeSingle: () => Promise.resolve({
+      data: { name: 'Folkets Park Square', visibility: 'private', can_view: false, request_status: 'pending' }, error: null,
+    }) });
+
+    await expect(projects.readProjectAccess('proj-1')).resolves.toEqual({
+      name: 'Folkets Park Square', visibility: 'private', canView: false, requestStatus: 'pending',
+    });
+    expect(rpc).toHaveBeenCalledWith('project_access_preview', { p_project_id: 'proj-1' });
+  });
+
+  it('asks to be let in under the name given', async () => {
+    await load();
+    rpc.mockResolvedValue({ data: 'pending', error: null });
+
+    await expect(projects.requestProjectAccess('proj-1', 'Ana')).resolves.toBe('pending');
+    expect(rpc).toHaveBeenCalledWith('project_request_access', { p_project_id: 'proj-1', p_display_name: 'Ana' });
+  });
+
+  it('lets somebody in, and takes them off again', async () => {
+    await load();
+    rpc.mockResolvedValue({ data: true, error: null });
+
+    await projects.decideAccess('proj-1', 'user-2', true);
+    await projects.removeAccess('proj-1', 'user-2');
+
+    expect(rpc).toHaveBeenCalledWith('project_decide_access', { p_project_id: 'proj-1', p_user_id: 'user-2', p_approve: true });
+    expect(rpc).toHaveBeenCalledWith('project_remove_access', { p_project_id: 'proj-1', p_user_id: 'user-2' });
+  });
+
+  it('reads the requests for the dashboard', async () => {
+    await load();
+    fromChains.project_access_requests = makeChain({ data: [
+      { user_id: 'user-2', display_name: '', status: 'pending', created_at: '2026-10-06T10:00:00Z', decided_at: null },
+    ], error: null });
+
+    await expect(projects.readAccessRequests('proj-1')).resolves.toEqual([
+      { userId: 'user-2', displayName: 'Somebody', status: 'pending', createdAt: '2026-10-06T10:00:00Z', decidedAt: null },
+    ]);
+  });
+
+  it('surfaces a refused request as a readable error', async () => {
+    await load();
+    rpc.mockResolvedValue({ data: null, error: { message: 'asking to see a project needs an account' } });
+
+    await expect(projects.requestProjectAccess('proj-1', 'Ana')).rejects.toThrow('needs an account');
   });
 });

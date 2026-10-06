@@ -501,7 +501,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
       {/* The map does not scroll, so the header stays put above it simply by being
           outside it; the map takes the rest of the height. */}
       <div style={{ flex: '0 0 auto', padding: '0 40px' }}>
-        <PageHeader t={t} title="Imagine"
+        <PageHeader t={t} title="Reimagine a Space"
           style={{ marginBottom: 0 }} />
       </div>
       {/* Map View */}

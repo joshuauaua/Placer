@@ -62,6 +62,9 @@ const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
 // bar and footer the other views sit inside.
 const FLOW_VIEWS = ['street', 'describe', 'post'];
 
+// The Toolkit tool the imagination flow belongs to (toolkit/tools.js).
+const REIMAGINE_TOOL = 'reimagine-a-space';
+
 // The account views live in the URL, for the same reason the Toolkit does: a
 // settings page you cannot bookmark or refresh into is a worse settings page.
 //
@@ -208,9 +211,9 @@ function MainApp({ initialView = 'welcome' }) {
   // Where the map should open. Set when an imagination is posted, so the map comes
   // back centred on the new pin instead of the default location.
   const [mapFocus, setMapFocus] = useState(null);
-  // Set by a project's public page's "Imagine something for this project" button, so
-  // the imagination that comes out the other end of the capture flow is attached to
-  // it. Cleared by posting, and by starting a capture any other way (handleExplore) —
+  // Set when Reimagine a Space is started for a project (opened from the project's
+  // page, so its URL carries ?project=), so the imagination that comes out the other
+  // end of the capture flow is attached to it. Cleared by posting, and by starting a capture any other way (handleExplore) —
   // otherwise a project visited earlier in the session could tag something unrelated.
   const [activeProjectId, setActiveProjectId] = useState(null);
 
@@ -327,8 +330,13 @@ function MainApp({ initialView = 'welcome' }) {
     setCurrentView(next);
   };
 
-  const handleImagineForProject = (id) => {
-    setActiveProjectId(id);
+  // Imagining is the Toolkit's Reimagine a Space now, opened like any tool — from the
+  // Toolkit, or from a project's page with the project attached. Its Get started hands
+  // back here to run the flow.
+  const handleLaunchTool = (toolId, projectId) => {
+    if (toolId !== REIMAGINE_TOOL) return;
+    posthog.capture('imagination_started', { project: Boolean(projectId) });
+    setActiveProjectId(projectId ?? null);
     show('imagine');
   };
 
@@ -621,6 +629,7 @@ function MainApp({ initialView = 'welcome' }) {
                   // Only opening a room is gated. Joining, contributing and reading are not.
                   needsAccount={identityStatus === 'signedOut'}
                   onSignIn={handleSignIn}
+                  onLaunchTool={handleLaunchTool}
                 />
               </Suspense>
             )}
@@ -756,11 +765,12 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'projectPublic' && (
               <Suspense fallback={<LoadingFallback />}>
                 <PublicProjectPage t={t} projectId={projectRoute.id} accountId={accountId}
-                  onImagineForProject={handleImagineForProject}
+                  accountName={profile?.name ?? null} onSignIn={handleSignIn}
                   onBack={() => show('projects')}
                   onOpenProject={showProjectPublic}
                   onOpenOrganisation={showOrganisationPublic}
-                  onOpenToolkit={showProjectToolkit} />
+                  onOpenToolkit={showProjectToolkit}
+                  onOpenRoom={showProjectRoom} />
               </Suspense>
             )}
           </div>

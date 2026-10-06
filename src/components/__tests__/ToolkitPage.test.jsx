@@ -85,7 +85,7 @@ describe('the gallery', () => {
     for (const tool of TOOLS) {
       expect(screen.getByRole('button', { name: tile(new RegExp(tool.name, 'i')) })).toBeInTheDocument();
     }
-    expect(TOOLS).toHaveLength(8);
+    expect(TOOLS).toHaveLength(9);
   });
 
   it('shows every tool as one set of cards, each labelled with its category', async () => {
@@ -176,9 +176,9 @@ describe('the gallery', () => {
       .map((button) => TOOLS.find((tool) => button.textContent.includes(tool.name))?.name)
       .filter(Boolean);
 
-    // Newest first to begin with: Open Vote is the latest tool added.
+    // Newest first to begin with: Reimagine a Space is the latest tool added.
     expect(sorts.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
-    expect(names()[0]).toBe('Open Vote');
+    expect(names()[0]).toBe('Reimagine a Space');
 
     fireEvent.click(sorts.getByRole('button', { name: 'A-Z' }));
     const alphabetical = TOOLS.map((tool) => tool.name).sort((a, b) => a.localeCompare(b));
@@ -402,5 +402,51 @@ describe('inside the app', () => {
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
 
     expect(screen.queryByText('a toolkit for participatory placemaking')).not.toBeInTheDocument();
+  });
+});
+
+describe('Reimagine a Space', () => {
+  const renderWith = (path, searchPath, onLaunchTool) => {
+    const location = memoryLocation({ path, searchPath, record: true });
+    render(
+      <Router hook={location.hook}>
+        <ToolkitPage t={THEME} onLaunchTool={onLaunchTool} />
+      </Router>
+    );
+  };
+
+  it('is a tool in the Imagine category, with its own cover', () => {
+    renderWith('/toolkit/reimagine-a-space', '', vi.fn());
+
+    expect(screen.getByRole('heading', { name: 'Reimagine a Space' })).toBeInTheDocument();
+    expect(screen.getByText('A tool to help anyone quickly create a visual render of an idea they have.')).toBeInTheDocument();
+    expect(screen.getByText('Imagine')).toBeInTheDocument();
+  });
+
+  it('hands Get started over to the imagination flow, with the project it was opened for', () => {
+    const onLaunchTool = vi.fn();
+    renderWith('/toolkit/reimagine-a-space', 'project=proj-1', onLaunchTool);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+
+    expect(onLaunchTool).toHaveBeenCalledWith('reimagine-a-space', 'proj-1');
+  });
+
+  it('opens like any other tool where nothing takes the hand-over, with a way to start', () => {
+    renderWith('/toolkit/reimagine-a-space', '', undefined);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+
+    expect(screen.getByText(/Pick a spot on the map and open it in Street View/)).toBeInTheDocument();
+  });
+
+  it('leaves every other tool opening on its own page', () => {
+    const onLaunchTool = vi.fn();
+    renderWith('/toolkit/budget-ballot', '', onLaunchTool);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+
+    expect(onLaunchTool).not.toHaveBeenCalled();
+    expect(screen.getByText('What the street could have')).toBeInTheDocument();
   });
 });

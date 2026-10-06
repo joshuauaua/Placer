@@ -44,3 +44,26 @@ export function tally(votes) {
 
   return { counts, shares, total };
 }
+
+/*
+ * Setting a vote up for a room. Opened for a project, the question is the point of the
+ * room — it is what the project's page puts above the three buttons — so it is written
+ * once, before the room opens, and fixed for its life (supabase/rooms-config.sql).
+ * Outside a room, and in a room opened without one, the question stays what it always
+ * was: typed on screen and never sent anywhere.
+ */
+
+/** The longest question a room can be set up with. */
+export const MAX_QUESTION_LENGTH = 200;
+
+export function defaultVoteSetup() {
+  return { question: '' };
+}
+
+/** What is wrong with a setup, as sentences for the organiser. Empty when it is ready. */
+export function voteSetupProblems(setup) {
+  const question = typeof setup?.question === 'string' ? setup.question.trim() : '';
+  if (!question) return ['Write the question you want people to vote on.'];
+  if (question.length > MAX_QUESTION_LENGTH) return [`Keep the question under ${MAX_QUESTION_LENGTH} characters.`];
+  return [];
+}
