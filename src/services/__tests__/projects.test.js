@@ -619,6 +619,33 @@ describe("a project's tools", () => {
   });
 });
 
+describe("a project's breadcrumb", () => {
+  it('is its name, and whether this account can edit it', async () => {
+    await load();
+    rpc.mockImplementation((name) => {
+      const data = name === 'project_access_preview'
+        ? { name: 'Riverside Greenway', visibility: 'private', can_view: false }
+        : true;
+      return { maybeSingle: () => Promise.resolve({ data, error: null }), then: (r) => r({ data, error: null }) };
+    });
+
+    await expect(projects.readProjectCrumb('proj-1')).resolves.toEqual({ name: 'Riverside Greenway', canEdit: true });
+    expect(rpc).toHaveBeenCalledWith('project_can_edit', { p_project_id: 'proj-1' });
+  });
+
+  it('cannot be edited when the check is refused, as it is signed out', async () => {
+    await load();
+    rpc.mockImplementation((name) => {
+      const result = name === 'project_access_preview'
+        ? { data: { name: 'Riverside Greenway', visibility: 'public', can_view: true }, error: null }
+        : { data: null, error: { message: 'permission denied' } };
+      return { maybeSingle: () => Promise.resolve(result), then: (r) => r(result) };
+    });
+
+    await expect(projects.readProjectCrumb('proj-1')).resolves.toEqual({ name: 'Riverside Greenway', canEdit: false });
+  });
+});
+
 describe("a project's budget", () => {
   it('reads the answer, the amount and the currency', async () => {
     await load();

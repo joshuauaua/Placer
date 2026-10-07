@@ -18,14 +18,18 @@ export function toolUrl(id) {
  * `actions` sits beside the copy-link button, for anything the page wants to offer
  * about this tool rather than inside it — starting a room, so far. Named
  * after the same slot on FlowScreen.
+ *
+ * `breadcrumb`, when given, replaces All tools, as on ToolCover.
  */
-export function ToolLayout({ t, tool, onBack, actions, children }) {
+export function ToolLayout({ t, tool, onBack, actions, breadcrumb = null, children }) {
   return (
     <div>
-      <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack}
-        style={{ padding: '0 12px 0 6px', marginBottom: 18, color: t.inkDim }}>
-        All tools
-      </Btn>
+      {breadcrumb ?? (
+        <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack}
+          style={{ padding: '0 12px 0 6px', marginBottom: 18, color: t.inkDim }}>
+          All tools
+        </Btn>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, flexWrap: 'wrap', marginBottom: 28 }}>
         <div style={{ flex: '1 1 420px', minWidth: 0 }}>

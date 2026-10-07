@@ -24,7 +24,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import posthog from 'posthog-js';
 import { Icon } from './Icon';
-import { PageHeader } from './PageHeader';
+import { Breadcrumb, PageHeader, WORKSPACE_CRUMB } from './PageHeader';
 import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from './GalleryToolbar';
 import { Btn } from './UI';
 import { Panel, ToolLayout } from './ToolLayout';
@@ -35,6 +35,22 @@ import { useRoom } from './toolkit/useRoom';
 import { CATEGORIES, SORTS, TOOLS, filterTools, findCategory, findTool, sortTools } from '../toolkit/tools';
 import { DEFAULT_LIFETIME, ROOM_LIFETIMES, projectIdFrom, roomIdFrom, roomPath } from '../toolkit/rooms';
 import { isSupabaseConfigured } from '../services/rooms';
+import { readProjectCrumb } from '../services/projects';
+
+/**
+ * The way back from a tool opened for a project. For somebody who can edit it — the
+ * organiser who added the tool — that is My Workspace / Projects / the project's
+ * dashboard; for anybody else, who came from its public page, just that page. Named
+ * "Project" until its name is in.
+ */
+export function projectTrail(projectId, crumb) {
+  const name = crumb?.name || 'Project';
+  if (crumb?.canEdit) {
+    return [WORKSPACE_CRUMB, { label: 'Projects', href: '/projects' },
+      { label: name, href: `/projects/${projectId}/dashboard` }];
+  }
+  return [{ label: name, href: `/projects/${projectId}` }];
+}
 
 /** The tool id in a path like /toolkit/street-mixer, if there is one. */
 export function toolIdFrom(path) {
@@ -277,6 +293,19 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
 
   const projectId = projectIdFrom(search);
 
+  // The project's name and whether this account can edit it, for the breadcrumb. The
+  // page stands without it: a failure leaves the crumb reading "Project".
+  const [crumb, setCrumb] = useState(null);
+  useEffect(() => {
+    setCrumb(null);
+    if (!projectId || !isSupabaseConfigured()) return undefined;
+    let cancelled = false;
+    readProjectCrumb(projectId)
+      .then((found) => { if (!cancelled) setCrumb(found); })
+      .catch((err) => console.error('Could not load the project for the breadcrumb:', err));
+    return () => { cancelled = true; };
+  }, [projectId]);
+
   const room = useRoom({
     tool,
     roomId: roomIdFrom(search),
@@ -332,11 +361,15 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
   const canStartRoom = roomIsPossible && !needsAccount;
   const settingUp = Boolean(tool?.setup) && settingUpId === tool.id && canStartRoom;
 
+  const breadcrumb = tool && projectId ? (
+    <Breadcrumb t={t} trail={projectTrail(projectId, crumb)} current={tool.name} style={{ marginBottom: 24 }} />
+  ) : null;
+
   // Every tool opens on its cover, full-bleed rather than inside the padded
   // column the tool itself sits in.
   if (tool && Tool && startedId !== tool.id) {
     return (
-      <ToolCover t={t} tool={tool}
+      <ToolCover t={t} tool={tool} breadcrumb={breadcrumb}
         onStart={() => {
           if (tool.launch && onLaunchTool) onLaunchTool(tool.id, projectId);
           else setStartedId(tool.id);
@@ -387,6 +420,7 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
           <ToolLayout
             t={t}
             tool={tool}
+            breadcrumb={breadcrumb}
             onBack={() => navigate('/toolkit')}
             actions={settingUp ? null : canStartRoom ? (
               <StartRoom t={t} tool={tool} onStart={room.start} onSetUp={() => setSettingUpId(tool.id)}

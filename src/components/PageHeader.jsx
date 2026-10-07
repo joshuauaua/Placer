@@ -11,29 +11,39 @@
  * Toolkit's filter, sort and view controls.
  */
 
+import { Fragment } from 'react';
 import { useLocation } from 'wouter';
 
+// Where every signed-in page's breadcrumb starts.
+export const WORKSPACE_CRUMB = { label: 'My Workspace', href: '/dashboard' };
+
 /**
- * "My Workspace / <page>", the way back to the dashboard from any page under it.
- * My Workspace is a real link, for a new tab, and stays in the app on a plain click.
+ * "My Workspace / <page>", the way back to the dashboard from any page under it, or
+ * any longer `trail` of { label, href } leading to `current` — a tool opened for a
+ * project goes through the project, for one. Each step is a real link, for a new
+ * tab, and stays in the app on a plain click.
  */
-export function Breadcrumb({ t, current, style }) {
+export function Breadcrumb({ t, current, trail = [WORKSPACE_CRUMB], style }) {
   const [, navigate] = useLocation();
   return (
     <nav aria-label="Breadcrumb" className="placer-mono"
       style={{ fontSize: 11.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: t.inkDim, ...style }}>
       <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-        <li>
-          <a href="/dashboard" className="placer-breadcrumb-link"
-            onClick={(e) => {
-              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-              e.preventDefault();
-              navigate('/dashboard');
-            }}>
-            My Workspace
-          </a>
-        </li>
-        <li aria-hidden="true">/</li>
+        {trail.map(({ label, href }) => (
+          <Fragment key={href}>
+            <li>
+              <a href={href} className="placer-breadcrumb-link"
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                  e.preventDefault();
+                  navigate(href);
+                }}>
+                {label}
+              </a>
+            </li>
+            <li aria-hidden="true">/</li>
+          </Fragment>
+        ))}
         <li aria-current="page" style={{ color: t.ink }}>{current}</li>
       </ol>
     </nav>
