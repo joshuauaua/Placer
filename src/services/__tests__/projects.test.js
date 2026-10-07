@@ -691,6 +691,9 @@ describe("a tool's setup for a project", () => {
     await load({ configured: false });
 
     await expect(projects.readReimagineScene('proj-1')).resolves.toBeNull();
+  });
+});
+
 describe("a project's breadcrumb", () => {
   it('is its name, and whether this account can edit it', async () => {
     await load();
