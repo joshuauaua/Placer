@@ -28,10 +28,12 @@ import {
   readLinks,
   readProject,
   readProjectRooms,
+  readProjectTools,
   readStats,
   readProjectViews,
   removeCollaborator,
   removeLink,
+  saveProjectTools,
 } from '../services/projects';
 import { closeRoom, deleteRoom } from '../services/rooms';
 import { readPreferences, readProjectResponses, saveProjectResponses } from '../services/notifications';
@@ -330,6 +332,26 @@ function AddToolkitTool({ t, onChoose }) {
   );
 }
 
+/** A tool chosen for this project (project_tools), opened with the project attached. */
+function ChosenToolRow({ t, tool, onOpen }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+      padding: '12px 0', borderTop: `1px solid ${t.line}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+        <span style={{ width: 36, height: 36, borderRadius: 10, flex: '0 0 auto', background: tool.tint,
+          boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name={tool.icon} size={18} stroke={2} />
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>{tool.name}</div>
+          {tool.tagline && <div style={{ fontSize: 12.5, color: t.inkDim }}>{tool.tagline}</div>}
+        </div>
+      </div>
+      <Btn t={t} variant="secondary" size="sm" onClick={onOpen} ariaLabel={`Open ${tool.name}`}>Open</Btn>
+    </div>
+  );
+}
+
 /**
  * One open room: its QR code, how it is going, and the things a project runs it with —
  * open it as the facilitator, save its code to print, close it, or delete it and
@@ -525,6 +547,18 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   // Null until loaded, and left null if the database has not had rooms-lifetime.sql
   // yet — the rest of the dashboard does not depend on it, so it should not fail with it.
   const [rooms, setRooms] = useState(null);
+  // The tools chosen for it at setup or added since, as registry ids. Like rooms, the
+  // dashboard stands without them, so a failure leaves the list empty.
+  const [tools, setTools] = useState([]);
+
+  const loadTools = useCallback(async (id) => {
+    try {
+      setTools(await readProjectTools(id));
+    } catch (err) {
+      console.error("Could not load this project's tools:", err);
+      setTools([]);
+    }
+  }, []);
 
   const loadRooms = useCallback(async (id) => {
     try {
@@ -554,6 +588,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
 
     setStatus('loading');
     loadRooms(projectId);
+    loadTools(projectId);
     loadEverything(projectId)
       .then(() => { if (!cancelled) setStatus('ready'); })
       .catch((err) => {
@@ -563,7 +598,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
       });
 
     return () => { cancelled = true; };
-  }, [projectId, loadEverything, loadRooms]);
+  }, [projectId, loadEverything, loadRooms, loadTools]);
 
   // Loaded apart from everything else: the dashboard stands without them, so a
   // failure here is logged and the views simply do not appear.
@@ -581,6 +616,8 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   }, [projectId, viewDays]);
 
   const isOwner = project?.ownerId === accountId;
+  // A tool the registry no longer has is skipped rather than shown blank.
+  const chosenTools = tools.map(findTool).filter(Boolean);
   const viewsInRange = views ? views.daily.reduce((sum, d) => sum + d.views, 0) : 0;
 
   const handleInvite = async (e) => {
@@ -628,6 +665,20 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
     } finally {
       setAddingLink(false);
     }
+  };
+
+  // "Add a Tool" attaches it to the project as well as opening it, so it is listed here
+  // and on the public page the same as one chosen at setup. Opening does not wait on it.
+  const handleAddTool = (toolId) => {
+    if (!tools.includes(toolId)) {
+      setTools((current) => [...current, toolId]);
+      saveProjectTools(project.id, [...tools, toolId], accountId)
+        .catch((err) => {
+          console.error('Could not add that tool to the project:', err);
+          loadTools(project.id);
+        });
+    }
+    onOpenToolkit(project.id, toolId);
   };
 
   const handleOpenRoom = (room) => {
@@ -685,7 +736,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
         project={project}
         accountName={project.ownerName}
         organisations={organisations}
-        onSaved={(saved) => { setProject(saved); setEditing(false); }}
+        onSaved={(saved) => { setProject(saved); setEditing(false); loadTools(saved.id); }}
         onCancel={() => setEditing(false)}
       />
     );
@@ -751,11 +802,24 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
         )}
 
         <Card t={t} title="Toolkit"
-          action={<AddToolkitTool t={t} onChoose={(toolId) => onOpenToolkit(project.id, toolId)} />}>
+          action={<AddToolkitTool t={t} onChoose={handleAddTool} />}>
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
             Open a tool attached to this project — it shows up in the count
             above, and on the public page once it has run.
           </p>
+
+          {chosenTools.length === 0 ? (
+            <p style={{ fontSize: 13.5, color: t.inkFaint, marginTop: 16, marginBottom: 0 }}>
+              No tools chosen yet.
+            </p>
+          ) : (
+            <div style={{ marginTop: 16 }}>
+              {chosenTools.map((tool) => (
+                <ChosenToolRow key={tool.id} t={t} tool={tool}
+                  onOpen={() => onOpenToolkit(project.id, tool.id)} />
+              ))}
+            </div>
+          )}
 
           {rooms && (
             <div style={{ marginTop: 24 }}>
