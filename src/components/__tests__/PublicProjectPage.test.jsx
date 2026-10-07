@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { PublicProjectPage } from '../PublicProjectPage';
 import { readImaginationsByProject } from '../../services/imaginations';
 import {
@@ -185,6 +185,19 @@ describe('PublicProjectPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Following' }));
 
     await waitFor(() => expect(unfollow).toHaveBeenCalledWith('project', 'proj-1'));
+  });
+
+  it('keeps a click on Follow when whether you follow it is only answered afterwards', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    let answer;
+    vi.mocked(isFollowing).mockReturnValue(new Promise((resolve) => { answer = resolve; }));
+
+    setup({ accountId: 'user-2' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Follow' }));
+    await waitFor(() => expect(isFollowing).toHaveBeenCalled());
+    await act(async () => { answer(false); });
+
+    expect(screen.getByRole('button', { name: 'Following' })).toBeInTheDocument();
   });
 
   it('shows a map of the drawn location outline at the top, when the project has one', async () => {

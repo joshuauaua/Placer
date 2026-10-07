@@ -12,7 +12,9 @@ import { Icon } from '../Icon';
 import { Btn } from '../UI';
 import { findCategory } from '../../toolkit/tools';
 
-export function ToolCover({ t, tool, onStart, onBack }) {
+// `breadcrumb`, when given, replaces All tools: a tool opened for a project leads
+// back to the project instead (ToolkitPage's projectTrail).
+export function ToolCover({ t, tool, onStart, onBack, breadcrumb = null }) {
   return (
     <div className="placer-cover" style={{ background: t.page }}>
       <div className="placer-cover-color" style={{ background: tool.tint }}>
@@ -20,10 +22,12 @@ export function ToolCover({ t, tool, onStart, onBack }) {
       </div>
 
       <div className="placer-cover-copy">
-        <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack}
-          style={{ padding: '0 12px 0 6px', marginBottom: 24, color: t.inkDim }}>
-          All tools
-        </Btn>
+        {breadcrumb ?? (
+          <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack}
+            style={{ padding: '0 12px 0 6px', marginBottom: 24, color: t.inkDim }}>
+            All tools
+          </Btn>
+        )}
 
         <div className="placer-caption" style={{ textTransform: 'uppercase', color: tool.color,
           fontWeight: 700, marginBottom: 12 }}>

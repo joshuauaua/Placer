@@ -499,6 +499,22 @@ export async function readProjectAccess(projectId) {
   };
 }
 
+/**
+ * What a breadcrumb needs to lead back to a project: its name, and whether the
+ * signed-in account can edit it — so the way back is its dashboard rather than its
+ * public page. The name is there even for a private project (project_access_preview),
+ * and for anybody signed out `canEdit` is simply false. Null for no such project.
+ */
+export async function readProjectCrumb(projectId) {
+  const supabase = await client();
+  const [preview, editable] = await Promise.all([
+    readProjectAccess(projectId),
+    supabase.rpc('project_can_edit', { p_project_id: projectId }),
+  ]);
+  if (!preview) return null;
+  return { name: preview.name, canEdit: editable.data === true };
+}
+
 /** Ask to see a private project. Signed in. Resolves to where the request stands. */
 export async function requestProjectAccess(projectId, displayName) {
   const supabase = await client();
