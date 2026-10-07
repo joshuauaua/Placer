@@ -107,6 +107,16 @@ describe('ProjectSetupPage, starting a project', () => {
     expect(screen.getByRole('button', { name: /^Next/ })).toBeEnabled();
   });
 
+  it('asks for a description above the goals, and holds the name to what the database takes', () => {
+    setup();
+    toBasics();
+
+    const description = screen.getByLabelText('Description');
+    const goals = screen.getByLabelText('Goals');
+    expect(description.compareDocumentPosition(goals) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByLabelText('Name *')).toHaveAttribute('maxLength', '120');
+  });
+
   it('goes back a step without losing what was filled in', () => {
     setup();
     toBasics();
@@ -125,6 +135,7 @@ describe('ProjectSetupPage, starting a project', () => {
 
     toBasics();
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'A park along the old rail line.' } });
     fireEvent.change(screen.getByLabelText('Goals'), { target: { value: 'Turn the old rail corridor into a park.' } });
     next();
     expect(screen.getByText('Step 4 of 6 · The place')).toBeInTheDocument();
@@ -141,6 +152,7 @@ describe('ProjectSetupPage, starting a project', () => {
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith({ id: 'proj-1', name: 'Riverside Greenway' }));
     expect(createProject).toHaveBeenCalledWith({
       ownerId: 'user-1', ownerName: 'Mara Quinn', name: 'Riverside Greenway',
+      summary: 'A park along the old rail line.',
       description: 'Turn the old rail corridor into a park.',
       startDate: null, endDate: null,
       address: 'Folkets Park, Amiralsgatan 35, Malmö', locationPoint: { lat: 55.59, lng: 13.01 },

@@ -65,6 +65,7 @@ const ROW = {
   owner_id: 'user-1',
   owner_name: 'Mara Quinn',
   name: 'Riverside Greenway',
+  summary: 'A park along the old rail line.',
   description: 'Turn the old rail corridor into a park.',
   start_date: '2026-01-01',
   end_date: '2026-12-31',
@@ -122,6 +123,7 @@ describe('starting a project', () => {
 
     const saved = await projects.createProject({
       ownerId: 'user-1', ownerName: 'Mara Quinn', name: 'Riverside Greenway',
+      summary: 'A park along the old rail line.',
       description: 'Turn the old rail corridor into a park.',
       startDate: '2026-01-01', endDate: '2026-12-31', locations: ['Malmö', 'Folkets Park'],
       locationShapes: [{ path: [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }] }],
@@ -132,13 +134,15 @@ describe('starting a project', () => {
     const [insertCall] = fromChains.projects.calls;
     expect(insertCall).toEqual(['insert', [{
       owner_id: 'user-1', owner_name: 'Mara Quinn', name: 'Riverside Greenway',
+      summary: 'A park along the old rail line.',
       description: 'Turn the old rail corridor into a park.',
       start_date: '2026-01-01', end_date: '2026-12-31', locations: ['Malmö', 'Folkets Park'],
       location_shapes: [{ path: [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }] }],
       address: '', location_lat: null, location_lng: null,
       project_type: 'steward', organisation_id: null, visibility: 'public',
     }]]);
-    expect(saved).toMatchObject({ id: 'proj-1', ownerId: 'user-1', name: 'Riverside Greenway' });
+    expect(saved).toMatchObject({ id: 'proj-1', ownerId: 'user-1', name: 'Riverside Greenway',
+      summary: 'A park along the old rail line.' });
   });
 
   it('surfaces a failure as a readable error', async () => {

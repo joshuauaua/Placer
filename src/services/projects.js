@@ -85,7 +85,7 @@ export const PROJECT_TYPE_NAMES = {
   steward: 'Have a say over a place', advocate: 'Pushing for change', other: 'Something else',
 };
 
-const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, description, start_date, end_date, '
+const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, summary, description, start_date, end_date, '
   + 'locations, location_shapes, address, location_lat, location_lng, image_path, project_type, '
   + 'organisation_id, visibility, created_at, updated_at';
 
@@ -95,6 +95,9 @@ function fromRow(row) {
     ownerId: row.owner_id,
     ownerName: row.owner_name,
     name: row.name,
+    // What the project is, in a line or two — see supabase/project-summary.sql.
+    summary: row.summary ?? '',
+    // Its goals, despite the column's name: what it is trying to find out or bring about.
     description: row.description ?? '',
     startDate: row.start_date ?? null,
     endDate: row.end_date ?? null,
@@ -129,7 +132,7 @@ function fromRow(row) {
  * insert policy, the same shape postImagination uses for userId — a missing one is a
  * refused write here rather than a policy violation there.
  */
-export async function createProject({ ownerId, ownerName, name, description = '',
+export async function createProject({ ownerId, ownerName, name, summary = '', description = '',
   startDate = null, endDate = null, locations = [], locationShapes = [], address = '',
   locationPoint = null, projectType = null, organisationId = null, visibility = 'public' }) {
   if (!ownerId) throw new Error('Starting a project needs an account.');
@@ -141,6 +144,7 @@ export async function createProject({ ownerId, ownerName, name, description = ''
       owner_id: ownerId,
       owner_name: ownerName,
       name,
+      summary,
       description,
       start_date: startDate,
       end_date: endDate,
@@ -319,7 +323,7 @@ export async function updateProject(id, patch) {
   const supabase = await client();
 
   const columns = {
-    ownerName: 'owner_name', name: 'name', description: 'description',
+    ownerName: 'owner_name', name: 'name', summary: 'summary', description: 'description',
     startDate: 'start_date', endDate: 'end_date', locations: 'locations',
     locationShapes: 'location_shapes', imagePath: 'image_path', projectType: 'project_type',
     organisationId: 'organisation_id', visibility: 'visibility',

@@ -165,10 +165,10 @@ function RelatedCard({ t, project, onOpen }) {
             By {project.ownerName}
           </span>
         )}
-        {project.description && (
+        {(project.summary || project.description) && (
           <span style={{ fontSize: 14, lineHeight: '20px', color: t.inkDim, marginTop: 8,
             display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            {project.description}
+            {project.summary || project.description}
           </span>
         )}
       </span>
@@ -535,11 +535,26 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
               </p>
             )}
 
-            {project.description && (
+            {project.summary && (
+              <p className="placer-body-lg" style={{ color: t.ink, marginTop: 24, whiteSpace: 'pre-line' }}>
+                {project.summary}
+              </p>
+            )}
+
+            {/* A project set up before it had a description shows its goals as it always
+                has; one with both labels the goals, so the two read as different things. */}
+            {project.description && (project.summary ? (
+              <div style={{ marginTop: 24 }}>
+                <p className="placer-label" style={{ color: t.inkDim, marginBottom: 8 }}>Goals</p>
+                <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>
+                  {project.description}
+                </p>
+              </div>
+            ) : (
               <p className="placer-body-lg" style={{ color: t.ink, marginTop: 24, whiteSpace: 'pre-line' }}>
                 {project.description}
               </p>
-            )}
+            ))}
           </header>
 
           {presented.length === 0 && (
