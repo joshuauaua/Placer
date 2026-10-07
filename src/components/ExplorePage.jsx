@@ -69,7 +69,7 @@ function shortLine(text) {
 function toPlace(kind, item, position) {
   return kind === 'project'
     ? { kind, id: item.id, title: item.name, image: item.image, position,
-      location: (item.locations ?? []).join(', '), line: shortLine(item.description),
+      location: (item.locations ?? []).join(', '), line: shortLine(item.summary || item.description),
       href: `/projects/${encodeURIComponent(item.id)}`, shapes: item.locationShapes }
     : { kind, id: item.id, title: item.name, image: item.cover, position,
       location: item.location, address: item.address, line: shortLine(item.description),

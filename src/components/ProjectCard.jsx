@@ -12,10 +12,10 @@ export function ProjectCard({ t, project, onOpen }) {
           margin: '-20px -20px 16px', aspectRatio: '16 / 9', objectFit: 'cover' }} />
       )}
       <h3 style={{ fontSize: 17, fontWeight: 700, color: t.ink, marginBottom: 6 }}>{project.name}</h3>
-      {project.description && (
+      {(project.summary || project.description) && (
         <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.5,
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-          {project.description}
+          {project.summary || project.description}
         </p>
       )}
     </button>

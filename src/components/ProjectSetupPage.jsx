@@ -60,6 +60,11 @@ function Field({ t, label, htmlFor, hint, children }) {
 const STEPS = ['What is a project', 'Project type', 'The basics', 'The place', 'Tools', 'An image'];
 const LAST_STEP = STEPS.length - 1;
 
+// The database's own limits (projects_name_shape, projects_summary_size), held here
+// too so a long name is cut off as it is typed rather than refused on save.
+const NAME_MAX_LENGTH = 120;
+const SUMMARY_MAX_LENGTH = 1000;
+
 /**
  * The place names a project is listed under — the public page's pin line, and what
  * "related projects" matches on. The town and country of a picked address, or the
@@ -297,6 +302,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   const editing = !!project;
 
   const [name, setName] = useState(project?.name ?? '');
+  const [summary, setSummary] = useState(project?.summary ?? '');
   const [description, setDescription] = useState(project?.description ?? '');
   const [startDate, setStartDate] = useState(project?.startDate ?? '');
   const [endDate, setEndDate] = useState(project?.endDate ?? '');
@@ -394,6 +400,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
     try {
       const patch = {
         name: name.trim(),
+        summary: summary.trim(),
         description: description.trim(),
         startDate: startDate || null,
         endDate: endDate || null,
@@ -478,9 +485,17 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
       )}
 
       <Field t={t} label="Name *" htmlFor="project-name">
-        <input id="project-name" type="text" value={name}
+        <input id="project-name" type="text" value={name} maxLength={NAME_MAX_LENGTH}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g., Riverside Greenway" style={inputStyle(t)} />
+      </Field>
+
+      <Field t={t} label="Description" htmlFor="project-summary"
+        hint="What the project is, in a sentence or two. Shown on its card and its public page.">
+        <textarea id="project-summary" value={summary} rows={3} maxLength={SUMMARY_MAX_LENGTH}
+          onChange={(e) => setSummary(e.target.value)}
+          placeholder="e.g., Turning the disused rail line along the river into a park."
+          style={{ ...inputStyle(t), resize: 'vertical' }} />
       </Field>
 
       <Field t={t} label="Goals" htmlFor="project-description" hint={goalsHint}>

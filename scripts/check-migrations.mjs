@@ -91,6 +91,7 @@ const PLAN = [
   { name: '20261006090001_project_budgets.sql', src: 'project-budget.sql' },
   { name: '20261006100001_project_open_rooms.sql', src: 'project-open-rooms.sql' },
   { name: '20261006110001_project_privacy.sql', src: 'project-privacy.sql' },
+  { name: '20261007090001_project_summary.sql', src: 'project-summary.sql' },
 ]
 
 const HAND_WRITTEN = [

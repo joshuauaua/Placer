@@ -68,10 +68,10 @@ function ProjectRow({ t, project, onOpen }) {
       </span>
       <span style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={{ fontSize: 17, fontWeight: 700 }}>{project.name}</span>
-        {project.description && (
+        {(project.summary || project.description) && (
           <span style={{ fontSize: 14, color: t.inkDim, overflow: 'hidden', textOverflow: 'ellipsis',
             whiteSpace: 'nowrap' }}>
-            {project.description}
+            {project.summary || project.description}
           </span>
         )}
       </span>
