@@ -21,6 +21,9 @@ vi.mock('../../services/projects', () => ({
   readPublicToolkitActivity: vi.fn(() => Promise.resolve(0)),
   readRelatedProjects: vi.fn(() => Promise.resolve([])),
   readProjectTools: vi.fn(() => Promise.resolve([])),
+  readProjectToolConfig: vi.fn(() => Promise.resolve(null)),
+  saveProjectToolConfig: vi.fn(() => Promise.resolve()),
+  uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),
   readProjectAccess: vi.fn(() => Promise.resolve(null)),
   requestProjectAccess: vi.fn(() => Promise.resolve('pending')),
 }));

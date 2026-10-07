@@ -19,6 +19,7 @@ import { DEFAULT_NAME } from './services/profile';
 import { clearPendingImagination, readPendingImagination, savePendingImagination } from './services/api';
 import { useIdentity } from './components/useIdentity';
 import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
+import { readReimagineScene } from './services/projects';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -333,11 +334,36 @@ function MainApp({ initialView = 'welcome' }) {
   // Imagining is the Toolkit's Reimagine a Space now, opened like any tool — from the
   // Toolkit, or from a project's page with the project attached. Its Get started hands
   // back here to run the flow.
-  const handleLaunchTool = (toolId, projectId) => {
+  //
+  // A project that has set the tool up (its location and base image, see
+  // ProjectSetupPage's SceneSetup) skips the map: everyone draws on the organiser's
+  // photo, pinned at the organiser's location. One that has not, or whose image cannot
+  // be loaded, gets the map as before, so taking part is never blocked.
+  const handleLaunchTool = async (toolId, projectId) => {
     if (toolId !== REIMAGINE_TOOL) return;
     posthog.capture('imagination_started', { project: Boolean(projectId) });
     setActiveProjectId(projectId ?? null);
-    show('imagine');
+
+    let scene = null;
+    if (projectId) {
+      try {
+        scene = await readReimagineScene(projectId);
+      } catch (err) {
+        console.error("Could not load the project's scene, so starting from the map:", err);
+      }
+    }
+    if (!scene) {
+      show('imagine');
+      return;
+    }
+    handleCaptureView({
+      position: scene.position,
+      pov: null,
+      fov: null,
+      source: 'project',
+      timestamp: new Date().toISOString(),
+      screenshot: scene.screenshot,
+    });
   };
 
   const handleCaptureView = (viewData) => {
@@ -349,8 +375,16 @@ function MainApp({ initialView = 'welcome' }) {
     show('street');
   };
 
+  // A project's scene was never picked from the map, so back from it is the project.
+  const fromProjectScene = capturedView?.source === 'project' && activeProjectId;
   const handleBackToMap = () => {
-    show('imagine');
+    if (fromProjectScene) {
+      // Off the flow, so the scene does not come back the next time '/' is opened.
+      setCurrentView('welcome');
+      showProjectPublic(activeProjectId);
+    } else {
+      show('imagine');
+    }
   };
 
   const handleNextStep = (canvasPreview) => {
@@ -366,7 +400,7 @@ function MainApp({ initialView = 'welcome' }) {
   // again on the way back — both of those reload the page, and everything above is React
   // state. See PostPage's SignInToPost, which calls this before it navigates.
   const stashDraft = () => savePendingImagination({
-    capturedView, canvasAssets, draft, preview,
+    capturedView, canvasAssets, draft, preview, projectId: activeProjectId,
   });
 
   useEffect(() => {
@@ -384,6 +418,7 @@ function MainApp({ initialView = 'welcome' }) {
       setCanvasAssets(pending.canvasAssets ?? []);
       setDraft(pending.draft ?? EMPTY_DRAFT);
       setPreview(pending.preview ?? null);
+      setActiveProjectId(pending.projectId ?? null);
       clearPendingImagination();
       // Back where they left off, which is the whole point of having parked it. Off
       // /dashboard first, where the redirect below will already have sent them.
@@ -460,6 +495,7 @@ function MainApp({ initialView = 'welcome' }) {
           <StreetScreen
             t={t}
             onBack={handleBackToMap}
+            backLabel={fromProjectScene ? 'Back to project' : undefined}
             onNext={handleNextStep}
             capturedView={capturedView}
             canvasAssets={canvasAssets}

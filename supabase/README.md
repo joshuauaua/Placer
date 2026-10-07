@@ -559,6 +559,9 @@ files themselves live in an R2 bucket. The R2 keys never reach the browser.
 - **Old pictures are removed.** Uploading a cover, profile photo or project image
   deletes the older ones in that folder, keeping the new one and the one the row
   currently uses; deleting an imagination or a project deletes its picture.
+  A project's Reimagine a Space base image (`scenes/<project id>/`, see
+  `project-tool-config.sql`) is not swept: the setup page deletes the one it
+  replaces, and deleting the project deletes it too.
 
 **In Cloudflare**
 
@@ -568,8 +571,21 @@ files themselves live in an R2 bucket. The R2 keys never reach the browser.
    guarantee. Jurisdiction is chosen at creation and cannot be changed afterwards.
 2. Settings -> Public access -> connect a **custom domain** (e.g. `media.<your-domain>`).
    The `r2.dev` address is rate-limited and not meant for production.
-3. No CORS policy is needed: the browser never talks to the bucket's S3 endpoint, only
-   to the function and to the public domain. Remove one if it was added earlier.
+3. Settings -> CORS policy -> allow `GET` from the app's origins. Uploads never need
+   it (the browser never talks to the bucket's S3 endpoint, only to the function), but
+   Reimagine a Space reads a project's base image (the `scenes` folder) with `fetch`
+   to draw on, and that read is cross-origin. Without the rule, people imagining for a
+   project are sent to the map instead of the organiser's photo.
+
+   ```json
+   [
+     {
+       "AllowedOrigins": ["https://beta.plcr.org", "https://plcr.org", "http://localhost:5173"],
+       "AllowedMethods": ["GET"],
+       "AllowedHeaders": []
+     }
+   ]
+   ```
 4. R2 -> Manage API tokens -> an **Object Read & Write** token scoped to this bucket
    only. Keep the Access Key ID and Secret Access Key; the account ID is on the R2
    overview page.

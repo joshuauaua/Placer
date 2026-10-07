@@ -3,11 +3,23 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import App from '../../App';
+import { readReimagineScene } from '../../services/projects';
 
 vi.mock('../MapContainer', () => ({
   default: () => {
     throw new Error('Map failed to load');
   },
+}));
+
+// Konva has no canvas to draw on here. Stood in for by the picture it would draw on.
+vi.mock('../ImaginationCanvas', () => ({
+  default: ({ backgroundImage }) => <img alt="Canvas background" src={backgroundImage ?? ''} />,
+}));
+
+// Null unless a test sets a project's scene up.
+vi.mock('../../services/projects', async (importOriginal) => ({
+  ...(await importOriginal()),
+  readReimagineScene: vi.fn(() => Promise.resolve(null)),
 }));
 
 vi.mock('../ExplorePage', () => ({
@@ -106,6 +118,37 @@ describe('App', () => {
     // and the Toolkit's URL has been left, since that flow has none.
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
     expect(history.at(-1)).toBe('/');
+  });
+
+  it('skips the map for a project that has set Reimagine a Space up, drawing on its base image', async () => {
+    vi.mocked(readReimagineScene).mockResolvedValueOnce({
+      address: 'Folkets Park, Malmö', position: { lat: 55.59, lng: 13.01 }, screenshot: 'data:image/webp;base64,AAAA',
+    });
+    const { hook, searchHook, history } = memoryLocation({
+      path: '/toolkit/reimagine-a-space?project=proj-1', record: true,
+    });
+    render(<Router hook={hook} searchHook={searchHook}><App /></Router>);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Get started' }));
+
+    expect(await screen.findByRole('button', { name: /Back to project/ })).toBeInTheDocument();
+    expect(readReimagineScene).toHaveBeenCalledWith('proj-1');
+    expect(await screen.findByRole('img', { name: 'Canvas background' }))
+      .toHaveAttribute('src', 'data:image/webp;base64,AAAA');
+    expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Back to project/ }));
+    expect(history.at(-1)).toBe('/projects/proj-1');
+  });
+
+  it('starts from the map when the project\'s scene cannot be loaded', async () => {
+    vi.mocked(readReimagineScene).mockRejectedValueOnce(new Error('blocked by CORS'));
+    const { hook, searchHook } = memoryLocation({ path: '/toolkit/reimagine-a-space?project=proj-1' });
+    render(<Router hook={hook} searchHook={searchHook}><App /></Router>);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Get started' }));
+
+    expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
   });
 
   it('opens Explore on a direct visit to /explore', async () => {
