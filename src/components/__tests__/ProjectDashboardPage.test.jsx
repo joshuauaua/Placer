@@ -9,10 +9,12 @@ import {
   readLinks,
   readProject,
   readProjectRooms,
+  readProjectTools,
   readProjectViews,
   readStats,
   removeCollaborator,
   removeLink,
+  saveProjectTools,
   updateProject,
 } from '../../services/projects';
 import { closeRoom, deleteRoom } from '../../services/rooms';
@@ -90,6 +92,7 @@ describe('ProjectDashboardPage', () => {
     vi.mocked(readCollaborators).mockResolvedValue([]);
     vi.mocked(readLinks).mockResolvedValue([]);
     vi.mocked(readProjectRooms).mockResolvedValue([]);
+    vi.mocked(readProjectTools).mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -189,6 +192,47 @@ describe('ProjectDashboardPage', () => {
 
     fireEvent.click(screen.getByRole('menuitem', { name: 'Budget Ballot' }));
 
+    expect(onOpenToolkit).toHaveBeenCalledWith('proj-1', 'budget-ballot');
+  });
+
+  it('lists the tools chosen at setup in the Toolkit, each opening with the project attached', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'budget-ballot']);
+    const { onOpenToolkit } = setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Budget Ballot' }));
+
+    expect(readProjectTools).toHaveBeenCalledWith('proj-1');
+    expect(screen.getByRole('button', { name: 'Open Open Vote' })).toBeInTheDocument();
+    expect(onOpenToolkit).toHaveBeenCalledWith('proj-1', 'budget-ballot');
+  });
+
+  it('says so when no tools have been chosen', async () => {
+    setup();
+
+    expect(await screen.findByText('No tools chosen yet.')).toBeInTheDocument();
+  });
+
+  it('attaches a tool added from the dashboard to the project, and lists it', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    setup();
+    await screen.findByRole('button', { name: 'Open Open Vote' });
+
+    fireEvent.click(screen.getByRole('button', { name: /Add a Tool/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Budget Ballot' }));
+
+    expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['open-vote', 'budget-ballot'], 'user-1');
+    expect(await screen.findByRole('button', { name: 'Open Budget Ballot' })).toBeInTheDocument();
+  });
+
+  it('does not save again when the tool added is already chosen', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['budget-ballot']);
+    const { onOpenToolkit } = setup();
+    await screen.findByRole('button', { name: 'Open Budget Ballot' });
+
+    fireEvent.click(screen.getByRole('button', { name: /Add a Tool/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Budget Ballot' }));
+
+    expect(saveProjectTools).not.toHaveBeenCalled();
     expect(onOpenToolkit).toHaveBeenCalledWith('proj-1', 'budget-ballot');
   });
 
