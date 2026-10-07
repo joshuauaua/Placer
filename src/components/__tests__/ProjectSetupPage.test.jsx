@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { ProjectSetupPage, parseBudgetAmount } from '../ProjectSetupPage';
 import {
-  createProject, readProjectBudget, readProjectTools, saveProjectBudget, saveProjectTools, updateProject,
+  createProject, readProjectBudget, readProjectToolConfig, readProjectTools, removeProjectImageFile,
+  saveProjectBudget, saveProjectToolConfig, saveProjectTools, updateProject, uploadSceneImage,
 } from '../../services/projects';
 import { THEME } from '../../theme';
 import { TOOLS } from '../../toolkit/tools';
@@ -17,7 +18,16 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   createProject: vi.fn(),
   updateProject: vi.fn(),
   readProjectTools: vi.fn(() => Promise.resolve([])),
+  readProjectToolConfig: vi.fn(() => Promise.resolve(null)),
+  saveProjectToolConfig: vi.fn(() => Promise.resolve()),
+  uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),
   saveProjectTools: vi.fn((projectId, tools) => Promise.resolve(tools)),
+  removeProjectImageFile: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('../../services/media', async (importOriginal) => ({
+  ...(await importOriginal()),
+  mediaUrl: (path) => (path ? `https://media.test/${path}` : null),
 }));
 
 // The Places suggestions need a real Google Maps script this suite has no business
@@ -580,5 +590,138 @@ describe('ProjectSetupPage, public or private', () => {
     fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
 
     await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1', expect.objectContaining({ visibility: 'public' })));
+  });
+});
+
+describe('ProjectSetupPage, setting up Reimagine a Space', () => {
+  const PHOTO = new File(['photo'], 'park.jpg', { type: 'image/jpeg' });
+  const scene = () => screen.getByRole('region', { name: 'Set up Reimagine a Space' });
+  const addPhoto = () => fireEvent.change(within(scene()).getByLabelText(/Add a base image|Choose another/),
+    { target: { files: [PHOTO] } });
+
+  beforeEach(() => {
+    globalThis.URL.createObjectURL = vi.fn(() => 'blob:scene');
+    globalThis.URL.revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** Through to the tools step of a new project placed at the picked address. */
+  const toTools = () => {
+    toBasics();
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    next();
+    fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
+    next();
+  };
+
+  it('asks for a location and a base image once it is chosen, starting at the project\'s place', () => {
+    setup();
+    toTools();
+    expect(screen.queryByRole('region', { name: 'Set up Reimagine a Space' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Reimagine a Space/ }));
+
+    expect(within(scene()).getByLabelText('Location *')).toHaveValue('Folkets Park, Amiralsgatan 35, Malmö');
+    expect(screen.getByRole('button', { name: /^Next/ })).toBeDisabled();
+  });
+
+  it('will not go on without a base image, or without a location', async () => {
+    setup();
+    toTools();
+    fireEvent.click(screen.getByRole('button', { name: /Reimagine a Space/ }));
+
+    addPhoto();
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Next/ })).toBeEnabled());
+    fireEvent.change(within(scene()).getByLabelText('Location *'), { target: { value: '' } });
+    expect(screen.getByRole('button', { name: /^Next/ })).toBeDisabled();
+  });
+
+  it('uploads the base image once the project exists, and saves the scene on the tool', async () => {
+    createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    const { onSaved } = setup();
+    toTools();
+    fireEvent.click(screen.getByRole('button', { name: /Reimagine a Space/ }));
+    addPhoto();
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Next/ })).toBeEnabled());
+    next();
+    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['reimagine-a-space'], 'user-1');
+    expect(uploadSceneImage).toHaveBeenCalledWith('proj-1', PHOTO);
+    expect(saveProjectToolConfig).toHaveBeenCalledWith('proj-1', 'reimagine-a-space', {
+      address: 'Folkets Park, Amiralsgatan 35, Malmö', point: { lat: 55.59, lng: 13.01 },
+      imagePath: 'scenes/proj-1/scene-1.webp',
+    });
+    // The tool's row has to exist before its scene can be saved on it.
+    expect(saveProjectTools.mock.invocationCallOrder[0])
+      .toBeLessThan(saveProjectToolConfig.mock.invocationCallOrder[0]);
+  });
+
+  describe('when editing', () => {
+    const PROJECT = { id: 'proj-1', ownerId: 'user-1', name: 'Riverside Greenway', address: '', locations: [] };
+    const SAVED = {
+      address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 },
+      imagePath: 'scenes/proj-1/scene-0.webp', image: 'https://media.test/scenes/proj-1/scene-0.webp',
+    };
+
+    beforeEach(() => {
+      updateProject.mockResolvedValue(PROJECT);
+      readProjectTools.mockResolvedValueOnce(['reimagine-a-space']);
+      readProjectToolConfig.mockResolvedValueOnce(SAVED);
+    });
+
+    it('starts filled in with the scene it has, and keeps its image when only the location changes', async () => {
+      setup({ project: PROJECT });
+
+      expect(await screen.findByRole('img', { name: 'The base image' })).toHaveAttribute('src', SAVED.image);
+      expect(within(scene()).getByLabelText('Location *')).toHaveValue('Folkets Park, Malmö');
+      fireEvent.click(within(scene()).getByRole('button', { name: 'Pick the suggestion' }));
+      fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+      await waitFor(() => expect(saveProjectToolConfig).toHaveBeenCalledWith('proj-1', 'reimagine-a-space', {
+        address: 'Folkets Park, Amiralsgatan 35, Malmö', point: { lat: 55.59, lng: 13.01 },
+        imagePath: SAVED.imagePath,
+      }));
+      expect(uploadSceneImage).not.toHaveBeenCalled();
+      expect(removeProjectImageFile).not.toHaveBeenCalled();
+    });
+
+    it('deletes the base image it replaces', async () => {
+      const { onSaved } = setup({ project: PROJECT });
+      await screen.findByRole('img', { name: 'The base image' });
+
+      addPhoto();
+      await waitFor(() => expect(screen.getByRole('img', { name: 'The base image' })).toHaveAttribute('src', 'blob:scene'));
+      fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+      await waitFor(() => expect(onSaved).toHaveBeenCalled());
+      expect(saveProjectToolConfig).toHaveBeenCalledWith('proj-1', 'reimagine-a-space',
+        expect.objectContaining({ imagePath: 'scenes/proj-1/scene-1.webp' }));
+      expect(removeProjectImageFile).toHaveBeenCalledWith(SAVED.imagePath);
+    });
+
+    it('deletes the base image when the tool is dropped', async () => {
+      const { onSaved } = setup({ project: PROJECT });
+      fireEvent.click(await screen.findByRole('button', { name: /Reimagine a Space/ }));
+      fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+      await waitFor(() => expect(onSaved).toHaveBeenCalled());
+      expect(saveProjectTools).toHaveBeenCalledWith('proj-1', [], 'user-1');
+      expect(saveProjectToolConfig).not.toHaveBeenCalled();
+      expect(removeProjectImageFile).toHaveBeenCalledWith(SAVED.imagePath);
+    });
+
+    it('will not save with the base image removed', async () => {
+      setup({ project: PROJECT });
+      await screen.findByRole('img', { name: 'The base image' });
+
+      fireEvent.click(within(scene()).getByRole('button', { name: /Remove/ }));
+
+      await waitFor(() => expect(screen.getByRole('button', { name: /Save changes/ })).toBeDisabled());
+    });
   });
 });

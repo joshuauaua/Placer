@@ -39,6 +39,9 @@ export const VISIBILITIES = [
 // The folder project images go under in the R2 bucket (supabase/functions/media).
 // Named after the project, not the uploader: any collaborator may replace it.
 export const PROJECT_IMAGES_FOLDER = 'projects';
+// Reimagine a Space's base images, one folder per project like the covers, but not
+// swept down to one by the media function: the page removes the one it replaces.
+export const SCENE_IMAGES_FOLDER = 'scenes';
 
 export { isSupabaseConfigured };
 
@@ -381,12 +384,16 @@ export async function removeProjectImageFile(path) {
 export async function deleteProject(id) {
   const supabase = await client();
 
-  // Read the path before the row that holds it is gone.
+  // Read the paths before the rows that hold them are gone.
   const { data: existing } = await supabase
     .from(PROJECTS_TABLE)
     .select('image_path')
     .eq('id', id)
     .maybeSingle();
+  const { data: toolRows } = await supabase
+    .from(PROJECT_TOOLS_TABLE)
+    .select('config')
+    .eq('project_id', id);
 
   const { error } = await supabase.from(PROJECTS_TABLE).delete().eq('id', id);
   if (error) throw new Error(`Could not remove that project: ${error.message}`);
@@ -394,6 +401,7 @@ export async function deleteProject(id) {
   // After the row, not before: a refused delete must not cost the project its image.
   // The media function lets anyone clear the files of a project that no longer exists.
   await removeProjectImageFile(existing?.image_path);
+  for (const row of toolRows ?? []) await removeProjectImageFile(row.config?.imagePath);
   return { success: true };
 }
 
@@ -599,6 +607,87 @@ export async function saveProjectTools(projectId, toolIds, addedBy) {
   }
 
   return [...current.filter((tool) => !removing.includes(tool)), ...adding];
+}
+
+/**
+ * How a project has set one of its tools up (project_tools.config, see
+ * supabase/project-tool-config.sql), or null when it has not been, or has not chosen
+ * the tool. For Reimagine a Space that is its scene: { address, point, imagePath,
+ * image }, `image` being the address to show `imagePath` from.
+ */
+export async function readProjectToolConfig(projectId, tool) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECT_TOOLS_TABLE)
+    .select('config')
+    .eq('project_id', projectId)
+    .eq('tool', tool)
+    .maybeSingle();
+
+  if (error) throw new Error(`Could not load how that tool is set up: ${error.message}`);
+  const config = data?.config;
+  if (!config) return null;
+  const point = Number.isFinite(config.lat) && Number.isFinite(config.lng) ? { lat: config.lat, lng: config.lng } : null;
+  return { address: config.address ?? '', point, imagePath: config.imagePath ?? null, image: mediaUrl(config.imagePath) };
+}
+
+/**
+ * Set a chosen tool up for a project. The tool has to be saved to the project first
+ * (saveProjectTools), since this changes its row. Owner or collaborator only.
+ */
+export async function saveProjectToolConfig(projectId, tool, { address = '', point = null, imagePath = null }) {
+  const supabase = await client();
+  const config = { address, lat: point?.lat ?? null, lng: point?.lng ?? null, imagePath };
+  const { data, error } = await supabase
+    .from(PROJECT_TOOLS_TABLE)
+    .update({ config })
+    .eq('project_id', projectId)
+    .eq('tool', tool)
+    .select('tool');
+
+  if (error) throw new Error(`Could not save how that tool is set up: ${error.message}`);
+  if (!data?.length) throw new Error('Could not save how that tool is set up: it is not one of the project\'s tools.');
+}
+
+/**
+ * Upload the base image of a project's Reimagine a Space scene and return its path,
+ * to save with saveProjectToolConfig. Same rules as a project image: the project has
+ * to exist, and the caller has to be its owner or a collaborator.
+ */
+export async function uploadSceneImage(projectId, file) {
+  const { blob, ext } = await preparePhoto(file, 'project', 'A base image');
+  const supabase = await client();
+  const path = `${SCENE_IMAGES_FOLDER}/${projectId}/scene-${Date.now()}.${ext}`;
+  try {
+    return await uploadMedia(supabase, path, blob);
+  } catch (error) {
+    throw new Error(`Could not upload the base image: ${error.message}`);
+  }
+}
+
+/**
+ * Whether a project's Reimagine a Space is set up, and if so its scene, ready to
+ * draw on: { address, position, screenshot }, with the image as a data: URL. Inlined
+ * rather than linked because the canvas is exported as the imagination's preview, and
+ * a picture from another origin would stop that (see src/lib/staticMaps.js) — the
+ * bucket has to allow this GET (supabase/README.md, the R2 section). Null when it is
+ * not set up, or there is no Supabase project to have set it up in.
+ */
+export async function readReimagineScene(projectId) {
+  if (!isSupabaseConfigured()) return null;
+  const config = await readProjectToolConfig(projectId, 'reimagine-a-space');
+  if (!config?.image) return null;
+
+  const response = await fetch(config.image);
+  if (!response.ok) throw new Error(`Could not load the project's base image (${response.status}).`);
+  const blob = await response.blob();
+  const screenshot = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+  return { address: config.address, position: config.point, screenshot };
 }
 
 /**

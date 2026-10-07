@@ -165,7 +165,7 @@ alter table public.imaginations add constraint imaginations_coords_shape
 
 alter table public.imaginations drop constraint if exists imaginations_source_known;
 alter table public.imaginations add constraint imaginations_source_known
-  check (source is null or source in ('streetview', 'staticmap'));
+  check (source is null or source in ('streetview', 'staticmap', 'map', 'project'));
 
 -- The drawing itself. Generous, because a busy canvas is a good thing, but not
 -- unbounded — these are the two columns a client could put anything in.

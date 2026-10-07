@@ -13,6 +13,7 @@ const noop = () => {};
 export function StreetScreen({
   t,
   onBack,
+  backLabel = 'Back to map',
   onNext,
   capturedView,
   canvasAssets = [],
@@ -58,7 +59,7 @@ export function StreetScreen({
       t={t}
       step={1}
       onBack={onBack}
-      backLabel="Back to map"
+      backLabel={backLabel}
       actions={
         <>
           <Btn t={t} variant="ghost" size="sm" style={{ color: t.inkDim }}>Save draft</Btn>

@@ -619,6 +619,78 @@ describe("a project's tools", () => {
   });
 });
 
+describe("a tool's setup for a project", () => {
+  it('reads Reimagine a Space\'s scene, with an address to show its image from', async () => {
+    await load();
+    fromChains.project_tools = makeChain({ data: { config: {
+      address: 'Folkets Park, Malmö', lat: 55.59, lng: 13.01, imagePath: 'scenes/proj-1/scene-1.webp',
+    } }, error: null });
+
+    await expect(projects.readProjectToolConfig('proj-1', 'reimagine-a-space')).resolves.toEqual({
+      address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 },
+      imagePath: 'scenes/proj-1/scene-1.webp', image: 'https://media.example/scenes/proj-1/scene-1.webp',
+    });
+    expect(fromChains.project_tools.calls).toContainEqual(['eq', ['tool', 'reimagine-a-space']]);
+  });
+
+  it('is null for a tool not set up, or not chosen', async () => {
+    await load();
+    fromChains.project_tools = makeChain({ data: { config: null }, error: null });
+    await expect(projects.readProjectToolConfig('proj-1', 'reimagine-a-space')).resolves.toBeNull();
+
+    fromChains.project_tools = makeChain({ data: null, error: null });
+    await expect(projects.readProjectToolConfig('proj-1', 'reimagine-a-space')).resolves.toBeNull();
+  });
+
+  it('saves the setup on the tool\'s own row', async () => {
+    await load();
+    fromChains.project_tools = makeChain({ data: [{ tool: 'reimagine-a-space' }], error: null });
+
+    await projects.saveProjectToolConfig('proj-1', 'reimagine-a-space', {
+      address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 }, imagePath: 'scenes/proj-1/scene-1.webp',
+    });
+
+    const { calls } = fromChains.project_tools;
+    expect(calls).toContainEqual(['update', [{ config: {
+      address: 'Folkets Park, Malmö', lat: 55.59, lng: 13.01, imagePath: 'scenes/proj-1/scene-1.webp',
+    } }]]);
+    expect(calls).toContainEqual(['eq', ['project_id', 'proj-1']]);
+    expect(calls).toContainEqual(['eq', ['tool', 'reimagine-a-space']]);
+  });
+
+  it('says so when the tool is not one of the project\'s, rather than saving nothing quietly', async () => {
+    await load();
+    fromChains.project_tools = makeChain({ data: [], error: null });
+
+    await expect(projects.saveProjectToolConfig('proj-1', 'reimagine-a-space', {}))
+      .rejects.toThrow(/not one of the project's tools/);
+  });
+
+  it('uploads a base image into the project\'s scenes folder', async () => {
+    await load();
+    const file = { type: 'image/jpeg', size: 1000 };
+
+    const path = await projects.uploadSceneImage('proj-1', file);
+
+    expect(path).toMatch(/^scenes\/proj-1\/scene-\d+\.webp$/);
+    expect(upload).toHaveBeenCalledWith(expect.anything(), path, expect.objectContaining({ type: 'image/webp' }));
+  });
+
+  it('removes the base images along with the project', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: { image_path: null }, error: null });
+    fromChains.project_tools = makeChain({ data: [{ config: { imagePath: 'scenes/proj-1/scene-1.webp' } }, { config: null }],
+      error: null });
+
+    await projects.deleteProject('proj-1');
+
+    expect(remove).toHaveBeenCalledWith(expect.anything(), 'scenes/proj-1/scene-1.webp');
+  });
+
+  it('has no scene to read with no Supabase project', async () => {
+    await load({ configured: false });
+
+    await expect(projects.readReimagineScene('proj-1')).resolves.toBeNull();
 describe("a project's breadcrumb", () => {
   it('is its name, and whether this account can edit it', async () => {
     await load();

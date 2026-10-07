@@ -35,7 +35,8 @@ const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MB = 1024 * 1024;
 
 // Everything one account may keep in the bucket: its previews, cover and profile photo,
-// and the images of the projects it owns. What keeps the bucket inside R2's free tier.
+// and the images (covers and scenes) of the projects it owns. What keeps the bucket
+// inside R2's free tier.
 const QUOTA_BYTES = 50 * MB;
 
 // What each folder accepts, whose id names it, and — for the ones that hold a single
@@ -59,10 +60,15 @@ const FOLDERS: Record<string, Folder> = {
     current: { table: 'profiles', column: 'avatar_path' } },
   projects: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'project',
     current: { table: 'projects', column: 'image_path' } },
+  // Reimagine a Space's base image for a project (supabase/project-tool-config.sql).
+  // Its own folder, since `projects` is swept down to the cover. No `current`: the key
+  // is inside project_tools.config, and the page deletes the one it replaces.
+  scenes: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'project' },
   organisations: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'organisation',
     current: { table: 'organisations', column: 'cover_path' } },
 };
 const ACCOUNT_FOLDERS = Object.keys(FOLDERS).filter((name) => FOLDERS[name].owner === 'account');
+const PROJECT_FOLDERS = Object.keys(FOLDERS).filter((name) => FOLDERS[name].owner === 'project');
 
 const EXTENSIONS: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 
@@ -203,7 +209,7 @@ async function usage(store: Store, caller: Caller, accountId: string, replacing:
   const { data: owned } = await caller.supabase.from('projects').select('id').eq('owner_id', accountId);
   const prefixes = [
     ...ACCOUNT_FOLDERS.map((name) => `${name}/${accountId}/`),
-    ...((owned ?? []) as { id: string }[]).map((project) => `projects/${project.id}/`),
+    ...((owned ?? []) as { id: string }[]).flatMap((project) => PROJECT_FOLDERS.map((name) => `${name}/${project.id}/`)),
   ].filter((prefix) => prefix !== replacing);
 
   const listings = await Promise.all(prefixes.map((prefix) => listObjects(store, prefix)));
