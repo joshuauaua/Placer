@@ -316,6 +316,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   // For 'locked': what the visitor may know about a private project they cannot see.
   const [preview, setPreview] = useState(null);
   const [following, setFollowing] = useState(false);
+  // Set once the visitor clicks Follow, so a slower isFollowing answer cannot undo it.
+  const followTouchedRef = useRef(false);
   const topRef = useRef(null);
 
   useEffect(() => {
@@ -400,8 +402,9 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   useEffect(() => {
     if (!accountId || status !== 'ready') return;
     let cancelled = false;
+    followTouchedRef.current = false;
     isFollowing('project', projectId)
-      .then((value) => { if (!cancelled) setFollowing(value); })
+      .then((value) => { if (!cancelled && !followTouchedRef.current) setFollowing(value); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [accountId, projectId, status]);
@@ -432,6 +435,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
 
   const toggleFollow = async () => {
     const next = !following;
+    followTouchedRef.current = true;
     setFollowing(next);
     try {
       if (next) await follow('project', projectId, project.name);
