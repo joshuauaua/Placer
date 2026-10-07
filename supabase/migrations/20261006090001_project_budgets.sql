@@ -55,8 +55,12 @@ create policy "an owner or collaborator can change the budget"
 -- Nothing for anon at all: a visitor has no business with a project's budget.
 revoke all on public.project_budgets from anon, authenticated;
 grant select on public.project_budgets to authenticated;
+-- project_id is in the update grant for the same reason project_notification_settings'
+-- is: saving is an upsert, ON CONFLICT DO UPDATE sets every column it is given, and
+-- without it every save is refused. The update policy is what stops it being changed
+-- to a project the caller cannot edit.
 grant insert (project_id, has_budget, amount, currency, updated_at) on public.project_budgets to authenticated;
-grant update (has_budget, amount, currency, updated_at) on public.project_budgets to authenticated;
+grant update (project_id, has_budget, amount, currency, updated_at) on public.project_budgets to authenticated;
 
 comment on table public.project_budgets is
   'Whether a project has a budget, and how much. Private to its owner and collaborators.';
