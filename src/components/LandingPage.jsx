@@ -64,6 +64,32 @@ const FEATURES = [
   { title: 'Plan', text: 'meaningful change' },
 ];
 
+// The width index.css treats as a phone, where the carousel gives way to a
+// single waitlist button inside the pitch.
+const MOBILE_QUERY = '(max-width: 1023px)';
+
+function matchesMobile() {
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia(MOBILE_QUERY).matches;
+}
+
+// Read on the first render, so a phone never mounts the carousel, and followed
+// as the window resizes. Swapping the two in JS rather than hiding one in CSS
+// keeps a single waitlist button, and dialog, on the page at a time.
+function useIsMobile() {
+  const [mobile, setMobile] = useState(matchesMobile);
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+    const query = window.matchMedia(MOBILE_QUERY);
+    const onChange = () => setMobile(query.matches);
+    onChange();
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+  return mobile;
+}
+
 function prefersReducedMotion() {
   return typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
@@ -146,6 +172,8 @@ function CreditLink({ href, children }) {
 }
 
 export function LandingPage({ t }) {
+  const mobile = useIsMobile();
+
   return (
     // margin:auto on the card rather than justify-content, so content taller
     // than the viewport scrolls from the top instead of being clipped there.
@@ -172,8 +200,8 @@ export function LandingPage({ t }) {
 
       {/* The card over the drawing: what PLACER is on the left, and on the right
         * the three things a visitor can do about it, as slides of one media card
-        * that take turns, with the credit along the bottom. A phone stacks them, the pitch
-        * first. */}
+        * that take turns, with the credit along the bottom. A phone shows the
+        * pitch alone, ending in the waitlist button. */}
       <div className="placer-landing-column" style={{
         position: 'relative',
         margin: 'auto',
@@ -201,9 +229,16 @@ export function LandingPage({ t }) {
           </ol>
 
           <p className="placer-landing-tagline">All in one shared workspace.</p>
+
+          {/* A phone has no carousel, so the waitlist, its first card, is offered here. */}
+          {mobile && (
+            <div className="placer-landing-cta">
+              <HaveYourSay t={t} className="placer-landing-option-link" />
+            </div>
+          )}
         </div>
 
-        <LandingCarousel t={t} />
+        {!mobile && <LandingCarousel t={t} />}
 
         {/* The credit and the funder lockup run the full width of the card,
           * under a rule. Hidden below 1024px (see index.css). */}

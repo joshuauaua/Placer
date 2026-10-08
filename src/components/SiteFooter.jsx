@@ -14,13 +14,13 @@ export const FOOTER_COLUMNS = [
   {
     heading: 'Project News',
     links: [
+      { label: 'User Labs', view: 'userLabs' },
+      { label: 'Placemaking Trends Survey 2026/2027', view: 'placemakingTrendsSurvey' },
       { label: 'Project Announcement', href: 'https://www.stpln.se/participatory-toolkit' },
       {
         label: 'Pilot Project',
         href: 'https://si.se/en/projects-granted-funding/designing-participatory-spaces-innovation-in-placemaking-and-capacity-building/',
       },
-      { label: 'User Labs', view: 'userLabs' },
-      { label: 'Placemaking Trends Survey 2026/2027', view: 'placemakingTrendsSurvey' },
     ],
   },
   {
@@ -92,7 +92,7 @@ function NewsletterSignup({ t }) {
 
   return (
     <form onSubmit={handleSubmit} style={{ maxWidth: 360 }}>
-      <label htmlFor="placer-footer-newsletter" style={{ display: 'block', fontSize: 14, lineHeight: '20px',
+      <label htmlFor="placer-footer-newsletter" className="placer-footer-heading" style={{ display: 'block', fontSize: 14, lineHeight: '20px',
         fontWeight: 700, marginBottom: 8 }}>
         Follow our newsletter
       </label>
@@ -146,7 +146,7 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
             <div onClick={() => onNavigate('welcome')} style={{ cursor: 'pointer', display: 'inline-block' }}>
               <BrandLogo variant="badge" height={56} label="PLACER" />
             </div>
-            <p style={{ marginTop: 16, maxWidth: 360, fontSize: 14, lineHeight: '20px', color: t.inkDim }}>
+            <p className="placer-footer-blurb" style={{ marginTop: 16, maxWidth: 360, fontSize: 14, lineHeight: '20px', color: t.inkDim }}>
               Reimagine your city. A toolkit for shaping shared spaces together.
             </p>
           </div>
@@ -157,10 +157,10 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
                 .filter(Boolean)
                 .map(({ heading, links }) => (
                   <div key={heading}>
-                    <div style={{ fontSize: 14, lineHeight: '20px', fontWeight: 700, marginBottom: 16 }}>
+                    <div className="placer-footer-heading" style={{ fontSize: 14, lineHeight: '20px', fontWeight: 700, marginBottom: 16 }}>
                       {heading}
                     </div>
-                    <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, lineHeight: '20px' }}>
+                    <ul className="placer-footer-links" style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, lineHeight: '20px' }}>
                       {links.map(({ label, view: target, href }) => (
                         <li key={label}>
                           {target ? (
@@ -182,7 +182,7 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
           {/* The newsletter and the socials, in the far-right column. */}
           <div>
             <NewsletterSignup t={t} />
-            <div style={{ display: 'flex', gap: 24, marginTop: 16, fontSize: 14, lineHeight: '20px' }}>
+            <div className="placer-footer-socials" style={{ display: 'flex', gap: 24, marginTop: 16, fontSize: 14, lineHeight: '20px' }}>
               {SOCIALS.map(({ label, href }) => (
                 <a key={label} href={href} target="_blank" rel="noopener noreferrer"
                   className="placer-footer-link">

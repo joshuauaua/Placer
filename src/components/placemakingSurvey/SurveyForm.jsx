@@ -167,9 +167,8 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
         t={t}
         src={coverPhoto}
         alt="A deck of Dream It cards clipped to a plywood board beside a street map dotted with pins, from a participatory placemaking workshop."
+        heading={<PhotoSplitHeading t={t} title={content.cover.title} subtitle={content.cover.subtitle} subtitleItalic />}
       >
-        <PhotoSplitHeading t={t} title={content.cover.title} subtitle={content.cover.subtitle} subtitleItalic />
-
         <div style={{ marginTop: 20 }}>
           {content.cover.body.map((paragraph) => (
             <p

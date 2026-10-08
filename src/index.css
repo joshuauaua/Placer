@@ -26,6 +26,13 @@
   --placer-orange-50: #FFF3E8; --placer-orange-100: #FFD9B8; --placer-orange-300: #FDB27A; --placer-orange-700: #9E4600; --placer-orange-900: #6B2E00;
   --placer-purple-50: #F4F0FE; --placer-purple-100: #DDD2FA; --placer-purple-300: #B39DF2; --placer-purple-700: #5B3CB8; --placer-purple-900: #3A2480;
 
+  /* The site's one accent, the design practitioner's purple: 700 for text on
+   * white, 50 behind a hover, and 100 on the ink footer. The landing card
+   * stays black and white. */
+  --placer-accent: var(--placer-purple-700);
+  --placer-accent-soft: var(--placer-purple-50);
+  --placer-accent-on-dark: var(--placer-purple-100);
+
   --placer-radius-sm: 12px;
   --placer-radius-lg: 16px;
   --placer-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
@@ -395,8 +402,8 @@ a {
  * at the footer, where the credit and funder lockup run the full width under
  * a hairline.
  *
- * Below 1024px the pitch and the carousel stack full width, the media bleeding
- * to the card's sides and bottom, and the credit row goes.
+ * Below 1024px only the pitch is left, full width: the carousel and the
+ * credit row both go.
  */
 .placer-landing-column {
   width: 100%;
@@ -775,7 +782,9 @@ a {
     padding: 88px 16px 24px;
   }
 
+  /* A little narrower than the screen, so more of the drawing shows each side. */
   .placer-landing-column {
+    max-width: 340px;
     --placer-landing-pad-y: 32px;
     --placer-landing-pad-x: 24px;
     grid-template-columns: minmax(0, 1fr);
@@ -787,52 +796,93 @@ a {
   .placer-landing-info {
     grid-column: 1 / -1;
     padding-bottom: 0;
+    align-items: center;
+    text-align: center;
   }
 
-  /* Under the pitch, out to the card's sides and bottom. */
-  .placer-landing-actions {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    margin: 0 calc(-1 * var(--placer-landing-pad-x)) calc(-1 * var(--placer-landing-pad-y));
-  }
-
-  .placer-landing-title {
-    font-size: 36px !important;
-    line-height: 40px !important;
-    margin-bottom: 12px;
-  }
-
-  .placer-landing-features {
-    margin: 24px 0;
-  }
-
-  /* Here the media meets the card's bottom corners instead of its top right. */
-  .placer-landing-option {
-    border-radius: 0 0 6px 6px;
-  }
-
-  .placer-landing-option-photo {
-    height: auto;
-    min-height: 0;
-    aspect-ratio: 4 / 3;
-    border-radius: 0;
-  }
-
-  /* The button drops under the title when the bar gets narrow. */
-  .placer-landing-option-body {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 20px;
-  }
-
-  .placer-landing-option-title {
+  /* The steps stay aligned with each other, their numbers in one column, and
+   * the list as a whole is centred. */
+  .placer-landing-feature {
     text-align: left;
   }
 
-  .placer-landing-option-link {
-    height: 44px;
+  /* No card on a phone: the copy sits straight on the drawing, held clear of
+   * its lines by a soft wash behind it (below) rather than a panel. */
+  .placer-landing-column {
+    border: none;
+    box-shadow: none;
   }
 
+  .placer-landing-column::before {
+    display: none;
+  }
+
+  .placer-landing-info {
+    text-shadow: 0 0 2px #FFFFFF, 0 0 8px #FFFFFF;
+  }
+
+  /* A white wash over the middle of the drawing, where the copy sits, that
+   * fades out with no edge, so the city still frames the page. */
+  .placer-landing-backdrop::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 75% 42% at 50% 54%,
+      rgba(255, 255, 255, 0.96) 45%, rgba(255, 255, 255, 0) 100%);
+  }
+
+  /* The hierarchy, top down: the wordmark, the pitch in ink, the steps a size
+   * under it, then the tagline and the button. */
+  .placer-landing-pitch {
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 500;
+    color: var(--placer-ink);
+  }
+
+  .placer-landing-features {
+    font-size: 15px;
+    line-height: 22px;
+  }
+
+  .placer-landing-feature-text {
+    color: var(--placer-ink);
+  }
+
+  .placer-landing-tagline {
+    font-size: 18px;
+    line-height: 24px;
+  }
+
+  /* The rule over the tagline, centred with it. */
+  .placer-landing-tagline::before {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .placer-landing-title {
+    font-size: 56px !important;
+    line-height: 60px !important;
+    margin-bottom: 16px;
+  }
+
+  .placer-landing-features {
+    margin: 28px 0;
+  }
+
+  /* The waitlist button closing the pitch, a phone's 48px tall. */
+  .placer-landing-cta {
+    margin-top: 28px;
+  }
+
+  .placer-landing-cta .placer-landing-option-link {
+    height: 48px;
+    padding: 0 20px;
+    font-size: 16px;
+  }
+
+  /* A phone shows the pitch alone: the carousel and the credit row go. */
+  .placer-landing-actions,
   .placer-landing-footer {
     display: none;
   }
@@ -991,6 +1041,15 @@ a {
   transition: background 0.2s ease, transform 0.2s ease;
 }
 
+/* A bigger glyph on a phone, in the same 48px target. The CSS size beats the
+ * width and height attributes Icon sets. */
+@media (max-width: 1023px) {
+  .placer-menu-trigger svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
 .placer-menu-trigger:hover,
 .placer-menu-trigger:focus-visible,
 .placer-menu-trigger[aria-expanded='true'] {
@@ -1073,9 +1132,23 @@ a {
   transition: background 0.15s ease;
 }
 
+/* On a phone the menu is the whole screen, so the links read at twice the size. */
+@media (max-width: 1023px) {
+  .placer-menu-link {
+    font-size: 32px;
+    line-height: 40px;
+    min-height: 56px;
+  }
+}
+
 :is(a, button).placer-menu-link:hover,
 :is(a, button).placer-menu-link:focus-visible {
-  background: var(--placer-grey-100);
+  background: var(--placer-accent-soft);
+}
+
+/* The page you are on, in the accent. */
+.placer-menu-link[aria-current='page'] {
+  color: var(--placer-accent) !important;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -1244,10 +1317,15 @@ a {
   text-decoration: none;
 }
 
+.placer-footer-heading {
+  color: var(--placer-accent-on-dark);
+}
+
 .placer-footer-link:hover,
 .placer-footer-link[aria-current='page'] {
   color: var(--placer-white);
   text-decoration: underline;
+  text-decoration-color: var(--placer-accent-on-dark);
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
@@ -1311,6 +1389,44 @@ a {
     grid-template-columns: 1fr;
     gap: 32px;
   }
+
+  /* Stacked, every column is centred, as is the row under the rule. */
+  .placer-footer-grid,
+  .placer-footer-bottom {
+    text-align: center;
+  }
+
+  .placer-footer-blurb {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .placer-footer-links {
+    align-items: center;
+  }
+
+  .placer-footer-socials,
+  .placer-footer-bottom {
+    justify-content: center;
+  }
+
+  .placer-footer-bottom {
+    flex-direction: column;
+  }
+
+  /* The sign-up button drops under the field, the two centred on one narrower
+   * measure, the address typed centred in line with them. */
+  .placer-footer-newsletter {
+    flex-direction: column;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .placer-footer-newsletter input {
+    flex: none;
+    text-align: center;
+  }
 }
 
 /* PLACER — a photo beside a block of copy (see PhotoSplit.jsx).
@@ -1369,8 +1485,12 @@ a {
 }
 
 @media (max-width: 1023px) {
+  /* minmax(0, 1fr) rather than 1fr, so nothing in the copy can push the column
+   * wider than the screen, and anything that still would is clipped rather
+   * than scrolled to sideways. */
   .placer-split {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    overflow-x: clip;
   }
 
   .placer-split-photo {
@@ -1380,6 +1500,48 @@ a {
 
   .placer-split-copy {
     padding: 32px 24px 56px;
+  }
+
+  /* With a heading, it shares the photo's cell, white over a dark fade at the
+   * photo's foot, and the rest of the copy follows under the photo. */
+  .placer-split-has-heading .placer-split-copy {
+    display: contents;
+  }
+
+  .placer-split-has-heading .placer-split-photo,
+  .placer-split-has-heading .placer-split-heading {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .placer-split-has-heading .placer-split-photo {
+    aspect-ratio: 4 / 5;
+  }
+
+  .placer-split-heading {
+    position: relative;
+    align-self: end;
+    padding: 96px 24px 24px;
+    background: linear-gradient(to top, rgba(17, 17, 17, 0.72), rgba(17, 17, 17, 0));
+  }
+
+  .placer-split-heading :is(h1, p) {
+    color: #fff !important;
+  }
+
+  .placer-split-has-heading .placer-split-body {
+    padding: 32px 24px 56px;
+  }
+
+  /* The body's first line no longer follows a heading. */
+  .placer-split-has-heading .placer-split-body > :first-child {
+    margin-top: 0 !important;
+  }
+
+  /* iOS Safari zooms into any field set under 16px when it is focused, which
+   * leaves the page panning sideways. The inline 15px comes from UserLabsPage. */
+  .placer-split-copy :is(input, textarea, select) {
+    font-size: 16px !important;
   }
 }
 
@@ -1485,6 +1647,11 @@ a {
 
   .placer-about-feature-reverse .placer-about-feature-media {
     order: 0;
+  }
+
+  /* Twice the desktop width, as 30% of a phone's column is a thumbnail. */
+  .placer-about-team-photo {
+    width: 60%;
   }
 }
 

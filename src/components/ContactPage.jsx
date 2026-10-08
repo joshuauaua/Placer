@@ -10,14 +10,18 @@ const CONTACT_EMAIL = 'info@plcr.org';
 
 export function ContactPage({ t }) {
   return (
+    // The top padding clears the fixed 64px glass nav bar, which would otherwise
+    // sit over the heading. margin:auto centres the copy in the space left, and
+    // still lets it scroll from the top if it outgrows a short screen.
     <div style={{
       width: '100%',
       height: '100%',
       overflowY: 'auto',
+      display: 'flex',
       background: t.page,
-      padding: '48px 40px 96px'
+      padding: '112px 40px 48px'
     }}>
-      <div style={{ maxWidth: 760, margin: '0 auto' }}>
+      <div style={{ width: '100%', maxWidth: 760, margin: 'auto' }}>
         <div style={{ marginBottom: 40, paddingBottom: 32, borderBottom: `1px solid ${t.line}` }}>
           <h1 className="placer-disp" style={{
             fontSize: 48,

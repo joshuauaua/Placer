@@ -230,19 +230,23 @@ export function UserLabsPage({ t }) {
   const [step, setStep] = useState('pitch');
   const [sentTo, setSentTo] = useState(null);
 
+  // Each step's heading, which a phone sets on the photo (see PhotoSplit).
+  const HEADINGS = {
+    pitch: <PhotoSplitHeading t={t} title="User Labs"
+      subtitle="Help shape PLACER by testing it in the places you know." />,
+    form: <PhotoSplitHeading t={t} title="Apply for a User Lab" />,
+    sent: <PhotoSplitHeading t={t} title="Thank you for your interest" />,
+  };
+
   return (
     <PhotoSplit
       t={t}
       src={userLabsPhoto}
       alt="A User Labs session outside an orange-red brick building: people pin notes to a map and sketch on wooden boards by a picnic table, beside a banner reading Designing Participatory Spaces."
+      heading={HEADINGS[step]}
     >
       {step === 'pitch' && (
         <>
-          <PhotoSplitHeading
-            t={t}
-            title="User Labs"
-            subtitle="Help shape PLACER by testing it in the places you know."
-          />
           <p style={{ marginTop: 20, fontSize: 17, lineHeight: 1.65, color: t.inkDim }}>
             User Labs are hands-on sessions where residents, designers and local leaders
             try PLACER out on real streets and squares. You sketch ideas, test early
@@ -263,10 +267,6 @@ export function UserLabsPage({ t }) {
 
       {step === 'form' && (
         <>
-          <PhotoSplitHeading
-            t={t}
-            title="Apply for a User Lab"
-          />
           <ApplicationForm
             t={t}
             onCancel={() => setStep('pitch')}
@@ -277,7 +277,6 @@ export function UserLabsPage({ t }) {
 
       {step === 'sent' && (
         <>
-          <PhotoSplitHeading t={t} title="Thank you for your interest" />
           <p style={{ marginTop: 20, fontSize: 17, lineHeight: 1.65, color: t.inkDim }}>
             Thanks for submitting your interest to take part in the User Lab in{' '}
             {UPCOMING_LAB.sessions.find((s) => s.value === sentTo?.lab)?.city}. We will confirm
