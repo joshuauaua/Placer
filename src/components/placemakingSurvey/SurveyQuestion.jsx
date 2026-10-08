@@ -19,14 +19,19 @@ const inputStyle = (t) => ({
 /** The tint a selected option carries, which differs by theme. */
 const selectedFill = (t) => t.surfaceAlt;
 
-function Heading({ t, id, children, tight }) {
+function Heading({ t, id, eyebrow, children, tight }) {
   return (
-    <h1
-      id={id}
-      style={{ fontSize: 28, fontWeight: 700, color: t.ink, lineHeight: 1.4, marginBottom: tight ? 8 : 40 }}
-    >
-      {children}
-    </h1>
+    <>
+      {eyebrow && (
+        <div style={{ fontSize: 14, fontWeight: 600, color: t.inkDim, marginBottom: 8 }}>{eyebrow}</div>
+      )}
+      <h1
+        id={id}
+        style={{ fontSize: 28, fontWeight: 700, color: t.ink, lineHeight: 1.4, marginBottom: tight ? 8 : 40 }}
+      >
+        {children}
+      </h1>
+    </>
   );
 }
 
@@ -52,7 +57,7 @@ function ChoiceQuestion({ t, labels, question, value, otherText, onToggle, onOth
 
   return (
     <div>
-      <Heading t={t} id={labelId} tight={multiple}>
+      <Heading t={t} id={labelId} eyebrow={question.eyebrow} tight={multiple}>
         {question.label}
       </Heading>
 
@@ -195,7 +200,7 @@ function ScaleQuestion({ t, question, value, onToggle }) {
 
   return (
     <div>
-      <Heading t={t} id={labelId} tight>
+      <Heading t={t} id={labelId} eyebrow={question.eyebrow} tight>
         {question.label}
       </Heading>
 
@@ -282,7 +287,7 @@ function WrittenQuestion({ t, labels, question, value, onText }) {
     <div>
       {/* The question is the field's label, and it is also the screen's heading:
           named by reference rather than wrapped, so the heading stays a heading. */}
-      <Heading t={t} id={labelId} tight={question.optional}>
+      <Heading t={t} id={labelId} eyebrow={question.eyebrow} tight={question.optional}>
         {question.label}
       </Heading>
 

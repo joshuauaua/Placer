@@ -187,14 +187,13 @@ describe('placemaking trends survey content', () => {
       expect(content.optIns.at(-1).anonymous).toBe(true);
     });
 
-    it('asks for a name, work email, municipality and department', () => {
+    it('asks for a name, work email and municipality', () => {
       const content = resolveSurveyContent();
 
       expect(content.contact.fields.map((field) => field.key)).toEqual([
         'name',
         'email',
         'municipality',
-        'department',
       ]);
     });
 
