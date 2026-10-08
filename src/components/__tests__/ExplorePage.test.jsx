@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, cleanup, act, within } from '@testing-library/react';
 import ExplorePage, { shapeCentre } from '../ExplorePage';
 import { isSupabaseConfigured, readMapProjects } from '../../services/projects';
 import { readMapOrganisations } from '../../services/organisations';
-import { resetGoogleMapsLoaderForTests } from '../../lib/googleMaps';
 import { resetGeocodeCacheForTests } from '../../lib/geocode';
+import { clickMap, lastMap, maps } from '../../test/maplibreStub';
+import { photonFeature, stubPhoton } from '../../test/photon';
 
 vi.mock('../../services/projects', () => ({
   isSupabaseConfigured: vi.fn(() => true),
@@ -38,70 +39,27 @@ const ORGANISATION = {
   cover: null,
 };
 
-let mapListeners = {};
-let mapInstance;
-let geocodeResult = { lat: 55.6054, lng: 12.9854 };
-
-function mockGoogleMaps() {
-  mapListeners = {};
-  const overlay = () => vi.fn(function (options) {
-    const listeners = {};
-    return {
-      ...options,
-      setMap: vi.fn(),
-      setIcon: vi.fn(),
-      setZIndex: vi.fn(),
-      addListener: vi.fn((event, handler) => { listeners[event] = handler; }),
-      fire: (event) => listeners[event]?.(),
-    };
-  });
-  return {
-    maps: {
-      Map: vi.fn(function () {
-        mapInstance = {
-          panTo: vi.fn(),
-          setZoom: vi.fn(),
-          addListener: vi.fn((event, handler) => {
-            mapListeners[event] = handler;
-            return { remove: vi.fn() };
-          }),
-        };
-        return mapInstance;
-      }),
-      Marker: overlay(),
-      Polygon: overlay(),
-      Geocoder: vi.fn(function () {
-        return {
-          geocode: vi.fn((request, callback) => {
-            const point = geocodeResult;
-            callback(point ? [{ geometry: { location: { lat: () => point.lat, lng: () => point.lng } } }] : [],
-              point ? 'OK' : 'ZERO_RESULTS');
-          }),
-        };
-      }),
-      SymbolPath: { CIRCLE: 'circle' },
-      event: { clearInstanceListeners: vi.fn() },
-    },
-  };
-}
+// What the geocoder answers for any place asked about; null for nothing found.
+const answerWith = (point) => stubPhoton(point ? [photonFeature({ name: 'Somewhere', ...point })] : []);
 
 function renderPage(props = {}) {
-  window.google = mockGoogleMaps();
-  return render(<ExplorePage apiKey="key" onSignIn={vi.fn()} onOpenProject={vi.fn()}
+  return render(<ExplorePage onSignIn={vi.fn()} onOpenProject={vi.fn()}
     onOpenOrganisation={vi.fn()} {...props} />);
 }
 
-const markers = () => window.google.maps.Marker.mock.results.map(({ value }) => value);
-const markerFor = (title) => markers().filter((marker) => marker.title === title).at(-1);
+const markerFor = (title) => lastMap()?.markers.find((marker) => marker.getElement().title === title);
+const positionOf = (marker) => ({ lat: marker.getLngLat().lat, lng: marker.getLngLat().lng });
 
 describe('ExplorePage', () => {
+  let geocoder;
+  beforeEach(() => {
+    geocoder = answerWith({ lat: 55.6054, lng: 12.9854 });
+  });
+
   afterEach(() => {
     cleanup();
-    delete window.google;
-    resetGoogleMapsLoaderForTests();
     resetGeocodeCacheForTests();
-    geocodeResult = { lat: 55.6054, lng: 12.9854 };
-    mapInstance = undefined;
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
     vi.mocked(isSupabaseConfigured).mockReturnValue(true);
     vi.mocked(readMapProjects).mockResolvedValue([]);
@@ -132,19 +90,19 @@ describe('ExplorePage', () => {
     renderPage();
 
     await waitFor(() => expect(markerFor('Riverside Greenway')).toBeDefined());
-    expect(window.google.maps.Polygon).toHaveBeenCalledWith(expect.objectContaining({
-      paths: PROJECT.locationShapes[0].path,
-    }));
-    expect(markerFor('Riverside Greenway').position).toEqual(shapeCentre(PROJECT.locationShapes));
+    await waitFor(() => expect(lastMap().getSource('explore-areas')).toBeDefined());
+    const ring = lastMap().getSource('explore-areas').data.features[0].geometry.coordinates[0];
+    expect(ring.slice(0, 3)).toEqual(PROJECT.locationShapes[0].path.map(({ lat, lng }) => [lng, lat]));
+    expect(positionOf(markerFor('Riverside Greenway'))).toEqual(shapeCentre(PROJECT.locationShapes));
   });
 
   it('pins an organisation where its location text geocodes to', async () => {
     vi.mocked(readMapOrganisations).mockResolvedValue([ORGANISATION]);
-    geocodeResult = { lat: 55.6, lng: 13 };
+    answerWith({ lat: 55.6, lng: 13 });
     renderPage();
 
     await waitFor(() => expect(markerFor('STPLN')).toBeDefined());
-    expect(markerFor('STPLN').position).toEqual({ lat: 55.6, lng: 13 });
+    expect(positionOf(markerFor('STPLN'))).toEqual({ lat: 55.6, lng: 13 });
   });
 
   it('pins an organisation at the point of the address it chose, without geocoding', async () => {
@@ -153,28 +111,28 @@ describe('ExplorePage', () => {
     renderPage();
 
     await waitFor(() => expect(markerFor('STPLN')).toBeDefined());
-    expect(markerFor('STPLN').position).toEqual({ lat: 55.6054, lng: 12.9854 });
-    expect(window.google.maps.Geocoder).not.toHaveBeenCalled();
+    expect(positionOf(markerFor('STPLN'))).toEqual({ lat: 55.6054, lng: 12.9854 });
+    expect(geocoder).not.toHaveBeenCalled();
   });
 
   it('geocodes the address rather than the town when there is no point', async () => {
     vi.mocked(readMapOrganisations).mockResolvedValue([{ ...ORGANISATION,
       address: 'Stapelbäddsgatan 3, Malmö', locationPoint: null }]);
-    geocodeResult = { lat: 55.61, lng: 12.97 };
+    const asked = answerWith({ lat: 55.61, lng: 12.97 });
     renderPage();
 
     await waitFor(() => expect(markerFor('STPLN')).toBeDefined());
-    const [geocoder] = window.google.maps.Geocoder.mock.results.map(({ value }) => value);
-    expect(geocoder.geocode).toHaveBeenCalledWith({ address: 'Stapelbäddsgatan 3, Malmö' }, expect.any(Function));
-    expect(markerFor('STPLN').position).toEqual({ lat: 55.61, lng: 12.97 });
+    expect(new URL(asked.mock.calls[0][0]).searchParams.get('q')).toBe('Stapelbäddsgatan 3, Malmö');
+    expect(positionOf(markerFor('STPLN'))).toEqual({ lat: 55.61, lng: 12.97 });
   });
 
   it('leaves an organisation off the map when its location cannot be found', async () => {
     vi.mocked(readMapOrganisations).mockResolvedValue([ORGANISATION]);
-    geocodeResult = null;
+    const asked = answerWith(null);
     renderPage();
 
-    await waitFor(() => expect(window.google.maps.Geocoder).toHaveBeenCalled());
+    await waitFor(() => expect(asked).toHaveBeenCalled());
+    await act(async () => {});
     expect(markerFor('STPLN')).toBeUndefined();
   });
 
@@ -182,20 +140,26 @@ describe('ExplorePage', () => {
     vi.mocked(readMapProjects).mockResolvedValue([PROJECT]);
     renderPage();
     await waitFor(() => expect(markerFor('Riverside Greenway')).toBeDefined());
-    const drawn = markerFor('Riverside Greenway');
+    const drawn = markerFor('Riverside Greenway').getElement();
 
     fireEvent.click(screen.getByRole('checkbox', { name: /projects/i }));
 
-    expect(drawn.setMap).toHaveBeenCalledWith(null);
+    expect(markerFor('Riverside Greenway')).toBeUndefined();
+    expect(drawn).not.toBeInTheDocument();
   });
 
-  it('makes the map once, and leaves Google\'s own listeners on it', async () => {
+  it('makes the map once, and keeps it while the page re-renders', async () => {
     renderPage();
-    await waitFor(() => expect(mapInstance).toBeDefined());
+    await waitFor(() => expect(lastMap()).toBeDefined());
     // Setting the map re-renders the page; that must not tear the map down.
     await act(async () => {});
-    expect(window.google.maps.Map).toHaveBeenCalledTimes(1);
-    expect(window.google.maps.event.clearInstanceListeners).not.toHaveBeenCalled();
+    expect(maps).toHaveLength(1);
+    expect(lastMap().removed).toBe(false);
+  });
+
+  it('opens over the place chosen in Settings', () => {
+    renderPage({ homeCenter: { lat: 59.33, lng: 18.07 } });
+    expect(lastMap().center).toEqual({ lat: 59.33, lng: 18.07 });
   });
 
   it('reads nothing when Supabase is not configured', () => {
@@ -210,7 +174,7 @@ describe('ExplorePage', () => {
       vi.mocked(readMapProjects).mockResolvedValue([PROJECT]);
       renderPage(props);
       await waitFor(() => expect(markerFor('Riverside Greenway')).toBeDefined());
-      act(() => markerFor('Riverside Greenway').fire('click'));
+      fireEvent.click(markerFor('Riverside Greenway').getElement());
       return screen.getByRole('region', { name: 'Selected place' });
     };
 
@@ -232,7 +196,7 @@ describe('ExplorePage', () => {
 
     it('pans to what was picked', async () => {
       await pickProject();
-      expect(mapInstance.panTo).toHaveBeenCalledWith(shapeCentre(PROJECT.locationShapes));
+      expect(lastMap().center).toEqual(shapeCentre(PROJECT.locationShapes));
     });
 
     it('links through to the project page, staying in the app on a plain click', async () => {
@@ -260,7 +224,7 @@ describe('ExplorePage', () => {
 
     it('closes when the map itself is clicked', async () => {
       const card = await pickProject();
-      act(() => mapListeners.click());
+      act(() => clickMap(lastMap(), { lat: 55, lng: 13 }));
       expect(card).toHaveTextContent(/pick something on the map/i);
     });
   });
@@ -292,19 +256,20 @@ describe('ExplorePage', () => {
 
       expect(within(screen.getByRole('region', { name: 'Selected place' }))
         .getByRole('heading', { name: 'Riverside Greenway' })).toBeInTheDocument();
-      expect(mapInstance.setZoom).toHaveBeenCalled();
+      expect(lastMap().zoom).toBe(15);
+      expect(lastMap().center).toEqual(shapeCentre(PROJECT.locationShapes));
     });
 
     it('goes to a typed place on Enter when nothing matches it', async () => {
-      geocodeResult = { lat: 59.33, lng: 18.07 };
+      answerWith({ lat: 59.33, lng: 18.07 });
       renderPage();
-      await waitFor(() => expect(mapInstance).toBeDefined());
+      await waitFor(() => expect(lastMap()).toBeDefined());
 
       const box = screen.getByRole('combobox');
       fireEvent.change(box, { target: { value: 'Stockholm' } });
       fireEvent.keyDown(box, { key: 'Enter' });
 
-      await waitFor(() => expect(mapInstance.panTo).toHaveBeenCalledWith({ lat: 59.33, lng: 18.07 }));
+      await waitFor(() => expect(lastMap().center).toEqual({ lat: 59.33, lng: 18.07 }));
     });
   });
 });

@@ -1,5 +1,10 @@
 import '@testing-library/jest-dom'
 import { beforeEach, afterEach, vi } from 'vite-plus/test'
+import { resetMaps } from './maplibreStub'
+
+// jsdom has no WebGL for MapLibre to draw with, so every test gets the stand-in in
+// maplibreStub.js, which keeps track of what was put on each map instead.
+vi.mock('maplibre-gl', () => import('./maplibreStub'))
 
 // A developer's .env holds real PostHog credentials, and Vite loads it in test
 // mode too — which would mount the cookie banner inside every test that renders
@@ -9,6 +14,7 @@ import { beforeEach, afterEach, vi } from 'vite-plus/test'
 // toolkit room controls in tests that a clean checkout does not, and the room tests
 // stub these back on themselves.
 beforeEach(() => {
+  resetMaps()
   vi.stubEnv('VITE_POSTHOG_KEY', '')
   vi.stubEnv('VITE_POSTHOG_HOST', '')
   vi.stubEnv('VITE_SUPABASE_URL', '')

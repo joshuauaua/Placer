@@ -27,7 +27,6 @@ import {
   updateProject, uploadProjectImage, uploadSceneImage,
 } from '../services/projects';
 import { checkPickedImage, mediaUrl } from '../services/media';
-import { isGoogleMapsConfigured } from '../lib/googleMaps';
 import { TOOLS, findCategory } from '../toolkit/tools';
 
 // Matches DescribePage's form styling.
@@ -261,13 +260,11 @@ function SceneSetup({ t, address, point, image, onAddress, onPick, onImage, disa
       </p>
 
       <Field t={t} label="Location *" htmlFor="scene-address"
-        hint={isGoogleMapsConfigured()
-          ? 'Where the photo is of. Pick it from the suggestions, so the ideas are pinned there on the map.'
-          : 'Where the photo is of.'}>
+        hint={'Where the photo is of. Pick it from the suggestions, so the ideas are pinned there on the map.'}>
         <AddressInput id="scene-address" value={address}
           placeholder="e.g. Folkets Park, Malmö" style={inputStyle(t)}
           onChange={onAddress} onPick={onPick} />
-        {isGoogleMapsConfigured() && address.trim() && !point && (
+        {address.trim() && !point && (
           <div style={{ fontSize: 13, color: t.inkFaint, marginTop: 8 }}>
             Not pinned yet: pick the address from the suggestions.
           </div>
@@ -458,8 +455,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
 
   const reimagining = tools.includes(REIMAGINE_TOOL);
   const sceneImage = scenePending?.url ?? (sceneImageCleared ? null : savedScene?.image ?? null);
-  const sceneComplete = !reimagining || (!!sceneImage && sceneAddress.trim().length > 0
-    && (!!scenePoint || !isGoogleMapsConfigured()));
+  const sceneComplete = !reimagining || (!!sceneImage && sceneAddress.trim().length > 0 && !!scenePoint);
 
   // Choosing Reimagine a Space starts its location at the project's own, which is
   // usually the place in question.
@@ -671,9 +667,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
 
   const place = (
     <Field t={t} label="Address" htmlFor="project-address"
-      hint={isGoogleMapsConfigured()
-        ? 'The place this project is about. Pick it from the suggestions and the project is pinned there on the map.'
-        : 'The place this project is about.'}>
+      hint={'The place this project is about. Pick it from the suggestions and the project is pinned there on the map.'}>
       <AddressInput id="project-address" value={address}
         placeholder="e.g. Folkets Park, Malmö" style={inputStyle(t)}
         onChange={(next) => { setAddress(next); setPoint(null); setTown(''); }}
@@ -682,7 +676,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
           setPoint(picked.point);
           setTown(picked.townAndCountry);
         }} />
-      {isGoogleMapsConfigured() && address.trim() && (
+      {address.trim() && (
         <div style={{ fontSize: 13, color: t.inkFaint, marginTop: 8 }}>
           {point
             ? 'Pinned on the map at this address.'

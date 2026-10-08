@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { render, screen } from '@testing-library/react';
-import { ProjectLocationMap } from '../ProjectLocationMap';
+import { describe, it, expect } from 'vite-plus/test';
+import { render, screen, waitFor } from '@testing-library/react';
+import { ProjectLocationMap, hasProjectMap } from '../ProjectLocationMap';
 import { THEME } from '../../theme';
+import { lastMap, maps } from '../../test/maplibreStub';
 
 const PROJECT = {
   name: 'Riverside Greenway',
@@ -9,56 +10,52 @@ const PROJECT = {
 };
 
 describe('ProjectLocationMap', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  it('renders nothing when there is no API key', () => {
-    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', '');
-    const { container } = render(<ProjectLocationMap t={THEME} project={PROJECT} />);
-    expect(container).toBeEmptyDOMElement();
+  it('needs no API key: a project with an outline always has a map', () => {
+    expect(hasProjectMap(PROJECT)).toBe(true);
   });
 
   it('renders nothing when the project has neither a drawn shape nor an address point', () => {
-    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
     const { container } = render(<ProjectLocationMap t={THEME} project={{ ...PROJECT, locationShapes: [] }} />);
     expect(container).toBeEmptyDOMElement();
+    expect(maps).toHaveLength(0);
   });
 
   it('pins the address of a project with no outline', () => {
-    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
     const project = { ...PROJECT, locationShapes: [], locationPoint: { lat: 55.59, lng: 13.01 } };
     render(<ProjectLocationMap t={THEME} project={project} />);
 
-    const params = new URL(screen.getByRole('img', { name: /Riverside Greenway/ }).src).searchParams;
-    expect(params.get('center')).toBe('55.59,13.01');
-    expect(params.get('markers')).toContain('55.59,13.01');
-    expect(params.get('path')).toBeNull();
+    const map = lastMap();
+    expect(map.center).toEqual({ lat: 55.59, lng: 13.01 });
+    expect(map.markers).toHaveLength(1);
+    expect(map.markers[0].getLngLat()).toEqual({ lat: 55.59, lng: 13.01 });
   });
 
-  it('draws the outline rather than the pin when a project has both', () => {
-    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
+  it('draws the outline rather than the pin when a project has both', async () => {
     render(<ProjectLocationMap t={THEME} project={{ ...PROJECT, locationPoint: { lat: 55.59, lng: 13.01 } }} />);
 
-    const params = new URL(screen.getByRole('img', { name: /Riverside Greenway/ }).src).searchParams;
-    expect(params.get('path')).not.toBeNull();
-    expect(params.get('markers')).toBeNull();
+    const map = lastMap();
+    await waitFor(() => expect(map.getSource('project-area')).toBeDefined());
+    expect(map.markers).toHaveLength(0);
+    // Framed on the outline's points.
+    expect(map.bounds.points).toEqual(expect.arrayContaining([{ lat: 55.61, lng: 12.99 }]));
   });
 
   it('ignores a shape with fewer than 3 points', () => {
-    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
     const project = { ...PROJECT, locationShapes: [{ path: [{ lat: 1, lng: 2 }] }] };
     const { container } = render(<ProjectLocationMap t={THEME} project={project} />);
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows a static map image of the drawn outline', () => {
-    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
+  it('shows a map that cannot be moved, named for the project', async () => {
     render(<ProjectLocationMap t={THEME} project={PROJECT} />);
 
-    const img = screen.getByRole('img', { name: /Riverside Greenway/ });
-    expect(img).toHaveAttribute('src', expect.stringContaining('https://maps.googleapis.com/maps/api/staticmap?'));
-    expect(img.src).toContain('path=');
-    expect(img.src).toContain('key=test-key');
+    expect(screen.getByRole('img', { name: /Riverside Greenway/ })).toBeInTheDocument();
+    expect(lastMap().options.interactive).toBe(false);
+    await waitFor(() => {
+      const ring = lastMap().getSource('project-area').data.features[0].geometry.coordinates[0];
+      // Closed: it ends where it starts, as GeoJSON asks.
+      expect(ring[0]).toEqual(ring[ring.length - 1]);
+      expect(ring[0]).toEqual([12.98, 55.6]);
+    });
   });
 });

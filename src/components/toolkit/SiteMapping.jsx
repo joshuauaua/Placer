@@ -1,16 +1,18 @@
 /* PLACER — Toolkit: Site-Specific Spatial Mapping Tool.
  *
- * Pick a site on a Google Map (with geolocation + Places search when an API
- * key is configured), tell us a little about yourself, answer eighteen ordered
- * questions as a stack of cards, then optionally map markers, reflect, and
- * leave contact details for follow-up. Without an API key the picker falls
- * back to coordinates + presets — the survey never depends on the map tiles.
+ * Pick a site on an OpenStreetMap map (with geolocation + place search), tell us
+ * a little about yourself, answer eighteen ordered questions as a stack of cards,
+ * then optionally map markers, reflect, and leave contact details for follow-up.
+ * If the map cannot load the picker falls back to coordinates + presets — the
+ * survey never depends on the map tiles.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { Panel, Readout } from '../ToolLayout';
 import { Btn, Chip, CopyButton } from '../UI';
+import { PlaceSearch } from '../PlaceSearch';
+import { addPlainMarker, createMap, onBackgroundClick, toLngLat } from '../../lib/map';
 import {
   AGE_RANGES,
   GENDER_OPTIONS,
@@ -24,7 +26,6 @@ import {
   buildJSON,
   buildSummary,
   emptyState,
-  googleMapsUrl,
   hasReflection,
   hinderingCount,
   invitingCount,
@@ -34,32 +35,10 @@ import {
   parseSiteSearch,
   placeMarker,
   removeMarker,
+  siteMapUrl,
 } from '../../lib/toolkit/siteMapping';
 
-const MAPS_API_KEY = (import.meta.env?.VITE_GOOGLE_MAPS_API_KEY || '').trim();
 const DEFAULT_CENTER = { lat: 52.5206, lng: 13.4095 };
-
-function loadGoogleMaps(apiKey) {
-  if (typeof document === 'undefined') return Promise.resolve(false);
-  if (window.google?.maps) return Promise.resolve(true);
-  const existing = document.querySelector('script[data-placer-maps]');
-  if (existing) {
-    return new Promise((resolve) => {
-      existing.addEventListener('load', () => resolve(true), { once: true });
-      existing.addEventListener('error', () => resolve(false), { once: true });
-      if (window.google?.maps) resolve(true);
-    });
-  }
-  return new Promise((resolve) => {
-    const script = document.createElement('script');
-    script.dataset.placerMaps = 'true';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places`;
-    script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.head.appendChild(script);
-  });
-}
 
 function fieldStyle(t) {
   return {
@@ -90,9 +69,10 @@ export function SiteMapping({ t, tool }) {
   const [site, setSite] = useState(null);
   const [siteName, setSiteName] = useState('');
   const [siteSearch, setSiteSearch] = useState('');
+  const [placeQuery, setPlaceQuery] = useState('');
   const [picked, setPicked] = useState(null);
   const [placeLabel, setPlaceLabel] = useState('');
-  const [mapsReady, setMapsReady] = useState(() => !!window.google?.maps);
+  const [mapsReady, setMapsReady] = useState(false);
   const [mapFailed, setMapFailed] = useState(false);
   const [geoState, setGeoState] = useState('idle');
   const [geoMessage, setGeoMessage] = useState('');
@@ -102,105 +82,63 @@ export function SiteMapping({ t, tool }) {
   const [panel, setPanel] = useState('survey');
   const [selectedMarker, setSelectedMarker] = useState(MAP_MARKERS[0].key);
   const mapEl = useRef(null);
-  const searchEl = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
 
-  // Load the Maps script for the site picker only — the survey itself never
-  // needs it, so a missing key degrades to coordinates + presets, not a block.
+  // Stand up the picker map while there is no site yet — clicks choose the site. The
+  // survey itself never needs it, so a map that fails degrades to coordinates +
+  // presets, not a block.
   useEffect(() => {
-    if (site || !MAPS_API_KEY || window.google?.maps) {
-      if (window.google?.maps) setMapsReady(true);
-      return;
-    }
-    let cancelled = false;
-    loadGoogleMaps(MAPS_API_KEY).then((ok) => {
-      if (cancelled) return;
-      setMapsReady(ok);
-      setMapFailed(!ok);
-    });
-    return () => { cancelled = true; };
-  }, [site]);
-
-  // Stand up the picker map once, then keep it — clicks choose the site.
-  useEffect(() => {
-    if (site || !mapsReady || !window.google?.maps || !mapEl.current || mapRef.current) return;
+    if (site || !mapEl.current) return undefined;
+    let map;
     try {
-      const map = new window.google.maps.Map(mapEl.current, {
+      map = createMap(mapEl.current, {
         center: picked || DEFAULT_CENTER,
         zoom: picked ? 16 : 12,
-        mapTypeControl: false,
-        streetViewControl: false,
       });
-      map.addListener('click', (e) => {
-        if (!e.latLng) return;
-        const coords = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-        setPicked(coords);
-        setPlaceLabel('');
-        setSiteSearch(`${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`);
-      });
-      mapRef.current = map;
     } catch {
       setMapFailed(true);
+      return undefined;
     }
+    map.ready.then(() => setMapsReady(true));
+    map.on('error', (event) => {
+      // A tile that will not load is not a failed map; a style that will not is.
+      if (!map.isStyleLoaded()) {
+        console.error('Could not load the map:', event?.error);
+        setMapFailed(true);
+      }
+    });
+    onBackgroundClick(map, (coords) => {
+      setPicked(coords);
+      setPlaceLabel('');
+      setSiteSearch(`${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`);
+    });
+    mapRef.current = map;
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+      setMapsReady(false);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [site, mapsReady]);
+  }, [site]);
 
   // Keep one pin on the picked spot.
   useEffect(() => {
-    if (!mapRef.current || !window.google?.maps) return;
-    if (markerRef.current) {
-      markerRef.current.setMap(null);
-      markerRef.current = null;
-    }
-    if (!picked) return;
-    markerRef.current = new window.google.maps.Marker({
-      position: picked,
-      map: mapRef.current,
-      title: 'Chosen site',
-    });
-    mapRef.current.panTo(picked);
-  }, [picked]);
+    markerRef.current?.remove();
+    markerRef.current = null;
+    if (!mapRef.current || !picked) return;
+    markerRef.current = addPlainMarker(mapRef.current, picked, { color: c });
+    mapRef.current.panTo(toLngLat(picked));
+  }, [picked, mapsReady, c]);
 
-  // Places search — progressive enhancement; the coordinate field always works.
-  useEffect(() => {
-    if (site || !mapsReady || !window.google?.maps?.places || !searchEl.current) return;
-    let autocomplete;
-    try {
-      autocomplete = new window.google.maps.places.Autocomplete(searchEl.current, {
-        fields: ['geometry', 'formatted_address', 'name'],
-      });
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        const loc = place.geometry?.location;
-        if (!loc) return;
-        const coords = { lat: loc.lat(), lng: loc.lng() };
-        setPicked(coords);
-        setPlaceLabel(place.name || place.formatted_address || '');
-        setSiteSearch(`${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`);
-        if (place.name && !siteName) setSiteName(place.name);
-        mapRef.current?.setCenter(coords);
-        mapRef.current?.setZoom(16);
-      });
-    } catch {
-      return undefined;
-    }
-    return () => {
-      if (autocomplete && window.google?.maps?.event) {
-        window.google.maps.event.clearInstanceListeners(autocomplete);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [site, mapsReady]);
-
-  // Reset the picker map handle when leaving the site, so "Change site"
-  // rebuilds it cleanly instead of reusing a detached div.
-  useEffect(() => {
-    if (!site) {
-      mapRef.current = null;
-      markerRef.current = null;
-    }
-  }, [site]);
+  function pickPlace(result) {
+    setPicked(result.point);
+    setPlaceLabel(result.name || result.label);
+    setSiteSearch(`${result.point.lat.toFixed(5)}, ${result.point.lng.toFixed(5)}`);
+    if (result.name && !siteName) setSiteName(result.name);
+    mapRef.current?.jumpTo({ center: toLngLat(result.point), zoom: 16 });
+  }
 
   function locateMe() {
     if (!navigator.geolocation) {
@@ -217,10 +155,7 @@ export function SiteMapping({ t, tool }) {
         setSiteSearch(`${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`);
         setGeoState('found');
         setGeoMessage(`Centred near you (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}) — drag the pin by clicking the map.`);
-        if (mapRef.current) {
-          mapRef.current.setCenter(coords);
-          mapRef.current.setZoom(16);
-        }
+        mapRef.current?.jumpTo({ center: toLngLat(coords), zoom: 16 });
       },
       (err) => {
         setGeoState('denied');
@@ -239,7 +174,7 @@ export function SiteMapping({ t, tool }) {
   const counts = useMemo(() => markerCounts(state.markers), [state.markers]);
   const placedTotal = state.markers.length;
   const reflected = hasReflection(state);
-  const mapsUrl = site ? googleMapsUrl(site) : null;
+  const mapsUrl = site ? siteMapUrl(site) : null;
   const summary = useMemo(() => (site ? buildSummary(site, state) : ''), [site, state]);
   const current = SURVEY_QUESTIONS[Math.min(cardIndex, SURVEY_QUESTIONS.length - 1)];
 
@@ -318,6 +253,7 @@ export function SiteMapping({ t, tool }) {
     setSite(null);
     setPicked(null);
     setPlaceLabel('');
+    setPlaceQuery('');
     setSiteSearch('');
     setGeoState('idle');
     setGeoMessage('');
@@ -328,7 +264,7 @@ export function SiteMapping({ t, tool }) {
 
   // ——— Phase 0: no site yet — map-based picker + who you are ———
   if (!site) {
-    const showMap = MAPS_API_KEY && !mapFailed;
+    const showMap = !mapFailed;
     return (
       <div style={{ maxWidth: 860 }}>
         <Panel t={t} title="Find your site on the map">
@@ -345,8 +281,10 @@ export function SiteMapping({ t, tool }) {
             <label className="placer-mono" htmlFor="site-place-search" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: t.inkDim }}>
               Search for a place
             </label>
-            <input id="site-place-search" ref={searchEl} type="text" placeholder="Square, park, address…"
-              style={{ ...fieldStyle(t), marginTop: 6 }} />
+            <div style={{ marginTop: 6 }}>
+              <PlaceSearch id="site-place-search" value={placeQuery} onChange={setPlaceQuery}
+                onPick={pickPlace} near={picked} placeholder="Square, park, address…" style={fieldStyle(t)} />
+            </div>
           </div>
           {showMap ? (
             <div style={{ marginTop: 12 }}>
@@ -366,9 +304,7 @@ export function SiteMapping({ t, tool }) {
             </div>
           ) : (
             <p style={{ fontSize: 12.5, color: t.inkFaint, lineHeight: 1.6, marginTop: 12 }}>
-              {MAPS_API_KEY
-                ? 'The map could not load — search or coordinates below still work.'
-                : 'Map tiles need a Google Maps key (VITE_GOOGLE_MAPS_API_KEY). Coordinates and presets below still work.'}
+              The map could not load — search or coordinates below still work.
             </p>
           )}
           <div style={{ marginTop: 14 }}>
@@ -512,7 +448,7 @@ export function SiteMapping({ t, tool }) {
           {mapsUrl && (
             <a href={mapsUrl} target="_blank" rel="noreferrer"
               style={{ fontSize: 13, fontWeight: 700, color: c }}>
-              Open this site in Google Maps ↗
+              Open this site in OpenStreetMap ↗
             </a>
           )}
           <div style={{ flex: 1 }} />

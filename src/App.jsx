@@ -574,7 +574,6 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'map' && (
               <Suspense fallback={<LoadingFallback />}>
                 <ExplorePage
-                  apiKey={GOOGLE_MAPS_API_KEY}
                   homeCenter={profile?.locationPoint ?? null}
                   accountId={accountId}
                   onSignIn={handleSignIn}

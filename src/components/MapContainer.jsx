@@ -1,8 +1,15 @@
-/* PLACER — Map Container with Google Maps */
+/* PLACER — the community map, where an imagination starts.
+ *
+ * The map is OpenStreetMap's (lib/map.js): pins for every imagination posted, and the
+ * areas projects have outlined. Clicking it chooses a spot. Street View, which
+ * OpenStreetMap has nothing like, is Google's: the Street View button opens Google's
+ * panorama over the map at the nearest photo to that spot, and capturing while it is
+ * open takes the background from the Street View Static API (lib/staticMaps.js).
+ * Capturing with the map showing takes the map itself.
+ */
 
 import { useState, useEffect, useRef } from 'react';
 import posthog from 'posthog-js';
-import { toPng } from 'html-to-image';
 import { Icon } from './Icon';
 import { Btn } from './UI';
 import { ImaginationPreview } from './ImaginationPreview';
@@ -14,14 +21,14 @@ import {
   DEFAULT_SIZE,
   fetchAsDataUrl,
   fovFromPanoramaZoom,
-  staticMapUrl,
   streetViewBackgroundTiles,
   streetViewStaticUrl,
 } from '../lib/staticMaps';
 import { tilingGain } from '../lib/panoGeometry';
 import { loadGoogleMaps } from '../lib/googleMaps';
-import { MAP_STYLE } from '../lib/mapStyle';
+import { addPin, addPlainMarker, createMap, onBackgroundClick, showAreas, toLngLat } from '../lib/map';
 import { PageHeader } from './PageHeader';
+import { PlaceSearch } from './PlaceSearch';
 
 // An imagination's pin, in the brand kit's pin style: a 24px circle in a character's
 // 100 with a 2px ring in its 700. Imaginations come from citizens, so orange.
@@ -59,19 +66,25 @@ const hasCoords = (position) =>
 const PIN_ZOOM = 17;
 const HOME_ZOOM = 13;
 const DEFAULT_ZOOM = 15;
+// How close to the chosen spot a Street View photo has to be to count as of it.
+const STREET_VIEW_RADIUS = 100;
+// The zoom the map is captured at when a spot turns out to have no Street View.
+const FALLBACK_ZOOM = 18;
 
 const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCenter = null,
   accountId = null, authorName, onSignIn, onOpenProject }) => {
   const t = THEME;
   const mapRef = useRef(null);
-  const searchInputRef = useRef(null);
-  const mapInitializedRef = useRef(false);
-  // The StreetViewPanorama bound to the map div. Held in a ref, not state — the
-  // capture handler reads getVisible()/getPosition()/getPov() live at click time,
-  // so there is nothing to re-render on as the user pans.
+  const panoramaElRef = useRef(null);
+  // The StreetViewPanorama over the map. Held in a ref, not state — the capture
+  // handler reads getVisible()/getPosition()/getPov() live at click time, so there is
+  // nothing to re-render on as the user pans.
   const panoramaRef = useRef(null);
   const [map, setMap] = useState(null);
-  const [googleLoaded, setGoogleLoaded] = useState(() => !!window.google);
+  // Google's script, which only Street View needs: the map is there without it.
+  const [googleLoaded, setGoogleLoaded] = useState(() => !!window.google?.maps);
+  // Why Street View could not open at the chosen spot, shown until the next try.
+  const [streetViewMessage, setStreetViewMessage] = useState('');
   const [searchValue, setSearchValue] = useState('');
   const [isCapturing, setIsCapturing] = useState(false);
   const [currentPosition, setCurrentPosition] = useState(
@@ -86,14 +99,12 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
   // been. Loaded once per mount, which is enough: returning from the post step
   // remounts this component, so a just-posted imagination appears without plumbing.
   const [imaginations, setImaginations] = useState([]);
-  const markersRef = useRef([]);
   // Every project's drawn location outline, so a project's area shows up here too —
   // not just on its own public page. Loaded once per mount, same as imaginations.
   const [projectLocations, setProjectLocations] = useState([]);
-  const projectOverlaysRef = useRef([]);
   // The imagination whose preview card is open, if any.
   const [selected, setSelected] = useState(null);
-  // Whether Street View has taken over the map, where the legend's pins and areas
+  // Whether Street View is open over the map, where the legend's pins and areas
   // are not drawn and it would only be in the way.
   const [streetViewOpen, setStreetViewOpen] = useState(false);
   // Tracks the latest position without making the init effect below re-run on every change —
@@ -103,10 +114,10 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
     currentPositionRef.current = currentPosition;
   }, [currentPosition]);
 
-  // Load Google Maps script, sharing one tag with every other component that needs it —
-  // see src/lib/googleMaps.js for why that has to be shared rather than each component
-  // injecting its own.
+  // Load Google's script for Street View, sharing one tag with anything else that needs
+  // it — see src/lib/googleMaps.js. Without a key there is no Street View to offer.
   useEffect(() => {
+    if (!apiKey) return undefined;
     let cancelled = false;
 
     loadGoogleMaps(apiKey)
@@ -114,66 +125,55 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
         if (!cancelled) setGoogleLoaded(true);
       })
       .catch((error) => {
-        console.error('Failed to load Google Maps script', error);
+        console.error('Failed to load Google Street View', error);
       });
 
     return () => { cancelled = true; };
   }, [apiKey]);
 
-  // Initialize Google Maps
+  // The map, made once. A click on it — not on a pin or an area — chooses the spot.
   useEffect(() => {
-    if (!googleLoaded) {
-      return;
-    }
+    if (!mapRef.current) return undefined;
 
-    if (!mapRef.current) {
-      return;
-    }
-
-    if (mapInitializedRef.current) {
-      return;
-    }
-
+    let osmMap;
     try {
-      const googleMap = new window.google.maps.Map(mapRef.current, {
+      osmMap = createMap(mapRef.current, {
         center: currentPositionRef.current,
         zoom: hasCoords(initialCenter) ? PIN_ZOOM : hasCoords(homeCenter) ? HOME_ZOOM : DEFAULT_ZOOM,
-        mapTypeControl: true,
-        streetViewControl: true,
-        styles: MAP_STYLE,
       });
-
-
-      panoramaRef.current = googleMap.getStreetView
-        ? googleMap.getStreetView()
-        : null;
-      panoramaRef.current?.addListener?.('visible_changed', () => {
-        setStreetViewOpen(Boolean(panoramaRef.current.getVisible()));
-      });
-
-      // Add click listener to update current position
-      googleMap.addListener('click', (e) => {
-        // A click on open water rather than a pin: put the preview away.
-        setSelected(null);
-        if (e.latLng) {
-          setCurrentPosition({
-            lat: e.latLng.lat(),
-            lng: e.latLng.lng()
-          });
-        }
-      });
-
-      setMap(googleMap);
-      mapInitializedRef.current = true;
-
-      return () => {
-        if (googleMap) {
-          window.google.maps.event.clearInstanceListeners(googleMap);
-        }
-      };
     } catch (error) {
       console.error('Error initializing maps:', error);
+      return undefined;
     }
+
+    onBackgroundClick(osmMap, (point) => {
+      // A click on open ground rather than a pin: put the preview away.
+      setSelected(null);
+      setStreetViewMessage('');
+      setCurrentPosition(point);
+    });
+
+    setMap(osmMap);
+    return () => osmMap.remove();
+    // initialCenter and homeCenter only seed where the map opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // The panorama, once Google is there: hidden over the map until Street View is asked for.
+  useEffect(() => {
+    if (!googleLoaded || !panoramaElRef.current || panoramaRef.current) return;
+    const panorama = new window.google.maps.StreetViewPanorama(panoramaElRef.current, {
+      visible: false,
+      addressControl: false,
+      fullscreenControl: false,
+      motionTracking: false,
+      motionTrackingControl: false,
+      enableCloseButton: false,
+    });
+    panorama.addListener('visible_changed', () => {
+      setStreetViewOpen(Boolean(panorama.getVisible()));
+    });
+    panoramaRef.current = panorama;
   }, [googleLoaded]);
 
   // Load the imaginations to pin on the map. With a Supabase project configured this is
@@ -213,85 +213,64 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
     return () => { cancelled = true; };
   }, []);
 
-  // Drop one pin per saved imagination, coloured by category so the map reads the
-  // same way the category tags do. Imaginations saved without coordinates are
+  // Drop one pin per saved imagination. Imaginations saved without coordinates are
   // skipped — there is nowhere to put them.
   useEffect(() => {
-    if (!map || !window.google) return;
+    if (!map) return undefined;
 
-    const withCoords = imaginations.filter((imagination) => hasCoords(imagination.position));
-
-    markersRef.current = withCoords.map((imagination) => {
-      const marker = new window.google.maps.Marker({
-        position: imagination.position,
-        map,
+    const markers = imaginations
+      .filter((imagination) => hasCoords(imagination.position))
+      .map((imagination) => addPin(map, imagination.position, {
+        size: 24,
+        fill: PIN.fill,
+        ring: PIN.ring,
         title: imagination.title || 'Imagination',
-        icon: {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          scale: 11,
-          fillColor: PIN.fill,
-          fillOpacity: 1,
-          strokeColor: PIN.ring,
-          strokeWeight: 2,
+        onClick: () => {
+          posthog.capture('imagination_viewed', {
+            imagination_id: imagination.id,
+            category: imagination.cat,
+            assets_count: imagination.canvasAssets?.length ?? 0,
+          });
+          setSelected(imagination);
+          // Bring the pin into view so it is obvious which one the card describes.
+          map.panTo(toLngLat(imagination.position));
         },
-        // Above the plain marker the address search drops.
-        zIndex: 10,
-      });
-
-      marker.addListener('click', () => {
-        posthog.capture('imagination_viewed', {
-          imagination_id: imagination.id,
-          category: imagination.cat,
-          assets_count: imagination.canvasAssets?.length ?? 0,
-        });
-        setSelected(imagination);
-        // Bring the pin into view so it is obvious which one the card describes.
-        map.panTo(imagination.position);
-      });
-
-      return marker;
-    });
+      }));
 
     return () => {
-      markersRef.current.forEach((marker) => marker.setMap(null));
-      markersRef.current = [];
+      markers.forEach((marker) => marker.remove());
       // The card describes a marker that no longer exists.
       setSelected(null);
     };
   }, [map, imaginations]);
 
-  // Draw one polygon per shape a project has outlined — the same trace LocationMapPicker
-  // draws while it is being set up and ProjectLocationMap shows on its public page, now
-  // on the map everyone shares. Clicking one goes to that project's public page, the
-  // same destination "View the public page" on its dashboard does.
+  // Draw every shape a project has outlined — the same trace ProjectLocationMap shows
+  // on its public page, now on the map everyone shares. Clicking one goes to that
+  // project's public page, the same destination "View the public page" on its
+  // dashboard does.
   useEffect(() => {
-    if (!map || !window.google) return undefined;
+    if (!map) return undefined;
 
-    projectOverlaysRef.current = projectLocations.flatMap((project) =>
-      (project.locationShapes ?? [])
-        .filter((shape) => (shape?.path?.length ?? 0) >= 3)
-        .map((shape) => {
-          const polygon = new window.google.maps.Polygon({
-            paths: shape.path,
-            map,
-            fillColor: PROJECT_AREA.fill,
-            fillOpacity: 0.4,
-            strokeColor: PROJECT_AREA.stroke,
-            strokeWeight: 2,
-            clickable: true,
-          });
+    const areas = projectLocations.flatMap((project) =>
+      (project.locationShapes ?? []).map((shape) => ({
+        path: shape?.path ?? [],
+        fill: PROJECT_AREA.fill,
+        stroke: PROJECT_AREA.stroke,
+        projectId: project.id,
+      })));
 
-          polygon.addListener('click', () => onOpenProject?.(project.id));
-
-          return polygon;
-        })
-    );
-
-    return () => {
-      projectOverlaysRef.current.forEach((polygon) => polygon.setMap(null));
-      projectOverlaysRef.current = [];
-    };
+    return showAreas(map, 'project-areas', areas, {
+      onClick: (area) => onOpenProject?.(area.projectId),
+    });
   }, [map, projectLocations, onOpenProject]);
+
+  // The spot chosen by clicking or searching: where Street View opens, and what the
+  // map is captured around.
+  useEffect(() => {
+    if (!map || !hasCoords(currentPosition)) return undefined;
+    const marker = addPlainMarker(map, currentPosition, { color: CHARACTER.citizen.c700 });
+    return () => marker.remove();
+  }, [map, currentPosition]);
 
   // Escape closes the preview, matching the canvas's own Escape behaviour.
   useEffect(() => {
@@ -305,44 +284,63 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selected]);
 
-  // Initialize Google Places Autocomplete
-  useEffect(() => {
-    if (!googleLoaded || !map || !searchInputRef.current) return;
+  const handlePlacePicked = (place) => {
+    setCurrentPosition(place.point);
+    setStreetViewMessage('');
+    map?.jumpTo({ center: toLngLat(place.point), zoom: PIN_ZOOM });
+  };
 
-    const autocomplete = new window.google.maps.places.Autocomplete(searchInputRef.current, {
-      fields: ['geometry', 'formatted_address', 'name']
-    });
-
-    autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-
-      if (!place.geometry || !place.geometry.location) {
+  // Open Street View at the nearest photo to the chosen spot, or say there is none.
+  const openStreetView = () => {
+    const panorama = panoramaRef.current;
+    if (!panorama || !window.google?.maps?.StreetViewService) return;
+    setStreetViewMessage('');
+    new window.google.maps.StreetViewService().getPanorama({
+      location: currentPosition,
+      radius: STREET_VIEW_RADIUS,
+      preference: window.google.maps.StreetViewPreference?.NEAREST,
+      sources: window.google.maps.StreetViewSource?.OUTDOOR
+        ? [window.google.maps.StreetViewSource.OUTDOOR] : undefined,
+    }, (data, status) => {
+      if (status !== 'OK' || !data?.location?.pano) {
+        setStreetViewMessage('No Street View near this spot. Choose a spot on a street and try again.');
         return;
       }
-
-      const location = {
-        lat: place.geometry.location.lat(),
-        lng: place.geometry.location.lng()
-      };
-
-      setCurrentPosition(location);
-      map.setCenter(location);
-      map.setZoom(17);
-
-      // Add marker at searched location
-      new window.google.maps.Marker({
-        position: location,
-        map: map,
-        title: place.formatted_address || place.name
-      });
-
-      setSearchValue(place.formatted_address || place.name || '');
+      panorama.setPano(data.location.pano);
+      panorama.setPov({ heading: 0, pitch: 0 });
+      panorama.setZoom(1);
+      panorama.setVisible(true);
     });
+  };
 
-    return () => {
-      window.google.maps.event.clearInstanceListeners(autocomplete);
-    };
-  }, [googleLoaded, map]);
+  // Back to the map, where Street View had walked to.
+  const closeStreetView = () => {
+    const panorama = panoramaRef.current;
+    const position = panorama?.getPosition?.();
+    if (position) {
+      const point = { lat: position.lat(), lng: position.lng() };
+      setCurrentPosition(point);
+      map?.jumpTo({ center: toLngLat(point) });
+    }
+    panorama?.setVisible(false);
+  };
+
+  // The map as it is drawn, as a PNG. `at` moves it there first, and waits for it to
+  // finish drawing.
+  const captureMap = async (at = null) => {
+    if (!map) return null;
+    if (at) {
+      map.jumpTo({ center: toLngLat(at), zoom: FALLBACK_ZOOM });
+      // Waits for it to settle, but not forever: a tile that never arrives is a gap in
+      // the picture, not a capture that never happens.
+      await new Promise((resolve) => {
+        map.once('idle', resolve);
+        map.triggerRepaint();
+        setTimeout(resolve, 4000);
+      });
+    }
+    return map.getCanvas().toDataURL('image/png');
+  };
 
   // Snapshot the live panorama, or null when the user is looking at the map
   // rather than a Street View panorama.
@@ -411,8 +409,8 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
     }
   };
 
-  // Ask Google's servers for the panorama image. Falls back to a top-down map
-  // tile when the spot has no Street View coverage (signalled by a 404, which
+  // Ask Google's servers for the panorama image. Falls back to the map at that
+  // spot when it has no Street View coverage (signalled by a 404, which
   // return_error_code=true in streetViewStaticUrl makes Google send instead of a
   // gray placeholder image).
   const captureStreetView = async (view) => {
@@ -432,9 +430,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
         throw error;
       }
       console.warn('No Street View imagery here — falling back to map view');
-      return await fetchAsDataUrl(
-        staticMapUrl({ apiKey, center: view.position, zoom: 18 })
-      );
+      return captureMap(view.position);
     }
   };
 
@@ -454,7 +450,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
     const position = streetView ? streetView.position : currentPosition;
     const pov = streetView
       ? { heading: streetView.heading, pitch: streetView.pitch, zoom: streetView.zoom }
-      : { heading: 0, pitch: 0, zoom: map ? map.getZoom() : 1 };
+      : { heading: 0, pitch: 0, zoom: map ? Math.round(map.getZoom()) : 1 };
 
     let screenshot = null;
 
@@ -462,13 +458,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
       if (streetView) {
         screenshot = await captureStreetView(streetView);
       } else {
-        // Small delay to ensure map is fully rendered
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        // Capture screenshot of the map
-        screenshot = await toPng(mapRef.current, {
-          cacheBust: true,
-        });
+        screenshot = await captureMap();
       }
     } catch (error) {
       // Fallback: send data without screenshot
@@ -508,6 +498,15 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
       <div style={{ flex: 1, minHeight: 0 }}>
         <div style={{ width: '100%', height: '100%', position: 'relative', background: t.surface }}>
           <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+          {/* Street View, over the map while it is open. */}
+          <div ref={panoramaElRef} data-testid="street-view" style={{ position: 'absolute', inset: 0,
+            zIndex: 2, visibility: streetViewOpen ? 'visible' : 'hidden' }} />
+          {streetViewOpen && (
+            <Btn t={t} variant="outline" icon="close" onClick={closeStreetView}
+              style={{ position: 'absolute', top: 16, right: 16, zIndex: 6, boxShadow: t.shadow }}>
+              Back to the map
+            </Btn>
+          )}
 
           {selected && (
             <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)}
@@ -519,6 +518,15 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
           )}
 
           {!streetViewOpen && <MapLegend t={t} pin={PIN} area={PROJECT_AREA} />}
+
+          {streetViewMessage && !streetViewOpen && (
+            <div role="status" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+              bottom: 'calc(80px + var(--placer-consent-inset, 0px))', zIndex: 5, maxWidth: 'calc(100% - 32px)',
+              padding: '10px 14px', borderRadius: 12, background: t.surface, boxShadow: t.shadow,
+              fontSize: 14, color: t.ink }}>
+              {streetViewMessage}
+            </div>
+          )}
 
           {/* Floating controls — bottom-centered over the map: search + capture */}
           <div style={{
@@ -548,12 +556,9 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
               boxShadow: t.shadow
             }}>
               <Icon name="search" size={19} stroke={2} style={{ color: t.inkDim }} />
-              <input
-                ref={searchInputRef}
-                type="text"
+              <PlaceSearch value={searchValue} onChange={setSearchValue} onPick={handlePlacePicked}
+                near={currentPosition} placement="above" ariaLabel="Search for an address"
                 placeholder="Search for an address..."
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
                 style={{
                   flex: 1,
                   minWidth: 0,
@@ -564,10 +569,22 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
                   fontSize: 15,
                   fontWeight: 500,
                   color: t.ink,
-                  '::placeholder': { color: t.inkDim }
                 }}
               />
             </div>
+
+            {/* Street View — only with Google's key, which it needs */}
+            {apiKey && !streetViewOpen && (
+              <Btn
+                t={t}
+                variant="outline"
+                icon="walk"
+                onClick={openStreetView}
+                disabled={!googleLoaded}
+                ariaLabel="Open Street View at the chosen spot"
+                style={{ flex: '0 0 auto', width: 44, height: 44, padding: 0, boxShadow: t.shadow }}
+              />
+            )}
 
             {/* Capture Button — icon only */}
             <Btn
@@ -590,13 +607,6 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
         </div>
       </div>
 
-      {!apiKey && (
-        <div style={{ background: '#F5F5F5', borderLeft: `4px solid #111111`, color: '#111111',
-          padding: 16, margin: 12 }}>
-          <p style={{ fontWeight: 700, marginBottom: 4 }}>Google Maps API Key Required</p>
-          <p style={{ fontSize: 14 }}>Add your API key to .env to enable map functionality.</p>
-        </div>
-      )}
     </div>
   );
 };

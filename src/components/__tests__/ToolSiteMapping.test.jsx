@@ -57,7 +57,7 @@ describe('Site-Specific Spatial Mapping Tool', () => {
     expect(screen.getByText(/question 1 of 18/i)).toBeInTheDocument();
     expect(screen.getByText('A variety of seating and resting places')).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /site map/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /open this site in google maps/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open this site in openstreetmap/i })).toBeInTheDocument();
   });
 
   it('walks the eighteen cards in order and then offers the two optional sections', () => {
@@ -132,10 +132,11 @@ describe('Site-Specific Spatial Mapping Tool', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/does not look right/i);
   });
 
-  it('falls back to coordinates and presets when no Maps key is configured', () => {
+  it('offers the map, with coordinates and presets alongside it', () => {
     mount();
+    expect(screen.getByRole('application', { name: /choose site on map/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /use my location/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/or type coordinates/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /use my location/i })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/or type coordinates/i), { target: { value: '52.52, 13.40' } });
     fireEvent.click(screen.getByRole('button', { name: /load site/i }));
     expect(screen.getByText(/question 1 of 18/i)).toBeInTheDocument();

@@ -1,4 +1,4 @@
-// Server-rendered map imagery via Google's Static APIs.
+// Server-rendered Street View imagery via Google's Street View Static API.
 //
 // The browser cannot screenshot a Street View panorama: Google renders it into a
 // WebGL canvas over cross-origin tiles, and html-to-image (which rasterizes a DOM
@@ -9,9 +9,8 @@
 import { planGridTiles, planTiles } from './panoGeometry.js'
 
 const STREET_VIEW_ENDPOINT = 'https://maps.googleapis.com/maps/api/streetview'
-const STATIC_MAP_ENDPOINT = 'https://maps.googleapis.com/maps/api/staticmap'
 
-// Both Static APIs cap output at 640px per side, and the Street View endpoint has
+// The Static API caps output at 640px per side, and has
 // no `scale` parameter to work around it. Oversized requests are not clamped to
 // the requested aspect ratio — they come back square (a 1024x717 request returns
 // 640x640), so callers must clamp before sending or the background arrives
@@ -20,16 +19,9 @@ export const MAX_STATIC_SIZE = 640
 
 // The Konva stage in StreetScreen is 1000x700, so 640x448 fills it without
 // stretching while staying inside the cap. It does not *fill* it at native
-// resolution — 640 stretched to 1000 is visibly soft — which is what the
-// scale parameter below and streetViewBackgroundTiles are for.
+// resolution — 640 stretched to 1000 is visibly soft — which is what
+// streetViewBackgroundTiles is for.
 export const DEFAULT_SIZE = { width: 640, height: 448 }
-
-// The Maps Static API accepts scale=1 or 2, where 2 "returns twice as many
-// pixels while retaining the same coverage area and level of detail" — so a
-// 640x448 request comes back 1280x896, enough to fill the stage natively. It
-// counts as one request either way. The Street View endpoint has no equivalent,
-// which is why higher resolution there needs tiling instead.
-export const MAX_MAP_SCALE = 2
 
 // Documented ceiling for the Street View `fov` parameter; the floor is ours, to
 // keep an extreme panorama zoom from asking for a degenerate sliver.
@@ -79,59 +71,6 @@ export function streetViewStaticUrl({
   // the sensible default when the panorama has not reported a direction yet.
   if (Number.isFinite(heading)) params.set('heading', String(heading))
   return `${STREET_VIEW_ENDPOINT}?${params.toString()}`
-}
-
-// fillcolor:0x...NN closes a path into a filled polygon (rather than an open
-// line), matching what LocationMapPicker draws live while editing.
-const PATH_FILL_ALPHA = '40'
-
-export function staticMapUrl({
-  apiKey,
-  center,
-  zoom = 18,
-  // Deliberately not 'satellite': satellite and hybrid are refused with a 403
-  // ("not available for your account and region") under Google's EEA terms for
-  // the Maps Static API, which covers this project's account. roadmap and
-  // terrain are the types that actually serve.
-  maptype = 'roadmap',
-  size = DEFAULT_SIZE,
-  scale = MAX_MAP_SCALE,
-  // A project's drawn location outline (locationShapes: [{ path: [{lat,lng},...] }]).
-  // Given instead of center/zoom, Google fits the viewport to the shapes itself, the
-  // same auto-fit ProjectSetupPage's live map gets for free from google.maps.Map —
-  // there is no bounds math to duplicate here.
-  paths,
-  pathColor = '1D5FA8',
-  // A pin at `center`, for a place given as a point rather than an outline.
-  marker = false,
-}) {
-  const { width, height } = clampSize(size)
-  const params = new URLSearchParams({
-    size: `${width}x${height}`,
-    // Requested in CSS-ish pixels: `size` stays inside the 640 cap and scale
-    // multiplies the pixels delivered, so this is 1280x896 of image describing
-    // the same 640x448 of map.
-    scale: String(clamp(Math.round(scale), 1, MAX_MAP_SCALE)),
-    maptype,
-    key: apiKey,
-  })
-
-  if (paths?.length) {
-    const color = pathColor.replace('#', '').toLowerCase()
-    for (const shape of paths) {
-      const points = (shape?.path ?? []).map(({ lat, lng }) => `${lat},${lng}`).join('|')
-      if (!points) continue
-      params.append('path', `color:0x${color}ff|weight:2|fillcolor:0x${color}${PATH_FILL_ALPHA}|${points}`)
-    }
-  } else {
-    params.set('center', `${center.lat},${center.lng}`)
-    params.set('zoom', String(zoom))
-    if (marker) {
-      params.append('markers', `color:0x${pathColor.replace('#', '').toLowerCase()}|${center.lat},${center.lng}`)
-    }
-  }
-
-  return `${STATIC_MAP_ENDPOINT}?${params.toString()}`
 }
 
 // Street View headings wrap at 360.

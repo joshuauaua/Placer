@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { photonFeature, stubPhoton } from '../../test/photon';
 import { SettingsPage } from '../SettingsPage';
 import { saveProfile } from '../../services/profile';
 import { removeProfileImageFile, updatePassword, uploadProfilePhoto } from '../../services/auth';
@@ -253,24 +254,21 @@ describe('SettingsPage, bio and location', () => {
   });
 
   it('keeps the place a suggestion was chosen from, and opens Explore there', async () => {
-    // A stand-in for Google Places: the Autocomplete it builds is handed back here so
-    // the test can "choose" a suggestion the way the real list would.
-    let placeChanged;
-    const place = { formatted_address: 'Malmö, Sweden',
-      geometry: { location: { lat: () => 55.6, lng: () => 13 } } };
-    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'maps-key');
-    window.google = { maps: { places: { Autocomplete: vi.fn(function Autocomplete() {
-      this.getPlace = () => place;
-      this.addListener = (event, handler) => { placeChanged = handler; return { remove: vi.fn() }; };
-    }) } } };
+    const fetchMock = stubPhoton([
+      photonFeature({ name: 'Malmö', type: 'city', country: 'Sweden', lat: 55.6, lng: 13 }),
+      photonFeature({ name: 'Malmövägen', type: 'street', city: 'Lund', country: 'Sweden', lat: 55.7, lng: 13.2 }),
+    ]);
 
     try {
       const { onSaveProfile } = setup({ option: PROFILE, profile: { name: 'Mara Quinn', bio: '', location: '' } });
-      await waitFor(() => expect(placeChanged).toBeTypeOf('function'));
-      expect(window.google.maps.places.Autocomplete).toHaveBeenCalledWith(
-        screen.getByLabelText('Location'), expect.objectContaining({ types: ['(regions)'] }));
+      fireEvent.change(screen.getByLabelText('Location'), { target: { value: 'Malmö' } });
 
-      act(() => placeChanged());
+      // Only towns, cities and regions are offered, since this is shown on a profile.
+      const option = await screen.findByRole('option', { name: 'Malmö, Sweden' });
+      expect(screen.queryByRole('option', { name: /Malmövägen/ })).not.toBeInTheDocument();
+      expect(String(fetchMock.mock.calls[0][0])).toContain('q=Malm%C3%B6');
+
+      fireEvent.mouseDown(option);
       expect(screen.getByLabelText('Location')).toHaveValue('Malmö, Sweden');
       expect(screen.getByText('Explore opens here.')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: /Save location/ }));
@@ -278,8 +276,7 @@ describe('SettingsPage, bio and location', () => {
       await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({
         location: 'Malmö, Sweden', locationPoint: { lat: 55.6, lng: 13 } }));
     } finally {
-      delete window.google;
-      vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
     }
   });
 });
