@@ -806,11 +806,52 @@ a {
     text-align: left;
   }
 
-  /* The nav bar's own glass, clear rather than frosted white: on a phone the
-   * card is the only thing over the drawing, and the blur alone keeps the
-   * copy readable. */
+  /* No card on a phone: the copy sits straight on the drawing, held clear of
+   * its lines by a soft wash behind it (below) rather than a panel. */
+  .placer-landing-column {
+    border: none;
+    box-shadow: none;
+  }
+
   .placer-landing-column::before {
-    background: rgba(255, 255, 255, 0.12);
+    display: none;
+  }
+
+  .placer-landing-info {
+    text-shadow: 0 0 2px #FFFFFF, 0 0 8px #FFFFFF;
+  }
+
+  /* A white wash over the middle of the drawing, where the copy sits, that
+   * fades out with no edge, so the city still frames the page. */
+  .placer-landing-backdrop::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 75% 42% at 50% 54%,
+      rgba(255, 255, 255, 0.96) 45%, rgba(255, 255, 255, 0) 100%);
+  }
+
+  /* The hierarchy, top down: the wordmark, the pitch in ink, the steps a size
+   * under it, then the tagline and the button. */
+  .placer-landing-pitch {
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 500;
+    color: var(--placer-ink);
+  }
+
+  .placer-landing-features {
+    font-size: 15px;
+    line-height: 22px;
+  }
+
+  .placer-landing-feature-text {
+    color: var(--placer-ink);
+  }
+
+  .placer-landing-tagline {
+    font-size: 18px;
+    line-height: 24px;
   }
 
   /* The rule over the tagline, centred with it. */
@@ -820,13 +861,13 @@ a {
   }
 
   .placer-landing-title {
-    font-size: 36px !important;
-    line-height: 40px !important;
-    margin-bottom: 12px;
+    font-size: 56px !important;
+    line-height: 60px !important;
+    margin-bottom: 16px;
   }
 
   .placer-landing-features {
-    margin: 24px 0;
+    margin: 28px 0;
   }
 
   /* The waitlist button closing the pitch, a phone's 48px tall. */
