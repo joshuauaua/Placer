@@ -131,27 +131,30 @@
   "module4": [
     {
       "key": "spatialFilteringValue",
-      "label": "How valuable would Interactive Spatial Filtering be to your department? Enabling citizens and staff to add, remove and filter design ideas on a live map.",
+      "eyebrow": "Interactive Spatial Filtering",
+      "label": "How badly is live, map-based filtering of design ideas missing from your process?",
       "type": "scale",
       "scaleMax": 5,
-      "minLabel": "1 = Not valuable",
-      "maxLabel": "5 = Extremely valuable"
+      "minLabel": "1 = Not missing at all",
+      "maxLabel": "5 = Badly missing"
     },
     {
       "key": "caseStudyHubValue",
-      "label": "How valuable would a Global Case Study Hub be to your department? A searchable, peer-to-peer repository of community-driven placemaking projects.",
+      "eyebrow": "Global Case Study Hub",
+      "label": "How much would your process benefit from a searchable repository of peer placemaking projects?",
       "type": "scale",
       "scaleMax": 5,
-      "minLabel": "1 = Not valuable",
-      "maxLabel": "5 = Extremely valuable"
+      "minLabel": "1 = No benefit",
+      "maxLabel": "5 = Major benefit"
     },
     {
       "key": "publishingNetworkValue",
-      "label": "How valuable would a Publishing Network be to your department? The ability to benchmark and share your local municipal projects with international peers.",
+      "eyebrow": "Publishing Network",
+      "label": "How useful would it be to benchmark and share local projects with international peers?",
       "type": "scale",
       "scaleMax": 5,
-      "minLabel": "1 = Not valuable",
-      "maxLabel": "5 = Extremely valuable"
+      "minLabel": "1 = Not useful",
+      "maxLabel": "5 = Extremely useful"
     },
     {
       "key": "anythingToAdd",
@@ -185,8 +188,7 @@
         "key": "municipality",
         "label": "Municipality / City & Country",
         "placeholder": "e.g. Rotterdam, Netherlands"
-      },
-      { "key": "department", "label": "Department", "placeholder": "e.g. Zoning and Urban Planning" }
+      }
     ]
   },
   "success": {

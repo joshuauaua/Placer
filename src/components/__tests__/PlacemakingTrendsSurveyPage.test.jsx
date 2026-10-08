@@ -102,7 +102,6 @@ describe('PlacemakingTrendsSurveyPage', () => {
       fireEvent.change(field('Municipality / City & Country'), {
         target: { value: 'Rotterdam, Netherlands' },
       });
-      fireEvent.change(field('Department'), { target: { value: 'Zoning' } });
       fireEvent.change(field('Email Address'), { target: { value: 'not-an-email' } });
       expect(button(content.steps.submitLabel)).toBeDisabled();
 
@@ -168,7 +167,6 @@ describe('PlacemakingTrendsSurveyPage', () => {
       fireEvent.change(field('Municipality / City & Country'), {
         target: { value: 'Rotterdam, Netherlands' },
       });
-      fireEvent.change(field('Department'), { target: { value: 'Zoning' } });
       fireEvent.click(button(content.steps.submitLabel));
 
       expect(await screen.findByRole('heading', { name: content.success.title })).toBeInTheDocument();
@@ -183,7 +181,6 @@ describe('PlacemakingTrendsSurveyPage', () => {
           name: 'A. Planner',
           email: 'planner@city.gov',
           municipality: 'Rotterdam, Netherlands',
-          department: 'Zoning',
         },
         module1: { [firstQuestion.key]: firstQuestion.options[0].value },
       });

@@ -162,6 +162,8 @@ function question(value, path) {
   object(value, path);
   text(value.key, `${path}.key`);
   text(value.label, `${path}.label`);
+  // A short name shown above the question, e.g. the feature a rating is about.
+  optionalText(value.eyebrow, `${path}.eyebrow`);
   flag(value.optional, `${path}.optional`);
 
   const type = questionType(value);
