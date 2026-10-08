@@ -201,7 +201,6 @@ describe('PublicProjectPage', () => {
   });
 
   it('shows a map of the drawn location outline at the top, when the project has one', async () => {
-    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
     vi.mocked(readProject).mockResolvedValue({
       ...PROJECT,
       locationShapes: [{ path: [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }] }],
@@ -209,9 +208,7 @@ describe('PublicProjectPage', () => {
 
     setup();
 
-    const img = await screen.findByRole('img', { name: /Riverside Greenway/ });
-    expect(img.src).toContain('https://maps.googleapis.com/maps/api/staticmap?');
-    vi.unstubAllEnvs();
+    expect(await screen.findByRole('img', { name: /Map of the area for Riverside Greenway/ })).toBeInTheDocument();
   });
 
   it('has no map when the project has no drawn location outline', async () => {

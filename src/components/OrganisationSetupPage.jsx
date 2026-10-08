@@ -11,7 +11,6 @@ import {
 } from '../services/organisations';
 import { checkPickedImage } from '../services/media';
 import { AddressInput } from './AddressInput';
-import { isGoogleMapsConfigured } from '../lib/googleMaps';
 
 // Matches ProjectSetupPage's form styling.
 const inputStyle = (t) => ({
@@ -159,9 +158,7 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
         </Field>
 
         <Field t={t} label="Address" htmlFor="organisation-address"
-          hint={isGoogleMapsConfigured()
-            ? 'Where it is based, exactly. Pick the address from the suggestions and the organisation is pinned there on the Explore map, and its town and country fill in below. Optional.'
-            : 'Where it is based, exactly. The organisation is pinned there on the Explore map. Optional.'}>
+          hint={'Where it is based, exactly. Pick the address from the suggestions and the organisation is pinned there on the Explore map, and its town and country fill in below. Optional.'}>
           <AddressInput id="organisation-address" value={address}
             placeholder="e.g. Malmöhusvägen 5, Malmö" style={inputStyle(t)}
             onChange={(next) => { setAddress(next); setPoint(null); }}
@@ -170,7 +167,7 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
               setPoint(picked.point);
               if (picked.townAndCountry) setLocation(picked.townAndCountry);
             }} />
-          {isGoogleMapsConfigured() && address.trim() && (
+          {address.trim() && (
             <div style={{ fontSize: 13, color: t.inkFaint, marginTop: 8 }}>
               {point
                 ? 'Pinned on the Explore map at this address.'

@@ -1,8 +1,9 @@
 import { describe, it, expect, afterEach } from 'vite-plus/test';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, act, fireEvent } from '@testing-library/react';
 import { StationaryActivityMap } from '../toolkit/StationaryActivityMap';
 import { findTool } from '../../toolkit/tools';
 import { THEME } from '../../theme';
+import { clickMap, lastMap } from '../../test/maplibreStub';
 
 function mount() {
   return render(<StationaryActivityMap t={THEME} tool={findTool('stationary-activity-mapping')} />);
@@ -36,5 +37,22 @@ describe('Stationary Activity Mapping', () => {
     expect(tallyCard.textContent).toContain('Standing');
     expect(tallyCard.textContent).toContain('Lying Down');
     expect(tallyCard.textContent).toContain('Multiple / Movement');
+  });
+
+  it('plots each observation where it was recorded on the map', () => {
+    mount();
+    act(() => clickMap(lastMap(), { lat: 55.601, lng: 12.99 }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Standing' }));
+    fireEvent.click(screen.getByLabelText('Waiting for Transport'));
+    fireEvent.click(screen.getByRole('button', { name: 'Record' }));
+
+    const recorded = screen.getByRole('button', { name: 'Standing: Waiting for Transport' });
+    const marker = lastMap().markers.find((item) => item.getElement() === recorded);
+    expect(marker.getLngLat()).toEqual({ lat: 55.601, lng: 12.99 });
+
+    // And says what it was when clicked.
+    fireEvent.click(recorded);
+    expect(lastMap().popups[0].node.textContent).toContain('Observation #1');
   });
 });

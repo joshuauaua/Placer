@@ -5,7 +5,6 @@ import {
   StaticImageError,
   fetchAsDataUrl,
   fovFromPanoramaZoom,
-  staticMapUrl,
   streetViewBackgroundTiles,
   streetViewStaticUrl,
 } from '../staticMaps';
@@ -100,71 +99,6 @@ describe('streetViewStaticUrl', () => {
     const params = paramsOf(url);
     expect(params.fov).toBe('120');
     expect(params.pitch).toBe('90');
-  });
-});
-
-describe('staticMapUrl', () => {
-  it('targets the Maps Static endpoint centred on the given position', () => {
-    const url = staticMapUrl({ apiKey: KEY, center: LOCATION, zoom: 18 });
-
-    expect(url.startsWith('https://maps.googleapis.com/maps/api/staticmap?')).toBe(true);
-    expect(paramsOf(url)).toMatchObject({
-      center: '55.6054,12.9854',
-      zoom: '18',
-      size: '640x448',
-      key: KEY,
-    });
-  });
-
-  it('puts a pin at the centre only when asked to', () => {
-    expect(paramsOf(staticMapUrl({ apiKey: KEY, center: LOCATION })).markers).toBeUndefined();
-    expect(paramsOf(staticMapUrl({ apiKey: KEY, center: LOCATION, marker: true, pathColor: '#123F73' })).markers)
-      .toBe('color:0x123f73|55.6054,12.9854');
-  });
-
-  it('defaults to roadmap, since satellite and hybrid are refused under EEA terms', () => {
-    const url = staticMapUrl({ apiKey: KEY, center: LOCATION });
-    expect(paramsOf(url).maptype).toBe('roadmap');
-  });
-
-  it('asks for double-density pixels, which this endpoint supports and Street View does not', () => {
-    // 640x448 at scale 2 is delivered as 1280x896, enough to fill the 1000x700
-    // stage without upscaling, and still billed as one request.
-    expect(paramsOf(staticMapUrl({ apiKey: KEY, center: LOCATION })).scale).toBe('2');
-  });
-
-  it('clamps scale to what the API accepts', () => {
-    expect(paramsOf(staticMapUrl({ apiKey: KEY, center: LOCATION, scale: 4 })).scale).toBe('2');
-    expect(paramsOf(staticMapUrl({ apiKey: KEY, center: LOCATION, scale: 0 })).scale).toBe('1');
-  });
-
-  it('still accepts scale 1 for callers that want the smaller payload', () => {
-    expect(paramsOf(staticMapUrl({ apiKey: KEY, center: LOCATION, scale: 1 })).scale).toBe('1');
-  });
-
-  it('draws a filled polygon per path and lets Google fit the viewport, given paths instead of center/zoom', () => {
-    const shapes = [{ path: [{ lat: 1, lng: 2 }, { lat: 1, lng: 3 }, { lat: 2, lng: 3 }] }];
-    const url = staticMapUrl({ apiKey: KEY, paths: shapes, pathColor: '#2f91a2' });
-
-    const params = new URL(url).searchParams;
-    expect(params.getAll('path')).toEqual(['color:0x2f91a2ff|weight:2|fillcolor:0x2f91a240|1,2|1,3|2,3']);
-    expect(params.has('center')).toBe(false);
-    expect(params.has('zoom')).toBe(false);
-  });
-
-  it('draws one path per shape, in order', () => {
-    const shapes = [
-      { path: [{ lat: 1, lng: 2 }, { lat: 1, lng: 3 }, { lat: 2, lng: 3 }] },
-      { path: [{ lat: 5, lng: 6 }, { lat: 5, lng: 7 }, { lat: 6, lng: 7 }] },
-    ];
-    const url = staticMapUrl({ apiKey: KEY, paths: shapes });
-
-    expect(new URL(url).searchParams.getAll('path')).toHaveLength(2);
-  });
-
-  it('skips a shape with no points rather than emitting an empty path', () => {
-    const url = staticMapUrl({ apiKey: KEY, paths: [{ path: [] }] });
-    expect(new URL(url).searchParams.getAll('path')).toHaveLength(0);
   });
 });
 

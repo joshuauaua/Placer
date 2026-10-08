@@ -1,13 +1,13 @@
 /* PLACER — Toolkit: Stationary Activity Mapping.
  *
- * A map-based field observation tool. The Google Map is the dominant
+ * A map-based field observation tool. The map (OpenStreetMap) is the dominant
  * visual element; the recording card floats over its left half and
  * the tally sits below it. The user first clicks the map to pick a
  * location, then selects posture and activities, then records.
  * The site's text face (--placer-font) is used throughout.
  */
 
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Icon } from '../Icon';
 import { Panel, Readout } from '../ToolLayout';
 import { Btn, Chip, CopyButton } from '../UI';
@@ -22,6 +22,7 @@ import {
   peopleWord,
   summaryText,
 } from '../../lib/toolkit/stationaryActivity';
+import { addPin, createMap, onBackgroundClick, openPopup } from '../../lib/map';
 
 const MAP_CENTER = { lat: 55.6054, lng: 12.9854 };
 const MAP_ZOOM = 15;
@@ -36,119 +37,91 @@ function postureIconColor(postureKey) {
   return POSTURES[postureKey]?.color ?? '#888';
 }
 
+function describe(person) {
+  return {
+    posture: POSTURES[person.posture]?.label ?? person.posture,
+    activities: person.activities.map((k) => ACTIVITY_BY_KEY[k]?.label ?? k),
+  };
+}
+
+// What a recorded point says when it is clicked.
+function popupContent(person, id) {
+  const { posture, activities } = describe(person);
+  const node = document.createElement('div');
+  node.style.cssText = 'font-family:var(--placer-font);padding:2px 4px;min-width:150px;font-size:13px;line-height:1.5';
+  const heading = document.createElement('strong');
+  heading.style.color = postureIconColor(person.posture);
+  heading.textContent = posture;
+  node.append(heading);
+  activities.forEach((label) => {
+    const line = document.createElement('div');
+    line.textContent = label;
+    node.append(line);
+  });
+  const footer = document.createElement('div');
+  footer.style.cssText = 'font-size:11px;color:#888;margin-top:4px';
+  footer.textContent = `Observation #${id}`;
+  node.append(footer);
+  return node;
+}
+
 export function StationaryActivityMap({ t, tool }) {
   const mapRef = useRef(null);
-  const mapObjectRef = useRef(null);
-  const markersRef = useRef([]);
-  const [googleLoaded, setGoogleLoaded] = useState(() => !!window.google);
   const [map, setMap] = useState(null);
+  const [mapFailed, setMapFailed] = useState(false);
 
   const [observations, setObservations] = useState([]);
   const [posture, setPosture] = useState(null);
   const [activities, setActivities] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
-  const locationMarkerRef = useRef(null);
   const [last, setLast] = useState(null);
   const nextId = useRef(1);
 
   const counts = useMemo(() => tally(observations), [observations]);
   const activityList = posture ? ACTIVITIES_BY_POSTURE[posture] : [];
   const recordDisabled = !posture || activities.length === 0 || !selectedLocation;
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
-  /* --- Load Google Maps script --- */
+  /* --- Initialise map; a click on it picks the spot to record --- */
   useEffect(() => {
-    if (window.google) { setGoogleLoaded(true); return; }
-    if (!apiKey) return;
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.onload = () => setGoogleLoaded(true);
-    script.onerror = () => console.error('Failed to load Google Maps script');
-    document.head.appendChild(script);
-  }, [apiKey]);
-
-  /* --- Initialise map --- */
-  useEffect(() => {
-    if (!googleLoaded || !mapRef.current || mapObjectRef.current) return;
+    if (!mapRef.current) return undefined;
+    let osmMap;
     try {
-      const googleMap = new window.google.maps.Map(mapRef.current, {
-        center: MAP_CENTER, zoom: MAP_ZOOM,
-        mapTypeControl: true, streetViewControl: true,
-        styles: [{ featureType: 'all', elementType: 'geometry', stylers: [{ saturation: -20 }] }],
-      });
-      mapObjectRef.current = googleMap;
-      setMap(googleMap);
+      osmMap = createMap(mapRef.current, { center: MAP_CENTER, zoom: MAP_ZOOM });
     } catch (error) {
       console.error('Error initializing map:', error);
+      setMapFailed(true);
+      return undefined;
     }
-  }, [googleLoaded]);
+    onBackgroundClick(osmMap, (point) => setSelectedLocation(point));
+    setMap(osmMap);
+    return () => osmMap.remove();
+  }, []);
 
-  /* --- Sync observations to map markers --- */
+  /* --- One point per observation, where it was recorded --- */
   useEffect(() => {
-    if (!map) return;
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
-    observations.forEach((obs) => {
+    if (!map) return undefined;
+    const markers = observations.flatMap((obs) => {
       const person = normaliseObservation(obs);
-      if (!person) return;
-      const cell = obs.cell ?? Math.floor(Math.random() * 40);
-      const col = cell % 8;
-      const row = Math.floor(cell / 8);
-      const position = {
-        lat: MAP_CENTER.lat + (row - 2) * 0.002 + (col % 3 - 1) * 0.0005,
-        lng: MAP_CENTER.lng + (col - 4) * 0.002 + (row % 3 - 1) * 0.0005,
-      };
-      const color = postureIconColor(person.posture);
-      const marker = new window.google.maps.Marker({
-        position, map,
-        title: `${POSTURES[person.posture]?.label ?? person.posture}: ${person.activities.map((k) => ACTIVITY_BY_KEY[k]?.label ?? k).join(', ')}`,
-        icon: {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          scale: 10, fillColor: color, fillOpacity: 0.9,
-          strokeColor: '#FFFFFF', strokeWeight: 2,
-        },
-        zIndex: 10,
-      });
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: `<div style="font-family:var(--placer-font);padding:6px 10px;min-width:160px"><strong style="color:${color}">${POSTURES[person.posture]?.label ?? person.posture}</strong><br>${person.activities.map((k) => ACTIVITY_BY_KEY[k]?.label ?? k).join('<br>')}<div style="font-size:11px;color:#888;margin-top:4px">Observation #${person.id}</div></div>`,
-      });
-      marker.addListener('click', () => infoWindow.open(map, marker));
-      markersRef.current.push(marker);
+      if (!person || !obs.position) return [];
+      const { posture: postureLabel, activities: activityLabels } = describe(person);
+      return [addPin(map, obs.position, {
+        size: 20, fill: postureIconColor(person.posture), ring: '#FFFFFF',
+        title: `${postureLabel}: ${activityLabels.join(', ')}`,
+        onClick: () => openPopup(map, obs.position, popupContent(person, obs.id)),
+      })];
     });
-    return () => {
-      markersRef.current.forEach((m) => m.setMap(null));
-      markersRef.current = [];
-    };
+    return () => markers.forEach((marker) => marker.remove());
   }, [observations, map]);
 
-  /* --- Map click handler --- */
-  const handleMapClick = useCallback((event) => {
-    if (!event.latLng || !map) return;
-    const lat = event.latLng.lat();
-    const lng = event.latLng.lng();
-    setSelectedLocation({ lat, lng });
-    if (locationMarkerRef.current) locationMarkerRef.current.setMap(null);
-    const marker = new window.google.maps.Marker({
-      position: { lat, lng }, map,
-      title: 'Observation location',
-      icon: {
-        path: window.google.maps.SymbolPath.CIRCLE,
-        scale: 8, fillColor: tool.color, fillOpacity: 1,
-        strokeColor: '#FFFFFF', strokeWeight: 3,
-      },
-      zIndex: 20,
-    });
-    locationMarkerRef.current = marker;
-  }, [map, tool.color]);
-
+  /* --- The spot about to be recorded --- */
   useEffect(() => {
-    if (!map) return;
-    const listener = map.addListener('click', handleMapClick);
-    return () => {
-      if (window.google) window.google.maps.event.removeListener(listener);
-    };
-  }, [map, handleMapClick]);
+    if (!map || !selectedLocation) return undefined;
+    const marker = addPin(map, selectedLocation, {
+      size: 16, fill: tool.color, ring: '#FFFFFF', ringWidth: 3, zIndex: 2,
+      title: 'Observation location',
+    });
+    return () => marker.remove();
+  }, [map, selectedLocation, tool.color]);
 
   /* --- Handlers --- */
   function pickPosture(key) {
@@ -182,7 +155,7 @@ export function StationaryActivityMap({ t, tool }) {
   function record() {
     if (!posture || activities.length === 0 || !selectedLocation) return;
     const cell = Math.floor(Math.random() * 40);
-    const person = { id: nextId.current, posture, activities: [...activities], cell };
+    const person = { id: nextId.current, posture, activities: [...activities], cell, position: selectedLocation };
     nextId.current += 1;
     setObservations((current) => [...current, person]);
     setLast(person);
@@ -201,7 +174,6 @@ export function StationaryActivityMap({ t, tool }) {
     setPosture(null);
     setActivities([]);
     setSelectedLocation(null);
-    if (locationMarkerRef.current) { locationMarkerRef.current.setMap(null); locationMarkerRef.current = null; }
   }
 
   const locationStr = selectedLocation
@@ -320,7 +292,7 @@ export function StationaryActivityMap({ t, tool }) {
             </div>
           </div>
 
-          {/* Google Map container */}
+          {/* Map container */}
           <div
             ref={mapRef}
             role="group"
@@ -332,11 +304,10 @@ export function StationaryActivityMap({ t, tool }) {
             }}
           />
 
-          {/* No API key notice */}
-          {(!apiKey || !googleLoaded) && (
+          {mapFailed && (
             <div style={{ background: '#F5F5F5', borderLeft: `4px solid #111111`, color: '#111111',
               padding: 10, marginTop: 8, fontSize: 13, borderRadius: 6 }}>
-              <strong>Google Maps API Key Required</strong> — add <code>VITE_GOOGLE_MAPS_API_KEY</code> to <code>.env</code> to enable the map.
+              <strong>The map could not load.</strong> Try reloading the page.
             </div>
           )}
 

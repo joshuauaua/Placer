@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { photonFeature, stubPhoton } from '../../test/photon';
 import { OrganisationSetupPage } from '../OrganisationSetupPage';
 import {
   createOrganisation, removeOrganisationCoverFile, updateOrganisation, uploadOrganisationCover,
@@ -99,51 +100,22 @@ describe('OrganisationSetupPage', () => {
 describe('OrganisationSetupPage, address', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  // A stand-in for Google Places: the Autocomplete it builds is handed back so the test
-  // can "choose" a suggestion the way the real list would.
-  const withPlaces = async (place, run) => {
-    let placeChanged;
-    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'maps-key');
-    window.google = { maps: { places: { Autocomplete: vi.fn(function Autocomplete() {
-      this.getPlace = () => place;
-      this.addListener = (event, handler) => { placeChanged = handler; return { remove: vi.fn() }; };
-    }) } } };
-    try {
-      await run(async () => {
-        await waitFor(() => expect(placeChanged).toBeTypeOf('function'));
-        act(() => placeChanged());
-      });
-    } finally {
-      delete window.google;
-      vi.unstubAllEnvs();
-    }
-  };
+  afterEach(() => vi.unstubAllGlobals());
 
-  const STPLN = {
-    formatted_address: 'Malmöhusvägen 5, 211 18 Malmö, Sweden',
-    geometry: { location: { lat: () => 55.6054, lng: () => 12.9854 } },
-    address_components: [
-      { long_name: '5', types: ['street_number'] },
-      { long_name: 'Malmöhusvägen', types: ['route'] },
-      { long_name: 'Malmö', types: ['locality', 'political'] },
-      { long_name: 'Sweden', types: ['country', 'political'] },
-    ],
-  };
+  // Photon's answer for STPLN's address: a house, so no name of its own, only its parts.
+  const STPLN = photonFeature({ type: 'house', housenumber: '5', street: 'Malmöhusvägen',
+    postcode: '211 18', city: 'Malmö', state: 'Skåne', country: 'Sweden', lat: 55.6054, lng: 12.9854 });
 
   it('saves a chosen address with its point, and fills in the town and country from it', async () => {
     vi.mocked(createOrganisation).mockResolvedValue(ORG);
-    let onSaved;
+    stubPhoton([STPLN]);
+    const { onSaved } = setup();
 
-    await withPlaces(STPLN, async (choose) => {
-      ({ onSaved } = setup());
-      await choose();
-      // Any address, not only towns, and with the parts the town and country come from.
-      expect(window.google.maps.places.Autocomplete).toHaveBeenCalledWith(
-        screen.getByLabelText('Address'), expect.objectContaining({
-          fields: expect.arrayContaining(['address_components', 'geometry']) }));
-    });
+    // Any address, not only towns.
+    fireEvent.change(screen.getByLabelText('Address'), { target: { value: 'Malmöhusvägen 5' } });
+    fireEvent.mouseDown(await screen.findByRole('option', { name: /Malmöhusvägen 5/ }));
 
-    expect(screen.getByLabelText('Address')).toHaveValue('Malmöhusvägen 5, 211 18 Malmö, Sweden');
+    expect(screen.getByLabelText('Address')).toHaveValue('Malmöhusvägen 5, 211 18 Malmö, Skåne, Sweden');
     expect(screen.getByLabelText('Town and country')).toHaveValue('Malmö, Sweden');
 
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'STPLN' } });
@@ -151,7 +123,7 @@ describe('OrganisationSetupPage, address', () => {
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(createOrganisation).toHaveBeenCalledWith(expect.objectContaining({
-      address: 'Malmöhusvägen 5, 211 18 Malmö, Sweden',
+      address: 'Malmöhusvägen 5, 211 18 Malmö, Skåne, Sweden',
       locationPoint: { lat: 55.6054, lng: 12.9854 },
       location: 'Malmö, Sweden',
     }));

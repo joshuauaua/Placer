@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
-import { toPng } from 'html-to-image';
 import MapContainer from '../MapContainer';
 import { fetchImaginations } from '../../services/api';
 import { isSupabaseConfigured, readProjectLocations } from '../../services/projects';
 import { stitchPanoTiles } from '../../lib/panoStitch';
 import { resetGoogleMapsLoaderForTests } from '../../lib/googleMaps';
 import { CHARACTER } from '../../theme';
+import { clickLayer, clickMap, lastMap, maps } from '../../test/maplibreStub';
+import { photonFeature, stubPhoton } from '../../test/photon';
 
-vi.mock('html-to-image', () => ({
-  toPng: vi.fn(() => Promise.resolve('data:image/png;base64,mock')),
-}));
+// What the stand-in map's canvas reads back as: a capture of the map itself.
+const MAP_IMAGE = 'data:image/png;base64,MAP';
 
 vi.mock('../../services/api', () => ({
   fetchImaginations: vi.fn(() => Promise.resolve([])),
@@ -29,15 +29,16 @@ vi.mock('../../lib/panoStitch', () => ({
   stitchPanoTiles: vi.fn(() => Promise.resolve(STITCHED)),
 }));
 
-// A StreetViewPanorama stub. Defaults to hidden so the map capture path — which
-// this change leaves alone — stays the default in every pre-existing test.
+// A StreetViewPanorama stub. Defaults to hidden, the way the panorama starts out over
+// the map, so the map capture path is the default in every test.
 function mockPanorama({
   visible = false,
   position = { lat: 55.6, lng: 12.98 },
   pov = { heading: 0, pitch: 0 },
   zoom = 1,
 } = {}) {
-  return {
+  const listeners = {};
+  const panorama = {
     getVisible: vi.fn(() => visible),
     getPosition: vi.fn(() =>
       position && {
@@ -47,60 +48,42 @@ function mockPanorama({
     ),
     getPov: vi.fn(() => pov),
     getZoom: vi.fn(() => zoom),
+    setPano: vi.fn(),
+    setPov: vi.fn(),
+    setZoom: vi.fn(),
+    setVisible: vi.fn((next) => {
+      visible = next;
+      listeners.visible_changed?.();
+    }),
+    addListener: vi.fn((event, handler) => { listeners[event] = handler; }),
   };
+  return panorama;
 }
 
-// Captures the listeners MapContainer registers on the map, so tests can fire a
-// map click the way Maps would.
-let mapListeners = {};
-
-function mockGoogleMaps({ getZoom = vi.fn(() => 1), panorama = mockPanorama() } = {}) {
-  mapListeners = {};
+// Google, as far as Street View needs it. `coverage` is what StreetViewService answers
+// for the nearest photo: a pano id, or null for none nearby.
+function mockGoogleMaps({ panorama = mockPanorama(), coverage = 'pano-1' } = {}) {
   return {
     maps: {
-      Map: vi.fn(function () {
+      StreetViewPanorama: vi.fn(function () { return panorama; }),
+      StreetViewService: vi.fn(function () {
         return {
-          getZoom,
-          getStreetView: vi.fn(() => panorama),
-          setCenter: vi.fn(),
-          setZoom: vi.fn(),
-          panTo: vi.fn(),
-          addListener: vi.fn((event, handler) => { mapListeners[event] = handler; }),
+          getPanorama: vi.fn((request, callback) => callback(
+            coverage ? { location: { pano: coverage } } : null,
+            coverage ? 'OK' : 'ZERO_RESULTS',
+          )),
         };
       }),
-      Marker: vi.fn(function (options) {
-        const listeners = {};
-        return {
-          ...options,
-          setMap: vi.fn(),
-          addListener: vi.fn((event, handler) => { listeners[event] = handler; }),
-          // Test-only hook for firing a pin click the way Maps would.
-          fire: (event) => listeners[event]?.(),
-        };
-      }),
-      Polygon: vi.fn(function (options) {
-        const listeners = {};
-        return {
-          ...options,
-          setMap: vi.fn(),
-          addListener: vi.fn((event, handler) => { listeners[event] = handler; }),
-          // Test-only hook for firing a polygon click the way Maps would.
-          fire: (event) => listeners[event]?.(),
-        };
-      }),
-      SymbolPath: { CIRCLE: 'circle' },
-      event: { clearInstanceListeners: vi.fn() },
-      places: {
-        Autocomplete: vi.fn(function () {
-          return {
-            addListener: vi.fn(),
-            getPlace: vi.fn(() => ({})),
-          };
-        }),
-      },
+      StreetViewPreference: { NEAREST: 'nearest' },
+      StreetViewSource: { OUTDOOR: 'outdoor' },
     },
   };
 }
+
+// The pins drawn for imaginations: every marker that can be clicked. The spot chosen
+// for Street View is a marker too, but not one to click.
+const pins = () => (lastMap()?.markers ?? []).filter((marker) => marker.getElement().getAttribute('role') === 'button');
+const pinElements = () => pins().map((marker) => marker.getElement());
 
 describe('MapContainer', () => {
   afterEach(() => {
@@ -114,19 +97,24 @@ describe('MapContainer', () => {
     vi.mocked(fetchImaginations).mockResolvedValue([]);
     vi.mocked(isSupabaseConfigured).mockReturnValue(true);
     vi.mocked(readProjectLocations).mockResolvedValue([]);
-    // restoreAllMocks does not reach the module-level toPng mock, so its call
-    // history would otherwise leak between tests.
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
-  it('renders the "Google Maps API Key Required" warning banner when apiKey is empty', () => {
+  it('draws the map without a Google key, and offers no Street View without one', () => {
+    const appendChildSpy = vi.spyOn(document.head, 'appendChild');
     render(<MapContainer onCaptureView={vi.fn()} apiKey="" />);
-    expect(screen.getByText('Google Maps API Key Required')).toBeInTheDocument();
+
+    expect(maps).toHaveLength(1);
+    expect(screen.getByLabelText('Capture view')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Open Street View at the chosen spot')).not.toBeInTheDocument();
+    expect(appendChildSpy.mock.calls.some(([el]) => el.tagName === 'SCRIPT')).toBe(false);
   });
 
-  it('does not render the warning banner when apiKey is provided', () => {
+  it('offers Street View once Google has loaded', () => {
+    window.google = mockGoogleMaps();
     render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-    expect(screen.queryByText('Google Maps API Key Required')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Open Street View at the chosen spot')).toBeEnabled();
   });
 
   it('appends a script tag to document.head when apiKey is provided and window.google is absent', () => {
@@ -169,7 +157,8 @@ describe('MapContainer', () => {
   it('floats the search box centered along the bottom, on top of the map', () => {
     render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
-    const searchBox = screen.getByPlaceholderText('Search for an address...').parentElement;
+    // The field, inside its suggestion list's wrapper, inside the search box.
+    const searchBox = screen.getByPlaceholderText('Search for an address...').parentElement.parentElement;
     const floatingBar = searchBox.parentElement;
 
     expect(floatingBar).toHaveStyle({
@@ -185,7 +174,7 @@ describe('MapContainer', () => {
   it('places the capture button after the search box in the same floating bar', () => {
     render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
-    const searchBox = screen.getByPlaceholderText('Search for an address...').parentElement;
+    const searchBox = screen.getByPlaceholderText('Search for an address...').parentElement.parentElement;
     const floatingBar = searchBox.parentElement;
     const button = screen.getByLabelText('Capture view');
 
@@ -206,20 +195,20 @@ describe('MapContainer', () => {
 
     expect(onCaptureView).toHaveBeenCalledWith({
       position: { lat: 55.6054, lng: 12.9854 },
-      pov: { heading: 0, pitch: 0, zoom: 1 },
+      // The map's own zoom: it opens at 15.
+      pov: { heading: 0, pitch: 0, zoom: 15 },
       // A map capture has no panorama field of view.
       fov: null,
       source: 'map',
       timestamp: expect.any(String),
-      screenshot: 'data:image/png;base64,mock',
+      screenshot: MAP_IMAGE,
     });
   });
 
-  it('sends capture data with a numeric pov.zoom read from the live map', async () => {
-    const getZoom = vi.fn(() => 15);
-    window.google = mockGoogleMaps({ getZoom });
+  it('sends capture data with a whole-number pov.zoom read from the live map', async () => {
     const onCaptureView = vi.fn();
     render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
+    lastMap().zoom = 15.4;
 
     fireEvent.click(screen.getByLabelText('Capture view'));
 
@@ -227,13 +216,13 @@ describe('MapContainer', () => {
 
     const captureData = onCaptureView.mock.calls[0][0];
     expect(captureData.pov).toEqual({ heading: 0, pitch: 0, zoom: 15 });
-    expect(getZoom).toHaveBeenCalled();
   });
 
-  it('calls onCaptureView with screenshot: null when html-to-image throws', async () => {
-    toPng.mockImplementationOnce(() => Promise.reject(new Error('capture failed')));
+  it('calls onCaptureView with screenshot: null when the map cannot be read', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     const onCaptureView = vi.fn();
     render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
+    lastMap().canvas.toDataURL = () => { throw new Error('capture failed'); };
 
     fireEvent.click(screen.getByLabelText('Capture view'));
 
@@ -254,9 +243,9 @@ describe('MapContainer', () => {
   });
 
   describe('when a Street View panorama is open', () => {
-    // html-to-image cannot rasterize the panorama's WebGL canvas or its
-    // cross-origin tiles, so capture goes through Google's Street View Static
-    // API instead. These tests pin that routing.
+    // The panorama's WebGL canvas and cross-origin tiles cannot be read back, so
+    // capture goes through Google's Street View Static API instead. These tests pin
+    // that routing.
     function stubStaticImageFetch({ status = 200 } = {}) {
       const fetchMock = vi.fn(() => Promise.resolve({
         ok: status >= 200 && status < 300,
@@ -293,7 +282,7 @@ describe('MapContainer', () => {
 
       const requested = new URL(fetchMock.mock.calls[0][0]);
       expect(requested.pathname).toBe('/maps/api/streetview');
-      expect(toPng).not.toHaveBeenCalled();
+      expect(onCaptureView.mock.calls[0][0].screenshot).not.toBe(MAP_IMAGE);
     });
 
     it('fetches a grid of narrow tiles, since the endpoint caps one image at 640px', async () => {
@@ -444,20 +433,10 @@ describe('MapContainer', () => {
         .toEqual({ lat: 55.6054, lng: 12.9854 });
     });
 
-    it('falls back to a top-down map image when the spot has no Street View coverage', async () => {
+    it('falls back to the map at that spot when it has no Street View coverage', async () => {
       window.google = mockGoogleMaps({ panorama: mockPanorama(OPEN_PANORAMA) });
       // return_error_code=true makes Google 404 rather than serve a gray tile.
-      // Keyed on the endpoint rather than call order, since the tiles go out
-      // together and there is no guaranteed order among them.
-      const fetchMock = vi.fn((url) => Promise.resolve(
-        new URL(url).pathname === '/maps/api/streetview'
-          ? { ok: false, status: 404 }
-          : {
-            ok: true,
-            status: 200,
-            blob: () => Promise.resolve(new Blob(['tile'], { type: 'image/png' })),
-          }
-      ));
+      const fetchMock = vi.fn(() => Promise.resolve({ ok: false, status: 404 }));
       vi.stubGlobal('fetch', fetchMock);
       const onCaptureView = vi.fn();
       render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
@@ -465,16 +444,13 @@ describe('MapContainer', () => {
       fireEvent.click(screen.getByLabelText('Capture view'));
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
-      const requests = requestsOf(fetchMock);
-      const fallback = requests[requests.length - 1];
-      expect(fallback.pathname).toBe('/maps/api/staticmap');
-      expect(fallback.params.get('center')).toBe('55.60123,12.98456');
-      // Exactly one map request: a 404 from the tiles already means no coverage,
-      // so there is no point asking the same endpoint for the wide image too.
-      expect(requests.filter((r) => r.pathname === '/maps/api/staticmap')).toHaveLength(1);
-      expect(requests.filter((r) => r.pathname === '/maps/api/streetview')).toHaveLength(4);
-      expect(onCaptureView.mock.calls[0][0].screenshot)
-        .toMatch(/^data:image\/png;base64,/);
+      // A 404 from the tiles already means no coverage, so there is no point asking
+      // the same endpoint for the wide image too.
+      expect(requestsOf(fetchMock)).toHaveLength(4);
+      // The map, moved to where the panorama was and zoomed in, stands in for it.
+      expect(lastMap().center).toEqual({ lat: 55.60123, lng: 12.98456 });
+      expect(lastMap().zoom).toBe(18);
+      expect(onCaptureView.mock.calls[0][0].screenshot).toBe(MAP_IMAGE);
     });
 
     it('does not retry as a map image when the key is rejected with a 403', async () => {
@@ -486,49 +462,102 @@ describe('MapContainer', () => {
       fireEvent.click(screen.getByLabelText('Capture view'));
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
-      // A misconfigured key is not missing coverage — retrying either the wide
-      // image or the map fallback would just 403 again and hide the real cause.
+      // A misconfigured key is not missing coverage — retrying the wide image would
+      // just 403 again, and the map fallback would hide the real cause.
       const requests = requestsOf(fetchMock);
       expect(requests.every((r) => r.pathname === '/maps/api/streetview')).toBe(true);
       expect(onCaptureView.mock.calls[0][0].screenshot).toBeNull();
     });
   });
 
-  it('does not re-initialize Google Map when currentPosition changes', async () => {
-    let clickHandler;
-    const googleMaps = mockGoogleMaps();
-    googleMaps.maps.Map = vi.fn(function () {
-      return {
-        getZoom: vi.fn(() => 1),
-        getStreetView: vi.fn(() => mockPanorama()),
-        setCenter: vi.fn(),
-        setZoom: vi.fn(),
-        addListener: vi.fn((event, handler) => {
-          if (event === 'click') {
-            clickHandler = handler;
-          }
-        }),
-      };
-    });
-    window.google = googleMaps;
-
+  it('does not re-initialize the map when the chosen spot changes', async () => {
     const onCaptureView = vi.fn();
     render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-    expect(googleMaps.maps.Map).toHaveBeenCalledTimes(1);
+    expect(maps).toHaveLength(1);
 
-    act(() => {
-      clickHandler({ latLng: { lat: () => 1.2345, lng: () => 6.789 } });
-    });
+    act(() => clickMap(lastMap(), { lat: 1.2345, lng: 6.789 }));
 
-    // The captured payload is the only surface for currentPosition now that the
+    // The captured payload is the only surface for the chosen spot now that the
     // coordinate readout is gone — it proves the click updated state...
     fireEvent.click(screen.getByLabelText('Capture view'));
     await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
     expect(onCaptureView.mock.calls[0][0].position).toEqual({ lat: 1.2345, lng: 6.789 });
 
     // ...without the init effect rebuilding the map.
-    expect(googleMaps.maps.Map).toHaveBeenCalledTimes(1);
+    expect(maps).toHaveLength(1);
+    expect(lastMap().removed).toBe(false);
+  });
+
+  it('marks the chosen spot on the map', () => {
+    render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+    act(() => clickMap(lastMap(), { lat: 1.2345, lng: 6.789 }));
+
+    const spots = lastMap().markers.filter((marker) => !pins().includes(marker));
+    expect(spots).toHaveLength(1);
+    expect(spots[0].getLngLat()).toEqual({ lat: 1.2345, lng: 6.789 });
+  });
+
+  describe('Street View', () => {
+    it('opens at the nearest photo to the chosen spot', () => {
+      const panorama = mockPanorama();
+      window.google = mockGoogleMaps({ panorama, coverage: 'pano-42' });
+      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+      act(() => clickMap(lastMap(), { lat: 55.59, lng: 13.0 }));
+
+      act(() => fireEvent.click(screen.getByLabelText('Open Street View at the chosen spot')));
+
+      const service = window.google.maps.StreetViewService.mock.results[0].value;
+      expect(service.getPanorama).toHaveBeenCalledWith(
+        expect.objectContaining({ location: { lat: 55.59, lng: 13.0 }, radius: 100 }), expect.any(Function));
+      expect(panorama.setPano).toHaveBeenCalledWith('pano-42');
+      expect(panorama.setVisible).toHaveBeenCalledWith(true);
+      expect(screen.getByTestId('street-view')).toHaveStyle({ visibility: 'visible' });
+      // The legend describes the map, which is hidden behind the panorama.
+      expect(screen.queryByLabelText('Open Street View at the chosen spot')).not.toBeInTheDocument();
+    });
+
+    it('says so when there is no Street View near the chosen spot', () => {
+      const panorama = mockPanorama();
+      window.google = mockGoogleMaps({ panorama, coverage: null });
+      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+      act(() => fireEvent.click(screen.getByLabelText('Open Street View at the chosen spot')));
+
+      expect(screen.getByRole('status')).toHaveTextContent(/No Street View near this spot/);
+      expect(panorama.setVisible).not.toHaveBeenCalled();
+    });
+
+    it('goes back to the map where Street View had walked to', () => {
+      const panorama = mockPanorama({ position: { lat: 55.611, lng: 12.991 } });
+      window.google = mockGoogleMaps({ panorama });
+      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+      act(() => fireEvent.click(screen.getByLabelText('Open Street View at the chosen spot')));
+
+      act(() => fireEvent.click(screen.getByRole('button', { name: 'Back to the map' })));
+
+      expect(panorama.setVisible).toHaveBeenLastCalledWith(false);
+      expect(lastMap().center).toEqual({ lat: 55.611, lng: 12.991 });
+      expect(screen.getByTestId('street-view')).toHaveStyle({ visibility: 'hidden' });
+    });
+  });
+
+  describe('address search', () => {
+    it('suggests places and goes to the one chosen, making it the chosen spot', async () => {
+      stubPhoton([photonFeature({ name: 'Folkets Park', city: 'Malmö', country: 'Sweden', lat: 55.594, lng: 13.007 })]);
+      const onCaptureView = vi.fn();
+      render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
+
+      fireEvent.change(screen.getByPlaceholderText('Search for an address...'), { target: { value: 'Folkets' } });
+      fireEvent.mouseDown(await screen.findByRole('option', { name: /Folkets Park/ }));
+
+      expect(lastMap().center).toEqual({ lat: 55.594, lng: 13.007 });
+      expect(lastMap().zoom).toBe(17);
+      fireEvent.click(screen.getByLabelText('Capture view'));
+      await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
+      expect(onCaptureView.mock.calls[0][0].position).toEqual({ lat: 55.594, lng: 13.007 });
+    });
   });
 
   describe('imagination pins', () => {
@@ -548,35 +577,30 @@ describe('MapContainer', () => {
     ];
 
     it('drops one marker per saved imagination', async () => {
-      window.google = mockGoogleMaps();
       vi.mocked(fetchImaginations).mockResolvedValue(SAVED);
 
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
-      await waitFor(() =>
-        expect(window.google.maps.Marker).toHaveBeenCalledTimes(2)
-      );
+      await waitFor(() => expect(pins()).toHaveLength(2));
     });
 
     it('draws each pin in the citizen pin style and labels it with the title', async () => {
-      window.google = mockGoogleMaps();
       vi.mocked(fetchImaginations).mockResolvedValue(SAVED);
 
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
-      await waitFor(() => expect(window.google.maps.Marker).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(pins()).toHaveLength(2));
 
-      const [first, second] = window.google.maps.Marker.mock.calls.map((call) => call[0]);
-      expect(first.position).toEqual({ lat: 55.61, lng: 12.99 });
-      expect(first.title).toBe('Pocket park');
-      for (const pin of [first, second]) {
-        expect(pin.icon.fillColor).toBe(CHARACTER.citizen.c100);
-        expect(pin.icon.strokeColor).toBe(CHARACTER.citizen.c700);
+      const [first] = pins();
+      expect(first.getLngLat()).toEqual({ lat: 55.61, lng: 12.99 });
+      expect(screen.getByRole('button', { name: 'Pocket park' })).toBe(first.getElement());
+      for (const element of pinElements()) {
+        expect(element).toHaveStyle({ backgroundColor: CHARACTER.citizen.c100 });
+        expect(element.style.border).toContain('2px solid');
       }
     });
 
     it('skips imaginations saved without usable coordinates', async () => {
-      window.google = mockGoogleMaps();
       vi.mocked(fetchImaginations).mockResolvedValue([
         ...SAVED,
         { id: 'img-3', title: 'No position', cat: 'art', position: null },
@@ -586,21 +610,19 @@ describe('MapContainer', () => {
 
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
-      await waitFor(() => expect(window.google.maps.Marker).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(pins()).toHaveLength(2));
     });
 
     it('draws no pins when nothing has been saved yet', async () => {
-      window.google = mockGoogleMaps();
       vi.mocked(fetchImaginations).mockResolvedValue([]);
 
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
       await waitFor(() => expect(fetchImaginations).toHaveBeenCalled());
-      expect(window.google.maps.Marker).not.toHaveBeenCalled();
+      expect(pins()).toHaveLength(0);
     });
 
     it('keeps the map usable when the pins fail to load', async () => {
-      window.google = mockGoogleMaps();
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(fetchImaginations).mockRejectedValue(new Error('storage unavailable'));
 
@@ -608,21 +630,23 @@ describe('MapContainer', () => {
 
       await waitFor(() => expect(consoleError).toHaveBeenCalled());
       expect(screen.getByPlaceholderText('Search for an address...')).toBeInTheDocument();
-      expect(window.google.maps.Marker).not.toHaveBeenCalled();
+      expect(pins()).toHaveLength(0);
       consoleError.mockRestore();
     });
 
     it('removes its markers on unmount', async () => {
-      window.google = mockGoogleMaps();
       vi.mocked(fetchImaginations).mockResolvedValue(SAVED);
 
       const { unmount } = render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-      await waitFor(() => expect(window.google.maps.Marker).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(pins()).toHaveLength(2));
 
-      const markers = window.google.maps.Marker.mock.results.map((r) => r.value);
+      const map = lastMap();
+      const elements = pinElements();
       unmount();
 
-      markers.forEach((marker) => expect(marker.setMap).toHaveBeenCalledWith(null));
+      expect(map.markers).toHaveLength(0);
+      expect(map.removed).toBe(true);
+      elements.forEach((element) => expect(element).not.toBeInTheDocument());
     });
   });
 
@@ -630,18 +654,20 @@ describe('MapContainer', () => {
     const TRIANGLE = [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }];
     const PROJECT = { id: 'proj-1', name: 'Riverside Greenway', locationShapes: [{ path: TRIANGLE }] };
 
+    const areas = () => lastMap().getSource('project-areas')?.data.features ?? [];
+
     it('draws one polygon per shape a project has drawn', async () => {
-      window.google = mockGoogleMaps();
       vi.mocked(readProjectLocations).mockResolvedValue([PROJECT]);
 
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
-      await waitFor(() => expect(window.google.maps.Polygon).toHaveBeenCalledTimes(1));
-      expect(window.google.maps.Polygon.mock.calls[0][0].paths).toEqual(TRIANGLE);
+      await waitFor(() => expect(areas()).toHaveLength(1));
+      expect(areas()[0].geometry.coordinates[0].slice(0, 3))
+        .toEqual(TRIANGLE.map(({ lat, lng }) => [lng, lat]));
+      expect(areas()[0].properties).toEqual({ fill: CHARACTER.cityWorker.c300, stroke: CHARACTER.cityWorker.c700 });
     });
 
     it('draws a polygon for every shape across every project', async () => {
-      window.google = mockGoogleMaps();
       vi.mocked(readProjectLocations).mockResolvedValue([
         PROJECT,
         { id: 'proj-2', name: 'Second project', locationShapes: [{ path: TRIANGLE }, { path: TRIANGLE }] },
@@ -649,11 +675,10 @@ describe('MapContainer', () => {
 
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
-      await waitFor(() => expect(window.google.maps.Polygon).toHaveBeenCalledTimes(3));
+      await waitFor(() => expect(areas()).toHaveLength(3));
     });
 
     it('ignores a shape with fewer than 3 points', async () => {
-      window.google = mockGoogleMaps();
       vi.mocked(readProjectLocations).mockResolvedValue([
         { id: 'proj-1', name: 'Too small', locationShapes: [{ path: TRIANGLE.slice(0, 2) }] },
       ]);
@@ -661,60 +686,69 @@ describe('MapContainer', () => {
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
       await waitFor(() => expect(readProjectLocations).toHaveBeenCalled());
-      expect(window.google.maps.Polygon).not.toHaveBeenCalled();
+      await act(async () => {});
+      expect(areas()).toHaveLength(0);
     });
 
     it('draws no polygons when Supabase is not configured', async () => {
-      window.google = mockGoogleMaps();
       vi.mocked(isSupabaseConfigured).mockReturnValue(false);
 
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
-      await waitFor(() => expect(screen.getByPlaceholderText('Search for an address...')).toBeInTheDocument());
+      await act(async () => {});
       expect(readProjectLocations).not.toHaveBeenCalled();
-      expect(window.google.maps.Polygon).not.toHaveBeenCalled();
+      expect(areas()).toHaveLength(0);
     });
 
     it('sends you to the project\'s public page when its outline is clicked', async () => {
-      window.google = mockGoogleMaps();
       vi.mocked(readProjectLocations).mockResolvedValue([PROJECT]);
       const onOpenProject = vi.fn();
 
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" onOpenProject={onOpenProject} />);
 
-      await waitFor(() => expect(window.google.maps.Polygon).toHaveBeenCalledTimes(1));
-      const polygon = window.google.maps.Polygon.mock.results[0].value;
-      act(() => polygon.fire('click'));
+      await waitFor(() => expect(areas()).toHaveLength(1));
+      act(() => clickLayer(lastMap(), 'project-areas-fill', 0));
 
       expect(onOpenProject).toHaveBeenCalledWith('proj-1');
     });
 
+    it('does not count a click on an outline as choosing a spot', async () => {
+      vi.mocked(readProjectLocations).mockResolvedValue([PROJECT]);
+      const onCaptureView = vi.fn();
+      render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" onOpenProject={vi.fn()} />);
+      await waitFor(() => expect(areas()).toHaveLength(1));
+
+      act(() => clickLayer(lastMap(), 'project-areas-fill', 0));
+      fireEvent.click(screen.getByLabelText('Capture view'));
+
+      await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
+      expect(onCaptureView.mock.calls[0][0].position).toEqual({ lat: 55.6054, lng: 12.9854 });
+    });
+
     it('removes its polygons on unmount', async () => {
-      window.google = mockGoogleMaps();
       vi.mocked(readProjectLocations).mockResolvedValue([PROJECT]);
 
       const { unmount } = render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-      await waitFor(() => expect(window.google.maps.Polygon).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(areas()).toHaveLength(1));
 
-      const polygon = window.google.maps.Polygon.mock.results[0].value;
+      const map = lastMap();
       unmount();
 
-      expect(polygon.setMap).toHaveBeenCalledWith(null);
+      expect(map.getLayer('project-areas-fill')).toBeUndefined();
+      expect(map.getSource('project-areas')).toBeUndefined();
     });
   });
 
   describe('initialCenter', () => {
     it('opens on the default location and zoom when no centre is given', () => {
-      window.google = mockGoogleMaps();
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
-      const options = window.google.maps.Map.mock.calls[0][1];
-      expect(options.center).toEqual({ lat: 55.6054, lng: 12.9854 });
+      const options = lastMap().options;
+      expect(lastMap().center).toEqual({ lat: 55.6054, lng: 12.9854 });
       expect(options.zoom).toBe(15);
     });
 
     it('opens centred and zoomed in on the given position', () => {
-      window.google = mockGoogleMaps();
       render(
         <MapContainer
           onCaptureView={vi.fn()}
@@ -723,38 +757,35 @@ describe('MapContainer', () => {
         />
       );
 
-      const options = window.google.maps.Map.mock.calls[0][1];
-      expect(options.center).toEqual({ lat: 55.61, lng: 12.99 });
+      const options = lastMap().options;
+      expect(lastMap().center).toEqual({ lat: 55.61, lng: 12.99 });
       expect(options.zoom).toBe(17);
     });
 
     it('ignores an incomplete position and keeps the default', () => {
-      window.google = mockGoogleMaps();
       render(
         <MapContainer onCaptureView={vi.fn()} apiKey="test-key" initialCenter={{ lat: 55.61 }} />
       );
 
-      const options = window.google.maps.Map.mock.calls[0][1];
-      expect(options.center).toEqual({ lat: 55.6054, lng: 12.9854 });
+      const options = lastMap().options;
+      expect(lastMap().center).toEqual({ lat: 55.6054, lng: 12.9854 });
       expect(options.zoom).toBe(15);
     });
 
     it('opens over the place chosen as the account location, zoomed out to the town', () => {
-      window.google = mockGoogleMaps();
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" homeCenter={{ lat: 59.33, lng: 18.07 }} />);
 
-      const options = window.google.maps.Map.mock.calls[0][1];
-      expect(options.center).toEqual({ lat: 59.33, lng: 18.07 });
+      const options = lastMap().options;
+      expect(lastMap().center).toEqual({ lat: 59.33, lng: 18.07 });
       expect(options.zoom).toBe(13);
     });
 
     it('still opens on a just-posted imagination rather than the account location', () => {
-      window.google = mockGoogleMaps();
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key"
         initialCenter={{ lat: 55.61, lng: 12.99 }} homeCenter={{ lat: 59.33, lng: 18.07 }} />);
 
-      const options = window.google.maps.Map.mock.calls[0][1];
-      expect(options.center).toEqual({ lat: 55.61, lng: 12.99 });
+      const options = lastMap().options;
+      expect(lastMap().center).toEqual({ lat: 55.61, lng: 12.99 });
       expect(options.zoom).toBe(17);
     });
   });
@@ -780,13 +811,10 @@ describe('MapContainer', () => {
     ];
 
     const renderWithPins = async (saved = SAVED) => {
-      window.google = mockGoogleMaps();
       vi.mocked(fetchImaginations).mockResolvedValue(saved);
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-      await waitFor(() =>
-        expect(window.google.maps.Marker).toHaveBeenCalledTimes(saved.length)
-      );
-      return window.google.maps.Marker.mock.results.map((r) => r.value);
+      await waitFor(() => expect(pins()).toHaveLength(saved.length));
+      return pinElements().map((element) => ({ fire: () => fireEvent.click(element) }));
     };
 
     it('shows no preview until a pin is clicked', async () => {
@@ -797,7 +825,7 @@ describe('MapContainer', () => {
     it('opens the preview for the clicked pin', async () => {
       const markers = await renderWithPins();
 
-      act(() => markers[0].fire('click'));
+      markers[0].fire();
 
       expect(await screen.findByRole('dialog')).toBeInTheDocument();
       expect(screen.getByText('Pocket park')).toBeInTheDocument();
@@ -806,20 +834,19 @@ describe('MapContainer', () => {
 
     it('pans the map to the clicked pin', async () => {
       const markers = await renderWithPins();
-      const mapInstance = window.google.maps.Map.mock.results[0].value;
 
-      act(() => markers[1].fire('click'));
+      markers[1].fire();
 
-      expect(mapInstance.panTo).toHaveBeenCalledWith({ lat: 55.62, lng: 13.01 });
+      expect(lastMap().center).toEqual({ lat: 55.62, lng: 13.01 });
     });
 
     it('swaps the preview when a different pin is clicked', async () => {
       const markers = await renderWithPins();
 
-      act(() => markers[0].fire('click'));
+      markers[0].fire();
       expect(await screen.findByText('Pocket park')).toBeInTheDocument();
 
-      act(() => markers[1].fire('click'));
+      markers[1].fire();
 
       expect(await screen.findByText('Shade on 8th')).toBeInTheDocument();
       expect(screen.queryByText('Pocket park')).not.toBeInTheDocument();
@@ -827,7 +854,7 @@ describe('MapContainer', () => {
 
     it('closes the preview from its close button', async () => {
       const markers = await renderWithPins();
-      act(() => markers[0].fire('click'));
+      markers[0].fire();
       await screen.findByRole('dialog');
 
       fireEvent.click(screen.getByLabelText('Close preview'));
@@ -837,7 +864,7 @@ describe('MapContainer', () => {
 
     it('closes the preview on Escape', async () => {
       const markers = await renderWithPins();
-      act(() => markers[0].fire('click'));
+      markers[0].fire();
       await screen.findByRole('dialog');
 
       fireEvent.keyDown(window, { key: 'Escape' });
@@ -847,26 +874,27 @@ describe('MapContainer', () => {
 
     it('closes the preview when the map itself is clicked', async () => {
       const markers = await renderWithPins();
-      act(() => markers[0].fire('click'));
+      markers[0].fire();
       await screen.findByRole('dialog');
 
-      act(() => mapListeners.click({ latLng: null }));
+      act(() => clickMap(lastMap(), { lat: 10, lng: 20 }));
 
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
     it('still records the clicked position when the map click closes the preview', async () => {
       const markers = await renderWithPins();
-      act(() => markers[0].fire('click'));
+      markers[0].fire();
       await screen.findByRole('dialog');
 
       // Dismissing the card must not swallow the position update the map click
       // carries — the capture button depends on it.
-      act(() => mapListeners.click({ latLng: { lat: () => 10, lng: () => 20 } }));
+      act(() => clickMap(lastMap(), { lat: 10, lng: 20 }));
 
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-      fireEvent.click(screen.getByLabelText('Capture view'));
-      await waitFor(() => expect(toPng).toHaveBeenCalled());
+      // The chosen spot moved there.
+      expect(lastMap().markers.some((marker) => !pins().includes(marker)
+        && marker.getLngLat().lat === 10 && marker.getLngLat().lng === 20)).toBe(true);
     });
   });
 });

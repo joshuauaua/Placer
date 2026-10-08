@@ -16,7 +16,7 @@ import {
 } from '../services/auth';
 import { isSupabaseConfigured, readPreferences, savePreferences } from '../services/notifications';
 import { ProjectResponsesChoice } from './ProjectResponsesChoice';
-import { googleMapsApiKey, isGoogleMapsConfigured, loadGoogleMaps } from '../lib/googleMaps';
+import { PlaceSearch } from './PlaceSearch';
 
 // The same floor AuthPage and ResetPasswordPage ask for.
 const MIN_PASSWORD = 8;
@@ -210,48 +210,18 @@ function ProfileField({ t, profile, onSaveProfile, fieldKey, title, description,
 }
 
 /**
- * The location, with place suggestions as it is typed — the same Google Places search
- * as the map's own box, but only towns, cities and regions, since what is typed here is
+ * The location, with place suggestions as it is typed — the same OpenStreetMap search
+ * as the map's own box (PlaceSearch), but only towns, cities and regions, since what is typed here is
  * shown on the public profile. Choosing a suggestion also keeps where it is
  * (profile.locationPoint), which is where the Explore map opens; typed text that was
  * not chosen from the list is saved as it is, with no place, and Explore opens where it
- * always has. Without a Maps key it is a plain text field.
+ * always has.
  */
 function LocationField({ t, profile, onSaveProfile }) {
   const [value, setValue] = useState(profile?.location ?? '');
   // The place behind `value`, when it came from a suggestion; null once edited by hand.
   const [point, setPoint] = useState(profile?.locationPoint ?? null);
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
-  const inputRef = useRef(null);
-
-  useEffect(() => {
-    if (!isGoogleMapsConfigured()) return undefined;
-    let cancelled = false;
-    let listener = null;
-
-    loadGoogleMaps(googleMapsApiKey())
-      .then(() => {
-        if (cancelled || !inputRef.current || !window.google?.maps?.places) return;
-        const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-          types: ['(regions)'],
-          fields: ['geometry', 'formatted_address', 'name'],
-        });
-        listener = autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          const location = place?.geometry?.location;
-          if (!location) return;
-          setValue(place.formatted_address || place.name || '');
-          setPoint({ lat: location.lat(), lng: location.lng() });
-          setStatus('idle');
-        });
-      })
-      .catch((err) => console.error('Could not load place suggestions:', err));
-
-    return () => {
-      cancelled = true;
-      listener?.remove?.();
-    };
-  }, []);
 
   const trimmed = value.trim();
   const saved = profile?.locationPoint ?? null;
@@ -280,12 +250,12 @@ function LocationField({ t, profile, onSaveProfile }) {
         style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
         Location
       </label>
-      <input id="settings-location" ref={inputRef} type="text" value={value} placeholder="e.g. Malmö, Sweden"
-        autoComplete="off"
-        onChange={(e) => { setValue(e.target.value); setPoint(null); setStatus('idle'); }}
-        // Enter picks a suggestion in the Places list; it must not do anything else here.
-        onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
-        style={{ ...inputStyle(t), maxWidth: 380, marginBottom: 12 }} />
+      <div style={{ maxWidth: 380, marginBottom: 12 }}>
+        <PlaceSearch id="settings-location" value={value} placeholder="e.g. Malmö, Sweden" regions
+          onChange={(next) => { setValue(next); setPoint(null); setStatus('idle'); }}
+          onPick={(picked) => { setValue(picked.label); setPoint(picked.point); setStatus('idle'); }}
+          style={inputStyle(t)} />
+      </div>
       <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: 20 }}>
         {point
           ? 'Explore opens here.'

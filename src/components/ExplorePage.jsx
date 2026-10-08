@@ -8,8 +8,8 @@
  * Projects are drawn where they have outlined themselves, the same outline their own
  * page shows, with a pin in the middle so a small one can still be found zoomed out.
  * Organisations are pinned at the address they chose from the suggestions on their
- * setup form; one saved without that point is pinned wherever Google places its address
- * or town — see lib/geocode.js. Case studies have nowhere to come from yet
+ * setup form; one saved without that point is pinned wherever OpenStreetMap places its
+ * address or town — see lib/geocode.js. The map is OpenStreetMap's, through lib/map.js. Case studies have nowhere to come from yet
  * and wait as a filter that cannot be turned on.
  *
  * Imaginations are not here: they have their own map, MapContainer, which is also where
@@ -22,9 +22,8 @@ import { Btn } from './UI';
 import { FollowButton } from './FollowButton';
 import { PageHeader } from './PageHeader';
 import { CHARACTER, THEME } from '../theme';
-import { loadGoogleMaps } from '../lib/googleMaps';
 import { geocodePlace } from '../lib/geocode';
-import { MAP_STYLE } from '../lib/mapStyle';
+import { addPin, createMap, onBackgroundClick, showAreas, stylePin, toLngLat } from '../lib/map';
 import { isSupabaseConfigured, readMapProjects } from '../services/projects';
 import { readMapOrganisations } from '../services/organisations';
 
@@ -76,14 +75,13 @@ function toPlace(kind, item, position) {
       href: `/organisations/${encodeURIComponent(item.id)}` };
 }
 
-function pinIcon(character, selected) {
+function pinStyle(character, selected) {
   return {
-    path: window.google.maps.SymbolPath.CIRCLE,
-    scale: selected ? 13 : 9,
-    fillColor: selected ? character.c300 : character.c100,
-    fillOpacity: 1,
-    strokeColor: character.c700,
-    strokeWeight: selected ? 3 : 2,
+    size: selected ? 26 : 18,
+    fill: selected ? character.c300 : character.c100,
+    ring: character.c700,
+    ringWidth: selected ? 3 : 2,
+    zIndex: selected ? 2 : 1,
   };
 }
 
@@ -273,52 +271,38 @@ function ExploreSearch({ t, places, onPick, onPlace }) {
   );
 }
 
-export function ExplorePage({ apiKey = '', homeCenter = null, accountId = null, onSignIn,
+export function ExplorePage({ homeCenter = null, accountId = null, onSignIn,
   onOpenProject, onOpenOrganisation }) {
   const t = THEME;
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
-  const [googleLoaded, setGoogleLoaded] = useState(() => !!window.google);
   const [projects, setProjects] = useState([]);
   const [organisations, setOrganisations] = useState([]);
   const [shown, setShown] = useState({ projects: true, organisations: true });
   const [selected, setSelected] = useState(null);
-  // Each pin, by `${kind}-${id}`, so picking one can enlarge it without redrawing the rest.
+  // Each pin's element, by `${kind}-${id}`, so picking one can enlarge it without
+  // redrawing the rest.
   const markersRef = useRef(new Map());
 
   useEffect(() => {
-    let cancelled = false;
-    loadGoogleMaps(apiKey)
-      .then(() => { if (!cancelled) setGoogleLoaded(true); })
-      .catch((error) => console.error('Failed to load Google Maps script', error));
-    return () => { cancelled = true; };
-  }, [apiKey]);
-
-  useEffect(() => {
-    if (!googleLoaded || !mapRef.current) return undefined;
+    if (!mapRef.current) return undefined;
     const centre = hasCoords(homeCenter) ? homeCenter : DEFAULT_CENTER;
     try {
-      const googleMap = new window.google.maps.Map(mapRef.current, {
+      const osmMap = createMap(mapRef.current, {
         center: centre,
         zoom: hasCoords(homeCenter) ? HOME_ZOOM : DEFAULT_ZOOM,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-        styles: MAP_STYLE,
       });
       // A click on the map rather than on something drawn on it puts the preview away.
-      const clicks = googleMap.addListener('click', () => setSelected(null));
-      setMap(googleMap);
-      // Only this listener. Clearing every listener on the map would take Google's own
-      // with it, and the map would stop drawing its tiles.
-      return () => clicks.remove();
+      onBackgroundClick(osmMap, () => setSelected(null));
+      setMap(osmMap);
+      return () => osmMap.remove();
     } catch (error) {
       console.error('Error initializing maps:', error);
       return undefined;
     }
-    // homeCenter only seeds where the map opens; the map is made once, when Maps loads.
+    // homeCenter only seeds where the map opens; the map is made once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [googleLoaded]);
+  }, []);
 
   // Both are public reads, but both need a Supabase project to read from.
   useEffect(() => {
@@ -340,12 +324,12 @@ export function ExplorePage({ apiKey = '', homeCenter = null, accountId = null, 
     return () => { cancelled = true; };
   }, []);
 
-  // Organisations without a point get one once Maps is there to ask: from the address
+  // Organisations without a point get one from the geocoder: from the address
   // when there is one, which is the more exact of the two, or else the town. Each is
   // set as it comes back, so one slow or unknown place does not hold up the rest.
   const organisationCount = organisations.length;
   useEffect(() => {
-    if (!googleLoaded || organisationCount === 0) return undefined;
+    if (organisationCount === 0) return undefined;
     let cancelled = false;
     organisations.forEach((organisation) => {
       if (organisation.position) return;
@@ -358,7 +342,7 @@ export function ExplorePage({ apiKey = '', homeCenter = null, accountId = null, 
     return () => { cancelled = true; };
     // Re-run for a new list, not for each point it fills in.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [googleLoaded, organisationCount]);
+  }, [organisationCount]);
 
   const visible = useMemo(() => [
     ...(shown.projects ? projects : []),
@@ -367,36 +351,34 @@ export function ExplorePage({ apiKey = '', homeCenter = null, accountId = null, 
 
   // Draw what is switched on: a pin each, and for a project its outline too.
   useEffect(() => {
-    if (!map || !window.google) return undefined;
-    const overlays = [];
+    if (!map) return undefined;
     const markers = markersRef.current;
+    const pick = (place) => {
+      setSelected(place);
+      map.panTo(toLngLat(place.position));
+    };
 
-    visible.forEach((place) => {
+    const areas = visible.flatMap((place) => {
       const { character } = LAYERS.find(({ kind }) => kind === place.kind);
-      const pick = () => {
-        setSelected(place);
-        map.panTo(place.position);
-      };
+      return (place.shapes ?? []).map((shape) => ({
+        path: shape?.path ?? [], fill: character.c300, stroke: character.c700, place,
+      }));
+    });
+    const removeAreas = showAreas(map, 'explore-areas', areas,
+      { fillOpacity: 0.35, onClick: (area) => pick(area.place) });
 
-      (place.shapes ?? []).filter((shape) => (shape?.path?.length ?? 0) >= 3).forEach((shape) => {
-        const polygon = new window.google.maps.Polygon({
-          paths: shape.path, map, clickable: true,
-          fillColor: character.c300, fillOpacity: 0.35, strokeColor: character.c700, strokeWeight: 2,
-        });
-        polygon.addListener('click', pick);
-        overlays.push(polygon);
+    const pins = visible.map((place) => {
+      const { character } = LAYERS.find(({ kind }) => kind === place.kind);
+      const marker = addPin(map, place.position, {
+        ...pinStyle(character, false), title: place.title, onClick: () => pick(place),
       });
-
-      const marker = new window.google.maps.Marker({
-        position: place.position, map, title: place.title, icon: pinIcon(character, false), zIndex: 10,
-      });
-      marker.addListener('click', pick);
-      markers.set(`${place.kind}-${place.id}`, marker);
-      overlays.push(marker);
+      markers.set(`${place.kind}-${place.id}`, marker.getElement());
+      return marker;
     });
 
     return () => {
-      overlays.forEach((overlay) => overlay.setMap(null));
+      removeAreas();
+      pins.forEach((marker) => marker.remove());
       markers.clear();
     };
   }, [map, visible]);
@@ -409,15 +391,11 @@ export function ExplorePage({ apiKey = '', homeCenter = null, accountId = null, 
       return undefined;
     }
     const key = selected && `${selected.kind}-${selected.id}`;
-    const marker = key && markersRef.current.get(key);
-    if (!marker) return undefined;
+    const element = key && markersRef.current.get(key);
+    if (!element) return undefined;
     const { character } = LAYERS.find(({ kind }) => kind === selected.kind);
-    marker.setIcon?.(pinIcon(character, true));
-    marker.setZIndex?.(20);
-    return () => {
-      marker.setIcon?.(pinIcon(character, false));
-      marker.setZIndex?.(10);
-    };
+    stylePin(element, pinStyle(character, true));
+    return () => stylePin(element, pinStyle(character, false));
   }, [selected, visible]);
 
   useEffect(() => {
@@ -433,16 +411,14 @@ export function ExplorePage({ apiKey = '', homeCenter = null, accountId = null, 
     setShown((current) => ({ ...current, [layer.key]: true }));
     setSelected(place);
     if (map && hasCoords(place.position)) {
-      map.panTo(place.position);
-      map.setZoom(ITEM_ZOOM);
+      map.easeTo({ center: toLngLat(place.position), zoom: ITEM_ZOOM });
     }
   };
 
   const goToPlace = async (text) => {
     const position = await geocodePlace(text);
     if (!position || !map) return;
-    map.panTo(position);
-    map.setZoom(PLACE_ZOOM);
+    map.easeTo({ center: toLngLat(position), zoom: PLACE_ZOOM });
   };
 
   const openPlace = (place) => {
@@ -469,13 +445,6 @@ export function ExplorePage({ apiKey = '', homeCenter = null, accountId = null, 
             onToggle={(key) => setShown((current) => ({ ...current, [key]: !current[key] }))} />
           <PreviewCard t={t} place={selected} accountId={accountId} onSignIn={onSignIn} onOpen={openPlace} />
         </aside>
-        {!apiKey && (
-          <div style={{ position: 'absolute', left: 16, right: 16, bottom: 16, background: t.surface,
-            borderLeft: `4px solid ${t.ink}`, padding: 16, boxShadow: t.shadow }}>
-            <p style={{ fontWeight: 700, marginBottom: 4 }}>Google Maps API Key Required</p>
-            <p style={{ fontSize: 14 }}>Add your API key to .env to enable map functionality.</p>
-          </div>
-        )}
       </div>
     </div>
   );

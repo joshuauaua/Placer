@@ -194,9 +194,9 @@ export function parseSiteSearch(text) {
   return { lat, lng };
 }
 
-export function googleMapsUrl(site) {
+export function siteMapUrl(site) {
   if (!site || !Number.isFinite(site.lat) || !Number.isFinite(site.lng)) return null;
-  return `https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lng}`;
+  return `https://www.openstreetmap.org/?mlat=${site.lat}&mlon=${site.lng}#map=18/${site.lat}/${site.lng}`;
 }
 
 export function hasReflection(state) {
