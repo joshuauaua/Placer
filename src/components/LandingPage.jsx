@@ -72,7 +72,7 @@ function prefersReducedMotion() {
 
 /* The right of the landing card: one media card with the three slides stacked
  * in it, one showing at a time, rotating on their own every few seconds, with a dot
- * for each over the photo to jump to it. Rotation pauses while the pointer or
+ * for each centred along the photo's foot to jump to it. Rotation pauses while the pointer or
  * focus is on the carousel, which also keeps the waitlist dialog (rendered
  * inside its card) from being rotated away while it is open, and is off
  * entirely for anyone who prefers reduced motion. The hidden cards are inert,
@@ -117,19 +117,19 @@ function LandingCarousel({ t }) {
             </div>
           </div>
         ))}
-      </div>
 
-      <div className="placer-landing-dots">
-        {OPTIONS.map((option, i) => (
-          <button
-            key={option.key}
-            type="button"
-            className="placer-landing-dot"
-            aria-label={`Show card ${i + 1}: ${option.title}`}
-            aria-current={i === active ? 'true' : undefined}
-            onClick={() => setActive(i)}
-          />
-        ))}
+        <div className="placer-landing-dots">
+          {OPTIONS.map((option, i) => (
+            <button
+              key={option.key}
+              type="button"
+              className="placer-landing-dot"
+              aria-label={`Show card ${i + 1}: ${option.title}`}
+              aria-current={i === active ? 'true' : undefined}
+              onClick={() => setActive(i)}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -548,15 +548,17 @@ a {
   flex-direction: column;
 }
 
-/* All three slides share one grid cell, so the stack is as tall as the tallest
- * and the slides, colour and all, cross-fade in place. Only opacity changes: a
- * transform would trap the waitlist dialog, which is position:fixed inside its
- * slide. */
+/* All three slides share one grid area, so the stack is as tall as the tallest
+ * and the slides, colour and all, cross-fade in place. Two rows, the photo's and
+ * the bar's, which the slides take on as a subgrid: every bar is as tall as the
+ * tallest, so the photo's foot sits in one place and the dots can sit on it.
+ * Only opacity changes: a transform would trap the waitlist dialog, which is
+ * position:fixed inside its slide. */
 .placer-landing-slides {
   flex: 1 1 auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
 }
 
 /* One slide: the photo filling whatever height the bar leaves, the tinted bar
@@ -564,9 +566,10 @@ a {
  * card's 1px border); the card cannot clip it, as overflow on the card would
  * trap the waitlist dialog. */
 .placer-landing-option {
-  grid-area: 1 / 1;
-  display: flex;
-  flex-direction: column;
+  grid-column: 1;
+  grid-row: 1 / -1;
+  display: grid;
+  grid-template-rows: subgrid;
   border-top-right-radius: 6px;
   background: var(--placer-landing-option-bg);
   opacity: 0;
@@ -582,8 +585,8 @@ a {
 
 .placer-landing-option-photo {
   display: block;
-  flex: 1 1 0;
   width: 100%;
+  height: 100%;
   min-height: 240px;
   object-fit: cover;
   border-top-right-radius: 6px;
@@ -652,12 +655,15 @@ a {
   outline-offset: 2px;
 }
 
-/* Over the photo's top-right corner, on a small smoked pill so they read on
- * any picture. The blur is safe here: the waitlist dialog is not inside it. */
+/* Centred along the photo's foot, on a small smoked pill so they read on any
+ * picture. The blur is safe here: the waitlist dialog is not inside it. */
 .placer-landing-dots {
-  position: absolute;
-  top: 12px;
-  right: 12px;
+  grid-column: 1;
+  grid-row: 1;
+  align-self: end;
+  justify-self: center;
+  position: relative;
+  margin-bottom: 12px;
   display: flex;
   gap: 0;
   padding: 0 4px;
@@ -806,7 +812,7 @@ a {
   }
 
   .placer-landing-option-photo {
-    flex: none;
+    height: auto;
     min-height: 0;
     aspect-ratio: 4 / 3;
     border-radius: 0;
