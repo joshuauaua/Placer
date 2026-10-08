@@ -16,20 +16,19 @@ import photoWaitlist from '../assets/about-malmo.jpg';
 import photoUserLabs from '../assets/user-labs.webp';
 import photoSurvey from '../assets/placemaking-trends-cover.webp';
 import { HaveYourSay } from './HaveYourSay';
-import { Icon } from './Icon';
-import { ExternalLink } from './LegalLayout';
 import { CHARACTER } from '../theme';
 
 // Trimmed to its artwork and stored at 160px tall, so a height here is enough
-// to size it and the width stays in proportion.
-const FUNDER_HEIGHT = 52;
+// to size it and the width stays in proportion. Kept small and dimmed (see
+// index.css) so it reads as an endorsement rather than a second focal point.
+const FUNDER_HEIGHT = 32;
 
 // How long each card stays up before the next one rotates in.
 const ROTATE_MS = 6000;
 
-/* The three things a visitor can do, one card each, and each on one of the
- * three characters' colours in turn: a photo, the title that says what the link
- * is for, and the link. Each action is a render function so the card can hand
+/* The three things a visitor can do, one slide each, and each on one of the
+ * three characters' colours in turn: a photo, then a bar tinted in that colour
+ * with the title that says what the button is for, and the button. Each action is a render function so the card can hand
  * it the theme. */
 const OPTIONS = [
   {
@@ -57,11 +56,12 @@ const OPTIONS = [
   },
 ];
 
-/* What PLACER is for, under the pitch: an icon and a line for each. */
+/* What PLACER is for, under the pitch: a step number, a title and a line for
+ * each. */
 const FEATURES = [
-  { icon: 'search', title: 'Understand', text: 'how your community uses a place' },
-  { icon: 'sparkle', title: 'Imagine', text: 'new possibilities' },
-  { icon: 'layers', title: 'Plan', text: 'meaningful change' },
+  { title: 'Understand', text: 'how your community uses a place' },
+  { title: 'Imagine', text: 'new possibilities' },
+  { title: 'Plan', text: 'meaningful change' },
 ];
 
 function prefersReducedMotion() {
@@ -70,9 +70,9 @@ function prefersReducedMotion() {
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/* The right of the landing card: the three option cards stacked in one place,
- * one showing at a time, rotating on their own every few seconds, with a dot
- * for each underneath to jump to it. Rotation pauses while the pointer or
+/* The right of the landing card: one media card with the three slides stacked
+ * in it, one showing at a time, rotating on their own every few seconds, with a dot
+ * for each over the photo to jump to it. Rotation pauses while the pointer or
  * focus is on the carousel, which also keeps the waitlist dialog (rendered
  * inside its card) from being rotated away while it is open, and is off
  * entirely for anyone who prefers reduced motion. The hidden cards are inert,
@@ -109,10 +109,7 @@ function LandingCarousel({ t }) {
             aria-label={`${i + 1} of ${OPTIONS.length}`}
             aria-hidden={i !== active}
             inert={i !== active}
-            style={{
-              '--placer-landing-option-bg': option.colour.c100,
-              '--placer-landing-option-ink': option.colour.c900,
-            }}>
+            style={{ '--placer-landing-option-bg': option.colour.c50 }}>
             <img className="placer-landing-option-photo" src={option.photo} alt="" />
             <div className="placer-landing-option-body">
               <h2 className="placer-landing-option-title">{option.title}</h2>
@@ -131,11 +128,20 @@ function LandingCarousel({ t }) {
             aria-label={`Show card ${i + 1}: ${option.title}`}
             aria-current={i === active ? 'true' : undefined}
             onClick={() => setActive(i)}
-            style={{ backgroundColor: i === active ? OPTIONS[active].colour.c900 : OPTIONS[active].colour.c300 }}
           />
         ))}
       </div>
     </section>
+  );
+}
+
+/* A partner link in the credit line: no underline at rest, a hairline under it
+ * on hover and focus (see index.css). */
+function CreditLink({ href, children }) {
+  return (
+    <a className="placer-landing-credit-link" href={href} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
   );
 }
 
@@ -165,54 +171,52 @@ export function LandingPage({ t }) {
       </div>
 
       {/* The card over the drawing: what PLACER is on the left, and on the right
-        * the three things a visitor can do about it, on smaller cards that take
-        * turns, with the credit along the bottom. A phone stacks them, the pitch
+        * the three things a visitor can do about it, as slides of one media card
+        * that take turns, with the credit along the bottom. A phone stacks them, the pitch
         * first. */}
       <div className="placer-landing-column" style={{
         position: 'relative',
         margin: 'auto',
-        background: t.surface,
-        border: `1px solid ${t.line}`,
       }}>
         <div className="placer-landing-info">
           {/* The wordmark, then the pitch. Their sizes are set in index.css so a
             * phone can scale them down. */}
           <h1 className="placer-disp placer-landing-title" style={{ color: t.ink }}>PLACER</h1>
 
-          <div className="placer-landing-pitch" style={{ color: t.ink }}>
-            <p>Placer is the open toolkit for co-designing shared spaces.</p>
-          </div>
+          <p className="placer-landing-pitch">Placer is the open toolkit for co-designing shared spaces.</p>
 
-          {/* What it does, in three steps, each with an icon. */}
-          <ul className="placer-landing-features">
-            {FEATURES.map((feature) => (
+          {/* What it does, in three numbered steps. */}
+          <ol className="placer-landing-features">
+            {FEATURES.map((feature, i) => (
               <li key={feature.title} className="placer-landing-feature">
-                <span className="placer-landing-feature-icon" aria-hidden="true" style={{ color: t.ink }}>
-                  <Icon name={feature.icon} size={28} stroke={1.8} />
+                <span className="placer-landing-feature-step" aria-hidden="true">
+                  {i + 1}
                 </span>
-                <span style={{ color: t.ink }}>
-                  <strong>{feature.title}</strong> {feature.text}
+                <span>
+                  <strong className="placer-landing-feature-title">{feature.title}</strong>{' '}
+                  <span className="placer-landing-feature-text">{feature.text}</span>
                 </span>
               </li>
             ))}
-          </ul>
+          </ol>
 
-          <p className="placer-landing-pitch" style={{ color: t.ink }}>All in one shared workspace.</p>
+          <p className="placer-landing-tagline">All in one shared workspace.</p>
         </div>
 
         <LandingCarousel t={t} />
 
         {/* The credit and the funder lockup run the full width of the card,
           * under a rule. Hidden below 1024px (see index.css). */}
-        <div className="placer-landing-footer" style={{ borderTop: `1px solid ${t.line}` }}>
-          <p className="placer-landing-credit" style={{ fontSize: 15.5, color: t.inkDim, lineHeight: 1.7 }}>
-            PLACER is developed by <ExternalLink t={t} href="https://stpln.se/">STPLN</ExternalLink>{' '}
-            and <ExternalLink t={t} href="https://ankaraaks.com/">Ankara Aks</ExternalLink>, funded
+        <div className="placer-landing-footer">
+          <p className="placer-landing-credit">
+            PLACER is developed by <CreditLink href="https://stpln.se/">STPLN</CreditLink>{' '}
+            and <CreditLink href="https://ankaraaks.com/">Ankara Aks</CreditLink>, funded
             by the Swedish Institute.
           </p>
 
           {/* The lockup reads "Funded by Swedish Institute" as part of the artwork. */}
           <img
+            className="placer-landing-funder"
             src={logoSwedishInstitute}
             alt="Funded by Swedish Institute"
             style={{ height: FUNDER_HEIGHT, width: 'auto' }}

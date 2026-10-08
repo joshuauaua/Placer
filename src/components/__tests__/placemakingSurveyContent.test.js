@@ -182,7 +182,7 @@ describe('placemaking trends survey content', () => {
 
       expect(content.optIns.map((entry) => entry.key)).toEqual(['report', 'beta', 'anonymous']);
       expect(content.optIns[0].label).toMatch(/report/i);
-      expect(content.optIns[1].label).toMatch(/beta access/i);
+      expect(content.optIns[1].label).toMatch(/beta test/i);
       // The step's description tells respondents to pick the last option.
       expect(content.optIns.at(-1).anonymous).toBe(true);
     });

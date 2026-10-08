@@ -103,10 +103,10 @@ describe('PlacemakingTrendsSurveyPage', () => {
         target: { value: 'Rotterdam, Netherlands' },
       });
       fireEvent.change(field('Department'), { target: { value: 'Zoning' } });
-      fireEvent.change(field('Work Email Address'), { target: { value: 'not-an-email' } });
+      fireEvent.change(field('Email Address'), { target: { value: 'not-an-email' } });
       expect(button(content.steps.submitLabel)).toBeDisabled();
 
-      fireEvent.change(field('Work Email Address'), { target: { value: 'planner@city.gov' } });
+      fireEvent.change(field('Email Address'), { target: { value: 'planner@city.gov' } });
       expect(button(content.steps.submitLabel)).not.toBeDisabled();
     });
 
@@ -164,7 +164,7 @@ describe('PlacemakingTrendsSurveyPage', () => {
 
       fireEvent.click(optIn(content.optIns[0].label));
       fireEvent.change(field('Full Name'), { target: { value: 'A. Planner' } });
-      fireEvent.change(field('Work Email Address'), { target: { value: 'planner@city.gov' } });
+      fireEvent.change(field('Email Address'), { target: { value: 'planner@city.gov' } });
       fireEvent.change(field('Municipality / City & Country'), {
         target: { value: 'Rotterdam, Netherlands' },
       });
