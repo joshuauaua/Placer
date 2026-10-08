@@ -21,9 +21,17 @@ import { FOOTER_COLUMNS } from './SiteFooter';
 // Two columns: the project's own pages on the left, About Us on its own on the
 // right. Anything not named here falls into the left column.
 const RIGHT_COLUMN = ['About Us'];
+
+// Footer links the menu leaves out: the outside write-ups stay in the footer only.
+const NOT_IN_MENU = ['Project Announcement', 'Pilot Project'];
+const MENU_SECTIONS = FOOTER_COLUMNS.map((section) => ({
+  ...section,
+  links: section.links.filter(({ label }) => !NOT_IN_MENU.includes(label)),
+}));
+
 const MENU_COLUMNS = [
-  FOOTER_COLUMNS.filter(({ heading }) => !RIGHT_COLUMN.includes(heading)),
-  FOOTER_COLUMNS.filter(({ heading }) => RIGHT_COLUMN.includes(heading)),
+  MENU_SECTIONS.filter(({ heading }) => !RIGHT_COLUMN.includes(heading)),
+  MENU_SECTIONS.filter(({ heading }) => RIGHT_COLUMN.includes(heading)),
 ];
 
 export function HamburgerMenu({ t, view, onNavigate }) {
@@ -79,7 +87,7 @@ export function HamburgerMenu({ t, view, onNavigate }) {
               <div key={index} className="placer-menu-column">
                 {sections.map(({ heading, links }) => (
                   <section key={heading} className="placer-menu-section">
-                    <div className="placer-menu-heading" style={{ color: t.inkFaint }}>{heading}</div>
+                    <div className="placer-menu-heading" style={{ color: 'var(--placer-accent)' }}>{heading}</div>
                     {links.map(({ label, view: target, href }) => target ? (
                       <button
                         key={label}

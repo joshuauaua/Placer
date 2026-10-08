@@ -91,12 +91,14 @@ export function AboutPage({ t }) {
         t={t}
         src={userLabsPhoto}
         alt="People at a User Labs session pinning notes to a map and sketching on wooden boards outdoors."
+        heading={
+          <PhotoSplitHeading
+            t={t}
+            title="About PLACER"
+            subtitle="A toolkit for shaping shared spaces together."
+          />
+        }
       >
-        <PhotoSplitHeading
-          t={t}
-          title="About PLACER"
-          subtitle="A toolkit for shaping shared spaces together."
-        />
         <p style={{ marginTop: 20, fontSize: 17, lineHeight: 1.65, color: t.inkDim }}>
           Shared spaces belong to everyone who uses them, but the people who know
           them best are rarely the ones asked how they should change. PLACER gives

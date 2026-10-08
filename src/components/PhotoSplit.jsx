@@ -7,13 +7,19 @@
  * cannot override an inline style.
  */
 
-export function PhotoSplit({ t, src, alt, children }) {
+/* `heading`, when given, opens the copy on a wide screen, and on a phone moves
+ * onto the foot of the photo: the copy then dissolves into the grid (display:
+ * contents) so the heading can share the photo's cell. */
+export function PhotoSplit({ t, src, alt, heading, children }) {
   return (
-    <div className="placer-split" style={{ background: t.page }}>
+    <div className={`placer-split${heading ? ' placer-split-has-heading' : ''}`} style={{ background: t.page }}>
       <div className="placer-split-photo">
         <img src={src} alt={alt} />
       </div>
-      <div className="placer-split-copy">{children}</div>
+      <div className="placer-split-copy">
+        {heading && <div className="placer-split-heading">{heading}</div>}
+        <div className="placer-split-body">{children}</div>
+      </div>
     </div>
   );
 }
