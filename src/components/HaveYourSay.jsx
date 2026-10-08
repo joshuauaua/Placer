@@ -51,21 +51,10 @@ const TRIGGER_BG = CHARACTER.practitioner.c100;
 const TRIGGER_BORDER = CHARACTER.practitioner.c700;
 const TRIGGER_FG = '#111111';
 
-// The dialog is the nav bar's glass (see GLASS), so the survey inside paints no
-// page colour of its own and the glass shows through. The header, footer and
-// inputs stay white so the questions keep their contrast.
-const surveyTheme = (t) => ({ ...t, page: 'transparent' });
-
-// The nav bar's matte glass: 12% white over a 24px blur. The scrim under it is
-// a light dim rather than the usual dark one, as ink type on glass over black
-// would be unreadable.
-const GLASS = {
-  background: 'rgba(255, 255, 255, 0.12)',
-  WebkitBackdropFilter: 'blur(24px) saturate(140%)',
-  backdropFilter: 'blur(24px) saturate(140%)',
-  border: '1px solid rgba(255, 255, 255, 0.45)',
-};
-const SCRIM = 'rgba(17, 17, 17, 0.12)';
+// The dialog is plain white, the survey inside on the site's own white page,
+// over the usual dark scrim.
+const surveyTheme = (t) => ({ ...t, page: '#FFFFFF' });
+const SCRIM = 'rgba(0, 0, 0, 0.55)';
 
 // Above the cookie banner (200), so an open survey is not overlapped by it.
 const DIALOG_Z = 300;
@@ -178,7 +167,8 @@ export function HaveYourSay({ t, className }) {
               position: 'relative',
               width: '100%',
               maxWidth: 900,
-              ...GLASS,
+              background: '#FFFFFF',
+              border: `1px solid ${t.line}`,
               // Only the top right corner is rounded; the other three are square.
               borderRadius: '0 16px 0 0',
               boxShadow: t.shadow,
