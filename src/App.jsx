@@ -282,6 +282,34 @@ function MainApp({ initialView = 'welcome' }) {
     ?? (inToolkit ? 'toolkit' : projectView ?? organisationView ?? (personId ? 'profilePublic'
       : resourceSlug ? 'resourceArticle' : currentView));
 
+  // Pages scroll inside .placer-scroll-view, not the window, so that is what goes back
+  // to the top: whenever the page changes, and when the side nav is used (even for the
+  // page already open). The nav bar and side nav sit outside what scrolls, so they stay put.
+  const scrollPageToTop = () => document.querySelector('.placer-scroll-view')?.scrollTo?.(0, 0);
+  useEffect(() => { scrollPageToTop(); }, [view, location]);
+
+  // The side nav is fixed and runs from the nav bar down to the footer: as the footer
+  // comes up into the window, tell the CSS how much of the window it has taken.
+  useEffect(() => {
+    const update = () => {
+      const scroller = document.querySelector('.placer-scroll-view');
+      if (!scroller) return;
+      const footer = scroller.querySelector('footer');
+      const overlap = footer ? Math.max(0, window.innerHeight - footer.getBoundingClientRect().top) : 0;
+      scroller.style.setProperty('--placer-footer-overlap', `${overlap}px`);    };
+    update();
+    // Scroll events do not bubble, so listen in the capture phase from the document:
+    // that finds the scroll area whenever it is (re)rendered.
+    document.addEventListener('scroll', update, { passive: true, capture: true });
+    window.addEventListener('resize', update);
+    const timer = setTimeout(update, 300); // once the page's content has laid out
+    return () => {
+      document.removeEventListener('scroll', update, { capture: true });
+      window.removeEventListener('resize', update);
+      clearTimeout(timer);
+    };
+  }, [view, location]);
+
   // The imagine map fills the window and does not scroll, so it has no footer. Explore
   // scrolls like a page, its map in a frame of its own, with the footer under it.
   const fullHeight = view === 'imagine';
@@ -561,8 +589,10 @@ function MainApp({ initialView = 'welcome' }) {
               goes back to. Held back while the session is still being read, the same as
               the nav bar's right-hand end. */}
           {!identityLoading && profile && (
-            <SideNav t={t} view={view} onNavigate={show} onExplore={handleExplore}
-              onNewProject={showNewProject} showOrganisations={isSupabaseConfigured()} />
+            <SideNav t={t} view={view}
+              onNavigate={(next) => { show(next); scrollPageToTop(); }}
+              onExplore={() => { handleExplore(); scrollPageToTop(); }}
+              onNewProject={() => { showNewProject(); scrollPageToTop(); }} showOrganisations={isSupabaseConfigured()} />
           )}
 
           <div className="placer-app-page">

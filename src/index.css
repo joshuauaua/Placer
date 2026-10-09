@@ -1054,6 +1054,17 @@ a {
   min-height: 100%;
 }
 
+@media (min-width: 1024px) {
+  .placer-scroll-view:has(.placer-side-nav) .placer-app-page {
+    margin-left: 292px;
+    transition: margin-left 0.2s ease;
+  }
+
+  .placer-scroll-view:has(.placer-side-nav.is-collapsed) .placer-app-page {
+    margin-left: 84px;
+  }
+}
+
 .placer-app-page {
   flex: 1;
   min-width: 0;
@@ -1135,9 +1146,7 @@ a {
   justify-content: space-between;
   align-items: center;
   z-index: 160;
-  background: rgba(255, 255, 255, 0.12);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  backdrop-filter: blur(24px) saturate(140%);
+  background: #fff;
   box-shadow: var(--placer-shadow);
 }
 
@@ -1309,11 +1318,15 @@ a {
  */
 .placer-side-nav {
   flex: 0 0 auto;
-  position: sticky;
-  top: 12px;
-  align-self: flex-start;
-  margin: 12px 0 12px 12px;
-  height: calc(100vh - 64px - 24px);
+  /* Fixed: it never scrolls. It runs from under the nav bar to just above the
+     footer: MainApp sets --placer-footer-overlap to how far the footer has come up
+     into the window, and the bar gets that much shorter. The page gives up the room
+     beside it (see the margin below). */
+  position: fixed;
+  top: 76px;
+  left: 12px;
+  margin: 0;
+  height: calc(100vh - 64px - 24px - var(--placer-footer-overlap, 0px));
   width: 280px;
   box-sizing: border-box;
   padding: 12px;
@@ -1322,10 +1335,8 @@ a {
   gap: 4px;
   overflow-y: auto;
   z-index: 150;
-  background: rgba(255, 255, 255, 0.12);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  backdrop-filter: blur(24px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: #fff;
+  border: 1px solid var(--placer-grey-100);
   border-radius: var(--placer-radius-lg);
   box-shadow: var(--placer-shadow);
   transition: width 0.2s ease;
@@ -1447,6 +1458,24 @@ a {
   display: none;
 }
 
+/* Short laptop windows: with the footer up, the side nav has only what is left of the
+ * window, so its items and the footer's padding tighten up to keep every item whole. */
+@media (min-width: 1024px) and (max-height: 900px) {
+  .placer-side-nav {
+    padding: 8px;
+    gap: 2px;
+  }
+
+  .placer-side-nav .placer-side-nav-link {
+    height: 40px;
+  }
+
+  .placer-footer {
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
+}
+
 @media (max-width: 1023px) {
   .placer-side-nav,
   .placer-side-nav.is-collapsed {
@@ -1533,8 +1562,6 @@ a {
 /* Browsers without backdrop-filter get white at 85% instead of an unreadable
    clear glass. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .placer-glass-nav,
-  .placer-side-nav,
   .placer-glass {
     background: rgba(255, 255, 255, 0.85);
   }
