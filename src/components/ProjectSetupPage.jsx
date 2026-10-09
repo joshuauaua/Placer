@@ -15,7 +15,7 @@
  * Tools are only chosen here. Each is a template, configured for the project from its
  * dashboard afterwards (ConfigureToolDialog), and live on its public page from then. */
 
-import { DatePicker } from './DatePicker';
+import { DateRangePicker } from './DatePicker';
 import { useEffect, useState } from 'react';
 import { Btn } from './UI';
 import { Icon } from './Icon';
@@ -519,20 +519,11 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
           style={{ ...inputStyle(t), resize: 'vertical' }} />
       </Field>
 
-      <div style={{ display: 'flex', gap: 16, marginBottom: 0 }}>
-        <div style={{ flex: 1 }}>
-          <Field t={t} label="Start date" htmlFor="project-start">
-            <DatePicker t={t} id="project-start" value={startDate ?? ''}
-              onChange={setStartDate} style={inputStyle(t)} />
-          </Field>
-        </div>
-        <div style={{ flex: 1 }}>
-          <Field t={t} label="End date" htmlFor="project-end">
-            <DatePicker t={t} id="project-end" value={endDate ?? ''}
-              onChange={setEndDate} style={inputStyle(t)} />
-          </Field>
-        </div>
-      </div>
+      <Field t={t} label="Dates" htmlFor="project-dates"
+        hint="Optional. Tap a start and an end date, or drag across the days it runs.">
+        <DateRangePicker t={t} id="project-dates" start={startDate ?? ''} end={endDate ?? ''}
+          onChange={(start, end) => { setStartDate(start); setEndDate(end); }} style={inputStyle(t)} />
+      </Field>
 
       {budgetReady && (
         <BudgetQuestion t={t} hasBudget={hasBudget} onHasBudget={setHasBudget}
