@@ -343,7 +343,7 @@ describe('ProjectSetupPage, editing a project', () => {
     setup({ project: PROJECT });
 
     expect(screen.getByLabelText('Name *')).toHaveValue('Riverside Greenway');
-    expect(screen.getByLabelText('Start date')).toHaveValue('2026-01-01');
+    expect(screen.getByLabelText('Dates')).toHaveTextContent(/Jan.*Dec.*2026/);
     expect(screen.getByLabelText('Address')).toHaveValue('Folkets Park, Amiralsgatan 35, Malmö');
     expect(await screen.findByRole('button', { name: /Open Vote/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('radio', { name: /I want to push for change/ })).toBeChecked();
