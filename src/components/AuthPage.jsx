@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Btn } from './UI';
 import { Icon } from './Icon';
+import { CHARACTER } from '../theme';
 import {
   sendPasswordReset,
   signInWithGoogle,
@@ -51,20 +52,24 @@ function Field({ t, id, label, type, value, onChange, autoComplete, hint }) {
   );
 }
 
+// The page sits on the practitioner's purple 100, as the survey dialog does; the
+// form card stays white so the inputs keep their contrast.
+const PAGE_BG = CHARACTER.practitioner.c100;
+
 function Shell({ t, title, blurb, children }) {
   return (
-    <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
+    <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: PAGE_BG,
       padding: '48px 40px' }} className="placer-scroll">
       <div style={{ maxWidth: 440, margin: '0 auto' }}>
-        <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 700, color: t.ink,
-          letterSpacing: '-0.03em', marginBottom: 12, lineHeight: 1.15 }}>
-          {title}
-        </h1>
-        <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6, marginBottom: 32 }}>
-          {blurb}
-        </p>
         <section style={{ padding: 28, background: t.surface, borderRadius: 12,
           border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
+          <h1 className="placer-disp" style={{ fontSize: 28, fontWeight: 700, color: t.ink,
+            letterSpacing: '-0.03em', marginBottom: 8, lineHeight: 1.15 }}>
+            {title}
+          </h1>
+          <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 24 }}>
+            {blurb}
+          </p>
           {children}
         </section>
       </div>
@@ -309,13 +314,13 @@ export function AuthPage({ t, mode = 'signin', onNavigate }) {
 
   const title = awaiting
     ? 'Check your inbox'
-    : (signingUp ? 'Create an account' : 'Sign in');
+    : (signingUp ? 'Create an account' : 'Welcome back');
 
   const blurb = awaiting
     ? 'Your account is made. One more click and it is yours.'
     : (signingUp
-      ? 'An account is what lets an imagination you post belong to you, and follow you to another device.'
-      : 'Welcome back. Your imaginations are waiting wherever you left them.');
+      ? 'Sign up to get started'
+      : 'Sign in to access your account');
 
   return (
     <Shell t={t} title={title} blurb={blurb}>

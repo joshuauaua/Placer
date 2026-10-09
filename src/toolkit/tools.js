@@ -315,6 +315,32 @@ export function sortTools(tools, sort = 'recent', direction = 'desc') {
     .map(({ tool }) => tool);
 }
 
+/**
+ * Tools are templates: the Toolkit page shows each on its own, to understand and try
+ * out, and a project adds the ones it wants and fills them in for itself from its own
+ * page (ConfigureToolDialog). How a tool is filled in for a project:
+ *
+ *   'scene'  — Reimagine a Space: the place, and the photo of it people add to
+ *   'room'   — a tool that runs in a room: its `setup`, if it has one, and how long the
+ *              project's room stays open. Opening that room is what puts it live.
+ *   'none'   — nothing to fill in; configuring it only puts it live
+ */
+export function projectSetupKind(tool) {
+  if (tool.id === 'reimagine-a-space') return 'scene';
+  if (tool.room) return 'room';
+  return 'none';
+}
+
+/**
+ * Whether a project's tool is live: shown on its public page for people to use. A
+ * tool that runs in a room is live while the project has a room open for it; any
+ * other once it has been configured (project_tools.config, which is null until then).
+ * Until it is live, the dashboard offers to configure it.
+ */
+export function isToolLive(tool, { configured = false, openRoom = null } = {}) {
+  return projectSetupKind(tool) === 'room' ? Boolean(openRoom) : configured;
+}
+
 /** The category with this id, or null. */
 export function findCategory(id) {
   return CATEGORIES.find((category) => category.id === id) ?? null;

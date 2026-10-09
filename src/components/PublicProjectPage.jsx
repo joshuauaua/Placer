@@ -10,8 +10,9 @@
  * supabase/project-setup.sql) and have set up, not the whole Toolkit, and each is
  * presented in its own section under a heading said to the visitor rather than a
  * "Tools" list: an Open Vote is "We want your opinion" with the poll right there
- * (onProjectPage in toolkit/tools.js). A tool that runs in a room counts as set up
- * once a room is open for it (supabase/project-open-rooms.sql). What people have
+ * (onProjectPage in toolkit/tools.js). Only live tools are shown: configured for the
+ * project from its dashboard, or for one that runs in a room, with a room open for it
+ * (isToolLive in toolkit/tools.js, supabase/project-open-rooms.sql). What people have
  * imagined is not a section of its own either: imagining is Reimagine a Space, so the
  * imaginations show in that tool's section, and only once the project has added it.
  *
@@ -23,10 +24,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn, CatTag, LoadingMark, Vote } from './UI';
 import { ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
-import { findTool } from '../toolkit/tools';
+import { findTool, isToolLive } from '../toolkit/tools';
 import { readImaginationsByProject } from '../services/imaginations';
 import {
-  readLinks, readProject, readProjectAccess, readProjectTools, requestProjectAccess, readPublicToolkitActivity, readRelatedProjects, recordProjectView,
+  readConfiguredProjectTools, readLinks, readProject, readProjectAccess, readProjectTools, requestProjectAccess, readPublicToolkitActivity, readRelatedProjects, recordProjectView,
 } from '../services/projects';
 
 // The tool whose results are the project's imaginations (toolkit/tools.js).
@@ -306,6 +307,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   // The rooms opened for it that are still open: what "set up" means for a tool that
   // runs in a room.
   const [openRooms, setOpenRooms] = useState([]);
+  const [configuredTools, setConfiguredTools] = useState(new Set());
   const [imaginations, setImaginations] = useState([]);
   const [links, setLinks] = useState([]);
   const [toolkitActivity, setToolkitActivity] = useState(0);
@@ -342,8 +344,13 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         console.error("Could not load this project's open rooms:", err);
         return [];
       }),
+      // Which tools have been configured for the project, and so are live.
+      readConfiguredProjectTools(projectId).catch((err) => {
+        console.error("Could not load how this project's tools are set up:", err);
+        return new Set();
+      }),
     ])
-      .then(([proj, imgs, docs, activity, toolIds, rooms]) => {
+      .then(([proj, imgs, docs, activity, toolIds, rooms, configured]) => {
         if (cancelled) return;
         if (!proj) {
           // A private project reads as no project at all to somebody who cannot see
@@ -364,6 +371,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         setProject(proj);
         setTools(toolIds.map(findTool).filter(Boolean));
         setOpenRooms(rooms);
+        setConfiguredTools(configured);
         setImaginations(imgs);
         setLinks(docs);
         setToolkitActivity(activity);
@@ -410,12 +418,11 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   }, [accountId, projectId, status]);
 
   // How the tools it added are put to the visitor: each in a section of its own, under
-  // a heading said to them (onProjectPage in toolkit/tools.js). A tool that runs in a
-  // room is only shown once a room is open for it — until then it has been added but
-  // not set up. Reimagine a Space needs no room. Any other tool is there to try.
+  // a heading said to them (onProjectPage in toolkit/tools.js). Only the live ones: a
+  // tool added but not yet configured for the project is not shown (isToolLive).
   const presented = tools.flatMap((tool) => {
     const room = openRooms.find((candidate) => candidate.tool === tool.id) ?? null;
-    if (tool.room && !room) return [];
+    if (!isToolLive(tool, { configured: configuredTools.has(tool.id), openRoom: room })) return [];
     return [{ id: `project-tool-${tool.id}`, heading: tool.onProjectPage?.heading ?? `Try ${tool.name}`, tool, room }];
   });
 

@@ -650,6 +650,42 @@ export async function saveProjectToolConfig(projectId, tool, { address = '', poi
 }
 
 /**
+ * Which of a project's tools have been configured for it: their ids, in a Set. A
+ * tool's row holds a config once it has been (project_tools.config); see isToolLive in
+ * toolkit/tools.js for what that means for each kind of tool. Readable by anybody
+ * who can see the project, like the rest of the row.
+ */
+export async function readConfiguredProjectTools(projectId) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECT_TOOLS_TABLE)
+    .select('tool')
+    .eq('project_id', projectId)
+    .not('config', 'is', null);
+
+  if (error) throw new Error(`Could not load how the project's tools are set up: ${error.message}`);
+  return new Set((data ?? []).map((row) => row.tool));
+}
+
+/**
+ * Mark a tool with nothing to fill in as configured for a project, which puts it
+ * live: its config becomes an empty object rather than null. Owner or collaborator
+ * only, and the tool has to be one of the project's.
+ */
+export async function markProjectToolConfigured(projectId, tool) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECT_TOOLS_TABLE)
+    .update({ config: {} })
+    .eq('project_id', projectId)
+    .eq('tool', tool)
+    .select('tool');
+
+  if (error) throw new Error(`Could not put that tool live: ${error.message}`);
+  if (!data?.length) throw new Error('Could not put that tool live: it is not one of the project\'s tools.');
+}
+
+/**
  * Upload the base image of a project's Reimagine a Space scene and return its path,
  * to save with saveProjectToolConfig. Same rules as a project image: the project has
  * to exist, and the caller has to be its owner or a collaborator.
