@@ -783,7 +783,6 @@ function MainApp({ initialView = 'welcome' }) {
               <Suspense fallback={<LoadingFallback />}>
                 <ProjectDashboardPage t={t} accountId={accountId} projectId={projectRoute.id}
                   organisations={organisations}
-                  onOpenToolkit={showProjectToolkit}
                   onOpenRoom={showProjectRoom}
                   onNavigateToPublic={showProjectPublic}
                   onDeleted={() => show('projects')} />

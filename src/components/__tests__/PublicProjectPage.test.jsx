@@ -3,7 +3,7 @@ import { act, render, screen, fireEvent, waitFor, within } from '@testing-librar
 import { PublicProjectPage } from '../PublicProjectPage';
 import { readImaginationsByProject } from '../../services/imaginations';
 import {
-  readLinks, readProject, readProjectAccess, readProjectTools, readPublicToolkitActivity, readRelatedProjects,
+  readConfiguredProjectTools, readLinks, readProject, readProjectAccess, readProjectTools, readPublicToolkitActivity, readRelatedProjects,
   requestProjectAccess,
 } from '../../services/projects';
 import { follow, isFollowing, unfollow } from '../../services/follows';
@@ -21,6 +21,8 @@ vi.mock('../../services/projects', () => ({
   readPublicToolkitActivity: vi.fn(() => Promise.resolve(0)),
   readRelatedProjects: vi.fn(() => Promise.resolve([])),
   readProjectTools: vi.fn(() => Promise.resolve([])),
+  // Every tool configured unless a test says otherwise, so a tool added is a tool shown.
+  readConfiguredProjectTools: vi.fn(async () => new Set((await import('../../toolkit/tools')).TOOLS.map((tool) => tool.id))),
   readProjectToolConfig: vi.fn(() => Promise.resolve(null)),
   saveProjectToolConfig: vi.fn(() => Promise.resolve()),
   uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),
@@ -319,6 +321,26 @@ describe('PublicProjectPage, taking part', () => {
 
     expect(await screen.findByText('Nothing to take part in yet. Check back soon.')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'We want your opinion' })).not.toBeInTheDocument();
+  });
+
+  it('leaves out a tool that has not been configured for the project yet', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['desire-lines', 'reimagine-a-space']);
+    vi.mocked(readConfiguredProjectTools).mockResolvedValueOnce(new Set(['desire-lines']));
+
+    setup();
+
+    expect(await screen.findByRole('heading', { name: 'Try Desire Lines' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Share your idea for this place' })).not.toBeInTheDocument();
+  });
+
+  it('still shows the project when it cannot tell which tools are configured', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(readProjectTools).mockResolvedValue(['desire-lines']);
+    vi.mocked(readConfiguredProjectTools).mockRejectedValueOnce(new Error('network down'));
+
+    setup();
+
+    expect(await screen.findByText('Nothing to take part in yet. Check back soon.')).toBeInTheDocument();
   });
 
   it('links to a set-up tool it cannot put on the page, opening its room', async () => {

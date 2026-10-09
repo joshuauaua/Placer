@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { ProjectSetupPage, parseBudgetAmount } from '../ProjectSetupPage';
 import {
   createProject, readProjectBudget, readProjectToolConfig, readProjectTools, removeProjectImageFile,
-  saveProjectBudget, saveProjectToolConfig, saveProjectTools, updateProject, uploadSceneImage,
+  saveProjectBudget, saveProjectToolConfig, saveProjectTools, updateProject,
 } from '../../services/projects';
 import { THEME } from '../../theme';
 import { TOOLS } from '../../toolkit/tools';
@@ -593,17 +593,7 @@ describe('ProjectSetupPage, public or private', () => {
   });
 });
 
-describe('ProjectSetupPage, setting up Reimagine a Space', () => {
-  const PHOTO = new File(['photo'], 'park.jpg', { type: 'image/jpeg' });
-  const scene = () => screen.getByRole('region', { name: 'Set up Reimagine a Space' });
-  const addPhoto = () => fireEvent.change(within(scene()).getByLabelText(/Add a base image|Choose another/),
-    { target: { files: [PHOTO] } });
-
-  beforeEach(() => {
-    globalThis.URL.createObjectURL = vi.fn(() => 'blob:scene');
-    globalThis.URL.revokeObjectURL = vi.fn();
-  });
-
+describe('ProjectSetupPage, Reimagine a Space', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -617,111 +607,34 @@ describe('ProjectSetupPage, setting up Reimagine a Space', () => {
     next();
   };
 
-  it('asks for a location and a base image once it is chosen, starting at the project\'s place', () => {
-    setup();
-    toTools();
-    expect(screen.queryByRole('region', { name: 'Set up Reimagine a Space' })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /Reimagine a Space/ }));
-
-    expect(within(scene()).getByLabelText('Location *')).toHaveValue('Folkets Park, Amiralsgatan 35, Malmö');
-    expect(screen.getByRole('button', { name: /^Next/ })).toBeDisabled();
-  });
-
-  it('will not go on without a base image, or without a location', async () => {
-    setup();
-    toTools();
-    fireEvent.click(screen.getByRole('button', { name: /Reimagine a Space/ }));
-
-    addPhoto();
-    await waitFor(() => expect(screen.getByRole('button', { name: /^Next/ })).toBeEnabled());
-    fireEvent.change(within(scene()).getByLabelText('Location *'), { target: { value: '' } });
-    expect(screen.getByRole('button', { name: /^Next/ })).toBeDisabled();
-  });
-
-  it('uploads the base image once the project exists, and saves the scene on the tool', async () => {
+  it('is only chosen here, and configured from the dashboard afterwards', async () => {
     createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
     const { onSaved } = setup();
     toTools();
     fireEvent.click(screen.getByRole('button', { name: /Reimagine a Space/ }));
-    addPhoto();
-    await waitFor(() => expect(screen.getByRole('button', { name: /^Next/ })).toBeEnabled());
+
+    expect(screen.queryByLabelText('Location *')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Next/ })).toBeEnabled();
     next();
     fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['reimagine-a-space'], 'user-1');
-    expect(uploadSceneImage).toHaveBeenCalledWith('proj-1', PHOTO);
-    expect(saveProjectToolConfig).toHaveBeenCalledWith('proj-1', 'reimagine-a-space', {
-      address: 'Folkets Park, Amiralsgatan 35, Malmö', point: { lat: 55.59, lng: 13.01 },
-      imagePath: 'scenes/proj-1/scene-1.webp',
-    });
-    // The tool's row has to exist before its scene can be saved on it.
-    expect(saveProjectTools.mock.invocationCallOrder[0])
-      .toBeLessThan(saveProjectToolConfig.mock.invocationCallOrder[0]);
+    expect(saveProjectToolConfig).not.toHaveBeenCalled();
   });
 
-  describe('when editing', () => {
+  it('deletes the base image of its scene when the tool is dropped', async () => {
     const PROJECT = { id: 'proj-1', ownerId: 'user-1', name: 'Riverside Greenway', address: '', locations: [] };
-    const SAVED = {
-      address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 },
-      imagePath: 'scenes/proj-1/scene-0.webp', image: 'https://media.test/scenes/proj-1/scene-0.webp',
-    };
+    updateProject.mockResolvedValue(PROJECT);
+    readProjectTools.mockResolvedValueOnce(['reimagine-a-space']);
+    readProjectToolConfig.mockResolvedValueOnce({ imagePath: 'scenes/proj-1/scene-0.webp' });
+    const { onSaved } = setup({ project: PROJECT });
 
-    beforeEach(() => {
-      updateProject.mockResolvedValue(PROJECT);
-      readProjectTools.mockResolvedValueOnce(['reimagine-a-space']);
-      readProjectToolConfig.mockResolvedValueOnce(SAVED);
-    });
+    fireEvent.click(await screen.findByRole('button', { name: /Reimagine a Space/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
 
-    it('starts filled in with the scene it has, and keeps its image when only the location changes', async () => {
-      setup({ project: PROJECT });
-
-      expect(await screen.findByRole('img', { name: 'The base image' })).toHaveAttribute('src', SAVED.image);
-      expect(within(scene()).getByLabelText('Location *')).toHaveValue('Folkets Park, Malmö');
-      fireEvent.click(within(scene()).getByRole('button', { name: 'Pick the suggestion' }));
-      fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
-
-      await waitFor(() => expect(saveProjectToolConfig).toHaveBeenCalledWith('proj-1', 'reimagine-a-space', {
-        address: 'Folkets Park, Amiralsgatan 35, Malmö', point: { lat: 55.59, lng: 13.01 },
-        imagePath: SAVED.imagePath,
-      }));
-      expect(uploadSceneImage).not.toHaveBeenCalled();
-      expect(removeProjectImageFile).not.toHaveBeenCalled();
-    });
-
-    it('deletes the base image it replaces', async () => {
-      const { onSaved } = setup({ project: PROJECT });
-      await screen.findByRole('img', { name: 'The base image' });
-
-      addPhoto();
-      await waitFor(() => expect(screen.getByRole('img', { name: 'The base image' })).toHaveAttribute('src', 'blob:scene'));
-      fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
-
-      await waitFor(() => expect(onSaved).toHaveBeenCalled());
-      expect(saveProjectToolConfig).toHaveBeenCalledWith('proj-1', 'reimagine-a-space',
-        expect.objectContaining({ imagePath: 'scenes/proj-1/scene-1.webp' }));
-      expect(removeProjectImageFile).toHaveBeenCalledWith(SAVED.imagePath);
-    });
-
-    it('deletes the base image when the tool is dropped', async () => {
-      const { onSaved } = setup({ project: PROJECT });
-      fireEvent.click(await screen.findByRole('button', { name: /Reimagine a Space/ }));
-      fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
-
-      await waitFor(() => expect(onSaved).toHaveBeenCalled());
-      expect(saveProjectTools).toHaveBeenCalledWith('proj-1', [], 'user-1');
-      expect(saveProjectToolConfig).not.toHaveBeenCalled();
-      expect(removeProjectImageFile).toHaveBeenCalledWith(SAVED.imagePath);
-    });
-
-    it('will not save with the base image removed', async () => {
-      setup({ project: PROJECT });
-      await screen.findByRole('img', { name: 'The base image' });
-
-      fireEvent.click(within(scene()).getByRole('button', { name: /Remove/ }));
-
-      await waitFor(() => expect(screen.getByRole('button', { name: /Save changes/ })).toBeDisabled());
-    });
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(saveProjectTools).toHaveBeenCalledWith('proj-1', [], 'user-1');
+    expect(removeProjectImageFile).toHaveBeenCalledWith('scenes/proj-1/scene-0.webp');
   });
 });

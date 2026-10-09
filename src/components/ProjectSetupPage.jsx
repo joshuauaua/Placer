@@ -12,9 +12,8 @@
  * It replaced an outline drawn on a map; a project that already has one keeps it, and
  * the maps still draw it.
  *
- * Most tools are only chosen here, and set up later, when their room is opened.
- * Reimagine a Space is the exception: it has no room, so it is set up here, with the
- * location and base image everyone imagining for the project draws on (SceneSetup). */
+ * Tools are only chosen here. Each is a template, configured for the project from its
+ * dashboard afterwards (ConfigureToolDialog), and live on its public page from then. */
 
 import { useEffect, useState } from 'react';
 import { Btn } from './UI';
@@ -23,10 +22,9 @@ import { ImagePicker } from './ImagePicker';
 import { AddressInput } from './AddressInput';
 import {
   BUDGET_CURRENCIES, PROJECT_TYPES, VISIBILITIES, createProject, readProjectBudget, readProjectToolConfig,
-  readProjectTools, removeProjectImageFile, saveProjectBudget, saveProjectToolConfig, saveProjectTools,
-  updateProject, uploadProjectImage, uploadSceneImage,
+  readProjectTools, removeProjectImageFile, saveProjectBudget, saveProjectTools, updateProject, uploadProjectImage,
 } from '../services/projects';
-import { checkPickedImage, mediaUrl } from '../services/media';
+import { checkPickedImage } from '../services/media';
 import { TOOLS, findCategory } from '../toolkit/tools';
 
 // Matches DescribePage's form styling.
@@ -61,7 +59,7 @@ function Field({ t, label, htmlFor, hint, children }) {
 const STEPS = ['What is a project', 'Project type', 'The basics', 'The place', 'Tools', 'An image'];
 const LAST_STEP = STEPS.length - 1;
 
-// The tool set up on this page rather than when a room opens (toolkit/tools.js).
+// The tool whose scene has a base image to delete when it is dropped (toolkit/tools.js).
 const REIMAGINE_TOOL = 'reimagine-a-space';
 
 // The database's own limits (projects_name_shape, projects_summary_size), held here
@@ -194,8 +192,8 @@ function BudgetQuestion({ t, hasBudget, onHasBudget, amount, onAmount, currency,
 
 /**
  * The Toolkit, as a grid to choose a project's tools from. Each card is a toggle, and
- * all this holds is which ones are chosen. Setting one up happens when its room is
- * opened — or, for Reimagine a Space, in SceneSetup beneath it.
+ * all this holds is which ones are chosen. Each is configured for the project from its
+ * dashboard once it is saved.
  */
 function ToolPicker({ t, value, onChange }) {
   const toggle = (id) => onChange(value.includes(id) ? value.filter((tool) => tool !== id) : [...value, id]);
@@ -239,52 +237,6 @@ function ToolPicker({ t, value, onChange }) {
         );
       })}
     </ul>
-  );
-}
-
-/**
- * Reimagine a Space's setup for this project: where the place is, and the photo of it
- * that people place benches, trees and the rest on. Both are required — without them
- * there is nothing for anyone to draw on. Shown once the tool is chosen.
- */
-function SceneSetup({ t, address, point, image, onAddress, onPick, onImage, disabled }) {
-  const tool = TOOLS.find(({ id }) => id === REIMAGINE_TOOL);
-  return (
-    <section aria-label="Set up Reimagine a Space"
-      style={{ margin: '0 0 26px', padding: 20, borderRadius: 12, background: tool.wash,
-        border: `1.5px solid ${tool.color}` }}>
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: t.ink, margin: '0 0 6px' }}>Set up Reimagine a Space</h2>
-      <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.5, margin: '0 0 20px' }}>
-        People imagining for this project place their ideas on a photo you choose, of a place you choose,
-        instead of finding a spot in Street View.
-      </p>
-
-      <Field t={t} label="Location *" htmlFor="scene-address"
-        hint={'Where the photo is of. Pick it from the suggestions, so the ideas are pinned there on the map.'}>
-        <AddressInput id="scene-address" value={address}
-          placeholder="e.g. Folkets Park, Malmö" style={inputStyle(t)}
-          onChange={onAddress} onPick={onPick} />
-        {address.trim() && !point && (
-          <div style={{ fontSize: 13, color: t.inkFaint, marginTop: 8 }}>
-            Not pinned yet: pick the address from the suggestions.
-          </div>
-        )}
-      </Field>
-
-      <Field t={t} label="Base image *"
-        hint="The photo people add to. A wide, landscape photo of the place works best. It is resized, and saved without its location data.">
-        {image && (
-          <img src={image} alt="The base image" style={{ display: 'block', width: '100%', aspectRatio: '10 / 7',
-            objectFit: 'cover', borderRadius: 12, border: `1px solid ${t.line}`, marginBottom: 14 }} />
-        )}
-        <ImagePicker t={t} hasImage={!!image} uploadLabel="Add a base image" replaceLabel="Choose another"
-          onUpload={async (file) => {
-            checkPickedImage(file, 'A base image'); // Throws the same sentence the upload would.
-            onImage(file);
-          }}
-          onRemove={async () => onImage(null)} disabled={disabled} />
-      </Field>
-    </section>
   );
 }
 
@@ -365,14 +317,9 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   // false until they are, so a failed load can never save over them with nothing.
   const [tools, setTools] = useState([]);
   const [toolsReady, setToolsReady] = useState(!initialProject);
-  // Reimagine a Space's scene (SceneSetup). `savedScene` is what the project has now,
-  // so a replaced or dropped base image can be deleted once nothing points at it; the
-  // picked photo waits in `scenePending` until the save, like a new project's image.
-  const [savedScene, setSavedScene] = useState(null);
-  const [sceneAddress, setSceneAddress] = useState('');
-  const [scenePoint, setScenePoint] = useState(null);
-  const [scenePending, setScenePending] = useState(null); // { file, url } | null
-  const [sceneImageCleared, setSceneImageCleared] = useState(false);
+  // The base image of Reimagine a Space's scene, if it has been configured, so that
+  // dropping the tool here can delete it once nothing points at it.
+  const [sceneImagePath, setSceneImagePath] = useState(null);
   // The budget question: null until answered. Loaded first when editing, with the same
   // guard as the tools, so a failed read never saves over it.
   const [hasBudget, setHasBudget] = useState(null);
@@ -399,9 +346,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
       .then(([saved, scene]) => {
         if (cancelled) return;
         setTools(saved);
-        setSavedScene(scene);
-        setSceneAddress(scene?.address ?? '');
-        setScenePoint(scene?.point ?? null);
+        setSceneImagePath(scene?.imagePath ?? null);
         setToolsReady(true);
       })
       .catch((err) => console.error('Could not load the project\'s tools:', err));
@@ -421,7 +366,6 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
 
   // The preview URL holds the file in memory until it is revoked.
   useEffect(() => () => { if (pending) URL.revokeObjectURL(pending.url); }, [pending]);
-  useEffect(() => () => { if (scenePending) URL.revokeObjectURL(scenePending.url); }, [scenePending]);
 
   // Editing: the image saves straight away, like a cover in Settings, and the file it
   // replaces is deleted once the project points at the new one.
@@ -453,48 +397,9 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   const budgetValid = !hasBudget || !Number.isNaN(parseBudgetAmount(budgetAmount));
   const complete = name.trim().length > 0 && budgetValid;
 
-  const reimagining = tools.includes(REIMAGINE_TOOL);
-  const sceneImage = scenePending?.url ?? (sceneImageCleared ? null : savedScene?.image ?? null);
-  const sceneComplete = !reimagining || (!!sceneImage && sceneAddress.trim().length > 0 && !!scenePoint);
-
-  // Choosing Reimagine a Space starts its location at the project's own, which is
-  // usually the place in question.
-  const chooseTools = (next) => {
-    if (next.includes(REIMAGINE_TOOL) && !tools.includes(REIMAGINE_TOOL) && !sceneAddress.trim()) {
-      setSceneAddress(address);
-      setScenePoint(point);
-    }
-    setTools(next);
-  };
-
-  const pickSceneImage = (file) => {
-    setScenePending(file ? { file, url: URL.createObjectURL(file) } : null);
-    setSceneImageCleared(!file);
-  };
-
-  // After the tools are saved, so the row the scene goes on exists — or is gone, when
-  // the tool was dropped, and then only its base image is left to delete.
-  const saveScene = async (projectId) => {
-    const previousPath = savedScene?.imagePath ?? null;
-    if (!reimagining) {
-      setSavedScene(null);
-      await removeProjectImageFile(previousPath);
-      return;
-    }
-    const imagePath = scenePending ? await uploadSceneImage(projectId, scenePending.file) : previousPath;
-    await saveProjectToolConfig(projectId, REIMAGINE_TOOL, {
-      address: sceneAddress.trim(), point: scenePoint, imagePath,
-    });
-    // Saved, so a second try does not upload the same photo again.
-    setSavedScene({ address: sceneAddress.trim(), point: scenePoint, imagePath, image: mediaUrl(imagePath) });
-    setScenePending(null);
-    setSceneImageCleared(false);
-    if (previousPath && previousPath !== imagePath) await removeProjectImageFile(previousPath);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!complete || !sceneComplete || status === 'saving') return;
+    if (!complete || status === 'saving') return;
 
     setStatus('saving');
     setError(null);
@@ -550,18 +455,11 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
         }
       }
 
-      if (toolsReady && (reimagining || savedScene)) {
-        try {
-          await saveScene(saved.id);
-        } catch (sceneError) {
-          console.error('Could not set up Reimagine a Space:', sceneError);
-          setProject(saved);
-          setPending(null);
-          setError(`The project was saved, but Reimagine a Space could not be set up: ${sceneError.message} `
-            + 'Save again to try once more.');
-          setStatus('idle');
-          return;
-        }
+      // Dropping Reimagine a Space drops its scene with its row; its base image is
+      // deleted here, since nothing points at it any more.
+      if (toolsReady && sceneImagePath && !tools.includes(REIMAGINE_TOOL)) {
+        removeProjectImageFile(sceneImagePath).catch((err) => console.error('Could not remove the base image:', err));
+        setSceneImagePath(null);
       }
 
       if (budgetReady && hasBudget !== null) {
@@ -687,15 +585,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   );
 
   const toolsField = toolsReady ? (
-    <>
-      <ToolPicker t={t} value={tools} onChange={chooseTools} />
-      {reimagining && (
-        <SceneSetup t={t} address={sceneAddress} point={scenePoint} image={sceneImage}
-          onAddress={(next) => { setSceneAddress(next); setScenePoint(null); }}
-          onPick={(picked) => { setSceneAddress(picked.address); setScenePoint(picked.point); }}
-          onImage={pickSceneImage} disabled={status === 'saving'} />
-      )}
-    </>
+    <ToolPicker t={t} value={tools} onChange={setTools} />
   ) : (
     <p style={{ fontSize: 14, color: t.inkDim, marginBottom: 26 }}>Loading the project&rsquo;s tools…</p>
   );
@@ -738,7 +628,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
 
         <h2 style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>Tools</h2>
         <p style={{ fontSize: 13, color: t.inkDim, marginBottom: 14, lineHeight: 1.5 }}>
-          The tools this project will use. Most are set up when you open them for people to take part.
+          The tools this project will use. Each is configured for it from its dashboard.
         </p>
         {toolsField}
 
@@ -750,7 +640,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
 
         <div style={{ display: 'flex', gap: 12 }}>
           <Btn t={t} type="submit" variant="primary" icon="check"
-            disabled={!complete || !sceneComplete || status === 'saving'}>
+            disabled={!complete || status === 'saving'}>
             {status === 'saving' ? 'Saving…' : 'Save changes'}
           </Btn>
           {onCancel && (
@@ -788,7 +678,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   }
 
   // What has to be filled in before a step lets you past it.
-  const stepReady = step === 1 ? !!projectType : step === 2 ? complete : step === 4 ? sceneComplete : true;
+  const stepReady = step === 1 ? !!projectType : step === 2 ? complete : true;
 
   // Enter in a field moves on a step rather than starting the project early.
   const onStepSubmit = (e) => {
@@ -821,8 +711,8 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
         )}
         {step === 4 && (
           <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6 }}>
-            Choose the tools this project will use. Most you set up later, when you open them for
-            people to take part — and you can change which ones from the project&rsquo;s setup.
+            Choose the tools this project will use. Each is a template: once the project is started,
+            configure it from the project&rsquo;s dashboard and it goes live on its page.
           </p>
         )}
       </div>
@@ -846,7 +736,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
           </Btn>
         ) : (
           <Btn t={t} type="submit" variant="primary" icon="check"
-            disabled={!complete || !sceneComplete || status === 'saving'}>
+            disabled={!complete || status === 'saving'}>
             {status === 'saving' ? 'Saving…' : 'Start project'}
           </Btn>
         )}

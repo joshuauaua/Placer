@@ -6,7 +6,8 @@ import { Icon } from './Icon';
 import { Btn, LoadingMark } from './UI';
 import { ProjectViewsChart } from './ProjectViewsChart';
 import { ProjectSetupPage } from './ProjectSetupPage';
-import { TOOLS, findTool } from '../toolkit/tools';
+import { TOOLS, findTool, isToolLive } from '../toolkit/tools';
+import { ConfigureToolDialog } from './ConfigureToolDialog';
 import {
   codeJoinUrl,
   formatPin,
@@ -28,6 +29,7 @@ import {
   readLinks,
   readProject,
   readProjectRooms,
+  readConfiguredProjectTools,
   readProjectTools,
   readStats,
   readProjectViews,
@@ -274,11 +276,11 @@ function ToolMenuItem({ t, tool, onClick }) {
 }
 
 /**
- * "Open Toolkit for this project" needed to become a choice once the Toolkit held
- * more than one tool — same dismissal shape as UserMenu's dropdown, which is
- * this app's first one.
+ * Adds a tool to the project, from the Toolkit's tools it does not have yet — same
+ * dismissal shape as UserMenu's dropdown, which is this app's first one.
  */
-function AddToolkitTool({ t, onChoose }) {
+function AddToolkitTool({ t, chosen = [], onChoose }) {
+  const available = TOOLS.filter((tool) => !chosen.includes(tool.id));
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
@@ -303,6 +305,7 @@ function AddToolkitTool({ t, onChoose }) {
       <button
         aria-haspopup="menu"
         aria-expanded={open}
+        disabled={available.length === 0}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
         style={{ height: 42, padding: '0 18px', borderRadius: 12, cursor: 'pointer',
           display: 'inline-flex', alignItems: 'center', gap: 8, background: t.accent,
@@ -322,7 +325,7 @@ function AddToolkitTool({ t, onChoose }) {
             minWidth: 240, padding: '6px 0', background: t.surface,
             border: `1px solid ${t.line}`, borderRadius: 12, boxShadow: t.shadow,
             overflow: 'hidden' }}>
-          {TOOLS.map((tool) => (
+          {available.map((tool) => (
             <ToolMenuItem key={tool.id} t={t} tool={tool}
               onClick={() => { setOpen(false); onChoose(tool.id); }} />
           ))}
@@ -332,8 +335,13 @@ function AddToolkitTool({ t, onChoose }) {
   );
 }
 
-/** A tool chosen for this project (project_tools), opened with the project attached. */
-function ChosenToolRow({ t, tool, onOpen }) {
+/**
+ * One of this project's tools (project_tools): live on the public page, or waiting to
+ * be configured for the project first (ConfigureToolDialog). A tool that runs in a room
+ * is live while its room is open, and that room is listed under Open rooms; any other
+ * live tool can be configured again.
+ */
+function ChosenToolRow({ t, tool, live, inRoom, onConfigure }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
       padding: '12px 0', borderTop: `1px solid ${t.line}` }}>
@@ -343,11 +351,26 @@ function ChosenToolRow({ t, tool, onOpen }) {
           <Icon name={tool.icon} size={18} stroke={2} />
         </span>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>{tool.name}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>{tool.name}</span>
+            <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700,
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+              background: live ? '#E3F4E8' : t.surfaceAlt, color: live ? '#1E6B3A' : t.inkDim }}>
+              {live ? 'Live' : 'Not configured'}
+            </span>
+          </div>
           {tool.tagline && <div style={{ fontSize: 12.5, color: t.inkDim }}>{tool.tagline}</div>}
         </div>
       </div>
-      <Btn t={t} variant="secondary" size="sm" onClick={onOpen} ariaLabel={`Open ${tool.name}`}>Open</Btn>
+      {!live ? (
+        <Btn t={t} variant="primary" size="sm" onClick={onConfigure} ariaLabel={`Configure ${tool.name}`}>
+          Configure
+        </Btn>
+      ) : !inRoom && (
+        <Btn t={t} variant="secondary" size="sm" onClick={onConfigure} ariaLabel={`Configure ${tool.name} again`}>
+          Edit
+        </Btn>
+      )}
     </div>
   );
 }
@@ -527,7 +550,7 @@ function DeleteProjectDialog({ t, project, onDeleted, onClose }) {
  * controls; a plain collaborator sees everything else.
  */
 export function ProjectDashboardPage({ t, accountId, projectId, organisations = [],
-  onOpenToolkit, onOpenRoom, onNavigateToPublic, onDeleted }) {
+  onOpenRoom, onNavigateToPublic, onDeleted }) {
   const [project, setProject] = useState(null);
   const [status, setStatus] = useState('loading');
   const [editing, setEditing] = useState(false);
@@ -550,10 +573,15 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   // The tools chosen for it at setup or added since, as registry ids. Like rooms, the
   // dashboard stands without them, so a failure leaves the list empty.
   const [tools, setTools] = useState([]);
+  // Which of them have been configured, and the one being configured now.
+  const [configured, setConfigured] = useState(new Set());
+  const [configuring, setConfiguring] = useState(null);
 
   const loadTools = useCallback(async (id) => {
     try {
-      setTools(await readProjectTools(id));
+      const [chosen, done] = await Promise.all([readProjectTools(id), readConfiguredProjectTools(id)]);
+      setTools(chosen);
+      setConfigured(done);
     } catch (err) {
       console.error("Could not load this project's tools:", err);
       setTools([]);
@@ -667,18 +695,28 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
     }
   };
 
-  // "Add a Tool" attaches it to the project as well as opening it, so it is listed here
-  // and on the public page the same as one chosen at setup. Opening does not wait on it.
-  const handleAddTool = (toolId) => {
-    if (!tools.includes(toolId)) {
-      setTools((current) => [...current, toolId]);
-      saveProjectTools(project.id, [...tools, toolId], accountId)
-        .catch((err) => {
-          console.error('Could not add that tool to the project:', err);
-          loadTools(project.id);
-        });
+  // "Add a Tool" adds it to the project and goes straight on to configuring it, since
+  // it is not live until it has been. The dialog waits on the save: configuring
+  // changes the tool's row, which has to exist first.
+  const handleAddTool = async (toolId) => {
+    if (tools.includes(toolId)) {
+      setConfiguring(toolId);
+      return;
     }
-    onOpenToolkit(project.id, toolId);
+    setTools((current) => [...current, toolId]);
+    try {
+      await saveProjectTools(project.id, [...tools, toolId], accountId);
+      setConfiguring(toolId);
+    } catch (err) {
+      console.error('Could not add that tool to the project:', err);
+      loadTools(project.id);
+    }
+  };
+
+  const handleConfigured = () => {
+    setConfiguring(null);
+    loadTools(project.id);
+    loadRooms(project.id);
   };
 
   const handleOpenRoom = (room) => {
@@ -802,22 +840,27 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
         )}
 
         <Card t={t} title="Toolkit"
-          action={<AddToolkitTool t={t} onChoose={handleAddTool} />}>
+          action={<AddToolkitTool t={t} chosen={tools} onChoose={handleAddTool} />}>
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
-            Open a tool attached to this project — it shows up in the count
-            above, and on the public page once it has run.
+            The tools this project uses. Each is a template: configure it for this project
+            and it goes live on the public page.
           </p>
 
           {chosenTools.length === 0 ? (
             <p style={{ fontSize: 13.5, color: t.inkFaint, marginTop: 16, marginBottom: 0 }}>
-              No tools chosen yet.
+              No tools yet. Add one to configure it for this project.
             </p>
           ) : (
             <div style={{ marginTop: 16 }}>
-              {chosenTools.map((tool) => (
-                <ChosenToolRow key={tool.id} t={t} tool={tool}
-                  onOpen={() => onOpenToolkit(project.id, tool.id)} />
-              ))}
+              {chosenTools.map((tool) => {
+                const openRoom = (rooms ?? []).find((room) => room.tool === tool.id && room.status === 'open') ?? null;
+                return (
+                  <ChosenToolRow key={tool.id} t={t} tool={tool}
+                    live={isToolLive(tool, { configured: configured.has(tool.id), openRoom })}
+                    inRoom={Boolean(openRoom)}
+                    onConfigure={() => setConfiguring(tool.id)} />
+                );
+              })}
             </div>
           )}
 
@@ -839,6 +882,11 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
             </div>
           )}
         </Card>
+
+        {configuring && findTool(configuring) && (
+          <ConfigureToolDialog t={t} project={project} tool={findTool(configuring)}
+            onClose={() => setConfiguring(null)} onConfigured={handleConfigured} />
+        )}
 
         <ProjectNotifications t={t} projectId={project.id} />
 

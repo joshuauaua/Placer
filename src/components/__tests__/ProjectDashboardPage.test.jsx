@@ -9,6 +9,8 @@ import {
   readLinks,
   readProject,
   readProjectRooms,
+  markProjectToolConfigured,
+  readConfiguredProjectTools,
   readProjectTools,
   readProjectViews,
   readStats,
@@ -17,7 +19,7 @@ import {
   saveProjectTools,
   updateProject,
 } from '../../services/projects';
-import { closeRoom, deleteRoom } from '../../services/rooms';
+import { closeRoom, createRoom, deleteRoom } from '../../services/rooms';
 import { decideAccess, readAccessRequests, removeAccess } from '../../services/projects';
 import { readPreferences, readProjectResponses, saveProjectResponses } from '../../services/notifications';
 import { hostedRoom } from '../../toolkit/rooms';
@@ -47,6 +49,9 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   createProject: vi.fn(),
   updateProject: vi.fn(),
   readProjectTools: vi.fn(() => Promise.resolve([])),
+  readConfiguredProjectTools: vi.fn(() => Promise.resolve(new Set())),
+  markProjectToolConfigured: vi.fn(() => Promise.resolve()),
+  removeProjectImageFile: vi.fn(() => Promise.resolve()),
   readProjectToolConfig: vi.fn(() => Promise.resolve(null)),
   saveProjectToolConfig: vi.fn(() => Promise.resolve()),
   uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),
@@ -67,6 +72,7 @@ vi.mock('../../services/notifications', async (importOriginal) => ({
 }));
 
 vi.mock('../../services/rooms', () => ({
+  createRoom: vi.fn(() => Promise.resolve({ id: 'room-9', pin: '123456', facilitatorToken: 'facilitator-9' })),
   closeRoom: vi.fn(() => Promise.resolve(true)),
   deleteRoom: vi.fn(() => Promise.resolve(true)),
 }));
@@ -186,57 +192,76 @@ describe('ProjectDashboardPage', () => {
     expect(await screen.findByRole('heading', { name: 'Riverside Greenway' })).toBeInTheDocument();
   });
 
-  it('lists the toolkit tools and sends you to the one you pick, with the project attached', async () => {
-    const { onOpenToolkit } = setup();
-    await screen.findByText('Riverside Greenway');
+  it('adds a tool from the dashboard and goes straight on to configuring it', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    setup();
+    await screen.findByRole('button', { name: 'Configure Open Vote' });
 
     fireEvent.click(screen.getByRole('button', { name: /Add a Tool/ }));
-    expect(screen.getByRole('menuitem', { name: 'Budget Ballot' })).toBeInTheDocument();
-
+    // Only the tools the project does not have yet.
+    expect(screen.queryByRole('menuitem', { name: 'Open Vote' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('menuitem', { name: 'Budget Ballot' }));
 
-    expect(onOpenToolkit).toHaveBeenCalledWith('proj-1', 'budget-ballot');
+    expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['open-vote', 'budget-ballot'], 'user-1');
+    expect(await screen.findByRole('dialog', { name: 'Configure Budget Ballot' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Configure Budget Ballot' })).toBeInTheDocument();
   });
 
-  it('lists the tools chosen at setup in the Toolkit, each opening with the project attached', async () => {
-    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'budget-ballot']);
-    const { onOpenToolkit } = setup();
+  it('lists the tools chosen at setup, each waiting to be configured', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'desire-lines']);
+    setup();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Open Budget Ballot' }));
-
+    expect(await screen.findByRole('button', { name: 'Configure Open Vote' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Configure Desire Lines' })).toBeInTheDocument();
+    expect(screen.getAllByText('Not configured')).toHaveLength(2);
     expect(readProjectTools).toHaveBeenCalledWith('proj-1');
-    expect(screen.getByRole('button', { name: 'Open Open Vote' })).toBeInTheDocument();
-    expect(onOpenToolkit).toHaveBeenCalledWith('proj-1', 'budget-ballot');
+  });
+
+  it('shows a configured tool, and a room tool with its room open, as live', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['desire-lines', 'open-vote']);
+    vi.mocked(readConfiguredProjectTools).mockResolvedValueOnce(new Set(['desire-lines']));
+    vi.mocked(readProjectRooms).mockResolvedValue([{
+      id: 'room-1', tool: 'open-vote', pin: '123456', facilitatorToken: 'facilitator-1', status: 'open',
+      createdAt: '2026-09-27T10:00:00Z', expiresAt: '2026-10-27T10:00:00Z', contributors: 0, joinCode: 'abc',
+    }]);
+    setup();
+
+    expect(await screen.findByRole('button', { name: 'Configure Desire Lines again' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText('Live')).toHaveLength(2));
+    expect(screen.queryByRole('button', { name: 'Configure Open Vote' })).not.toBeInTheDocument();
+  });
+
+  it('puts a tool with nothing to set up live from its dialog', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['desire-lines']);
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Configure Desire Lines' }));
+    vi.mocked(readConfiguredProjectTools).mockResolvedValueOnce(new Set(['desire-lines']));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Go live' }));
+
+    await waitFor(() => expect(markProjectToolConfigured).toHaveBeenCalledWith('proj-1', 'desire-lines'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(await screen.findByText('Live')).toBeInTheDocument();
+  });
+
+  it('configures a room tool by opening the project\'s room with its setup', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Configure Open Vote' }));
+    const dialog = screen.getByRole('dialog', { name: 'Configure Open Vote' });
+    fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: 'Should the square be car-free?' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save and go live' }));
+
+    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('open-vote', 'proj-1', '30d',
+      expect.objectContaining({ question: 'Should the square be car-free?' })));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('says so when no tools have been chosen', async () => {
     setup();
 
-    expect(await screen.findByText('No tools chosen yet.')).toBeInTheDocument();
-  });
-
-  it('attaches a tool added from the dashboard to the project, and lists it', async () => {
-    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
-    setup();
-    await screen.findByRole('button', { name: 'Open Open Vote' });
-
-    fireEvent.click(screen.getByRole('button', { name: /Add a Tool/ }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Budget Ballot' }));
-
-    expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['open-vote', 'budget-ballot'], 'user-1');
-    expect(await screen.findByRole('button', { name: 'Open Budget Ballot' })).toBeInTheDocument();
-  });
-
-  it('does not save again when the tool added is already chosen', async () => {
-    vi.mocked(readProjectTools).mockResolvedValue(['budget-ballot']);
-    const { onOpenToolkit } = setup();
-    await screen.findByRole('button', { name: 'Open Budget Ballot' });
-
-    fireEvent.click(screen.getByRole('button', { name: /Add a Tool/ }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Budget Ballot' }));
-
-    expect(saveProjectTools).not.toHaveBeenCalled();
-    expect(onOpenToolkit).toHaveBeenCalledWith('proj-1', 'budget-ballot');
+    expect(await screen.findByText(/No tools yet/)).toBeInTheDocument();
   });
 
   it('lists collaborators, defaulting to just the owner', async () => {
