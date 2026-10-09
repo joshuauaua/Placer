@@ -1458,6 +1458,24 @@ a {
   display: none;
 }
 
+/* Short laptop windows: with the footer up, the side nav has only what is left of the
+ * window, so its items and the footer's padding tighten up to keep every item whole. */
+@media (min-width: 1024px) and (max-height: 900px) {
+  .placer-side-nav {
+    padding: 8px;
+    gap: 2px;
+  }
+
+  .placer-side-nav .placer-side-nav-link {
+    height: 40px;
+  }
+
+  .placer-footer {
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
+}
+
 @media (max-width: 1023px) {
   .placer-side-nav,
   .placer-side-nav.is-collapsed {
