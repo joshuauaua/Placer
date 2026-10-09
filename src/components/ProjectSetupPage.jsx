@@ -15,6 +15,7 @@
  * Tools are only chosen here. Each is a template, configured for the project from its
  * dashboard afterwards (ConfigureToolDialog), and live on its public page from then. */
 
+import { DatePicker } from './DatePicker';
 import { useEffect, useState } from 'react';
 import { Btn } from './UI';
 import { Icon } from './Icon';
@@ -521,14 +522,14 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
       <div style={{ display: 'flex', gap: 16, marginBottom: 0 }}>
         <div style={{ flex: 1 }}>
           <Field t={t} label="Start date" htmlFor="project-start">
-            <input id="project-start" type="date" value={startDate ?? ''}
-              onChange={(e) => setStartDate(e.target.value)} style={inputStyle(t)} />
+            <DatePicker t={t} id="project-start" value={startDate ?? ''}
+              onChange={setStartDate} style={inputStyle(t)} />
           </Field>
         </div>
         <div style={{ flex: 1 }}>
           <Field t={t} label="End date" htmlFor="project-end">
-            <input id="project-end" type="date" value={endDate ?? ''}
-              onChange={(e) => setEndDate(e.target.value)} style={inputStyle(t)} />
+            <DatePicker t={t} id="project-end" value={endDate ?? ''}
+              onChange={setEndDate} style={inputStyle(t)} />
           </Field>
         </div>
       </div>

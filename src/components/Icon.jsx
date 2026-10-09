@@ -198,6 +198,12 @@ const ICON_ELEMENTS = {
       <path d="M10.5 17.2l-1 1a3.6 3.6 0 01-5.1-5.1l2.6-2.6" />
     </>
   ),
+  calendar: (
+    <>
+      <rect x="4" y="5" width="16" height="15" rx="2" />
+      <path d="M4 10h16M8 3v4M16 3v4" />
+    </>
+  ),
   clock: (
     <>
       <circle cx="12" cy="12" r="8.5" />
