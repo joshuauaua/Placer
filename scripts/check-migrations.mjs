@@ -107,6 +107,7 @@ const HAND_WRITTEN = [
   '20261005090001_survey_responses_authenticated.sql',
   '20261005140001_survey_responses_newsletter_signup.sql',
   '20261007100001_project_budgets_upsert_grant.sql',
+  '20261009090001_project_private_create.sql',
 ]
 
 export function render({ src, slice, note }, read = (f) => readFileSync(`${DIR}/${f}`, 'utf8')) {

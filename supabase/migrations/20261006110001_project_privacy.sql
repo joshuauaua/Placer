@@ -241,9 +241,13 @@ grant execute on function public.project_remove_access(uuid, uuid) to authentica
 
 drop policy if exists "anyone can read a project" on public.projects;
 drop policy if exists "anyone can read a public project, and its people a private one" on public.projects;
+-- The owner is checked on the row itself as well as through project_can_view: that
+-- function looks the project up again, and while a private project is being inserted
+-- the lookup cannot see it yet, so the row the insert hands back would be refused and
+-- the whole insert with it ("new row violates row-level security policy").
 create policy "anyone can read a public project, and its people a private one"
   on public.projects for select to anon, authenticated
-  using (visibility = 'public' or public.project_can_view(id));
+  using (visibility = 'public' or owner_id = auth.uid() or public.project_can_view(id));
 
 drop policy if exists "anyone can read a project's links" on public.project_links;
 drop policy if exists "anyone who can see a project can read its links" on public.project_links;
