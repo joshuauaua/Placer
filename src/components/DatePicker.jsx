@@ -37,6 +37,7 @@ export function DateRangePicker({ t, id, start, end, onChange, style }) {
   const [dragFrom, setDragFrom] = useState(null);
   const [hover, setHover] = useState(null);
   const rootRef = useRef(null);
+  const gridRef = useRef(null);
   const live = useRef({});
   live.current = { anchor, dragFrom, hover, onChange };
   const first = parseIso(start);
@@ -82,6 +83,37 @@ export function DateRangePicker({ t, id, start, end, onChange, style }) {
     };
   }, [open]);
 
+  // Dragging to the top or bottom edge of the grid turns the calendar to the previous or
+  // next month, so a range can run across months. The month keeps turning while held there.
+  useEffect(() => {
+    if (!dragFrom) return undefined;
+    const EDGE = 30;
+    let point = null;
+    const onMove = (e) => { point = { x: e.clientX, y: e.clientY }; };
+    const turn = () => {
+      const grid = gridRef.current;
+      if (!point || !grid) return;
+      const rect = grid.getBoundingClientRect();
+      const delta = point.y > rect.bottom - EDGE ? 1 : point.y < rect.top + EDGE + 24 ? -1 : 0;
+      if (!delta) return;
+      setView(({ y, m }) => {
+        const next = new Date(y, m + delta, 1);
+        return { y: next.getFullYear(), m: next.getMonth() };
+      });
+      // Re-read the day under the pointer once the new month has drawn.
+      requestAnimationFrame(() => {
+        const cell = document.elementFromPoint(point.x, point.y)?.closest('[data-iso]');
+        if (cell) setHover(cell.dataset.iso);
+      });
+    };
+    const timer = setInterval(turn, 650);
+    window.addEventListener('pointermove', onMove);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('pointermove', onMove);
+    };
+  }, [dragFrom]);
+
   const toggle = () => {
     if (!open) setView({ y: first?.y ?? today.getFullYear(), m: first?.m ?? today.getMonth() });
     settle();
@@ -123,7 +155,7 @@ export function DateRangePicker({ t, id, start, end, onChange, style }) {
     color: enabled ? t.ink : t.inkFaint, cursor: enabled ? 'pointer' : 'default',
   });
 
-  const hint = anchor ? 'Now tap an end date' : 'Tap a start date, then an end date — or drag across a range';
+  const hint = anchor ? 'Now tap an end date' : 'Tap a start date, then an end date — or drag across a range, holding at the edge to change month';
 
   return (
     <div ref={rootRef} style={{ position: 'relative' }}>
@@ -154,7 +186,7 @@ export function DateRangePicker({ t, id, start, end, onChange, style }) {
             </button>
           </div>
 
-          <div onPointerMove={trackPointer} onPointerLeave={() => { if (!dragFrom) setHover(null); }}
+          <div ref={gridRef} onPointerMove={trackPointer} onPointerLeave={() => { if (!dragFrom) setHover(null); }}
             style={{
               display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', rowGap: 4,
               touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none',
