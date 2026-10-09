@@ -6,8 +6,8 @@
  * bar's height so nothing starts out hidden behind it. The glass itself lives
  * in index.css (.placer-glass-nav).
  *
- * The right-hand end depends on who is there. Logged out, it is Create Account
- * and Log In and nothing else. Logged in, it is the search box and the account menu
+ * The right-hand end depends on who is there. Logged out, it is Log In and
+ * Create Account and nothing else. Logged in, it is the search box and the account menu
  * — the side nav and the footer carry the site links. The search box needs a
  * Supabase project to search, so without one it is left out. While the session is still being read it stays empty,
  * rather than flashing the logged-out buttons at someone who is signed in.
@@ -38,8 +38,8 @@ export function GlassNavbar({ t, profile, loading, onNavigate, onSignIn, onCreat
           </>
         ) : (
           <>
-            <Btn t={t} variant="primary" size="sm" onClick={onCreateAccount}>Create Account</Btn>
             <Btn t={t} variant="outline" size="sm" onClick={onSignIn}>Log In</Btn>
+            <Btn t={t} variant="primary" size="sm" onClick={onCreateAccount}>Create Account</Btn>
           </>
         )}
       </div>

@@ -362,7 +362,7 @@ describe('App', () => {
     it('renders the sign-in form at /signin', async () => {
       renderAt('/signin');
 
-      expect(await screen.findByRole('heading', { level: 1, name: 'Sign in' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: 'Welcome back' })).toBeInTheDocument();
       expect(screen.getByLabelText('Email address')).toBeInTheDocument();
     });
 
@@ -375,7 +375,7 @@ describe('App', () => {
 
     it('keeps the nav bar on the auth views, so signing in is not a dead end', async () => {
       renderAt('/signin');
-      await screen.findByRole('heading', { level: 1, name: 'Sign in' });
+      await screen.findByRole('heading', { level: 1, name: 'Welcome back' });
 
       // The same nav every other view inside MainApp gets. It is what makes it possible
       // to change your mind and go back to the map without using the browser's back
@@ -386,7 +386,7 @@ describe('App', () => {
 
     it('moves between the two forms without leaving MainApp', async () => {
       const location = renderRecording('/signin');
-      await screen.findByRole('heading', { level: 1, name: 'Sign in' });
+      await screen.findByRole('heading', { level: 1, name: 'Welcome back' });
 
       fireEvent.click(screen.getByRole('link', { name: 'Create an account' }));
 
