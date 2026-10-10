@@ -9,6 +9,7 @@ import {
 import { follow, isFollowing, unfollow } from '../../services/follows';
 import { readContributions, readProjectOpenRooms, saveContribution } from '../../services/rooms';
 import { THEME } from '../../theme';
+import { rememberAnswer } from '../../toolkit/rooms';
 
 vi.mock('../../services/imaginations', () => ({
   readImaginationsByProject: vi.fn(() => Promise.resolve([])),
@@ -362,15 +363,149 @@ describe('PublicProjectPage, taking part', () => {
     expect(await screen.findByText('Nothing to take part in yet. Check back soon.')).toBeInTheDocument();
   });
 
-  it('links to a set-up tool it cannot put on the page, opening its room', async () => {
-    vi.mocked(readProjectTools).mockResolvedValue(['budget-ballot']);
-    vi.mocked(readProjectOpenRooms).mockResolvedValue([{ id: 'room-2', tool: 'budget-ballot', expiresAt: null, config: {} }]);
-    const { onOpenRoom } = setup();
+  describe('a Co-Budget', () => {
+    const BUDGET_ROOM = { id: 'room-2', tool: 'budget-ballot', expiresAt: '2026-11-05T12:00:00Z', config: {
+      currency: 'GBP', budget: 10000, ownPosts: true,
+      posts: [{ key: 'post-1', label: 'Water fountain', icon: 'sparkle', unitCost: 4000 },
+        { key: 'post-2', label: 'Mural', icon: 'art', unitCost: 1500 }],
+    } };
+    beforeEach(() => vi.mocked(readContributions).mockResolvedValue([]));
 
-    const section = within(await screen.findByRole('region', { name: 'How would you spend the budget?' }));
-    fireEvent.click(section.getByRole('button', { name: /Co-Budget/ }));
+    const open = async () => {
+      vi.mocked(readProjectTools).mockResolvedValue(['budget-ballot']);
+      vi.mocked(readProjectOpenRooms).mockResolvedValue([BUDGET_ROOM]);
+      const handlers = setup();
+      const section = within(await screen.findByRole('region', { name: 'How would you spend the budget?' }));
+      return { section, handlers };
+    };
 
-    expect(onOpenRoom).toHaveBeenCalledWith('budget-ballot', 'room-2');
+    it('opens out on the page, with the money above the posts', async () => {
+      const { section, handlers } = await open();
+      const card = section.getByRole('button', { name: /Co-Budget/, expanded: false });
+
+      expect(section.queryByRole('button', { name: 'One more: Mural' })).not.toBeInTheDocument();
+      fireEvent.click(card);
+
+      expect(card).toHaveAttribute('aria-expanded', 'true');
+      expect(section.getByText('Committed')).toBeInTheDocument();
+      expect(section.getByText('£10,000')).toBeInTheDocument();
+      expect(section.getByRole('button', { name: 'One more: Mural' })).toBeInTheDocument();
+      expect(section.getByRole('button', { name: 'Next' })).toBeDisabled();
+      expect(handlers.onOpenRoom).not.toHaveBeenCalled();
+    });
+
+    it('shows the ballot on Next, and sends it on Submit', async () => {
+      const { section } = await open();
+      fireEvent.click(section.getByRole('button', { name: /Co-Budget/ }));
+
+      fireEvent.click(section.getByRole('button', { name: 'One more: Water fountain' }));
+      fireEvent.click(section.getByRole('button', { name: 'One more: Mural' }));
+      fireEvent.click(section.getByRole('button', { name: 'One more: Mural' }));
+      fireEvent.click(section.getByRole('button', { name: 'Next' }));
+
+      expect(section.getByRole('heading', { name: 'Your ballot' })).toBeInTheDocument();
+      expect(section.getByText('Water fountain × 1')).toBeInTheDocument();
+      expect(section.getByText('Mural × 2')).toBeInTheDocument();
+      expect(saveContribution).not.toHaveBeenCalled();
+
+      fireEvent.click(section.getByRole('button', { name: 'Submit' }));
+
+      expect(await section.findByText(/your ballot is in/i, { selector: 'p' })).toBeInTheDocument();
+      expect(saveContribution).toHaveBeenCalledWith(expect.objectContaining({
+        roomId: 'room-2', displayName: null, state: { 'post-1': 1, 'post-2': 2, own: [] },
+      }));
+      // What they spent is kept to the list of individual ballots, not the card.
+      expect(section.queryByText(/You spent/)).not.toBeInTheDocument();
+      fireEvent.click(await section.findByRole('button', { name: /See individual ballots/ }));
+      const list = within(section.getByRole('list', { name: 'Individual ballots' }));
+      const mine = list.getByRole('button', { name: /Your ballot/ });
+      expect(mine).toHaveTextContent('£7,000');
+      fireEvent.click(mine);
+      expect(list.getByText('Water fountain × 1')).toBeInTheDocument();
+      expect(list.getByText('Mural × 2')).toBeInTheDocument();
+    });
+
+    it('shows the average of every ballot once one is in, and each ballot on its own', async () => {
+      vi.mocked(readContributions).mockResolvedValue([
+        { displayName: null, updatedAt: '2026-10-10T10:00:00Z', state: { 'post-1': 2, 'post-2': 0, own: [] } },
+        { displayName: null, updatedAt: '2026-10-10T11:00:00Z',
+          state: { 'post-1': 0, 'post-2': 2, own: [{ label: 'Bike racks', unitCost: 500, quantity: 2 }] } },
+      ]);
+      const { section } = await open();
+      fireEvent.click(section.getByRole('button', { name: /Co-Budget/ }));
+      fireEvent.click(section.getByRole('button', { name: 'One more: Mural' }));
+      fireEvent.click(section.getByRole('button', { name: 'Next' }));
+      fireEvent.click(section.getByRole('button', { name: 'Submit' }));
+
+      // Fountains average (2 + 0) / 2 = 1, murals (0 + 2) / 2 = 1.
+      expect(await section.findByRole('heading', { name: "Everybody's average" })).toBeInTheDocument();
+      expect(section.getByText(/2 ballots so far/)).toBeInTheDocument();
+      expect(section.getByText('Water fountain × 1')).toBeInTheDocument();
+      expect(section.getByRole('heading', { name: 'Posts people added' })).toBeInTheDocument();
+
+      fireEvent.click(section.getByRole('button', { name: 'See individual ballots (2)' }));
+      expect(section.getByRole('button', { name: /^Your ballot/ })).toHaveTextContent('£1,500');
+      const ballots = within(section.getByRole('list', { name: 'Individual ballots' }));
+      const second = ballots.getByRole('button', { name: /Ballot 2/ });
+      expect(second).toHaveTextContent('£4,000');
+
+      fireEvent.click(second);
+      expect(ballots.getByText('Mural × 2')).toBeInTheDocument();
+      expect(ballots.getByText(/Bike racks × 2/)).toHaveTextContent('their own post');
+    });
+
+    it('opens on the results for somebody who has submitted, with no way to change it', async () => {
+      rememberAnswer('room-2', { ballot: { items: [{ key: 'post-2', label: 'Mural', quantity: 1, cost: 1500 }],
+        spent: 1500, budget: 10000, currency: 'GBP', state: { own: [], 'post-1': 0, 'post-2': 1 } } });
+      vi.mocked(readContributions).mockResolvedValue([
+        { displayName: null, updatedAt: 'a', state: { 'post-2': 1, own: [], 'post-1': 0 } },
+      ]);
+      const { section } = await open();
+
+      expect(section.getByRole('button', { name: /Co-Budget/ })).toHaveAttribute('aria-expanded', 'true');
+      expect(await section.findByRole('heading', { name: "Everybody's average" })).toBeInTheDocument();
+      fireEvent.click(section.getByRole('button', { name: 'See individual ballots (1)' }));
+      // Theirs is the one ballot in the room, so it is listed once, as theirs.
+      expect(section.getByRole('button', { name: /^Your ballot/ })).toBeInTheDocument();
+      expect(section.queryByRole('button', { name: /Ballot 1/ })).not.toBeInTheDocument();
+      expect(section.queryByRole('button', { name: /change my ballot/i })).not.toBeInTheDocument();
+      expect(section.queryByRole('button', { name: 'One more: Mural' })).not.toBeInTheDocument();
+      expect(section.queryByRole('button', { name: 'Submit' })).not.toBeInTheDocument();
+    });
+
+    it('stays open on the results right after submitting', async () => {
+      const { section } = await open();
+      fireEvent.click(section.getByRole('button', { name: /Co-Budget/ }));
+      fireEvent.click(section.getByRole('button', { name: 'One more: Mural' }));
+      fireEvent.click(section.getByRole('button', { name: 'Next' }));
+      fireEvent.click(section.getByRole('button', { name: 'Submit' }));
+
+      expect(await section.findByRole('heading', { name: "Everybody's average" })).toBeInTheDocument();
+      expect(section.getByRole('button', { name: /Co-Budget/ })).toHaveAttribute('aria-expanded', 'true');
+      expect(section.queryByRole('button', { name: /change my ballot/i })).not.toBeInTheDocument();
+    });
+
+    it('goes back from the ballot to change it', async () => {
+      const { section } = await open();
+      fireEvent.click(section.getByRole('button', { name: /Co-Budget/ }));
+      fireEvent.click(section.getByRole('button', { name: 'One more: Mural' }));
+      fireEvent.click(section.getByRole('button', { name: 'Next' }));
+
+      fireEvent.click(section.getByRole('button', { name: 'Back' }));
+
+      expect(section.getByLabelText('Mural: how many')).toHaveTextContent('1');
+    });
+
+    it('says so when the ballot has closed', async () => {
+      vi.mocked(saveContribution).mockResolvedValue(false);
+      const { section } = await open();
+      fireEvent.click(section.getByRole('button', { name: /Co-Budget/ }));
+      fireEvent.click(section.getByRole('button', { name: 'One more: Mural' }));
+      fireEvent.click(section.getByRole('button', { name: 'Next' }));
+      fireEvent.click(section.getByRole('button', { name: 'Submit' }));
+
+      expect(await section.findByText('This ballot has closed.')).toBeInTheDocument();
+    });
   });
 
   it('does not show a room the project has not added the tool for', async () => {
