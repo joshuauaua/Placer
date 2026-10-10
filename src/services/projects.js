@@ -650,6 +650,55 @@ export async function saveProjectToolConfig(projectId, tool, { address = '', poi
 }
 
 /**
+ * The site a project has set Site-Specific Spatial Mapping up on — { name, address,
+ * point, zoom, bounds } — or null when it has not been. `bounds` is the view the
+ * organiser framed, [west, south, east, north], which everybody taking part sees the
+ * site in; `point` and `zoom` stand in for it when the map could not be framed.
+ */
+export async function readProjectSite(projectId, tool = 'site-spatial-mapping') {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECT_TOOLS_TABLE)
+    .select('config')
+    .eq('project_id', projectId)
+    .eq('tool', tool)
+    .maybeSingle();
+
+  if (error) throw new Error(`Could not load the project's site: ${error.message}`);
+  const config = data?.config;
+  if (!config || !Number.isFinite(config.lat) || !Number.isFinite(config.lng)) return null;
+  const bounds = Array.isArray(config.bounds) && config.bounds.length === 4 && config.bounds.every(Number.isFinite)
+    ? config.bounds : null;
+  return {
+    name: config.name ?? '',
+    address: config.address ?? '',
+    point: { lat: config.lat, lng: config.lng },
+    zoom: Number.isFinite(config.zoom) ? config.zoom : null,
+    bounds,
+  };
+}
+
+/** Set Site-Specific Spatial Mapping up on a site for a project. Owner or collaborator only. */
+export async function saveProjectSite(projectId, tool, { name, address = '', point, zoom = null, bounds = null }) {
+  const round = (value) => Math.round(value * 1e6) / 1e6;
+  const config = {
+    name, address, lat: round(point.lat), lng: round(point.lng),
+    zoom: Number.isFinite(zoom) ? Math.round(zoom * 100) / 100 : null,
+    bounds: bounds ? bounds.map(round) : null,
+  };
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECT_TOOLS_TABLE)
+    .update({ config })
+    .eq('project_id', projectId)
+    .eq('tool', tool)
+    .select('tool');
+
+  if (error) throw new Error(`Could not save the project's site: ${error.message}`);
+  if (!data?.length) throw new Error('Could not save the project\'s site: it is not one of the project\'s tools.');
+}
+
+/**
  * Which of a project's tools have been configured for it: their ids, in a Set. A
  * tool's row holds a config once it has been (project_tools.config); see isToolLive in
  * toolkit/tools.js for what that means for each kind of tool. Readable by anybody

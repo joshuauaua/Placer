@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { SiteMapping } from '../toolkit/SiteMapping';
 import { findTool } from '../../toolkit/tools';
 import { THEME } from '../../theme';
+import { lastMap } from '../../test/maplibreStub';
 import {
   MAP_MARKERS,
   SURVEY_QUESTIONS,
@@ -205,3 +206,80 @@ function answerAllYesFrom(questionNumber) {
     fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
   }
 }
+
+describe('Site-Specific Spatial Mapping Tool, in a project', () => {
+  const SITE = {
+    name: 'Folkets Park', address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 }, zoom: 17,
+    bounds: [13.0, 55.585, 13.02, 55.595],
+  };
+  const mountInProject = () => render(
+    <SiteMapping t={THEME} tool={findTool('site-spatial-mapping')} projectSite={SITE} />,
+  );
+
+  it('opens on the project\'s site, with no picker', () => {
+    mountInProject();
+
+    expect(screen.getByText('Where are you? · Folkets Park')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Site name')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lindenplatz' })).not.toBeInTheDocument();
+    expect(lastMap().options.interactive).toBe(false);
+    expect(lastMap().bounds).toEqual([[13.0, 55.585], [13.02, 55.595]]);
+  });
+
+  const dropPin = () => fireEvent.click(screen.getByRole('group', { name: /Tap where you are to drop your pin/ }));
+
+  it('asks where you are first, and starts only once your pin is down', () => {
+    mountInProject();
+
+    expect(screen.getByText(/Where are you\?/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start the survey' })).toBeDisabled();
+    expect(screen.queryByText(/question 1 of 18/i)).not.toBeInTheDocument();
+
+    dropPin();
+
+    expect(screen.getByRole('status')).toHaveTextContent('Your pin is down');
+    expect(screen.getByRole('button', { name: 'Start the survey' })).toBeEnabled();
+  });
+
+  it('goes on to About you, then the survey', () => {
+    mountInProject();
+    dropPin();
+    fireEvent.click(screen.getByRole('button', { name: 'Start the survey' }));
+
+    expect(screen.getByText('About you')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Age' })).toBeInTheDocument();
+    expect(screen.queryByText(/question 1 of 18/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByRole('button', { name: 'Start the survey' })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start the survey' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to the survey' }));
+    expect(screen.getByText(/question 1 of 18/i)).toBeInTheDocument();
+  });
+
+  it('marks the survey cards as what a phone shows on its own (.placer-site-mapping in index.css)', () => {
+    const { container } = mountInProject();
+    dropPin();
+    fireEvent.click(screen.getByRole('button', { name: 'Start the survey' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to the survey' }));
+
+    const layout = container.querySelector('.placer-site-mapping');
+    expect(layout).toHaveAttribute('data-panel', 'survey');
+    expect(layout.querySelector('.placer-site-mapping-map')).toContainElement(
+      screen.getByRole('img', { name: 'Map of Folkets Park' }));
+    expect(layout.querySelector('.placer-site-mapping-map')).not.toContainElement(screen.getByText(/question 1 of 18/i));
+  });
+
+  it('maps it in the framed view, and cannot change the site', () => {
+    mountInProject();
+    dropPin();
+    fireEvent.click(screen.getByRole('button', { name: 'Start the survey' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to the survey' }));
+
+    expect(screen.getByText(/question 1 of 18/i)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Map of Folkets Park' })).toBeInTheDocument();
+    expect(lastMap().bounds).toEqual([[13.0, 55.585], [13.02, 55.595]]);
+    expect(screen.queryByRole('button', { name: /change site/i })).not.toBeInTheDocument();
+  });
+});

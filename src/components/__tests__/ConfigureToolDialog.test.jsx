@@ -1,19 +1,34 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { ConfigureToolDialog } from '../ConfigureToolDialog';
 import {
-  markProjectToolConfigured, readProjectToolConfig, removeProjectImageFile, saveProjectToolConfig, uploadSceneImage,
+  markProjectToolConfigured, readProjectSite, readProjectToolConfig, removeProjectImageFile, saveProjectSite,
+  saveProjectToolConfig, uploadSceneImage,
 } from '../../services/projects';
+import { lastMap } from '../../test/maplibreStub';
 import { createRoom } from '../../services/rooms';
 import { findTool } from '../../toolkit/tools';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/projects', () => ({
   readProjectToolConfig: vi.fn(() => Promise.resolve(null)),
+  readProjectSite: vi.fn(() => Promise.resolve(null)),
+  saveProjectSite: vi.fn(() => Promise.resolve()),
   saveProjectToolConfig: vi.fn(() => Promise.resolve()),
   markProjectToolConfigured: vi.fn(() => Promise.resolve()),
   uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),
   removeProjectImageFile: vi.fn(() => Promise.resolve()),
+}));
+
+// Stubbed to the field plus a stand-in for choosing a suggestion.
+const PLACE = { label: 'Lindenplatz, Berlin', name: 'Lindenplatz', point: { lat: 52.52, lng: 13.41 } };
+vi.mock('../PlaceSearch', () => ({
+  PlaceSearch: ({ id, value, onChange, onPick }) => (
+    <>
+      <input id={id} value={value} onChange={(e) => onChange(e.target.value)} />
+      <button type="button" onClick={() => onPick(PLACE)}>Pick the place</button>
+    </>
+  ),
 }));
 
 vi.mock('../../services/rooms', () => ({
@@ -326,5 +341,61 @@ describe('ConfigureToolDialog, a tool with nothing to set up', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('ConfigureToolDialog, Site-Specific Spatial Mapping', () => {
+  const next = () => fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+  it('asks for the site name first, and will not move on without one', async () => {
+    setup('site-spatial-mapping');
+
+    expect(await screen.findByText('Step 1 of 2')).toBeInTheDocument();
+    expect(screen.getByLabelText('Site name *')).toBeInTheDocument();
+    next();
+    expect(screen.getByRole('alert')).toHaveTextContent('Give the site a name.');
+  });
+
+  it('then the place and the map, and saves the view framed as the site', async () => {
+    const { onConfigured } = setup('site-spatial-mapping');
+    fireEvent.change(await screen.findByLabelText('Site name *'), { target: { value: 'Lindenplatz' } });
+    next();
+
+    expect(screen.getByText('Step 2 of 2')).toBeInTheDocument();
+    save();
+    expect(screen.getByRole('alert')).toHaveTextContent('Search for the place, then frame the site on the map.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pick the place' }));
+    // The organiser drags the map to frame the site.
+    const map = lastMap();
+    await act(async () => { await map.ready; });
+    act(() => { map.jumpTo({ center: [13.42, 52.53], zoom: 18 }); map.fire('moveend'); });
+    save();
+
+    await waitFor(() => expect(onConfigured).toHaveBeenCalled());
+    expect(saveProjectSite).toHaveBeenCalledWith('proj-1', 'site-spatial-mapping', {
+      name: 'Lindenplatz',
+      address: 'Lindenplatz, Berlin',
+      point: { lat: 52.53, lng: 13.42 },
+      zoom: 18,
+      bounds: [13.41, 52.523, 13.43, 52.537],
+    });
+  });
+
+  it('starts from the site already saved', async () => {
+    readProjectSite.mockResolvedValueOnce({
+      name: 'Market Square', address: 'Market Square, Berlin', point: { lat: 52.51, lng: 13.39 }, zoom: 17,
+      bounds: [13.38, 52.5, 13.4, 52.52],
+    });
+    const { onConfigured } = setup('site-spatial-mapping');
+
+    expect(await screen.findByLabelText('Site name *')).toHaveValue('Market Square');
+    next();
+    save();
+
+    await waitFor(() => expect(onConfigured).toHaveBeenCalled());
+    expect(saveProjectSite).toHaveBeenCalledWith('proj-1', 'site-spatial-mapping', expect.objectContaining({
+      name: 'Market Square', bounds: [13.38, 52.5, 13.4, 52.52],
+    }));
   });
 });
