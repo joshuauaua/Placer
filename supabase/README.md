@@ -89,19 +89,17 @@ position each feature was placed in.
 
 ## 8. Toolkit rooms
 
-Optional, and separate from the survey. A facilitator opens a room on a Toolkit
-tool; people join it with a six-digit PIN or by scanning its QR code, and
-their answers are combined live. Without this the Toolkit still works — every
-tool runs on its own in the browser, and the "Start a room" button simply
-never appears.
+Optional, and separate from the survey. A project's organiser opens a room on one
+of its tools, by configuring the tool from the project's dashboard; people join it
+with a six-digit PIN or by scanning its QR code, and their answers are combined
+live. The Toolkit page itself only lets people try the tools, and opens no rooms.
+Without this every tool still runs on its own in the browser.
 
 **Opening a room takes an account. Joining one never does.** Opening creates
 something other people are invited into, so it needs somebody accountable for it;
-joining is what a participant does with a QR code in a workshop, and asking them to
-make an account at that moment would cost the room the people it was opened for. This
-means step 9 as well, if you want the "Start a room" button to work at all — without
-accounts configured, a signed-out facilitator gets "Sign in to start a room" and no
-further.
+joining is what a participant does with a QR code, and asking them to make an
+account at that moment would cost the room the people it was opened for. Opening
+one means step 9 as well, since only a project's owner or collaborators can.
 
 Run `rooms.sql` in the SQL editor, the same way as `schema.sql`. It is
 re-runnable. Only Co-Budget can host a room today; the tools allowed to

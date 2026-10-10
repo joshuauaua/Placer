@@ -8,7 +8,7 @@
  * hand this a fake instead of mocking a module. `status` is the whole story:
  *
  *   'none'    — not in a room, and the tool may or may not be able to host one
- *   'opening' — creating a room, or loading one from a link
+ *   'opening' — loading a room from a link
  *   'scheduled' — a project's room set up to start later, at `opensAt`
  *               (supabase/rooms-schedule.sql); it opens by itself when that comes
  *   'open'    — in a room; `contributions` and `combined` are live
@@ -30,11 +30,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  DEFAULT_LIFETIME,
   forgetHostedRoom,
   hostedRoom,
   participantToken,
-  rememberHostedRoom,
 } from '../../toolkit/rooms';
 import * as roomService from '../../services/rooms';
 
@@ -58,7 +56,7 @@ export function roomSetup(tool, raw) {
   return tool.setup.problems(raw).length === 0 ? raw : undefined;
 }
 
-export function useRoom({ tool, roomId, displayName, onOpened, projectId = null, service = roomService }) {
+export function useRoom({ tool, roomId, displayName, service = roomService }) {
   const capable = Boolean(tool?.room) && service.isSupabaseConfigured();
 
   const [status, setStatus] = useState('none');
@@ -208,34 +206,6 @@ export function useRoom({ tool, roomId, displayName, onOpened, projectId = null,
   }, [status, expiresAt, recheck]);
 
   /**
-   * Open a room on this tool and hand its id back to the caller to navigate to.
-   * `lifetime` is one of ROOM_LIFETIMES; anything past two hours needs `projectId`,
-   * which the database enforces. `setup` is the tool's setup, for a tool that has
-   * one, already checked by the caller.
-   */
-  const start = useCallback(async (lifetime, setup = null) => {
-    setStatus('opening');
-    setError(null);
-    try {
-      const args = [tool.id, projectId, lifetime ?? DEFAULT_LIFETIME];
-      if (setup) args.push(setup);
-      const room = await service.createRoom(...args);
-      rememberHostedRoom(room.id, { pin: room.pin, token: room.facilitatorToken, code: room.joinCode ?? null });
-      setPin(room.pin);
-      setJoinCode(room.joinCode ?? null);
-      setIsHost(true);
-      setExpiresAt(room.expiresAt ?? null);
-      setConfig(setup);
-      if (onOpened) onOpened(room.id);
-      return room;
-    } catch (cause) {
-      setError(cause.message);
-      setStatus('error');
-      return null;
-    }
-  }, [tool?.id, onOpened, projectId, service]);
-
-  /**
    * Publish this browser's state, no more than once every PUBLISH_DELAY. The last
    * value wins: a slider dragged across its range is one contribution, not forty.
    */
@@ -327,7 +297,6 @@ export function useRoom({ tool, roomId, displayName, onOpened, projectId = null,
     contributions,
     participantCount: contributions.length,
     combined,
-    start,
     publish,
     close,
     remove,

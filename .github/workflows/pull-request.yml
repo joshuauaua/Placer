@@ -1,9 +1,11 @@
 # PLACER — what runs on a pull request.
 #
 # There was no CI here before this file, so nothing checked a pull request at all:
-# not the tests, not the lint, not the lockfile. Three jobs now do: one refuses a
-# pull request that would merge the `landingpage` holding page into the app, one
-# keeps contributed changes inside the Sandbox, and one runs the tests and build.
+# not the tests, not the lint, not the lockfile. Two jobs now do: one refuses a
+# pull request that would merge the `landingpage` holding page into the app, and one
+# runs the tests and build. What a pull request may change is not limited; every one
+# into Development or main needs the owner's approval instead (the rulesets, and
+# .github/CODEOWNERS).
 #
 # `pull_request`, never `pull_request_target`. This workflow checks out and runs code
 # from the pull request, and pull_request_target would hand that code the repository's
@@ -28,7 +30,7 @@ jobs:
   landingpage:
     name: landingpage is not merged
     runs-on: ubuntu-latest
-    # As with `scope` below, no `if:` on the job — a job skipped by `if:` reports no
+    # No `if:` on the job — a job skipped by `if:` reports no
     # check, and a required check that never reports blocks every pull request forever.
     # The branch test therefore sits on the steps, and the job always reports.
     #
@@ -76,53 +78,6 @@ jobs:
           fi
 
           echo "landingpage: clear — this branch does not carry it."
-
-  scope:
-    name: sandbox scope
-    runs-on: ubuntu-latest
-    # Deliberately no `if:` on the job. Two pull requests are exempt from the
-    # boundary — the owner's own, and one labelled `beyond-sandbox` because a change
-    # genuinely has to reach outside and that was agreed first — but skipping the
-    # *job* would be the wrong way to do it: a job skipped by `if:` never reports a
-    # check at all, so once this is a required check every exempt pull request would
-    # sit forever waiting for a result that is never coming. The job therefore always
-    # runs, and decides inside itself whether there is anything to enforce.
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # The whole history, so the merge base with the target branch can be found.
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
-      - name: List what this pull request changes
-        # Via the environment rather than inline ${{ }}, so nothing from the event
-        # payload is ever pasted into a shell command.
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          git diff --name-only "$BASE_SHA...HEAD" | tee changed-files.txt
-
-      - name: Check they are all inside the Sandbox
-        env:
-          ASSOCIATION: ${{ github.event.pull_request.author_association }}
-          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-        run: |
-          if [ "$ASSOCIATION" = "OWNER" ]; then
-            echo "sandbox:scope: not enforced — the owner's pull requests are not limited to the Sandbox"
-            exit 0
-          fi
-
-          case ",$LABELS," in
-            *,beyond-sandbox,*)
-              echo "sandbox:scope: not enforced — labelled beyond-sandbox"
-              exit 0
-              ;;
-          esac
-
-          node scripts/check-sandbox-scope.mjs < changed-files.txt
 
   checks:
     name: tests, lint and build

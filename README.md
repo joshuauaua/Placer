@@ -154,7 +154,6 @@ them, and redeploy after changing them on Vercel.
 | `npm run preview` | serves the built `dist/` |
 | `npm run deps:check` | checks that `node_modules` matches the lockfile |
 | `npm run migrations:check` | checks that `supabase/migrations/` matches the SQL it is generated from |
-| `npm run toolkit:scope` | checks that a change stays inside the Toolkit sandbox |
 
 On Node 25 and later, run the tests with `NODE_OPTIONS=--no-experimental-webstorage`.
 Without it, Node's built-in `localStorage` shadows jsdom's and around 150 tests fail
@@ -176,16 +175,15 @@ supabase/
 ├── *.sql                # schema and row-level security, one file per feature
 ├── migrations/          # the same SQL, for `supabase db push`
 └── functions/           # Edge Functions: media uploads, survey → Slack
-scripts/                 # the deps, migrations and sandbox checks
+scripts/                 # the deps and migrations checks
 docs/PRD.md              # the product requirements
 ```
 
 ## Contributing
 
-Contributions are welcome **in the Toolkit**: new tools, or improvements to existing
-ones. The rest of the app is not open to pull requests, so please open an issue
-first. [CONTRIBUTING.md](CONTRIBUTING.md) explains what is in scope and how to add a
-tool.
+Collaborators can work on any part of the app, through a pull request into
+`Development` that the owner approves before it merges. [CONTRIBUTING.md](CONTRIBUTING.md)
+explains how, and how to add a Toolkit tool.
 
 ## Branches
 

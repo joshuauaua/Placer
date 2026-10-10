@@ -1,7 +1,7 @@
 /* PLACER — Toolkit: a tool's setup, asked for in stages.
  *
  * Walks through a list of stages — the tool's own (setupSteps in toolkit/tools.js),
- * then whatever its host adds, such as how long the room stays open — one at a time,
+ * then whatever its host adds, such as when the room starts and how long it stays open — one at a time,
  * with Back and Next between them and the host's button at the end. A list of one is
  * a single screen, as before stages existed: no counter, no Back.
  *
@@ -9,7 +9,7 @@
  * somebody has tried to move past it — a form that starts out shouting has not let you
  * fill it in yet — and Next will not leave a stage that has any.
  *
- * Used by ConfigureToolDialog (a project's tool) and ToolkitPage's RoomSetup.
+ * Used by ConfigureToolDialog, which sets a project's tool up from its dashboard.
  */
 
 import { useEffect, useRef, useState } from 'react';

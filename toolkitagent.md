@@ -184,7 +184,7 @@ export default MyTool;
 The shared layout (`ToolLayout`) renders:
 - A back button to `/toolkit`
 - A header with the tool icon, name, and blurb
-- An actions slot (for "Start a room" / "Copy link" buttons)
+- An actions slot (for buttons such as "Copy link")
 - Your component as `{children}`
 
 Your component fills the content area below the header. Use a two-column grid:
@@ -344,7 +344,9 @@ setup: {
 },
 ```
 
-"Start a room" then opens the setup in place of the tool, and the room opens with it.
+Configuring the tool from a project's dashboard (`ConfigureToolDialog`) then asks for the
+setup — in stages, if the entry lists `steps` (`{ title, Form, problems }` each) — and the
+project's room opens with it. The Toolkit page opens no rooms.
 It is fixed for the room's whole life (`supabase/rooms-config.sql`) and reaches your
 component as `room.config` — null outside a room, and in a room opened without one, so
 the tool has to work either way. Keep `defaults()` to a setup `problems()` accepts; the
@@ -366,26 +368,6 @@ src/
     yourTool.js           # Pure logic and constants
     toolkit/                    # Additional logic files (if needed)
 ```
-
-## Scope rules
-
-The scope checker (`scripts/check-sandbox-scope.mjs`) runs on every PR and ensures
-toolkit contributions stay within toolkit boundaries. These paths are allowed:
-
-- `src/toolkit/**`
-- `src/components/toolkit/**`
-- `src/components/ToolkitPage.jsx`
-- `src/components/ToolLayout.jsx`
-- `src/lib/toolkit/**`
-- `src/lib/yourTool.js` (the specific tool library file)
-- `src/components/__tests__/Toolkit*.test.jsx`
-
-These paths are **denied** (security-sensitive room layer, reviewed separately):
-
-- `src/toolkit/rooms.js`
-- `src/toolkit/__tests__/rooms.test.js`
-- `src/components/toolkit/RoomBar.jsx`
-- `src/components/toolkit/useRoom.js`
 
 ## Testing
 

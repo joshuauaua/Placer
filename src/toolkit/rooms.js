@@ -170,10 +170,10 @@ export function roomIdFrom(search) {
 }
 
 /**
- * The project id in ?project=…, or null. How a project's dashboard hands off to the
- * Toolkit gallery so the room it opens gets attached — see supabase/projects.sql.
- * Only read when opening a *new* room; a room reached by its own ?room= link is
- * already attached or not, and re-reading ?project= there would mean nothing.
+ * The project id in ?project=…, or null. Set when a tool is opened from a project's
+ * page, so the way back leads to the project and a launched tool (Idea Visualizer)
+ * knows which project it is for. Rooms are not opened here; a project opens them from
+ * its dashboard.
  */
 export function projectIdFrom(search) {
   const query = String(search ?? '').replace(/^\?/, '');

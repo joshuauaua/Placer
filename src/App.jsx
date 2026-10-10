@@ -691,9 +691,6 @@ function MainApp({ initialView = 'welcome' }) {
                 <ToolkitPage
                   t={t}
                   displayName={profile?.name ?? null}
-                  // Only opening a room is gated. Joining, contributing and reading are not.
-                  needsAccount={identityStatus === 'signedOut'}
-                  onSignIn={handleSignIn}
                   onLaunchTool={handleLaunchTool}
                 />
               </Suspense>
