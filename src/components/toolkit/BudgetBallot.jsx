@@ -1,33 +1,31 @@
-/* PLACER — Toolkit: Budget Ballot.
+/* PLACER — Toolkit: Co-Budget.
  *
- * One street, €250,000, and nine things a neighbourhood might ask for. The money runs
- * out long before the street is full, so the sliders are a set of choices rather than a
- * wishlist — and the "who gains" panel keeps score of who each choice is for.
+ * A budget, and posts to spend it on at a price per item. The money runs out long
+ * before the list does, so the − and + buttons are a set of choices rather than a wishlist.
+ * On the Toolkit's own page it is a made-up street: €250,000 and nine things a
+ * neighbourhood might ask for.
  *
- * Costs, effects and the tally are in src/lib/budgetBallot.js.
+ * Costs and the tally are in src/lib/budgetBallot.js.
  *
- * In a room (the optional `room` prop, from ToolkitPage) the sliders are still only
+ * In a room (the optional `room` prop, from ToolkitPage) the buttons are still only
  * this person's own ballot. What changes is that it is published to everybody else,
  * and that a second panel appears showing what the room as a whole would fund — the
  * average of every ballot cast, which is itself a ballot that fits the budget.
  *
  * A room can also have been set up by its organiser (`room.config`, see `setup` in
- * toolkit/tools.js): its own budget, and only some of the nine things on the ballot.
- * Then the ballot is theirs, and the council's draft — a draft for the Toolkit's
- * made-up street, not this one — is left out of it.
+ * toolkit/tools.js): its own budget, and its own posts. Then the ballot is theirs, and
+ * the council's draft — a draft for the Toolkit's made-up street, not this one — is
+ * left out of it.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { Meter, Panel, PresetRow, Readout } from '../ToolLayout';
-import { CopyButton } from '../UI';
+import { Btn, CopyButton } from '../UI';
 import {
-  BUDGET,
   COUNCIL_DRAFT,
-  GROUP_LIST,
-  INTERVENTION_LIST,
-  OUTCOME_LIST,
   affordableQuantity,
+  ballotOf,
   emptyBallot,
   formatEuros,
   normalise,
@@ -43,31 +41,27 @@ const PRESETS = [
 
 export function BudgetBallot({ t, tool, room }) {
   const config = room?.config ?? null;
-  const budget = config?.budget ?? BUDGET;
-  const offered = useMemo(
-    () => (config ? INTERVENTION_LIST.filter((item) => config.items.includes(item.key)) : INTERVENTION_LIST),
-    [config]
-  );
+  const ballot = useMemo(() => ballotOf(config), [config]);
+  const { budget, posts: offered } = ballot;
 
-  const [quantities, setQuantities] = useState(() => emptyBallot());
+  const [quantities, setQuantities] = useState(() => emptyBallot(ballot));
   const [preset, setPreset] = useState('empty');
   // Until somebody has actually allocated something there is nothing worth sending:
   // a room full of all-zero ballots would count people who have not chosen yet and
   // drag the average down with them.
   const [touched, setTouched] = useState(false);
 
-  // A setup arrives once the room has loaded, after the sliders are already on screen.
+  // A setup arrives once the room has loaded, after the posts are already on screen.
   // Whatever was chosen before then was chosen against the wrong budget, so the
   // ballot starts again rather than being sent half-fitting.
   useEffect(() => {
     if (!config) return;
-    setQuantities(emptyBallot());
+    setQuantities(emptyBallot(ballot));
     setPreset('empty');
     setTouched(false);
-  }, [config]);
+  }, [config, ballot]);
 
-  const result = useMemo(() => tally(quantities, budget), [quantities, budget]);
-  const draft = useMemo(() => tally(COUNCIL_DRAFT), []);
+  const result = useMemo(() => tally(quantities, ballot), [quantities, ballot]);
   const spentShare = result.spent / budget;
 
   // Held in a ref rather than an effect dependency: the room object is rebuilt on
@@ -84,18 +78,18 @@ export function BudgetBallot({ t, tool, room }) {
 
   const inRoom = room?.status === 'open';
   const roomResult = useMemo(
-    () => (room?.combined ? tally(room.combined, budget) : null),
-    [room?.combined, budget]
+    () => (room?.combined ? tally(room.combined, ballot) : null),
+    [room?.combined, ballot]
   );
 
   function setQuantity(key, quantity) {
     setPreset(null);
     setTouched(true);
-    setQuantities((current) => normalise({ ...current, [key]: quantity }));
+    setQuantities((current) => normalise({ ...current, [key]: quantity }, ballot));
   }
 
   function pickPreset(key) {
-    setQuantities(key === 'draft' ? normalise(COUNCIL_DRAFT) : emptyBallot());
+    setQuantities(key === 'draft' ? normalise(COUNCIL_DRAFT, ballot) : emptyBallot(ballot));
     setPreset(key);
     setTouched(true);
   }
@@ -122,13 +116,13 @@ export function BudgetBallot({ t, tool, room }) {
           )}
         </Panel>
 
-        <Panel t={t} title="What the street could have">
+        <Panel t={t} title={config ? 'What the budget can go on' : 'What the street could have'}>
           <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
             {offered.map((item) => {
               const quantity = result.quantities[item.key];
-              // The slider stops where the money does, so it cannot overspend — and the
+              // The + stops where the money does, so it cannot overspend — and the
               // row says which of the two limits it has run into.
-              const affordable = affordableQuantity(quantities, item.key, budget);
+              const affordable = affordableQuantity(quantities, item.key, ballot);
               const ceiling = Math.max(quantity, affordable);
               const atBudget = ceiling < item.max;
 
@@ -138,9 +132,9 @@ export function BudgetBallot({ t, tool, room }) {
                     <span style={{ color: quantity > 0 ? tool.color : t.inkFaint, display: 'flex' }}>
                       <Icon name={item.icon} size={17} stroke={2.1} />
                     </span>
-                    <label htmlFor={`ballot-${item.key}`} style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>
+                    <span id={`ballot-${item.key}`} style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>
                       {item.label}
-                    </label>
+                    </span>
                     <div style={{ flex: 1 }} />
                     <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>
                       {formatEuros(item.unitCost)} / {item.unit}
@@ -148,32 +142,37 @@ export function BudgetBallot({ t, tool, room }) {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <input
-                      id={`ballot-${item.key}`}
-                      type="range"
-                      min={0}
-                      max={ceiling}
-                      step={1}
-                      value={quantity}
-                      onChange={(event) => setQuantity(item.key, Number(event.target.value))}
-                      style={{ flex: 1, accentColor: tool.color }}
-                    />
-                    <span className="placer-mono" style={{ fontSize: 13, fontWeight: 700, color: t.ink, minWidth: 74, textAlign: 'right' }}>
-                      {quantity} {pluralise(item.unit, quantity)}
-                    </span>
+                    <div role="group" aria-labelledby={`ballot-${item.key}`}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                      <Btn t={t} type="button" variant="outline" size="sm" icon="minus"
+                        ariaLabel={`One fewer: ${item.label}`} disabled={quantity <= 0}
+                        onClick={() => setQuantity(item.key, quantity - 1)}
+                        style={{ width: 40, padding: 0 }} />
+                      <span aria-label={`${item.label}: how many`} className="placer-mono"
+                        style={{ fontSize: 15, fontWeight: 700, color: t.ink, minWidth: 32, textAlign: 'center' }}>
+                        {quantity}
+                      </span>
+                      <Btn t={t} type="button" variant="outline" size="sm" icon="plus"
+                        ariaLabel={`One more: ${item.label}`} disabled={quantity >= ceiling}
+                        onClick={() => setQuantity(item.key, quantity + 1)}
+                        style={{ width: 40, padding: 0, color: quantity < ceiling ? tool.color : undefined }} />
+                      <span style={{ fontSize: 13, color: t.inkDim }}>{pluralise(item.unit, quantity)}</span>
+                    </div>
                     <span className="placer-mono" style={{ fontSize: 13, color: t.inkDim, minWidth: 74, textAlign: 'right' }}>
                       {formatEuros(item.unitCost * quantity)}
                     </span>
                   </div>
 
-                  <div style={{ marginTop: 6, fontSize: 12.5, color: t.inkDim, lineHeight: 1.5 }}>
-                    {item.note}
-                    {atBudget && (
-                      <span style={{ color: tool.color, fontWeight: 700 }}>
-                        {' '}The budget stops at {ceiling}, not the street.
-                      </span>
-                    )}
-                  </div>
+                  {(item.note || atBudget) && (
+                    <div style={{ marginTop: 6, fontSize: 12.5, color: t.inkDim, lineHeight: 1.5 }}>
+                      {item.note}
+                      {atBudget && (
+                        <span style={{ color: tool.color, fontWeight: 700 }}>
+                          {item.note ? ' ' : ''}The budget stops at {ceiling}, not the street.
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </li>
               );
             })}
@@ -195,16 +194,18 @@ export function BudgetBallot({ t, tool, room }) {
                     tone={tool.color} />
                   <Readout t={t} label="You commit" value={formatEuros(result.spent)} />
                 </div>
-                {OUTCOME_LIST.map((outcome) => (
-                  <Meter
-                    key={outcome.key}
-                    t={t}
-                    label={outcome.label}
-                    value={roomResult.outcomes[outcome.key] / 100}
-                    color={outcome.color}
-                    caption={`${roomResult.outcomes[outcome.key]} · you ${result.outcomes[outcome.key]}`}
-                  />
-                ))}
+                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {roomResult.items.map((item) => (
+                    <li key={item.key} style={{ display: 'flex', gap: 10, fontSize: 13.5 }}>
+                      <span style={{ color: t.ink, fontWeight: 500, flex: 1, minWidth: 0 }}>
+                        {item.label} × {item.quantity}
+                      </span>
+                      <span className="placer-mono" style={{ color: t.inkDim }}>
+                        you {result.quantities[item.key]}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
                 <p style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.6, marginTop: 12 }}>
                   The average of every ballot in the room, which is why it still fits inside
                   {' '}{formatEuros(budget)}. Where it differs from yours is the argument worth having.
@@ -212,61 +213,18 @@ export function BudgetBallot({ t, tool, room }) {
               </>
             ) : (
               <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
-                Nobody has cast a ballot yet. Yours will show up here as soon as you move a slider.
+                Nobody has cast a ballot yet. Yours will show up here as soon as you add something.
               </p>
             )}
           </Panel>
         )}
 
-        <Panel t={t} title="What it achieves" aside={config ? null : (
-          <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>vs the draft</span>
-        )}>
-          {OUTCOME_LIST.map((outcome) => (
-            <Meter
-              key={outcome.key}
-              t={t}
-              label={outcome.label}
-              value={result.outcomes[outcome.key] / 100}
-              color={outcome.color}
-              caption={config
-                ? `${result.outcomes[outcome.key]}`
-                : `${result.outcomes[outcome.key]} · draft ${draft.outcomes[outcome.key]}`}
-            />
-          ))}
-        </Panel>
-
-        <Panel t={t} title="Who gains">
-          {GROUP_LIST.map((group) => {
-            const score = result.groups[group.key];
-            return (
-              <Meter
-                key={group.key}
-                t={t}
-                signed
-                label={group.label}
-                value={score / 100}
-                color={score < 0 ? '#B3261E' : '#1E7B3A'}
-                caption={score === 0 ? '—' : `${score > 0 ? '+' : ''}${score}`}
-              />
-            );
-          })}
-          <p style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.6, marginTop: 12 }}>
-            {offered.some((item) => item.key === 'parklets') && (
-              <>
-                Turning parking into parklets is the sharpest split in the list: measured trade goes up,
-                and the shopkeepers who asked for the parking are still worse off by their own reckoning.{' '}
-              </>
-            )}
-            A scheme that scores well everywhere usually has not chosen anything.
-          </p>
-        </Panel>
-
         <Panel t={t} title="Your ballot">
           {result.items.length === 0 ? (
             <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
               {config
-                ? 'Nothing chosen yet. Move a slider to start spending.'
-                : "Nothing chosen yet. Move a slider, or start from the council's draft and argue with it."}
+                ? 'Nothing chosen yet. Press + on a post to start spending.'
+                : "Nothing chosen yet. Press + on a post, or start from the council's draft and argue with it."}
             </p>
           ) : (
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>

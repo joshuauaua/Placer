@@ -1,4 +1,4 @@
-/* PLACER — Toolkit: Reimagine a Space.
+/* PLACER — Toolkit: Idea Visualizer.
  *
  * The imagination flow as a tool: pick a spot on the map, place benches, trees and the
  * rest into its Street View, describe the idea and post it. That flow is App's, not

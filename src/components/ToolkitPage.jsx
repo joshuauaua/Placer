@@ -6,15 +6,13 @@
  * and grid or list. Each is self-contained: no sign-in, nothing saved, and something moving within a
  * second of arriving. The register of tools is src/toolkit/tools.js.
  *
- * The exception to "nothing saved" is a room: a tool whose register entry has
- * a `room` can be opened up to a roomful of people, who join it with a PIN or a QR
- * code and whose answers are held in Supabase until the facilitator closes it. This
- * page owns the room the way it owns the tool — off the URL, in ?room= — and
- * hands it to the tool as a prop.
- *
- * A tool with a `setup` is set up before its room opens — the budget and the ballot,
- * say, for the place the room is about. "Start a room" on one of those opens
- * RoomSetup in place of the tool, and the room opens from there with the setup fixed.
+ * The page is a place to try the tools and see what each one does. They are used for
+ * real inside a project: added to it, configured from its dashboard
+ * (ConfigureToolDialog) and put in front of people on its public page. So nothing here
+ * opens a room. A room a project opened is still shown here, though — this page owns it
+ * off the URL, in ?room=, and hands it to the tool as a prop — because that is where
+ * people who join with a PIN or a QR code land, and where the dashboard sends its
+ * facilitator.
  *
  * The page owns the /toolkit part of the URL itself rather than taking the selected
  * tool as a prop, so every tool has a link that can be shared.
@@ -27,13 +25,13 @@ import { Icon } from './Icon';
 import { Breadcrumb, PageHeader, WORKSPACE_CRUMB } from './PageHeader';
 import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from './GalleryToolbar';
 import { Btn } from './UI';
-import { Panel, ToolLayout } from './ToolLayout';
+import { ToolLayout } from './ToolLayout';
 import { RoomBar } from './toolkit/RoomBar';
 import { ToolCover } from './toolkit/ToolCover';
 import { ContributeToolDialog } from './ContributeToolDialog';
 import { useRoom } from './toolkit/useRoom';
 import { CATEGORIES, SORTS, TOOLS, filterTools, findCategory, findTool, sortTools } from '../toolkit/tools';
-import { DEFAULT_LIFETIME, ROOM_LIFETIMES, projectIdFrom, roomIdFrom, roomPath } from '../toolkit/rooms';
+import { projectIdFrom, roomIdFrom } from '../toolkit/rooms';
 import { isSupabaseConfigured } from '../services/rooms';
 import { readProjectCrumb } from '../services/projects';
 
@@ -153,138 +151,11 @@ function Row({ t, tool, onOpen }) {
 const NO_FILTERS = { category: null, groupOnly: false };
 
 /**
- * Offered on a tool that can host a room, when there is a database to host it in
- * and somebody with an account to open it.
- *
- * Opened from a project, the room can also be left running for weeks — a poll on a
- * poster rather than a workshop — so how long it stays open becomes a choice. Without a
- * project there is no choice to offer: a long room needs somebody who can find it again
- * and close it, and the database refuses one that has no project behind it
- * (supabase/rooms-lifetime.sql).
- */
-function LifetimeSelect({ t, lifetime, onChange, busy }) {
-  return (
-    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13,
-      fontWeight: 500, color: t.inkDim }}>
-      Open for
-      <select
-        value={lifetime}
-        onChange={(event) => onChange(event.target.value)}
-        disabled={busy}
-        style={{ height: 40, padding: '0 12px', borderRadius: 12, border: `1px solid ${t.lineStrong}`,
-          background: t.surface, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 14,
-          fontWeight: 500 }}>
-        {ROOM_LIFETIMES.map((option) => (
-          <option key={option.id} value={option.id}>{option.label}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-/**
- * The button that opens a room. For a tool with a `setup`, it opens RoomSetup
- * instead, and the choice of how long the room stays open moves there with it.
- */
-function StartRoom({ t, tool, onStart, onSetUp, busy, canStayOpen }) {
-  const [lifetime, setLifetime] = useState(DEFAULT_LIFETIME);
-  const setsUp = Boolean(tool.setup);
-
-  return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-      {canStayOpen && !setsUp && (
-        <LifetimeSelect t={t} lifetime={lifetime} onChange={setLifetime} busy={busy} />
-      )}
-      <Btn
-        t={t}
-        size="sm"
-        icon="user"
-        variant="character"
-        tone={tool}
-        onClick={() => (setsUp ? onSetUp() : onStart(lifetime))}
-        disabled={busy}>
-        {busy ? 'Opening…' : 'Start a room'}
-      </Btn>
-    </div>
-  );
-}
-
-/**
- * Setting a tool up for the room about to open: the tool's own form, how long the
- * room stays open when there is a project to keep it open for, and what still has to
- * be fixed before it can open. Shown in place of the tool, so what the organiser sees
- * is what they are deciding.
- *
- * Problems are only listed once somebody has tried to open the room — a form that
- * starts out shouting at you has not let you fill it in yet.
- */
-function RoomSetup({ t, tool, canStayOpen, busy, onCancel, onOpen }) {
-  const [setup, setSetup] = useState(() => tool.setup.defaults());
-  const [lifetime, setLifetime] = useState(DEFAULT_LIFETIME);
-  const [tried, setTried] = useState(false);
-  const problems = tool.setup.problems(setup);
-  const Form = tool.setup.Form;
-
-  const open = () => {
-    setTried(true);
-    if (problems.length === 0) onOpen(lifetime, setup);
-  };
-
-  return (
-    <Panel t={t} title="Set up the room">
-      <p style={{ fontSize: 14.5, color: t.inkDim, lineHeight: 1.6, marginBottom: 20, maxWidth: 640 }}>
-        Everybody who joins sees the tool the way you set it up here, and it stays that way
-        until the room closes — so their answers are all about the same thing.
-      </p>
-
-      <Form t={t} tool={tool} setup={setup} onChange={setSetup} />
-
-      {tried && problems.length > 0 && (
-        <ul role="alert" style={{ listStyle: 'none', marginTop: 20, padding: '12px 16px', borderRadius: 12,
-          background: t.surfaceAlt, border: `1px solid ${t.line}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {problems.map((problem) => (
-            <li key={problem} style={{ fontSize: 14, color: t.ink }}>{problem}</li>
-          ))}
-        </ul>
-      )}
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 24 }}>
-        {canStayOpen && <LifetimeSelect t={t} lifetime={lifetime} onChange={setLifetime} busy={busy} />}
-        <div style={{ flex: 1 }} />
-        <Btn t={t} size="sm" variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Btn>
-        <Btn t={t} size="sm" icon="user" variant="character" tone={tool} onClick={open} disabled={busy}>
-          {busy ? 'Opening…' : 'Open the room'}
-        </Btn>
-      </div>
-    </Panel>
-  );
-}
-
-/**
- * What stands in for the button when nobody is signed in.
- *
- * Shown rather than hiding the control, because a feature that silently is not there
- * reads as a feature that is broken. Opening a room is the one thing in the Toolkit that
- * takes an account — it creates something other people join, and it is enforced in
- * supabase/rooms.sql, where toolkit_room_create is the only function the anon role may
- * not call. Joining a room needs nothing, which is the point: a participant scans a code
- * and starts, and being asked to make an account at that moment would cost the room the
- * people it was opened for.
- */
-function StartRoomSignedOut({ t, onSignIn }) {
-  return (
-    <Btn t={t} size="sm" variant="outline" icon="user" onClick={onSignIn}>
-      Sign in to start a room
-    </Btn>
-  );
-}
-
-/**
  * `onLaunchTool(toolId, projectId)` takes over from a tool marked `launch` (see
  * toolkit/tools.js) when its cover's Get started is pressed — App, which runs that
  * tool's flow. Without it, such a tool opens like any other.
  */
-export function ToolkitPage({ t, displayName = null, needsAccount = false, onSignIn, onLaunchTool }) {
+export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
   const [location, navigate] = useLocation();
   const search = useSearch();
   const requestedId = toolIdFrom(location);
@@ -314,13 +185,6 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
     // request, and this is a render body. It is still a label rather than proof of
     // identity — a room is joined with its PIN, not with an account.
     displayName,
-    // Only meaningful for a room being opened, not one being joined — see
-    // projectIdFrom's own comment. A ProjectDashboardPage link is what sets this.
-    projectId,
-    onOpened: (id) => {
-      posthog.capture('sandbox_room_opened', { experiment: tool.id });
-      navigate(roomPath(tool.id, id));
-    },
   });
 
   useEffect(() => {
@@ -332,10 +196,6 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
   // opening a different tool lands on that one's cover rather than skipping it,
   // and opening a room (which only changes the query string) does not bring it back.
   const [startedId, setStartedId] = useState(null);
-
-  // Which tool is being set up for a room, the same way as startedId: an id, so
-  // moving to another tool does not carry a half-finished setup with it.
-  const [settingUpId, setSettingUpId] = useState(null);
 
   // The Contribute button's pop-up form, for offering a tool to the PLACER Toolkit.
   const [contributing, setContributing] = useState(false);
@@ -353,14 +213,6 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
   const clearFilters = () => { setFilters(NO_FILTERS); setFavouritesOnly(false); };
 
   const Tool = tool?.component;
-  // Offered only where a room would mean something, and only with a database behind it.
-  const roomIsPossible =
-    Boolean(tool?.room) && isSupabaseConfigured() && room.status === 'none';
-  // Opening one also takes an account. Joining one does not — nothing on this page is
-  // gated for a participant who arrived with a PIN or a QR code.
-  const canStartRoom = roomIsPossible && !needsAccount;
-  const settingUp = Boolean(tool?.setup) && settingUpId === tool.id && canStartRoom;
-
   const breadcrumb = tool && projectId ? (
     <Breadcrumb t={t} trail={projectTrail(projectId, crumb)} current={tool.name} style={{ marginBottom: 24 }} />
   ) : null;
@@ -421,28 +273,10 @@ export function ToolkitPage({ t, displayName = null, needsAccount = false, onSig
             t={t}
             tool={tool}
             breadcrumb={breadcrumb}
-            onBack={() => navigate('/toolkit')}
-            actions={settingUp ? null : canStartRoom ? (
-              <StartRoom t={t} tool={tool} onStart={room.start} onSetUp={() => setSettingUpId(tool.id)}
-                busy={room.status === 'opening'} canStayOpen={Boolean(projectId)} />
-            ) : roomIsPossible ? (
-              <StartRoomSignedOut t={t} onSignIn={onSignIn} />
-            ) : null}>
-            {settingUp ? (
-              <RoomSetup t={t} tool={tool} canStayOpen={Boolean(projectId)}
-                busy={room.status === 'opening'}
-                onCancel={() => setSettingUpId(null)}
-                onOpen={async (lifetime, setup) => {
-                  await room.start(lifetime, setup);
-                  setSettingUpId(null);
-                }} />
-            ) : (
-              <>
-                <RoomBar t={t} tool={tool} room={room} />
-                <Tool t={t} tool={tool} room={room}
+            onBack={() => navigate('/toolkit')}>
+            <RoomBar t={t} tool={tool} room={room} />
+            <Tool t={t} tool={tool} room={room}
               onLaunch={tool.launch && onLaunchTool ? () => onLaunchTool(tool.id, projectId) : undefined} />
-              </>
-            )}
           </ToolLayout>
         ) : (
           <>

@@ -12,7 +12,6 @@
     "test": "vp test",
     "test:run": "vp test run",
     "deps:check": "node scripts/check-deps.mjs",
-    "toolkit:scope": "node scripts/check-sandbox-scope.mjs",
     "migrations:check": "node scripts/check-migrations.mjs"
   },
   "dependencies": {

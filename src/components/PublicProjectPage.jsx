@@ -9,11 +9,11 @@
  * The tools are only the ones its organisers chose for it (project_tools, see
  * supabase/project-setup.sql) and have set up, not the whole Toolkit, and each is
  * presented in its own section under a heading said to the visitor rather than a
- * "Tools" list: an Open Vote is "We want your opinion" with the poll right there
+ * "Tools" list: a Poll is "We want your opinion" with the poll right there
  * (onProjectPage in toolkit/tools.js). Only live tools are shown: configured for the
  * project from its dashboard, or for one that runs in a room, with a room open for it
  * (isToolLive in toolkit/tools.js, supabase/project-open-rooms.sql). What people have
- * imagined is not a section of its own either: imagining is Reimagine a Space, so the
+ * imagined is not a section of its own either: imagining is the Idea Visualizer, so the
  * imaginations show in that tool's section, and only once the project has added it.
  *
  * The layout lives in index.css (.placer-project-*), since the card's stickiness and

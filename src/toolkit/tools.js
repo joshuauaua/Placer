@@ -19,8 +19,10 @@
  * roomful of people at once rather than one person. Two functions:
  *
  *   empty()          — the state a participant starts from
- *   combine(states)  — everybody's state folded into one, in whatever way actually
- *                      means something for this tool
+ *   combine(states, config)
+ *                    — everybody's state folded into one, in whatever way actually
+ *                      means something for this tool; `config` is the room's setup,
+ *                      or null
  *
  * The tool also has to be in the enumerated list in supabase/rooms.sql, which
  * is the other half of the pair: the database will not host a room for a tool
@@ -34,13 +36,17 @@
  *   problems(setup)   — what is wrong with it, as sentences; empty when it can open
  *   Form              — the component that edits it: { t, tool, setup, onChange }
  *
+ * and optionally `steps`, for a setup asked for in stages rather than on one screen:
+ * each a { title, Form, problems } over the same setup, with `problems` covering only
+ * its own part (setupSteps, and SetupSteps which walks through them).
+ *
  * The setup is fixed when the room opens (supabase/rooms-config.sql) and reaches the
  * tool as `room.config`. A room opened without one — or before there was such a
  * thing — has a null `room.config`, and the tool behaves as it does outside a room.
  *
  * `launch` marks a tool that is a flow of App's own rather than a component on the
  * Toolkit's page: Get started on its cover hands over to that flow (ToolkitPage's
- * onLaunchTool), carrying the project it was opened for. Reimagine a Space is one —
+ * onLaunchTool), carrying the project it was opened for. Idea Visualizer is one —
  * the imagination flow runs full-bleed, step by step, and keeps its draft in App.
  * Its `component` is only what shows where nothing takes the hand-over.
  *
@@ -56,11 +62,11 @@
  */
 
 import { BudgetBallot } from '../components/toolkit/BudgetBallot';
-import { BudgetBallotSetup } from '../components/toolkit/BudgetBallotSetup';
+import { BudgetBallotSetup, BudgetStep, PostsStep } from '../components/toolkit/BudgetBallotSetup';
 import { DesireLines } from '../components/toolkit/DesireLines';
 import { FifteenMinute } from '../components/toolkit/FifteenMinute';
 import { OpenVote } from '../components/toolkit/OpenVote';
-import { OpenVoteSetup } from '../components/toolkit/OpenVoteSetup';
+import { AnswersStep, OpenVoteSetup, QuestionStep } from '../components/toolkit/OpenVoteSetup';
 import { OpenVoteOnPage } from '../components/toolkit/OpenVoteOnPage';
 import { ReimagineASpace } from '../components/toolkit/ReimagineASpace';
 import { SiteMapping } from '../components/toolkit/SiteMapping';
@@ -68,8 +74,12 @@ import { SocialSpaceSurvey } from '../components/toolkit/SocialSpaceSurvey';
 import { StationaryActivityMap } from '../components/toolkit/StationaryActivityMap';
 import { StreetMixer } from '../components/toolkit/StreetMixer';
 import { CHARACTER } from '../theme';
-import { ballotSetupProblems, defaultBallotSetup, emptyBallot, normalise } from '../lib/budgetBallot';
-import { defaultVoteSetup, emptyVote, tally as tallyVotes, voteSetupProblems } from '../lib/openVote';
+import {
+  ballotSetupProblems, budgetProblems, combineBallots, defaultBallotSetup, emptyBallot, postProblems,
+} from '../lib/budgetBallot';
+import {
+  answerProblems, combineVotes, defaultVoteSetup, emptyVote, questionProblems, voteSetupProblems,
+} from '../lib/openVote';
 
 // Each tool wears one of the three character colours: `color` is the 700,
 // for text, icons and outlines on white, and `tint` the 100, for fills with ink
@@ -143,9 +153,9 @@ export const TOOLS = [
     id: 'budget-ballot',
     added: '2026-08-27',
     category: 'plan',
-    name: 'Budget Ballot',
-    tagline: 'Two hundred and fifty thousand euros. Nine things. Choose.',
-    blurb: 'Every line has a real price and a real effect, and the money runs out well before the street is finished. Spending it is easy; explaining who ended up better off is the hard part.',
+    name: 'Co-Budget',
+    tagline: 'A fixed budget, more on the list than it buys. Choose.',
+    blurb: 'Every post has a price per item, and the money runs out well before the list does. Spend the budget the way you would, and see what the room would fund together.',
     ...tone(CHARACTER.citizen),
     icon: 'coins',
     createdBy: 'PLACER',
@@ -157,38 +167,23 @@ export const TOOLS = [
       defaults: defaultBallotSetup,
       problems: ballotSetupProblems,
       Form: BudgetBallotSetup,
+      steps: [
+        { title: 'Budget', Form: BudgetStep, problems: budgetProblems },
+        { title: 'Posts', Form: PostsStep, problems: postProblems },
+      ],
     },
     room: {
       empty: emptyBallot,
-      /*
-       * The room's ballot is the average of everybody's, not the total.
-       *
-       * A ballot is one fixed budget spent one way, so adding twenty of them
-       * together gives a five-million-euro wishlist and throws away the only thing
-       * the tool is about. The mean is itself a ballot somebody could have
-       * cast: it says what the room would fund, and it still fits the room's budget.
-       */
-      combine: (states) => {
-        if (states.length === 0) return emptyBallot();
-
-        const total = emptyBallot();
-        for (const state of states) {
-          for (const key of Object.keys(total)) total[key] += Number(state?.[key]) || 0;
-        }
-        for (const key of Object.keys(total)) {
-          total[key] = Math.round(total[key] / states.length);
-        }
-        return normalise(total);
-      },
+      combine: combineBallots,
     },
   },
   {
     id: 'open-vote',
     added: '2026-09-22',
     category: 'plan',
-    name: 'Open Vote',
-    tagline: 'Ask anything. Yes, No, or Undecided.',
-    blurb: 'Type whatever you want to put to a room, then let people vote. There is no scale to calibrate — just a question, three options, and a live tally as people pick.',
+    name: 'Poll',
+    tagline: 'Ask anything, with the answers you choose.',
+    blurb: 'Type whatever you want to put to a room, write the answers people can pick from, then let them vote. There is no scale to calibrate — just a question, your answers, and a live tally as people pick.',
     ...tone(CHARACTER.cityWorker),
     icon: 'flag',
     createdBy: 'PLACER',
@@ -197,6 +192,10 @@ export const TOOLS = [
       defaults: defaultVoteSetup,
       problems: voteSetupProblems,
       Form: OpenVoteSetup,
+      steps: [
+        { title: 'Question', Form: QuestionStep, problems: questionProblems },
+        { title: 'Answers', Form: AnswersStep, problems: answerProblems },
+      ],
     },
     onProjectPage: {
       heading: 'We want your opinion',
@@ -204,7 +203,7 @@ export const TOOLS = [
     },
     room: {
       empty: emptyVote,
-      combine: tallyVotes,
+      combine: combineVotes,
     },
   },
   {
@@ -247,7 +246,7 @@ export const TOOLS = [
     id: 'reimagine-a-space',
     added: '2026-10-06',
     category: 'imagine',
-    name: 'Reimagine a Space',
+    name: 'Idea Visualizer',
     tagline: 'A tool to help anyone quickly create a visual render of an idea they have.',
     blurb: 'Pick a spot on the map and step into its Street View. Place benches, trees, lighting and more where they would go, say what the idea is and why, and post it to the map for others to see.',
     ...tone(CHARACTER.citizen),
@@ -263,6 +262,12 @@ export const TOOLS = [
 ];
 
 const BY_ID = new Map(TOOLS.map((tool) => [tool.id, tool]));
+
+/** The stages a tool's setup is asked for in: its `steps`, or its one Form as a stage of its own. */
+export function setupSteps(tool) {
+  if (!tool?.setup) return [];
+  return tool.setup.steps ?? [{ title: null, Form: tool.setup.Form, problems: tool.setup.problems }];
+}
 
 /** Every organisation with a tool in the register, alphabetically. */
 export const ORGANISATIONS = [...new Set(TOOLS.map((tool) => tool.createdBy))]
@@ -320,7 +325,7 @@ export function sortTools(tools, sort = 'recent', direction = 'desc') {
  * out, and a project adds the ones it wants and fills them in for itself from its own
  * page (ConfigureToolDialog). How a tool is filled in for a project:
  *
- *   'scene'  — Reimagine a Space: the place, and the photo of it people add to
+ *   'scene'  — Idea Visualizer: the place, and the photo of it people add to
  *   'room'   — a tool that runs in a room: its `setup`, if it has one, and how long the
  *              project's room stays open. Opening that room is what puts it live.
  *   'none'   — nothing to fill in; configuring it only puts it live

@@ -4,7 +4,7 @@
 
 -- PLACER — setting a tool up before its room opens.
 --
--- A room used to be a tool exactly as the Toolkit ships it: a Budget Ballot room was
+-- A room used to be a tool exactly as the Toolkit ships it: a Co-Budget room was
 -- always €250,000 and the same nine things. Opened for a project, it should be about
 -- that project's place, so the organiser now sets the tool up first — for the Budget
 -- Ballot, how much money there is and what is on the ballot — and the room keeps it.

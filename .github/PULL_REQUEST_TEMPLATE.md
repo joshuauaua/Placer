@@ -1,6 +1,6 @@
 <!--
-Contributions are limited to the Toolkit. See CONTRIBUTING.md — and if this change
-needs to reach outside it, open an issue instead of a pull request.
+Into Development. The owner approves every pull request before it merges — see
+CONTRIBUTING.md.
 -->
 
 ## What this changes
@@ -15,16 +15,15 @@ needs to reach outside it, open an issue instead of a pull request.
 
 - [ ] `npm run test:run` passes, and there are tests for what I changed
 - [ ] `npm run lint` passes
-- [ ] `git diff --name-only Development...HEAD | npm run toolkit:scope` passes
 - [ ] Everything reachable by mouse is reachable by keyboard
 - [ ] No new dependencies
 
 ## Anything needing the owner
 
 <!--
-Delete if none. The usual two:
-  - a new icon, since src/components/Icon.jsx is shared and closed
-  - a room-capable tool, which also needs the allowlist in supabase/rooms.sql
+Delete if none. The usual one: a database change. Merging deploys beta at once, so
+the owner pushes a migration live before merging — list each file in
+supabase/migrations/ this adds.
 -->
 
 ## Where the numbers came from

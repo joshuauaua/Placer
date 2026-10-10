@@ -152,7 +152,7 @@ describe('ProjectSetupPage, starting a project', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
     next();
     expect(screen.getByText('Step 5 of 6 · Tools')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Budget Ballot/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Co-Budget/ }));
     fireEvent.click(screen.getByRole('button', { name: /Desire Lines/ }));
     next();
     expect(screen.getByText('Step 6 of 6 · An image')).toBeInTheDocument();
@@ -211,7 +211,7 @@ describe('ProjectSetupPage, starting a project', () => {
 
     const tools = within(screen.getByRole('list', { name: 'Toolkit tools' })).getAllByRole('button');
     expect(tools).toHaveLength(TOOLS.length);
-    const ballot = screen.getByRole('button', { name: /Budget Ballot/ });
+    const ballot = screen.getByRole('button', { name: /Co-Budget/ });
     expect(ballot).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(ballot);
     expect(ballot).toHaveAttribute('aria-pressed', 'true');
@@ -244,13 +244,13 @@ describe('ProjectSetupPage, starting a project', () => {
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
     next();
     next();
-    fireEvent.click(screen.getByRole('button', { name: /Budget Ballot/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Co-Budget/ }));
     next();
     fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('its tools could not be: network down');
     expect(onSaved).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: /Budget Ballot/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /Co-Budget/ })).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
@@ -345,7 +345,7 @@ describe('ProjectSetupPage, editing a project', () => {
     expect(screen.getByLabelText('Name *')).toHaveValue('Riverside Greenway');
     expect(screen.getByLabelText('Dates')).toHaveTextContent(/Jan.*Dec.*2026/);
     expect(screen.getByLabelText('Address')).toHaveValue('Folkets Park, Amiralsgatan 35, Malmö');
-    expect(await screen.findByRole('button', { name: /Open Vote/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByRole('button', { name: /Poll/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('radio', { name: /I want to push for change/ })).toBeChecked();
     expect(screen.getByRole('button', { name: /Save changes/ })).toBeInTheDocument();
   });
@@ -374,7 +374,7 @@ describe('ProjectSetupPage, editing a project', () => {
     readProjectTools.mockResolvedValueOnce(['open-vote']);
     setup({ project: PROJECT });
 
-    fireEvent.click(await screen.findByRole('button', { name: /Budget Ballot/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Co-Budget/ }));
     fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
 
     await waitFor(() => expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['open-vote', 'budget-ballot'], 'user-1'));
@@ -593,7 +593,7 @@ describe('ProjectSetupPage, public or private', () => {
   });
 });
 
-describe('ProjectSetupPage, Reimagine a Space', () => {
+describe('ProjectSetupPage, Idea Visualizer', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -611,7 +611,7 @@ describe('ProjectSetupPage, Reimagine a Space', () => {
     createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
     const { onSaved } = setup();
     toTools();
-    fireEvent.click(screen.getByRole('button', { name: /Reimagine a Space/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Idea Visualizer/ }));
 
     expect(screen.queryByLabelText('Location *')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Next/ })).toBeEnabled();
@@ -630,7 +630,7 @@ describe('ProjectSetupPage, Reimagine a Space', () => {
     readProjectToolConfig.mockResolvedValueOnce({ imagePath: 'scenes/proj-1/scene-0.webp' });
     const { onSaved } = setup({ project: PROJECT });
 
-    fireEvent.click(await screen.findByRole('button', { name: /Reimagine a Space/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Idea Visualizer/ }));
     fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());

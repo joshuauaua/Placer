@@ -2,10 +2,10 @@
 -- That file remains the documented Dashboard -> SQL Editor path
 -- (see supabase/README.md); this is the same SQL under CLI control.
 
--- PLACER — a tool's setup for one project, starting with Reimagine a Space's scene.
+-- PLACER — a tool's setup for one project, starting with Idea Visualizer's scene.
 --
 -- 1. project_tools.config. A project's chosen tools (project-setup.sql) were only a
---    list. Reimagine a Space has to be set up before people can use it for a project:
+--    list. Idea Visualizer has to be set up before people can use it for a project:
 --    the organiser gives it a location and a base image, and everyone imagining for
 --    the project draws on that image instead of capturing a Street View of their own.
 --    That setup is kept on the tool's row:

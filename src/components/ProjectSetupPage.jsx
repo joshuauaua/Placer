@@ -318,7 +318,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   // false until they are, so a failed load can never save over them with nothing.
   const [tools, setTools] = useState([]);
   const [toolsReady, setToolsReady] = useState(!initialProject);
-  // The base image of Reimagine a Space's scene, if it has been configured, so that
+  // The base image of Idea Visualizer's scene, if it has been configured, so that
   // dropping the tool here can delete it once nothing points at it.
   const [sceneImagePath, setSceneImagePath] = useState(null);
   // The budget question: null until answered. Loaded first when editing, with the same
@@ -456,7 +456,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
         }
       }
 
-      // Dropping Reimagine a Space drops its scene with its row; its base image is
+      // Dropping Idea Visualizer drops its scene with its row; its base image is
       // deleted here, since nothing points at it any more.
       if (toolsReady && sceneImagePath && !tools.includes(REIMAGINE_TOOL)) {
         removeProjectImageFile(sceneImagePath).catch((err) => console.error('Could not remove the base image:', err));

@@ -38,7 +38,7 @@ describe('a tool opened for a project', () => {
     expect(crumbs().getByRole('link', { name: 'My Workspace' })).toHaveAttribute('href', '/dashboard');
     expect(crumbs().getByRole('link', { name: 'Projects' })).toHaveAttribute('href', '/projects');
     expect(project).toHaveAttribute('href', '/projects/proj-1/dashboard');
-    expect(crumbs().getByText('Reimagine a Space')).toHaveAttribute('aria-current', 'page');
+    expect(crumbs().getByText('Idea Visualizer')).toHaveAttribute('aria-current', 'page');
     expect(screen.queryByRole('button', { name: 'All tools' })).not.toBeInTheDocument();
     expect(readProjectCrumb).toHaveBeenCalledWith('proj-1');
 
