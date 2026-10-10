@@ -1,7 +1,7 @@
-/* PLACER — an Open Vote on a project's page.
+/* PLACER — a Poll on a project's page.
  *
  * The poll an organiser opened for the project, set into its public page rather than
- * behind a link: their question, the three buttons straight under it, and once this
+ * behind a link: their question, its answers as buttons straight under it, and once this
  * browser has voted, the tally in place of the buttons. The room is the project's
  * (services/rooms' readProjectOpenRooms); the vote is saved against it with this
  * browser's participant token, so voting again from the same browser would replace
@@ -12,14 +12,15 @@
  * The service arrives as a prop, as in useRoom, so a test can hand this a fake.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Meter } from '../ToolLayout';
 import { Btn } from '../UI';
-import { OPTIONS, tally } from '../../lib/openVote';
+import { pollOptions, tally } from '../../lib/openVote';
 import { formatRoomDate, participantToken, rememberAnswer, rememberedAnswer } from '../../toolkit/rooms';
 import * as roomService from '../../services/rooms';
 
 export function OpenVoteOnPage({ t, room, service = roomService }) {
+  const options = useMemo(() => pollOptions(room.config?.answers), [room.config?.answers]);
   const [answer, setAnswer] = useState(() => rememberedAnswer(room.id));
   const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'closed' | 'error'
   const [result, setResult] = useState(null);
@@ -30,7 +31,7 @@ export function OpenVoteOnPage({ t, room, service = roomService }) {
     let cancelled = false;
     const refresh = () => service.readContributions(room.id)
       .then((contributions) => {
-        if (!cancelled) setResult(tally(contributions.map((entry) => entry.state)));
+        if (!cancelled) setResult(tally(contributions.map((entry) => entry.state), options));
       })
       .catch((err) => console.error('Could not read the poll:', err));
     refresh();
@@ -39,7 +40,7 @@ export function OpenVoteOnPage({ t, room, service = roomService }) {
       cancelled = true;
       unsubscribe();
     };
-  }, [answer, room.id, service]);
+  }, [answer, options, room.id, service]);
 
   const vote = async (choice) => {
     setStatus('sending');
@@ -61,7 +62,7 @@ export function OpenVoteOnPage({ t, room, service = roomService }) {
   };
 
   const closes = formatRoomDate(room.expiresAt);
-  const voted = OPTIONS.find((option) => option.key === answer?.choice);
+  const voted = options.find((option) => option.key === answer?.choice);
 
   return (
     <div className="placer-card" style={{ padding: 24 }}>
@@ -76,7 +77,7 @@ export function OpenVoteOnPage({ t, room, service = roomService }) {
         <div role="status" aria-live="polite">
           {result ? (
             <>
-              {OPTIONS.map((option) => (
+              {options.map((option) => (
                 <Meter key={option.key} t={t} label={option.label} value={result.shares[option.key]}
                   color={option.color}
                   caption={`${result.counts[option.key]} · ${Math.round(result.shares[option.key] * 100)}%`} />
@@ -93,7 +94,7 @@ export function OpenVoteOnPage({ t, room, service = roomService }) {
       ) : (
         <>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {OPTIONS.map((option) => (
+            {options.map((option) => (
               <Btn key={option.key} t={t} variant="outline" disabled={status === 'sending'}
                 onClick={() => vote(option.key)}
                 style={{ flex: '1 1 120px', height: 56, fontSize: 17, border: `2px solid ${option.color}`,

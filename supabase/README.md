@@ -89,22 +89,20 @@ position each feature was placed in.
 
 ## 8. Toolkit rooms
 
-Optional, and separate from the survey. A facilitator opens a room on a Toolkit
-tool; people join it with a six-digit PIN or by scanning its QR code, and
-their answers are combined live. Without this the Toolkit still works — every
-tool runs on its own in the browser, and the "Start a room" button simply
-never appears.
+Optional, and separate from the survey. A project's organiser opens a room on one
+of its tools, by configuring the tool from the project's dashboard; people join it
+with a six-digit PIN or by scanning its QR code, and their answers are combined
+live. The Toolkit page itself only lets people try the tools, and opens no rooms.
+Without this every tool still runs on its own in the browser.
 
 **Opening a room takes an account. Joining one never does.** Opening creates
 something other people are invited into, so it needs somebody accountable for it;
-joining is what a participant does with a QR code in a workshop, and asking them to
-make an account at that moment would cost the room the people it was opened for. This
-means step 9 as well, if you want the "Start a room" button to work at all — without
-accounts configured, a signed-out facilitator gets "Sign in to start a room" and no
-further.
+joining is what a participant does with a QR code, and asking them to make an
+account at that moment would cost the room the people it was opened for. Opening
+one means step 9 as well, since only a project's owner or collaborators can.
 
 Run `rooms.sql` in the SQL editor, the same way as `schema.sql`. It is
-re-runnable. Only Budget Ballot can host a room today; the tools allowed to
+re-runnable. Only Co-Budget can host a room today; the tools allowed to
 are enumerated in a CHECK constraint in that file, and adding a second one means
 editing both it and `src/toolkit/tools.js`.
 
@@ -467,17 +465,35 @@ select proname from pg_proc where proname = 'toolkit_room_delete';
 Requires the section above. Run `rooms-config.sql` in the SQL editor after
 `rooms-lifetime.sql` (or `supabase db push`). It is re-runnable.
 
-A tool with a `setup` in `src/toolkit/tools.js` — the Budget Ballot so far — is set up
-before its room opens: for the Budget Ballot, the budget and which things are on the
+A tool with a `setup` in `src/toolkit/tools.js` — the Co-Budget so far — is set up
+before its room opens: for the Co-Budget, the budget and which things are on the
 ballot. The room keeps it in `toolkit_rooms.config`, fixed for the room's whole life,
 and `toolkit_room_state` hands it to everybody who joins. The database checks only that
 it is a JSON object under 16 KB; what it means is checked by the tool in the browser.
 Until this file has run, the app still opens rooms on tools without a setup, but opening
-one on the Budget Ballot fails, because it sends a setup the older function does not take.
+one on the Co-Budget fails, because it sends a setup the older function does not take.
 
 ```sql
 select pg_get_function_identity_arguments('public.toolkit_room_create'::regproc);
 -- p_tool text, p_project_id uuid, p_lifetime text, p_config jsonb
+```
+
+### Scheduling a project's room to start later
+
+Run `rooms-schedule.sql` in the SQL editor after `project-privacy.sql` (or
+`supabase db push`). It is re-runnable.
+
+A project's room can be set up ahead of time to start on a day within the project's
+dates (the Poll's last setup step offers it). The room keeps when it starts in
+`toolkit_rooms.opens_at`, at the start of that day in the organiser's time zone; until
+then it is `scheduled` — listed on the project's dashboard, but not on its public page,
+and it cannot be joined or answered — and its lifetime counts from when it opens.
+`toolkit_room_create` refuses a day outside the project's dates, in the past, or for a
+project without dates.
+
+```sql
+select pg_get_function_identity_arguments('public.toolkit_room_create'::regproc);
+-- p_tool text, p_project_id uuid, p_lifetime text, p_config jsonb, p_opens_on date, p_time_zone text
 ```
 
 ## 13. Notifications
@@ -559,7 +575,7 @@ files themselves live in an R2 bucket. The R2 keys never reach the browser.
 - **Old pictures are removed.** Uploading a cover, profile photo or project image
   deletes the older ones in that folder, keeping the new one and the one the row
   currently uses; deleting an imagination or a project deletes its picture.
-  A project's Reimagine a Space base image (`scenes/<project id>/`, see
+  A project's Idea Visualizer base image (`scenes/<project id>/`, see
   `project-tool-config.sql`) is not swept: the setup page deletes the one it
   replaces, and deleting the project deletes it too.
 
@@ -573,7 +589,7 @@ files themselves live in an R2 bucket. The R2 keys never reach the browser.
    The `r2.dev` address is rate-limited and not meant for production.
 3. Settings -> CORS policy -> allow `GET` from the app's origins. Uploads never need
    it (the browser never talks to the bucket's S3 endpoint, only to the function), but
-   Reimagine a Space reads a project's base image (the `scenes` folder) with `fetch`
+   Idea Visualizer reads a project's base image (the `scenes` folder) with `fetch`
    to draw on, and that read is cross-origin. Without the rule, people imagining for a
    project are sent to the map instead of the organiser's photo.
 

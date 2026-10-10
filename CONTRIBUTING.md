@@ -1,43 +1,9 @@
 # Contributing to PLACER
 
-Contributions are welcome **in the Toolkit**, and only there.
-
-The Toolkit is the gallery of small tools at `/toolkit` — the Street Section
-Mixer, Desire Lines, 15-Minute Reach, the Budget Ballot. Each one is a self-contained
-toy that makes one argument about participatory urban design. Adding a new one, or
-improving an existing one, is the kind of change this repository is open to.
-
-The rest of the app is not open to pull requests. That is not a judgement about
-anyone's code — it is that the rest of it carries things a reviewer cannot check
-quickly: the legal pages make promises about what is stored where, the Supabase rules
-are what stop one visitor reading another's data, and the app shell is shared by every
-screen. If you want to change something out there, **open an issue** and we will talk
-about it first.
-
-## What you can change
-
-| Open | |
-|---|---|
-| `src/components/toolkit/**` | the tools themselves |
-| `src/toolkit/tools.js` | the register that makes one appear in the gallery |
-| `src/components/ToolkitPage.jsx`, `ToolLayout.jsx` | the gallery and the shared panel primitives |
-| `src/lib/toolkit/**` | the arithmetic behind a **new** tool |
-| `src/lib/streetSection.js`, `desireLines.js`, `reachGrid.js`, `budgetBallot.js` | the arithmetic behind the four that already exist |
-| the matching tests under `src/lib/toolkit/__tests__/`, `src/lib/__tests__/`, `src/toolkit/__tests__/`, `src/components/__tests__/Toolkit*.test.jsx` | |
-
-Everything else is closed, including four files that sit *inside* those directories:
-`src/components/toolkit/RoomBar.jsx`, `src/components/toolkit/useRoom.js`,
-`src/toolkit/rooms.js` and their tests. Those are the shared-room layer, and what
-they get wrong is not a wonky diagram but who can read a stranger's contribution.
-
-`scripts/check-sandbox-scope.mjs` is the definition, not this table. Check a change
-against it before you push:
-
-```bash
-git diff --name-only Development...HEAD | npm run toolkit:scope
-```
-
-A pull request that reaches outside gets a failing check that names the files.
+Collaborators can work on any part of the app — the Toolkit's tools, projects, the
+pages, the database. Every change reaches `Development` the same way: through a pull
+request that the owner approves before it merges (see
+[Opening the pull request](#opening-the-pull-request)).
 
 ## Getting set up
 
@@ -50,9 +16,9 @@ npm run lint
 npm run build
 ```
 
-No environment variables are needed for the Toolkit. The tools run entirely in
-the browser and save nothing. (`.env` matters only for the map, analytics and shared
-rooms, none of which you need to work on a tool.)
+No environment variables are needed to work on a Toolkit tool: the tools run entirely
+in the browser and save nothing. The rest of the app — accounts, projects, the map,
+shared rooms — needs a `.env`; ask the owner for one.
 
 ## Adding a tool
 
@@ -70,14 +36,10 @@ Four steps, and the register's own comment says the same thing:
 4. **Tests.** The logic in `src/lib/toolkit/__tests__/`, the component in
    `src/components/__tests__/ToolkitTools.test.jsx`.
 
-Two things need the owner, so mention them in the pull request rather than trying:
-
-- **A new icon.** `icon` is a key into `src/components/Icon.jsx`, which is shared and
-  therefore closed. Pick an existing name from that file, or say in the pull request
-  what mark you want and it can be added.
-- **A room-capable tool.** Adding a `room: { empty, combine }` to your register
-  entry is not enough on its own — the database has an allowlist of tools that
-  may host a room, in `supabase/rooms.sql`, and that half has to be done by the owner.
+`icon` is a key into `src/components/Icon.jsx`; add a new mark there if none of the
+existing ones fits. A tool that can be run in a room (`room: { empty, combine }` in its
+entry) also has to be on the database's allowlist in `supabase/rooms.sql`, which is a
+database change — see below.
 
 ## What review will look for
 
@@ -105,9 +67,16 @@ The codebase has strong habits. Matching them makes review quick:
 
 ## Opening the pull request
 
-Branch from `Development` and target `Development`. Do not push to `Development` or
-`main` directly.
+Branch from `Development` and open the pull request into `Development`. Do not push to
+`Development` or `main` directly — the rulesets refuse it.
 
-Two checks run, and both have to be green: the Toolkit scope check, and the tests,
-lint and build. Every pull request also needs a review from the owner — that is
-deliberate, and it applies to everything, including changes inside the Toolkit.
+Every pull request needs the owner's approval before it can merge, whatever it
+touches: `.github/CODEOWNERS` makes them the reviewer of every file, and a new push
+after approval asks for it again. The tests, lint and build also run on it and should
+be green.
+
+**A database change needs the owner too.** Merging into `Development` deploys the beta
+straight away, so a migration has to be live before the code that needs it. Add the
+migration under `supabase/migrations/` (generated from the matching `supabase/*.sql`;
+`npm run migrations:check` says whether they agree), say so in the pull request, and
+the owner pushes it live before merging.

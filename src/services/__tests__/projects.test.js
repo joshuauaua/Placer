@@ -620,7 +620,7 @@ describe("a project's tools", () => {
 });
 
 describe("a tool's setup for a project", () => {
-  it('reads Reimagine a Space\'s scene, with an address to show its image from', async () => {
+  it('reads Idea Visualizer\'s scene, with an address to show its image from', async () => {
     await load();
     fromChains.project_tools = makeChain({ data: { config: {
       address: 'Folkets Park, Malmö', lat: 55.59, lng: 13.01, imagePath: 'scenes/proj-1/scene-1.webp',

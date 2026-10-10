@@ -212,7 +212,7 @@ function MainApp({ initialView = 'welcome' }) {
   // Where the map should open. Set when an imagination is posted, so the map comes
   // back centred on the new pin instead of the default location.
   const [mapFocus, setMapFocus] = useState(null);
-  // Set when Reimagine a Space is started for a project (opened from the project's
+  // Set when Idea Visualizer is started for a project (opened from the project's
   // page, so its URL carries ?project=), so the imagination that comes out the other
   // end of the capture flow is attached to it. Cleared by posting, and by starting a capture any other way (handleExplore) —
   // otherwise a project visited earlier in the session could tag something unrelated.
@@ -359,7 +359,7 @@ function MainApp({ initialView = 'welcome' }) {
     setCurrentView(next);
   };
 
-  // Imagining is the Toolkit's Reimagine a Space now, opened like any tool — from the
+  // Imagining is the Toolkit's Idea Visualizer now, opened like any tool — from the
   // Toolkit, or from a project's page with the project attached. Its Get started hands
   // back here to run the flow.
   //
@@ -691,9 +691,6 @@ function MainApp({ initialView = 'welcome' }) {
                 <ToolkitPage
                   t={t}
                   displayName={profile?.name ?? null}
-                  // Only opening a room is gated. Joining, contributing and reading are not.
-                  needsAccount={identityStatus === 'signedOut'}
-                  onSignIn={handleSignIn}
                   onLaunchTool={handleLaunchTool}
                 />
               </Suspense>

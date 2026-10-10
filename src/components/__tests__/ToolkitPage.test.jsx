@@ -124,7 +124,7 @@ describe('the gallery', () => {
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
 
     fireEvent.click(within(screen.getByRole('group', { name: 'View' })).getByRole('button', { name: 'List' }));
-    fireEvent.click(screen.getByRole('button', { name: tile(/Open Vote/i) }));
+    fireEvent.click(screen.getByRole('button', { name: tile(/Poll/i) }));
 
     expect(location.history.at(-1)).toBe('/toolkit/open-vote');
     localStorage.clear();
@@ -156,7 +156,7 @@ describe('the gallery', () => {
     fireEvent.click(screen.getByRole('menuitemradio', { name: 'Understand' }));
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Category: Understand' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: tile(/Open Vote/i) })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: tile(/Poll/i) })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: tile(/Desire Lines/i) })).toBeInTheDocument();
 
     openMenu();
@@ -165,7 +165,7 @@ describe('the gallery', () => {
 
     openMenu();
     fireEvent.click(screen.getByRole('menuitemradio', { name: 'All tools' }));
-    expect(screen.getByRole('button', { name: tile(/Open Vote/i) })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: tile(/Poll/i) })).toBeInTheDocument();
   });
 
   it('sorts by Recent, A-Z or Organisation, and turns the current order round', async () => {
@@ -176,9 +176,9 @@ describe('the gallery', () => {
       .map((button) => TOOLS.find((tool) => button.textContent.includes(tool.name))?.name)
       .filter(Boolean);
 
-    // Newest first to begin with: Reimagine a Space is the latest tool added.
+    // Newest first to begin with: Idea Visualizer is the latest tool added.
     expect(sorts.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
-    expect(names()[0]).toBe('Reimagine a Space');
+    expect(names()[0]).toBe('Idea Visualizer');
 
     fireEvent.click(sorts.getByRole('button', { name: 'A-Z' }));
     const alphabetical = TOOLS.map((tool) => tool.name).sort((a, b) => a.localeCompare(b));
@@ -200,7 +200,7 @@ describe('the gallery', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Favourites' }));
     expect(screen.getByRole('button', { name: tile(/Desire Lines/i) })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: tile(/Open Vote/i) })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: tile(/Poll/i) })).not.toBeInTheDocument();
 
     unmount();
     renderPageAt('/toolkit');
@@ -267,7 +267,7 @@ describe('the gallery', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Toolkit' })).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('There is no tool called teleporter');
-    expect(screen.getByRole('button', { name: tile(/Budget Ballot/i) })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: tile(/Co-Budget/i) })).toBeInTheDocument();
   });
 
   it('opens a tool on its cover page, and shows the tool after Get started', async () => {
@@ -405,7 +405,7 @@ describe('inside the app', () => {
   });
 });
 
-describe('Reimagine a Space', () => {
+describe('Idea Visualizer', () => {
   const renderWith = (path, searchPath, onLaunchTool) => {
     const location = memoryLocation({ path, searchPath, record: true });
     render(
@@ -418,7 +418,7 @@ describe('Reimagine a Space', () => {
   it('is a tool in the Imagine category, with its own cover', () => {
     renderWith('/toolkit/reimagine-a-space', '', vi.fn());
 
-    expect(screen.getByRole('heading', { name: 'Reimagine a Space' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Idea Visualizer' })).toBeInTheDocument();
     expect(screen.getByText('A tool to help anyone quickly create a visual render of an idea they have.')).toBeInTheDocument();
     expect(screen.getByText('Imagine')).toBeInTheDocument();
   });

@@ -1,13 +1,15 @@
-/* PLACER — Toolkit: Open Vote.
+/* PLACER — Toolkit: Poll.
  *
- * The simplest possible room: type whatever you want to ask, then Yes, No or
- * Undecided. The question is decoration — read it aloud, put it on a slide — and is
- * never published anywhere; only the vote a person picks is sent to the room, so its
- * tally is exactly the three-way split people actually cast.
+ * The simplest possible room: type whatever you want to ask, write the answers to
+ * pick from (Yes, No and Undecided to begin with), then vote. Here the question and
+ * answers are decoration — read them aloud, put them on a slide — and are never
+ * published anywhere; only the vote a person picks is sent to the room, so its tally
+ * is exactly the split people actually cast.
  *
  * A room set up for a project (`room.config`, see `setup` in toolkit/tools.js) has its
- * question fixed: the organiser wrote it before opening the room, so it is shown
- * rather than typed.
+ * question and answers fixed: the organiser wrote them before opening the room, so
+ * they are shown rather than typed. A room opened without a setup offers Yes, No and
+ * Undecided, since everybody in it has to be choosing between the same answers.
  *
  * The counting is in src/lib/openVote.js.
  */
@@ -15,12 +17,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Meter, Panel } from '../ToolLayout';
 import { Btn } from '../UI';
-import { DEFAULT_QUESTION, OPTIONS, tally } from '../../lib/openVote';
+import { AnswersEditor } from './OpenVoteSetup';
+import { DEFAULT_ANSWERS, DEFAULT_QUESTION, pollOptions, tally } from '../../lib/openVote';
 
-function VoteMeters({ t, result }) {
+function VoteMeters({ t, options, result }) {
   return (
     <>
-      {OPTIONS.map((option) => (
+      {options.map((option) => (
         <Meter
           key={option.key}
           t={t}
@@ -36,12 +39,25 @@ function VoteMeters({ t, result }) {
 
 export function OpenVote({ t, tool, room }) {
   const [question, setQuestion] = useState('');
+  const [answers, setAnswers] = useState(DEFAULT_ANSWERS);
   const fixedQuestion = room?.config?.question ?? null;
   const [choice, setChoice] = useState(null);
 
+  const inRoom = room?.status === 'open';
+  const editable = !room?.config && !inRoom;
+  const options = useMemo(
+    () => pollOptions(room?.config ? room.config.answers : editable ? answers : null),
+    [room?.config, editable, answers],
+  );
+
+  // Rewriting or removing the answer that was picked takes the pick away with it.
+  useEffect(() => {
+    if (choice && !options.some((option) => option.key === choice)) setChoice(null);
+  }, [choice, options]);
+
   // Held in a ref rather than an effect dependency: the room object is rebuilt on
   // every render, so depending on it would republish on every incoming change and
-  // the two would chase each other round for ever — the same reason Budget Ballot
+  // the two would chase each other round for ever — the same reason Co-Budget
   // keeps one.
   const roomRef = useRef(room);
   roomRef.current = room;
@@ -52,9 +68,8 @@ export function OpenVote({ t, tool, room }) {
     if (current?.status === 'open') current.publish({ choice });
   }, [choice]);
 
-  const inRoom = room?.status === 'open';
   const roomResult = room?.combined ?? null;
-  const soloResult = useMemo(() => tally(choice ? [{ choice }] : []), [choice]);
+  const soloResult = useMemo(() => tally(choice ? [{ choice }] : [], options), [choice, options]);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(280px, 1fr)', gap: 20, alignItems: 'start' }}>
@@ -85,12 +100,17 @@ export function OpenVote({ t, tool, room }) {
             Shown on this screen only — read it aloud, or put it on a slide. What gets
             counted is the vote below, not the wording.
           </p>
+          {editable && (
+            <div style={{ marginTop: 20 }}>
+              <AnswersEditor t={t} answers={answers} onChange={setAnswers} />
+            </div>
+          )}
         </Panel>
         )}
 
         <Panel t={t} title="Cast your vote">
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {OPTIONS.map((option) => {
+            {options.map((option) => {
               const active = choice === option.key;
               return (
                 <Btn
@@ -128,7 +148,7 @@ export function OpenVote({ t, tool, room }) {
             </span>
           }>
             {roomResult && roomResult.total > 0 ? (
-              <VoteMeters t={t} result={roomResult} />
+              <VoteMeters t={t} options={options} result={roomResult} />
             ) : (
               <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
                 Nobody has voted yet. Yours will show up here as soon as you pick one.
@@ -138,10 +158,10 @@ export function OpenVote({ t, tool, room }) {
         ) : (
           <Panel t={t} title="Result">
             {choice ? (
-              <VoteMeters t={t} result={soloResult} />
+              <VoteMeters t={t} options={options} result={soloResult} />
             ) : (
               <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
-                Pick Yes, No, or Undecided to see it here.
+                Pick an answer to see it here.
               </p>
             )}
           </Panel>

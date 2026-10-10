@@ -94,6 +94,7 @@ const PLAN = [
   { name: '20261007090001_project_summary.sql', src: 'project-summary.sql' },
   { name: '20261007110001_project_tool_config.sql', src: 'project-tool-config.sql' },
   { name: '20261010110001_organisation_avatars.sql', src: 'organisation-avatars.sql' },
+  { name: '20261010100001_toolkit_rooms_schedule.sql', src: 'rooms-schedule.sql' },
 ]
 
 const HAND_WRITTEN = [
@@ -109,6 +110,7 @@ const HAND_WRITTEN = [
   '20261005140001_survey_responses_newsletter_signup.sql',
   '20261007100001_project_budgets_upsert_grant.sql',
   '20261009090001_project_private_create.sql',
+  '20261010090001_toolkit_tool_names.sql',
 ]
 
 export function render({ src, slice, note }, read = (f) => readFileSync(`${DIR}/${f}`, 'utf8')) {

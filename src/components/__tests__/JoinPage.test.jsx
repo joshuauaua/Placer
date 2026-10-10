@@ -51,6 +51,18 @@ describe('joining a long room by the code in its QR link', () => {
     expect(joinRoom).not.toHaveBeenCalled();
   });
 
+  it('says when the poll opens, for a poster scanned before it starts', async () => {
+    joinRoomByCode.mockResolvedValue({
+      id: 'room-1', tool: 'open-vote', status: 'scheduled', endsAt: '2026-12-01T12:00:00Z',
+      opensAt: '2026-11-01T12:00:00Z',
+    });
+
+    const location = renderAt(`code=${code}`);
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/opens on 1 November 2026/);
+    expect(location.history).toHaveLength(1);
+  });
+
   it('says when the poll closed, for a poster scanned after it ended', async () => {
     joinRoomByCode.mockResolvedValue({
       id: 'room-1', tool: 'open-vote', status: 'expired', endsAt: '2026-10-24T12:00:00Z',

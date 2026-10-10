@@ -60,7 +60,7 @@ const FOLDERS: Record<string, Folder> = {
     current: { table: 'profiles', column: 'avatar_path' } },
   projects: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'project',
     current: { table: 'projects', column: 'image_path' } },
-  // Reimagine a Space's base image for a project (supabase/project-tool-config.sql).
+  // Idea Visualizer's base image for a project (supabase/project-tool-config.sql).
   // Its own folder, since `projects` is swept down to the cover. No `current`: the key
   // is inside project_tools.config, and the page deletes the one it replaces.
   scenes: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'project' },

@@ -4,7 +4,6 @@ import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { THEME } from '../../theme';
 import { rememberHostedRoom } from '../../toolkit/rooms';
-import { defaultBallotSetup } from '../../lib/budgetBallot';
 import ToolkitPage from '../ToolkitPage';
 
 const createRoom = vi.fn();
@@ -67,124 +66,46 @@ describe('a tool outside a room', () => {
   it('is exactly as it was, with no room furniture on it', () => {
     renderAt('/toolkit/budget-ballot');
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Budget Ballot' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Co-Budget' })).toBeInTheDocument();
     expect(screen.queryByText(/you are in a room/i)).not.toBeInTheDocument();
     expect(screen.queryByText("The room's ballot")).not.toBeInTheDocument();
     expect(readRoom).not.toHaveBeenCalled();
   });
 
-  it('offers a room on a tool that can host one', () => {
-    renderAt('/toolkit/budget-ballot');
-
-    expect(screen.getByRole('button', { name: /start a room/i })).toBeInTheDocument();
-  });
-
-  it('offers nothing on a tool that cannot', () => {
-    renderAt('/toolkit/street-mixer');
-
-    expect(screen.queryByRole('button', { name: /start a room/i })).not.toBeInTheDocument();
-  });
-
-  it('offers nothing when there is no database to host it in', () => {
-    isSupabaseConfigured.mockReturnValue(false);
-
+  it('offers no way to start a room: a project opens those from its dashboard', () => {
     renderAt('/toolkit/budget-ballot');
 
     expect(screen.queryByRole('button', { name: /start a room/i })).not.toBeInTheDocument();
-  });
-});
-
-describe('opening a room', () => {
-  it('goes to the room it just opened', async () => {
-    createRoom.mockResolvedValue({
-      id: 'room-1', pin: '839201', facilitatorToken: 'facilitator-1', expiresAt: hours(2),
-    });
-    readRoom.mockResolvedValue(openRoom());
-
-    const location = renderAt('/toolkit/budget-ballot');
-
-    fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Open the room' }));
-
-    await waitFor(() => {
-      expect(location.history.at(-1)).toBe('/toolkit/budget-ballot?room=room-1');
-    });
-    expect(createRoom).toHaveBeenCalledWith('budget-ballot', null, '2h', defaultBallotSetup());
-  });
-
-  it('attaches the room to a project named in the URL', async () => {
-    createRoom.mockResolvedValue({
-      id: 'room-1', pin: '839201', facilitatorToken: 'facilitator-1', expiresAt: hours(2),
-    });
-    readRoom.mockResolvedValue(openRoom());
-
-    renderAt('/toolkit/budget-ballot', 'project=proj-1');
-
-    fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Open the room' }));
-
-    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('budget-ballot', 'proj-1', '2h', defaultBallotSetup()));
-  });
-});
-
-describe('setting a room up before it opens', () => {
-  const ballotSetup = { budget: 50000, items: ['benches', 'lighting'] };
-
-  it('shows the setup in place of the tool, and Cancel puts the tool back', () => {
-    renderAt('/toolkit/budget-ballot');
-
-    fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
-
-    expect(screen.getByText('Set up the room')).toBeInTheDocument();
-    expect(screen.getByLabelText('Budget, in euros')).toHaveValue(250000);
-    expect(screen.queryByText('What the street could have')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-
-    expect(screen.queryByText('Set up the room')).not.toBeInTheDocument();
-    expect(screen.getByText('What the street could have')).toBeInTheDocument();
-  });
-
-  it('opens the room with the budget and the ballot the organiser chose', async () => {
-    createRoom.mockResolvedValue({
-      id: 'room-1', pin: '839201', joinCode: 'a'.repeat(32), facilitatorToken: 'facilitator-1',
-      expiresAt: hours(24 * 30),
-    });
-    readRoom.mockResolvedValue({ ...openRoom(), expiresAt: hours(24 * 30), config: ballotSetup });
-
-    renderAt('/toolkit/budget-ballot', 'project=proj-1');
-    fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
-
-    fireEvent.change(screen.getByLabelText('Budget, in euros'), { target: { value: '50000' } });
-    for (const checkbox of screen.getAllByRole('checkbox')) {
-      if (!/benches with backs|street lighting/i.test(checkbox.closest('label').textContent)) fireEvent.click(checkbox);
-    }
-    fireEvent.change(screen.getByLabelText(/open for/i), { target: { value: '30d' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Open the room' }));
-
-    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('budget-ballot', 'proj-1', '30d', ballotSetup));
-  });
-
-  it('will not open until the setup is complete, and says why', () => {
-    renderAt('/toolkit/budget-ballot');
-    fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
-
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    for (const checkbox of screen.getAllByRole('checkbox')) fireEvent.click(checkbox);
-    fireEvent.click(screen.getByRole('button', { name: 'Open the room' }));
-
-    expect(screen.getByRole('alert')).toHaveTextContent('Put at least one thing on the ballot.');
     expect(createRoom).not.toHaveBeenCalled();
   });
+});
 
-  it('shows everybody in the room the ballot as it was set up', async () => {
+describe('a room set up by its project', () => {
+  const ballotSetup = { budget: 50000, items: ['benches', 'lighting'] };
+
+  it('shows everybody in the room the posts the organiser wrote', async () => {
+    readRoom.mockResolvedValue({ ...openRoom(), config: {
+      budget: 20000, posts: [{ key: 'post-1', label: 'Water fountain', icon: 'sparkle', unitCost: 4500 }],
+    } });
+
+    renderAt('/toolkit/budget-ballot', 'room=room-1');
+
+    const more = await screen.findByRole('button', { name: 'One more: Water fountain' });
+    for (let i = 0; i < 4; i += 1) fireEvent.click(more);
+    // €4,500 each, so €20,000 buys four.
+    expect(more).toBeDisabled();
+    expect(screen.getByText('€20,000')).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Street trees' })).not.toBeInTheDocument();
+  });
+
+  it('still shows a room set up before posts could be written', async () => {
     readRoom.mockResolvedValue({ ...openRoom(), config: ballotSetup });
 
     renderAt('/toolkit/budget-ballot', 'room=room-1');
 
     expect(await screen.findByText('€50,000')).toBeInTheDocument();
-    expect(screen.getByLabelText('Benches with backs')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Street trees')).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Benches with backs' })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Street trees' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: "The council's draft" })).not.toBeInTheDocument();
   });
 
@@ -195,7 +116,7 @@ describe('setting a room up before it opens', () => {
 
     expect(await screen.findByText("The room's ballot")).toBeInTheDocument();
     expect(screen.getByText('€250,000')).toBeInTheDocument();
-    expect(screen.getByLabelText('Street trees')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Street trees' })).toBeInTheDocument();
   });
 
   it('refuses a setup the tool does not accept rather than guessing', async () => {
@@ -207,29 +128,17 @@ describe('setting a room up before it opens', () => {
   });
 });
 
-describe('opening a room that stays open for weeks', () => {
-  it('only asks how long when a project is behind the room', () => {
-    renderAt('/toolkit/open-vote');
-    expect(screen.queryByLabelText(/open for/i)).not.toBeInTheDocument();
-  });
-
-  it('opens it for the lifetime chosen', async () => {
-    createRoom.mockResolvedValue({
-      id: 'room-1', pin: '839201', joinCode: 'a'.repeat(32), facilitatorToken: 'facilitator-1',
-      expiresAt: hours(24 * 30),
+describe('a room scheduled to start later', () => {
+  it('says when it opens, and adds nothing to it until then', async () => {
+    readRoom.mockResolvedValue({
+      tool: 'open-vote', status: 'scheduled', expiresAt: hours(24 * 40), opensAt: hours(24 * 10),
+      config: { question: 'Car-free?', answers: ['Yes', 'No'] },
     });
-    readRoom.mockResolvedValue({ tool: 'open-vote', status: 'open', expiresAt: hours(24 * 30) });
 
-    renderAt('/toolkit/open-vote', 'project=proj-1');
+    renderAt('/toolkit/open-vote', 'room=room-1');
 
-    // Open Vote is set up first, and how long it stays open is chosen there.
-    fireEvent.click(screen.getByRole('button', { name: /start a room/i }));
-    fireEvent.change(screen.getByLabelText('The question'), { target: { value: 'Should the square be car-free?' } });
-    fireEvent.change(screen.getByLabelText(/open for/i), { target: { value: '30d' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Open the room' }));
-
-    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('open-vote', 'proj-1', '30d',
-      { question: 'Should the square be car-free?' }));
+    expect(await screen.findByText(/This room opens on/)).toBeInTheDocument();
+    expect(readContributions).not.toHaveBeenCalled();
   });
 });
 
@@ -375,7 +284,7 @@ describe('a room seen by somebody who joined it', () => {
     // count people who have not chosen and drag the average down with them.
     expect(saveContribution).not.toHaveBeenCalled();
 
-    fireEvent.change(screen.getByLabelText('Benches with backs'), { target: { value: '3' } });
+    for (let i = 0; i < 3; i += 1) fireEvent.click(screen.getByRole('button', { name: 'One more: Benches with backs' }));
 
     await waitFor(
       () => {
@@ -444,7 +353,7 @@ describe('a room running out of time', () => {
     renderAt('/toolkit/budget-ballot', 'room=room-1');
     await screen.findByLabelText('Room PIN 839-201');
 
-    fireEvent.change(screen.getByLabelText('Benches with backs'), { target: { value: '3' } });
+    for (let i = 0; i < 3; i += 1) fireEvent.click(screen.getByRole('button', { name: 'One more: Benches with backs' }));
 
     expect(await screen.findByText(/run out of time/i, {}, { timeout: 4000 })).toBeInTheDocument();
   });
@@ -483,8 +392,8 @@ describe('a room that has gone', () => {
     renderAt('/toolkit/budget-ballot', 'room=room-1');
 
     await screen.findByRole('status');
-    expect(screen.getByRole('heading', { level: 1, name: 'Budget Ballot' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Benches with backs')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Co-Budget' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Benches with backs' })).toBeInTheDocument();
   });
 });
 
@@ -497,66 +406,23 @@ describe('a room that has gone', () => {
  * is the only function the anon role may not execute. These cover the half of it a person
  * can see.
  */
-describe('opening a room takes an account', () => {
-  it('asks for a sign in instead of offering the button', () => {
-    renderAt('/toolkit/budget-ballot', '', { needsAccount: true });
-
-    expect(screen.queryByRole('button', { name: /^start a room$/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /sign in to start a room/i })).toBeInTheDocument();
-  });
-
-  it('says so rather than hiding the feature, which would look broken', () => {
-    renderAt('/toolkit/budget-ballot', '', { needsAccount: true });
-
-    // The control is still where it was; only what it does has changed.
-    expect(screen.getByRole('button', { name: /sign in to start a room/i })).toBeInTheDocument();
-  });
-
-  it('sends somebody to sign in when they ask to', () => {
-    const onSignIn = vi.fn();
-    renderAt('/toolkit/budget-ballot', '', { needsAccount: true, onSignIn });
-
-    fireEvent.click(screen.getByRole('button', { name: /sign in to start a room/i }));
-
-    expect(onSignIn).toHaveBeenCalled();
-    expect(createRoom).not.toHaveBeenCalled();
-  });
-
-  it('offers the real button once there is an account', () => {
-    renderAt('/toolkit/budget-ballot', '', { needsAccount: false });
-
-    expect(screen.getByRole('button', { name: /^start a room$/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /sign in to start a room/i })).not.toBeInTheDocument();
-  });
-
-  it('offers neither where a room was never possible', () => {
-    isSupabaseConfigured.mockReturnValue(false);
-
-    renderAt('/toolkit/budget-ballot', '', { needsAccount: true });
-
-    // Nothing to sign in for: there is no database to host a room in either way.
-    expect(screen.queryByRole('button', { name: /sign in to start a room/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^start a room$/i })).not.toBeInTheDocument();
-  });
-});
-
 describe('joining a room takes no account', () => {
   it('lets a signed-out participant into a room that is open', async () => {
     readRoom.mockResolvedValue(openRoom());
 
-    renderAt('/toolkit/budget-ballot', 'room=room-1', { needsAccount: true });
+    renderAt('/toolkit/budget-ballot', 'room=room-1');
 
     expect(await screen.findByText(/2h left/)).toBeInTheDocument();
-    expect(screen.getByLabelText('Benches with backs')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Benches with backs' })).toBeInTheDocument();
   });
 
   it('lets a signed-out participant contribute', async () => {
     readRoom.mockResolvedValue(openRoom());
 
-    renderAt('/toolkit/budget-ballot', 'room=room-1', { needsAccount: true });
+    renderAt('/toolkit/budget-ballot', 'room=room-1');
     await screen.findByText(/2h left/);
 
-    fireEvent.change(screen.getByLabelText('Benches with backs'), { target: { value: '3' } });
+    for (let i = 0; i < 3; i += 1) fireEvent.click(screen.getByRole('button', { name: 'One more: Benches with backs' }));
 
     await waitFor(
       () => {
@@ -568,27 +434,13 @@ describe('joining a room takes no account', () => {
     );
   });
 
-  it('does not put a sign-in in front of somebody who is already in a room', async () => {
-    readRoom.mockResolvedValue(openRoom());
-
-    renderAt('/toolkit/budget-ballot', 'room=room-1', { needsAccount: true });
-    await screen.findByText(/2h left/);
-
-    expect(screen.queryByRole('button', { name: /sign in to start a room/i })).not.toBeInTheDocument();
-  });
 });
 
 // A second room-capable tool, exercised through the same machinery as Budget
 // Ballot above — this is what proves the room layer is generic rather than tuned to
 // one tool's shape.
-describe('Open Vote in a room', () => {
+describe('Poll in a room', () => {
   const openVoteRoom = () => ({ tool: 'open-vote', status: 'open', expiresAt: hours(2) });
-
-  it('offers a room, same as any other room-capable tool', () => {
-    renderAt('/toolkit/open-vote');
-
-    expect(screen.getByRole('button', { name: /start a room/i })).toBeInTheDocument();
-  });
 
   it("publishes a participant's vote once they pick one", async () => {
     readRoom.mockResolvedValue(openVoteRoom());

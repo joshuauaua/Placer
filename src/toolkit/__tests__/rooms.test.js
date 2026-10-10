@@ -3,6 +3,8 @@ import {
   PIN_LENGTH,
   ROOM_LIFETIMES,
   codeJoinUrl,
+  localToday,
+  scheduleRange,
   isLongRoom,
   parseJoinCode,
   timeRemaining,
@@ -181,5 +183,24 @@ describe('rooms that stay open for weeks', () => {
     expect(parseJoinCode('839201')).toBeNull();
     expect(parseJoinCode('z'.repeat(32))).toBeNull();
     expect(parseJoinCode(null)).toBeNull();
+  });
+});
+
+describe('scheduleRange', () => {
+  const project = { startDate: '2026-11-01', endDate: '2026-12-31' };
+
+  it('is the project\'s dates, from today on', () => {
+    expect(scheduleRange(project, '2026-10-10')).toEqual({ min: '2026-11-01', max: '2026-12-31' });
+    expect(scheduleRange(project, '2026-11-20')).toEqual({ min: '2026-11-20', max: '2026-12-31' });
+  });
+
+  it('is null for a project without both dates, or one that has ended', () => {
+    expect(scheduleRange({ startDate: '2026-11-01', endDate: null }, '2026-10-10')).toBeNull();
+    expect(scheduleRange({}, '2026-10-10')).toBeNull();
+    expect(scheduleRange(project, '2027-01-01')).toBeNull();
+  });
+
+  it('counts today in this browser\'s calendar', () => {
+    expect(localToday(new Date(2026, 0, 5, 23, 30))).toBe('2026-01-05');
   });
 });

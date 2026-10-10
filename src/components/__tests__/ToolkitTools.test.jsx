@@ -244,7 +244,11 @@ describe('15-Minute Reach', () => {
   });
 });
 
-describe('Budget Ballot', () => {
+describe('Co-Budget', () => {
+  const add = (label, times) => {
+    for (let i = 0; i < times; i += 1) fireEvent.click(screen.getByRole('button', { name: `One more: ${label}` }));
+  };
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -257,28 +261,32 @@ describe('Budget Ballot', () => {
     expect(screen.getByRole('button', { name: /copy my ballot/i })).toBeDisabled();
   });
 
-  it('spends the money as a slider moves', () => {
+  it('spends the money as + and − are pressed', () => {
     mount(BudgetBallot, 'budget-ballot');
 
-    fireEvent.change(screen.getByLabelText('Street trees'), { target: { value: '10' } });
+    expect(screen.getByRole('button', { name: 'One fewer: Street trees' })).toBeDisabled();
+    add('Street trees', 11);
+    fireEvent.click(screen.getByRole('button', { name: 'One fewer: Street trees' }));
 
+    expect(screen.getByLabelText('Street trees: how many')).toHaveTextContent('10');
     expect(screen.getByText('€236,000 left')).toBeInTheDocument();
     expect(screen.getByText('Street trees × 10')).toBeInTheDocument();
     // Once as the total committed, once on the line, once on the ballot.
     expect(screen.getAllByText('€14,000')).toHaveLength(3);
   });
 
-  it('caps a slider at what the budget will pay for, and says so', () => {
+  it('stops + at what the budget will pay for, and says so', () => {
     mount(BudgetBallot, 'budget-ballot');
 
-    const footway = screen.getByLabelText('Widened footway');
-    // 60 metres at €2,200 is €132,000, which the budget can just about take on its own.
-    expect(footway).toHaveAttribute('max', '60');
-    fireEvent.change(footway, { target: { value: '60' } });
-    fireEvent.change(screen.getByLabelText('Play equipment'), { target: { value: '4' } });
+    // 60 metres of footway at €2,200 and four play sets at €12,000: €180,000 gone.
+    add('Widened footway', 60);
+    add('Play equipment', 4);
+    expect(screen.getByRole('button', { name: 'One more: Widened footway' })).toBeDisabled();
 
-    // €180,000 gone, so the €18,000 crossings can no longer reach four.
-    expect(Number(screen.getByLabelText('Raised crossings').getAttribute('max'))).toBeLessThan(4);
+    // So the €18,000 crossings stop short of the four that fit.
+    add('Raised crossings', 4);
+    expect(screen.getByLabelText('Raised crossings: how many')).toHaveTextContent('3');
+    expect(screen.getByRole('button', { name: 'One more: Raised crossings' })).toBeDisabled();
     expect(screen.getAllByText(/the budget stops at/i).length).toBeGreaterThan(0);
   });
 
@@ -291,23 +299,18 @@ describe('Budget Ballot', () => {
     expect(screen.getByText('€65,800 left')).toBeInTheDocument();
   });
 
-  it('splits the room when parking becomes parklets', () => {
+  it('keeps no score of outcomes or who gains', () => {
     mount(BudgetBallot, 'budget-ballot');
 
-    fireEvent.change(screen.getByLabelText('Parking bay → parklet'), { target: { value: '8' } });
-
-    // Children gain, shopkeepers lose, and both are on the same panel.
-    const children = screen.getByText('Children').parentElement.parentElement;
-    const traders = screen.getByText('Shopkeepers').parentElement.parentElement;
-    expect(children.textContent).toMatch(/\+\d+/);
-    expect(traders.textContent).toMatch(/-\d+/);
+    expect(screen.queryByText('What it achieves')).not.toBeInTheDocument();
+    expect(screen.queryByText('Who gains')).not.toBeInTheDocument();
   });
 
   it('copies the ballot as text', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
     mount(BudgetBallot, 'budget-ballot');
-    fireEvent.change(screen.getByLabelText('Street trees'), { target: { value: '6' } });
+    add('Street trees', 6);
 
     fireEvent.click(screen.getByRole('button', { name: /copy my ballot/i }));
 
@@ -318,7 +321,7 @@ describe('Budget Ballot', () => {
   it('shows the text to copy by hand when the browser will not', async () => {
     vi.stubGlobal('navigator', { ...navigator, clipboard: undefined });
     mount(BudgetBallot, 'budget-ballot');
-    fireEvent.change(screen.getByLabelText('Benches with backs'), { target: { value: '3' } });
+    add('Benches with backs', 3);
 
     fireEvent.click(screen.getByRole('button', { name: /copy my ballot/i }));
 
@@ -328,12 +331,12 @@ describe('Budget Ballot', () => {
   });
 });
 
-describe('Open Vote', () => {
+describe('Poll', () => {
   it('shows the placeholder question and nothing chosen yet', () => {
     mount(OpenVote, 'open-vote');
 
     expect(screen.getByPlaceholderText('Yes or No?')).toBeInTheDocument();
-    expect(screen.getByText(/pick yes, no, or undecided to see it here/i)).toBeInTheDocument();
+    expect(screen.getByText(/pick an answer to see it here/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Yes' })).toHaveAttribute('aria-pressed', 'false');
   });
 
@@ -344,6 +347,31 @@ describe('Open Vote', () => {
 
     expect(screen.getByRole('button', { name: 'Undecided' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('1 · 100%')).toBeInTheDocument();
+  });
+
+  it('starts from Yes, No and Undecided as answers anybody can rewrite', () => {
+    mount(OpenVote, 'open-vote');
+
+    fireEvent.change(screen.getByLabelText('Answer 2'), { target: { value: 'Not yet' } });
+
+    expect(screen.getByRole('button', { name: 'Not yet' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'No' })).not.toBeInTheDocument();
+  });
+
+  it('adds answers, and removes them down to two', () => {
+    mount(OpenVote, 'open-vote');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add an answer' }));
+    fireEvent.change(screen.getByLabelText('Answer 4'), { target: { value: 'Only at weekends' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Only at weekends' }));
+    expect(screen.getByText('1 · 100%')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove answer 4' }));
+    expect(screen.queryByRole('button', { name: 'Only at weekends' })).not.toBeInTheDocument();
+    expect(screen.getByText(/pick an answer to see it here/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove answer 3' }));
+    expect(screen.getByRole('button', { name: 'Remove answer 1' })).toBeDisabled();
   });
 
   it('lets someone type their own question, purely for display', () => {

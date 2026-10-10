@@ -112,6 +112,26 @@ export function formatRoomDate(value) {
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+/** Today in this browser's calendar, as 'YYYY-MM-DD'. */
+export function localToday(now = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+/**
+ * The days a project's room can be scheduled to start on, as { min, max } in
+ * 'YYYY-MM-DD': within the project's dates and not before today. Null when there are
+ * none — a project without both dates, or one that has already ended. The database
+ * holds the same line (supabase/rooms-schedule.sql); this is so the picker can.
+ */
+export function scheduleRange(project, today = localToday()) {
+  const start = project?.startDate ?? null;
+  const end = project?.endDate ?? null;
+  if (!start || !end) return null;
+  const min = start > today ? start : today;
+  return min <= end ? { min, max: end } : null;
+}
+
 function origin() {
   return typeof window === 'undefined' ? '' : window.location.origin;
 }
@@ -150,10 +170,10 @@ export function roomIdFrom(search) {
 }
 
 /**
- * The project id in ?project=…, or null. How a project's dashboard hands off to the
- * Toolkit gallery so the room it opens gets attached — see supabase/projects.sql.
- * Only read when opening a *new* room; a room reached by its own ?room= link is
- * already attached or not, and re-reading ?project= there would mean nothing.
+ * The project id in ?project=…, or null. Set when a tool is opened from a project's
+ * page, so the way back leads to the project and a launched tool (Idea Visualizer)
+ * knows which project it is for. Rooms are not opened here; a project opens them from
+ * its dashboard.
  */
 export function projectIdFrom(search) {
   const query = String(search ?? '').replace(/^\?/, '');

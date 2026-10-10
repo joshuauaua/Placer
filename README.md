@@ -13,7 +13,7 @@ browser.
 
 ### Imagine a space
 
-Reimagine a Space turns an idea for a street corner into a picture, in three steps:
+Idea Visualizer turns an idea for a street corner into a picture, in three steps:
 
 1. **Place.** Pick a spot on the map, open it in Street View, and capture the view.
    Then drag, resize and rotate benches, trees and other assets onto it.
@@ -35,7 +35,7 @@ takes a few short screens:
 
 Organisers then get a **project dashboard** with views, a roster and documentation.
 Everyone else gets a **public project page**, where each chosen tool appears in its own
-section: an Open Vote's poll, for example, appears right on the page.
+section: a Poll's question, for example, appears right on the page.
 
 Projects are public by default. A **private** project can be seen only by people its
 organisers let in, and anybody else can ask for access.
@@ -46,8 +46,8 @@ The Toolkit at `/toolkit` is a gallery of small tools, grouped by what they help
 
 | Understand | Imagine | Plan |
 | --- | --- | --- |
-| Desire Lines | Street Section Mixer | Budget Ballot |
-| 15-Minute Reach | Reimagine a Space | Open Vote |
+| Desire Lines | Street Section Mixer | Co-Budget |
+| 15-Minute Reach | Idea Visualizer | Poll |
 | The Social Space Survey | | |
 | Site-Specific Spatial Mapping Tool | | |
 | Stationary Activity Mapping | | |
@@ -154,7 +154,6 @@ them, and redeploy after changing them on Vercel.
 | `npm run preview` | serves the built `dist/` |
 | `npm run deps:check` | checks that `node_modules` matches the lockfile |
 | `npm run migrations:check` | checks that `supabase/migrations/` matches the SQL it is generated from |
-| `npm run toolkit:scope` | checks that a change stays inside the Toolkit sandbox |
 
 On Node 25 and later, run the tests with `NODE_OPTIONS=--no-experimental-webstorage`.
 Without it, Node's built-in `localStorage` shadows jsdom's and around 150 tests fail
@@ -176,16 +175,15 @@ supabase/
 ├── *.sql                # schema and row-level security, one file per feature
 ├── migrations/          # the same SQL, for `supabase db push`
 └── functions/           # Edge Functions: media uploads, survey → Slack
-scripts/                 # the deps, migrations and sandbox checks
+scripts/                 # the deps and migrations checks
 docs/PRD.md              # the product requirements
 ```
 
 ## Contributing
 
-Contributions are welcome **in the Toolkit**: new tools, or improvements to existing
-ones. The rest of the app is not open to pull requests, so please open an issue
-first. [CONTRIBUTING.md](CONTRIBUTING.md) explains what is in scope and how to add a
-tool.
+Collaborators can work on any part of the app, through a pull request into
+`Development` that the owner approves before it merges. [CONTRIBUTING.md](CONTRIBUTING.md)
+explains how, and how to add a Toolkit tool.
 
 ## Branches
 

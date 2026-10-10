@@ -155,8 +155,8 @@ language sql
 immutable
 as $$
   select case p_tool
-    when 'budget-ballot' then 'Budget Ballot'
-    when 'open-vote'     then 'Open Vote'
+    when 'budget-ballot' then 'Co-Budget'
+    when 'open-vote'     then 'Poll'
     else 'a Toolkit tool'
   end;
 $$;

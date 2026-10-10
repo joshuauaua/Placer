@@ -50,7 +50,7 @@ describe('the register', () => {
   });
 
   it('starts every setup from one the tool can check', () => {
-    // Not necessarily one it accepts: an Open Vote has no question until the organiser
+    // Not necessarily one it accepts: a Poll has no question until the organiser
     // writes one.
     for (const tool of TOOLS.filter((entry) => entry.setup)) {
       const problems = tool.setup.problems(tool.setup.defaults());
@@ -59,12 +59,26 @@ describe('the register', () => {
     }
   });
 
-  it('asks the organiser for the Open Vote question, and keeps it within bounds', () => {
+  it('asks the organiser for the Poll question, and keeps it within bounds', () => {
     const { setup } = TOOLS.find((tool) => tool.id === 'open-vote');
     expect(setup.problems(setup.defaults())).toEqual(['Write the question you want people to vote on.']);
     expect(setup.problems({ question: '   ' })).toHaveLength(1);
     expect(setup.problems({ question: 'x'.repeat(201) })).toHaveLength(1);
     expect(setup.problems({ question: 'Should the square be car-free?' })).toEqual([]);
+  });
+
+  it('checks the answers the organiser writes for a Poll', () => {
+    const { setup } = TOOLS.find((tool) => tool.id === 'open-vote');
+    const question = 'Should the square be car-free?';
+    const problems = (answers) => setup.problems({ question, answers });
+
+    expect(problems(['Yes', 'No', 'Undecided'])).toEqual([]);
+    expect(problems(['Every day', 'Weekends'])).toEqual([]);
+    expect(problems(['Yes'])).toEqual(['Give people at least 2 answers to choose from.']);
+    expect(problems(['Yes', '  ', 'No'])).toEqual(['Fill in every answer, or remove the empty ones.']);
+    expect(problems(['Yes', 'yes '])).toEqual(['Make each answer different from the others.']);
+    expect(problems(Array.from({ length: 11 }, (_, i) => `Answer ${i}`))).toHaveLength(1);
+    expect(problems(['Yes', 'x'.repeat(81)])).toHaveLength(1);
   });
 });
 
@@ -115,7 +129,7 @@ describe('filterTools', () => {
   });
 });
 
-describe("the Budget Ballot's room", () => {
+describe("the Co-Budget's room", () => {
   const { room } = findTool('budget-ballot');
 
   it('starts a participant from an empty ballot', () => {
@@ -163,7 +177,7 @@ describe("the Budget Ballot's room", () => {
   });
 });
 
-describe("the Open Vote's room", () => {
+describe("the Poll's room", () => {
   const { room } = findTool('open-vote');
 
   it('starts a participant with no choice made', () => {
@@ -191,5 +205,13 @@ describe("the Open Vote's room", () => {
 
     expect(combined.counts).toEqual({ yes: 1, no: 0, undecided: 0 });
     expect(combined.total).toBe(1);
+  });
+
+  it("counts votes against the answers the room was set up with", () => {
+    const config = { question: 'When?', answers: ['Every day', 'Weekends'] };
+    const combined = room.combine([{ choice: 'Weekends' }, { choice: 'Weekends' }, { choice: 'yes' }], config);
+
+    expect(combined.counts).toEqual({ 'Every day': 0, Weekends: 2 });
+    expect(combined.total).toBe(2);
   });
 });
