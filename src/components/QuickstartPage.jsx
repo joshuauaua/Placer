@@ -43,7 +43,7 @@ const NEXT = [
   },
   {
     title: 'Gather views with the Toolkit',
-    body: 'Open a Toolkit room for the project, such as a vote or a budget ballot, and let people join with a PIN or a QR code.',
+    body: 'Open a Toolkit room for the project, such as a poll or a co-budget, and let people join with a PIN or a QR code.',
   },
 ];
 

@@ -55,12 +55,21 @@ async function client() {
  * `config` is the tool's setup, for a tool that has one (`setup` in toolkit/tools.js),
  * fixed for the room's whole life — see supabase/rooms-config.sql. Left off the
  * request when there is none, for the same reason as the lifetime.
+ *
+ * `opensOn` is a day ('YYYY-MM-DD') for a project's room to start on rather than now,
+ * within the project's dates — see supabase/rooms-schedule.sql. It opens at the start
+ * of that day in this browser's time zone, which goes with it; until then the room is
+ * 'scheduled', and its lifetime counts from then.
  */
-export async function createRoom(toolId, projectId = null, lifetime = '2h', config = null) {
+export async function createRoom(toolId, projectId = null, lifetime = '2h', config = null, opensOn = null) {
   const supabase = await client();
   const params = { p_tool: toolId, p_project_id: projectId };
   if (lifetime && lifetime !== '2h') params.p_lifetime = lifetime;
   if (config) params.p_config = config;
+  if (opensOn) {
+    params.p_opens_on = opensOn;
+    params.p_time_zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
 
   const { data, error } = await supabase.rpc('toolkit_room_create', params).single();
 
@@ -78,6 +87,7 @@ export async function createRoom(toolId, projectId = null, lifetime = '2h', conf
     joinCode: lifetime && lifetime !== '2h' ? (data.join_code ?? null) : null,
     facilitatorToken: data.facilitator_token,
     expiresAt: data.expires_at,
+    opensAt: data.opens_at ?? null,
   };
 }
 
@@ -100,8 +110,9 @@ export async function joinRoom(pin) {
 
 /**
  * Look up a room by the code in its QR link. Unlike a PIN this answers for a finished
- * room too — `status` is 'open', 'closed' or 'expired', and `endsAt` is when it ended
- * or will — so a poster scanned after its poll closed can say so. Null for a code
+ * room too — `status` is 'scheduled', 'open', 'closed' or 'expired', `endsAt` is when
+ * it ended or will and `opensAt` when it starts — so a poster scanned after its poll
+ * closed, or before it opens, can say so. Null for a code
  * that matches nothing, including a room already swept away.
  */
 export async function joinRoomByCode(code) {
@@ -113,12 +124,14 @@ export async function joinRoomByCode(code) {
   if (error) throw new Error(`Could not join that room: ${error.message}`);
   if (!data) return null;
 
-  return { id: data.room_id, tool: data.tool, status: data.status, endsAt: data.expires_at };
+  return {
+    id: data.room_id, tool: data.tool, status: data.status, endsAt: data.expires_at, opensAt: data.opens_at ?? null,
+  };
 }
 
 /**
  * What a room is, given its id: which tool it belongs to, whether it is
- * 'open', 'closed' or 'expired', when it runs out, and how the tool was set up for
+ * 'scheduled', 'open', 'closed' or 'expired', when it opens and runs out, and how the tool was set up for
  * it (`config`, null when it was not). Null for a room that does not exist.
  *
  * A page reloaded on a room link has the id but not the PIN, and an empty open room
@@ -136,7 +149,10 @@ export async function readRoom(roomId) {
   if (error) throw new Error(`Could not read the room: ${error.message}`);
   if (!data) return null;
 
-  return { tool: data.tool, status: data.status, expiresAt: data.expires_at, config: data.config ?? null };
+  return {
+    tool: data.tool, status: data.status, expiresAt: data.expires_at, config: data.config ?? null,
+    opensAt: data.opens_at ?? null,
+  };
 }
 
 /**

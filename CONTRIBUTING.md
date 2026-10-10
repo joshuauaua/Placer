@@ -3,7 +3,7 @@
 Contributions are welcome **in the Toolkit**, and only there.
 
 The Toolkit is the gallery of small tools at `/toolkit` — the Street Section
-Mixer, Desire Lines, 15-Minute Reach, the Budget Ballot. Each one is a self-contained
+Mixer, Desire Lines, 15-Minute Reach, the Co-Budget. Each one is a self-contained
 toy that makes one argument about participatory urban design. Adding a new one, or
 improving an existing one, is the kind of change this repository is open to.
 

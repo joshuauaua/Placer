@@ -9,6 +9,8 @@
  *
  *   'none'    — not in a room, and the tool may or may not be able to host one
  *   'opening' — creating a room, or loading one from a link
+ *   'scheduled' — a project's room set up to start later, at `opensAt`
+ *               (supabase/rooms-schedule.sql); it opens by itself when that comes
  *   'open'    — in a room; `contributions` and `combined` are live
  *   'closed'  — its facilitator ended it early
  *   'deleted' — its facilitator deleted it, and everything contributed to it
@@ -66,6 +68,9 @@ export function useRoom({ tool, roomId, displayName, onOpened, projectId = null,
   const [isHost, setIsHost] = useState(false);
   const [contributions, setContributions] = useState([]);
   const [expiresAt, setExpiresAt] = useState(null);
+  const [opensAt, setOpensAt] = useState(null);
+  // Bumped when a scheduled room's time comes, to load it again — open, this time.
+  const [reload, setReload] = useState(0);
   const [config, setConfig] = useState(null);
 
   // Kept in refs so the debounced publish and the unmount cleanup can see the
@@ -135,9 +140,10 @@ export function useRoom({ tool, roomId, displayName, onOpened, projectId = null,
         setPin(hosted?.pin ?? null);
         setJoinCode(hosted?.code ?? null);
         setExpiresAt(room.expiresAt ?? null);
+        setOpensAt(room.opensAt ?? null);
 
         if (room.status !== 'open') {
-          // 'closed' or 'expired' — the copy differs, so the distinction is kept.
+          // 'scheduled', 'closed' or 'expired' — the copy differs, so the distinction is kept.
           setStatus(room.status);
           setContributions([]);
           return;
@@ -161,7 +167,18 @@ export function useRoom({ tool, roomId, displayName, onOpened, projectId = null,
     };
     // `tool` rather than `tool?.id`: roomSetup reads its setup. A registry entry is a
     // module-level object, so this changes only when the tool does.
-  }, [roomId, capable, tool, refresh, service]);
+  }, [roomId, capable, tool, refresh, service, reload]);
+
+  // Waiting on a scheduled room to open, then loading it again.
+  const [rewait, setRewait] = useState(0);
+  useEffect(() => {
+    if (status !== 'scheduled' || !opensAt) return undefined;
+    const left = new Date(opensAt).getTime() - Date.now();
+    const timer = left > MAX_TIMER_DELAY
+      ? setTimeout(() => setRewait((n) => n + 1), MAX_TIMER_DELAY)
+      : setTimeout(() => setReload((n) => n + 1), Math.max(left, 0));
+    return () => clearTimeout(timer);
+  }, [status, opensAt, rewait]);
 
   // Nothing half-published should outlive the component.
   useEffect(
@@ -293,8 +310,8 @@ export function useRoom({ tool, roomId, displayName, onOpened, projectId = null,
 
   const combined = useMemo(() => {
     if (!tool?.room || contributions.length === 0) return null;
-    return tool.room.combine(contributions.map((entry) => entry.state));
-  }, [contributions, tool]);
+    return tool.room.combine(contributions.map((entry) => entry.state), config);
+  }, [contributions, config, tool]);
 
   return {
     capable,
@@ -304,6 +321,7 @@ export function useRoom({ tool, roomId, displayName, onOpened, projectId = null,
     pin,
     joinCode,
     expiresAt,
+    opensAt,
     config,
     isHost,
     contributions,

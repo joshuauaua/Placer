@@ -10,7 +10,8 @@
  *
  * A ?code= is a long room's QR link (supabase/rooms-lifetime.sql). It is followed the
  * same way, but a poster outlives its poll, so a code for a room that has ended says
- * when it ended rather than that nothing matched.
+ * when it ended rather than that nothing matched — and one put up before its room
+ * starts says when it opens (supabase/rooms-schedule.sql).
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -25,11 +26,13 @@ export function JoinPage({ t }) {
   const [, navigate] = useLocation();
   const search = useSearch();
   const [typed, setTyped] = useState('');
-  // 'idle' | 'joining' | 'unknown' | 'ended' | 'error'
+  // 'idle' | 'joining' | 'unknown' | 'scheduled' | 'ended' | 'error'
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
   // When the room a ?code= named ended, for status 'ended'.
   const [endedOn, setEndedOn] = useState(null);
+  // When the room a ?code= named opens, for status 'scheduled'.
+  const [opensOn, setOpensOn] = useState(null);
 
   const configured = isSupabaseConfigured();
 
@@ -79,6 +82,11 @@ export function JoinPage({ t }) {
         const room = await joinRoomByCode(code);
         if (!room) {
           setStatus('unknown');
+          return;
+        }
+        if (room.status === 'scheduled') {
+          setOpensOn(formatRoomDate(room.opensAt));
+          setStatus('scheduled');
           return;
         }
         if (room.status !== 'open') {
@@ -188,6 +196,13 @@ export function JoinPage({ t }) {
                 {codeFromUrl && !ready
                   ? 'That link does not lead to a room any more. It may have ended a while ago.'
                   : 'No open room has that PIN. It may have been closed, or one of the digits may be off.'}
+              </p>
+            )}
+
+            {status === 'scheduled' && (
+              <p role="status" style={{ marginTop: 16, fontSize: 14, color: t.ink, lineHeight: 1.6 }}>
+                {opensOn ? `This room opens on ${opensOn}.` : 'This room has not opened yet.'} Come
+                back then to take part.
               </p>
             )}
 

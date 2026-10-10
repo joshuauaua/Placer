@@ -39,7 +39,7 @@ export const VISIBILITIES = [
 // The folder project images go under in the R2 bucket (supabase/functions/media).
 // Named after the project, not the uploader: any collaborator may replace it.
 export const PROJECT_IMAGES_FOLDER = 'projects';
-// Reimagine a Space's base images, one folder per project like the covers, but not
+// Idea Visualizer's base images, one folder per project like the covers, but not
 // swept down to one by the media function: the page removes the one it replaces.
 export const SCENE_IMAGES_FOLDER = 'scenes';
 
@@ -612,7 +612,7 @@ export async function saveProjectTools(projectId, toolIds, addedBy) {
 /**
  * How a project has set one of its tools up (project_tools.config, see
  * supabase/project-tool-config.sql), or null when it has not been, or has not chosen
- * the tool. For Reimagine a Space that is its scene: { address, point, imagePath,
+ * the tool. For Idea Visualizer that is its scene: { address, point, imagePath,
  * image }, `image` being the address to show `imagePath` from.
  */
 export async function readProjectToolConfig(projectId, tool) {
@@ -686,7 +686,7 @@ export async function markProjectToolConfigured(projectId, tool) {
 }
 
 /**
- * Upload the base image of a project's Reimagine a Space scene and return its path,
+ * Upload the base image of a project's Idea Visualizer scene and return its path,
  * to save with saveProjectToolConfig. Same rules as a project image: the project has
  * to exist, and the caller has to be its owner or a collaborator.
  */
@@ -702,7 +702,7 @@ export async function uploadSceneImage(projectId, file) {
 }
 
 /**
- * Whether a project's Reimagine a Space is set up, and if so its scene, ready to
+ * Whether a project's Idea Visualizer is set up, and if so its scene, ready to
  * draw on: { address, position, screenshot }, with the image as a data: URL. Inlined
  * rather than linked because the canvas is exported as the imagination's preview, and
  * a picture from another origin would stop that (see src/lib/staticMaps.js) — the
@@ -845,8 +845,8 @@ export async function readProjectViews(projectId, days = 30) {
 
 /**
  * Every Toolkit room opened for this project, newest first, with how many people have
- * contributed to each. Owner-or-collaborator only (project_rooms in
- * supabase/rooms-lifetime.sql), and it includes each room's facilitator token — the
+ * contributed to each, including those scheduled to start later. Owner-or-collaborator
+ * only (project_rooms in supabase/rooms-schedule.sql), and it includes each room's facilitator token — the
  * dashboard hands that to the Toolkit so a room can be run from any browser, not only
  * the one that opened it.
  */
@@ -865,6 +865,7 @@ export async function readProjectRooms(projectId) {
     expiresAt: row.expires_at,
     status: row.status,
     contributions: row.contributions ?? 0,
+    opensAt: row.opens_at ?? null,
   }));
 }
 

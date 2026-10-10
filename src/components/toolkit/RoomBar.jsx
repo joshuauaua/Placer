@@ -99,6 +99,18 @@ export function RoomBar({ t, tool, room }) {
     );
   }
 
+  if (room.status === 'scheduled') {
+    const opens = formatRoomDate(room.opensAt);
+    return (
+      <Panel t={t} style={{ marginBottom: 20 }}>
+        <p role="status" style={{ fontSize: 14, color: t.ink, lineHeight: 1.6 }}>
+          {opens ? `This room opens on ${opens}.` : 'This room has not opened yet.'} Nothing
+          can be added to it until then, and it opens here by itself when the day comes.
+        </p>
+      </Panel>
+    );
+  }
+
   if (room.status === 'closed' || room.status === 'expired') {
     return (
       <Panel t={t} style={{ marginBottom: 20 }}>

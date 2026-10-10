@@ -98,7 +98,24 @@ describe('opening a room', () => {
       facilitatorToken: 'facilitator-1',
       // The deadline comes from the database, never from the browser's clock.
       expiresAt: '2026-09-11T12:00:00Z',
+      opensAt: null,
     });
+  });
+
+  it('schedules a project\'s room for a day, in this browser\'s time zone', async () => {
+    rpc.mockReturnValue(result({
+      data: { room_id: 'room-1', pin: '839201', facilitator_token: 'facilitator-1', join_code: 'c'.repeat(32),
+        expires_at: '2026-12-01T00:00:00Z', opens_at: '2026-11-01T00:00:00Z' },
+      error: null,
+    }));
+
+    const room = await rooms.createRoom('open-vote', 'proj-1', '30d', { question: 'Q?' }, '2026-11-01');
+
+    expect(rpc).toHaveBeenCalledWith('toolkit_room_create', {
+      p_tool: 'open-vote', p_project_id: 'proj-1', p_lifetime: '30d', p_config: { question: 'Q?' },
+      p_opens_on: '2026-11-01', p_time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
+    expect(room.opensAt).toBe('2026-11-01T00:00:00Z');
   });
 
   it('attaches a project when one is given, so its dashboard can see the room', async () => {
@@ -189,7 +206,9 @@ describe('joining a room by its code', () => {
     const room = await rooms.joinRoomByCode('a'.repeat(32));
 
     expect(rpc).toHaveBeenCalledWith('toolkit_room_join_code', { p_code: 'a'.repeat(32) });
-    expect(room).toEqual({ id: 'room-1', tool: 'open-vote', status: 'open', endsAt: '2026-10-24T12:00:00Z' });
+    expect(room).toEqual({
+      id: 'room-1', tool: 'open-vote', status: 'open', endsAt: '2026-10-24T12:00:00Z', opensAt: null,
+    });
   });
 
   it('is null for a code that matches nothing', async () => {
@@ -242,6 +261,7 @@ describe('reading a room', () => {
       status: 'expired',
       expiresAt: '2026-09-11T12:00:00Z',
       config: null,
+      opensAt: null,
     });
   });
 

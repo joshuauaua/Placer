@@ -2,7 +2,7 @@
 --
 -- A project's public page presents the tools its organisers have set up, and a tool is
 -- set up for a project by opening a room for it (rooms-config.sql keeps the setup on
--- the room). An Open Vote opened for a project is a poll on its page: the question,
+-- the room). A Poll opened for a project is a poll on its page: the question,
 -- the three buttons straight under it, then the tally once you have voted. So the page
 -- has to find the project's open rooms, which nothing public could do — toolkit_rooms
 -- has no grants at all (rooms.sql), and project_rooms is for the project's own people.

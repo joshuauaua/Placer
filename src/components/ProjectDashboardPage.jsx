@@ -341,7 +341,11 @@ function AddToolkitTool({ t, chosen = [], onChoose }) {
  * is live while its room is open, and that room is listed under Open rooms; any other
  * live tool can be configured again.
  */
-function ChosenToolRow({ t, tool, live, inRoom, onConfigure }) {
+// A room still to come counts as well as one running: its QR code can go up early.
+const isCurrentRoom = (room) => room.status === 'open' || room.status === 'scheduled';
+
+function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, onConfigure }) {
+  const badge = live ? 'Live' : scheduled ? `Starts ${formatRoomDate(scheduled.opensAt)}` : 'Not configured';
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
       padding: '12px 0', borderTop: `1px solid ${t.line}` }}>
@@ -355,14 +359,15 @@ function ChosenToolRow({ t, tool, live, inRoom, onConfigure }) {
             <span style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>{tool.name}</span>
             <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700,
               letterSpacing: '0.06em', textTransform: 'uppercase',
-              background: live ? '#E3F4E8' : t.surfaceAlt, color: live ? '#1E6B3A' : t.inkDim }}>
-              {live ? 'Live' : 'Not configured'}
+              background: live ? '#E3F4E8' : scheduled ? '#E8EEFB' : t.surfaceAlt,
+              color: live ? '#1E6B3A' : scheduled ? '#2F4F9E' : t.inkDim }}>
+              {badge}
             </span>
           </div>
           {tool.tagline && <div style={{ fontSize: 12.5, color: t.inkDim }}>{tool.tagline}</div>}
         </div>
       </div>
-      {!live ? (
+      {scheduled ? null : !live ? (
         <Btn t={t} variant="primary" size="sm" onClick={onConfigure} ariaLabel={`Configure ${tool.name}`}>
           Configure
         </Btn>
@@ -389,7 +394,8 @@ function RoomRow({ t, room, onOpen, onClose, onDelete }) {
   const tool = findTool(room.tool);
   const long = isLongRoom(room);
   const url = long ? codeJoinUrl(room.joinCode) : joinUrl(room.pin);
-  const left = timeRemaining(room.expiresAt);
+  const scheduled = room.status === 'scheduled';
+  const left = scheduled ? null : timeRemaining(room.expiresAt);
   const name = tool?.name ?? room.tool;
 
   return (
@@ -403,7 +409,9 @@ function RoomRow({ t, room, onOpen, onClose, onDelete }) {
       <div style={{ flex: '1 1 200px', minWidth: 0 }}>
         <div style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>{name}</div>
         <div style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.5 }}>
-          {room.contributions} {room.contributions === 1 ? 'response' : 'responses'}
+          {scheduled
+            ? `Starts ${formatRoomDate(room.opensAt)}`
+            : `${room.contributions} ${room.contributions === 1 ? 'response' : 'responses'}`}
           {left ? ` · ${left} left` : ''}
           {long ? ` · open until ${formatRoomDate(room.expiresAt)}` : ` · PIN ${formatPin(room.pin)}`}
         </div>
@@ -854,10 +862,12 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
             <div style={{ marginTop: 16 }}>
               {chosenTools.map((tool) => {
                 const openRoom = (rooms ?? []).find((room) => room.tool === tool.id && room.status === 'open') ?? null;
+                const scheduled = openRoom ? null
+                  : (rooms ?? []).find((room) => room.tool === tool.id && room.status === 'scheduled') ?? null;
                 return (
                   <ChosenToolRow key={tool.id} t={t} tool={tool}
                     live={isToolLive(tool, { configured: configured.has(tool.id), openRoom })}
-                    inRoom={Boolean(openRoom)}
+                    inRoom={Boolean(openRoom)} scheduled={scheduled}
                     onConfigure={() => setConfiguring(tool.id)} />
                 );
               })}
@@ -871,10 +881,10 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                 A room opened from here can stay open for up to 90 days — long enough to print
                 its QR code on a poster and leave it up.
               </p>
-              {rooms.filter((room) => room.status === 'open').length === 0 ? (
+              {rooms.filter(isCurrentRoom).length === 0 ? (
                 <p style={{ fontSize: 13.5, color: t.inkFaint }}>No rooms are open right now.</p>
               ) : (
-                rooms.filter((room) => room.status === 'open').map((room) => (
+                rooms.filter(isCurrentRoom).map((room) => (
                   <RoomRow key={room.id} t={t} room={room} onOpen={handleOpenRoom} onClose={handleCloseRoom}
                     onDelete={handleDeleteRoom} />
                 ))

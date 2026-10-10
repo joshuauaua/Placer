@@ -4,12 +4,15 @@
  * project fills it in for itself here before it goes live on the project's public
  * page. What there is to fill in depends on the tool (projectSetupKind):
  *
- *   scene — Reimagine a Space: the place, and the photo of it people add their ideas
+ *   scene — Idea Visualizer: the place, and the photo of it people add their ideas
  *           to (project_tools.config, supabase/project-tool-config.sql)
  *   room  — a tool that runs in a room: its own setup form, if it has one, and how long
  *           the project's room stays open. Saving opens that room, which is what puts
  *           the tool live; the room is then listed under Open rooms.
  *   none  — nothing to fill in. Saving only puts the tool live.
+ *
+ * It opens on an introduction to the tool — what it is, and what configuring it
+ * involves — and the form follows on Get started.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -23,8 +26,9 @@ import {
 } from '../services/projects';
 import { createRoom } from '../services/rooms';
 import { checkPickedImage } from '../services/media';
-import { ROOM_LIFETIMES, rememberHostedRoom } from '../toolkit/rooms';
-import { projectSetupKind } from '../toolkit/tools';
+import { ROOM_LIFETIMES, formatRoomDate, rememberHostedRoom, scheduleRange } from '../toolkit/rooms';
+import { findCategory, projectSetupKind, setupSteps } from '../toolkit/tools';
+import { SetupSteps } from './toolkit/SetupSteps';
 
 // A project's room is usually left up for people to find, not run as a workshop.
 const DEFAULT_PROJECT_LIFETIME = '30d';
@@ -56,7 +60,7 @@ function Field({ t, label, htmlFor, hint, children }) {
 }
 
 /**
- * Reimagine a Space's scene: where the place is, and the photo of it that people place
+ * Idea Visualizer's scene: where the place is, and the photo of it that people place
  * benches, trees and the rest on. Both are required — without them there is nothing
  * for anyone to draw on. A new scene starts at the project's own address, which is
  * usually the place in question.
@@ -79,7 +83,7 @@ function SceneForm({ t, project, tool, busy, setBusy, onDone, onError, onCancel 
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error('Could not load how Reimagine a Space is set up:', err);
+        console.error('Could not load how Idea Visualizer is set up:', err);
         setSaved(null);
         setAddress(project.address ?? '');
         setPoint(project.locationPoint ?? null);
@@ -108,8 +112,8 @@ function SceneForm({ t, project, tool, busy, setBusy, onDone, onError, onCancel 
       }
       onDone();
     } catch (err) {
-      console.error('Could not set up Reimagine a Space:', err);
-      onError(err?.message ?? 'Could not set up Reimagine a Space.');
+      console.error('Could not set up Idea Visualizer:', err);
+      onError(err?.message ?? 'Could not set up Idea Visualizer.');
       setBusy(false);
     }
   };
@@ -155,25 +159,69 @@ function SceneForm({ t, project, tool, busy, setBusy, onDone, onError, onCancel 
 }
 
 /**
- * A tool that runs in a room: its own setup form, if it has one, and how long the
- * project's room stays open. Problems are only listed once somebody has tried to save
- * — a form that starts out shouting has not let you fill it in yet.
+ * When a room set up in stages starts: now, or on a day within the project's dates
+ * (scheduleRange). A project without dates, or past them, can only start now.
+ */
+function StartsField({ t, project, starts, onChange, busy }) {
+  const range = scheduleRange(project);
+  const radio = (value, label, disabled = false) => (
+    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: disabled ? t.inkFaint : t.ink }}>
+      <input type="radio" name="configure-starts" value={value} checked={starts.mode === value}
+        disabled={busy || disabled} onChange={() => onChange({ ...starts, mode: value })} />
+      {label}
+    </label>
+  );
+
+  return (
+    <fieldset style={{ border: 0, padding: 0, margin: '0 0 22px' }}>
+      <legend style={{ fontSize: 14, fontWeight: 700, color: t.ink, padding: 0, marginBottom: 8 }}>Starts</legend>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {radio('now', 'Now')}
+        {radio('date', 'On a date', !range)}
+        {starts.mode === 'date' && range && (
+          <input type="date" aria-label="Start date" value={starts.date} min={range.min} max={range.max}
+            disabled={busy} onChange={(e) => onChange({ ...starts, date: e.target.value })}
+            style={{ ...inputStyle(t), width: 'auto', marginLeft: 26 }} />
+        )}
+      </div>
+      <div style={{ fontSize: 13, color: t.inkDim, marginTop: 8, lineHeight: 1.5 }}>
+        {range
+          ? `Any day from ${formatRoomDate(range.min)} to ${formatRoomDate(range.max)}, within the project's dates. It is not on the project's page until then.`
+          : 'Give the project start and end dates to schedule it for later.'}
+      </div>
+    </fieldset>
+  );
+}
+
+/** What is wrong with when a room starts, as sentences. */
+function startsProblems(project, starts) {
+  if (starts.mode !== 'date') return [];
+  const range = scheduleRange(project);
+  if (!starts.date) return ['Choose the day it starts.'];
+  if (!range || starts.date < range.min || starts.date > range.max) {
+    return ['Choose a day within the project\u2019s dates, from today on.'];
+  }
+  return [];
+}
+
+/**
+ * A tool that runs in a room: its own setup, in as many stages as it asks for
+ * (setupSteps), and then when the project's room starts and how long it stays open as
+ * the last.
  */
 function RoomForm({ t, project, tool, busy, setBusy, onDone, onError, onCancel }) {
   const [setup, setSetup] = useState(() => tool.setup?.defaults() ?? null);
   const [lifetime, setLifetime] = useState(DEFAULT_PROJECT_LIFETIME);
-  const [tried, setTried] = useState(false);
-  const problems = tool.setup ? tool.setup.problems(setup) : [];
-  const Form = tool.setup?.Form;
+  const [starts, setStarts] = useState({ mode: 'now', date: '' });
+  const staged = setupSteps(tool).length > 1;
 
-  const save = async (e) => {
-    e.preventDefault();
-    setTried(true);
-    if (problems.length > 0 || busy) return;
+  const save = async () => {
+    if (busy) return;
     setBusy(true);
     onError(null);
     try {
-      const room = await createRoom(tool.id, project.id, lifetime, setup);
+      const opensOn = staged && starts.mode === 'date' ? starts.date : null;
+      const room = await createRoom(tool.id, project.id, lifetime, setup, opensOn);
       // This browser can run the room as its facilitator straight away.
       rememberHostedRoom(room.id, { pin: room.pin, token: room.facilitatorToken, code: room.joinCode ?? null });
       onDone();
@@ -184,31 +232,44 @@ function RoomForm({ t, project, tool, busy, setBusy, onDone, onError, onCancel }
     }
   };
 
+  const openFor = (
+    <Field t={t} label="Open for" htmlFor="configure-lifetime"
+      hint="How long people can take part, from when it starts. You can close it sooner from the dashboard.">
+      <select id="configure-lifetime" value={lifetime} onChange={(e) => setLifetime(e.target.value)}
+        disabled={busy} style={{ ...inputStyle(t), width: 'auto' }}>
+        {ROOM_LIFETIMES.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+      </select>
+    </Field>
+  );
+  const intro = (
+    <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '0 0 20px' }}>
+      Everybody who takes part sees {tool.name} the way you set it up here, on the project&rsquo;s
+      page, until it closes — so their answers are all about the same thing.
+    </p>
+  );
+
+  const toolSteps = setupSteps(tool).map(({ title, Form, problems }) => ({
+    title,
+    content: <Form t={t} tool={tool} setup={setup} onChange={setSetup} />,
+    problems: problems(setup),
+  }));
+  // A tool set up on one screen keeps how long it stays open on that screen too; one
+  // set up in stages gets it as a stage of its own.
+  const steps = staged
+    ? [...toolSteps, {
+      title: 'Open for',
+      content: <><StartsField t={t} project={project} starts={starts} onChange={setStarts} busy={busy} />{openFor}</>,
+      problems: startsProblems(project, starts),
+    }]
+    : [{
+      title: null,
+      content: <>{intro}{toolSteps[0]?.content}{openFor}</>,
+      problems: toolSteps[0]?.problems ?? [],
+    }];
+
   return (
-    <form onSubmit={save}>
-      <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '0 0 20px' }}>
-        Everybody who takes part sees {tool.name} the way you set it up here, on the project&rsquo;s
-        page, until it closes — so their answers are all about the same thing.
-      </p>
-
-      {Form && <Form t={t} tool={tool} setup={setup} onChange={setSetup} />}
-
-      <Field t={t} label="Open for" htmlFor="configure-lifetime"
-        hint="How long people can take part. You can close it sooner from the dashboard.">
-        <select id="configure-lifetime" value={lifetime} onChange={(e) => setLifetime(e.target.value)}
-          disabled={busy} style={{ ...inputStyle(t), width: 'auto' }}>
-          {ROOM_LIFETIMES.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-        </select>
-      </Field>
-
-      {tried && problems.length > 0 && (
-        <ul role="alert" style={{ margin: '0 0 16px', paddingLeft: 18, fontSize: 13.5, color: '#B3261E', lineHeight: 1.6 }}>
-          {problems.map((problem) => <li key={problem}>{problem}</li>)}
-        </ul>
-      )}
-
-      <Actions t={t} busy={busy} label="Save and go live" onCancel={onCancel} />
-    </form>
+    <SetupSteps t={t} steps={steps} busy={busy} onCancel={onCancel} onFinish={save}
+      finishLabel="Save and go live" busyLabel="Saving…" />
   );
 }
 
@@ -256,11 +317,57 @@ function Actions({ t, busy, disabled = false, label, onCancel }) {
 
 const FORMS = { scene: SceneForm, room: RoomForm, none: NothingForm };
 
+// What configuring each kind of tool involves, for the introduction.
+const WHAT_YOU_SET_UP = {
+  scene: 'You will pick the place, and add the photo of it that people put their ideas on.',
+  room: 'You will set it up for this project and choose how long it stays open on the project\u2019s page.',
+  none: 'There is nothing to fill in: going live adds it to the project\u2019s page, for people to try.',
+};
+
+/** The tool introduced, as its Toolkit cover does, before anything is filled in. */
+function Intro({ t, tool, kind, onStart, onCancel }) {
+  return (
+    <div>
+      <div style={{ height: 120, borderRadius: 12, background: tool.tint, marginBottom: 20,
+        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={tool.icon} size={56} stroke={1.5} style={{ color: t.ink }} />
+      </div>
+
+      <div className="placer-caption" style={{ textTransform: 'uppercase', color: tool.color,
+        fontWeight: 700, marginBottom: 8 }}>
+        {findCategory(tool.category)?.name ?? 'Tool'}
+      </div>
+      {tool.tagline && (
+        <p style={{ fontSize: 17, fontWeight: 700, color: t.ink, lineHeight: 1.4, margin: '0 0 10px' }}>
+          {tool.tagline}
+        </p>
+      )}
+      <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '0 0 12px' }}>{tool.blurb}</p>
+      {(tool.duration || tool.createdBy) && (
+        <p className="placer-caption" style={{ color: t.inkFaint, margin: '0 0 16px' }}>
+          {[tool.duration, tool.createdBy && `By ${tool.createdBy}`].filter(Boolean).join(' · ')}
+        </p>
+      )}
+      <p style={{ fontSize: 14, color: t.ink, lineHeight: 1.6, margin: '0 0 20px', padding: '12px 14px',
+        borderRadius: 12, background: t.chrome }}>
+        {WHAT_YOU_SET_UP[kind]}
+      </p>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+        <Btn t={t} variant="outline" size="sm" type="button" onClick={onCancel}>Cancel</Btn>
+        <Btn t={t} variant="primary" size="sm" type="button" onClick={onStart}>Get started</Btn>
+      </div>
+    </div>
+  );
+}
+
 export function ConfigureToolDialog({ t, project, tool, onClose, onConfigured }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [started, setStarted] = useState(false);
   const panelRef = useRef(null);
-  const SetupForm = FORMS[projectSetupKind(tool)];
+  const kind = projectSetupKind(tool);
+  const SetupForm = FORMS[kind];
 
   // Escape closes it, unless a save is under way.
   useEffect(() => {
@@ -292,8 +399,12 @@ export function ConfigureToolDialog({ t, project, tool, onClose, onConfigured })
           <p role="alert" style={{ fontSize: 13.5, color: '#B3261E', margin: '0 0 16px' }}>{error}</p>
         )}
 
-        <SetupForm t={t} project={project} tool={tool} busy={busy} setBusy={setBusy}
-          onDone={onConfigured} onError={setError} onCancel={onClose} />
+        {started ? (
+          <SetupForm t={t} project={project} tool={tool} busy={busy} setBusy={setBusy}
+            onDone={onConfigured} onError={setError} onCancel={onClose} />
+        ) : (
+          <Intro t={t} tool={tool} kind={kind} onStart={() => setStarted(true)} onCancel={onClose} />
+        )}
       </div>
     </div>
   );

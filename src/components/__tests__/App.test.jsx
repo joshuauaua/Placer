@@ -108,7 +108,7 @@ describe('App', () => {
     expect(history.at(-1)).toBe('/explore');
   });
 
-  it('starts an imagination from the Toolkit\'s Reimagine a Space, on its own map', async () => {
+  it('starts an imagination from the Toolkit\'s Idea Visualizer, on its own map', async () => {
     const { hook, history } = memoryLocation({ path: '/toolkit/reimagine-a-space', record: true });
     render(<Router hook={hook}><App /></Router>);
 
@@ -120,7 +120,7 @@ describe('App', () => {
     expect(history.at(-1)).toBe('/');
   });
 
-  it('skips the map for a project that has set Reimagine a Space up, drawing on its base image', async () => {
+  it('skips the map for a project that has set Idea Visualizer up, drawing on its base image', async () => {
     vi.mocked(readReimagineScene).mockResolvedValueOnce({
       address: 'Folkets Park, Malmö', position: { lat: 55.59, lng: 13.01 }, screenshot: 'data:image/webp;base64,AAAA',
     });

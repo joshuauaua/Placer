@@ -227,7 +227,7 @@ Tools are typically one of these:
 
 | Pattern | Example | Key elements |
 |---------|---------|-------------|
-| Calculator / slider tool | Budget Ballot | Range sliders, live readouts, budget caps |
+| Calculator / slider tool | Co-Budget | Range sliders, live readouts, budget caps |
 | Drag-to-resize | Street Mixer | Dividers with `role="separator"`, keyboard nudge |
 | Click-to-place map | 15-Minute Reach | SVG grid, roving cursor, keyboard navigation |
 | Draw-and-measure | Desire Lines | SVG canvas, drag-to-draw, destination markers |

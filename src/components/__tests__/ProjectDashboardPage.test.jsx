@@ -195,23 +195,23 @@ describe('ProjectDashboardPage', () => {
   it('adds a tool from the dashboard and goes straight on to configuring it', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
     setup();
-    await screen.findByRole('button', { name: 'Configure Open Vote' });
+    await screen.findByRole('button', { name: 'Configure Poll' });
 
     fireEvent.click(screen.getByRole('button', { name: /Add a Tool/ }));
     // Only the tools the project does not have yet.
-    expect(screen.queryByRole('menuitem', { name: 'Open Vote' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Budget Ballot' }));
+    expect(screen.queryByRole('menuitem', { name: 'Poll' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Co-Budget' }));
 
     expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['open-vote', 'budget-ballot'], 'user-1');
-    expect(await screen.findByRole('dialog', { name: 'Configure Budget Ballot' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Configure Budget Ballot' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'Configure Co-Budget' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Configure Co-Budget' })).toBeInTheDocument();
   });
 
   it('lists the tools chosen at setup, each waiting to be configured', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'desire-lines']);
     setup();
 
-    expect(await screen.findByRole('button', { name: 'Configure Open Vote' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Configure Poll' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Configure Desire Lines' })).toBeInTheDocument();
     expect(screen.getAllByText('Not configured')).toHaveLength(2);
     expect(readProjectTools).toHaveBeenCalledWith('proj-1');
@@ -228,7 +228,7 @@ describe('ProjectDashboardPage', () => {
 
     expect(await screen.findByRole('button', { name: 'Configure Desire Lines again' })).toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByText('Live')).toHaveLength(2));
-    expect(screen.queryByRole('button', { name: 'Configure Open Vote' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Configure Poll' })).not.toBeInTheDocument();
   });
 
   it('puts a tool with nothing to set up live from its dialog', async () => {
@@ -236,6 +236,7 @@ describe('ProjectDashboardPage', () => {
     setup();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Configure Desire Lines' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Get started' }));
     vi.mocked(readConfiguredProjectTools).mockResolvedValueOnce(new Set(['desire-lines']));
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Go live' }));
 
@@ -248,13 +249,17 @@ describe('ProjectDashboardPage', () => {
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
     setup();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Configure Open Vote' }));
-    const dialog = screen.getByRole('dialog', { name: 'Configure Open Vote' });
-    fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: 'Should the square be car-free?' } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Configure Poll' }));
+    const dialog = screen.getByRole('dialog', { name: 'Configure Poll' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Get started' }));
+    fireEvent.change(within(dialog).getByLabelText('The question'), { target: { value: 'Should the square be car-free?' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    fireEvent.change(within(dialog).getByLabelText('Answer 3'), { target: { value: 'Only at weekends' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save and go live' }));
 
     await waitFor(() => expect(createRoom).toHaveBeenCalledWith('open-vote', 'proj-1', '30d',
-      expect.objectContaining({ question: 'Should the square be car-free?' })));
+      { question: 'Should the square be car-free?', answers: ['Yes', 'No', 'Only at weekends'] }, null));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
@@ -371,8 +376,18 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
   it('lists the rooms still open, with how they are going', async () => {
     setup();
 
-    expect(await screen.findByText('Open Vote')).toBeInTheDocument();
+    expect(await screen.findByText('Poll')).toBeInTheDocument();
     expect(screen.getByText(/12 responses/)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^open$/i })).toHaveLength(1);
+  });
+
+  it('lists a room scheduled to start later, with when it starts', async () => {
+    vi.mocked(readProjectRooms).mockResolvedValue([{
+      ...LONG_ROOM, status: 'scheduled', contributions: 0, opensAt: '2026-11-01T00:00:00Z',
+    }]);
+    setup();
+
+    expect(await screen.findAllByText(/Starts 1 November 2026/)).not.toHaveLength(0);
     expect(screen.getAllByRole('button', { name: /^open$/i })).toHaveLength(1);
   });
 

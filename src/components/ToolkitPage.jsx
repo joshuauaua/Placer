@@ -29,10 +29,13 @@ import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from '
 import { Btn } from './UI';
 import { Panel, ToolLayout } from './ToolLayout';
 import { RoomBar } from './toolkit/RoomBar';
+import { SetupSteps } from './toolkit/SetupSteps';
 import { ToolCover } from './toolkit/ToolCover';
 import { ContributeToolDialog } from './ContributeToolDialog';
 import { useRoom } from './toolkit/useRoom';
-import { CATEGORIES, SORTS, TOOLS, filterTools, findCategory, findTool, sortTools } from '../toolkit/tools';
+import {
+  CATEGORIES, SORTS, TOOLS, filterTools, findCategory, findTool, setupSteps, sortTools,
+} from '../toolkit/tools';
 import { DEFAULT_LIFETIME, ROOM_LIFETIMES, projectIdFrom, roomIdFrom, roomPath } from '../toolkit/rooms';
 import { isSupabaseConfigured } from '../services/rooms';
 import { readProjectCrumb } from '../services/projects';
@@ -210,25 +213,34 @@ function StartRoom({ t, tool, onStart, onSetUp, busy, canStayOpen }) {
 }
 
 /**
- * Setting a tool up for the room about to open: the tool's own form, how long the
- * room stays open when there is a project to keep it open for, and what still has to
- * be fixed before it can open. Shown in place of the tool, so what the organiser sees
- * is what they are deciding.
- *
- * Problems are only listed once somebody has tried to open the room — a form that
- * starts out shouting at you has not let you fill it in yet.
+ * Setting a tool up for the room about to open: the tool's own setup, in as many
+ * stages as it asks for (setupSteps), and how long the room stays open when there is a
+ * project to keep it open for — on the one screen for a tool set up on one, as the last
+ * stage for a tool set up in stages. Shown in place of the tool, so what the organiser
+ * sees is what they are deciding.
  */
 function RoomSetup({ t, tool, canStayOpen, busy, onCancel, onOpen }) {
   const [setup, setSetup] = useState(() => tool.setup.defaults());
   const [lifetime, setLifetime] = useState(DEFAULT_LIFETIME);
-  const [tried, setTried] = useState(false);
-  const problems = tool.setup.problems(setup);
-  const Form = tool.setup.Form;
 
-  const open = () => {
-    setTried(true);
-    if (problems.length === 0) onOpen(lifetime, setup);
-  };
+  const openFor = <LifetimeSelect t={t} lifetime={lifetime} onChange={setLifetime} busy={busy} />;
+  const toolSteps = setupSteps(tool).map(({ title, Form, problems }) => ({
+    title,
+    content: <Form t={t} tool={tool} setup={setup} onChange={setSetup} />,
+    problems: problems(setup),
+  }));
+  const steps = toolSteps.length > 1
+    ? [...toolSteps, ...(canStayOpen ? [{ title: 'Open for', content: openFor, problems: [] }] : [])]
+    : [{
+      title: null,
+      content: (
+        <>
+          {toolSteps[0].content}
+          {canStayOpen && <div style={{ marginTop: 24 }}>{openFor}</div>}
+        </>
+      ),
+      problems: toolSteps[0].problems,
+    }];
 
   return (
     <Panel t={t} title="Set up the room">
@@ -237,25 +249,10 @@ function RoomSetup({ t, tool, canStayOpen, busy, onCancel, onOpen }) {
         until the room closes — so their answers are all about the same thing.
       </p>
 
-      <Form t={t} tool={tool} setup={setup} onChange={setSetup} />
-
-      {tried && problems.length > 0 && (
-        <ul role="alert" style={{ listStyle: 'none', marginTop: 20, padding: '12px 16px', borderRadius: 12,
-          background: t.surfaceAlt, border: `1px solid ${t.line}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {problems.map((problem) => (
-            <li key={problem} style={{ fontSize: 14, color: t.ink }}>{problem}</li>
-          ))}
-        </ul>
-      )}
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 24 }}>
-        {canStayOpen && <LifetimeSelect t={t} lifetime={lifetime} onChange={setLifetime} busy={busy} />}
-        <div style={{ flex: 1 }} />
-        <Btn t={t} size="sm" variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Btn>
-        <Btn t={t} size="sm" icon="user" variant="character" tone={tool} onClick={open} disabled={busy}>
-          {busy ? 'Opening…' : 'Open the room'}
-        </Btn>
-      </div>
+      <SetupSteps t={t} steps={steps} busy={busy} onCancel={onCancel}
+        onFinish={() => onOpen(lifetime, setup)}
+        finishLabel="Open the room" busyLabel="Opening…" cancelVariant="ghost"
+        finishButton={{ icon: 'user', variant: 'character', tone: tool }} />
     </Panel>
   );
 }
