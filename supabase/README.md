@@ -751,6 +751,16 @@ refuses anything still over 3 MB. The folder keeps at most two, and closing the
 organisation deletes its cover. The uploading admin needs room under their own 50 MB
 for it, but it is not counted against anyone afterwards; the folder's own limit bounds it.
 
+**Profile pictures.** Run `organisation-avatars.sql` after `organisation-covers.sql`, and
+redeploy the `media` function — both are needed. It adds `organisations.avatar_path`,
+pointing into `organisation-avatars/<organisation id>/`: a folder of its own, since the
+function sweeps a folder down to the one picture its column names, and sharing the
+cover's would delete each whenever the other was replaced. Admins write it the same way
+as the cover; the browser re-encodes it to a 512px square, and the function refuses
+anything over 1 MB. Closing the organisation deletes it with the cover. Until the
+function is redeployed it refuses the folder, so uploading a picture fails while
+everything else works.
+
 **Addresses.** Run `organisation-address.sql` after `organisations.sql`. It adds
 `organisations.address` and the point it is at (`location_lat`, `location_lng`, both
 or neither). The setup form suggests addresses from Google Places as one is typed; the

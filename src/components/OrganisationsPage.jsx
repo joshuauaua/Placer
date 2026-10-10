@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Btn } from './UI';
+import { Avatar, Btn } from './UI';
 import { Icon } from './Icon';
 import { PageHeader } from './PageHeader';
 import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from './GalleryToolbar';
@@ -65,8 +65,8 @@ function YoursLabel({ t }) {
 }
 
 /* One organisation: its cover edge to edge across the top, the way a ProjectCard
- * shows a project's image, then the building mark beside its name, town and the start
- * of its description. Without a cover it is just that row. */
+ * shows a project's image, then its profile picture (or the building mark) beside its
+ * name, town and the start of its description. Without a cover it is just that row. */
 function OrganisationCard({ t, organisation, yours, onOpen }) {
   return (
     <button type="button" onClick={() => onOpen(organisation.id)} style={{ flex: 1, textAlign: 'left',
@@ -79,10 +79,14 @@ function OrganisationCard({ t, organisation, yours, onOpen }) {
       )}
       {yours && <span style={{ display: 'block', marginBottom: 12 }}><YoursLabel t={t} /></span>}
       <span style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-        <span style={{ width: 44, height: 44, borderRadius: 12, background: t.surfaceAlt, flex: '0 0 auto',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.ink }}>
-          <Icon name="building" size={22} stroke={2} />
-        </span>
+        {organisation.avatar ? (
+          <Avatar name={organisation.name} size={44} photo={organisation.avatar} />
+        ) : (
+          <span style={{ width: 44, height: 44, borderRadius: 12, background: t.surfaceAlt, flex: '0 0 auto',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.ink }}>
+            <Icon name="building" size={22} stroke={2} />
+          </span>
+        )}
         <span style={{ minWidth: 0 }}>
           <span style={{ display: 'block', fontSize: 17, fontWeight: 700, color: t.ink, marginBottom: 4 }}>
             {organisation.name}
@@ -113,8 +117,9 @@ function OrganisationRow({ t, organisation, yours, onOpen }) {
         fontFamily: 'var(--placer-font)' }}>
       <span style={{ width: 44, height: 44, borderRadius: 12, flex: '0 0 auto', overflow: 'hidden',
         background: t.surfaceAlt, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {organisation.cover
-          ? <img src={organisation.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        {organisation.avatar || organisation.cover
+          ? <img src={organisation.avatar || organisation.cover} alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           : <Icon name="building" size={20} stroke={2} />}
       </span>
       <span style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
