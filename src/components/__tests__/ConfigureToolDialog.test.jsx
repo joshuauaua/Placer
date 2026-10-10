@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { ConfigureToolDialog } from '../ConfigureToolDialog';
 import {
   markProjectToolConfigured, readProjectToolConfig, removeProjectImageFile, saveProjectToolConfig, uploadSceneImage,
@@ -212,25 +212,32 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
       toLastStep();
 
       fireEvent.click(screen.getByLabelText('On a date'));
-      const day = screen.getByLabelText('Start date');
-      expect(day).toHaveAttribute('min', '2026-11-01');
-      expect(day).toHaveAttribute('max', '2026-12-31');
-      fireEvent.change(day, { target: { value: '2026-11-15' } });
+      fireEvent.click(screen.getByLabelText('Start date'));
+      const calendar = within(screen.getByRole('dialog', { name: 'Choose the start date' }));
+      fireEvent.click(calendar.getByRole('button', { name: '15 November 2026' }));
+
+      expect(screen.queryByRole('dialog', { name: 'Choose the start date' })).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Start date')).toHaveTextContent('2026');
       save();
 
       await waitFor(() => expect(onConfigured).toHaveBeenCalled());
       expect(createRoom).toHaveBeenCalledWith('open-vote', 'proj-1', '30d', expect.any(Object), '2026-11-15');
     });
 
-    it('will not schedule it outside the project\'s dates', async () => {
+    it('offers only days within the project\'s dates, and asks for one', async () => {
       setup('open-vote', { project: DATED });
       toLastStep();
 
       fireEvent.click(screen.getByLabelText('On a date'));
-      fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2027-01-05' } });
       save();
+      expect(await screen.findByRole('alert')).toHaveTextContent('Choose the day it starts.');
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('within the project\u2019s dates');
+      fireEvent.click(screen.getByLabelText('Start date'));
+      const calendar = within(screen.getByRole('dialog', { name: 'Choose the start date' }));
+      expect(calendar.getByRole('button', { name: '1 November 2026' })).toBeEnabled();
+      expect(calendar.getByRole('button', { name: '31 December 2026' })).toBeEnabled();
+      expect(calendar.queryByRole('button', { name: '31 October 2026' })).not.toBeInTheDocument();
+      expect(calendar.queryByRole('button', { name: '1 January 2027' })).not.toBeInTheDocument();
       expect(createRoom).not.toHaveBeenCalled();
     });
 
@@ -269,22 +276,24 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
     const { onConfigured } = setup('budget-ballot');
 
     expect(screen.getByText('Step 1 of 3')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Total budget, in euros'), { target: { value: '40000' } });
+    fireEvent.change(screen.getByLabelText('Currency'), { target: { value: 'SEK' } });
+    fireEvent.change(screen.getByLabelText('Total budget'), { target: { value: '40000' } });
     next();
 
     expect(screen.getByRole('heading', { name: 'Posts' })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Post 1 cost per item, in euros'), { target: { value: '50000' } });
+    fireEvent.change(screen.getByLabelText('Post 1 cost per item'), { target: { value: '50000' } });
     next();
     expect(screen.getByRole('alert')).toHaveTextContent('costs more per item than the whole budget');
 
-    fireEvent.change(screen.getByLabelText('Post 1 cost per item, in euros'), { target: { value: '2000' } });
+    fireEvent.change(screen.getByLabelText('Post 1 cost per item'), { target: { value: '2000' } });
+    fireEvent.click(screen.getByLabelText(/Let people add their own posts/));
     next();
     expect(screen.getByRole('heading', { name: 'Open for' })).toBeInTheDocument();
     save();
 
     await waitFor(() => expect(onConfigured).toHaveBeenCalled());
     expect(createRoom).toHaveBeenCalledWith('budget-ballot', 'proj-1', '30d',
-      expect.objectContaining({ budget: 40000 }), null);
+      expect.objectContaining({ currency: 'SEK', budget: 40000, ownPosts: true }), null);
     expect(createRoom.mock.calls[0][3].posts[0]).toEqual(
       { key: 'trees', label: 'Street trees', icon: 'tree', unitCost: 2000 });
   });
