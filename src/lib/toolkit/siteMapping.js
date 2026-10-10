@@ -130,6 +130,9 @@ export function emptyState() {
     notes: {},
     profile: emptyProfile(),
     contact: emptyContact(),
+    // Where the person is, as a share of the way across and down the site's view
+    // ({ x, y }, 0–1) — dropped as a pin before the survey, on a project's site.
+    here: null,
   };
 }
 
@@ -219,6 +222,7 @@ export function buildJSON(site, state) {
       inventory: Object.fromEntries(
         SURVEY_QUESTIONS.map((q) => [q.key, state.answers?.[q.key] === true]),
       ),
+      here: state.here ? { x: state.here.x, y: state.here.y } : null,
       spatialMarkers: (state.markers || []).map((m) => ({ type: m.type, x: m.x, y: m.y })),
       reflection: {
         mood: state.mood,
@@ -246,6 +250,9 @@ export function buildSummary(site, state) {
     'SITE',
     `Name: ${site?.name || '(unnamed)'}`,
     site && Number.isFinite(site.lat) ? `Location: ${site.lat}, ${site.lng}` : 'Location: —',
+    ...(state.here
+      ? [`You were here: ${Math.round(state.here.x * 100)}% across, ${Math.round(state.here.y * 100)}% down the site view`]
+      : []),
     '',
     `SITE SURVEY — ${answeredCount(state.answers)}/18 answered`,
     `Inviting features present: ${invited} of 14`,

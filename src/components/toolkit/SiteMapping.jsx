@@ -5,6 +5,12 @@
  * then optionally map markers, reflect, and leave contact details for follow-up.
  * If the map cannot load the picker falls back to coordinates + presets — the
  * survey never depends on the map tiles.
+ *
+ * Opened for a project that has set it up on a site (ConfigureToolDialog), there is no
+ * picker: the site is the project's, named by its organisers and seen in the view they
+ * framed (SiteScope.jsx), and the markers are placed on that view rather than a sketch.
+ * It opens in steps — drop a pin on the site where you are, Start the survey, then
+ * About you — and the pin stays on the map through the survey.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -12,6 +18,7 @@ import { Icon } from '../Icon';
 import { Panel, Readout } from '../ToolLayout';
 import { Btn, Chip, CopyButton } from '../UI';
 import { PlaceSearch } from '../PlaceSearch';
+import { SITE_ASPECT, SiteView } from './SiteScope';
 import { addPlainMarker, createMap, onBackgroundClick, toLngLat } from '../../lib/map';
 import {
   AGE_RANGES,
@@ -64,8 +71,20 @@ function coordsFromPointer(event, cols = 100, rows = 70) {
   return { x: Math.min(0.98, Math.max(0.02, x)), y: Math.min(0.98, Math.max(0.02, y)), cols, rows };
 }
 
-export function SiteMapping({ t, tool }) {
+/** A project's site ({ name, point, zoom, bounds }) as the tool's site. */
+function siteFromProject(projectSite) {
+  if (!projectSite?.point) return null;
+  return {
+    name: projectSite.name || 'Project site',
+    lat: projectSite.point.lat,
+    lng: projectSite.point.lng,
+    scope: { point: projectSite.point, zoom: projectSite.zoom, bounds: projectSite.bounds },
+  };
+}
+
+export function SiteMapping({ t, tool, projectSite = null }) {
   const c = tool.color;
+  const fixed = useMemo(() => siteFromProject(projectSite), [projectSite]);
   const [site, setSite] = useState(null);
   const [siteName, setSiteName] = useState('');
   const [siteSearch, setSiteSearch] = useState('');
@@ -79,6 +98,8 @@ export function SiteMapping({ t, tool }) {
   const [searchError, setSearchError] = useState('');
   const [state, setState] = useState(() => emptyState());
   const [cardIndex, setCardIndex] = useState(0);
+  // On a project's site, the steps before the survey: 'where' you are, then 'about' you.
+  const [intro, setIntro] = useState('where');
   const [panel, setPanel] = useState('survey');
   const [selectedMarker, setSelectedMarker] = useState(MAP_MARKERS[0].key);
   const mapEl = useRef(null);
@@ -89,7 +110,7 @@ export function SiteMapping({ t, tool }) {
   // survey itself never needs it, so a map that fails degrades to coordinates +
   // presets, not a block.
   useEffect(() => {
-    if (site || !mapEl.current) return undefined;
+    if (site || fixed || !mapEl.current) return undefined;
     let map;
     try {
       map = createMap(mapEl.current, {
@@ -257,10 +278,120 @@ export function SiteMapping({ t, tool }) {
     setSiteSearch('');
     setGeoState('idle');
     setGeoMessage('');
+    setIntro('where');
   }
 
   const contact = state.contact || {};
   const emailOk = isValidEmail(contact.email);
+
+  // Who the person is: below the picker on the Toolkit's own page, a step of its own on
+  // a project's site (`own`), where the step's title already says what it is.
+  const aboutYouFields = (own) => (
+    <div style={own ? undefined : { marginTop: 22, borderTop: `1px solid ${t.line}`, paddingTop: 16 }}>
+      <span className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: t.inkDim }}>
+        {own ? 'Optional — it helps read the answers' : 'About you — optional, helps read the answers'}
+      </span>
+      <div style={{ marginTop: 10 }}>
+        <span id="age-label" style={{ fontSize: 13, fontWeight: 700, color: t.ink }}>Age</span>
+        <div role="group" aria-labelledby="age-label" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+          {AGE_RANGES.map((range) => (
+            <Chip key={range.value} t={t} color={c} active={state.profile?.ageRange === range.value}
+              ariaPressed={state.profile?.ageRange === range.value}
+              onClick={() => setProfile({ ageRange: state.profile?.ageRange === range.value ? '' : range.value })}>
+              {range.label}
+            </Chip>
+          ))}
+        </div>
+      </div>
+      <div style={{ marginTop: 14 }}>
+        <span id="gender-label" style={{ fontSize: 13, fontWeight: 700, color: t.ink }}>Gender</span>
+        <div role="group" aria-labelledby="gender-label" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+          {GENDER_OPTIONS.map((option) => (
+            <Chip key={option.value} t={t} color={c} active={state.profile?.gender === option.value}
+              ariaPressed={state.profile?.gender === option.value}
+              onClick={() => setProfile({ gender: state.profile?.gender === option.value ? '' : option.value })}>
+              {option.label}
+            </Chip>
+          ))}
+        </div>
+        {state.profile?.gender === 'self-describe' && (
+          <input aria-label="Describe your gender" type="text" placeholder="Self-describe (optional)"
+            value={state.profile?.genderSelf || ''}
+            onChange={(e) => setProfile({ genderSelf: e.target.value })}
+            style={{ ...fieldStyle(t), marginTop: 8 }} />
+        )}
+      </div>
+      <p style={{ fontSize: 12.5, color: t.inkFaint, lineHeight: 1.6, marginTop: 10 }}>
+        Stays in this browser — it only leaves with your download if you export.
+      </p>
+    </div>
+  );
+  const aboutYou = aboutYouFields(false);
+
+  function dropHere(event) {
+    const point = coordsFromPointer(event) || { x: 0.5, y: 0.5 };
+    setState((s) => ({ ...s, here: { x: point.x, y: point.y } }));
+  }
+
+  // The person's pin, drawn in the same 100 × 70 space as the markers.
+  const herePin = (here) => (
+    <g aria-hidden="true">
+      <circle cx={here.x * 100} cy={here.y * 70} r="4.2" fill={c} opacity="0.22" />
+      <circle cx={here.x * 100} cy={here.y * 70} r="2.2" fill={c} stroke="#fff" strokeWidth="0.8" />
+    </g>
+  );
+
+  // ——— Phase 0, in a project: where you are on its site, then who you are ———
+  if (!site && fixed && intro === 'where') {
+    return (
+      <div style={{ maxWidth: 860 }}>
+        <Panel t={t} title={`Where are you? · ${fixed.name}`}>
+          <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
+            Tap the map where you are standing now. Then start the survey: a few questions about
+            you, and Section 1 as a stack of eighteen cards.
+          </p>
+          <div role="group" aria-label={`Map of ${fixed.name}. Tap where you are to drop your pin.`}
+            onClick={dropHere}
+            style={{ position: 'relative', width: '100%', aspectRatio: SITE_ASPECT, borderRadius: 12,
+              overflow: 'hidden', border: `1px solid ${t.line}`, background: t.surfaceAlt, cursor: 'crosshair' }}>
+            <SiteView scope={fixed.scope} label={`Map of ${fixed.name}`} />
+            <svg viewBox="0 0 100 70" preserveAspectRatio="none"
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+              {state.here && herePin(state.here)}
+            </svg>
+          </div>
+          <p role="status" aria-live="polite" style={{ fontSize: 13, color: t.inkDim, marginTop: 10, minHeight: 20 }}>
+            {state.here ? 'Your pin is down. Tap again to move it.' : 'No pin yet — tap the map where you are.'}
+          </p>
+          <div style={{ marginTop: 12 }}>
+            <Btn t={t} variant="primary" size="md" icon="arrowRight" disabled={!state.here}
+              onClick={() => setIntro('about')}>
+              Start the survey
+            </Btn>
+          </div>
+        </Panel>
+      </div>
+    );
+  }
+
+  if (!site && fixed) {
+    return (
+      <div style={{ maxWidth: 860 }}>
+        <Panel t={t} title="About you">
+          {aboutYouFields(true)}
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 18 }}>
+            <Btn t={t} variant="outline" size="md" icon="chevLeft" onClick={() => setIntro('where')}>
+              Back
+            </Btn>
+            <Btn t={t} variant="primary" size="md" icon="arrowRight"
+              onClick={() => { setSite(fixed); setPanel('survey'); setCardIndex(0); }}>
+              Continue to the survey
+            </Btn>
+          </div>
+        </Panel>
+      </div>
+    );
+  }
 
   // ——— Phase 0: no site yet — map-based picker + who you are ———
   if (!site) {
@@ -348,53 +479,20 @@ export function SiteMapping({ t, tool }) {
               ))}
             </div>
           </div>
-          <div style={{ marginTop: 22, borderTop: `1px solid ${t.line}`, paddingTop: 16 }}>
-            <span className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: t.inkDim }}>
-              About you — optional, helps read the answers
-            </span>
-            <div style={{ marginTop: 10 }}>
-              <span id="age-label" style={{ fontSize: 13, fontWeight: 700, color: t.ink }}>Age</span>
-              <div role="group" aria-labelledby="age-label" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-                {AGE_RANGES.map((range) => (
-                  <Chip key={range.value} t={t} color={c} active={state.profile?.ageRange === range.value}
-                    ariaPressed={state.profile?.ageRange === range.value}
-                    onClick={() => setProfile({ ageRange: state.profile?.ageRange === range.value ? '' : range.value })}>
-                    {range.label}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-            <div style={{ marginTop: 14 }}>
-              <span id="gender-label" style={{ fontSize: 13, fontWeight: 700, color: t.ink }}>Gender</span>
-              <div role="group" aria-labelledby="gender-label" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-                {GENDER_OPTIONS.map((option) => (
-                  <Chip key={option.value} t={t} color={c} active={state.profile?.gender === option.value}
-                    ariaPressed={state.profile?.gender === option.value}
-                    onClick={() => setProfile({ gender: state.profile?.gender === option.value ? '' : option.value })}>
-                    {option.label}
-                  </Chip>
-                ))}
-              </div>
-              {state.profile?.gender === 'self-describe' && (
-                <input aria-label="Describe your gender" type="text" placeholder="Self-describe (optional)"
-                  value={state.profile?.genderSelf || ''}
-                  onChange={(e) => setProfile({ genderSelf: e.target.value })}
-                  style={{ ...fieldStyle(t), marginTop: 8 }} />
-              )}
-            </div>
-            <p style={{ fontSize: 12.5, color: t.inkFaint, lineHeight: 1.6, marginTop: 10 }}>
-              Stays in this browser — it only leaves with your download if you export.
-            </p>
-          </div>
+          {aboutYou}
         </Panel>
       </div>
     );
   }
 
   // ——— Site loaded: map + side box ———
+  // On a phone the two stack, and while the eighteen cards are up only they show: the
+  // map is for the sections after them (.placer-site-mapping in index.css).
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(300px, 1fr)', gap: 20, alignItems: 'start' }}>
+    <div className="placer-site-mapping" data-panel={panel}
+      style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(300px, 1fr)', gap: 20, alignItems: 'start' }}>
       {/* Left: the site map */}
+      <div className="placer-site-mapping-map" style={{ minWidth: 0 }}>
       <Panel t={t} title={site.name} aside={
         <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
           {site.lat.toFixed(4)}, {site.lng.toFixed(4)} · {placedTotal} marker{placedTotal === 1 ? '' : 's'}
@@ -406,9 +504,13 @@ export function SiteMapping({ t, tool }) {
           onClick={panel === 'spatial' ? clickMap : undefined}
           onDragOver={(e) => { if (panel === 'spatial') e.preventDefault(); }}
           onDrop={panel === 'spatial' ? dropOnMap : undefined}
-          style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${t.line}`, background: t.surfaceAlt, cursor: panel === 'spatial' ? 'crosshair' : 'default' }}>
-          <svg viewBox="0 0 100 70" style={{ width: '100%', display: 'block' }} role="img"
-            aria-label={`Schematic plan of ${site.name} with ${placedTotal} placed markers`}>
+          style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: `1px solid ${t.line}`, background: t.surfaceAlt, cursor: panel === 'spatial' ? 'crosshair' : 'default' }}>
+          {site.scope && <SiteView scope={site.scope} label={`Map of ${site.name}`} />}
+          <svg viewBox="0 0 100 70" style={{ position: 'relative', width: '100%', display: 'block' }} role="img"
+            aria-label={site.scope
+              ? `Markers placed on ${site.name}: ${placedTotal}`
+              : `Schematic plan of ${site.name} with ${placedTotal} placed markers`}>
+            {!site.scope && <>
             {/* grass, paths, water hint */}
             <rect x="0" y="0" width="100" height="70" fill={t.mapMode === 'dark' ? '#232329' : '#E9EFE2'} />
             {Array.from({ length: 9 }).map((_, i) => (
@@ -425,6 +527,8 @@ export function SiteMapping({ t, tool }) {
               <circle cx="50" cy="32" r="3.2" fill={c} opacity="0.2" />
               <circle cx="50" cy="32" r="1.6" fill={c} stroke="#fff" strokeWidth="0.5" />
             </g>
+            </>}
+            {state.here && herePin(state.here)}
             {state.markers.map((m) => {
               const kind = MAP_MARKERS.find((k) => k.key === m.type);
               return (
@@ -452,10 +556,11 @@ export function SiteMapping({ t, tool }) {
             </a>
           )}
           <div style={{ flex: 1 }} />
-          <Btn t={t} variant="ghost" size="sm" icon="pencil" onClick={() => setSite(null)}>Change site</Btn>
+          {!fixed && <Btn t={t} variant="ghost" size="sm" icon="pencil" onClick={() => setSite(null)}>Change site</Btn>}
         </div>
         {panel === 'spatial' && placedTotal > 0 && (
           <ul style={{ listStyle: 'none', marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {state.here && herePin(state.here)}
             {state.markers.map((m) => {
               const kind = MAP_MARKERS.find((k) => k.key === m.type);
               return (
@@ -473,6 +578,7 @@ export function SiteMapping({ t, tool }) {
           </ul>
         )}
       </Panel>
+      </div>
 
       {/* Right: the side box */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>

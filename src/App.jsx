@@ -830,8 +830,7 @@ function MainApp({ initialView = 'welcome' }) {
                   onBack={() => show('projects')}
                   onOpenProject={showProjectPublic}
                   onOpenOrganisation={showOrganisationPublic}
-                  onOpenToolkit={showProjectToolkit}
-                  onOpenRoom={showProjectRoom} />
+                  onOpenToolkit={showProjectToolkit} />
               </Suspense>
             )}
           </div>

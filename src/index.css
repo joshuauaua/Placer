@@ -2431,3 +2431,17 @@ a {
 .placer-notification-row:focus-visible {
   background: var(--placer-grey-100) !important;
 }
+
+/* Site-Specific Spatial Mapping, once a site is loaded (SiteMapping.jsx). On a phone the
+ * map and the side box stack, and while the eighteen survey cards are up only they show:
+ * the map comes back for the spatial mapping and the sections after it. The grid's
+ * columns are set inline, so the phone's one column has to win over them. */
+@media (max-width: 899px) {
+  .placer-site-mapping {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .placer-site-mapping[data-panel="survey"] .placer-site-mapping-map {
+    display: none;
+  }
+}
