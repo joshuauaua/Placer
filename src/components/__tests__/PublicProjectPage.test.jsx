@@ -3,7 +3,7 @@ import { act, render, screen, fireEvent, waitFor, within } from '@testing-librar
 import { PublicProjectPage } from '../PublicProjectPage';
 import { readImaginationsByProject } from '../../services/imaginations';
 import {
-  readConfiguredProjectTools, readLinks, readProject, readProjectAccess, readProjectTools, readPublicToolkitActivity, readRelatedProjects,
+  readConfiguredProjectTools, readLinks, readProject, readProjectAccess, readProjectSite, readProjectTools, readPublicToolkitActivity, readRelatedProjects,
   requestProjectAccess,
 } from '../../services/projects';
 import { follow, isFollowing, unfollow } from '../../services/follows';
@@ -25,6 +25,7 @@ vi.mock('../../services/projects', () => ({
   // Every tool configured unless a test says otherwise, so a tool added is a tool shown.
   readConfiguredProjectTools: vi.fn(async () => new Set((await import('../../toolkit/tools')).TOOLS.map((tool) => tool.id))),
   readProjectToolConfig: vi.fn(() => Promise.resolve(null)),
+  readProjectSite: vi.fn(() => Promise.resolve(null)),
   saveProjectToolConfig: vi.fn(() => Promise.resolve()),
   uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),
   readProjectAccess: vi.fn(() => Promise.resolve(null)),
@@ -36,6 +37,7 @@ vi.mock('../../services/rooms', () => ({
   readContributions: vi.fn(() => Promise.resolve([])),
   saveContribution: vi.fn(() => Promise.resolve(true)),
   subscribeToRoom: vi.fn(() => () => {}),
+  isSupabaseConfigured: vi.fn(() => true),
 }));
 
 vi.mock('../../services/follows', () => ({
@@ -53,7 +55,7 @@ const PROJECT = {
 const setup = (overrides = {}) => {
   const props = {
     t: THEME, projectId: 'proj-1', accountId: null,
-    onBack: vi.fn(), onOpenProject: vi.fn(), onOpenToolkit: vi.fn(), onOpenRoom: vi.fn(),
+    onBack: vi.fn(), onOpenProject: vi.fn(), onOpenToolkit: vi.fn(),
     ...overrides,
   };
   render(<PublicProjectPage {...props} />);
@@ -353,6 +355,38 @@ describe('PublicProjectPage, taking part', () => {
     expect(screen.queryByRole('heading', { name: 'Share your idea for this place' })).not.toBeInTheDocument();
   });
 
+  it('opens a tool out on the page to take part in, rather than leaving for the Toolkit', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['desire-lines']);
+    const { onOpenToolkit } = setup();
+    const section = within(await screen.findByRole('region', { name: 'Try Desire Lines' }));
+    const card = section.getByRole('button', { name: /Desire Lines/, expanded: false });
+
+    fireEvent.click(card);
+
+    expect(card).toHaveAttribute('aria-expanded', 'true');
+    expect(section.getByRole('button', { name: /clear/i })).toBeInTheDocument();
+    expect(onOpenToolkit).not.toHaveBeenCalled();
+
+    fireEvent.click(card);
+    expect(section.queryByRole('button', { name: /clear/i })).not.toBeInTheDocument();
+  });
+
+  it('uses Site-Specific Spatial Mapping on the site the project set it up on', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['site-spatial-mapping']);
+    vi.mocked(readProjectSite).mockResolvedValueOnce({
+      name: 'Folkets Park', address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 }, zoom: 17,
+      bounds: [13.0, 55.585, 13.02, 55.595],
+    });
+    setup();
+    const section = within(await screen.findByRole('region', { name: 'Try Site-Specific Spatial Mapping Tool' }));
+
+    fireEvent.click(section.getByRole('button', { name: /Site-Specific Spatial Mapping Tool/ }));
+
+    expect(await section.findByRole('button', { name: 'Start the survey' })).toBeInTheDocument();
+    expect(readProjectSite).toHaveBeenCalledWith('proj-1', 'site-spatial-mapping');
+    expect(section.queryByLabelText('Site name')).not.toBeInTheDocument();
+  });
+
   it('still shows the project when it cannot tell which tools are configured', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(readProjectTools).mockResolvedValue(['desire-lines']);
@@ -391,7 +425,7 @@ describe('PublicProjectPage, taking part', () => {
       expect(section.getByText('£10,000')).toBeInTheDocument();
       expect(section.getByRole('button', { name: 'One more: Mural' })).toBeInTheDocument();
       expect(section.getByRole('button', { name: 'Next' })).toBeDisabled();
-      expect(handlers.onOpenRoom).not.toHaveBeenCalled();
+      expect(handlers.onOpenToolkit).not.toHaveBeenCalled();
     });
 
     it('shows the ballot on Next, and sends it on Submit', async () => {

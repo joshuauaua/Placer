@@ -10,7 +10,9 @@
  * supabase/project-setup.sql) and have set up, not the whole Toolkit, and each is
  * presented in its own section under a heading said to the visitor rather than a
  * "Tools" list: a Poll is "We want your opinion" with the poll right there
- * (onProjectPage in toolkit/tools.js). Only live tools are shown: configured for the
+ * (onProjectPage in toolkit/tools.js). Every other tool is taken part in right there
+ * too, in a card that opens out with the tool inside (ProjectToolCard) — only the Idea
+ * Visualizer, a full-screen flow of its own, leaves the page. Only live tools are shown: configured for the
  * project from its dashboard, or for one that runs in a room, with a room open for it
  * (isToolLive in toolkit/tools.js, supabase/project-open-rooms.sql). What people have
  * imagined is not a section of its own either: imagining is the Idea Visualizer, so the
@@ -24,6 +26,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn, CatTag, LoadingMark, Vote } from './UI';
 import { ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
+import { ProjectToolCard } from './toolkit/ProjectToolCard';
 import { findTool, isToolLive } from '../toolkit/tools';
 import { readImaginationsByProject } from '../services/imaginations';
 import {
@@ -299,7 +302,7 @@ function LockedProject({ t, preview, accountId, accountName, onSignIn, projectId
 }
 
 export function PublicProjectPage({ t, projectId, accountId, accountName = null, onSignIn, onBack, onOpenProject,
-  onOpenOrganisation, onOpenToolkit, onOpenRoom }) {
+  onOpenOrganisation, onOpenToolkit }) {
   const [project, setProject] = useState(null);
   // The tools its organisers added, as registry entries. A tool no longer in the
   // registry is skipped rather than shown broken.
@@ -602,10 +605,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
                 </>
               ) : room && tool.onProjectPage?.Embed ? (
                 <tool.onProjectPage.Embed t={t} tool={tool} room={room} />
-              ) : room ? (
-                <ToolCard t={t} tool={tool} onOpen={() => onOpenRoom?.(tool.id, room.id)} />
               ) : (
-                <ToolCard t={t} tool={tool} onOpen={() => onOpenToolkit?.(project.id, tool.id)} />
+                <ProjectToolCard t={t} tool={tool} room={room} projectId={project.id} displayName={accountName} />
               )}
             </section>
           ))}

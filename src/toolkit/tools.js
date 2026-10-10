@@ -328,12 +328,15 @@ export function sortTools(tools, sort = 'recent', direction = 'desc') {
  * page (ConfigureToolDialog). How a tool is filled in for a project:
  *
  *   'scene'  — Idea Visualizer: the place, and the photo of it people add to
+ *   'site'   — Site-Specific Spatial Mapping: the site's name, and the view of it on
+ *              the map that everybody maps it in
  *   'room'   — a tool that runs in a room: its `setup`, if it has one, and how long the
  *              project's room stays open. Opening that room is what puts it live.
  *   'none'   — nothing to fill in; configuring it only puts it live
  */
 export function projectSetupKind(tool) {
   if (tool.id === 'reimagine-a-space') return 'scene';
+  if (tool.id === 'site-spatial-mapping') return 'site';
   if (tool.room) return 'room';
   return 'none';
 }

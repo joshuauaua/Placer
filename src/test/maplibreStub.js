@@ -97,6 +97,11 @@ class FakeMap {
   getContainer() { return this.container; }
   getZoom() { return this.zoom; }
   getCenter() { return this.center; }
+  // A small box around the centre, as a map's view would be.
+  getBounds() {
+    const { lng, lat } = this.center;
+    return { getWest: () => lng - 0.01, getSouth: () => lat - 0.007, getEast: () => lng + 0.01, getNorth: () => lat + 0.007 };
+  }
   panTo(center) { this.center = toLngLatObject(center); return this; }
   jumpTo({ center, zoom }) {
     if (center) this.center = toLngLatObject(center);
