@@ -118,7 +118,7 @@ describe('creating an organisation', () => {
     expect(saved).toEqual({
       id: 'org-1', name: 'Malmö Stad', contactEmail: 'hello@malmo.se', website: 'https://malmo.se',
       location: 'Malmö', address: '', locationPoint: null, description: 'The city.',
-      coverPath: null, cover: null, createdBy: 'user-1', unadministeredSince: null,
+      coverPath: null, cover: null, avatarPath: null, avatar: null, createdBy: 'user-1', unadministeredSince: null,
       createdAt: '2026-09-30T10:00:00.000Z',
     });
   });
@@ -279,6 +279,43 @@ describe('the cover image', () => {
 
     await expect(organisations.closeOrganisation('org-1')).rejects.toThrow('permission denied');
     expect(remove).not.toHaveBeenCalled();
+  });
+});
+
+describe('the profile picture', () => {
+  it('is re-encoded as a square avatar and uploaded into its own folder, apart from the cover', async () => {
+    await load();
+    const file = new File(['x'], 'logo.png', { type: 'image/png' });
+
+    const path = await organisations.uploadOrganisationAvatar('org-1', file);
+
+    expect(encodeImage).toHaveBeenCalledWith(file, expect.objectContaining({ maxSide: 512, square: true }));
+    expect(path).toMatch(/^organisation-avatars\/org-1\/avatar-\d+\.webp$/);
+    expect(upload).toHaveBeenCalledWith(expect.anything(), path, expect.any(Blob));
+  });
+
+  it('is saved as a key, and read back as an address', async () => {
+    await load();
+    const path = 'organisation-avatars/org-1/avatar-1.webp';
+    fromChains.organisations = makeChain({ data: { ...ROW, avatar_path: path }, error: null });
+
+    const saved = await organisations.updateOrganisation('org-1', { avatarPath: path });
+
+    expect(fromChains.organisations.calls[0]).toEqual(['update', [{ avatar_path: path }]]);
+    expect(saved).toMatchObject({ avatarPath: path, avatar: `https://media.example/${path}` });
+  });
+
+  it('goes with the organisation when it is closed, along with the cover', async () => {
+    await load();
+    fromChains.organisations = makeChain({
+      data: { cover_path: 'organisations/org-1/cover-1.webp', avatar_path: 'organisation-avatars/org-1/avatar-1.webp' },
+      error: null,
+    });
+
+    await organisations.closeOrganisation('org-1');
+
+    expect(remove).toHaveBeenCalledWith(expect.anything(), 'organisations/org-1/cover-1.webp');
+    expect(remove).toHaveBeenCalledWith(expect.anything(), 'organisation-avatars/org-1/avatar-1.webp');
   });
 });
 

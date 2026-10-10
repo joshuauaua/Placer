@@ -18,6 +18,9 @@ export const ADMINS_TABLE = 'organisation_admins';
 // The folder organisation covers go under in the R2 bucket (supabase/functions/media).
 // Named after the organisation, not the uploader: any of its admins may replace it.
 export const ORGANISATION_COVERS_FOLDER = 'organisations';
+// Its profile picture's folder: separate, because the media function sweeps a folder
+// down to the one picture its column points at.
+export const ORGANISATION_AVATARS_FOLDER = 'organisation-avatars';
 
 export { isSupabaseConfigured };
 
@@ -32,7 +35,7 @@ async function client() {
 }
 
 const ORGANISATION_COLUMNS = 'id, name, contact_email, website, location, address, '
-  + 'location_lat, location_lng, description, cover_path, created_by, unadministered_since, created_at';
+  + 'location_lat, location_lng, description, cover_path, avatar_path, created_by, unadministered_since, created_at';
 
 function fromRow(row) {
   return {
@@ -52,6 +55,9 @@ function fromRow(row) {
     // The picture across the top of its public page, or null for a plain band.
     coverPath: row.cover_path ?? null,
     cover: mediaUrl(row.cover_path),
+    // Its profile picture, beside its name; null for its initials instead.
+    avatarPath: row.avatar_path ?? null,
+    avatar: mediaUrl(row.avatar_path),
     createdBy: row.created_by ?? null,
     // Set once its last admin's account is gone, until a former admin claims it.
     unadministeredSince: row.unadministered_since ?? null,
@@ -71,6 +77,7 @@ function toRow(patch) {
   }
   // A key, or null to take the cover away — not text to trim.
   if (patch.coverPath !== undefined) row.cover_path = patch.coverPath;
+  if (patch.avatarPath !== undefined) row.avatar_path = patch.avatarPath;
   // A point, or null for none; the database wants both halves or neither.
   if (patch.locationPoint !== undefined) {
     row.location_lat = patch.locationPoint?.lat ?? null;
@@ -218,6 +225,35 @@ export async function removeOrganisationCoverFile(path) {
 }
 
 /**
+ * Upload a profile picture for an organisation and return the path to save on it with
+ * updateOrganisation({ avatarPath }). Like the cover, the organisation has to exist
+ * and the caller has to be one of its admins. Re-encoded like a person's profile
+ * photo — a 512px square, without its metadata — and the media function refuses
+ * anything still over 1 MB (supabase/organisation-avatars.sql).
+ */
+export async function uploadOrganisationAvatar(organisationId, file) {
+  const { blob, ext } = await preparePhoto(file, 'avatar', 'A profile picture');
+  const supabase = await client();
+  const path = `${ORGANISATION_AVATARS_FOLDER}/${organisationId}/avatar-${Date.now()}.${ext}`;
+  try {
+    return await uploadMedia(supabase, path, blob);
+  } catch (error) {
+    throw new Error(`Could not upload the profile picture: ${error.message}`);
+  }
+}
+
+/** Delete a profile picture no longer in use. Best effort, like the cover. */
+export async function removeOrganisationAvatarFile(path) {
+  if (!path) return;
+  const supabase = await client();
+  try {
+    await removeMedia(supabase, path);
+  } catch (error) {
+    console.error('Could not delete the old profile picture:', error.message);
+  }
+}
+
+/**
  * Close an organisation: delete it, and then its cover. Admins only. Its projects
  * stay, credited to whoever started each one.
  */
@@ -227,16 +263,17 @@ export async function closeOrganisation(id) {
   // Read the path before the row that holds it is gone.
   const { data: existing } = await supabase
     .from(ORGANISATIONS_TABLE)
-    .select('cover_path')
+    .select('cover_path, avatar_path')
     .eq('id', id)
     .maybeSingle();
 
   const { error } = await supabase.from(ORGANISATIONS_TABLE).delete().eq('id', id);
   if (error) throw new Error(`Could not close that organisation: ${error.message}`);
 
-  // After the row, not before: a refused close must not cost it its cover. The media
+  // After the row, not before: a refused close must not cost it its pictures. The media
   // function lets anyone clear the files of an organisation that no longer exists.
   await removeOrganisationCoverFile(existing?.cover_path);
+  await removeOrganisationAvatarFile(existing?.avatar_path);
   return { success: true };
 }
 

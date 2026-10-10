@@ -1,13 +1,14 @@
-/* PLACER — create or edit an organisation: its name, what it does, where it is, how
- * to reach it, and a cover image. One page either way, and every field but the name
+/* PLACER — create or edit an organisation: its name and profile picture, what it does,
+ * where it is, how to reach it, and a cover image. One page either way, and every field but the name
  * optional. All of it is shown on the organisation's public page, except the exact
  * address, which places its pin on the Explore map instead. */
 
 import { useEffect, useState } from 'react';
-import { Btn } from './UI';
+import { Avatar, Btn } from './UI';
 import { ImagePicker } from './ImagePicker';
 import {
-  createOrganisation, removeOrganisationCoverFile, updateOrganisation, uploadOrganisationCover,
+  createOrganisation, removeOrganisationAvatarFile, removeOrganisationCoverFile, updateOrganisation,
+  uploadOrganisationAvatar, uploadOrganisationCover,
 } from '../services/organisations';
 import { checkPickedImage } from '../services/media';
 import { AddressInput } from './AddressInput';
@@ -62,12 +63,14 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
   const [website, setWebsite] = useState(organisation?.website ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  // A new organisation has no id to name the cover's folder until it is created, so
-  // the picked file waits here, shown from a local preview, and is uploaded right after.
-  const [pending, setPending] = useState(null); // { file, url } | null
+  // A new organisation has no id to name the pictures' folders until it is created, so
+  // a picked file waits here, shown from a local preview, and is uploaded right after.
+  const [pending, setPending] = useState(null); // the cover: { file, url } | null
+  const [pendingAvatar, setPendingAvatar] = useState(null); // the profile picture, the same
 
-  // The preview URL holds the file in memory until it is revoked.
+  // A preview URL holds the file in memory until it is revoked.
   useEffect(() => () => { if (pending) URL.revokeObjectURL(pending.url); }, [pending]);
+  useEffect(() => () => { if (pendingAvatar) URL.revokeObjectURL(pendingAvatar.url); }, [pendingAvatar]);
 
   // Editing: the cover saves straight away, like a profile cover in Settings, and the
   // file it replaces is deleted once the organisation points at the new one.
@@ -83,7 +86,21 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
     setPending({ file, url: URL.createObjectURL(file) });
   };
 
+  // The profile picture, the same way as the cover.
+  const replaceAvatar = async (nextPath) => {
+    const previous = organisation.avatarPath;
+    const saved = await updateOrganisation(organisation.id, { avatarPath: nextPath });
+    setOrganisation(saved);
+    if (previous && previous !== nextPath) await removeOrganisationAvatarFile(previous);
+  };
+
+  const pickPendingAvatar = async (file) => {
+    checkPickedImage(file, 'A profile picture');
+    setPendingAvatar({ file, url: URL.createObjectURL(file) });
+  };
+
   const shownCover = editing ? organisation.cover : pending?.url;
+  const shownAvatar = editing ? organisation.avatar : pendingAvatar?.url;
 
   const complete = name.trim().length > 0;
 
@@ -101,16 +118,19 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
         ? await updateOrganisation(organisation.id, fields)
         : await createOrganisation({ createdBy: accountId, ...fields });
 
-      if (!editing && pending) {
+      if (!editing && (pending || pendingAvatar)) {
         try {
-          const coverPath = await uploadOrganisationCover(saved.id, pending.file);
-          saved = await updateOrganisation(saved.id, { coverPath });
-        } catch (coverError) {
-          console.error('Could not add the cover image:', coverError);
+          const pictures = {};
+          if (pendingAvatar) pictures.avatarPath = await uploadOrganisationAvatar(saved.id, pendingAvatar.file);
+          if (pending) pictures.coverPath = await uploadOrganisationCover(saved.id, pending.file);
+          saved = await updateOrganisation(saved.id, pictures);
+        } catch (pictureError) {
+          console.error('Could not add the pictures:', pictureError);
           setOrganisation(saved);
           setPending(null);
-          setError(`The organisation was created, but its cover image could not be added: ${coverError.message} `
-            + 'Try it again below, or save without one.');
+          setPendingAvatar(null);
+          setError(`The organisation was created, but its pictures could not be added: ${pictureError.message} `
+            + 'Try them again below, or save without them.');
           setSaving(false);
           return;
         }
@@ -148,6 +168,23 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
           <input id="organisation-name" type="text" value={name} maxLength={120}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g., Malmö Stad" style={inputStyle(t)} />
+        </Field>
+
+        <Field t={t} label="Profile picture"
+          hint="The round picture beside the organisation's name — a logo works well. It is cropped to a square, resized to 512 pixels and saved without its location data; the file you pick can be up to 30 MB. Without one, its initials are shown. Optional.">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <Avatar name={name.trim() || 'Organisation'} size={72} photo={shownAvatar} />
+            {editing ? (
+              <ImagePicker t={t} hasImage={!!organisation.avatar} uploadLabel="Upload a picture"
+                replaceLabel="Replace picture" removeLabel="Remove picture"
+                onUpload={async (file) => replaceAvatar(await uploadOrganisationAvatar(organisation.id, file))}
+                onRemove={() => replaceAvatar(null)} disabled={saving} />
+            ) : (
+              <ImagePicker t={t} hasImage={!!pendingAvatar} uploadLabel="Upload a picture"
+                replaceLabel="Choose another picture" removeLabel="Remove picture" onUpload={pickPendingAvatar}
+                onRemove={async () => setPendingAvatar(null)} disabled={saving} />
+            )}
+          </div>
         </Field>
 
         <Field t={t} label="Description" htmlFor="organisation-description"

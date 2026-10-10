@@ -3,7 +3,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { photonFeature, stubPhoton } from '../../test/photon';
 import { OrganisationSetupPage } from '../OrganisationSetupPage';
 import {
-  createOrganisation, removeOrganisationCoverFile, updateOrganisation, uploadOrganisationCover,
+  createOrganisation, removeOrganisationAvatarFile, removeOrganisationCoverFile, updateOrganisation,
+  uploadOrganisationAvatar, uploadOrganisationCover,
 } from '../../services/organisations';
 import { THEME } from '../../theme';
 
@@ -12,6 +13,8 @@ vi.mock('../../services/organisations', () => ({
   updateOrganisation: vi.fn(),
   uploadOrganisationCover: vi.fn(),
   removeOrganisationCoverFile: vi.fn(() => Promise.resolve()),
+  uploadOrganisationAvatar: vi.fn(),
+  removeOrganisationAvatarFile: vi.fn(() => Promise.resolve()),
 }));
 
 const ORG = { id: 'org-1', name: 'Malmö Stad', description: '', location: '', address: '', locationPoint: null,
@@ -19,7 +22,10 @@ const ORG = { id: 'org-1', name: 'Malmö Stad', description: '', location: '', a
   coverPath: 'organisations/org-1/cover-1.webp', cover: 'https://media.example/organisations/org-1/cover-1.webp' };
 
 const photo = () => new File(['x'], 'photo.jpg', { type: 'image/jpeg' });
-const pick = (file) => fireEvent.change(document.querySelector('input[type="file"]'), { target: { files: [file] } });
+// The cover's picker, or with `picture` the profile picture's: each input sits inside its button's label.
+const pick = (file, label = /Upload a cover|Replace cover|^Choose another$/) =>
+  fireEvent.change(screen.getByLabelText(label), { target: { files: [file] } });
+const pickPicture = (file) => pick(file, /Upload a picture|Replace picture|Choose another picture/);
 
 const setup = (props = {}) => {
   const handlers = { onSaved: vi.fn(), onCancel: vi.fn() };
@@ -94,6 +100,61 @@ describe('OrganisationSetupPage', () => {
 
     await waitFor(() => expect(removeOrganisationCoverFile).toHaveBeenCalledWith('organisations/org-1/cover-1.webp'));
     expect(updateOrganisation).toHaveBeenCalledWith('org-1', { coverPath: 'organisations/org-1/cover-2.webp' });
+  });
+});
+
+describe('OrganisationSetupPage, profile picture', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    globalThis.URL.createObjectURL = vi.fn(() => 'blob:preview');
+    globalThis.URL.revokeObjectURL = vi.fn();
+  });
+
+  it('creates an organisation, then uploads the picture and the cover picked for it', async () => {
+    vi.mocked(createOrganisation).mockResolvedValue({ ...ORG, coverPath: null, cover: null });
+    vi.mocked(uploadOrganisationAvatar).mockResolvedValue('organisation-avatars/org-1/avatar-2.webp');
+    vi.mocked(uploadOrganisationCover).mockResolvedValue('organisations/org-1/cover-2.webp');
+    vi.mocked(updateOrganisation).mockResolvedValue(ORG);
+    const { onSaved } = setup();
+
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Malmö Stad' } });
+    pickPicture(photo());
+    pick(photo());
+    await screen.findByText('Choose another picture');
+    fireEvent.click(screen.getByRole('button', { name: /Create organisation/ }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(ORG));
+    expect(uploadOrganisationAvatar).toHaveBeenCalledWith('org-1', expect.any(File));
+    expect(updateOrganisation).toHaveBeenCalledWith('org-1', {
+      avatarPath: 'organisation-avatars/org-1/avatar-2.webp', coverPath: 'organisations/org-1/cover-2.webp',
+    });
+  });
+
+  it('replaces the picture straight away when editing, and deletes the old file', async () => {
+    const withPicture = { ...ORG, avatarPath: 'organisation-avatars/org-1/avatar-1.webp',
+      avatar: 'https://media.example/organisation-avatars/org-1/avatar-1.webp' };
+    vi.mocked(uploadOrganisationAvatar).mockResolvedValue('organisation-avatars/org-1/avatar-2.webp');
+    vi.mocked(updateOrganisation).mockResolvedValue({ ...withPicture, avatarPath: 'organisation-avatars/org-1/avatar-2.webp' });
+    setup({ organisation: withPicture });
+
+    pickPicture(photo());
+
+    await waitFor(() => expect(removeOrganisationAvatarFile).toHaveBeenCalledWith('organisation-avatars/org-1/avatar-1.webp'));
+    expect(updateOrganisation).toHaveBeenCalledWith('org-1', { avatarPath: 'organisation-avatars/org-1/avatar-2.webp' });
+    expect(removeOrganisationCoverFile).not.toHaveBeenCalled();
+  });
+
+  it('takes the picture away when editing, and leaves the cover', async () => {
+    const withPicture = { ...ORG, avatarPath: 'organisation-avatars/org-1/avatar-1.webp',
+      avatar: 'https://media.example/organisation-avatars/org-1/avatar-1.webp' };
+    vi.mocked(updateOrganisation).mockResolvedValue({ ...withPicture, avatarPath: null, avatar: null });
+    setup({ organisation: withPicture });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove picture' }));
+
+    await waitFor(() => expect(updateOrganisation).toHaveBeenCalledWith('org-1', { avatarPath: null }));
+    expect(removeOrganisationAvatarFile).toHaveBeenCalledWith('organisation-avatars/org-1/avatar-1.webp');
+    expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument();
   });
 });
 

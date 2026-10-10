@@ -66,6 +66,10 @@ const FOLDERS: Record<string, Folder> = {
   scenes: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'project' },
   organisations: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'organisation',
     current: { table: 'organisations', column: 'cover_path' } },
+  // An organisation's profile picture (supabase/organisation-avatars.sql). Its own
+  // folder, since `organisations` is swept down to the cover.
+  'organisation-avatars': { types: PHOTO_TYPES, maxBytes: 1 * MB, owner: 'organisation',
+    current: { table: 'organisations', column: 'avatar_path' } },
 };
 const ACCOUNT_FOLDERS = Object.keys(FOLDERS).filter((name) => FOLDERS[name].owner === 'account');
 const PROJECT_FOLDERS = Object.keys(FOLDERS).filter((name) => FOLDERS[name].owner === 'project');
@@ -91,7 +95,7 @@ function env(name: string) {
   return value;
 }
 
-const KEY = /^([a-z]+)\/([0-9a-f-]{36})\/([A-Za-z0-9_-]+)\.(jpg|png|webp)$/;
+const KEY = /^([a-z]+(?:-[a-z]+)*)\/([0-9a-f-]{36})\/([A-Za-z0-9_-]+)\.(jpg|png|webp)$/;
 
 /** A key taken apart, or null for anything that is not one of ours. */
 function parseKey(path: unknown) {

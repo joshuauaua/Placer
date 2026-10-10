@@ -143,7 +143,8 @@ export function PublicOrganisationPage({ t, organisationId, accountId = null, is
           ? { backgroundImage: `url("${organisation.cover}")` }
           : { background: t.surfaceAlt }}>
         <div className="placer-profile-cover-inner" style={{ color: organisation.cover ? '#FFFFFF' : t.ink }}>
-          <Avatar name={organisation.name} size={72} ring={organisation.cover ? '#FFFFFF' : t.line} />
+          <Avatar name={organisation.name} size={72} photo={organisation.avatar}
+            ring={organisation.cover ? '#FFFFFF' : t.line} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 500,
               opacity: 0.85, marginBottom: 6 }}>

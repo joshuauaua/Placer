@@ -15,7 +15,9 @@ import { Icon } from './Icon';
 // and elsewhere the encoder says plainly that it could not read the file.
 export const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/avif,image/gif,image/heic,image/heif';
 
-export function ImagePicker({ t, hasImage, uploadLabel, replaceLabel, onUpload, onRemove, disabled = false }) {
+export function ImagePicker({
+  t, hasImage, uploadLabel, replaceLabel, removeLabel = 'Remove', onUpload, onRemove, disabled = false,
+}) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'uploading' | 'removing'
   const [error, setError] = useState(null);
 
@@ -58,7 +60,7 @@ export function ImagePicker({ t, hasImage, uploadLabel, replaceLabel, onUpload, 
         // where a button with no type would submit the form as well.
         <Btn t={t} variant="outline" icon="trash" type="button" disabled={busy}
           onClick={() => run('removing', onRemove, 'Could not remove it. Try again.')()}>
-          {status === 'removing' ? 'Removing…' : 'Remove'}
+          {status === 'removing' ? 'Removing…' : removeLabel}
         </Btn>
       )}
       {error && (

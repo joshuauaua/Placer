@@ -93,6 +93,7 @@ const PLAN = [
   { name: '20261006110001_project_privacy.sql', src: 'project-privacy.sql' },
   { name: '20261007090001_project_summary.sql', src: 'project-summary.sql' },
   { name: '20261007110001_project_tool_config.sql', src: 'project-tool-config.sql' },
+  { name: '20261010110001_organisation_avatars.sql', src: 'organisation-avatars.sql' },
   { name: '20261010100001_toolkit_rooms_schedule.sql', src: 'rooms-schedule.sql' },
 ]
 
