@@ -1,6 +1,6 @@
 /* PLACER — a project's dashboard: its numbers, its roster, and its documentation */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { Icon } from './Icon';
 import { Btn, LoadingMark } from './UI';
@@ -311,7 +311,7 @@ function AddToolkitTool({ t, chosen = [], onChoose }) {
           display: 'inline-flex', alignItems: 'center', gap: 8, background: t.accent,
           color: t.accentInk, border: '1px solid transparent', fontFamily: 'var(--placer-font)',
           fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em' }}>
-        <Icon name="sparkle" size={18} stroke={2.1} />
+        <Icon name="plus" size={18} stroke={2.4} />
         Add a Tool
         <Icon name={open ? 'chevUp' : 'chevDown'} size={15} stroke={2.2} />
       </button>
@@ -338,56 +338,89 @@ function AddToolkitTool({ t, chosen = [], onChoose }) {
 /**
  * One of this project's tools (project_tools): live on the public page, or waiting to
  * be configured for the project first (ConfigureToolDialog). A tool that runs in a room
- * is live while its room is open, and that room is listed under Open rooms; any other
- * live tool can be configured again.
+ * is live while its room is open; its row then opens out on click to show that room,
+ * and anything scheduled to start, with what the project runs it with (RoomRow). Any
+ * other live tool can be configured again.
  */
 // A room still to come counts as well as one running: its QR code can go up early.
 const isCurrentRoom = (room) => room.status === 'open' || room.status === 'scheduled';
 
-function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, onConfigure }) {
+function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, rooms = [], onConfigure, onOpenRoom,
+  onCloseRoom, onDeleteRoom }) {
+  const [expanded, setExpanded] = useState(false);
+  const panelId = useId();
+  const expandable = rooms.length > 0;
   const badge = live ? 'Live' : scheduled ? `Starts ${formatRoomDate(scheduled.opensAt)}` : 'Not configured';
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-      padding: '12px 0', borderTop: `1px solid ${t.line}` }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-        <span style={{ width: 36, height: 36, borderRadius: 10, flex: '0 0 auto', background: tool.tint,
-          boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name={tool.icon} size={18} stroke={2} />
+
+  const summary = (
+    <>
+      <span style={{ width: 36, height: 36, borderRadius: 10, flex: '0 0 auto', background: tool.tint,
+        boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: t.ink }}>
+        <Icon name={tool.icon} size={18} stroke={2} />
+      </span>
+      <span style={{ minWidth: 0, display: 'block' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>{tool.name}</span>
+          <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700,
+            letterSpacing: '0.06em', textTransform: 'uppercase',
+            background: live ? '#E3F4E8' : scheduled ? '#E8EEFB' : t.surfaceAlt,
+            color: live ? '#1E6B3A' : scheduled ? '#2F4F9E' : t.inkDim }}>
+            {badge}
+          </span>
         </span>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>{tool.name}</span>
-            <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700,
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-              background: live ? '#E3F4E8' : scheduled ? '#E8EEFB' : t.surfaceAlt,
-              color: live ? '#1E6B3A' : scheduled ? '#2F4F9E' : t.inkDim }}>
-              {badge}
-            </span>
-          </div>
-          {tool.tagline && <div style={{ fontSize: 12.5, color: t.inkDim }}>{tool.tagline}</div>}
-        </div>
+        {tool.tagline && <span style={{ display: 'block', fontSize: 12.5, color: t.inkDim }}>{tool.tagline}</span>}
+      </span>
+    </>
+  );
+
+  return (
+    <div style={{ borderTop: `1px solid ${t.line}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+        padding: '12px 0' }}>
+        {expandable ? (
+          <button type="button" aria-expanded={expanded} aria-controls={panelId}
+            onClick={() => setExpanded((was) => !was)}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1, padding: 0,
+              background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+              fontFamily: 'var(--placer-font)' }}>
+            {summary}
+            <Icon name={expanded ? 'chevUp' : 'chevDown'} size={16} stroke={2.2}
+              style={{ color: t.inkDim, marginLeft: 'auto', flex: '0 0 auto' }} />
+          </button>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>{summary}</div>
+        )}
+        {scheduled ? null : !live ? (
+          <Btn t={t} variant="primary" size="sm" onClick={onConfigure} ariaLabel={`Configure ${tool.name}`}>
+            Configure
+          </Btn>
+        ) : !inRoom && (
+          <Btn t={t} variant="secondary" size="sm" onClick={onConfigure} ariaLabel={`Configure ${tool.name} again`}>
+            Edit
+          </Btn>
+        )}
       </div>
-      {scheduled ? null : !live ? (
-        <Btn t={t} variant="primary" size="sm" onClick={onConfigure} ariaLabel={`Configure ${tool.name}`}>
-          Configure
-        </Btn>
-      ) : !inRoom && (
-        <Btn t={t} variant="secondary" size="sm" onClick={onConfigure} ariaLabel={`Configure ${tool.name} again`}>
-          Edit
-        </Btn>
+      {expandable && expanded && (
+        <div id={panelId} role="region" aria-label={`${tool.name} rooms`} style={{ padding: '0 0 8px 48px' }}>
+          {rooms.map((room) => (
+            <RoomRow key={room.id} t={t} room={room} named={false} onOpen={onOpenRoom} onClose={onCloseRoom}
+              onDelete={onDeleteRoom} />
+          ))}
+        </div>
       )}
     </div>
   );
 }
 
 /**
- * One open room: its QR code, how it is going, and the things a project runs it with —
+ * One room: its QR code, how it is going, and the things a project runs it with —
  * open it as the facilitator, save its code to print, close it, or delete it and
  * everything contributed to it. The point of
  * having these here rather than only on the room itself is that a poll left running for
  * a month outlives the browser tab, and often the device, it was opened on.
  */
-function RoomRow({ t, room, onOpen, onClose, onDelete }) {
+function RoomRow({ t, room, named = true, onOpen, onClose, onDelete }) {
   const qrRef = useRef(null);
   const [confirming, setConfirming] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -407,7 +440,7 @@ function RoomRow({ t, room, onOpen, onClose, onDelete }) {
       </div>
 
       <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>{name}</div>
+        {named && <div style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>{name}</div>}
         <div style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.5 }}>
           {scheduled
             ? `Starts ${formatRoomDate(room.opensAt)}`
@@ -654,6 +687,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   const isOwner = project?.ownerId === accountId;
   // A tool the registry no longer has is skipped rather than shown blank.
   const chosenTools = tools.map(findTool).filter(Boolean);
+  const otherRooms = (rooms ?? []).filter((room) => isCurrentRoom(room) && !tools.includes(room.tool));
   const viewsInRange = views ? views.daily.reduce((sum, d) => sum + d.views, 0) : 0;
 
   const handleInvite = async (e) => {
@@ -847,7 +881,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
           </Card>
         )}
 
-        <Card t={t} title="Toolkit"
+        <Card t={t} title="My Toolkit"
           action={<AddToolkitTool t={t} chosen={tools} onChoose={handleAddTool} />}>
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
             The tools this project uses. Each is a template: configure it for this project
@@ -868,27 +902,26 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                   <ChosenToolRow key={tool.id} t={t} tool={tool}
                     live={isToolLive(tool, { configured: configured.has(tool.id), openRoom })}
                     inRoom={Boolean(openRoom)} scheduled={scheduled}
-                    onConfigure={() => setConfiguring(tool.id)} />
+                    rooms={(rooms ?? []).filter((room) => room.tool === tool.id && isCurrentRoom(room))}
+                    onConfigure={() => setConfiguring(tool.id)}
+                    onOpenRoom={handleOpenRoom} onCloseRoom={handleCloseRoom} onDeleteRoom={handleDeleteRoom} />
                 );
               })}
             </div>
           )}
 
-          {rooms && (
+          {/* A room whose tool has since been taken off the list has no row to open out
+              under, so it is listed on its own rather than lost from sight. */}
+          {otherRooms.length > 0 && (
             <div style={{ marginTop: 24 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 4 }}>Open rooms</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 4 }}>Other rooms</h3>
               <p style={{ fontSize: 13, color: t.inkDim, lineHeight: 1.55, marginBottom: 8 }}>
-                A room opened from here can stay open for up to 90 days — long enough to print
-                its QR code on a poster and leave it up.
+                Still open for tools no longer on this list.
               </p>
-              {rooms.filter(isCurrentRoom).length === 0 ? (
-                <p style={{ fontSize: 13.5, color: t.inkFaint }}>No rooms are open right now.</p>
-              ) : (
-                rooms.filter(isCurrentRoom).map((room) => (
-                  <RoomRow key={room.id} t={t} room={room} onOpen={handleOpenRoom} onClose={handleCloseRoom}
-                    onDelete={handleDeleteRoom} />
-                ))
-              )}
+              {otherRooms.map((room) => (
+                <RoomRow key={room.id} t={t} room={room} onOpen={handleOpenRoom} onClose={handleCloseRoom}
+                  onDelete={handleDeleteRoom} />
+              ))}
             </div>
           )}
         </Card>
