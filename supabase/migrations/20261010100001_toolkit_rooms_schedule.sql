@@ -1,3 +1,7 @@
+-- Generated from supabase/rooms-schedule.sql -- keep the two in step.
+-- That file remains the documented Dashboard -> SQL Editor path
+-- (see supabase/README.md); this is the same SQL under CLI control.
+
 -- PLACER — a project's room that starts later.
 --
 -- A room used to open the moment it was created. A project's organiser can now set
