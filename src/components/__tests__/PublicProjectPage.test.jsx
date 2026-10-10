@@ -440,6 +440,11 @@ describe('PublicProjectPage, taking part', () => {
       // Fountains average (2 + 0) / 2 = 1, murals (0 + 2) / 2 = 1.
       expect(await section.findByRole('heading', { name: "Everybody's average" })).toBeInTheDocument();
       expect(section.getByText(/2 ballots so far/)).toBeInTheDocument();
+      // A pie of the budget, with a legend that says every slice in words too.
+      expect(section.getByRole('img', { name: 'How the average ballot spends £10,000' })).toBeInTheDocument();
+      const legend = within(section.getByRole('list', { name: 'Legend' }));
+      expect(legend.getByText('Unspent')).toBeInTheDocument();
+      expect(legend.getByText('£4,000 · 40%')).toBeInTheDocument();
       expect(section.getByText('Water fountain × 1')).toBeInTheDocument();
       expect(section.getByRole('heading', { name: 'Posts people added' })).toBeInTheDocument();
 

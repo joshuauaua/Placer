@@ -333,6 +333,32 @@ export function ownPostProposals(states) {
   return [...byName.values()].sort((a, b) => b.people - a.people || b.spent - a.spent);
 }
 
+/** The most posts a pie of a ballot shows by name; past this the smallest fold into Other. */
+export const PIE_POSTS = 4;
+
+/**
+ * A tallied ballot as the slices of a pie of its budget: each post bought, in the
+ * order the ballot lists them — so a post keeps its place, and its colour, however
+ * the amounts move — then what is left unspent. Past PIE_POSTS + 1 posts, the
+ * smallest fold into one "Other" slice, so the pie never has more than six.
+ */
+export function pieSlices(result) {
+  let posts = result.items.map((item) => ({ key: item.key, label: item.label, quantity: item.quantity, cost: item.cost }));
+  if (posts.length > PIE_POSTS + 1) {
+    const kept = new Set([...posts].sort((a, b) => b.cost - a.cost).slice(0, PIE_POSTS).map((post) => post.key));
+    const folded = posts.filter((post) => !kept.has(post.key));
+    posts = [
+      ...posts.filter((post) => kept.has(post.key)),
+      { key: 'other', label: `Other (${folded.length} posts)`, cost: folded.reduce((sum, post) => sum + post.cost, 0), other: true },
+    ];
+  }
+  const slices = [...posts];
+  const unspent = Math.max(0, result.budget - result.spent);
+  if (unspent > 0) slices.push({ key: 'unspent', label: 'Unspent', cost: unspent, unspent: true });
+  const whole = slices.reduce((sum, slice) => sum + slice.cost, 0);
+  return slices.map((slice) => ({ ...slice, share: whole > 0 ? slice.cost / whole : 0 }));
+}
+
 /**
  * "3 benches", not "3 benchs". Enough of a rule for the units in this catalogue —
  * anything ending in a sibilant takes -es.
