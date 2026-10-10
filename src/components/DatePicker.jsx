@@ -34,9 +34,13 @@ function rangeLabel(start, end) {
 
 const monthTitle = (y, m) => new Date(y, m, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
+// A day's full name, for its button: "15 November 2026".
+const dayName = (y, m, d) => new Date(y, m, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
 // One month of days. It only redraws when its own slice of the shaded range changes,
-// which keeps a drag smooth with dozens of months in the list.
-const Month = memo(function Month({ t, y, m, lo, hi, todayIso, onDayDown, onDayKey }) {
+// which keeps a drag smooth with dozens of months in the list. Days before `min` or
+// after `max` are shown but cannot be picked; `onDayClick` is the single-date picker's.
+const Month = memo(function Month({ t, y, m, lo, hi, todayIso, min, max, onDayDown, onDayKey, onDayClick }) {
   const firstWeekday = (new Date(y, m, 1).getDay() + 6) % 7; // Monday first
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const cells = [
@@ -57,18 +61,22 @@ const Month = memo(function Month({ t, y, m, lo, hi, todayIso, onDayDown, onDayK
           // The shading runs edge to edge across a week and rounds off at its ends.
           const roundLeft = iso === lo || column === 0;
           const roundRight = iso === hi || column === 6;
+          const outside = (min && iso < min) || (max && iso > max);
           return (
-            <button key={iso} type="button" data-iso={iso}
-              onPointerDown={(e) => onDayDown(e, iso)}
-              onKeyDown={(e) => onDayKey(e, iso)}
+            <button key={iso} type="button" data-iso={iso} disabled={outside}
+              aria-label={dayName(y, m, day)}
+              onPointerDown={onDayDown ? (e) => onDayDown(e, iso) : undefined}
+              onKeyDown={onDayKey ? (e) => onDayKey(e, iso) : undefined}
+              onClick={onDayClick ? () => onDayClick(iso) : undefined}
               aria-pressed={isEdge}
               style={{
-                height: 42, padding: 0, fontSize: 15, fontFamily: 'inherit', cursor: 'pointer',
+                height: 42, padding: 0, fontSize: 15, fontFamily: 'inherit', cursor: outside ? 'default' : 'pointer',
                 fontWeight: isEdge || isToday ? 700 : 500,
                 border: 'none', outline: 'none',
                 borderRadius: `${roundLeft ? 10 : 0}px ${roundRight ? 10 : 0}px ${roundRight ? 10 : 0}px ${roundLeft ? 10 : 0}px`,
                 background: isEdge ? t.primaryBg : inRange ? t.surfaceAlt : 'transparent',
-                color: isEdge ? t.primaryFg : t.ink,
+                color: isEdge ? t.primaryFg : outside ? t.inkFaint : t.ink,
+                opacity: outside ? 0.45 : 1,
                 boxShadow: isToday && !isEdge ? `inset 0 0 0 1.5px ${t.lineStrong}` : 'none',
               }}>
               {day}
@@ -131,7 +139,7 @@ export function DateRangePicker({ t, id, start, end, onChange, style }) {
 
   const scrollToMonth = (key, smooth) => {
     const el = sections().find((s) => s.dataset.month === key);
-    if (el && scrollRef.current) scrollRef.current.scrollTo({ top: el.offsetTop, behavior: smooth ? 'smooth' : 'auto' });
+    if (el && scrollRef.current) scrollRef.current.scrollTo?.({ top: el.offsetTop, behavior: smooth ? 'smooth' : 'auto' });
   };
 
   // The month heading follows whichever month is at the top of the window.
@@ -270,7 +278,7 @@ export function DateRangePicker({ t, id, start, end, onChange, style }) {
     const target = direction > 0
       ? tops.find((top) => top > box.scrollTop + 2)
       : [...tops].reverse().find((top) => top < box.scrollTop - 2);
-    if (target !== undefined) box.scrollTo({ top: target, behavior: 'smooth' });
+    if (target !== undefined) box.scrollTo?.({ top: target, behavior: 'smooth' });
   };
 
   // What is shaded: a drag in progress, else a tapped start following the pointer, else the saved range.
@@ -357,6 +365,180 @@ export function DateRangePicker({ t, id, start, end, onChange, style }) {
             </button>
             <button type="button" onClick={() => scrollToMonth(monthKey(today.getFullYear(), today.getMonth()), true)}
               style={textBtn(true)}>
+              Today
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * One date, on the same calendar as DateRangePicker — the same button, popup, scrolling
+ * months and footer — so every date in the app is picked the same way. A tap or Enter
+ * on a day picks it and closes. `min` and `max` (yyyy-mm-dd, optional) bound what can
+ * be picked, and the months on offer; onChange(value) is called with '' when cleared.
+ */
+export function DatePicker({
+  t, id, value, min = null, max = null, onChange, style, placeholder = 'Select a date',
+  label = 'Choose a date', clearable = true, disabled = false,
+}) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const rootRef = useRef(null);
+  const scrollRef = useRef(null);
+
+  const today = new Date();
+  const todayIso = toIso(today.getFullYear(), today.getMonth(), today.getDate());
+  const picked = parseIso(value);
+
+  // Bounded by min and max when there are any; otherwise from half a year before the
+  // date (or today) to three years after.
+  const monthsList = useMemo(() => {
+    const now = { y: today.getFullYear(), m: today.getMonth() };
+    const from = parseIso(min) ?? (() => {
+      const base = picked && (picked.y * 12 + picked.m) < (now.y * 12 + now.m) ? picked : now;
+      const d = new Date(base.y, base.m - 6, 1);
+      return { y: d.getFullYear(), m: d.getMonth() };
+    })();
+    const to = parseIso(max) ?? (() => {
+      const base = picked && (picked.y * 12 + picked.m) > (now.y * 12 + now.m) ? picked : now;
+      const d = new Date(base.y, base.m + 36, 1);
+      return { y: d.getFullYear(), m: d.getMonth() };
+    })();
+    const span = Math.max(0, (to.y - from.y) * 12 + (to.m - from.m));
+    return Array.from({ length: span + 1 }, (_, i) => {
+      const d = new Date(from.y, from.m + i, 1);
+      return { y: d.getFullYear(), m: d.getMonth() };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, min, max]);
+
+  const close = useCallback(() => setOpen(false), []);
+  const sections = () => [...(scrollRef.current?.querySelectorAll('[data-month]') ?? [])];
+
+  const scrollToMonth = (key, smooth) => {
+    const el = sections().find((section) => section.dataset.month === key);
+    if (el && scrollRef.current) scrollRef.current.scrollTo?.({ top: el.offsetTop, behavior: smooth ? 'smooth' : 'auto' });
+  };
+
+  const syncTitle = () => {
+    const box = scrollRef.current;
+    if (!box) return;
+    const here = sections().filter((section) => section.offsetTop <= box.scrollTop + 24).pop();
+    if (here) {
+      const [y, m] = here.dataset.month.split('-').map(Number);
+      setTitle(monthTitle(y, m - 1));
+    }
+  };
+
+  // Open on the picked date's month, else this one, else the first that can be picked.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const first = monthsList[0];
+    const wanted = picked ?? { y: today.getFullYear(), m: today.getMonth() };
+    const inList = monthsList.some(({ y, m }) => y === wanted.y && m === wanted.m);
+    const target = inList ? wanted : first;
+    if (target) scrollToMonth(monthKey(target.y, target.m), false);
+    syncTitle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onPointer = (e) => { if (!rootRef.current?.contains(e.target)) close(); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open, close]);
+
+  const pick = useCallback((iso) => { onChange(iso); setOpen(false); }, [onChange]);
+
+  const step = (direction) => {
+    const box = scrollRef.current;
+    if (!box) return;
+    const tops = sections().map((section) => section.offsetTop);
+    const target = direction > 0
+      ? tops.find((top) => top > box.scrollTop + 2)
+      : [...tops].reverse().find((top) => top < box.scrollTop - 2);
+    if (target !== undefined) box.scrollTo?.({ top: target, behavior: 'smooth' });
+  };
+
+  const navBtn = {
+    width: 40, height: 40, borderRadius: 10, border: `1.5px solid ${t.line}`, background: t.surface,
+    color: t.ink, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+  };
+  const textBtn = (enabled) => ({
+    background: 'none', border: 'none', padding: '6px 4px', fontSize: 14, fontFamily: 'inherit', fontWeight: 600,
+    color: enabled ? t.ink : t.inkFaint, cursor: enabled ? 'pointer' : 'default',
+  });
+  const todayPickable = (!min || todayIso >= min) && (!max || todayIso <= max);
+
+  return (
+    <div ref={rootRef} style={{ position: 'relative' }}>
+      <button id={id} type="button" onClick={() => setOpen((was) => !was)} aria-haspopup="dialog"
+        aria-expanded={open} disabled={disabled}
+        style={{
+          ...style, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+          textAlign: 'left', cursor: disabled ? 'default' : 'pointer', color: value ? t.ink : t.inkFaint,
+        }}>
+        <span>{value ? formatDay(value, true) : placeholder}</span>
+        <Icon name="calendar" size={18} color={t.inkDim} />
+      </button>
+
+      {open && (
+        <div role="dialog" aria-label={label}
+          style={{
+            position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 50,
+            width: 'min(360px, calc(100vw - 32px))', padding: 18, boxSizing: 'border-box',
+            background: t.surface, border: `1.5px solid ${t.line}`, borderRadius: 16,
+            boxShadow: '0 18px 48px rgba(0,0,0,0.18)',
+          }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <button type="button" onClick={() => step(-1)} aria-label="Previous month" style={navBtn}>
+              <Icon name="chevUp" size={18} />
+            </button>
+            <div style={{ fontSize: 16, fontWeight: 700, color: t.ink }}>{title}</div>
+            <button type="button" onClick={() => step(1)} aria-label="Next month" style={navBtn}>
+              <Icon name="chevDown" size={18} />
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', paddingBottom: 4 }}>
+            {WEEKDAYS.map((d) => (
+              <div key={d} style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, color: t.inkFaint, padding: '4px 0' }}>
+                {d}
+              </div>
+            ))}
+          </div>
+
+          <div ref={scrollRef} onScroll={syncTitle}
+            style={{ height: VIEW_HEIGHT, overflowY: 'auto', overscrollBehavior: 'contain', scrollbarWidth: 'thin' }}>
+            {monthsList.map(({ y, m }) => {
+              const key = monthKey(y, m);
+              const here = value && value.startsWith(key) ? value : null;
+              return (
+                <Month key={key} t={t} y={y} m={m} lo={here} hi={here} todayIso={todayIso}
+                  min={min} max={max} onDayClick={pick} />
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
+            {clearable ? (
+              <button type="button" onClick={() => { onChange(''); close(); }} disabled={!value}
+                style={textBtn(!!value)}>
+                Clear
+              </button>
+            ) : <span />}
+            <button type="button" disabled={!todayPickable}
+              onClick={() => scrollToMonth(monthKey(today.getFullYear(), today.getMonth()), true)}
+              style={textBtn(todayPickable)}>
               Today
             </button>
           </div>

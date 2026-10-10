@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { THEME } from '../../theme';
@@ -297,6 +297,69 @@ describe('a room seen by somebody who joined it', () => {
       },
       { timeout: 2000 }
     );
+  });
+});
+
+describe('a Co-Budget room that lets people add their own posts', () => {
+  const config = {
+    currency: 'GBP', budget: 20000, ownPosts: true,
+    posts: [{ key: 'post-1', label: 'Water fountain', icon: 'sparkle', unitCost: 4500 }],
+  };
+
+  it('lets a participant add a post, spend on it, and sends it as theirs', async () => {
+    readRoom.mockResolvedValue({ ...openRoom(), config });
+
+    renderAt('/toolkit/budget-ballot', 'room=room-1');
+    await screen.findByText(/you are in a room/i);
+    expect(screen.getByText('£20,000 left')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Your post's name"), { target: { value: 'Bike racks' } });
+    fireEvent.change(screen.getByLabelText("Your post's cost per item"), { target: { value: '800' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    for (let i = 0; i < 2; i += 1) fireEvent.click(screen.getByRole('button', { name: 'One more: Bike racks' }));
+    fireEvent.click(screen.getByRole('button', { name: 'One more: Water fountain' }));
+
+    expect(screen.getByText('£13,900 left')).toBeInTheDocument();
+    await waitFor(() => expect(saveContribution).toHaveBeenLastCalledWith(expect.objectContaining({
+      state: { 'post-1': 1, own: [{ label: 'Bike racks', unitCost: 800, quantity: 2 }] },
+    })), { timeout: 2000 });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove your post: Bike racks' }));
+    expect(screen.queryByRole('button', { name: 'One more: Bike racks' })).not.toBeInTheDocument();
+  });
+
+  it('says what is wrong with a post before adding it', async () => {
+    readRoom.mockResolvedValue({ ...openRoom(), config });
+
+    renderAt('/toolkit/budget-ballot', 'room=room-1');
+    await screen.findByText(/you are in a room/i);
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Give your post a name.');
+  });
+
+  it("shows the room everybody's own posts apart from its ballot", async () => {
+    readRoom.mockResolvedValue({ ...openRoom(), config });
+    readContributions.mockResolvedValue([
+      { displayName: 'Mara', state: { 'post-1': 2, own: [{ label: 'Bike racks', unitCost: 800, quantity: 3 }] }, updatedAt: 'a' },
+      { displayName: 'Sam', state: { 'post-1': 2, own: [{ label: 'bike racks', unitCost: 700, quantity: 1 }] }, updatedAt: 'b' },
+    ]);
+
+    renderAt('/toolkit/budget-ballot', 'room=room-1');
+
+    const proposals = within(await screen.findByRole('list', { name: 'Posts people added' }));
+    expect(proposals.getByText('Bike racks')).toBeInTheDocument();
+    expect(proposals.getByText(/2 people/)).toBeInTheDocument();
+    expect(proposals.getByText('£3,100')).toBeInTheDocument();
+  });
+
+  it('offers nothing of the kind when the organiser did not allow it', async () => {
+    readRoom.mockResolvedValue({ ...openRoom(), config: { ...config, ownPosts: false } });
+
+    renderAt('/toolkit/budget-ballot', 'room=room-1');
+    await screen.findByText(/you are in a room/i);
+
+    expect(screen.queryByLabelText("Your post's name")).not.toBeInTheDocument();
   });
 });
 

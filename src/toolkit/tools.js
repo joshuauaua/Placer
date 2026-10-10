@@ -62,6 +62,7 @@
  */
 
 import { BudgetBallot } from '../components/toolkit/BudgetBallot';
+import { BudgetBallotOnPage } from '../components/toolkit/BudgetBallotOnPage';
 import { BudgetBallotSetup, BudgetStep, PostsStep } from '../components/toolkit/BudgetBallotSetup';
 import { DesireLines } from '../components/toolkit/DesireLines';
 import { FifteenMinute } from '../components/toolkit/FifteenMinute';
@@ -162,6 +163,7 @@ export const TOOLS = [
     component: BudgetBallot,
     onProjectPage: {
       heading: 'How would you spend the budget?',
+      Embed: BudgetBallotOnPage,
     },
     setup: {
       defaults: defaultBallotSetup,

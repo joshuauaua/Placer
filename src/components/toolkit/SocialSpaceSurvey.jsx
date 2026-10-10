@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState } from 'react';
 import { Icon } from '../Icon';
 import { Panel } from '../ToolLayout';
 import { Btn, Chip, CopyButton } from '../UI';
+import { DatePicker } from '../DatePicker';
 import {
   HINDERING_ITEMS,
   INVITING_ITEMS,
@@ -307,8 +308,8 @@ export function SocialSpaceSurvey({ t, tool }) {
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <div style={{ flex: '1 1 140px', minWidth: 0 }}>
                 <Field t={t} id="meta-date" label="Date">
-                  <input id="meta-date" type="date" value={survey.meta.date}
-                    onChange={(event) => setMeta('date', event.target.value)} style={siteInput} />
+                  <DatePicker t={t} id="meta-date" value={survey.meta.date} label="Choose the survey date"
+                    onChange={(date) => setMeta('date', date)} style={siteInput} />
                 </Field>
               </div>
               <div style={{ flex: '1 1 120px', minWidth: 0 }}>

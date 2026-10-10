@@ -8,7 +8,7 @@
  *           to (project_tools.config, supabase/project-tool-config.sql)
  *   room  — a tool that runs in a room: its own setup form, if it has one, and how long
  *           the project's room stays open. Saving opens that room, which is what puts
- *           the tool live; the room is then listed under Open rooms.
+ *           the tool live; its row on the dashboard then opens out to the room.
  *   none  — nothing to fill in. Saving only puts the tool live.
  *
  * It opens on an introduction to the tool — what it is, and what configuring it
@@ -20,6 +20,7 @@ import { Btn } from './UI';
 import { Icon } from './Icon';
 import { ImagePicker } from './ImagePicker';
 import { AddressInput } from './AddressInput';
+import { DatePicker } from './DatePicker';
 import {
   markProjectToolConfigured, readProjectToolConfig, removeProjectImageFile, saveProjectToolConfig,
   uploadSceneImage,
@@ -179,9 +180,15 @@ function StartsField({ t, project, starts, onChange, busy }) {
         {radio('now', 'Now')}
         {radio('date', 'On a date', !range)}
         {starts.mode === 'date' && range && (
-          <input type="date" aria-label="Start date" value={starts.date} min={range.min} max={range.max}
-            disabled={busy} onChange={(e) => onChange({ ...starts, date: e.target.value })}
-            style={{ ...inputStyle(t), width: 'auto', marginLeft: 26 }} />
+          <div style={{ marginLeft: 26, maxWidth: 280 }}>
+            <label htmlFor="configure-start-date"
+              style={{ display: 'block', fontSize: 13, fontWeight: 600, color: t.inkDim, marginBottom: 6 }}>
+              Start date
+            </label>
+            <DatePicker t={t} id="configure-start-date" value={starts.date} min={range.min} max={range.max}
+              label="Choose the start date" placeholder="Pick a day" clearable={false} disabled={busy}
+              onChange={(date) => onChange({ ...starts, date })} style={inputStyle(t)} />
+          </div>
         )}
       </div>
       <div style={{ fontSize: 13, color: t.inkDim, marginTop: 8, lineHeight: 1.5 }}>

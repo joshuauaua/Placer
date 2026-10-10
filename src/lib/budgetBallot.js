@@ -5,13 +5,33 @@
  * the list does — that is the choice the tool exists to make people take.
  *
  * Opened for a project, the organiser writes the ballot: the budget, and each post's
- * name, icon and cost per item (ballotSetupProblems). Without one — on the Toolkit's
- * own page — it is the Toolkit's made-up street below: €250,000 and nine things a
- * neighbourhood might ask for, at order-of-magnitude prices from European streetscape
- * schemes.
+ * name, icon and cost per item (ballotSetupProblems) — and may let people add posts of
+ * their own (`ownPosts`), to put an alternative budget forward. Without a setup — on
+ * the Toolkit's own page — it is the Toolkit's made-up street below: €250,000 and nine
+ * things a neighbourhood might ask for, at order-of-magnitude prices from European
+ * streetscape schemes.
  */
 
 export const BUDGET = 250000;
+
+/**
+ * What a ballot can be counted in, chosen with the budget (budgetProblems). A setup
+ * from before there was a choice has none, and is in euros like the Toolkit's street.
+ */
+export const CURRENCIES = [
+  { code: 'EUR', name: 'Euro' },
+  { code: 'SEK', name: 'Swedish krona' },
+  { code: 'NOK', name: 'Norwegian krone' },
+  { code: 'DKK', name: 'Danish krone' },
+  { code: 'GBP', name: 'British pound' },
+  { code: 'USD', name: 'US dollar' },
+  { code: 'CHF', name: 'Swiss franc' },
+  { code: 'PLN', name: 'Polish złoty' },
+];
+export const DEFAULT_CURRENCY = 'EUR';
+const CURRENCY_CODES = new Set(CURRENCIES.map((currency) => currency.code));
+
+const currencyOf = (setup) => (CURRENCY_CODES.has(setup?.currency) ? setup.currency : DEFAULT_CURRENCY);
 
 /**
  * The Toolkit's own street. `max` is what physically fits on it, which is usually
@@ -82,6 +102,15 @@ export const MIN_POSTS = 1;
 export const MAX_POSTS = 20;
 export const MAX_POST_LABEL = 60;
 
+/**
+ * The most posts one person can add of their own, and the longest name for one. Kept
+ * small: a person's ballot is one contribution, and the database holds each to 4,000
+ * characters (toolkit_contributions_state_size in supabase/rooms.sql).
+ */
+export const MAX_OWN_POSTS = 5;
+export const MAX_OWN_POST_LABEL = 40;
+const OWN_POST_ICON = 'sparkle';
+
 /** The largest budget a room can be set up with. Past this it is not a street. */
 export const MAX_BUDGET = 100_000_000;
 
@@ -98,6 +127,7 @@ function postMax(post, budget) {
  */
 export function ballotOf(config) {
   const budget = Number.isInteger(config?.budget) && config.budget > 0 ? config.budget : BUDGET;
+  const currency = currencyOf(config);
   let posts;
   if (Array.isArray(config?.posts)) {
     posts = config.posts.map((post) => ({
@@ -112,7 +142,7 @@ export function ballotOf(config) {
   } else {
     posts = INTERVENTION_LIST;
   }
-  return { budget, posts: posts.map((post) => ({ ...post, max: postMax(post, budget) })) };
+  return { budget, currency, posts: posts.map((post) => ({ ...post, max: postMax(post, budget) })) };
 }
 
 const TOOLKIT_BALLOT = ballotOf(null);
@@ -161,6 +191,7 @@ export function tally(quantities, ballot = TOOLKIT_BALLOT) {
     items,
     spent,
     budget: ballot.budget,
+    currency: ballot.currency ?? DEFAULT_CURRENCY,
     remaining: ballot.budget - spent,
     over: spent > ballot.budget,
     overBy: Math.max(0, spent - ballot.budget),
@@ -198,6 +229,110 @@ export function combineBallots(states, config) {
   return normalise(total, ballot);
 }
 
+/*
+ * Posts people add of their own, when the organiser lets them (`ownPosts` on the
+ * setup). Each person's are theirs alone: they join that person's ballot as posts
+ * like any other, spent from the same budget, and go to the room with it as
+ * `own: [{ label, unitCost, quantity }]` beside the quantities. They cannot be averaged
+ * into the room's ballot — nobody else has them — so the room shows them apart, as
+ * proposals (ownPostProposals).
+ */
+
+/** What is wrong with a post somebody wants to add of their own, as sentences. */
+export function ownPostProblems({ label, unitCost }, ballot, own = []) {
+  const name = typeof label === 'string' ? label.trim() : '';
+  const problems = [];
+  if (own.length >= MAX_OWN_POSTS) problems.push(`You can add up to ${MAX_OWN_POSTS} posts of your own.`);
+  if (!name) problems.push('Give your post a name.');
+  else if (name.length > MAX_OWN_POST_LABEL) problems.push(`Keep its name under ${MAX_OWN_POST_LABEL} characters.`);
+  else if ([...ballot.posts, ...own].some((post) => post.label.trim().toLowerCase() === name.toLowerCase())) {
+    problems.push('There is already a post with that name.');
+  }
+  if (!Number.isInteger(unitCost) || unitCost <= 0) problems.push('Give it a cost per item, as a whole number.');
+  else if (unitCost > ballot.budget) problems.push('That costs more per item than the whole budget.');
+  return problems;
+}
+
+/** A ballot with somebody's own posts added to it, each `{ key, label, unitCost }`. */
+export function withOwnPosts(ballot, own) {
+  if (!own?.length) return ballot;
+  return {
+    ...ballot,
+    posts: [
+      ...ballot.posts,
+      ...own.map((post) => ({
+        key: post.key, label: post.label.trim(), icon: OWN_POST_ICON, unitCost: post.unitCost, unit: 'item',
+        max: Math.floor(ballot.budget / post.unitCost), own: true,
+      })),
+    ],
+  };
+}
+
+/**
+ * Somebody's own posts as the room gets them, from what they hold: `[{ label,
+ * unitCost, quantity }]`, leaving out any they have added but not spent on.
+ */
+export function ownPostsState(own, quantities) {
+  return own
+    .map((post) => ({ label: post.label.trim(), unitCost: post.unitCost, quantity: quantities[post.key] ?? 0 }))
+    .filter((post) => post.quantity > 0);
+}
+
+/**
+ * What the room proposed beyond the organiser's posts: everybody's own posts, put
+ * together by name (ignoring case), the most proposed first — how many people put
+ * each forward, how many items in all, and what they would spend on it.
+ *
+ * The states come back from a database other browsers wrote to, so anything that is
+ * not a well-formed post is skipped rather than thrown on.
+ */
+/**
+ * The own posts in one ballot as the room got it, well-formed ones only: `[{ label,
+ * unitCost, quantity }]`. The state comes back from a database other browsers wrote to.
+ */
+function ownPostsIn(state) {
+  const own = Array.isArray(state?.own) ? state.own.slice(0, MAX_OWN_POSTS) : [];
+  return own.flatMap((post) => {
+    const label = typeof post?.label === 'string' ? post.label.trim().slice(0, MAX_OWN_POST_LABEL) : '';
+    const { unitCost, quantity } = post ?? {};
+    if (!label || !Number.isInteger(unitCost) || unitCost <= 0 || !Number.isInteger(quantity) || quantity <= 0) return [];
+    return [{ label, unitCost, quantity }];
+  });
+}
+
+/**
+ * One ballot from the room, read against its setup: each post bought — the organiser's,
+ * then the person's own, marked `own` — with how many and what it cost, and the total.
+ */
+export function readBallot(state, config) {
+  const ballot = ballotOf(config);
+  const result = tally(state, ballot);
+  const own = config?.ownPosts ? ownPostsIn(state) : [];
+  const items = [
+    ...result.items,
+    ...own.map((post) => ({ key: `own:${post.label}`, label: post.label, unit: 'item', quantity: post.quantity,
+      cost: post.unitCost * post.quantity, own: true })),
+  ];
+  return { items, spent: items.reduce((sum, item) => sum + item.cost, 0) };
+}
+
+export function ownPostProposals(states) {
+  const byName = new Map();
+  for (const state of states ?? []) {
+    const seen = new Set();
+    for (const { label, unitCost, quantity } of ownPostsIn(state)) {
+      const name = label.toLowerCase();
+      const entry = byName.get(name) ?? { label, people: 0, quantity: 0, spent: 0 };
+      if (!seen.has(name)) entry.people += 1;
+      seen.add(name);
+      entry.quantity += quantity;
+      entry.spent += unitCost * quantity;
+      byName.set(name, entry);
+    }
+  }
+  return [...byName.values()].sort((a, b) => b.people - a.people || b.spent - a.spent);
+}
+
 /**
  * "3 benches", not "3 benchs". Enough of a rule for the units in this catalogue —
  * anything ending in a sibilant takes -es.
@@ -207,15 +342,28 @@ export function pluralise(unit, quantity) {
   return /(?:s|x|z|ch|sh)$/.test(unit) ? `${unit}es` : `${unit}s`;
 }
 
+/** An amount in a ballot's currency, to the whole unit: "€250,000", "SEK 250,000". */
+export function formatMoney(amount, currency = DEFAULT_CURRENCY) {
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0,
+  }).format(Math.round(amount));
+}
+
 export function formatEuros(amount) {
-  return `€${Math.round(amount).toLocaleString('en-GB')}`;
+  return formatMoney(amount, 'EUR');
+}
+
+/** The currency's own mark, for beside a field: "€", "£", "SEK". */
+export function currencySymbol(currency = DEFAULT_CURRENCY) {
+  return new Intl.NumberFormat('en-GB', { style: 'currency', currency })
+    .formatToParts(0).find((part) => part.type === 'currency')?.value ?? currency;
 }
 
 /** A plain-text version of a ballot, for the copy button. */
 export function summaryText(result) {
   const lines = [
     'My budget — PLACER Toolkit',
-    `Spent ${formatEuros(result.spent)} of ${formatEuros(result.budget)}`,
+    `Spent ${formatMoney(result.spent, result.currency)} of ${formatMoney(result.budget, result.currency)}`,
     '',
   ];
 
@@ -223,7 +371,7 @@ export function summaryText(result) {
     lines.push('Nothing chosen yet.');
   } else {
     for (const item of result.items) {
-      lines.push(`- ${item.label}: ${item.quantity} ${pluralise(item.unit, item.quantity)} — ${formatEuros(item.cost)}`);
+      lines.push(`- ${item.label}: ${item.quantity} ${pluralise(item.unit, item.quantity)} — ${formatMoney(item.cost, result.currency)}`);
     }
   }
 
@@ -250,6 +398,7 @@ export function newPost(posts = []) {
 /** What a new room starts from: the Toolkit's €250,000, and three of its posts to rewrite. */
 export function defaultBallotSetup() {
   return {
+    currency: DEFAULT_CURRENCY,
     budget: BUDGET,
     posts: ['trees', 'benches', 'lighting'].map((key) => {
       const { label, icon, unitCost } = INTERVENTIONS[key];
@@ -258,13 +407,17 @@ export function defaultBallotSetup() {
   };
 }
 
-/** What is wrong with the budget, as sentences: the first stage of setting a ballot up. */
+/** What is wrong with the budget and its currency, as sentences: the first stage. */
 export function budgetProblems(setup) {
+  const problems = [];
+  if (setup?.currency !== undefined && !CURRENCY_CODES.has(setup.currency)) {
+    problems.push('Pick a currency from the list.');
+  }
   const budget = setup?.budget;
   if (!Number.isInteger(budget) || budget <= 0 || budget > MAX_BUDGET) {
-    return [`Set a budget in whole euros, up to ${formatEuros(MAX_BUDGET)}.`];
+    problems.push(`Set a budget as a whole number, up to ${formatMoney(MAX_BUDGET, currencyOf(setup))}.`);
   }
-  return [];
+  return problems;
 }
 
 /** What is wrong with the posts, as sentences: the second stage. */
@@ -301,9 +454,13 @@ export function postProblems(setup) {
   }
   if (posts.some((post) => !POST_ICONS.includes(post?.icon))) problems.push('Pick an icon for every post.');
 
+  if (setup.ownPosts !== undefined && typeof setup.ownPosts !== 'boolean') {
+    problems.push('Say whether people may add posts of their own.');
+  }
+
   const costs = posts.map((post) => post?.unitCost);
   if (costs.some((cost) => !Number.isInteger(cost) || cost <= 0)) {
-    problems.push('Give every post a cost per item, in whole euros.');
+    problems.push('Give every post a cost per item, as a whole number.');
   } else if (Number.isInteger(budget) && budget > 0 && costs.some((cost) => cost > budget)) {
     problems.push('A post costs more per item than the whole budget. Lower its cost, or raise the budget.');
   }

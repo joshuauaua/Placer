@@ -373,6 +373,44 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
     localStorage.clear();
   });
 
+  it('opens out a configured tool\'s row to its room, with what it is run with', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    setup();
+
+    expect(await screen.findByRole('heading', { name: 'My Toolkit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add a Tool/ })).toBeInTheDocument();
+
+    const row = await screen.findByRole('button', { name: /Poll/, expanded: false });
+    expect(screen.queryByRole('button', { name: /download qr/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('Other rooms')).not.toBeInTheDocument();
+
+    fireEvent.click(row);
+
+    const room = within(screen.getByRole('region', { name: 'Poll rooms' }));
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+    expect(room.getByText(/12 responses/)).toBeInTheDocument();
+    for (const name of [/^open$/i, /download qr/i, /^close$/i, /^delete$/i]) {
+      expect(room.getByRole('button', { name })).toBeInTheDocument();
+    }
+
+    fireEvent.click(row);
+    expect(screen.queryByRole('region', { name: 'Poll rooms' })).not.toBeInTheDocument();
+  });
+
+  it('does not open out a tool with no room', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['budget-ballot']);
+    setup();
+
+    expect(await screen.findByRole('button', { name: 'Configure Co-Budget' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Co-Budget/, expanded: false })).not.toBeInTheDocument();
+  });
+
+  it('lists a room on its own when its tool is no longer on the list', async () => {
+    setup();
+
+    expect(await screen.findByText('Other rooms')).toBeInTheDocument();
+  });
+
   it('lists the rooms still open, with how they are going', async () => {
     setup();
 
