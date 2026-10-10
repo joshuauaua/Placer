@@ -15,6 +15,7 @@ import {
   ownPostProblems,
   ownPostProposals,
   ownPostsState,
+  pieSlices,
   readBallot,
   withOwnPosts,
   defaultBallotSetup,
@@ -272,5 +273,26 @@ describe('readBallot', () => {
 
   it('leaves own posts out of a room that did not allow them', () => {
     expect(readBallot({ 'post-2': 1, own: [{ label: 'X', unitCost: 1, quantity: 1 }] }, OWN).items).toHaveLength(1);
+  });
+});
+
+describe('pieSlices', () => {
+  it('is each post bought in the ballot\'s order, then what is left unspent', () => {
+    const slices = pieSlices(tally({ 'post-1': 2, 'post-2': 3 }, ballotOf(OWN)));
+    expect(slices.map((slice) => [slice.label, slice.cost])).toEqual([
+      ['Water fountain', 9000], ['Mural', 6000], ['Unspent', 5000],
+    ]);
+    expect(slices.reduce((sum, slice) => sum + slice.share, 0)).toBeCloseTo(1);
+  });
+
+  it('has no unspent slice when the budget is all spent', () => {
+    expect(pieSlices(tally({ 'post-2': 10 }, ballotOf(OWN))).map((slice) => slice.key)).toEqual(['post-2']);
+  });
+
+  it('folds the smallest into Other past five posts, so there are never more than six slices', () => {
+    const slices = pieSlices(tally({ trees: 1, benches: 1, footway: 1, cycleTrack: 1, crossings: 1, play: 1, lighting: 1 }));
+    expect(slices).toHaveLength(6);
+    expect(slices.map((slice) => slice.key)).toEqual(['footway', 'crossings', 'play', 'lighting', 'other', 'unspent']);
+    expect(slices[4]).toMatchObject({ label: 'Other (3 posts)', cost: 1400 + 900 + 1600 });
   });
 });

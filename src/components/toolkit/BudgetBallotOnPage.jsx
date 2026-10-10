@@ -15,23 +15,24 @@
  * person's own ballot kept to the list of individual ones.
  *
  * Once a ballot is in, the card shows the room's — kept live while the page is open, as
- * the Poll shows its tally: the average of every ballot submitted, which still fits the
- * budget (combineBallots), the posts people added of their own, and every ballot on its
- * own, numbered in the order they came in, each opening out to what it bought.
+ * the Poll shows its tally: the average of every ballot submitted, as a pie of the
+ * budget it still fits (combineBallots, BudgetPie), the posts people added of their
+ * own, and every ballot on its own, numbered in the order they came in, each opening
+ * out to what it bought.
  *
  * The service arrives as a prop, as in OpenVoteOnPage, so a test can hand this a fake.
  */
 
 import { useEffect, useId, useMemo, useState } from 'react';
 import { Icon } from '../Icon';
-import { Meter } from '../ToolLayout';
 import { Btn } from '../UI';
 import {
-  ballotOf, combineBallots, formatMoney, ownPostProposals, readBallot, tally,
+  ballotOf, combineBallots, formatMoney, ownPostProposals, pieSlices, readBallot, tally,
 } from '../../lib/budgetBallot';
 import { formatRoomDate, participantToken, rememberAnswer, rememberedAnswer } from '../../toolkit/rooms';
 import * as roomService from '../../services/rooms';
 import { MoneySummary, PostList, ballotState, useBallot } from './BudgetBallotParts';
+import { BudgetPie } from './BudgetPie';
 
 /** A ballot as a list: each post bought, how many, and what it costs. */
 function BallotLines({ t, items, money, theirs = false }) {
@@ -86,7 +87,7 @@ const sameState = (a, b) => {
   return canonical(a) === canonical(b);
 };
 
-function RoomBallots({ t, tool, room, service, submitted }) {
+function RoomBallots({ t, room, service, submitted }) {
   const [contributions, setContributions] = useState(null);
   const [showAll, setShowAll] = useState(false);
   const listId = useId();
@@ -130,10 +131,10 @@ function RoomBallots({ t, tool, room, service, submitted }) {
       </p>
       {average.items.length === 0 ? (
         <p style={{ fontSize: 14, color: t.inkDim }}>Nothing is bought on average yet.</p>
-      ) : average.items.map((item) => (
-        <Meter key={item.key} t={t} label={`${item.label} × ${item.quantity}`} value={item.cost / ballot.budget}
-          color={tool.color} caption={`${money(item.cost)} · ${Math.round((item.cost / ballot.budget) * 100)}%`} />
-      ))}
+      ) : (
+        <BudgetPie t={t} slices={pieSlices(average)} money={money}
+          label={`How the average ballot spends ${money(ballot.budget)}`} />
+      )}
 
       {proposals.length > 0 && (
         <div style={{ marginTop: 16 }}>
@@ -242,7 +243,7 @@ export function BudgetBallotOnPage({ t, tool, room, service = roomService }) {
               <p role="status" aria-live="polite" style={{ fontSize: 15, fontWeight: 600, color: t.ink, marginBottom: 16 }}>
                 Thank you — your ballot is in.
               </p>
-              <RoomBallots t={t} tool={tool} room={room} service={service} submitted={submitted} />
+              <RoomBallots t={t} room={room} service={service} submitted={submitted} />
             </div>
           ) : stage === 'review' ? (
             <div style={{ marginTop: 16 }}>
