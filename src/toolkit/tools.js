@@ -69,6 +69,8 @@ import { FifteenMinute } from '../components/toolkit/FifteenMinute';
 import { OpenVote } from '../components/toolkit/OpenVote';
 import { AnswersStep, OpenVoteSetup, QuestionStep } from '../components/toolkit/OpenVoteSetup';
 import { OpenVoteOnPage } from '../components/toolkit/OpenVoteOnPage';
+import { PopQuiz } from '../components/toolkit/PopQuiz';
+import { PopQuizSetup, QuestionsStep, TimeStep } from '../components/toolkit/PopQuizSetup';
 import { ReimagineASpace } from '../components/toolkit/ReimagineASpace';
 import { SiteMapping } from '../components/toolkit/SiteMapping';
 import { SocialSpaceSurvey } from '../components/toolkit/SocialSpaceSurvey';
@@ -81,6 +83,10 @@ import {
 import {
   answerProblems, combineVotes, defaultVoteSetup, emptyVote, questionProblems, voteSetupProblems,
 } from '../lib/openVote';
+import {
+  combineQuiz, defaultQuizSetup, emptyQuizState, questionProblems as quizQuestionProblems, quizSetupProblems,
+  timeProblems,
+} from '../lib/popQuiz';
 
 // Each tool wears one of the three character colours: `color` is the 700,
 // for text, icons and outlines on white, and `tint` the 100, for fills with ink
@@ -206,6 +212,34 @@ export const TOOLS = [
     room: {
       empty: emptyVote,
       combine: combineVotes,
+    },
+  },
+  {
+    id: 'pop-quiz',
+    added: '2026-10-12',
+    category: 'understand',
+    name: 'Pop Quiz',
+    tagline: 'Twenty questions, a clock, and a scoreboard.',
+    blurb: 'Write a quiz of up to twenty questions, each with four choices or a blank to fill in. Everybody joins with a nickname, the questions go up one at a time, and a right answer scores more the sooner it comes — a quick way to find out what a room already knows about a place.',
+    ...tone(CHARACTER.cityWorker),
+    icon: 'flask',
+    createdBy: 'PLACER',
+    component: PopQuiz,
+    setup: {
+      defaults: defaultQuizSetup,
+      problems: quizSetupProblems,
+      Form: PopQuizSetup,
+      steps: [
+        { title: 'Questions', Form: QuestionsStep, problems: quizQuestionProblems },
+        { title: 'Time', Form: TimeStep, problems: timeProblems },
+      ],
+    },
+    onProjectPage: {
+      heading: 'Take the pop quiz',
+    },
+    room: {
+      empty: emptyQuizState,
+      combine: combineQuiz,
     },
   },
   {

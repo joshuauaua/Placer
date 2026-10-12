@@ -161,6 +161,7 @@ as $$
   select case p_tool
     when 'budget-ballot' then 'Co-Budget'
     when 'open-vote'     then 'Poll'
+    when 'pop-quiz'      then 'Pop Quiz'
     else 'a Toolkit tool'
   end;
 $$;

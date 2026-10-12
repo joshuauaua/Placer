@@ -208,6 +208,39 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
       { question: 'Car-free on Sundays?', answers: ['Yes', 'No', 'Only in summer'] }, null);
   });
 
+  it('asks for the Pop Quiz questions, then the time for each, then how long it stays open', async () => {
+    const { onConfigured } = setup('pop-quiz');
+
+    expect(screen.getByRole('heading', { name: 'Questions' })).toBeInTheDocument();
+    next();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Write question 1.');
+
+    fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'Which way is north?' } });
+    ['Up', 'Down', 'Left', 'Right'].forEach((choice, index) => {
+      fireEvent.change(screen.getByLabelText(`Choice ${'ABCD'[index]} for question 1`), { target: { value: choice } });
+    });
+    fireEvent.click(screen.getByLabelText('B is the right answer to question 1'));
+    fireEvent.click(screen.getByRole('button', { name: 'Add a question' }));
+    fireEvent.change(screen.getByLabelText('Kind of question 2'), { target: { value: 'blank' } });
+    fireEvent.change(screen.getByLabelText('Question 2'), { target: { value: 'The square is called ___.' } });
+    fireEvent.change(screen.getByLabelText('Answer to question 2'), { target: { value: 'Möllan' } });
+    next();
+
+    expect(screen.getByRole('heading', { name: 'Time' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Time per question'), { target: { value: '30' } });
+    next();
+    save();
+
+    await waitFor(() => expect(onConfigured).toHaveBeenCalled());
+    expect(createRoom).toHaveBeenCalledWith('pop-quiz', 'proj-1', expect.any(String), {
+      seconds: 30,
+      questions: [
+        { kind: 'choice', text: 'Which way is north?', choices: ['Up', 'Down', 'Left', 'Right'], correct: 1 },
+        { kind: 'blank', text: 'The square is called ___.', answer: 'Möllan' },
+      ],
+    }, null);
+  });
+
   describe('starting on a date', () => {
     const DATED = { ...PROJECT, startDate: '2026-11-01', endDate: '2026-12-31' };
     const toLastStep = () => {
