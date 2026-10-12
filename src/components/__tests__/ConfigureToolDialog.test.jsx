@@ -208,6 +208,31 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
       { question: 'Car-free on Sundays?', answers: ['Yes', 'No', 'Only in summer'] }, null);
   });
 
+  it('asks for the Word Cloud prompt, then the words per person, then how long it stays open', async () => {
+    const { onConfigured } = setup('word-cloud');
+
+    expect(screen.getByRole('heading', { name: 'Prompt' })).toBeInTheDocument();
+    next();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Write what you want people to answer.');
+    fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'One word for the square?' } });
+    next();
+
+    expect(screen.getByRole('heading', { name: 'Words' })).toBeInTheDocument();
+    expect(screen.getByText('One word for the square?')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Words per person'), { target: { value: '1' } });
+    expect(screen.getByLabelText('Timer')).toHaveValue('');
+    expect(within(screen.getByLabelText('Timer')).getAllByRole('option')).toHaveLength(21);
+    fireEvent.change(screen.getByLabelText('Timer'), { target: { value: '90' } });
+    next();
+
+    expect(screen.getByRole('heading', { name: 'Open for' })).toBeInTheDocument();
+    save();
+
+    await waitFor(() => expect(onConfigured).toHaveBeenCalled());
+    expect(createRoom).toHaveBeenCalledWith('word-cloud', 'proj-1', expect.any(String),
+      { prompt: 'One word for the square?', limit: 1, timer: 90 }, null);
+  });
+
   describe('starting on a date', () => {
     const DATED = { ...PROJECT, startDate: '2026-11-01', endDate: '2026-12-31' };
     const toLastStep = () => {
