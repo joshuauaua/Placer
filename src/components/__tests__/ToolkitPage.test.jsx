@@ -85,7 +85,7 @@ describe('the gallery', () => {
     for (const tool of TOOLS) {
       expect(screen.getByRole('button', { name: tile(new RegExp(tool.name, 'i')) })).toBeInTheDocument();
     }
-    expect(TOOLS).toHaveLength(9);
+    expect(TOOLS).toHaveLength(10);
   });
 
   it('shows every tool as one set of cards, each labelled with its category', async () => {
@@ -176,9 +176,9 @@ describe('the gallery', () => {
       .map((button) => TOOLS.find((tool) => button.textContent.includes(tool.name))?.name)
       .filter(Boolean);
 
-    // Newest first to begin with: Idea Visualizer is the latest tool added.
+    // Newest first to begin with: Dream It is the latest tool added.
     expect(sorts.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
-    expect(names()[0]).toBe('Idea Visualizer');
+    expect(names()[0]).toBe('Dream It');
 
     fireEvent.click(sorts.getByRole('button', { name: 'A-Z' }));
     const alphabetical = TOOLS.map((tool) => tool.name).sort((a, b) => a.localeCompare(b));

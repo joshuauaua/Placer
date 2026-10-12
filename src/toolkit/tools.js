@@ -65,6 +65,7 @@ import { BudgetBallot } from '../components/toolkit/BudgetBallot';
 import { BudgetBallotOnPage } from '../components/toolkit/BudgetBallotOnPage';
 import { BudgetBallotSetup, BudgetStep, PostsStep } from '../components/toolkit/BudgetBallotSetup';
 import { DesireLines } from '../components/toolkit/DesireLines';
+import { DreamIt } from '../components/toolkit/DreamIt';
 import { FifteenMinute } from '../components/toolkit/FifteenMinute';
 import { OpenVote } from '../components/toolkit/OpenVote';
 import { AnswersStep, OpenVoteSetup, QuestionStep } from '../components/toolkit/OpenVoteSetup';
@@ -260,6 +261,18 @@ export const TOOLS = [
     onProjectPage: {
       heading: 'Share your idea for this place',
     },
+  },
+  {
+    id: 'dream-it',
+    added: '2026-10-12',
+    category: 'imagine',
+    name: 'Dream It',
+    tagline: 'A prompt to set a room imagining, at the press of a button.',
+    blurb: 'An activity for unlocking imagination and making a safe space to share personal visions, desires and emotional connections to a place. Generate a prompt, and let people speak, imagine and listen to each other — about how the place could feel, function or inspire, rather than what is practical today.',
+    ...tone(CHARACTER.citizen),
+    icon: 'sparkle',
+    createdBy: 'PLACER',
+    component: DreamIt,
   },
 ];
 

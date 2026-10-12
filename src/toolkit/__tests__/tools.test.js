@@ -106,7 +106,7 @@ describe('filterTools', () => {
 
   it('filters by category', () => {
     expect(ids({ category: 'plan' })).toEqual(['budget-ballot', 'open-vote']);
-    expect(ids({ category: 'imagine' })).toEqual(['street-mixer', 'reimagine-a-space']);
+    expect(ids({ category: 'imagine' })).toEqual(['street-mixer', 'reimagine-a-space', 'dream-it']);
   });
 
   it('filters by the organisation that made the tool', () => {
