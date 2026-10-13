@@ -98,6 +98,7 @@ import {
   combineQuiz, defaultQuizSetup, emptyQuizState, questionProblems as quizQuestionProblems, quizSetupProblems,
   timeProblems,
 } from '../lib/popQuiz';
+import {
   cloudSetupProblems, combineWords, defaultCloudSetup, emptyWords, promptProblems, wordsProblems,
 } from '../lib/wordCloud';
 
@@ -253,6 +254,9 @@ export const TOOLS = [
     room: {
       empty: emptyQuizState,
       combine: combineQuiz,
+    },
+  },
+  {
     id: 'word-cloud',
     added: '2026-10-12',
     category: 'understand',

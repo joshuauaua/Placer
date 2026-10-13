@@ -85,7 +85,7 @@ describe('the gallery', () => {
     for (const tool of TOOLS) {
       expect(screen.getByRole('button', { name: tile(new RegExp(tool.name, 'i')) })).toBeInTheDocument();
     }
-    expect(TOOLS).toHaveLength(10);
+    expect(TOOLS).toHaveLength(11);
   });
 
   it('shows every tool as one set of cards, each labelled with its category', async () => {
@@ -178,12 +178,9 @@ describe('the gallery', () => {
       .map((button) => TOOLS.find((tool) => button.textContent.includes(tool.name))?.name)
       .filter(Boolean);
 
-    // Newest first to begin with: Pop Quiz is the latest tool added.
+    // Newest first to begin with: Pop Quiz and Word Cloud were both added last, on the same day.
     expect(sorts.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
-    expect(names()[0]).toBe('Pop Quiz');
-    // Newest first to begin with: Word Cloud is the latest tool added.
-    expect(sorts.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
-    expect(names()[0]).toBe('Word Cloud');
+    expect(names().slice(0, 2).sort()).toEqual(['Pop Quiz', 'Word Cloud']);
 
     fireEvent.click(sorts.getByRole('button', { name: 'A-Z' }));
     const alphabetical = TOOLS.map((tool) => tool.name).sort((a, b) => a.localeCompare(b));

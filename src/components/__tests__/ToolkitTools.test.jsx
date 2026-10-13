@@ -503,6 +503,9 @@ describe('Pop Quiz', () => {
     click('Play again');
     expect(screen.getByRole('heading', { name: 'Question 1 of 3' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Jane Jacobs/ })).toBeEnabled();
+  });
+});
+
 describe('Word Cloud', () => {
   const add = (word) => {
     fireEvent.change(screen.getByLabelText('Your word'), { target: { value: word } });

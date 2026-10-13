@@ -698,6 +698,10 @@ describe('Pop Quiz in a room', () => {
       const board = within(screen.getByRole('list', { name: 'Final scores' })).getAllByRole('listitem');
       expect(board.map((row) => row.textContent)).toEqual(['1Mara1 right950']);
       await sent({ host: { q: 2, at: expect.any(Number), shown: false } });
+    });
+  });
+});
+
 describe('Word Cloud in a room', () => {
   const wordCloudRoom = () => ({ tool: 'word-cloud', status: 'open', expiresAt: hours(2) });
 

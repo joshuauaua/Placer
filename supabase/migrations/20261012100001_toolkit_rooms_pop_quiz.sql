@@ -8,7 +8,7 @@
 
 alter table public.toolkit_rooms drop constraint if exists toolkit_rooms_tool_known;
 alter table public.toolkit_rooms add constraint toolkit_rooms_tool_known
-  check (tool in ('budget-ballot', 'open-vote', 'pop-quiz'));
+  check (tool in ('budget-ballot', 'open-vote', 'word-cloud', 'pop-quiz'));
 
 create or replace function public.toolkit_tool_name(p_tool text)
 returns text
@@ -18,6 +18,7 @@ as $$
   select case p_tool
     when 'budget-ballot' then 'Co-Budget'
     when 'open-vote'     then 'Poll'
+    when 'word-cloud'    then 'Word Cloud'
     when 'pop-quiz'      then 'Pop Quiz'
     else 'a Toolkit tool'
   end;
