@@ -14,24 +14,16 @@
 
 export const BUDGET = 250000;
 
-/**
- * What a ballot can be counted in, chosen with the budget (budgetProblems). A setup
- * from before there was a choice has none, and is in euros like the Toolkit's street.
- */
-export const CURRENCIES = [
-  { code: 'EUR', name: 'Euro' },
-  { code: 'SEK', name: 'Swedish krona' },
-  { code: 'NOK', name: 'Norwegian krone' },
-  { code: 'DKK', name: 'Danish krone' },
-  { code: 'GBP', name: 'British pound' },
-  { code: 'USD', name: 'US dollar' },
-  { code: 'CHF', name: 'Swiss franc' },
-  { code: 'PLN', name: 'Polish złoty' },
-];
-export const DEFAULT_CURRENCY = 'EUR';
-const CURRENCY_CODES = new Set(CURRENCIES.map((currency) => currency.code));
+import { CURRENCIES, CURRENCY_CODES, DEFAULT_CURRENCY } from './currency';
 
-const currencyOf = (setup) => (CURRENCY_CODES.has(setup?.currency) ? setup.currency : DEFAULT_CURRENCY);
+/**
+ * What a ballot can be counted in, chosen with the budget (budgetProblems): the same
+ * currencies as a project's budget (lib/currency.js). A setup from before there was a
+ * choice has none, and is in euros like the Toolkit's street.
+ */
+export { CURRENCIES, DEFAULT_CURRENCY };
+
+const currencyOf = (setup) => (CURRENCY_CODES.includes(setup?.currency) ? setup.currency : DEFAULT_CURRENCY);
 
 /**
  * The Toolkit's own street. `max` is what physically fits on it, which is usually
@@ -436,7 +428,7 @@ export function defaultBallotSetup() {
 /** What is wrong with the budget and its currency, as sentences: the first stage. */
 export function budgetProblems(setup) {
   const problems = [];
-  if (setup?.currency !== undefined && !CURRENCY_CODES.has(setup.currency)) {
+  if (setup?.currency !== undefined && !CURRENCY_CODES.includes(setup.currency)) {
     problems.push('Pick a currency from the list.');
   }
   const budget = setup?.budget;

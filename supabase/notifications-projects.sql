@@ -158,6 +158,7 @@ as $$
     when 'budget-ballot' then 'Co-Budget'
     when 'open-vote'     then 'Poll'
     when 'pop-quiz'      then 'Pop Quiz'
+    when 'word-cloud'    then 'Word Cloud'
     else 'a Toolkit tool'
   end;
 $$;

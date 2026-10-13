@@ -336,6 +336,86 @@ describe('PublicProjectPage, taking part', () => {
     expect(await section.findByText('This poll has closed.')).toBeInTheDocument();
   });
 
+  describe('a word cloud', () => {
+    const CLOUD = { id: 'room-2', tool: 'word-cloud', expiresAt: '2026-11-05T12:00:00Z',
+      config: { prompt: 'One word for the square?', limit: 2 } };
+    const region = async () => within(await screen.findByRole('region', { name: 'Tell us in a word' }));
+
+    beforeEach(() => {
+      vi.mocked(readProjectTools).mockResolvedValue(['word-cloud']);
+      vi.mocked(readProjectOpenRooms).mockResolvedValue([CLOUD]);
+    });
+
+    it("puts the organiser's prompt on the page, with a field to answer it in", async () => {
+      setup();
+
+      const section = await region();
+      expect(section.getByText('One word for the square?')).toBeInTheDocument();
+      expect(section.getByLabelText('Your word')).toBeInTheDocument();
+      expect(section.getByRole('button', { name: 'Send my word' })).toBeDisabled();
+      expect(section.getByText(/Open until 5 November 2026. Up to 2 words per person./)).toBeInTheDocument();
+    });
+
+    it('sends the words, the one still in the field included, then shows the cloud', async () => {
+      vi.mocked(readContributions).mockResolvedValue([
+        { state: { words: ['green', 'quiet'] } }, { state: { words: ['green'] } },
+      ]);
+
+      setup();
+      const section = await region();
+      fireEvent.change(section.getByLabelText('Your word'), { target: { value: 'Green' } });
+      fireEvent.click(section.getByRole('button', { name: 'Add' }));
+      fireEvent.change(section.getByLabelText('Your word'), { target: { value: 'quiet' } });
+      fireEvent.click(section.getByRole('button', { name: 'Send my words' }));
+
+      expect(await section.findByText(/2 people have answered so far/)).toBeInTheDocument();
+      expect(saveContribution).toHaveBeenCalledWith(expect.objectContaining({
+        roomId: 'room-2', displayName: null, state: { words: ['green', 'quiet'] },
+      }));
+      expect(section.getByText(/You said/)).toHaveTextContent('You said green, quiet.');
+      expect(within(section.getByRole('list', { name: 'Word cloud' })).getAllByRole('listitem')).toHaveLength(2);
+      expect(within(section.getByRole('list', { name: /answers and how many times/i })).getAllByRole('listitem')
+        .map((item) => item.textContent)).toEqual(['green2', 'quiet1']);
+      expect(section.queryByLabelText('Your word')).not.toBeInTheDocument();
+    });
+
+    it('shows the cloud straight away to a browser that has already answered', async () => {
+      vi.mocked(readContributions).mockResolvedValue([{ state: { words: ['green'] } }]);
+      localStorage.setItem('placemaking_room_answers', JSON.stringify({ 'room-2': { words: ['green'] } }));
+
+      setup();
+
+      const section = await region();
+      expect(await section.findByText(/1 person has answered so far/)).toBeInTheDocument();
+      expect(section.queryByLabelText('Your word')).not.toBeInTheDocument();
+    });
+
+    it('shows the cloud in place of the field once a timer has run out or been stopped', async () => {
+      vi.mocked(readProjectOpenRooms).mockResolvedValue([{ ...CLOUD, config: { ...CLOUD.config, timer: 30 } }]);
+      vi.mocked(readContributions).mockResolvedValue([
+        { state: { words: ['green'], timer: { endsAt: Date.now() - 30000 } } },
+      ]);
+
+      setup();
+
+      const section = await region();
+      expect(await section.findByText(/This word cloud has finished, so no more words are being taken/)).toBeInTheDocument();
+      expect(section.queryByLabelText('Your word')).not.toBeInTheDocument();
+      expect(within(section.getByRole('list', { name: 'Word cloud' })).getByText('green')).toBeInTheDocument();
+    });
+
+    it('says so when the word cloud closed before the words arrived', async () => {
+      vi.mocked(saveContribution).mockResolvedValue(false);
+
+      setup();
+      const section = await region();
+      fireEvent.change(section.getByLabelText('Your word'), { target: { value: 'green' } });
+      fireEvent.click(section.getByRole('button', { name: 'Send my word' }));
+
+      expect(await section.findByText('This word cloud has closed.')).toBeInTheDocument();
+    });
+  });
+
   it('leaves out a tool that was added but not set up, with no room open for it', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'budget-ballot']);
 

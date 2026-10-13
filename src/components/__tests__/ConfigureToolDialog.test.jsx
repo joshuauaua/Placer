@@ -31,6 +31,13 @@ vi.mock('../PlaceSearch', () => ({
   ),
 }));
 
+// Where this machine is says nothing about the project: the suggestion goes only on
+// the places a test gives it.
+vi.mock('../../lib/currency', async (importOriginal) => {
+  const real = await importOriginal();
+  return { ...real, suggestCurrency: (options) => real.suggestCurrency({ timeZone: '', locales: [], ...options }) };
+});
+
 vi.mock('../../services/rooms', () => ({
   createRoom: vi.fn(() => Promise.resolve({ id: 'room-1', pin: '123456', facilitatorToken: 'facilitator-1' })),
 }));
@@ -239,6 +246,29 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
         { kind: 'blank', text: 'The square is called ___.', answer: 'Möllan' },
       ],
     }, null);
+  it('asks for the Word Cloud prompt, then the words per person, then how long it stays open', async () => {
+    const { onConfigured } = setup('word-cloud');
+
+    expect(screen.getByRole('heading', { name: 'Prompt' })).toBeInTheDocument();
+    next();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Write what you want people to answer.');
+    fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'One word for the square?' } });
+    next();
+
+    expect(screen.getByRole('heading', { name: 'Words' })).toBeInTheDocument();
+    expect(screen.getByText('One word for the square?')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Words per person'), { target: { value: '1' } });
+    expect(screen.getByLabelText('Timer')).toHaveValue('');
+    expect(within(screen.getByLabelText('Timer')).getAllByRole('option')).toHaveLength(21);
+    fireEvent.change(screen.getByLabelText('Timer'), { target: { value: '90' } });
+    next();
+
+    expect(screen.getByRole('heading', { name: 'Open for' })).toBeInTheDocument();
+    save();
+
+    await waitFor(() => expect(onConfigured).toHaveBeenCalled());
+    expect(createRoom).toHaveBeenCalledWith('word-cloud', 'proj-1', expect.any(String),
+      { prompt: 'One word for the square?', limit: 1, timer: 90 }, null);
   });
 
   describe('starting on a date', () => {
@@ -318,6 +348,12 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
 
     expect(screen.getByLabelText('The question')).toHaveValue('Car-free on Sundays?');
+  });
+
+  it('starts a Co-Budget in the currency where the project is', () => {
+    setup('budget-ballot', { project: { ...PROJECT, locations: ['Izmir, Türkiye'] } });
+
+    expect(screen.getByLabelText('Currency')).toHaveValue('TRY');
   });
 
   it('asks a Co-Budget for its budget, then its posts, then how long it stays open', async () => {

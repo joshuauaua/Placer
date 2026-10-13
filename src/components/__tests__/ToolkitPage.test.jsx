@@ -162,6 +162,7 @@ describe('the gallery', () => {
     openMenu();
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Works with a group' }));
     expect(screen.getByRole('button', { name: tile(/Pop Quiz/i) })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: tile(/Word Cloud/i) })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: tile(/Desire Lines/i) })).not.toBeInTheDocument();
 
     openMenu();
@@ -180,6 +181,9 @@ describe('the gallery', () => {
     // Newest first to begin with: Pop Quiz is the latest tool added.
     expect(sorts.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
     expect(names()[0]).toBe('Pop Quiz');
+    // Newest first to begin with: Word Cloud is the latest tool added.
+    expect(sorts.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
+    expect(names()[0]).toBe('Word Cloud');
 
     fireEvent.click(sorts.getByRole('button', { name: 'A-Z' }));
     const alphabetical = TOOLS.map((tool) => tool.name).sort((a, b) => a.localeCompare(b));

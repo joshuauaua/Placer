@@ -13,6 +13,7 @@
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
 import { mediaUrl, preparePhoto, removeMedia, uploadMedia } from './media';
+import { CURRENCY_CODES } from '../lib/currency';
 
 export const PROJECTS_TABLE = 'projects';
 export const COLLABORATORS_TABLE = 'project_collaborators';
@@ -20,8 +21,11 @@ export const LINKS_TABLE = 'project_links';
 export const PROJECT_TOOLS_TABLE = 'project_tools';
 export const PROJECT_BUDGETS_TABLE = 'project_budgets';
 
-/** The currencies a budget can be given in — the same list supabase/project-budget.sql checks. */
-export const BUDGET_CURRENCIES = ['EUR', 'SEK', 'DKK', 'NOK', 'GBP', 'USD'];
+/**
+ * The currencies a budget can be given in — the same as Co-Budget's (lib/currency.js),
+ * and the list supabase/project-budget.sql checks.
+ */
+export const BUDGET_CURRENCIES = CURRENCY_CODES;
 
 export const ACCESS_REQUESTS_TABLE = 'project_access_requests';
 

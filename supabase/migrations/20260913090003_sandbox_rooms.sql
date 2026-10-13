@@ -88,6 +88,7 @@ alter table public.toolkit_rooms add constraint toolkit_rooms_pin_shape
 alter table public.toolkit_rooms drop constraint if exists toolkit_rooms_tool_known;
 alter table public.toolkit_rooms add constraint toolkit_rooms_tool_known
   check (tool in ('budget-ballot', 'open-vote', 'pop-quiz'));
+  check (tool in ('budget-ballot', 'open-vote', 'word-cloud'));
 
 revoke all on public.toolkit_rooms from anon;
 

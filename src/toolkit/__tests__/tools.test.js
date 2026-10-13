@@ -3,8 +3,15 @@ import { CATEGORIES, ORGANISATIONS, TOOLS, filterTools, findCategory, findTool }
 import { BUDGET, emptyBallot, tally } from '../../lib/budgetBallot';
 import { emptyVote } from '../../lib/openVote';
 import { emptyQuizState, sampleQuiz } from '../../lib/popQuiz';
+import { emptyWords } from '../../lib/wordCloud';
 
 describe('the register', () => {
+  it('credits the Public Life Data Protocol on the tools built on it, and only those', () => {
+    const credited = TOOLS.filter((tool) => tool.credit?.startsWith('The Public Life Data Protocol'));
+    expect(credited.map((tool) => tool.id).sort())
+      .toEqual(['site-spatial-mapping', 'social-space-survey', 'stationary-activity-mapping']);
+  });
+
   it('finds a tool by the id in its URL', () => {
     expect(findTool('budget-ballot')).toMatchObject({ id: 'budget-ballot' });
   });
@@ -81,6 +88,25 @@ describe('the register', () => {
     expect(problems(Array.from({ length: 11 }, (_, i) => `Answer ${i}`))).toHaveLength(1);
     expect(problems(['Yes', 'x'.repeat(81)])).toHaveLength(1);
   });
+
+  it('asks the organiser for the Word Cloud prompt, and keeps the words per person within bounds', () => {
+    const { setup } = TOOLS.find((tool) => tool.id === 'word-cloud');
+    expect(setup.problems(setup.defaults())).toEqual(['Write what you want people to answer.']);
+    expect(setup.problems({ prompt: 'x'.repeat(201) })).toHaveLength(1);
+    expect(setup.problems({ prompt: 'One word for the square?' })).toEqual([]);
+    expect(setup.problems({ prompt: 'One word for the square?', limit: 5 })).toEqual([]);
+    expect(setup.problems({ prompt: 'One word for the square?', limit: 6 })).toHaveLength(1);
+    expect(setup.problems({ prompt: 'One word for the square?', limit: 'many' })).toHaveLength(1);
+  });
+
+  it('takes a Word Cloud with no timer, or one of 10 to 200 seconds in tens', () => {
+    const { setup } = TOOLS.find((tool) => tool.id === 'word-cloud');
+    const problems = (timer) => setup.problems({ prompt: 'One word for the square?', limit: 3, timer });
+
+    expect(setup.defaults().timer).toBeNull();
+    for (const timer of [null, undefined, 10, 60, 200]) expect(problems(timer), String(timer)).toEqual([]);
+    for (const timer of [0, 5, 15, 210, '60']) expect(problems(timer), String(timer)).toHaveLength(1);
+  });
 });
 
 describe('filterTools', () => {
@@ -116,6 +142,7 @@ describe('filterTools', () => {
 
   it('keeps only the tools that can run in a room when asked', () => {
     expect(ids({ groupOnly: true })).toEqual(['budget-ballot', 'open-vote', 'pop-quiz']);
+    expect(ids({ groupOnly: true })).toEqual(['budget-ballot', 'open-vote', 'word-cloud']);
   });
 
   it('combines filters', () => {
@@ -245,6 +272,25 @@ describe("the Pop Quiz's setup and room", () => {
 
   it('is an empty lobby when nobody has joined', () => {
     expect(room.combine([], quiz)).toEqual({ pace: null, players: [] });
+describe("the Word Cloud's room", () => {
+  const { room } = findTool('word-cloud');
+
+  it('starts a participant with no words', () => {
+    expect(room.empty()).toEqual(emptyWords());
+  });
+
+  it('counts each word by the people who said it, the most said first', () => {
+    const combined = room.combine([{ words: ['green', 'quiet'] }, { words: ['Green'] }, { words: ['busy'] }]);
+
+    expect(combined.words).toEqual([
+      { word: 'green', count: 2 }, { word: 'busy', count: 1 }, { word: 'quiet', count: 1 },
+    ]);
+    expect(combined.total).toBe(4);
+    expect(combined.people).toBe(3);
+  });
+
+  it('is an empty count when nobody has added a word', () => {
+    expect(room.combine([])).toEqual({ words: [], total: 0, people: 0 });
   });
 
   it('ignores a contribution that is missing or malformed', () => {
@@ -255,5 +301,16 @@ describe("the Pop Quiz's setup and room", () => {
     expect(combined.pace).toBeNull();
     expect(combined.players).toHaveLength(1);
     expect(combined.players[0]).toMatchObject({ nickname: 'Mara', score: 0 });
+    const combined = room.combine([{ words: ['green'] }, null, { words: 'green' }, { words: [4, null, '  '] }]);
+
+    expect(combined.words).toEqual([{ word: 'green', count: 1 }]);
+    expect(combined.people).toBe(1);
+  });
+
+  it('counts no more words from one person than the room was set up to take', () => {
+    const config = { prompt: 'One word for the square?', limit: 1 };
+    const combined = room.combine([{ words: ['green', 'quiet', 'busy'] }], config);
+
+    expect(combined.words).toEqual([{ word: 'green', count: 1 }]);
   });
 });

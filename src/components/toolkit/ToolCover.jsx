@@ -50,6 +50,11 @@ export function ToolCover({ t, tool, onStart, onBack, breadcrumb = null }) {
               .filter(Boolean).join(' · ')}
           </p>
         )}
+        {tool.credit && (
+          <p className="placer-caption" style={{ marginTop: 8, color: t.inkFaint }}>
+            {tool.credit}
+          </p>
+        )}
 
         <div className="placer-cover-action">
           <Btn t={t} size="lg" onClick={onStart}>Get started</Btn>
