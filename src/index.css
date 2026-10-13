@@ -947,8 +947,8 @@ a {
 }
 
 /* PLACER — the holding page's nav bar (see GlassNavbar.jsx): the wordmark top
- * left at the page margin, the menu at the other end. Matte glass from the brand
- * kit, square to the window since it runs edge to edge. */
+ * left at the page margin, the menu at the other end. Solid white, square to the
+ * window since it runs edge to edge. */
 .placer-glass-nav {
   position: fixed;
   top: 0;
@@ -961,9 +961,7 @@ a {
   justify-content: space-between;
   align-items: center;
   z-index: 160;
-  background: rgba(255, 255, 255, 0.12);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  backdrop-filter: blur(24px) saturate(140%);
+  background: var(--placer-white);
   box-shadow: var(--placer-shadow);
 }
 
@@ -1011,7 +1009,6 @@ a {
 /* Browsers without backdrop-filter get a near-opaque bar instead of an
    unreadable clear one. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .placer-glass-nav,
   .placer-glass,
   .placer-landing-column::before {
     background: rgba(255, 255, 255, 0.85);
@@ -1021,8 +1018,8 @@ a {
 /* PLACER — the site menu inside the nav bar (see HamburgerMenu.jsx).
  *
  * The panel fills the viewport under the bar (top matches .placer-glass-nav's
- * height) in the bar's own glass, so opening the menu reads as the bar pulling
- * down over the page. It scrolls on its own if the sections outgrow the screen.
+ * height), so opening the menu reads as the bar pulling down over the page. It
+ * scrolls on its own if the sections outgrow the screen.
  */
 .placer-menu-root {
   position: relative;
@@ -1053,7 +1050,7 @@ a {
 .placer-menu-trigger:hover,
 .placer-menu-trigger:focus-visible,
 .placer-menu-trigger[aria-expanded='true'] {
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--placer-grey-100);
 }
 
 .placer-menu-panel {
@@ -1069,8 +1066,7 @@ a {
   padding: 24px var(--placer-margin) 40px;
   display: flex;
   flex-direction: column;
-  /* The bar above is glass already, and the kit never stacks glass on glass, so
-     the panel under it is the glass fallback: white at 85%. */
+  /* Frosted white at 85%, a shade softer than the solid bar above it. */
   background: rgba(255, 255, 255, 0.85);
   -webkit-backdrop-filter: blur(24px) saturate(140%);
   backdrop-filter: blur(24px) saturate(140%);
@@ -1318,7 +1314,7 @@ a {
 }
 
 .placer-footer-heading {
-  color: var(--placer-accent-on-dark);
+  color: var(--placer-white);
 }
 
 .placer-footer-link:hover,
