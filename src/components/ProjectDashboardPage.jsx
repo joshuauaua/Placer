@@ -6,7 +6,7 @@ import { Icon } from './Icon';
 import { Btn, LoadingMark } from './UI';
 import { ProjectViewsChart } from './ProjectViewsChart';
 import { ProjectSetupPage } from './ProjectSetupPage';
-import { TOOLS, findTool, isToolLive } from '../toolkit/tools';
+import { TOOLS, findTool, isToolLive, projectSetupKind } from '../toolkit/tools';
 import { ConfigureToolDialog } from './ConfigureToolDialog';
 import {
   codeJoinUrl,
@@ -37,7 +37,7 @@ import {
   removeLink,
   saveProjectTools,
 } from '../services/projects';
-import { closeRoom, deleteRoom } from '../services/rooms';
+import { closeRoom, deleteRoom, readProjectOpenRooms } from '../services/rooms';
 import { readPreferences, readProjectResponses, saveProjectResponses } from '../services/notifications';
 import { ProjectResponsesChoice } from './ProjectResponsesChoice';
 
@@ -338,9 +338,11 @@ function AddToolkitTool({ t, chosen = [], onChoose }) {
 /**
  * One of this project's tools (project_tools): live on the public page, or waiting to
  * be configured for the project first (ConfigureToolDialog). A tool that runs in a room
- * is live while its room is open; its row then opens out on click to show that room,
- * and anything scheduled to start, with what the project runs it with (RoomRow). Any
- * other live tool can be configured again.
+ * is live while a room of it is open; its row then opens out on click to show its
+ * rooms, and any scheduled to start, with what the project runs them with (RoomRow).
+ * It can have several at once, each set up on its own — two Polls asking different
+ * questions — so Open another configures one more. Any other live tool can be
+ * configured again.
  */
 // A room still to come counts as well as one running: its QR code can go up early.
 const isCurrentRoom = (room) => room.status === 'open' || room.status === 'scheduled';
@@ -350,7 +352,10 @@ function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, rooms = [], on
   const [expanded, setExpanded] = useState(false);
   const panelId = useId();
   const expandable = rooms.length > 0;
-  const badge = live ? 'Live' : scheduled ? `Starts ${formatRoomDate(scheduled.opensAt)}` : 'Not configured';
+  const liveRooms = rooms.filter((room) => room.status === 'open').length;
+  const badge = live ? (liveRooms > 1 ? `${liveRooms} live` : 'Live')
+    : scheduled ? `Starts ${formatRoomDate(scheduled.opensAt)}` : 'Not configured';
+  const roomTool = projectSetupKind(tool) === 'room';
 
   const summary = (
     <>
@@ -391,7 +396,12 @@ function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, rooms = [], on
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>{summary}</div>
         )}
-        {scheduled ? null : !live ? (
+        {roomTool && (inRoom || scheduled) ? (
+          <Btn t={t} variant="secondary" size="sm" icon="plus" onClick={onConfigure}
+            ariaLabel={`Open another ${tool.name}`}>
+            Open another
+          </Btn>
+        ) : scheduled ? null : !live ? (
           <Btn t={t} variant="primary" size="sm" onClick={onConfigure} ariaLabel={`Configure ${tool.name}`}>
             Configure
           </Btn>
@@ -430,6 +440,8 @@ function RoomRow({ t, room, named = true, onOpen, onClose, onDelete }) {
   const scheduled = room.status === 'scheduled';
   const left = scheduled ? null : timeRemaining(room.expiresAt);
   const name = tool?.name ?? room.tool;
+  // Which of the tool's rooms this is, from its setup: a Poll's question.
+  const label = room.config ? tool?.room?.label?.(room.config) ?? null : null;
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0',
@@ -441,6 +453,12 @@ function RoomRow({ t, room, named = true, onOpen, onClose, onDelete }) {
 
       <div style={{ flex: '1 1 200px', minWidth: 0 }}>
         {named && <div style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>{name}</div>}
+        {label && (
+          <div style={{ fontSize: named ? 13.5 : 14, fontWeight: named ? 500 : 700, color: t.ink,
+            overflowWrap: 'anywhere' }}>
+            {label}
+          </div>
+        )}
         <div style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.5 }}>
           {scheduled
             ? `Starts ${formatRoomDate(room.opensAt)}`
@@ -629,9 +647,20 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
     }
   }, []);
 
+  // project_rooms has no setups, so each open room's — which says which room it is —
+  // comes from project_open_rooms, the public page's list. A room goes unlabelled
+  // rather than the list failing without it.
   const loadRooms = useCallback(async (id) => {
     try {
-      setRooms(await readProjectRooms(id));
+      const [found, open] = await Promise.all([
+        readProjectRooms(id),
+        readProjectOpenRooms(id).catch((err) => {
+          console.error("Could not load what this project's rooms are set up with:", err);
+          return [];
+        }),
+      ]);
+      const configs = new Map(open.map((room) => [room.id, room.config]));
+      setRooms(found.map((room) => ({ ...room, config: configs.get(room.id) ?? null })));
     } catch (err) {
       console.error("Could not load this project's rooms:", err);
       setRooms(null);

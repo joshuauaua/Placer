@@ -19,7 +19,7 @@ import {
   saveProjectTools,
   updateProject,
 } from '../../services/projects';
-import { closeRoom, createRoom, deleteRoom } from '../../services/rooms';
+import { closeRoom, createRoom, deleteRoom, readProjectOpenRooms } from '../../services/rooms';
 import { decideAccess, readAccessRequests, removeAccess } from '../../services/projects';
 import { readPreferences, readProjectResponses, saveProjectResponses } from '../../services/notifications';
 import { hostedRoom } from '../../toolkit/rooms';
@@ -73,6 +73,7 @@ vi.mock('../../services/notifications', async (importOriginal) => ({
 
 vi.mock('../../services/rooms', () => ({
   createRoom: vi.fn(() => Promise.resolve({ id: 'room-9', pin: '123456', facilitatorToken: 'facilitator-9' })),
+  readProjectOpenRooms: vi.fn(() => Promise.resolve([])),
   closeRoom: vi.fn(() => Promise.resolve(true)),
   deleteRoom: vi.fn(() => Promise.resolve(true)),
 }));
@@ -395,6 +396,52 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
 
     fireEvent.click(row);
     expect(screen.queryByRole('region', { name: 'Poll rooms' })).not.toBeInTheDocument();
+  });
+
+  it('opens another room of a tool that has one live, set up on its own', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open another Poll' }));
+    const dialog = screen.getByRole('dialog', { name: 'Configure Poll' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Get started' }));
+    fireEvent.change(within(dialog).getByLabelText('The question'), { target: { value: 'Do we need more benches?' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save and go live' }));
+
+    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('open-vote', 'proj-1', '30d',
+      { question: 'Do we need more benches?', answers: ['Yes', 'No', 'Undecided'] }, null));
+    expect(closeRoom).not.toHaveBeenCalled();
+  });
+
+  it('tells a tool\'s live rooms apart by what each was set up with', async () => {
+    const BENCHES = { ...LONG_ROOM, id: 'room-3', contributions: 4 };
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    vi.mocked(readProjectRooms).mockResolvedValue([LONG_ROOM, BENCHES]);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([
+      { id: 'room-1', tool: 'open-vote', config: { question: 'Should the square be car-free?' } },
+      { id: 'room-3', tool: 'open-vote', config: { question: 'Do we need more benches?' } },
+    ]);
+    setup();
+
+    expect(await screen.findByText('2 live')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Poll/, expanded: false }));
+
+    const rooms = within(screen.getByRole('region', { name: 'Poll rooms' }));
+    expect(rooms.getByText('Should the square be car-free?')).toBeInTheDocument();
+    expect(rooms.getByText('Do we need more benches?')).toBeInTheDocument();
+    expect(rooms.getAllByRole('button', { name: /download qr/i })).toHaveLength(2);
+  });
+
+  it('still lists the rooms when what they were set up with cannot be read', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    vi.mocked(readProjectOpenRooms).mockRejectedValueOnce(new Error('network down'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Poll/, expanded: false }));
+    expect(within(screen.getByRole('region', { name: 'Poll rooms' })).getByText(/12 responses/)).toBeInTheDocument();
   });
 
   it('does not open out a tool with no room', async () => {

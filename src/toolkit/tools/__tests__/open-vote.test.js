@@ -64,3 +64,17 @@ describe("the Poll's room", () => {
     expect(combined.total).toBe(2);
   });
 });
+
+describe('telling its rooms apart', () => {
+  const { room } = findTool('open-vote');
+
+  it('labels a room by what it was set up with', () => {
+    expect(room.label({ question: '  Should the square be car-free? ', answers: ['Yes', 'No'] })).toBe('Should the square be car-free?');
+  });
+
+  it('has no label for a room set up with nothing it can use', () => {
+    for (const config of [null, {}, 'garbage', { question: 7, prompt: '  ', questions: [], posts: 'none' }]) {
+      expect(room.label(config), JSON.stringify(config)).toBeNull();
+    }
+  });
+});

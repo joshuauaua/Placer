@@ -310,6 +310,12 @@ room: {
     // This runs on the facilitator's browser.
     return { /* ... */ };
   },
+  label(config) {
+    // Optional: which room this is, from its setup (a Poll's question), or null.
+    // A project can run several rooms of one tool at once; this tells them apart on
+    // its dashboard and public page. roomText in src/toolkit/toolParts.js helps.
+    return roomText(config?.question);
+  },
 }
 ```
 

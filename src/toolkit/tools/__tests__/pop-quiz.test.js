@@ -42,3 +42,17 @@ describe("the Pop Quiz's setup and room", () => {
     expect(combined.players[0]).toMatchObject({ nickname: 'Mara', score: 0 });
   });
 });
+
+describe('telling its rooms apart', () => {
+  const { room } = findTool('pop-quiz');
+
+  it('labels a room by what it was set up with', () => {
+    expect(room.label({ seconds: 20, questions: [{ kind: 'blank', text: 'The square is called ___.', answer: 'Möllan' }] })).toBe('The square is called ___.');
+  });
+
+  it('has no label for a room set up with nothing it can use', () => {
+    for (const config of [null, {}, 'garbage', { question: 7, prompt: '  ', questions: [], posts: 'none' }]) {
+      expect(room.label(config), JSON.stringify(config)).toBeNull();
+    }
+  });
+});

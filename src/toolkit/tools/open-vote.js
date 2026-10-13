@@ -5,7 +5,7 @@ import { CHARACTER } from '../../theme';
 import {
   answerProblems, combineVotes, defaultVoteSetup, emptyVote, questionProblems, voteSetupProblems,
 } from '../../lib/openVote';
-import { tone } from '../toolParts';
+import { roomText, tone } from '../toolParts';
 
 export default {
   id: 'open-vote',
@@ -34,5 +34,6 @@ export default {
   room: {
     empty: emptyVote,
     combine: combineVotes,
+    label: (config) => roomText(config?.question),
   },
 };

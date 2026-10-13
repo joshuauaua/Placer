@@ -59,3 +59,17 @@ describe("the Word Cloud's room", () => {
     expect(combined.words).toEqual([{ word: 'green', count: 1 }]);
   });
 });
+
+describe('telling its rooms apart', () => {
+  const { room } = findTool('word-cloud');
+
+  it('labels a room by what it was set up with', () => {
+    expect(room.label({ prompt: 'One word for the square?', limit: 3 })).toBe('One word for the square?');
+  });
+
+  it('has no label for a room set up with nothing it can use', () => {
+    for (const config of [null, {}, 'garbage', { question: 7, prompt: '  ', questions: [], posts: 'none' }]) {
+      expect(room.label(config), JSON.stringify(config)).toBeNull();
+    }
+  });
+});

@@ -5,7 +5,7 @@ import { CHARACTER } from '../../theme';
 import {
   cloudSetupProblems, combineWords, defaultCloudSetup, emptyWords, promptProblems, wordsProblems,
 } from '../../lib/wordCloud';
-import { tone } from '../toolParts';
+import { roomText, tone } from '../toolParts';
 
 export default {
   id: 'word-cloud',
@@ -34,5 +34,6 @@ export default {
   room: {
     empty: emptyWords,
     combine: combineWords,
+    label: (config) => roomText(config?.prompt),
   },
 };
