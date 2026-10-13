@@ -440,6 +440,9 @@ function Intro({ t, tool, kind, onStart, onCancel }) {
           {[tool.duration, tool.createdBy && `By ${tool.createdBy}`].filter(Boolean).join(' · ')}
         </p>
       )}
+      {tool.credit && (
+        <p className="placer-caption" style={{ color: t.inkFaint, margin: '-8px 0 16px' }}>{tool.credit}</p>
+      )}
       <p style={{ fontSize: 14, color: t.ink, lineHeight: 1.6, margin: '0 0 20px', padding: '12px 14px',
         borderRadius: 12, background: t.chrome }}>
         {WHAT_YOU_SET_UP[kind]}
