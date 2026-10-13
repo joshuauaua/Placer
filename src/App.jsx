@@ -799,6 +799,7 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'projectNew' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <ProjectSetupPage t={t} accountId={accountId} accountName={profile.name}
+                  accountLocation={profile.location}
                   organisations={organisations}
                   initialOrganisationId={newProjectOrganisationId}
                   onSaved={(project) => showProjectDashboard(project.id)}

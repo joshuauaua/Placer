@@ -25,6 +25,13 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   removeProjectImageFile: vi.fn(() => Promise.resolve()),
 }));
 
+// Where this machine is says nothing about the project: the suggestion goes only on
+// the places a test gives it.
+vi.mock('../../lib/currency', async (importOriginal) => {
+  const real = await importOriginal();
+  return { ...real, suggestCurrency: (options) => real.suggestCurrency({ timeZone: '', locales: [], ...options }) };
+});
+
 vi.mock('../../services/media', async (importOriginal) => ({
   ...(await importOriginal()),
   mediaUrl: (path) => (path ? `https://media.test/${path}` : null),
@@ -469,6 +476,49 @@ describe('ProjectSetupPage, the budget question', () => {
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(saveProjectBudget).toHaveBeenCalledWith('proj-1', { hasBudget: true, amount: 250000, currency: 'SEK' });
+  });
+
+  it('starts in the currency where the organiser is', () => {
+    setup({ accountLocation: 'Istanbul, Türkiye' });
+    toBasics();
+    fireEvent.click(within(budgetQuestion()).getByRole('radio', { name: 'Yes' }));
+
+    expect(screen.getByLabelText('Currency')).toHaveValue('TRY');
+  });
+
+  it('follows the project to its place, until a currency is picked', async () => {
+    createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    const { onSaved } = setup({ accountLocation: 'Istanbul, Türkiye' });
+
+    toBasics();
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    fireEvent.click(within(budgetQuestion()).getByRole('radio', { name: 'Yes' }));
+    next();
+    fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
+    next();
+    next();
+    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(saveProjectBudget).toHaveBeenCalledWith('proj-1', expect.objectContaining({ currency: 'SEK' }));
+  });
+
+  it('keeps a currency picked by hand, wherever the project is', async () => {
+    createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
+    const { onSaved } = setup({ accountLocation: 'Istanbul, Türkiye' });
+
+    toBasics();
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    fireEvent.click(within(budgetQuestion()).getByRole('radio', { name: 'Yes' }));
+    fireEvent.change(screen.getByLabelText('Currency'), { target: { value: 'TRY' } });
+    next();
+    fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
+    next();
+    next();
+    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(saveProjectBudget).toHaveBeenCalledWith('proj-1', expect.objectContaining({ currency: 'TRY' }));
   });
 
   it('saves a no', async () => {
