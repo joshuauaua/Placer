@@ -26,6 +26,7 @@ import {
   readProjectTools, removeProjectImageFile, saveProjectBudget, saveProjectTools, updateProject, uploadProjectImage,
 } from '../services/projects';
 import { checkPickedImage } from '../services/media';
+import { suggestCurrency } from '../lib/currency';
 import { TOOLS, findCategory } from '../toolkit/tools';
 
 // Matches DescribePage's form styling.
@@ -296,7 +297,7 @@ function RunByChoice({ t, accountName, organisations, value, onChange }) {
  * fromRow shape) to edit it in place — the same field set either way, so this is the
  * one form both `/projects/new` and a dashboard's "Edit setup" reach.
  */
-export function ProjectSetupPage({ t, accountId, accountName, project: initialProject = null,
+export function ProjectSetupPage({ t, accountId, accountName, accountLocation = '', project: initialProject = null,
   organisations = [], initialOrganisationId = null, onSaved, onCancel }) {
   // Normally the project being edited. Starting a new one can set it too: if the
   // project is created but its image then fails to upload, the form carries on as an
@@ -325,7 +326,10 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   // guard as the tools, so a failed read never saves over it.
   const [hasBudget, setHasBudget] = useState(null);
   const [budgetAmount, setBudgetAmount] = useState('');
-  const [budgetCurrency, setBudgetCurrency] = useState('EUR');
+  // Null until one is picked, or loaded: until then it follows where the project is,
+  // or else where its organiser is (lib/currency.js), so picking a place in another
+  // country after answering moves it along.
+  const [chosenCurrency, setChosenCurrency] = useState(null);
   const [budgetReady, setBudgetReady] = useState(!initialProject);
   const [projectType, setProjectType] = useState(project?.projectType ?? null);
   const [visibility, setVisibility] = useState(project?.visibility ?? 'public');
@@ -357,7 +361,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
         if (budget) {
           setHasBudget(budget.hasBudget);
           setBudgetAmount(budget.amount == null ? '' : String(budget.amount));
-          setBudgetCurrency(budget.currency);
+          setChosenCurrency(budget.currency);
         }
         setBudgetReady(true);
       })
@@ -394,6 +398,10 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
   const chosenOrganisationId = runsOrganisation(organisationId) ? organisationId : null;
   const offerRunBy = organisations.length > 0
     && (!editing || !project.organisationId || runsOrganisation(project.organisationId));
+
+  const placesForCurrency = [town, ...(editing ? project.locations ?? [] : []), accountLocation];
+  const budgetCurrency = chosenCurrency
+    ?? suggestCurrency({ places: placesForCurrency.filter(Boolean), offered: BUDGET_CURRENCIES });
 
   const budgetValid = !hasBudget || !Number.isNaN(parseBudgetAmount(budgetAmount));
   const complete = name.trim().length > 0 && budgetValid;
@@ -528,7 +536,7 @@ export function ProjectSetupPage({ t, accountId, accountName, project: initialPr
       {budgetReady && (
         <BudgetQuestion t={t} hasBudget={hasBudget} onHasBudget={setHasBudget}
           amount={budgetAmount} onAmount={setBudgetAmount}
-          currency={budgetCurrency} onCurrency={setBudgetCurrency} />
+          currency={budgetCurrency} onCurrency={setChosenCurrency} />
       )}
 
       <VisibilityChoice t={t} value={visibility} onChange={setVisibility} />

@@ -31,6 +31,13 @@ vi.mock('../PlaceSearch', () => ({
   ),
 }));
 
+// Where this machine is says nothing about the project: the suggestion goes only on
+// the places a test gives it.
+vi.mock('../../lib/currency', async (importOriginal) => {
+  const real = await importOriginal();
+  return { ...real, suggestCurrency: (options) => real.suggestCurrency({ timeZone: '', locales: [], ...options }) };
+});
+
 vi.mock('../../services/rooms', () => ({
   createRoom: vi.fn(() => Promise.resolve({ id: 'room-1', pin: '123456', facilitatorToken: 'facilitator-1' })),
 }));
@@ -310,6 +317,12 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
 
     expect(screen.getByLabelText('The question')).toHaveValue('Car-free on Sundays?');
+  });
+
+  it('starts a Co-Budget in the currency where the project is', () => {
+    setup('budget-ballot', { project: { ...PROJECT, locations: ['Izmir, Türkiye'] } });
+
+    expect(screen.getByLabelText('Currency')).toHaveValue('TRY');
   });
 
   it('asks a Co-Budget for its budget, then its posts, then how long it stays open', async () => {

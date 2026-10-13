@@ -29,6 +29,7 @@ import {
 } from '../services/projects';
 import { createRoom } from '../services/rooms';
 import { checkPickedImage } from '../services/media';
+import { suggestCurrency } from '../lib/currency';
 import { ROOM_LIFETIMES, formatRoomDate, rememberHostedRoom, scheduleRange } from '../toolkit/rooms';
 import { findCategory, projectSetupKind, setupSteps } from '../toolkit/tools';
 import { SetupSteps } from './toolkit/SetupSteps';
@@ -295,7 +296,12 @@ function startsProblems(project, starts) {
  * the last.
  */
 function RoomForm({ t, project, tool, busy, setBusy, onDone, onError, onCancel }) {
-  const [setup, setSetup] = useState(() => tool.setup?.defaults() ?? null);
+  const [setup, setSetup] = useState(() => {
+    const defaults = tool.setup?.defaults() ?? null;
+    // A setup counted in money starts in the currency where the project is.
+    if (!defaults?.currency) return defaults;
+    return { ...defaults, currency: suggestCurrency({ places: project.locations ?? [], fallback: defaults.currency }) };
+  });
   const [lifetime, setLifetime] = useState(DEFAULT_PROJECT_LIFETIME);
   const [starts, setStarts] = useState({ mode: 'now', date: '' });
   const staged = setupSteps(tool).length > 1;
@@ -433,6 +439,9 @@ function Intro({ t, tool, kind, onStart, onCancel }) {
         <p className="placer-caption" style={{ color: t.inkFaint, margin: '0 0 16px' }}>
           {[tool.duration, tool.createdBy && `By ${tool.createdBy}`].filter(Boolean).join(' · ')}
         </p>
+      )}
+      {tool.credit && (
+        <p className="placer-caption" style={{ color: t.inkFaint, margin: '-8px 0 16px' }}>{tool.credit}</p>
       )}
       <p style={{ fontSize: 14, color: t.ink, lineHeight: 1.6, margin: '0 0 20px', padding: '12px 14px',
         borderRadius: 12, background: t.chrome }}>

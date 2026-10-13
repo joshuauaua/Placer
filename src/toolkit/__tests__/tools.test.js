@@ -5,6 +5,12 @@ import { emptyVote } from '../../lib/openVote';
 import { emptyWords } from '../../lib/wordCloud';
 
 describe('the register', () => {
+  it('credits the Public Life Data Protocol on the tools built on it, and only those', () => {
+    const credited = TOOLS.filter((tool) => tool.credit?.startsWith('The Public Life Data Protocol'));
+    expect(credited.map((tool) => tool.id).sort())
+      .toEqual(['site-spatial-mapping', 'social-space-survey', 'stationary-activity-mapping']);
+  });
+
   it('finds a tool by the id in its URL', () => {
     expect(findTool('budget-ballot')).toMatchObject({ id: 'budget-ballot' });
   });

@@ -112,6 +112,7 @@ const HAND_WRITTEN = [
   '20261009090001_project_private_create.sql',
   '20261010090001_toolkit_tool_names.sql',
   '20261012090001_toolkit_rooms_word_cloud.sql',
+  '20261013090001_project_budgets_currencies.sql',
 ]
 
 export function render({ src, slice, note }, read = (f) => readFileSync(`${DIR}/${f}`, 'utf8')) {
