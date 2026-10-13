@@ -9,6 +9,7 @@ import { ProjectSetupPage } from './ProjectSetupPage';
 import { TOOLS, findTool, isToolLive, projectSetupKind } from '../toolkit/tools';
 import { ConfigureToolDialog } from './ConfigureToolDialog';
 import {
+  closingRange,
   codeJoinUrl,
   formatPin,
   formatRoomDate,
@@ -37,7 +38,8 @@ import {
   removeLink,
   saveProjectTools,
 } from '../services/projects';
-import { closeRoom, deleteRoom, readProjectOpenRooms } from '../services/rooms';
+import { closeRoom, deleteRoom, setRoomCloses } from '../services/rooms';
+import { DatePicker } from './DatePicker';
 import { readPreferences, readProjectResponses, saveProjectResponses } from '../services/notifications';
 import { ProjectResponsesChoice } from './ProjectResponsesChoice';
 
@@ -362,7 +364,7 @@ function AddToolDialog({ t, tools, onChoose, onClose }) {
 const isCurrentRoom = (room) => room.status === 'open' || room.status === 'scheduled';
 
 function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, rooms = [], onConfigure, onOpenRoom,
-  onCloseRoom, onDeleteRoom }) {
+  onEditRoom, onCloseRoom, onDeleteRoom }) {
   const [expanded, setExpanded] = useState(false);
   const panelId = useId();
   const expandable = rooms.length > 0;
@@ -428,8 +430,8 @@ function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, rooms = [], on
       {expandable && expanded && (
         <div id={panelId} role="region" aria-label={`${tool.name} rooms`} style={{ padding: '0 0 8px 48px' }}>
           {rooms.map((room) => (
-            <RoomRow key={room.id} t={t} room={room} named={false} onOpen={onOpenRoom} onClose={onCloseRoom}
-              onDelete={onDeleteRoom} />
+            <RoomRow key={room.id} t={t} room={room} named={false} onOpen={onOpenRoom} onEdit={onEditRoom}
+              onClose={onCloseRoom} onDelete={onDeleteRoom} />
           ))}
         </div>
       )}
@@ -444,7 +446,7 @@ function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, rooms = [], on
  * having these here rather than only on the room itself is that a poll left running for
  * a month outlives the browser tab, and often the device, it was opened on.
  */
-function RoomRow({ t, room, named = true, onOpen, onClose, onDelete }) {
+function RoomRow({ t, room, named = true, onOpen, onEdit, onClose, onDelete }) {
   const qrRef = useRef(null);
   const [confirming, setConfirming] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -452,6 +454,8 @@ function RoomRow({ t, room, named = true, onOpen, onClose, onDelete }) {
   const long = isLongRoom(room);
   const url = long ? codeJoinUrl(room.joinCode) : joinUrl(room.pin);
   const scheduled = room.status === 'scheduled';
+  // Before it starts, all of it can change; once open, a long room's closing day can.
+  const editable = Boolean(onEdit) && (scheduled || (room.status === 'open' && long));
   const left = scheduled ? null : timeRemaining(room.expiresAt);
   const name = tool?.name ?? room.tool;
   // Which of the tool's rooms this is, from its setup: a Poll's question.
@@ -486,6 +490,12 @@ function RoomRow({ t, room, named = true, onOpen, onClose, onDelete }) {
         <Btn t={t} variant="outline" size="sm" icon="arrowRight" onClick={() => onOpen(room)}>
           Open
         </Btn>
+        {editable && (
+          <Btn t={t} variant="quiet" size="sm" icon="pencil" onClick={() => onEdit(room)}
+            ariaLabel={scheduled ? `Edit ${label ?? name}` : `Change when ${label ?? name} closes`}>
+            Edit
+          </Btn>
+        )}
         <Btn t={t} variant="quiet" size="sm" icon="arrowDown"
           onClick={() => downloadQrSvg(qrRef.current, `placer-${room.tool}-qr.svg`)}>
           Download QR
@@ -505,6 +515,78 @@ function RoomRow({ t, room, named = true, onOpen, onClose, onDelete }) {
           {confirmingDelete ? 'Delete — confirm' : 'Delete'}
         </Btn>
       </div>
+    </div>
+  );
+}
+
+/**
+ * When an open room closes, moved: the one thing about it that can change once people
+ * may have answered it (supabase/rooms-edit.sql). It closes at the end of the day chosen.
+ */
+function RoomClosesDialog({ t, room, onClose, onSaved }) {
+  const range = closingRange(room);
+  const [day, setDay] = useState(range?.current ?? '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const panelRef = useRef(null);
+  const tool = findTool(room.tool);
+  const label = room.config ? tool?.room?.label?.(room.config) ?? null : null;
+
+  useEffect(() => {
+    panelRef.current?.focus();
+    const handleKeyDown = (e) => { if (e.key === 'Escape' && !busy) onClose(); };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [busy, onClose]);
+
+  const save = async (e) => {
+    e.preventDefault();
+    if (busy || !day) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await setRoomCloses(room.id, day);
+      onSaved();
+    } catch (err) {
+      console.error('Could not change when that room closes:', err);
+      setError(err?.message ?? 'Could not change when that room closes.');
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }}
+      style={{ position: 'fixed', inset: 0, zIndex: 180, background: 'rgba(0, 0, 0, 0.4)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <form ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="room-closes-title" tabIndex={-1}
+        onSubmit={save}
+        style={{ width: '100%', maxWidth: 440, padding: 24, background: t.surface, borderRadius: 16,
+          boxShadow: t.shadow, outline: 'none' }}>
+        <h2 id="room-closes-title" style={{ fontSize: 18, fontWeight: 700, color: t.ink, margin: '0 0 6px' }}>
+          Change when it closes
+        </h2>
+        <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '0 0 18px' }}>
+          {label ? <><strong style={{ color: t.ink }}>{label}</strong> · </> : null}
+          {tool?.name ?? room.tool} is live, so what it asks stays as it is: people have
+          answered it. It can run on longer, or end sooner, up to 90 days from when it opened.
+        </p>
+        {error && <p role="alert" style={{ fontSize: 13.5, color: '#B3261E', margin: '0 0 12px' }}>{error}</p>}
+        <label htmlFor="room-closes-day"
+          style={{ display: 'block', fontSize: 13, fontWeight: 600, color: t.inkDim, marginBottom: 6 }}>
+          Closes at the end of
+        </label>
+        <DatePicker t={t} id="room-closes-day" value={day} min={range?.min} max={range?.max}
+          label="Choose the closing day" placeholder="Pick a day" clearable={false} disabled={busy}
+          onChange={setDay}
+          style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${t.line}`,
+            background: t.surface, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 14 }} />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
+          <Btn t={t} variant="outline" size="sm" type="button" onClick={onClose} disabled={busy}>Cancel</Btn>
+          <Btn t={t} variant="primary" size="sm" type="submit" disabled={busy || !day || day === range?.current}>
+            {busy ? 'Saving…' : 'Save'}
+          </Btn>
+        </div>
+      </form>
     </div>
   );
 }
@@ -649,6 +731,9 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   // Which of them have been configured, and the one being configured now.
   const [configured, setConfigured] = useState(new Set());
   const [configuring, setConfiguring] = useState(null);
+  // A room being changed: a scheduled one in the configure dialog, an open one's
+  // closing day in its own.
+  const [editingRoom, setEditingRoom] = useState(null);
 
   const loadTools = useCallback(async (id) => {
     try {
@@ -661,20 +746,9 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
     }
   }, []);
 
-  // project_rooms has no setups, so each open room's — which says which room it is —
-  // comes from project_open_rooms, the public page's list. A room goes unlabelled
-  // rather than the list failing without it.
   const loadRooms = useCallback(async (id) => {
     try {
-      const [found, open] = await Promise.all([
-        readProjectRooms(id),
-        readProjectOpenRooms(id).catch((err) => {
-          console.error("Could not load what this project's rooms are set up with:", err);
-          return [];
-        }),
-      ]);
-      const configs = new Map(open.map((room) => [room.id, room.config]));
-      setRooms(found.map((room) => ({ ...room, config: configs.get(room.id) ?? null })));
+      setRooms(await readProjectRooms(id));
     } catch (err) {
       console.error("Could not load this project's rooms:", err);
       setRooms(null);
@@ -805,6 +879,11 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
     const long = isLongRoom(room);
     rememberHostedRoom(room.id, { pin: room.pin, token: room.facilitatorToken, code: long ? room.joinCode : null });
     onOpenRoom?.(room.tool, room.id);
+  };
+
+  const handleRoomEdited = () => {
+    setEditingRoom(null);
+    loadRooms(project.id);
   };
 
   const handleCloseRoom = async (room) => {
@@ -942,7 +1021,8 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                     inRoom={Boolean(openRoom)} scheduled={scheduled}
                     rooms={(rooms ?? []).filter((room) => room.tool === tool.id && isCurrentRoom(room))}
                     onConfigure={() => setConfiguring(tool.id)}
-                    onOpenRoom={handleOpenRoom} onCloseRoom={handleCloseRoom} onDeleteRoom={handleDeleteRoom} />
+                    onOpenRoom={handleOpenRoom} onEditRoom={setEditingRoom} onCloseRoom={handleCloseRoom}
+                    onDeleteRoom={handleDeleteRoom} />
                 );
               })}
             </div>
@@ -957,8 +1037,8 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                 Still open for tools no longer on this list.
               </p>
               {otherRooms.map((room) => (
-                <RoomRow key={room.id} t={t} room={room} onOpen={handleOpenRoom} onClose={handleCloseRoom}
-                  onDelete={handleDeleteRoom} />
+                <RoomRow key={room.id} t={t} room={room} onOpen={handleOpenRoom} onEdit={setEditingRoom}
+                  onClose={handleCloseRoom} onDelete={handleDeleteRoom} />
               ))}
             </div>
           )}
@@ -967,6 +1047,14 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
         {configuring && findTool(configuring) && (
           <ConfigureToolDialog t={t} project={project} tool={findTool(configuring)}
             onClose={() => setConfiguring(null)} onConfigured={handleConfigured} />
+        )}
+        {editingRoom?.status === 'scheduled' && findTool(editingRoom.tool) && (
+          <ConfigureToolDialog t={t} project={project} tool={findTool(editingRoom.tool)} room={editingRoom}
+            onClose={() => setEditingRoom(null)} onConfigured={handleRoomEdited} />
+        )}
+        {editingRoom?.status === 'open' && (
+          <RoomClosesDialog t={t} room={editingRoom} onClose={() => setEditingRoom(null)}
+            onSaved={handleRoomEdited} />
         )}
 
         <ProjectNotifications t={t} projectId={project.id} />

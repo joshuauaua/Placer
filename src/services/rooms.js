@@ -174,6 +174,41 @@ export async function readProjectOpenRooms(projectId) {
 }
 
 /**
+ * Change a project's room that has not started yet: its setup, the day it starts (null
+ * for now) and how long it stays open — everything opening it chose. Owner or
+ * collaborator only; see toolkit_room_reschedule in supabase/rooms-edit.sql.
+ */
+export async function rescheduleRoom(roomId, { lifetime, config, opensOn = null }) {
+  const supabase = await client();
+  const params = { p_room_id: roomId, p_lifetime: lifetime, p_config: config ?? {} };
+  if (opensOn) {
+    params.p_opens_on = opensOn;
+    params.p_time_zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+  const { data, error } = await supabase.rpc('toolkit_room_reschedule', params).single();
+
+  if (error) throw new Error(`Could not change the room: ${error.message}`);
+  return { opensAt: data.opens_at, expiresAt: data.expires_at };
+}
+
+/**
+ * Move the day an open long room closes: at the end of `closesOn` ('YYYY-MM-DD') in
+ * this browser's calendar. Owner or collaborator only; see toolkit_room_set_closes in
+ * supabase/rooms-edit.sql. Resolves to when it now closes.
+ */
+export async function setRoomCloses(roomId, closesOn) {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('toolkit_room_set_closes', {
+    p_room_id: roomId,
+    p_closes_on: closesOn,
+    p_time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  });
+
+  if (error) throw new Error(`Could not change when the room closes: ${error.message}`);
+  return data;
+}
+
+/**
  * Add or replace this participant's contribution. Resolves false when the room ended
  * underneath them — closed or run out of time — which is a normal thing to happen
  * rather than an error.

@@ -103,6 +103,7 @@ const PLAN = [
   { name: '20261010110001_organisation_avatars.sql', src: 'organisation-avatars.sql' },
   { name: '20261010100001_toolkit_rooms_schedule.sql', src: 'rooms-schedule.sql' },
   { name: '20261013120001_toolkit_room_tools.sql', src: 'room-tools.sql' },
+  { name: '20261013130001_toolkit_rooms_edit.sql', src: 'rooms-edit.sql' },
 ]
 
 const ROOM_TOOLS = 'room-tools'

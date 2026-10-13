@@ -919,6 +919,8 @@ export async function readProjectRooms(projectId) {
     status: row.status,
     contributions: row.contributions ?? 0,
     opensAt: row.opens_at ?? null,
+    // The room's setup; absent until supabase/rooms-edit.sql has run.
+    config: row.config ?? null,
   }));
 }
 
