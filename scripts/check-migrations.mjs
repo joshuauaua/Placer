@@ -32,6 +32,13 @@
 // them; they are only ever checked for presence, the same as hardening.sql is exempt
 // outright. Add a new one here, by name, whenever this drift happens again -- each
 // file's own header explains which migration it is catching up.
+//
+// ROOM_TOOLS is the one source with no list to add to: every supabase/room-tools/<id>.sql
+// is a tool's row in toolkit_room_tools (see room-tools.sql), and its migration is
+// found by name, <timestamp>_toolkit_room_tool_<id>.sql, rather than listed here. That
+// is so two branches each adding a tool that runs in a room add a file each and edit
+// nothing in common. --write creates a missing one, dated now -- or just after the
+// newest migration, if that is later -- so `db push` takes it, after room-tools.sql's.
 
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
@@ -95,7 +102,46 @@ const PLAN = [
   { name: '20261007110001_project_tool_config.sql', src: 'project-tool-config.sql' },
   { name: '20261010110001_organisation_avatars.sql', src: 'organisation-avatars.sql' },
   { name: '20261010100001_toolkit_rooms_schedule.sql', src: 'rooms-schedule.sql' },
+  { name: '20261013120001_toolkit_room_tools.sql', src: 'room-tools.sql' },
 ]
+
+const ROOM_TOOLS = 'room-tools'
+const ROOM_TOOL_MIGRATION = /^(\d{14})_toolkit_room_tool_([a-z0-9_]+)\.sql$/
+
+/** A tool id as it appears in its migration's name: pop-quiz is pop_quiz. */
+const roomToolSlug = (id) => id.replace(/-/g, '_')
+
+/**
+ * A version for a new migration: now, as 20261013140001 for 2026-10-13 14:00:01 UTC,
+ * unless that would sort before one of `migrations`.
+ */
+export function nextVersion(migrations, now = new Date()) {
+  const version = (date) => date.toISOString().replace(/\D/g, '').slice(0, 14)
+  const newest = migrations.map((f) => f.slice(0, 14)).filter((v) => /^\d{14}$/.test(v)).sort().at(-1)
+  if (!newest || newest < version(now)) return version(now)
+  const [, y, mo, d, h, mi, sec] = /^(\d{4})(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)$/.exec(newest)
+  return version(new Date(Date.UTC(y, mo - 1, d, h, mi, Number(sec) + 1)))
+}
+
+/**
+ * Each supabase/room-tools/<id>.sql with the migrations named for it -- ideally exactly
+ * one. A room-tool migration no source claims is left for check() to call an orphan.
+ */
+export function roomToolMigrations(sources, migrations) {
+  const bySlug = new Map()
+  for (const file of migrations) {
+    const match = ROOM_TOOL_MIGRATION.exec(file)
+    if (!match) continue
+    bySlug.set(match[2], [...(bySlug.get(match[2]) ?? []), file])
+  }
+  const entries = sources.map((file) => {
+    const id = file.slice(0, -'.sql'.length)
+    const slug = roomToolSlug(id)
+    const names = bySlug.get(slug) ?? []
+    return { id, slug, names, src: `${ROOM_TOOLS}/${file}` }
+  })
+  return entries
+}
 
 const HAND_WRITTEN = [
   '20260922110001_profiles_location_avatar_backfill.sql',
@@ -111,8 +157,6 @@ const HAND_WRITTEN = [
   '20261007100001_project_budgets_upsert_grant.sql',
   '20261009090001_project_private_create.sql',
   '20261010090001_toolkit_tool_names.sql',
-  '20261012100001_toolkit_rooms_pop_quiz.sql',
-  '20261012090001_toolkit_rooms_word_cloud.sql',
   '20261013090001_project_budgets_currencies.sql',
 ]
 
@@ -141,7 +185,23 @@ export function check({ write = false } = {}) {
   if (!existsSync(OUT)) return { drifted: [], orphans: [], skipped: true }
 
   const drifted = []
-  for (const entry of PLAN) {
+  const migrations = readdirSync(OUT)
+  const sources = existsSync(`${DIR}/${ROOM_TOOLS}`)
+    ? readdirSync(`${DIR}/${ROOM_TOOLS}`).filter((f) => f.endsWith('.sql'))
+    : []
+  const plan = [...PLAN]
+  const duplicates = []
+  for (const tool of roomToolMigrations(sources, migrations)) {
+    if (tool.names.length > 1) {
+      drifted.push({ name: tool.names.join(', '), src: tool.src, reason: 'are one source in more than one migration' })
+      duplicates.push(...tool.names)
+      continue
+    }
+    const name = tool.names[0] ?? `${nextVersion([...migrations, ...plan.map((e) => e.name)])}_toolkit_room_tool_${tool.slug}.sql`
+    plan.push({ name, src: tool.src })
+  }
+
+  for (const entry of plan) {
     const expected = render(entry)
     const path = `${OUT}/${entry.name}`
     const actual = existsSync(path) ? readFileSync(path, 'utf8') : null
@@ -154,22 +214,22 @@ export function check({ write = false } = {}) {
   // A migration nobody generated is worse than a stale one: it will be pushed and
   // never checked. Name it rather than quietly ignoring it -- HAND_WRITTEN is that
   // naming, for the ones that are supposed to exist without a generated source.
-  const known = new Set([...PLAN.map((e) => e.name), ...HAND_WRITTEN])
+  const known = new Set([...plan.map((e) => e.name), ...HAND_WRITTEN, ...duplicates])
   const orphans = readdirSync(OUT).filter((f) => f.endsWith('.sql') && !known.has(f))
 
-  return { drifted, orphans, skipped: false }
+  return { drifted, orphans, skipped: false, count: plan.length }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const write = process.argv.includes('--write')
-  const { drifted, orphans, skipped } = check({ write })
+  const { drifted, orphans, skipped, count } = check({ write })
 
   if (skipped) {
     console.log('no supabase/migrations on this branch — nothing to check')
     process.exit(0)
   }
   if (write) {
-    console.log(`regenerated ${PLAN.length} migrations from supabase/*.sql`)
+    console.log(`regenerated ${count} migrations from supabase/*.sql`)
   }
   for (const d of drifted) {
     console.error(`drift: ${OUT}/${d.name} ${d.reason} (source: ${DIR}/${d.src})`)
@@ -181,5 +241,5 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     console.error('\nRun `node scripts/check-migrations.mjs --write` if the source is correct.')
     process.exit(1)
   }
-  if (!write) console.log(`${PLAN.length} migrations match their sources`)
+  if (!write) console.log(`${count} migrations match their sources`)
 }

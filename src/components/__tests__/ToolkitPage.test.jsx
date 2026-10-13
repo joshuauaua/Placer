@@ -85,7 +85,6 @@ describe('the gallery', () => {
     for (const tool of TOOLS) {
       expect(screen.getByRole('button', { name: tile(new RegExp(tool.name, 'i')) })).toBeInTheDocument();
     }
-    expect(TOOLS).toHaveLength(12);
   });
 
   it('shows every tool as one set of cards, each labelled with its category', async () => {
@@ -192,9 +191,12 @@ describe('the gallery', () => {
       .map((button) => TOOLS.find((tool) => button.textContent.includes(tool.name))?.name)
       .filter(Boolean);
 
-    // Newest first to begin with: Dream It, Pop Quiz and Word Cloud were all added last, on the same day.
+    // Newest first to begin with: whichever tools were added last, however many joined that day.
+    const latest = TOOLS.map((tool) => tool.added).sort().at(-1);
+    const newest = TOOLS.filter((tool) => tool.added === latest).map((tool) => tool.name);
     expect(sorts.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
-    expect(names().slice(0, 3).sort()).toEqual(['Dream It', 'Pop Quiz', 'Word Cloud']);
+    expect(names().slice(0, newest.length).sort()).toEqual([...newest].sort());
+    expect(TOOLS.find((tool) => tool.name === names().at(-1)).added).toBe(TOOLS.map((tool) => tool.added).sort()[0]);
 
     fireEvent.click(sorts.getByRole('button', { name: 'A-Z' }));
     const alphabetical = TOOLS.map((tool) => tool.name).sort((a, b) => a.localeCompare(b));
@@ -234,13 +236,15 @@ describe('the gallery', () => {
   });
 
   it('clears every filter at once', async () => {
+    // A category none of whose tools runs in a room, so the two filters together match nothing.
+    const soloCategory = CATEGORIES.find(({ id }) => !TOOLS.some((tool) => tool.category === id && tool.room));
     renderPageAt('/toolkit');
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
 
     fireEvent.click(screen.getByRole('button', { name: /^Category:/ }));
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Works with a group' }));
     fireEvent.click(screen.getByRole('button', { name: /^Category:/ }));
-    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Imagine' }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: soloCategory.name }));
     expect(screen.getByText('No tools match those filters.')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));

@@ -1,0 +1,38 @@
+import { BudgetBallot } from '../../components/toolkit/BudgetBallot';
+import { BudgetBallotOnPage } from '../../components/toolkit/BudgetBallotOnPage';
+import { BudgetBallotSetup, BudgetStep, PostsStep } from '../../components/toolkit/BudgetBallotSetup';
+import { CHARACTER } from '../../theme';
+import {
+  ballotSetupProblems, budgetProblems, combineBallots, defaultBallotSetup, emptyBallot, postProblems,
+} from '../../lib/budgetBallot';
+import { tone } from '../toolParts';
+
+export default {
+  id: 'budget-ballot',
+  added: '2026-08-27',
+  category: 'plan',
+  name: 'Co-Budget',
+  tagline: 'A fixed budget, more on the list than it buys. Choose.',
+  blurb: 'Every post has a price per item, and the money runs out well before the list does. Spend the budget the way you would, and see what the room would fund together.',
+  ...tone(CHARACTER.citizen),
+  icon: 'coins',
+  createdBy: 'PLACER',
+  component: BudgetBallot,
+  onProjectPage: {
+    heading: 'How would you spend the budget?',
+    Embed: BudgetBallotOnPage,
+  },
+  setup: {
+    defaults: defaultBallotSetup,
+    problems: ballotSetupProblems,
+    Form: BudgetBallotSetup,
+    steps: [
+      { title: 'Budget', Form: BudgetStep, problems: budgetProblems },
+      { title: 'Posts', Form: PostsStep, problems: postProblems },
+    ],
+  },
+  room: {
+    empty: emptyBallot,
+    combine: combineBallots,
+  },
+};

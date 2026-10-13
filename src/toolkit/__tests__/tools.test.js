@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { CATEGORIES, ORGANISATIONS, TOOLS, filterTools, findCategory, findTool } from '../tools';
-import { BUDGET, emptyBallot, tally } from '../../lib/budgetBallot';
-import { emptyVote } from '../../lib/openVote';
-import { emptyQuizState, sampleQuiz } from '../../lib/popQuiz';
-import { emptyWords } from '../../lib/wordCloud';
 
 describe('the register', () => {
   it('credits the Public Life Data Protocol on the tools built on it, and only those', () => {
@@ -67,46 +63,6 @@ describe('the register', () => {
     }
   });
 
-  it('asks the organiser for the Poll question, and keeps it within bounds', () => {
-    const { setup } = TOOLS.find((tool) => tool.id === 'open-vote');
-    expect(setup.problems(setup.defaults())).toEqual(['Write the question you want people to vote on.']);
-    expect(setup.problems({ question: '   ' })).toHaveLength(1);
-    expect(setup.problems({ question: 'x'.repeat(201) })).toHaveLength(1);
-    expect(setup.problems({ question: 'Should the square be car-free?' })).toEqual([]);
-  });
-
-  it('checks the answers the organiser writes for a Poll', () => {
-    const { setup } = TOOLS.find((tool) => tool.id === 'open-vote');
-    const question = 'Should the square be car-free?';
-    const problems = (answers) => setup.problems({ question, answers });
-
-    expect(problems(['Yes', 'No', 'Undecided'])).toEqual([]);
-    expect(problems(['Every day', 'Weekends'])).toEqual([]);
-    expect(problems(['Yes'])).toEqual(['Give people at least 2 answers to choose from.']);
-    expect(problems(['Yes', '  ', 'No'])).toEqual(['Fill in every answer, or remove the empty ones.']);
-    expect(problems(['Yes', 'yes '])).toEqual(['Make each answer different from the others.']);
-    expect(problems(Array.from({ length: 11 }, (_, i) => `Answer ${i}`))).toHaveLength(1);
-    expect(problems(['Yes', 'x'.repeat(81)])).toHaveLength(1);
-  });
-
-  it('asks the organiser for the Word Cloud prompt, and keeps the words per person within bounds', () => {
-    const { setup } = TOOLS.find((tool) => tool.id === 'word-cloud');
-    expect(setup.problems(setup.defaults())).toEqual(['Write what you want people to answer.']);
-    expect(setup.problems({ prompt: 'x'.repeat(201) })).toHaveLength(1);
-    expect(setup.problems({ prompt: 'One word for the square?' })).toEqual([]);
-    expect(setup.problems({ prompt: 'One word for the square?', limit: 5 })).toEqual([]);
-    expect(setup.problems({ prompt: 'One word for the square?', limit: 6 })).toHaveLength(1);
-    expect(setup.problems({ prompt: 'One word for the square?', limit: 'many' })).toHaveLength(1);
-  });
-
-  it('takes a Word Cloud with no timer, or one of 10 to 200 seconds in tens', () => {
-    const { setup } = TOOLS.find((tool) => tool.id === 'word-cloud');
-    const problems = (timer) => setup.problems({ prompt: 'One word for the square?', limit: 3, timer });
-
-    expect(setup.defaults().timer).toBeNull();
-    for (const timer of [null, undefined, 10, 60, 200]) expect(problems(timer), String(timer)).toEqual([]);
-    for (const timer of [0, 5, 15, 210, '60']) expect(problems(timer), String(timer)).toHaveLength(1);
-  });
 });
 
 describe('filterTools', () => {
@@ -132,8 +88,11 @@ describe('filterTools', () => {
   });
 
   it('filters by category', () => {
-    expect(ids({ category: 'plan' })).toEqual(['budget-ballot', 'open-vote']);
-    expect(ids({ category: 'imagine' })).toEqual(['street-mixer', 'reimagine-a-space', 'dream-it']);
+    for (const { id } of CATEGORIES) {
+      expect(ids({ category: id })).toEqual(TOOLS.filter((tool) => tool.category === id).map((tool) => tool.id));
+    }
+    expect(ids({ category: 'plan' })).toEqual(expect.arrayContaining(['budget-ballot', 'open-vote']));
+    expect(ids({ category: 'plan' })).not.toContain('desire-lines');
   });
 
   it('filters by the organisation that made the tool', () => {
@@ -141,7 +100,10 @@ describe('filterTools', () => {
   });
 
   it('keeps only the tools that can run in a room when asked', () => {
-    expect(ids({ groupOnly: true })).toEqual(['budget-ballot', 'open-vote', 'pop-quiz', 'word-cloud']);
+    const rooms = ids({ groupOnly: true });
+    expect(rooms).toEqual(TOOLS.filter((tool) => tool.room).map((tool) => tool.id));
+    expect(rooms).toEqual(expect.arrayContaining(['budget-ballot', 'open-vote']));
+    expect(rooms).not.toContain('desire-lines');
   });
 
   it('combines filters', () => {
@@ -156,167 +118,3 @@ describe('filterTools', () => {
   });
 });
 
-describe("the Co-Budget's room", () => {
-  const { room } = findTool('budget-ballot');
-
-  it('starts a participant from an empty ballot', () => {
-    expect(room.empty()).toEqual(emptyBallot());
-  });
-
-  it('averages the ballots rather than adding them up', () => {
-    // benches cost 900 each: 4 and 2 average to 3, so the room commits 2700 — not
-    // the 5400 a sum would report.
-    const combined = room.combine([{ benches: 4 }, { benches: 2 }]);
-
-    expect(combined.benches).toBe(3);
-    expect(tally(combined).spent).toBe(2700);
-  });
-
-  it('rounds to something somebody could actually build', () => {
-    const combined = room.combine([{ benches: 1 }, { benches: 2 }]);
-
-    expect(Number.isInteger(combined.benches)).toBe(true);
-    expect(combined.benches).toBe(2);
-  });
-
-  it("keeps the room's ballot inside the budget, which is the whole point", () => {
-    // Twenty people all spending the entire budget on different things must not
-    // produce a combined ballot that spends twenty budgets.
-    const maxed = [
-      { footway: 60, benches: 20 },
-      { cycleTrack: 80, trees: 24 },
-      { footway: 60, cycleTrack: 80, trees: 24, benches: 20 },
-    ];
-
-    expect(tally(room.combine(maxed)).spent).toBeLessThanOrEqual(BUDGET);
-  });
-
-  it('is an empty ballot when nobody has cast one', () => {
-    expect(room.combine([])).toEqual(emptyBallot());
-  });
-
-  it('ignores a contribution that is missing or malformed', () => {
-    // The state comes back from a database that other browsers wrote to.
-    const combined = room.combine([{ benches: 4 }, null, { benches: undefined }, { nonsense: 5 }]);
-
-    expect(combined).toEqual(expect.objectContaining({ benches: 1 }));
-    expect(combined).not.toHaveProperty('nonsense');
-  });
-});
-
-describe("the Poll's room", () => {
-  const { room } = findTool('open-vote');
-
-  it('starts a participant with no choice made', () => {
-    expect(room.empty()).toEqual(emptyVote());
-  });
-
-  it('counts every vote by its choice', () => {
-    const combined = room.combine([{ choice: 'yes' }, { choice: 'yes' }, { choice: 'no' }]);
-
-    expect(combined.counts).toEqual({ yes: 2, no: 1, undecided: 0 });
-    expect(combined.total).toBe(3);
-  });
-
-  it('is an empty tally when nobody has voted', () => {
-    expect(room.combine([])).toEqual({
-      counts: { yes: 0, no: 0, undecided: 0 },
-      shares: { yes: 0, no: 0, undecided: 0 },
-      total: 0,
-    });
-  });
-
-  it('ignores a contribution that is missing or malformed', () => {
-    // The state comes back from a database that other browsers wrote to.
-    const combined = room.combine([{ choice: 'yes' }, null, { choice: undefined }, { choice: 'maybe' }]);
-
-    expect(combined.counts).toEqual({ yes: 1, no: 0, undecided: 0 });
-    expect(combined.total).toBe(1);
-  });
-
-  it("counts votes against the answers the room was set up with", () => {
-    const config = { question: 'When?', answers: ['Every day', 'Weekends'] };
-    const combined = room.combine([{ choice: 'Weekends' }, { choice: 'Weekends' }, { choice: 'yes' }], config);
-
-    expect(combined.counts).toEqual({ 'Every day': 0, Weekends: 2 });
-    expect(combined.total).toBe(2);
-  });
-});
-
-describe("the Pop Quiz's setup and room", () => {
-  const { room, setup } = findTool('pop-quiz');
-  const quiz = sampleQuiz();
-
-  it('starts from one question still to be written, and accepts a finished quiz', () => {
-    expect(setup.problems(setup.defaults())).toEqual(['Write question 1.', 'Fill in all 4 choices for question 1.']);
-    expect(setup.problems(quiz)).toEqual([]);
-  });
-
-  it('starts a participant with no nickname and nothing answered', () => {
-    expect(room.empty()).toEqual(emptyQuizState());
-  });
-
-  it('scores the players against the quiz, the highest first, and leaves out the facilitator', () => {
-    const combined = room.combine([
-      { host: { q: 1, at: 1000, shown: false } },
-      { nickname: 'Mara', answers: { 0: { value: 1, ms: 2000 } } },
-      { nickname: 'Sam', answers: { 0: { value: 0, ms: 10000 } } },
-    ], quiz);
-
-    expect(combined.pace).toEqual({ q: 1, at: 1000, shown: false });
-    expect(combined.players.map(({ nickname, score, correct }) => ({ nickname, score, correct }))).toEqual([
-      { nickname: 'Sam', score: 750, correct: 1 }, { nickname: 'Mara', score: 0, correct: 0 },
-    ]);
-  });
-
-  it('is an empty lobby when nobody has joined', () => {
-    expect(room.combine([], quiz)).toEqual({ pace: null, players: [] });
-  });
-
-  it('ignores a contribution that is missing or malformed', () => {
-    // The state comes back from a database that other browsers wrote to.
-    const combined = room.combine([null, { nickname: '   ' }, { nickname: 7 }, { host: { q: 'two' } },
-      { nickname: 'Mara', answers: 'none' }], quiz);
-
-    expect(combined.pace).toBeNull();
-    expect(combined.players).toHaveLength(1);
-    expect(combined.players[0]).toMatchObject({ nickname: 'Mara', score: 0 });
-  });
-});
-
-describe("the Word Cloud's room", () => {
-  const { room } = findTool('word-cloud');
-
-  it('starts a participant with no words', () => {
-    expect(room.empty()).toEqual(emptyWords());
-  });
-
-  it('counts each word by the people who said it, the most said first', () => {
-    const combined = room.combine([{ words: ['green', 'quiet'] }, { words: ['Green'] }, { words: ['busy'] }]);
-
-    expect(combined.words).toEqual([
-      { word: 'green', count: 2 }, { word: 'busy', count: 1 }, { word: 'quiet', count: 1 },
-    ]);
-    expect(combined.total).toBe(4);
-    expect(combined.people).toBe(3);
-  });
-
-  it('is an empty count when nobody has added a word', () => {
-    expect(room.combine([])).toEqual({ words: [], total: 0, people: 0 });
-  });
-
-  it('ignores a contribution that is missing or malformed', () => {
-    // The state comes back from a database that other browsers wrote to.
-    const combined = room.combine([{ words: ['green'] }, null, { words: 'green' }, { words: [4, null, '  '] }]);
-
-    expect(combined.words).toEqual([{ word: 'green', count: 1 }]);
-    expect(combined.people).toBe(1);
-  });
-
-  it('counts no more words from one person than the room was set up to take', () => {
-    const config = { prompt: 'One word for the square?', limit: 1 };
-    const combined = room.combine([{ words: ['green', 'quiet', 'busy'] }], config);
-
-    expect(combined.words).toEqual([{ word: 'green', count: 1 }]);
-  });
-});

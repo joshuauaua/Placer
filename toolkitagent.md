@@ -17,7 +17,7 @@ Nothing is saved unless you open a room for other people to join.
 Every tool has four parts:
 
 1. **Cover page** — the first thing a visitor sees, drawn from the registry entry (see [The cover page](#the-cover-page))
-2. **Registry entry** in `src/toolkit/tools.js` — metadata and wiring
+2. **Registry entry** in `src/toolkit/tools/<id>.js` — metadata and wiring
 3. **Component** in `src/components/toolkit/` — the interactive UI
 4. **Logic module** in `src/lib/` — pure functions and constants (no React)
 
@@ -29,10 +29,11 @@ Optional: a fourth part for multi-player room support (see [Rooms](#rooms)).
 
 ## Registry entry
 
-Add an entry to the `TOOLS` array in `src/toolkit/tools.js`:
+Add a file of its own, `src/toolkit/tools/my-tool.js`, named for the tool's id, whose
+default export is the entry:
 
 ```js
-{
+export default {
   id: 'my-tool',
   name: 'My Tool',
   tagline: 'One line that makes people curious.',
@@ -42,8 +43,11 @@ Add an entry to the `TOOLS` array in `src/toolkit/tools.js`:
   category: 'understand',
   createdBy: 'Your Organisation',
   component: MyTool,
-}
+};
 ```
+
+`TOOLS` in `src/toolkit/tools.js` gathers every file in that folder, so nothing else
+lists the tool — two branches each adding one add a file each, and do not conflict.
 
 ### Categories
 
@@ -259,25 +263,28 @@ without a DOM. Follow the pattern of `budgetBallot.js`, `streetSection.js`,
 
 ## Registering the tool
 
-Once the component and logic are ready, wire them into `src/toolkit/tools.js`:
+Once the component and logic are ready, wire them into the tool's own file,
+`src/toolkit/tools/my-tool.js`:
 
 ```js
-import MyTool from '../components/toolkit/MyTool';
+import { MyTool } from '../../components/toolkit/MyTool';
 
-export const TOOLS = [
-  // ... existing tools ...
-  {
-    id: 'my-tool',
-    name: 'My Tool',
-    tagline: '...',
-    blurb: '...',
-    color: '#5A3ED6',
-    icon: 'flask',
-    createdBy: 'Your Organisation',
-    component: MyTool,
-  },
-];
+export default {
+  id: 'my-tool',
+  added: '2026-10-14',
+  name: 'My Tool',
+  tagline: '...',
+  blurb: '...',
+  color: '#5A3ED6',
+  icon: 'flask',
+  createdBy: 'Your Organisation',
+  component: MyTool,
+};
 ```
+
+The file has to be named for the `id`; the register refuses one that is not. Shared
+helpers — the character colours (`tone`) and the Public Life Data Protocol credit — are
+in `src/toolkit/toolParts.js`.
 
 The tool will automatically appear on the Toolkit page, be reachable at
 `/toolkit/my-tool`, and show up in the tile grid.
@@ -306,11 +313,17 @@ room: {
 }
 ```
 
-2. Add the tool id to the CHECK constraint in `supabase/rooms.sql`:
+2. Tell the database the tool may host a room, with a file of its own,
+   `supabase/room-tools/my-tool.sql`:
 
 ```sql
-check (tool in ('budget-ballot', 'my-tool'));
+-- Lets My Tool host a room.
+insert into public.toolkit_room_tools (id, name) values ('my-tool', 'My Tool')
+on conflict (id) do update set name = excluded.name;
 ```
+
+   then run `node scripts/check-migrations.mjs --write`, which generates its migration
+   (see `supabase/room-tools/README.md`). The name is what notifications call the tool.
 
 3. Use the `room` prop in your component:
 
@@ -357,7 +370,9 @@ registry tests check it.
 ```
 src/
   toolkit/
-    tools.js              # Registry — add your entry here
+    tools.js              # Registry — gathers tools/ (do not list your tool here)
+    tools/
+      your-tool.js        # Your registry entry, named for its id
   components/
     toolkit/
       YourTool.jsx       # Your component
@@ -371,8 +386,8 @@ src/
 
 ## Testing
 
-Write tests in `src/components/__tests__/ToolkitTools.test.jsx`. Follow the existing
-pattern: mount the tool with `t={THEME}` and `tool={findTool(id)}`.
+Write tests in a file of the tool's own, `src/components/__tests__/ToolMyTool.test.jsx`.
+Follow the existing pattern: mount the tool with `t={THEME}` and `tool={findTool(id)}`.
 The component is mounted on its own there, so there is no cover page in the way.
 
 ```jsx
@@ -394,5 +409,10 @@ Tests that mount the whole `ToolkitPage` (as `ToolkitPage.test.jsx` and
 **Get started** to reach the tool.
 
 If the tool has room support, also add room tests in
-`src/components/__tests__/ToolkitRoom.test.jsx` and registry tests in
-`src/toolkit/__tests__/tools.test.js`.
+`src/components/__tests__/ToolMyToolRoom.test.jsx` — `src/test/toolkitRoom.jsx` and
+`src/test/roomServices.js` have the room, and `src/test/configureTool.jsx` the dialog
+that sets it up for a project (see `ToolWordCloudRoom.test.jsx`) — and tests of its
+`room` and `setup` in `src/toolkit/tools/__tests__/my-tool.test.js`.
+
+Do not write a test that counts the tools or names the newest one: it is what every
+new tool would have to edit, and two branches adding tools would conflict on it.
