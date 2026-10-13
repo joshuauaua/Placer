@@ -8,6 +8,7 @@ import { ProjectViewsChart } from './ProjectViewsChart';
 import { ProjectSetupPage } from './ProjectSetupPage';
 import { TOOLS, findTool, isToolLive, projectSetupKind } from '../toolkit/tools';
 import { ConfigureToolDialog } from './ConfigureToolDialog';
+import { ToolsByCategory } from './toolkit/ToolsByCategory';
 import {
   closingRange,
   codeJoinUrl,
@@ -260,29 +261,6 @@ function CollaboratorRow({ t, collaborator, onRemove }) {
   );
 }
 
-function ToolChoice({ t, tool, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 12px',
-        background: 'transparent', color: t.ink, cursor: 'pointer', border: 'none', borderRadius: 10,
-        fontFamily: 'var(--placer-font)', textAlign: 'left' }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-      <span style={{ width: 36, height: 36, borderRadius: 10, flex: '0 0 auto', background: tool.tint,
-        boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: t.ink }}>
-        <Icon name={tool.icon} size={18} stroke={2} />
-      </span>
-      <span style={{ minWidth: 0, display: 'block' }}>
-        <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, letterSpacing: '-0.01em' }}>{tool.name}</span>
-        {tool.tagline && <span style={{ display: 'block', fontSize: 12.5, color: t.inkDim }}>{tool.tagline}</span>}
-      </span>
-    </button>
-  );
-}
-
 /**
  * Adds a tool to the project: a button that opens the Toolkit's tools it does not have
  * yet in a dialog. Choosing one only adds it to the list, waiting to be configured.
@@ -339,13 +317,7 @@ function AddToolDialog({ t, tools, onChoose, onClose }) {
             <Icon name="close" size={18} stroke={2.2} />
           </button>
         </div>
-        <div role="list" aria-label="Toolkit tools" style={{ margin: '0 -12px' }}>
-          {tools.map((tool) => (
-            <div role="listitem" key={tool.id}>
-              <ToolChoice t={t} tool={tool} onClick={() => onChoose(tool.id)} />
-            </div>
-          ))}
-        </div>
+        <ToolsByCategory t={t} tools={tools} onPick={onChoose} idPrefix="add-tool" />
       </div>
     </div>
   );

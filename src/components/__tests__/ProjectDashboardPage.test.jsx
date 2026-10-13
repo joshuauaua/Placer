@@ -203,8 +203,12 @@ describe('ProjectDashboardPage', () => {
     expect(add).toHaveTextContent('');
     fireEvent.click(add);
     const dialog = within(screen.getByRole('dialog', { name: 'Add a tool' }));
-    // Only the tools the project does not have yet.
+    // Only the tools the project does not have yet, in a list per category.
     expect(dialog.queryByRole('button', { name: /^Poll/ })).not.toBeInTheDocument();
+    expect(dialog.getAllByRole('list').map((list) => list.getAttribute('aria-labelledby')))
+      .toEqual(['add-tool-understand', 'add-tool-imagine', 'add-tool-plan']);
+    expect(within(dialog.getByRole('list', { name: 'Plan' })).getByRole('button', { name: /^Co-Budget/ }))
+      .toBeInTheDocument();
     fireEvent.click(dialog.getByRole('button', { name: /^Co-Budget/ }));
 
     expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['open-vote', 'budget-ballot'], 'user-1');
