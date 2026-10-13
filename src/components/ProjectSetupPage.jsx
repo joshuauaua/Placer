@@ -18,7 +18,6 @@
 import { DateRangePicker } from './DatePicker';
 import { useEffect, useState } from 'react';
 import { Btn } from './UI';
-import { Icon } from './Icon';
 import { ImagePicker } from './ImagePicker';
 import { AddressInput } from './AddressInput';
 import {
@@ -27,7 +26,8 @@ import {
 } from '../services/projects';
 import { checkPickedImage } from '../services/media';
 import { suggestCurrency } from '../lib/currency';
-import { TOOLS, findCategory } from '../toolkit/tools';
+import { TOOLS } from '../toolkit/tools';
+import { ToolsByCategory } from './toolkit/ToolsByCategory';
 
 // Matches DescribePage's form styling.
 const inputStyle = (t) => ({
@@ -193,52 +193,17 @@ function BudgetQuestion({ t, hasBudget, onHasBudget, amount, onAmount, currency,
 }
 
 /**
- * The Toolkit, as a grid to choose a project's tools from. Each card is a toggle, and
- * all this holds is which ones are chosen. Each is configured for the project from its
- * dashboard once it is saved.
+ * The Toolkit, in a section per category, to choose a project's tools from. Each row is
+ * a toggle, and all this holds is which ones are chosen. Each is configured for the
+ * project from its dashboard once it is saved.
  */
 function ToolPicker({ t, value, onChange }) {
   const toggle = (id) => onChange(value.includes(id) ? value.filter((tool) => tool !== id) : [...value, id]);
 
   return (
-    <ul aria-label="Toolkit tools" style={{ listStyle: 'none', padding: 0, margin: '0 0 26px', display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
-      {TOOLS.map((tool) => {
-        const chosen = value.includes(tool.id);
-        return (
-          <li key={tool.id}>
-            <button type="button" aria-pressed={chosen} onClick={() => toggle(tool.id)}
-              style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: 10,
-                padding: 16, textAlign: 'left', cursor: 'pointer', borderRadius: 12,
-                background: chosen ? tool.wash : t.surface,
-                border: `1.5px solid ${chosen ? tool.color : t.line}`, color: t.ink,
-                fontFamily: 'var(--placer-font)' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
-                <span style={{ width: 36, height: 36, borderRadius: 10, flex: '0 0 auto', background: tool.tint,
-                  boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', color: tool.color }}>
-                  <Icon name={tool.icon} size={18} stroke={2} />
-                </span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>{tool.name}</span>
-                  <span className="placer-mono" style={{ display: 'block', fontSize: 11, color: t.inkDim,
-                    textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {findCategory(tool.category)?.name}
-                  </span>
-                </span>
-                <span aria-hidden="true" style={{ width: 22, height: 22, borderRadius: 11, flex: '0 0 auto',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: chosen ? tool.color : 'transparent',
-                  border: `1.5px solid ${chosen ? tool.color : t.lineStrong}`, color: '#fff' }}>
-                  {chosen && <Icon name="check" size={14} stroke={2.6} />}
-                </span>
-              </span>
-              <span style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.5 }}>{tool.tagline}</span>
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+    <div style={{ margin: '0 0 26px' }}>
+      <ToolsByCategory t={t} tools={TOOLS} chosen={value} onPick={toggle} idPrefix="project-setup-tools" />
+    </div>
   );
 }
 

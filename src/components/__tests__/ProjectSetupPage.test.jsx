@@ -6,7 +6,7 @@ import {
   saveProjectBudget, saveProjectToolConfig, saveProjectTools, updateProject,
 } from '../../services/projects';
 import { THEME } from '../../theme';
-import { TOOLS } from '../../toolkit/tools';
+import { CATEGORIES, TOOLS } from '../../toolkit/tools';
 
 vi.mock('../../services/projects', async (importOriginal) => ({
   // The real PROJECT_TYPES and currencies, so the choices on screen are the ones that ship.
@@ -216,8 +216,15 @@ describe('ProjectSetupPage, starting a project', () => {
     next();
     next();
 
-    const tools = within(screen.getByRole('list', { name: 'Toolkit tools' })).getAllByRole('button');
+    const tools = within(screen.getByRole('group', { name: 'Toolkit tools' })).getAllByRole('button');
     expect(tools).toHaveLength(TOOLS.length);
+    // A list per category, Understand, Imagine and Plan, each holding just its own tools.
+    for (const category of CATEGORIES) {
+      const list = within(screen.getByRole('list', { name: category.name }));
+      expect(list.getAllByRole('button')).toHaveLength(TOOLS.filter((tool) => tool.category === category.id).length);
+    }
+    expect(within(screen.getByRole('list', { name: 'Plan' })).getByRole('button', { name: /Co-Budget/ }))
+      .toBeInTheDocument();
     const ballot = screen.getByRole('button', { name: /Co-Budget/ });
     expect(ballot).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(ballot);
