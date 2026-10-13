@@ -15,6 +15,11 @@
 -- constraint without the other's tool. A new tool now adds a file of its own instead:
 -- supabase/room-tools/<id>.sql, inserting its row (see the README there), and the
 -- migration that `node scripts/check-migrations.mjs --write` generates from it.
+--
+-- Its migration also stands in for the Word Cloud's and the Pop Quiz's catch-up
+-- migrations (20261012090001 and 20261012100001), which were never pushed: they were
+-- dated before 20261013090001, which was, and `db push` refuses one older than the
+-- newest applied. Until this ran, the database would not open a room on either tool.
 
 create table if not exists public.toolkit_room_tools (
   id   text primary key,
