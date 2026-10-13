@@ -246,6 +246,8 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
         { kind: 'blank', text: 'The square is called ___.', answer: 'Möllan' },
       ],
     }, null);
+  });
+
   it('asks for the Word Cloud prompt, then the words per person, then how long it stays open', async () => {
     const { onConfigured } = setup('word-cloud');
 

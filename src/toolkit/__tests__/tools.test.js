@@ -141,8 +141,7 @@ describe('filterTools', () => {
   });
 
   it('keeps only the tools that can run in a room when asked', () => {
-    expect(ids({ groupOnly: true })).toEqual(['budget-ballot', 'open-vote', 'pop-quiz']);
-    expect(ids({ groupOnly: true })).toEqual(['budget-ballot', 'open-vote', 'word-cloud']);
+    expect(ids({ groupOnly: true })).toEqual(['budget-ballot', 'open-vote', 'pop-quiz', 'word-cloud']);
   });
 
   it('combines filters', () => {
@@ -272,6 +271,19 @@ describe("the Pop Quiz's setup and room", () => {
 
   it('is an empty lobby when nobody has joined', () => {
     expect(room.combine([], quiz)).toEqual({ pace: null, players: [] });
+  });
+
+  it('ignores a contribution that is missing or malformed', () => {
+    // The state comes back from a database that other browsers wrote to.
+    const combined = room.combine([null, { nickname: '   ' }, { nickname: 7 }, { host: { q: 'two' } },
+      { nickname: 'Mara', answers: 'none' }], quiz);
+
+    expect(combined.pace).toBeNull();
+    expect(combined.players).toHaveLength(1);
+    expect(combined.players[0]).toMatchObject({ nickname: 'Mara', score: 0 });
+  });
+});
+
 describe("the Word Cloud's room", () => {
   const { room } = findTool('word-cloud');
 
@@ -295,12 +307,6 @@ describe("the Word Cloud's room", () => {
 
   it('ignores a contribution that is missing or malformed', () => {
     // The state comes back from a database that other browsers wrote to.
-    const combined = room.combine([null, { nickname: '   ' }, { nickname: 7 }, { host: { q: 'two' } },
-      { nickname: 'Mara', answers: 'none' }], quiz);
-
-    expect(combined.pace).toBeNull();
-    expect(combined.players).toHaveLength(1);
-    expect(combined.players[0]).toMatchObject({ nickname: 'Mara', score: 0 });
     const combined = room.combine([{ words: ['green'] }, null, { words: 'green' }, { words: [4, null, '  '] }]);
 
     expect(combined.words).toEqual([{ word: 'green', count: 1 }]);
