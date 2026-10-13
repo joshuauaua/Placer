@@ -504,6 +504,10 @@ describe('Dream It', () => {
       choose(/Write your own prompts/);
 
       expect(within(screen.getByRole('list', { name: 'Your prompts' })).getAllByRole('listitem')).toHaveLength(2);
+    });
+  });
+});
+
 describe('Pop Quiz', () => {
   const click = (name) => fireEvent.click(screen.getByRole('button', { name }));
   const start = (nickname = 'Mara') => {
