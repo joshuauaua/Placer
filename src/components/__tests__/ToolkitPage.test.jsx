@@ -129,6 +129,20 @@ describe('the gallery', () => {
     localStorage.clear();
   });
 
+  it('colours each icon in the list by its category, as the grid does', async () => {
+    renderPageAt('/toolkit');
+    await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
+    fireEvent.click(within(screen.getByRole('group', { name: 'View' })).getByRole('button', { name: 'List' }));
+
+    // Street Section Mixer is an Imagine tool in a City Worker colour of its own.
+    const imagine = CATEGORIES.find(({ id }) => id === 'imagine').colour;
+    const mixer = TOOLS.find(({ id }) => id === 'street-mixer');
+    expect(mixer.color).not.toBe(imagine.c700);
+    const icon = screen.getByRole('button', { name: tile(/Street Section Mixer/i) }).firstElementChild;
+    expect(icon).toHaveStyle({ background: imagine.c100, color: imagine.c700 });
+    localStorage.clear();
+  });
+
   it('credits each tool to the organisation that made it', async () => {
     renderPageAt('/toolkit');
 
