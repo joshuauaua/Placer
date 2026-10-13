@@ -120,8 +120,12 @@ function CategoryLabel({ t, tool }) {
   );
 }
 
-/** One tool as a row, for the list view: the same facts as a tile, side by side. */
+/**
+ * One tool as a row, for the list view: the same facts as a tile, side by side, with
+ * its icon in its category's colours, as the tile draws it.
+ */
 function Row({ t, tool, onOpen }) {
+  const colour = findCategory(tool.category)?.colour;
   return (
     <button
       onClick={onOpen}
@@ -129,8 +133,9 @@ function Row({ t, tool, onOpen }) {
       style={{ display: 'flex', alignItems: 'center', gap: 16, width: '100%', textAlign: 'left', cursor: 'pointer',
         flex: 1, minWidth: 0, padding: '16px 20px', border: 'none', background: 'transparent',
         color: t.ink, fontFamily: 'var(--placer-font)' }}>
-      <span style={{ width: 44, height: 44, borderRadius: 12, background: tool.tint, flex: '0 0 auto',
-        boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span style={{ width: 44, height: 44, borderRadius: 12, background: colour?.c100 ?? tool.tint, flex: '0 0 auto',
+        color: colour?.c700 ?? tool.color, boxShadow: `inset 0 0 0 1px ${colour?.c700 ?? tool.color}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Icon name={tool.icon} size={22} stroke={2.1} />
       </span>
       <span style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
