@@ -193,19 +193,37 @@ describe('ProjectDashboardPage', () => {
     expect(await screen.findByRole('heading', { name: 'Riverside Greenway' })).toBeInTheDocument();
   });
 
-  it('adds a tool from the dashboard and goes straight on to configuring it', async () => {
+  it('adds a tool from a dialog of the tools, to the list, without configuring it yet', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
     setup();
     await screen.findByRole('button', { name: 'Configure Poll' });
 
-    fireEvent.click(screen.getByRole('button', { name: /Add a Tool/ }));
+    const add = screen.getByRole('button', { name: 'Add a tool' });
+    expect(add).toHaveTextContent('');
+    fireEvent.click(add);
+    const dialog = within(screen.getByRole('dialog', { name: 'Add a tool' }));
     // Only the tools the project does not have yet.
-    expect(screen.queryByRole('menuitem', { name: 'Poll' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Co-Budget' }));
+    expect(dialog.queryByRole('button', { name: /^Poll/ })).not.toBeInTheDocument();
+    fireEvent.click(dialog.getByRole('button', { name: /^Co-Budget/ }));
 
     expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['open-vote', 'budget-ballot'], 'user-1');
-    expect(await screen.findByRole('dialog', { name: 'Configure Co-Budget' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Configure Co-Budget' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Configure Co-Budget' })).toBeInTheDocument();
+    expect(screen.getAllByText('Not configured')).toHaveLength(2);
+  });
+
+  it('closes the dialog of tools without adding one', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue([]);
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Add a tool' }));
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add a tool' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(saveProjectTools).not.toHaveBeenCalled();
   });
 
   it('lists the tools chosen at setup, each waiting to be configured', async () => {
@@ -379,7 +397,7 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
     setup();
 
     expect(await screen.findByRole('heading', { name: 'My Toolkit' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Add a Tool/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add a tool' })).toBeInTheDocument();
 
     const row = await screen.findByRole('button', { name: /Poll/, expanded: false });
     expect(screen.queryByRole('button', { name: /download qr/i })).not.toBeInTheDocument();

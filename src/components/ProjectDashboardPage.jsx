@@ -258,79 +258,93 @@ function CollaboratorRow({ t, collaborator, onRemove }) {
   );
 }
 
-function ToolMenuItem({ t, tool, onClick }) {
+function ToolChoice({ t, tool, onClick }) {
   return (
     <button
-      role="menuitem"
+      type="button"
       onClick={onClick}
-      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-        padding: '10px 14px', background: 'transparent', color: t.ink, cursor: 'pointer',
-        border: 'none', fontFamily: 'var(--placer-font)', fontWeight: 500, fontSize: 14.5,
-        letterSpacing: '-0.01em', textAlign: 'left' }}
+      style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 12px',
+        background: 'transparent', color: t.ink, cursor: 'pointer', border: 'none', borderRadius: 10,
+        fontFamily: 'var(--placer-font)', textAlign: 'left' }}
       onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-      <Icon name={tool.icon} size={17} stroke={2} style={{ color: tool.color, flex: '0 0 auto' }} />
-      {tool.name}
+      <span style={{ width: 36, height: 36, borderRadius: 10, flex: '0 0 auto', background: tool.tint,
+        boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: t.ink }}>
+        <Icon name={tool.icon} size={18} stroke={2} />
+      </span>
+      <span style={{ minWidth: 0, display: 'block' }}>
+        <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, letterSpacing: '-0.01em' }}>{tool.name}</span>
+        {tool.tagline && <span style={{ display: 'block', fontSize: 12.5, color: t.inkDim }}>{tool.tagline}</span>}
+      </span>
     </button>
   );
 }
 
 /**
- * Adds a tool to the project, from the Toolkit's tools it does not have yet — same
- * dismissal shape as UserMenu's dropdown, which is this app's first one.
+ * Adds a tool to the project: a button that opens the Toolkit's tools it does not have
+ * yet in a dialog. Choosing one only adds it to the list, waiting to be configured.
  */
 function AddToolkitTool({ t, chosen = [], onChoose }) {
   const available = TOOLS.filter((tool) => !chosen.includes(tool.id));
   const [open, setOpen] = useState(false);
-  const wrapRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return undefined;
-
-    const handleKeyDown = (e) => { if (e.key === 'Escape') setOpen(false); };
-    const handlePointerDown = (e) => {
-      if (!wrapRef.current?.contains(e.target)) setOpen(false);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('mousedown', handlePointerDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('mousedown', handlePointerDown);
-    };
-  }, [open]);
 
   return (
-    <div ref={wrapRef} style={{ position: 'relative', display: 'inline-block' }}>
+    <>
       <button
-        aria-haspopup="menu"
-        aria-expanded={open}
+        type="button"
+        aria-haspopup="dialog"
+        aria-label="Add a tool"
+        title="Add a tool"
         disabled={available.length === 0}
-        onClick={() => setOpen((wasOpen) => !wasOpen)}
-        style={{ height: 42, padding: '0 18px', borderRadius: 12, cursor: 'pointer',
-          display: 'inline-flex', alignItems: 'center', gap: 8, background: t.accent,
-          color: t.accentInk, border: '1px solid transparent', fontFamily: 'var(--placer-font)',
-          fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em' }}>
-        <Icon name="plus" size={18} stroke={2.4} />
-        Add a Tool
-        <Icon name={open ? 'chevUp' : 'chevDown'} size={15} stroke={2.2} />
+        onClick={() => setOpen(true)}
+        style={{ width: 42, height: 42, borderRadius: 12, cursor: available.length ? 'pointer' : 'default',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: t.accent,
+          color: t.accentInk, border: '1px solid transparent', opacity: available.length ? 1 : 0.5 }}>
+        <Icon name="plus" size={20} stroke={2.4} />
       </button>
-
       {open && (
-        <div
-          role="menu"
-          aria-label="Toolkit tools"
-          // Hangs from the button's right edge, as the button sits at the card's.
-          style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, zIndex: 10,
-            minWidth: 240, padding: '6px 0', background: t.surface,
-            border: `1px solid ${t.line}`, borderRadius: 12, boxShadow: t.shadow,
-            overflow: 'hidden' }}>
-          {available.map((tool) => (
-            <ToolMenuItem key={tool.id} t={t} tool={tool}
-              onClick={() => { setOpen(false); onChoose(tool.id); }} />
+        <AddToolDialog t={t} tools={available} onClose={() => setOpen(false)}
+          onChoose={(id) => { setOpen(false); onChoose(id); }} />
+      )}
+    </>
+  );
+}
+
+function AddToolDialog({ t, tools, onChoose, onClose }) {
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    panelRef.current?.focus();
+    const handleKeyDown = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: 'fixed', inset: 0, zIndex: 180, background: 'rgba(0, 0, 0, 0.4)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="add-tool-title" tabIndex={-1}
+        style={{ width: '100%', maxWidth: 480, maxHeight: 'min(90vh, 720px)', overflowY: 'auto', padding: 24,
+          background: t.surface, borderRadius: 16, boxShadow: t.shadow, outline: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          marginBottom: 12 }}>
+          <h2 id="add-tool-title" style={{ fontSize: 18, fontWeight: 700, color: t.ink, margin: 0 }}>Add a tool</h2>
+          <button type="button" aria-label="Close" onClick={onClose}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.inkDim, padding: 4,
+              display: 'flex' }}>
+            <Icon name="close" size={18} stroke={2.2} />
+          </button>
+        </div>
+        <div role="list" aria-label="Toolkit tools" style={{ margin: '0 -12px' }}>
+          {tools.map((tool) => (
+            <div role="listitem" key={tool.id}>
+              <ToolChoice t={t} tool={tool} onClick={() => onChoose(tool.id)} />
+            </div>
           ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -766,18 +780,13 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
     }
   };
 
-  // "Add a Tool" adds it to the project and goes straight on to configuring it, since
-  // it is not live until it has been. The dialog waits on the save: configuring
-  // changes the tool's row, which has to exist first.
+  // Adding a tool only puts it on the list, waiting to be configured: its row's
+  // Configure is how it goes live.
   const handleAddTool = async (toolId) => {
-    if (tools.includes(toolId)) {
-      setConfiguring(toolId);
-      return;
-    }
+    if (tools.includes(toolId)) return;
     setTools((current) => [...current, toolId]);
     try {
       await saveProjectTools(project.id, [...tools, toolId], accountId);
-      setConfiguring(toolId);
     } catch (err) {
       console.error('Could not add that tool to the project:', err);
       loadTools(project.id);
