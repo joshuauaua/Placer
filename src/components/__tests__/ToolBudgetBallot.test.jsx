@@ -10,8 +10,11 @@ function mount(Tool, id) {
 }
 
 describe('Co-Budget', () => {
+  // Found once and pressed `times` times: a role query walks the whole page, and sixty
+  // of them in a row was enough to time the test out on CI.
   const add = (label, times) => {
-    for (let i = 0; i < times; i += 1) fireEvent.click(screen.getByRole('button', { name: `One more: ${label}` }));
+    const more = screen.getByRole('button', { name: `One more: ${label}` });
+    for (let i = 0; i < times; i += 1) fireEvent.click(more);
   };
 
   afterEach(() => {

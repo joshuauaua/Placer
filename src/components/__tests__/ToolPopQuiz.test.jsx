@@ -31,11 +31,14 @@ describe('Pop Quiz', () => {
   it('adds questions up to twenty, and removes them down to one', () => {
     mount(PopQuiz, 'pop-quiz');
 
-    for (let i = 0; i < 17; i += 1) click('Add a question');
+    // Found once, and by label rather than role for the removes: a role query walks the
+    // whole page, and thirty-odd in a row came close to timing the test out on CI.
+    const add = screen.getByRole('button', { name: 'Add a question' });
+    for (let i = 0; i < 17; i += 1) fireEvent.click(add);
     expect(screen.getByText('20 of 20 questions')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add a question' })).not.toBeInTheDocument();
 
-    for (let i = 20; i > 1; i -= 1) click(`Remove question ${i}`);
+    for (let i = 20; i > 1; i -= 1) fireEvent.click(screen.getByLabelText(`Remove question ${i}`));
     expect(screen.getByRole('button', { name: 'Remove question 1' })).toBeDisabled();
   });
 
