@@ -1,10 +1,8 @@
 /* PLACER — the holding page's nav bar.
  *
- * A full-width "liquid glass" bar: the wordmark on the left, the site menu on
- * the right. It sits over the page rather than above it, so what scrolls
- * underneath shows through the blur. The glass itself lives in index.css
- * (.placer-glass-nav), since backdrop-filter and the layered highlights read
- * better there than as an inline style.
+ * A full-width solid white bar: the wordmark on the left, the site menu on
+ * the right. It is fixed over the top of the page; its styles live in
+ * index.css (.placer-glass-nav).
  */
 
 import { HamburgerMenu } from './HamburgerMenu';
