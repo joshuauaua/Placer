@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, within } from '@testing-library/react';
 import { BudgetBallot } from '../toolkit/BudgetBallot';
 import { DesireLines } from '../toolkit/DesireLines';
 import { DreamIt } from '../toolkit/DreamIt';
 import { FifteenMinute } from '../toolkit/FifteenMinute';
 import { OpenVote } from '../toolkit/OpenVote';
+import { PopQuiz } from '../toolkit/PopQuiz';
 import { StreetMixer } from '../toolkit/StreetMixer';
+import { WordCloud } from '../toolkit/WordCloud';
 import { findTool } from '../../toolkit/tools';
 import { PROMPTS } from '../../lib/dreamIt';
 import { THEME } from '../../theme';
@@ -502,6 +504,275 @@ describe('Dream It', () => {
       choose(/Write your own prompts/);
 
       expect(within(screen.getByRole('list', { name: 'Your prompts' })).getAllByRole('listitem')).toHaveLength(2);
+describe('Pop Quiz', () => {
+  const click = (name) => fireEvent.click(screen.getByRole('button', { name }));
+  const start = (nickname = 'Mara') => {
+    click('Play this quiz');
+    fireEvent.change(screen.getByLabelText('Nickname'), { target: { value: nickname } });
+    click('Start the quiz');
+  };
+
+  afterEach(() => vi.useRealTimers());
+
+  it('opens on a sample quiz to edit, with room for twenty questions', () => {
+    mount(PopQuiz, 'pop-quiz');
+
+    expect(screen.getByLabelText('Question 1')).toHaveValue('Who wrote “The Death and Life of Great American Cities”?');
+    expect(screen.getByText('3 of 20 questions')).toBeInTheDocument();
+    expect(screen.getByLabelText('Kind of question 2')).toHaveValue('blank');
+    expect(screen.getByLabelText('Time per question')).toHaveValue('20');
+  });
+
+  it('adds questions up to twenty, and removes them down to one', () => {
+    mount(PopQuiz, 'pop-quiz');
+
+    for (let i = 0; i < 17; i += 1) click('Add a question');
+    expect(screen.getByText('20 of 20 questions')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add a question' })).not.toBeInTheDocument();
+
+    for (let i = 20; i > 1; i -= 1) click(`Remove question ${i}`);
+    expect(screen.getByRole('button', { name: 'Remove question 1' })).toBeDisabled();
+  });
+
+  it('will not play a quiz with something missing, and says what', () => {
+    mount(PopQuiz, 'pop-quiz');
+
+    click('Add a question');
+    fireEvent.change(screen.getByLabelText('Kind of question 4'), { target: { value: 'blank' } });
+    click('Play this quiz');
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Write question 4.');
+    expect(screen.getByRole('alert')).toHaveTextContent('Write the answer to question 4.');
+    expect(screen.queryByLabelText('Nickname')).not.toBeInTheDocument();
+  });
+
+  it('asks for a nickname before the first question', () => {
+    mount(PopQuiz, 'pop-quiz');
+
+    click('Play this quiz');
+
+    expect(screen.getByRole('button', { name: 'Start the quiz' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Nickname'), { target: { value: 'Mara' } });
+    click('Start the quiz');
+    expect(screen.getByRole('heading', { name: 'Question 1 of 3' })).toBeInTheDocument();
+  });
+
+  it('scores a right answer more the sooner it comes', () => {
+    vi.useFakeTimers();
+    mount(PopQuiz, 'pop-quiz');
+    start();
+
+    expect(screen.getByRole('timer')).toHaveTextContent('20');
+    act(() => { vi.advanceTimersByTime(10000); });
+    expect(screen.getByRole('timer')).toHaveTextContent('10');
+    click(/Jane Jacobs/);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Right! +750 points.');
+    expect(screen.getByText('750 points so far')).toBeInTheDocument();
+  });
+
+  it('gives nothing for a wrong answer, and shows the right one', () => {
+    mount(PopQuiz, 'pop-quiz');
+    start();
+
+    click(/Le Corbusier/);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Not this time. The answer was A, Jane Jacobs.');
+    expect(screen.getByRole('button', { name: /Jane Jacobs/ })).toHaveTextContent('the right answer');
+  });
+
+  it('checks a filled-in blank without minding how it was typed', () => {
+    mount(PopQuiz, 'pop-quiz');
+    start();
+    click('Skip this question');
+    expect(screen.getByRole('status')).toHaveTextContent('Skipped. The answer was A, Jane Jacobs.');
+    click('Next question');
+
+    fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: ' 15. ' } });
+    click('Answer');
+
+    expect(screen.getByRole('status')).toHaveTextContent(/Right! \+\d+ points\./);
+  });
+
+  it('closes a question when its time runs out', () => {
+    vi.useFakeTimers();
+    mount(PopQuiz, 'pop-quiz');
+    start();
+
+    act(() => { vi.advanceTimersByTime(21000); });
+
+    expect(screen.getByRole('status')).toHaveTextContent('Time ran out. The answer was A, Jane Jacobs.');
+    expect(screen.getByRole('button', { name: /Le Corbusier/ })).toBeDisabled();
+  });
+
+  it('adds the quiz up at the end, and can be played again', () => {
+    mount(PopQuiz, 'pop-quiz');
+    start();
+
+    click(/Jane Jacobs/);
+    click('Next question');
+    click('Skip this question');
+    click('Next question');
+    click(/A painted cycle lane/);
+    click('See your score');
+
+    expect(screen.getByText('Mara, you got 1 of 3 right.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(/^\d+ points$/);
+
+    click('Play again');
+    expect(screen.getByRole('heading', { name: 'Question 1 of 3' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Jane Jacobs/ })).toBeEnabled();
+  });
+});
+
+describe('Word Cloud', () => {
+  const add = (word) => {
+    fireEvent.change(screen.getByLabelText('Your word'), { target: { value: word } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  };
+
+  it('shows the placeholder prompt and an empty cloud', () => {
+    mount(WordCloud, 'word-cloud');
+
+    expect(screen.getByPlaceholderText('One word for this place?')).toBeInTheDocument();
+    expect(screen.getByText(/add a word to see it here/i)).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Word cloud' })).not.toBeInTheDocument();
+  });
+
+  it('adds a word to the cloud, cleaned, and clears the field', () => {
+    mount(WordCloud, 'word-cloud');
+
+    add('  Green! ');
+
+    const cloud = within(screen.getByRole('list', { name: 'Word cloud' }));
+    expect(cloud.getByText('green')).toBeInTheDocument();
+    expect(screen.getByLabelText('Your word')).toHaveValue('');
+    expect(screen.getByText('1 of 5 words.')).toBeInTheDocument();
+  });
+
+  it('does not add the same word twice', () => {
+    mount(WordCloud, 'word-cloud');
+
+    add('green');
+    add('GREEN');
+
+    expect(within(screen.getByRole('list', { name: 'Your words' })).getAllByRole('listitem')).toHaveLength(1);
+  });
+
+  it('stops taking words at the limit, until one is removed', () => {
+    mount(WordCloud, 'word-cloud');
+
+    for (const word of ['green', 'quiet', 'busy', 'windy', 'loud']) add(word);
+    expect(screen.getByLabelText('Your word')).toBeDisabled();
+    expect(screen.getByLabelText('Your word')).toHaveAttribute('maxLength', '20');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove quiet' }));
+
+    expect(screen.getByLabelText('Your word')).toBeEnabled();
+    expect(within(screen.getByRole('list', { name: 'Word cloud' })).queryByText('quiet')).not.toBeInTheDocument();
+  });
+
+  it('lets someone type their own prompt, purely for display', () => {
+    mount(WordCloud, 'word-cloud');
+
+    fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'What is missing here?' } });
+
+    expect(screen.getByLabelText('The prompt')).toHaveValue('What is missing here?');
+  });
+
+  it('lists each answer with how many times it was given, under the cloud', () => {
+    mount(WordCloud, 'word-cloud');
+
+    add('green');
+    add('quiet');
+
+    const answers = within(screen.getByRole('list', { name: /answers and how many times/i }));
+    expect(answers.getAllByRole('listitem').map((item) => item.textContent)).toEqual(['green1', 'quiet1']);
+  });
+
+  it('shows the prompt as it was written, in the corner of the cloud card', () => {
+    mount(WordCloud, 'word-cloud');
+
+    fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'What is missing here?' } });
+
+    const card = within(screen.getByRole('heading', { name: 'Your cloud' }).closest('section'));
+    expect(card.getByText('What is missing here?')).toBeInTheDocument();
+  });
+
+  describe('with a timer', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('has none to begin with, and offers 10 to 200 seconds in tens', () => {
+      mount(WordCloud, 'word-cloud');
+
+      expect(screen.getByLabelText('Timer')).toHaveValue('');
+      expect(within(screen.getByLabelText('Timer')).getAllByRole('option').map((option) => option.value))
+        .toEqual(['', ...Array.from({ length: 20 }, (_, index) => String((index + 1) * 10))]);
+      expect(screen.queryByRole('button', { name: /start the/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('timer')).not.toBeInTheDocument();
+    });
+
+    it('pauses and carries on from where it was', () => {
+      vi.useFakeTimers();
+      mount(WordCloud, 'word-cloud');
+
+      fireEvent.change(screen.getByLabelText('Timer'), { target: { value: '20' } });
+      expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Start the 20 second timer' }));
+      act(() => { vi.advanceTimersByTime(5000); });
+      fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+
+      expect(screen.getByRole('timer')).toHaveTextContent('0:15 · paused');
+      act(() => { vi.advanceTimersByTime(60000); });
+      expect(screen.getByRole('timer')).toHaveTextContent('0:15 · paused');
+      expect(screen.getByLabelText('Your word')).toBeEnabled();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+      expect(screen.getByRole('timer')).toHaveTextContent('0:15');
+      act(() => { vi.advanceTimersByTime(5000); });
+      expect(screen.getByRole('timer')).toHaveTextContent('0:10');
+    });
+
+    it('stops on request, which finishes the exercise and locks the cloud', () => {
+      vi.useFakeTimers();
+      mount(WordCloud, 'word-cloud');
+
+      fireEvent.change(screen.getByLabelText('Timer'), { target: { value: '20' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Start the 20 second timer' }));
+      add('green');
+      act(() => { vi.advanceTimersByTime(5000); });
+      fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+
+      expect(screen.getByRole('timer')).toHaveTextContent('Finished');
+      expect(screen.getByLabelText('Your word')).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Remove green' })).toBeDisabled();
+      expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument();
+      expect(within(screen.getByRole('list', { name: 'Word cloud' })).getByText('green')).toBeInTheDocument();
+    });
+
+    it('counts down once started, then stops taking words', () => {
+      vi.useFakeTimers();
+      mount(WordCloud, 'word-cloud');
+
+      fireEvent.change(screen.getByLabelText('Timer'), { target: { value: '20' } });
+      expect(screen.queryByRole('timer')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Start the 20 second timer' }));
+      expect(screen.getByRole('timer')).toHaveTextContent('0:20');
+
+      add('green');
+      act(() => { vi.advanceTimersByTime(8000); });
+      expect(screen.getByRole('timer')).toHaveTextContent('0:12');
+      expect(screen.getByLabelText('Your word')).toBeEnabled();
+
+      act(() => { vi.advanceTimersByTime(13000); });
+      expect(screen.getByRole('timer')).toHaveTextContent('Finished');
+      expect(screen.getByLabelText('Your word')).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Remove green' })).toBeDisabled();
+      expect(within(screen.getByRole('list', { name: 'Word cloud' })).getByText('green')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Reset the timer' }));
+      expect(screen.getByLabelText('Your word')).toBeEnabled();
     });
   });
 });

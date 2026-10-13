@@ -332,9 +332,9 @@ function MainApp({ initialView = 'welcome' }) {
   const showPublicProfile = (id) => navigate(`/people/${encodeURIComponent(id)}`);
   // Sent straight to the chosen tool with the project attached, rather than
   // to the gallery, because the gallery has nowhere to carry ?project= through into
-  // picking one. Only 'budget-ballot' and 'open-vote' can actually host a room today —
-  // see supabase/rooms.sql's toolkit_rooms_tool_known constraint — so ?project=
-  // is inert on any other tool until it opts in too.
+  // picking one. Only 'budget-ballot', 'open-vote', 'word-cloud' and 'pop-quiz' can
+  // actually host a room today — see supabase/rooms.sql's toolkit_rooms_tool_known
+  // constraint — so ?project= is inert on any other tool until it opts in too.
   const showProjectToolkit = (id, toolId) =>
     navigate(`/toolkit/${encodeURIComponent(toolId)}?project=${encodeURIComponent(id)}`);
   // A room the project already has, from its dashboard — the dashboard has already
@@ -799,6 +799,7 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'projectNew' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <ProjectSetupPage t={t} accountId={accountId} accountName={profile.name}
+                  accountLocation={profile.location}
                   organisations={organisations}
                   initialOrganisationId={newProjectOrganisationId}
                   onSaved={(project) => showProjectDashboard(project.id)}

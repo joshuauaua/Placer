@@ -85,7 +85,7 @@ describe('the gallery', () => {
     for (const tool of TOOLS) {
       expect(screen.getByRole('button', { name: tile(new RegExp(tool.name, 'i')) })).toBeInTheDocument();
     }
-    expect(TOOLS).toHaveLength(10);
+    expect(TOOLS).toHaveLength(11);
   });
 
   it('shows every tool as one set of cards, each labelled with its category', async () => {
@@ -161,7 +161,9 @@ describe('the gallery', () => {
 
     openMenu();
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Works with a group' }));
-    expect(screen.getByText('No tools match those filters.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: tile(/Pop Quiz/i) })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: tile(/Word Cloud/i) })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: tile(/Desire Lines/i) })).not.toBeInTheDocument();
 
     openMenu();
     fireEvent.click(screen.getByRole('menuitemradio', { name: 'All tools' }));
@@ -179,6 +181,9 @@ describe('the gallery', () => {
     // Newest first to begin with: Dream It is the latest tool added.
     expect(sorts.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
     expect(names()[0]).toBe('Dream It');
+    // Newest first to begin with: Pop Quiz and Word Cloud were both added last, on the same day.
+    expect(sorts.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
+    expect(names().slice(0, 2).sort()).toEqual(['Pop Quiz', 'Word Cloud']);
 
     fireEvent.click(sorts.getByRole('button', { name: 'A-Z' }));
     const alphabetical = TOOLS.map((tool) => tool.name).sort((a, b) => a.localeCompare(b));
@@ -224,7 +229,7 @@ describe('the gallery', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Category:/ }));
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Works with a group' }));
     fireEvent.click(screen.getByRole('button', { name: /^Category:/ }));
-    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Understand' }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Imagine' }));
     expect(screen.getByText('No tools match those filters.')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));

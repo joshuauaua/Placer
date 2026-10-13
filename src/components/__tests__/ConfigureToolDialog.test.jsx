@@ -31,6 +31,13 @@ vi.mock('../PlaceSearch', () => ({
   ),
 }));
 
+// Where this machine is says nothing about the project: the suggestion goes only on
+// the places a test gives it.
+vi.mock('../../lib/currency', async (importOriginal) => {
+  const real = await importOriginal();
+  return { ...real, suggestCurrency: (options) => real.suggestCurrency({ timeZone: '', locales: [], ...options }) };
+});
+
 vi.mock('../../services/rooms', () => ({
   createRoom: vi.fn(() => Promise.resolve({ id: 'room-1', pin: '123456', facilitatorToken: 'facilitator-1' })),
 }));
@@ -208,6 +215,64 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
       { question: 'Car-free on Sundays?', answers: ['Yes', 'No', 'Only in summer'] }, null);
   });
 
+  it('asks for the Pop Quiz questions, then the time for each, then how long it stays open', async () => {
+    const { onConfigured } = setup('pop-quiz');
+
+    expect(screen.getByRole('heading', { name: 'Questions' })).toBeInTheDocument();
+    next();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Write question 1.');
+
+    fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'Which way is north?' } });
+    ['Up', 'Down', 'Left', 'Right'].forEach((choice, index) => {
+      fireEvent.change(screen.getByLabelText(`Choice ${'ABCD'[index]} for question 1`), { target: { value: choice } });
+    });
+    fireEvent.click(screen.getByLabelText('B is the right answer to question 1'));
+    fireEvent.click(screen.getByRole('button', { name: 'Add a question' }));
+    fireEvent.change(screen.getByLabelText('Kind of question 2'), { target: { value: 'blank' } });
+    fireEvent.change(screen.getByLabelText('Question 2'), { target: { value: 'The square is called ___.' } });
+    fireEvent.change(screen.getByLabelText('Answer to question 2'), { target: { value: 'Möllan' } });
+    next();
+
+    expect(screen.getByRole('heading', { name: 'Time' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Time per question'), { target: { value: '30' } });
+    next();
+    save();
+
+    await waitFor(() => expect(onConfigured).toHaveBeenCalled());
+    expect(createRoom).toHaveBeenCalledWith('pop-quiz', 'proj-1', expect.any(String), {
+      seconds: 30,
+      questions: [
+        { kind: 'choice', text: 'Which way is north?', choices: ['Up', 'Down', 'Left', 'Right'], correct: 1 },
+        { kind: 'blank', text: 'The square is called ___.', answer: 'Möllan' },
+      ],
+    }, null);
+  });
+
+  it('asks for the Word Cloud prompt, then the words per person, then how long it stays open', async () => {
+    const { onConfigured } = setup('word-cloud');
+
+    expect(screen.getByRole('heading', { name: 'Prompt' })).toBeInTheDocument();
+    next();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Write what you want people to answer.');
+    fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'One word for the square?' } });
+    next();
+
+    expect(screen.getByRole('heading', { name: 'Words' })).toBeInTheDocument();
+    expect(screen.getByText('One word for the square?')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Words per person'), { target: { value: '1' } });
+    expect(screen.getByLabelText('Timer')).toHaveValue('');
+    expect(within(screen.getByLabelText('Timer')).getAllByRole('option')).toHaveLength(21);
+    fireEvent.change(screen.getByLabelText('Timer'), { target: { value: '90' } });
+    next();
+
+    expect(screen.getByRole('heading', { name: 'Open for' })).toBeInTheDocument();
+    save();
+
+    await waitFor(() => expect(onConfigured).toHaveBeenCalled());
+    expect(createRoom).toHaveBeenCalledWith('word-cloud', 'proj-1', expect.any(String),
+      { prompt: 'One word for the square?', limit: 1, timer: 90 }, null);
+  });
+
   describe('starting on a date', () => {
     const DATED = { ...PROJECT, startDate: '2026-11-01', endDate: '2026-12-31' };
     const toLastStep = () => {
@@ -285,6 +350,12 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
 
     expect(screen.getByLabelText('The question')).toHaveValue('Car-free on Sundays?');
+  });
+
+  it('starts a Co-Budget in the currency where the project is', () => {
+    setup('budget-ballot', { project: { ...PROJECT, locations: ['Izmir, Türkiye'] } });
+
+    expect(screen.getByLabelText('Currency')).toHaveValue('TRY');
   });
 
   it('asks a Co-Budget for its budget, then its posts, then how long it stays open', async () => {

@@ -83,7 +83,7 @@ alter table public.toolkit_rooms add constraint toolkit_rooms_pin_shape
 -- tool opts in (src/toolkit/tools.js is the other half of the pair).
 alter table public.toolkit_rooms drop constraint if exists toolkit_rooms_tool_known;
 alter table public.toolkit_rooms add constraint toolkit_rooms_tool_known
-  check (tool in ('budget-ballot', 'open-vote'));
+  check (tool in ('budget-ballot', 'open-vote', 'word-cloud', 'pop-quiz'));
 
 revoke all on public.toolkit_rooms from anon;
 

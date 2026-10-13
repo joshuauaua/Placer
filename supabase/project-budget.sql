@@ -10,6 +10,7 @@
 --   has_budget   the answer: true or false. No row at all means it was not answered.
 --   amount       how much, when there is one and they said; null otherwise
 --   currency     an ISO 4217 code for the amount, from the few the form offers
+--                (src/lib/currency.js's CURRENCIES, which Co-Budget offers too)
 --
 -- Run this once in the Supabase SQL editor after projects.sql and media-photos.sql. It
 -- is written to be safe to re-run.
@@ -28,7 +29,7 @@ alter table public.project_budgets add constraint project_budgets_amount_shape
 
 alter table public.project_budgets drop constraint if exists project_budgets_currency_known;
 alter table public.project_budgets add constraint project_budgets_currency_known
-  check (currency in ('EUR', 'SEK', 'DKK', 'NOK', 'GBP', 'USD'));
+  check (currency in ('EUR', 'SEK', 'NOK', 'DKK', 'GBP', 'USD', 'CHF', 'PLN', 'TRY'));
 
 alter table public.project_budgets enable row level security;
 

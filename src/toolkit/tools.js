@@ -44,6 +44,10 @@
  * tool as `room.config`. A room opened without one — or before there was such a
  * thing — has a null `room.config`, and the tool behaves as it does outside a room.
  *
+ * `credit` is optional: a sentence acknowledging where the method comes from, shown
+ * under who made it wherever the tool describes itself (ToolCover, ToolLayout,
+ * ConfigureToolDialog).
+ *
  * `launch` marks a tool that is a flow of App's own rather than a component on the
  * Toolkit's page: Get started on its cover hands over to that flow (ToolkitPage's
  * onLaunchTool), carrying the project it was opened for. Idea Visualizer is one —
@@ -70,11 +74,20 @@ import { FifteenMinute } from '../components/toolkit/FifteenMinute';
 import { OpenVote } from '../components/toolkit/OpenVote';
 import { AnswersStep, OpenVoteSetup, QuestionStep } from '../components/toolkit/OpenVoteSetup';
 import { OpenVoteOnPage } from '../components/toolkit/OpenVoteOnPage';
+import { PopQuiz } from '../components/toolkit/PopQuiz';
+import { PopQuizSetup, QuestionsStep, TimeStep } from '../components/toolkit/PopQuizSetup';
 import { ReimagineASpace } from '../components/toolkit/ReimagineASpace';
 import { SiteMapping } from '../components/toolkit/SiteMapping';
 import { SocialSpaceSurvey } from '../components/toolkit/SocialSpaceSurvey';
 import { StationaryActivityMap } from '../components/toolkit/StationaryActivityMap';
+
+// The Gehl tools are built on the Public Life Data Protocol, and say whose it is.
+const PUBLIC_LIFE_PROTOCOL_CREDIT = 'The Public Life Data Protocol was jointly developed by Gehl Institute, '
+  + 'Gehl, the City of Copenhagen, The City of San Francisco, and Seattle Department of Transportation.';
 import { StreetMixer } from '../components/toolkit/StreetMixer';
+import { WordCloud } from '../components/toolkit/WordCloud';
+import { WordCloudOnPage } from '../components/toolkit/WordCloudOnPage';
+import { PromptStep, WordCloudSetup, WordsStep } from '../components/toolkit/WordCloudSetup';
 import { CHARACTER } from '../theme';
 import {
   ballotSetupProblems, budgetProblems, combineBallots, defaultBallotSetup, emptyBallot, postProblems,
@@ -82,6 +95,13 @@ import {
 import {
   answerProblems, combineVotes, defaultVoteSetup, emptyVote, questionProblems, voteSetupProblems,
 } from '../lib/openVote';
+import {
+  combineQuiz, defaultQuizSetup, emptyQuizState, questionProblems as quizQuestionProblems, quizSetupProblems,
+  timeProblems,
+} from '../lib/popQuiz';
+import {
+  cloudSetupProblems, combineWords, defaultCloudSetup, emptyWords, promptProblems, wordsProblems,
+} from '../lib/wordCloud';
 
 // Each tool wears one of the three character colours: `color` is the 700,
 // for text, icons and outlines on white, and `tint` the 100, for fills with ink
@@ -210,6 +230,63 @@ export const TOOLS = [
     },
   },
   {
+    id: 'pop-quiz',
+    added: '2026-10-12',
+    category: 'understand',
+    name: 'Pop Quiz',
+    tagline: 'Twenty questions, a clock, and a scoreboard.',
+    blurb: 'Write a quiz of up to twenty questions, each with four choices or a blank to fill in. Everybody joins with a nickname, the questions go up one at a time, and a right answer scores more the sooner it comes — a quick way to find out what a room already knows about a place.',
+    ...tone(CHARACTER.cityWorker),
+    icon: 'flask',
+    createdBy: 'PLACER',
+    component: PopQuiz,
+    setup: {
+      defaults: defaultQuizSetup,
+      problems: quizSetupProblems,
+      Form: PopQuizSetup,
+      steps: [
+        { title: 'Questions', Form: QuestionsStep, problems: quizQuestionProblems },
+        { title: 'Time', Form: TimeStep, problems: timeProblems },
+      ],
+    },
+    onProjectPage: {
+      heading: 'Take the pop quiz',
+    },
+    room: {
+      empty: emptyQuizState,
+      combine: combineQuiz,
+    },
+  },
+  {
+    id: 'word-cloud',
+    added: '2026-10-12',
+    category: 'understand',
+    name: 'Word Cloud',
+    tagline: 'Ask anything, and watch the answers gather.',
+    blurb: 'Type whatever you want to put to a room and let everybody answer in a few words of their own. Each word joins the cloud as it is added, and grows every time another person says it — so what the room agrees on is the first thing you read.',
+    ...tone(CHARACTER.cityWorker),
+    icon: 'cloud',
+    createdBy: 'PLACER',
+    component: WordCloud,
+    setup: {
+      defaults: defaultCloudSetup,
+      problems: cloudSetupProblems,
+      Form: WordCloudSetup,
+      steps: [
+        { title: 'Prompt', Form: PromptStep, problems: promptProblems },
+        { title: 'Words', Form: WordsStep, problems: wordsProblems },
+      ],
+    },
+    onProjectPage: {
+      heading: 'Tell us in a word',
+      Embed: WordCloudOnPage,
+    },
+    room: {
+      empty: emptyWords,
+      combine: combineWords,
+    },
+  },
+  {
     id: 'social-space-survey',
     added: '2026-09-17',
     category: 'understand',
@@ -219,6 +296,7 @@ export const TOOLS = [
     ...tone(CHARACTER.practitioner),
     icon: 'bench',
     createdBy: 'Gehl Institute',
+    credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
     component: SocialSpaceSurvey,
   },
   {
@@ -231,6 +309,7 @@ export const TOOLS = [
     ...tone(CHARACTER.cityWorker),
     icon: 'pin',
     createdBy: 'PLACER',
+    credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
     component: SiteMapping,
   },
   {
@@ -243,6 +322,7 @@ export const TOOLS = [
     ...tone(CHARACTER.citizen),
     icon: 'grid',
     createdBy: 'PLACER',
+    credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
     component: StationaryActivityMap,
   },
   {

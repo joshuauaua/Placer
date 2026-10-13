@@ -49,6 +49,11 @@ export function ToolLayout({ t, tool, onBack, actions, breadcrumb = null, childr
               By {tool.createdBy}
             </p>
           )}
+          {tool.credit && (
+            <p style={{ marginTop: 8, fontSize: 13, color: t.inkFaint, lineHeight: 1.5, maxWidth: 660 }}>
+              {tool.credit}
+            </p>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {actions}
