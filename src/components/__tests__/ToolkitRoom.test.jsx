@@ -45,7 +45,9 @@ describe('a room set up by its project', () => {
 
     renderAt('/toolkit/budget-ballot', 'room=room-1');
 
-    const more = await screen.findByRole('button', { name: 'One more: Water fountain' });
+    // The file's first test pays for its first render too: a busy run can need longer
+    // than findByRole's one second.
+    const more = await screen.findByRole('button', { name: 'One more: Water fountain' }, { timeout: 3000 });
     for (let i = 0; i < 4; i += 1) fireEvent.click(more);
     // €4,500 each, so €20,000 buys four.
     expect(more).toBeDisabled();
