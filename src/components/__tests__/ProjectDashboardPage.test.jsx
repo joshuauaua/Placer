@@ -19,7 +19,7 @@ import {
   saveProjectTools,
   updateProject,
 } from '../../services/projects';
-import { closeRoom, createRoom, deleteRoom } from '../../services/rooms';
+import { closeRoom, createRoom, deleteRoom, rescheduleRoom, setRoomCloses } from '../../services/rooms';
 import { decideAccess, readAccessRequests, removeAccess } from '../../services/projects';
 import { readPreferences, readProjectResponses, saveProjectResponses } from '../../services/notifications';
 import { hostedRoom } from '../../toolkit/rooms';
@@ -73,6 +73,8 @@ vi.mock('../../services/notifications', async (importOriginal) => ({
 
 vi.mock('../../services/rooms', () => ({
   createRoom: vi.fn(() => Promise.resolve({ id: 'room-9', pin: '123456', facilitatorToken: 'facilitator-9' })),
+  rescheduleRoom: vi.fn(() => Promise.resolve({})),
+  setRoomCloses: vi.fn(() => Promise.resolve('2026-11-21T00:00:00Z')),
   closeRoom: vi.fn(() => Promise.resolve(true)),
   deleteRoom: vi.fn(() => Promise.resolve(true)),
 }));
@@ -192,19 +194,37 @@ describe('ProjectDashboardPage', () => {
     expect(await screen.findByRole('heading', { name: 'Riverside Greenway' })).toBeInTheDocument();
   });
 
-  it('adds a tool from the dashboard and goes straight on to configuring it', async () => {
+  it('adds a tool from a dialog of the tools, to the list, without configuring it yet', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
     setup();
     await screen.findByRole('button', { name: 'Configure Poll' });
 
-    fireEvent.click(screen.getByRole('button', { name: /Add a Tool/ }));
+    const add = screen.getByRole('button', { name: 'Add a tool' });
+    expect(add).toHaveTextContent('');
+    fireEvent.click(add);
+    const dialog = within(screen.getByRole('dialog', { name: 'Add a tool' }));
     // Only the tools the project does not have yet.
-    expect(screen.queryByRole('menuitem', { name: 'Poll' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Co-Budget' }));
+    expect(dialog.queryByRole('button', { name: /^Poll/ })).not.toBeInTheDocument();
+    fireEvent.click(dialog.getByRole('button', { name: /^Co-Budget/ }));
 
     expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['open-vote', 'budget-ballot'], 'user-1');
-    expect(await screen.findByRole('dialog', { name: 'Configure Co-Budget' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Configure Co-Budget' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Configure Co-Budget' })).toBeInTheDocument();
+    expect(screen.getAllByText('Not configured')).toHaveLength(2);
+  });
+
+  it('closes the dialog of tools without adding one', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue([]);
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Add a tool' }));
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add a tool' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(saveProjectTools).not.toHaveBeenCalled();
   });
 
   it('lists the tools chosen at setup, each waiting to be configured', async () => {
@@ -378,7 +398,7 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
     setup();
 
     expect(await screen.findByRole('heading', { name: 'My Toolkit' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Add a Tool/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add a tool' })).toBeInTheDocument();
 
     const row = await screen.findByRole('button', { name: /Poll/, expanded: false });
     expect(screen.queryByRole('button', { name: /download qr/i })).not.toBeInTheDocument();
@@ -395,6 +415,122 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
 
     fireEvent.click(row);
     expect(screen.queryByRole('region', { name: 'Poll rooms' })).not.toBeInTheDocument();
+  });
+
+  it('opens another room of a tool that has one live, set up on its own', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open another Poll' }));
+    const dialog = screen.getByRole('dialog', { name: 'Configure Poll' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Get started' }));
+    fireEvent.change(within(dialog).getByLabelText('The question'), { target: { value: 'Do we need more benches?' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save and go live' }));
+
+    await waitFor(() => expect(createRoom).toHaveBeenCalledWith('open-vote', 'proj-1', '30d',
+      { question: 'Do we need more benches?', answers: ['Yes', 'No', 'Undecided'] }, null));
+    expect(closeRoom).not.toHaveBeenCalled();
+  });
+
+  it('tells a tool\'s live rooms apart by what each was set up with', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    vi.mocked(readProjectRooms).mockResolvedValue([
+      { ...LONG_ROOM, config: { question: 'Should the square be car-free?' } },
+      { ...LONG_ROOM, id: 'room-3', contributions: 4, config: { question: 'Do we need more benches?' } },
+    ]);
+    setup();
+
+    expect(await screen.findByText('2 live')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Poll/, expanded: false }));
+
+    const rooms = within(screen.getByRole('region', { name: 'Poll rooms' }));
+    expect(rooms.getByText('Should the square be car-free?')).toBeInTheDocument();
+    expect(rooms.getByText('Do we need more benches?')).toBeInTheDocument();
+    expect(rooms.getAllByRole('button', { name: /download qr/i })).toHaveLength(2);
+  });
+
+  describe('changing a room', () => {
+    // Local noon on 10 October 2026, so the calendar's days are the same everywhere.
+    const NOW = new Date(2026, 9, 10, 12);
+    const DAY = 86400000;
+    const pollRow = async () => fireEvent.click(await screen.findByRole('button', { name: /Poll/, expanded: false }));
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(NOW);
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('edits all of a room that has not started yet: its setup, when it starts and for how long', async () => {
+      const opens = new Date(2026, 10, 1);
+      vi.mocked(readProject).mockResolvedValue({ ...PROJECT, startDate: '2026-11-01', endDate: '2026-12-31' });
+      vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+      vi.mocked(readProjectRooms).mockResolvedValue([{
+        id: 'room-5', tool: 'open-vote', pin: '123456', joinCode: 'b'.repeat(32), facilitatorToken: 'facilitator-5',
+        status: 'scheduled', contributions: 0, createdAt: new Date(NOW.getTime() - DAY).toISOString(),
+        opensAt: opens.toISOString(), expiresAt: new Date(opens.getTime() + 30 * DAY).toISOString(),
+        config: { question: 'More benches?', answers: ['Yes', 'No'] },
+      }]);
+      setup();
+      await pollRow();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Edit More benches?' }));
+      const dialog = within(screen.getByRole('dialog', { name: 'Edit Poll' }));
+      expect(dialog.getByLabelText('The question')).toHaveValue('More benches?');
+      fireEvent.change(dialog.getByLabelText('The question'), { target: { value: 'Even more benches?' } });
+      fireEvent.click(dialog.getByRole('button', { name: 'Next' }));
+      fireEvent.click(dialog.getByRole('button', { name: 'Next' }));
+      expect(dialog.getByLabelText('On a date')).toBeChecked();
+      expect(dialog.getByLabelText('Open for')).toHaveValue('30d');
+      fireEvent.change(dialog.getByLabelText('Open for'), { target: { value: '1w' } });
+      fireEvent.click(dialog.getByRole('button', { name: 'Save changes' }));
+
+      await waitFor(() => expect(rescheduleRoom).toHaveBeenCalledWith('room-5', {
+        lifetime: '1w', config: { question: 'Even more benches?', answers: ['Yes', 'No'] }, opensOn: '2026-11-01',
+      }));
+      expect(createRoom).not.toHaveBeenCalled();
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    });
+
+    it('moves when a live room closes, within ninety days of when it opened, and nothing else', async () => {
+      vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+      vi.mocked(readProjectRooms).mockResolvedValue([{
+        ...LONG_ROOM, createdAt: NOW.toISOString(), expiresAt: new Date(NOW.getTime() + 30 * DAY).toISOString(),
+        config: { question: 'Car-free Sundays?' },
+      }]);
+      setup();
+      await pollRow();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Change when Car-free Sundays? closes' }));
+      const dialog = within(screen.getByRole('dialog', { name: 'Change when it closes' }));
+      expect(dialog.queryByLabelText('The question')).not.toBeInTheDocument();
+      expect(dialog.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+      fireEvent.click(dialog.getByLabelText('Closes at the end of'));
+      const calendar = within(screen.getByRole('dialog', { name: 'Choose the closing day' }));
+      expect(calendar.getByRole('button', { name: '7 January 2027' })).toBeEnabled();
+      expect(calendar.getByRole('button', { name: '8 January 2027' })).toBeDisabled();
+      fireEvent.click(calendar.getByRole('button', { name: '20 November 2026' }));
+      fireEvent.click(dialog.getByRole('button', { name: 'Save' }));
+
+      await waitFor(() => expect(setRoomCloses).toHaveBeenCalledWith('room-1', '2026-11-20'));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    });
+
+    it('leaves a room joined by its PIN to its two hours', async () => {
+      vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+      vi.mocked(readProjectRooms).mockResolvedValue([{
+        ...LONG_ROOM, createdAt: NOW.toISOString(), expiresAt: new Date(NOW.getTime() + 2 * 3600000).toISOString(),
+      }]);
+      setup();
+      await pollRow();
+
+      const rooms = within(screen.getByRole('region', { name: 'Poll rooms' }));
+      expect(rooms.getByRole('button', { name: /^open$/i })).toBeInTheDocument();
+      expect(rooms.queryByRole('button', { name: /^Edit|^Change when/ })).not.toBeInTheDocument();
+    });
   });
 
   it('does not open out a tool with no room', async () => {

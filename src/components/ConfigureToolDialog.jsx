@@ -27,10 +27,12 @@ import {
   markProjectToolConfigured, readProjectSite, readProjectToolConfig, removeProjectImageFile, saveProjectSite,
   saveProjectToolConfig, uploadSceneImage,
 } from '../services/projects';
-import { createRoom } from '../services/rooms';
+import { createRoom, rescheduleRoom } from '../services/rooms';
 import { checkPickedImage } from '../services/media';
 import { suggestCurrency } from '../lib/currency';
-import { ROOM_LIFETIMES, formatRoomDate, rememberHostedRoom, scheduleRange } from '../toolkit/rooms';
+import {
+  ROOM_LIFETIMES, formatRoomDate, localDay, rememberHostedRoom, roomLifetime, scheduleRange,
+} from '../toolkit/rooms';
 import { findCategory, projectSetupKind, setupSteps } from '../toolkit/tools';
 import { SetupSteps } from './toolkit/SetupSteps';
 import { SiteScopePicker } from './toolkit/SiteScope';
@@ -293,32 +295,43 @@ function startsProblems(project, starts) {
 /**
  * A tool that runs in a room: its own setup, in as many stages as it asks for
  * (setupSteps), and then when the project's room starts and how long it stays open as
- * the last.
+ * the last. Given a `room` that has not started yet, it edits that room instead of
+ * opening another, starting from everything it was opened with.
  */
-function RoomForm({ t, project, tool, busy, setBusy, onDone, onError, onCancel }) {
+function RoomForm({ t, project, tool, room = null, busy, setBusy, onDone, onError, onCancel }) {
   const [setup, setSetup] = useState(() => {
+    if (room?.config && Object.keys(room.config).length > 0) return room.config;
     const defaults = tool.setup?.defaults() ?? null;
     // A setup counted in money starts in the currency where the project is.
     if (!defaults?.currency) return defaults;
     return { ...defaults, currency: suggestCurrency({ places: project.locations ?? [], fallback: defaults.currency }) };
   });
-  const [lifetime, setLifetime] = useState(DEFAULT_PROJECT_LIFETIME);
-  const [starts, setStarts] = useState({ mode: 'now', date: '' });
+  const [lifetime, setLifetime] = useState(() => (room && roomLifetime(room)) || DEFAULT_PROJECT_LIFETIME);
+  const [starts, setStarts] = useState(() => (room?.opensAt
+    ? { mode: 'date', date: localDay(room.opensAt) } : { mode: 'now', date: '' }));
   const staged = setupSteps(tool).length > 1;
+  // When it starts is asked for alongside how long it stays open: always for a room
+  // being changed, since it was scheduled, and otherwise for a tool set up in stages.
+  const scheduling = staged || Boolean(room);
 
   const save = async () => {
     if (busy) return;
     setBusy(true);
     onError(null);
     try {
-      const opensOn = staged && starts.mode === 'date' ? starts.date : null;
-      const room = await createRoom(tool.id, project.id, lifetime, setup, opensOn);
-      // This browser can run the room as its facilitator straight away.
-      rememberHostedRoom(room.id, { pin: room.pin, token: room.facilitatorToken, code: room.joinCode ?? null });
+      const opensOn = scheduling && starts.mode === 'date' ? starts.date : null;
+      if (room) {
+        await rescheduleRoom(room.id, { lifetime, config: setup, opensOn });
+      } else {
+        const opened = await createRoom(tool.id, project.id, lifetime, setup, opensOn);
+        // This browser can run the room as its facilitator straight away.
+        rememberHostedRoom(opened.id, { pin: opened.pin, token: opened.facilitatorToken, code: opened.joinCode ?? null });
+      }
       onDone();
     } catch (err) {
-      console.error(`Could not open a room for ${tool.name}:`, err);
-      onError(err?.message ?? `Could not open a room for ${tool.name}.`);
+      const doing = room ? `change the room for ${tool.name}` : `open a room for ${tool.name}`;
+      console.error(`Could not ${doing}:`, err);
+      onError(err?.message ?? `Could not ${doing}.`);
       setBusy(false);
     }
   };
@@ -354,13 +367,19 @@ function RoomForm({ t, project, tool, busy, setBusy, onDone, onError, onCancel }
     }]
     : [{
       title: null,
-      content: <>{intro}{toolSteps[0]?.content}{openFor}</>,
-      problems: toolSteps[0]?.problems ?? [],
+      content: (
+        <>
+          {intro}{toolSteps[0]?.content}
+          {scheduling && <StartsField t={t} project={project} starts={starts} onChange={setStarts} busy={busy} />}
+          {openFor}
+        </>
+      ),
+      problems: [...(toolSteps[0]?.problems ?? []), ...(scheduling ? startsProblems(project, starts) : [])],
     }];
 
   return (
     <SetupSteps t={t} steps={steps} busy={busy} onCancel={onCancel} onFinish={save}
-      finishLabel="Save and go live" busyLabel="Saving…" />
+      finishLabel={room ? 'Save changes' : 'Save and go live'} busyLabel="Saving…" />
   );
 }
 
@@ -456,10 +475,15 @@ function Intro({ t, tool, kind, onStart, onCancel }) {
   );
 }
 
-export function ConfigureToolDialog({ t, project, tool, onClose, onConfigured }) {
+/**
+ * Configuring a tool for a project. Given `room`, one of the project's rooms that has
+ * not started yet, it edits that room instead — straight onto the form, since the
+ * introduction is for a tool not yet set up.
+ */
+export function ConfigureToolDialog({ t, project, tool, room = null, onClose, onConfigured }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] = useState(Boolean(room));
   const panelRef = useRef(null);
   const kind = projectSetupKind(tool);
   const SetupForm = FORMS[kind];
@@ -486,7 +510,7 @@ export function ConfigureToolDialog({ t, project, tool, onClose, onConfigured })
             <Icon name={tool.icon} size={18} stroke={2} />
           </span>
           <h2 id="configure-tool-title" style={{ fontSize: 18, fontWeight: 700, color: t.ink, margin: 0 }}>
-            Configure {tool.name}
+            {room ? 'Edit' : 'Configure'} {tool.name}
           </h2>
         </div>
 
@@ -495,7 +519,7 @@ export function ConfigureToolDialog({ t, project, tool, onClose, onConfigured })
         )}
 
         {started ? (
-          <SetupForm t={t} project={project} tool={tool} busy={busy} setBusy={setBusy}
+          <SetupForm t={t} project={project} tool={tool} room={room} busy={busy} setBusy={setBusy}
             onDone={onConfigured} onError={setError} onCancel={onClose} />
         ) : (
           <Intro t={t} tool={tool} kind={kind} onStart={() => setStarted(true)} onCancel={onClose} />

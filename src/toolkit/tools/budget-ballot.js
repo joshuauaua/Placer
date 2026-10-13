@@ -5,7 +5,7 @@ import { CHARACTER } from '../../theme';
 import {
   ballotSetupProblems, budgetProblems, combineBallots, defaultBallotSetup, emptyBallot, postProblems,
 } from '../../lib/budgetBallot';
-import { tone } from '../toolParts';
+import { roomText, tone } from '../toolParts';
 
 export default {
   id: 'budget-ballot',
@@ -34,5 +34,7 @@ export default {
   room: {
     empty: emptyBallot,
     combine: combineBallots,
+    label: (config) => roomText(Array.isArray(config?.posts)
+      ? config.posts.map((post) => post?.label).filter((label) => typeof label === 'string').join(', ') : null),
   },
 };

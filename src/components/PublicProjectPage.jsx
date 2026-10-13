@@ -27,7 +27,7 @@ import { Icon } from './Icon';
 import { Btn, CatTag, LoadingMark, Vote } from './UI';
 import { ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
 import { ProjectToolCard } from './toolkit/ProjectToolCard';
-import { findTool, isToolLive } from '../toolkit/tools';
+import { findTool, isToolLive, projectSetupKind } from '../toolkit/tools';
 import { readImaginationsByProject } from '../services/imaginations';
 import {
   readConfiguredProjectTools, readLinks, readProject, readProjectAccess, readProjectTools, requestProjectAccess, readPublicToolkitActivity, readRelatedProjects, recordProjectView,
@@ -423,10 +423,25 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   // How the tools it added are put to the visitor: each in a section of its own, under
   // a heading said to them (onProjectPage in toolkit/tools.js). Only the live ones: a
   // tool added but not yet configured for the project is not shown (isToolLive).
+  // A tool that runs in a room gets a section per open room, newest first, since a
+  // project can run several at once — two Polls asking different questions. Their
+  // headings say which is which (`room.label`), or number them when they cannot.
   const presented = tools.flatMap((tool) => {
-    const room = openRooms.find((candidate) => candidate.tool === tool.id) ?? null;
-    if (!isToolLive(tool, { configured: configuredTools.has(tool.id), openRoom: room })) return [];
-    return [{ id: `project-tool-${tool.id}`, heading: tool.onProjectPage?.heading ?? `Try ${tool.name}`, tool, room }];
+    const heading = tool.onProjectPage?.heading ?? `Try ${tool.name}`;
+    if (projectSetupKind(tool) !== 'room') {
+      if (!isToolLive(tool, { configured: configuredTools.has(tool.id) })) return [];
+      return [{ id: `project-tool-${tool.id}`, heading, tool, room: null }];
+    }
+    const rooms = openRooms.filter((candidate) => candidate.tool === tool.id);
+    return rooms.map((room, index) => {
+      const label = rooms.length > 1 ? tool.room?.label?.(room.config) ?? `${index + 1}` : null;
+      return {
+        id: index === 0 ? `project-tool-${tool.id}` : `project-tool-${tool.id}-${room.id}`,
+        heading: label ? `${heading}: ${label}` : heading,
+        tool,
+        room,
+      };
+    });
   });
 
   const sections = [

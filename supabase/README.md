@@ -549,6 +549,25 @@ DELETE policy and no INSERT; `notification_preferences` with SELECT, INSERT and 
 and no triggers listed on `notifications` itself — they live on the five tables that
 cause a notification, not on the table that receives one.
 
+### Changing a room after it is set up
+
+Run `rooms-edit.sql` in the SQL editor after `rooms-schedule.sql` (or
+`supabase db push`). It is re-runnable.
+
+A room scheduled to start later can be changed completely until it starts — its setup,
+the day it starts and how long it stays open (`toolkit_room_reschedule`) — since nobody
+can have answered it yet. Once a room is open its setup stays fixed, as
+`rooms-config.sql` explains, but a long room's closing day can move, within ninety days
+of when it opened (`toolkit_room_set_closes`). A room joined by its PIN keeps its two
+hours, and a long one cannot be cut to two hours or less, which would make its join code
+a PIN room's. Both are for the project's owner and collaborators. `project_rooms` also
+returns each room's setup now.
+
+```sql
+select pg_get_function_identity_arguments('public.toolkit_room_set_closes'::regproc);
+-- p_room_id uuid, p_closes_on date, p_time_zone text
+```
+
 ### Which tools can host a room
 
 Run `room-tools.sql` in the SQL editor after `rooms.sql` and `notifications-projects.sql`

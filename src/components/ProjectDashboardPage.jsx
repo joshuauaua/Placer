@@ -6,9 +6,10 @@ import { Icon } from './Icon';
 import { Btn, LoadingMark } from './UI';
 import { ProjectViewsChart } from './ProjectViewsChart';
 import { ProjectSetupPage } from './ProjectSetupPage';
-import { TOOLS, findTool, isToolLive } from '../toolkit/tools';
+import { TOOLS, findTool, isToolLive, projectSetupKind } from '../toolkit/tools';
 import { ConfigureToolDialog } from './ConfigureToolDialog';
 import {
+  closingRange,
   codeJoinUrl,
   formatPin,
   formatRoomDate,
@@ -37,7 +38,8 @@ import {
   removeLink,
   saveProjectTools,
 } from '../services/projects';
-import { closeRoom, deleteRoom } from '../services/rooms';
+import { closeRoom, deleteRoom, setRoomCloses } from '../services/rooms';
+import { DatePicker } from './DatePicker';
 import { readPreferences, readProjectResponses, saveProjectResponses } from '../services/notifications';
 import { ProjectResponsesChoice } from './ProjectResponsesChoice';
 
@@ -258,79 +260,93 @@ function CollaboratorRow({ t, collaborator, onRemove }) {
   );
 }
 
-function ToolMenuItem({ t, tool, onClick }) {
+function ToolChoice({ t, tool, onClick }) {
   return (
     <button
-      role="menuitem"
+      type="button"
       onClick={onClick}
-      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-        padding: '10px 14px', background: 'transparent', color: t.ink, cursor: 'pointer',
-        border: 'none', fontFamily: 'var(--placer-font)', fontWeight: 500, fontSize: 14.5,
-        letterSpacing: '-0.01em', textAlign: 'left' }}
+      style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 12px',
+        background: 'transparent', color: t.ink, cursor: 'pointer', border: 'none', borderRadius: 10,
+        fontFamily: 'var(--placer-font)', textAlign: 'left' }}
       onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceAlt; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-      <Icon name={tool.icon} size={17} stroke={2} style={{ color: tool.color, flex: '0 0 auto' }} />
-      {tool.name}
+      <span style={{ width: 36, height: 36, borderRadius: 10, flex: '0 0 auto', background: tool.tint,
+        boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: t.ink }}>
+        <Icon name={tool.icon} size={18} stroke={2} />
+      </span>
+      <span style={{ minWidth: 0, display: 'block' }}>
+        <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, letterSpacing: '-0.01em' }}>{tool.name}</span>
+        {tool.tagline && <span style={{ display: 'block', fontSize: 12.5, color: t.inkDim }}>{tool.tagline}</span>}
+      </span>
     </button>
   );
 }
 
 /**
- * Adds a tool to the project, from the Toolkit's tools it does not have yet — same
- * dismissal shape as UserMenu's dropdown, which is this app's first one.
+ * Adds a tool to the project: a button that opens the Toolkit's tools it does not have
+ * yet in a dialog. Choosing one only adds it to the list, waiting to be configured.
  */
 function AddToolkitTool({ t, chosen = [], onChoose }) {
   const available = TOOLS.filter((tool) => !chosen.includes(tool.id));
   const [open, setOpen] = useState(false);
-  const wrapRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return undefined;
-
-    const handleKeyDown = (e) => { if (e.key === 'Escape') setOpen(false); };
-    const handlePointerDown = (e) => {
-      if (!wrapRef.current?.contains(e.target)) setOpen(false);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('mousedown', handlePointerDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('mousedown', handlePointerDown);
-    };
-  }, [open]);
 
   return (
-    <div ref={wrapRef} style={{ position: 'relative', display: 'inline-block' }}>
+    <>
       <button
-        aria-haspopup="menu"
-        aria-expanded={open}
+        type="button"
+        aria-haspopup="dialog"
+        aria-label="Add a tool"
+        title="Add a tool"
         disabled={available.length === 0}
-        onClick={() => setOpen((wasOpen) => !wasOpen)}
-        style={{ height: 42, padding: '0 18px', borderRadius: 12, cursor: 'pointer',
-          display: 'inline-flex', alignItems: 'center', gap: 8, background: t.accent,
-          color: t.accentInk, border: '1px solid transparent', fontFamily: 'var(--placer-font)',
-          fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em' }}>
-        <Icon name="plus" size={18} stroke={2.4} />
-        Add a Tool
-        <Icon name={open ? 'chevUp' : 'chevDown'} size={15} stroke={2.2} />
+        onClick={() => setOpen(true)}
+        style={{ width: 42, height: 42, borderRadius: 12, cursor: available.length ? 'pointer' : 'default',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: t.accent,
+          color: t.accentInk, border: '1px solid transparent', opacity: available.length ? 1 : 0.5 }}>
+        <Icon name="plus" size={20} stroke={2.4} />
       </button>
-
       {open && (
-        <div
-          role="menu"
-          aria-label="Toolkit tools"
-          // Hangs from the button's right edge, as the button sits at the card's.
-          style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, zIndex: 10,
-            minWidth: 240, padding: '6px 0', background: t.surface,
-            border: `1px solid ${t.line}`, borderRadius: 12, boxShadow: t.shadow,
-            overflow: 'hidden' }}>
-          {available.map((tool) => (
-            <ToolMenuItem key={tool.id} t={t} tool={tool}
-              onClick={() => { setOpen(false); onChoose(tool.id); }} />
+        <AddToolDialog t={t} tools={available} onClose={() => setOpen(false)}
+          onChoose={(id) => { setOpen(false); onChoose(id); }} />
+      )}
+    </>
+  );
+}
+
+function AddToolDialog({ t, tools, onChoose, onClose }) {
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    panelRef.current?.focus();
+    const handleKeyDown = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: 'fixed', inset: 0, zIndex: 180, background: 'rgba(0, 0, 0, 0.4)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="add-tool-title" tabIndex={-1}
+        style={{ width: '100%', maxWidth: 480, maxHeight: 'min(90vh, 720px)', overflowY: 'auto', padding: 24,
+          background: t.surface, borderRadius: 16, boxShadow: t.shadow, outline: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          marginBottom: 12 }}>
+          <h2 id="add-tool-title" style={{ fontSize: 18, fontWeight: 700, color: t.ink, margin: 0 }}>Add a tool</h2>
+          <button type="button" aria-label="Close" onClick={onClose}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.inkDim, padding: 4,
+              display: 'flex' }}>
+            <Icon name="close" size={18} stroke={2.2} />
+          </button>
+        </div>
+        <div role="list" aria-label="Toolkit tools" style={{ margin: '0 -12px' }}>
+          {tools.map((tool) => (
+            <div role="listitem" key={tool.id}>
+              <ToolChoice t={t} tool={tool} onClick={() => onChoose(tool.id)} />
+            </div>
           ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -338,19 +354,24 @@ function AddToolkitTool({ t, chosen = [], onChoose }) {
 /**
  * One of this project's tools (project_tools): live on the public page, or waiting to
  * be configured for the project first (ConfigureToolDialog). A tool that runs in a room
- * is live while its room is open; its row then opens out on click to show that room,
- * and anything scheduled to start, with what the project runs it with (RoomRow). Any
- * other live tool can be configured again.
+ * is live while a room of it is open; its row then opens out on click to show its
+ * rooms, and any scheduled to start, with what the project runs them with (RoomRow).
+ * It can have several at once, each set up on its own — two Polls asking different
+ * questions — so Open another configures one more. Any other live tool can be
+ * configured again.
  */
 // A room still to come counts as well as one running: its QR code can go up early.
 const isCurrentRoom = (room) => room.status === 'open' || room.status === 'scheduled';
 
 function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, rooms = [], onConfigure, onOpenRoom,
-  onCloseRoom, onDeleteRoom }) {
+  onEditRoom, onCloseRoom, onDeleteRoom }) {
   const [expanded, setExpanded] = useState(false);
   const panelId = useId();
   const expandable = rooms.length > 0;
-  const badge = live ? 'Live' : scheduled ? `Starts ${formatRoomDate(scheduled.opensAt)}` : 'Not configured';
+  const liveRooms = rooms.filter((room) => room.status === 'open').length;
+  const badge = live ? (liveRooms > 1 ? `${liveRooms} live` : 'Live')
+    : scheduled ? `Starts ${formatRoomDate(scheduled.opensAt)}` : 'Not configured';
+  const roomTool = projectSetupKind(tool) === 'room';
 
   const summary = (
     <>
@@ -391,7 +412,12 @@ function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, rooms = [], on
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>{summary}</div>
         )}
-        {scheduled ? null : !live ? (
+        {roomTool && (inRoom || scheduled) ? (
+          <Btn t={t} variant="secondary" size="sm" icon="plus" onClick={onConfigure}
+            ariaLabel={`Open another ${tool.name}`}>
+            Open another
+          </Btn>
+        ) : scheduled ? null : !live ? (
           <Btn t={t} variant="primary" size="sm" onClick={onConfigure} ariaLabel={`Configure ${tool.name}`}>
             Configure
           </Btn>
@@ -404,8 +430,8 @@ function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, rooms = [], on
       {expandable && expanded && (
         <div id={panelId} role="region" aria-label={`${tool.name} rooms`} style={{ padding: '0 0 8px 48px' }}>
           {rooms.map((room) => (
-            <RoomRow key={room.id} t={t} room={room} named={false} onOpen={onOpenRoom} onClose={onCloseRoom}
-              onDelete={onDeleteRoom} />
+            <RoomRow key={room.id} t={t} room={room} named={false} onOpen={onOpenRoom} onEdit={onEditRoom}
+              onClose={onCloseRoom} onDelete={onDeleteRoom} />
           ))}
         </div>
       )}
@@ -420,7 +446,7 @@ function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, rooms = [], on
  * having these here rather than only on the room itself is that a poll left running for
  * a month outlives the browser tab, and often the device, it was opened on.
  */
-function RoomRow({ t, room, named = true, onOpen, onClose, onDelete }) {
+function RoomRow({ t, room, named = true, onOpen, onEdit, onClose, onDelete }) {
   const qrRef = useRef(null);
   const [confirming, setConfirming] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -428,8 +454,12 @@ function RoomRow({ t, room, named = true, onOpen, onClose, onDelete }) {
   const long = isLongRoom(room);
   const url = long ? codeJoinUrl(room.joinCode) : joinUrl(room.pin);
   const scheduled = room.status === 'scheduled';
+  // Before it starts, all of it can change; once open, a long room's closing day can.
+  const editable = Boolean(onEdit) && (scheduled || (room.status === 'open' && long));
   const left = scheduled ? null : timeRemaining(room.expiresAt);
   const name = tool?.name ?? room.tool;
+  // Which of the tool's rooms this is, from its setup: a Poll's question.
+  const label = room.config ? tool?.room?.label?.(room.config) ?? null : null;
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0',
@@ -441,6 +471,12 @@ function RoomRow({ t, room, named = true, onOpen, onClose, onDelete }) {
 
       <div style={{ flex: '1 1 200px', minWidth: 0 }}>
         {named && <div style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>{name}</div>}
+        {label && (
+          <div style={{ fontSize: named ? 13.5 : 14, fontWeight: named ? 500 : 700, color: t.ink,
+            overflowWrap: 'anywhere' }}>
+            {label}
+          </div>
+        )}
         <div style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.5 }}>
           {scheduled
             ? `Starts ${formatRoomDate(room.opensAt)}`
@@ -454,6 +490,12 @@ function RoomRow({ t, room, named = true, onOpen, onClose, onDelete }) {
         <Btn t={t} variant="outline" size="sm" icon="arrowRight" onClick={() => onOpen(room)}>
           Open
         </Btn>
+        {editable && (
+          <Btn t={t} variant="quiet" size="sm" icon="pencil" onClick={() => onEdit(room)}
+            ariaLabel={scheduled ? `Edit ${label ?? name}` : `Change when ${label ?? name} closes`}>
+            Edit
+          </Btn>
+        )}
         <Btn t={t} variant="quiet" size="sm" icon="arrowDown"
           onClick={() => downloadQrSvg(qrRef.current, `placer-${room.tool}-qr.svg`)}>
           Download QR
@@ -473,6 +515,78 @@ function RoomRow({ t, room, named = true, onOpen, onClose, onDelete }) {
           {confirmingDelete ? 'Delete — confirm' : 'Delete'}
         </Btn>
       </div>
+    </div>
+  );
+}
+
+/**
+ * When an open room closes, moved: the one thing about it that can change once people
+ * may have answered it (supabase/rooms-edit.sql). It closes at the end of the day chosen.
+ */
+function RoomClosesDialog({ t, room, onClose, onSaved }) {
+  const range = closingRange(room);
+  const [day, setDay] = useState(range?.current ?? '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const panelRef = useRef(null);
+  const tool = findTool(room.tool);
+  const label = room.config ? tool?.room?.label?.(room.config) ?? null : null;
+
+  useEffect(() => {
+    panelRef.current?.focus();
+    const handleKeyDown = (e) => { if (e.key === 'Escape' && !busy) onClose(); };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [busy, onClose]);
+
+  const save = async (e) => {
+    e.preventDefault();
+    if (busy || !day) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await setRoomCloses(room.id, day);
+      onSaved();
+    } catch (err) {
+      console.error('Could not change when that room closes:', err);
+      setError(err?.message ?? 'Could not change when that room closes.');
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }}
+      style={{ position: 'fixed', inset: 0, zIndex: 180, background: 'rgba(0, 0, 0, 0.4)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <form ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="room-closes-title" tabIndex={-1}
+        onSubmit={save}
+        style={{ width: '100%', maxWidth: 440, padding: 24, background: t.surface, borderRadius: 16,
+          boxShadow: t.shadow, outline: 'none' }}>
+        <h2 id="room-closes-title" style={{ fontSize: 18, fontWeight: 700, color: t.ink, margin: '0 0 6px' }}>
+          Change when it closes
+        </h2>
+        <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '0 0 18px' }}>
+          {label ? <><strong style={{ color: t.ink }}>{label}</strong> · </> : null}
+          {tool?.name ?? room.tool} is live, so what it asks stays as it is: people have
+          answered it. It can run on longer, or end sooner, up to 90 days from when it opened.
+        </p>
+        {error && <p role="alert" style={{ fontSize: 13.5, color: '#B3261E', margin: '0 0 12px' }}>{error}</p>}
+        <label htmlFor="room-closes-day"
+          style={{ display: 'block', fontSize: 13, fontWeight: 600, color: t.inkDim, marginBottom: 6 }}>
+          Closes at the end of
+        </label>
+        <DatePicker t={t} id="room-closes-day" value={day} min={range?.min} max={range?.max}
+          label="Choose the closing day" placeholder="Pick a day" clearable={false} disabled={busy}
+          onChange={setDay}
+          style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${t.line}`,
+            background: t.surface, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 14 }} />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
+          <Btn t={t} variant="outline" size="sm" type="button" onClick={onClose} disabled={busy}>Cancel</Btn>
+          <Btn t={t} variant="primary" size="sm" type="submit" disabled={busy || !day || day === range?.current}>
+            {busy ? 'Saving…' : 'Save'}
+          </Btn>
+        </div>
+      </form>
     </div>
   );
 }
@@ -617,6 +731,9 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   // Which of them have been configured, and the one being configured now.
   const [configured, setConfigured] = useState(new Set());
   const [configuring, setConfiguring] = useState(null);
+  // A room being changed: a scheduled one in the configure dialog, an open one's
+  // closing day in its own.
+  const [editingRoom, setEditingRoom] = useState(null);
 
   const loadTools = useCallback(async (id) => {
     try {
@@ -737,18 +854,13 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
     }
   };
 
-  // "Add a Tool" adds it to the project and goes straight on to configuring it, since
-  // it is not live until it has been. The dialog waits on the save: configuring
-  // changes the tool's row, which has to exist first.
+  // Adding a tool only puts it on the list, waiting to be configured: its row's
+  // Configure is how it goes live.
   const handleAddTool = async (toolId) => {
-    if (tools.includes(toolId)) {
-      setConfiguring(toolId);
-      return;
-    }
+    if (tools.includes(toolId)) return;
     setTools((current) => [...current, toolId]);
     try {
       await saveProjectTools(project.id, [...tools, toolId], accountId);
-      setConfiguring(toolId);
     } catch (err) {
       console.error('Could not add that tool to the project:', err);
       loadTools(project.id);
@@ -767,6 +879,11 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
     const long = isLongRoom(room);
     rememberHostedRoom(room.id, { pin: room.pin, token: room.facilitatorToken, code: long ? room.joinCode : null });
     onOpenRoom?.(room.tool, room.id);
+  };
+
+  const handleRoomEdited = () => {
+    setEditingRoom(null);
+    loadRooms(project.id);
   };
 
   const handleCloseRoom = async (room) => {
@@ -904,7 +1021,8 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                     inRoom={Boolean(openRoom)} scheduled={scheduled}
                     rooms={(rooms ?? []).filter((room) => room.tool === tool.id && isCurrentRoom(room))}
                     onConfigure={() => setConfiguring(tool.id)}
-                    onOpenRoom={handleOpenRoom} onCloseRoom={handleCloseRoom} onDeleteRoom={handleDeleteRoom} />
+                    onOpenRoom={handleOpenRoom} onEditRoom={setEditingRoom} onCloseRoom={handleCloseRoom}
+                    onDeleteRoom={handleDeleteRoom} />
                 );
               })}
             </div>
@@ -919,8 +1037,8 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                 Still open for tools no longer on this list.
               </p>
               {otherRooms.map((room) => (
-                <RoomRow key={room.id} t={t} room={room} onOpen={handleOpenRoom} onClose={handleCloseRoom}
-                  onDelete={handleDeleteRoom} />
+                <RoomRow key={room.id} t={t} room={room} onOpen={handleOpenRoom} onEdit={setEditingRoom}
+                  onClose={handleCloseRoom} onDelete={handleDeleteRoom} />
               ))}
             </div>
           )}
@@ -929,6 +1047,14 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
         {configuring && findTool(configuring) && (
           <ConfigureToolDialog t={t} project={project} tool={findTool(configuring)}
             onClose={() => setConfiguring(null)} onConfigured={handleConfigured} />
+        )}
+        {editingRoom?.status === 'scheduled' && findTool(editingRoom.tool) && (
+          <ConfigureToolDialog t={t} project={project} tool={findTool(editingRoom.tool)} room={editingRoom}
+            onClose={() => setEditingRoom(null)} onConfigured={handleRoomEdited} />
+        )}
+        {editingRoom?.status === 'open' && (
+          <RoomClosesDialog t={t} room={editingRoom} onClose={() => setEditingRoom(null)}
+            onSaved={handleRoomEdited} />
         )}
 
         <ProjectNotifications t={t} projectId={project.id} />

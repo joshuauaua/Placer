@@ -14,7 +14,9 @@
 --
 -- It is fixed when the room opens. There is no way to change it afterwards, on
 -- purpose: everybody's contribution was made against it, and moving the budget under
--- a ballot that has already been cast would change what that ballot meant.
+-- a ballot that has already been cast would change what that ballot meant. (A room
+-- scheduled to start later has not opened, so rooms-edit.sql lets its setup change
+-- until it does.)
 --
 -- Anybody who can reach the room can read its setup, through toolkit_room_state —
 -- they need it to show the tool. That reveals nothing: it is what the tool on their

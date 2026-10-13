@@ -5,7 +5,7 @@ import {
   combineQuiz, defaultQuizSetup, emptyQuizState, questionProblems as quizQuestionProblems, quizSetupProblems,
   timeProblems,
 } from '../../lib/popQuiz';
-import { tone } from '../toolParts';
+import { roomText, tone } from '../toolParts';
 
 export default {
   id: 'pop-quiz',
@@ -33,5 +33,6 @@ export default {
   room: {
     empty: emptyQuizState,
     combine: combineQuiz,
+    label: (config) => roomText(config?.questions?.[0]?.text),
   },
 };

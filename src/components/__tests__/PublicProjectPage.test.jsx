@@ -273,6 +273,34 @@ describe('PublicProjectPage, taking part', () => {
     expect(section.getByText(/Open until 5 November 2026/)).toBeInTheDocument();
   });
 
+  it('puts each of several polls on the page, under its own question, and votes in each apart', async () => {
+    const BENCHES = { ...POLL, id: 'room-2', config: { question: 'Do we need more benches?' } };
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL, BENCHES]);
+
+    setup();
+
+    const square = within(await screen.findByRole('region',
+      { name: 'We want your opinion: Should the square be car-free?' }));
+    const benches = within(screen.getByRole('region', { name: 'We want your opinion: Do we need more benches?' }));
+    fireEvent.click(benches.getByRole('button', { name: 'Yes' }));
+
+    await waitFor(() => expect(saveContribution).toHaveBeenCalledWith(
+      expect.objectContaining({ roomId: 'room-2', state: { choice: 'yes' } })));
+    expect(saveContribution).toHaveBeenCalledTimes(1);
+    expect(square.getByRole('button', { name: 'Yes' })).toBeInTheDocument();
+  });
+
+  it('numbers two rooms of a tool that cannot say which is which', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([{ ...POLL, config: null }, { ...POLL, id: 'room-2', config: null }]);
+
+    setup();
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'We want your opinion: 1' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'We want your opinion: 2' })).toBeInTheDocument();
+  });
+
   it("offers the answers the organiser wrote, and counts votes against them", async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
     vi.mocked(readProjectOpenRooms).mockResolvedValue([

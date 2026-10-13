@@ -27,6 +27,10 @@
  *                      means something for this tool; `config` is the room's setup,
  *                      or null
  *
+ * and optionally label(config): which room this is, from its setup — a Poll's
+ * question — or null. A project can have several rooms of one tool open at once, and
+ * this is what tells them apart on its dashboard and its public page.
+ *
  * The tool also needs a row in the database's toolkit_room_tools, which is the other
  * half of the pair: the database will not host a room for a tool it has not been told
  * about. That is a file of its own too, supabase/room-tools/<id>.sql, and its

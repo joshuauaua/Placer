@@ -49,12 +49,22 @@ export const DEFAULT_LIFETIME = '2h';
 
 /**
  * True for a room opened for longer than a workshop — the same test toolkit_room_join
- * applies in supabase/rooms-lifetime.sql, and the reason such a room is reached by its
- * join code and never its PIN.
+ * applies in supabase/rooms-schedule.sql, counted from when it opens, and the reason
+ * such a room is reached by its join code and never its PIN.
  */
-export function isLongRoom({ createdAt, expiresAt }) {
-  const span = new Date(expiresAt ?? NaN).getTime() - new Date(createdAt ?? NaN).getTime();
+export function isLongRoom({ createdAt, opensAt = null, expiresAt }) {
+  const span = new Date(expiresAt ?? NaN).getTime() - new Date(opensAt ?? createdAt ?? NaN).getTime();
   return Number.isFinite(span) && span > 2 * 60 * 60 * 1000;
+}
+
+/**
+ * Which of ROOM_LIFETIMES a room was opened for, from when it opens and closes, or
+ * null when it matches none — one whose closing day has since been moved.
+ */
+export function roomLifetime({ createdAt, opensAt = null, expiresAt }) {
+  const span = new Date(expiresAt ?? NaN).getTime() - new Date(opensAt ?? createdAt ?? NaN).getTime();
+  const hours = { '2h': 2, '1w': 7 * 24, '30d': 30 * 24, '90d': 90 * 24 };
+  return ROOM_LIFETIMES.find(({ id }) => Math.abs(span - hours[id] * 3600000) < 60000)?.id ?? null;
 }
 
 /** '839201' → '839-201'. Grouped because six digits read back badly in one run. */
@@ -116,6 +126,26 @@ export function formatRoomDate(value) {
 export function localToday(now = new Date()) {
   const pad = (n) => String(n).padStart(2, '0');
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+/** The day a moment falls on in this browser's calendar, as 'YYYY-MM-DD', or null. */
+export function localDay(value) {
+  const date = new Date(value ?? NaN);
+  return Number.isFinite(date.getTime()) ? localToday(date) : null;
+}
+
+/**
+ * The days an open long room can be set to close on, as { min, max, current } in
+ * 'YYYY-MM-DD': from today to the last day within ninety days of when it opened, the
+ * same limits toolkit_room_set_closes holds (supabase/rooms-edit.sql). It closes at the
+ * end of the day chosen, so `current` is the day its present closing time ends.
+ */
+export function closingRange(room, today = localToday()) {
+  const opened = new Date(room.opensAt ?? room.createdAt ?? NaN).getTime();
+  const closes = new Date(room.expiresAt ?? NaN).getTime();
+  if (!Number.isFinite(opened) || !Number.isFinite(closes)) return null;
+  const max = localDay(opened + 90 * 86400000 - 86400000);
+  return { min: today, max, current: localDay(closes - 1) };
 }
 
 /**

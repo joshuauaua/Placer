@@ -5,7 +5,10 @@ import {
   codeJoinUrl,
   localToday,
   scheduleRange,
+  closingRange,
   isLongRoom,
+  localDay,
+  roomLifetime,
   parseJoinCode,
   timeRemaining,
   forgetHostedRoom,
@@ -202,5 +205,36 @@ describe('scheduleRange', () => {
 
   it('counts today in this browser\'s calendar', () => {
     expect(localToday(new Date(2026, 0, 5, 23, 30))).toBe('2026-01-05');
+  });
+});
+
+describe('changing a room', () => {
+  const at = (iso) => new Date(iso).toISOString();
+
+  it('counts a scheduled room as long or not from when it opens, as the database does', () => {
+    const room = { createdAt: at('2026-10-01T10:00:00Z'), opensAt: at('2026-11-01T09:00:00Z'), expiresAt: at('2026-11-01T11:00:00Z') };
+    expect(isLongRoom(room)).toBe(false);
+    expect(isLongRoom({ ...room, expiresAt: at('2026-11-08T09:00:00Z') })).toBe(true);
+  });
+
+  it('works out which lifetime a room was opened for, or none once its closing day has moved', () => {
+    const opens = '2026-11-01T09:00:00Z';
+    expect(roomLifetime({ opensAt: opens, expiresAt: '2026-11-01T11:00:00Z' })).toBe('2h');
+    expect(roomLifetime({ createdAt: opens, expiresAt: '2026-11-08T09:00:00Z' })).toBe('1w');
+    expect(roomLifetime({ opensAt: opens, expiresAt: '2026-12-01T09:00:00Z' })).toBe('30d');
+    expect(roomLifetime({ opensAt: opens, expiresAt: '2026-11-20T00:00:00Z' })).toBeNull();
+  });
+
+  it('gives the days an open room can close on: today to ninety days after it opened', () => {
+    const opened = new Date(2026, 9, 10, 12);
+    const range = closingRange({ createdAt: opened.toISOString(), expiresAt: new Date(2026, 10, 9, 12).toISOString() },
+      '2026-10-12');
+    expect(range).toEqual({ min: '2026-10-12', max: '2027-01-07', current: '2026-11-09' });
+    expect(closingRange({ createdAt: null, expiresAt: null })).toBeNull();
+  });
+
+  it('gives the day a moment falls on in this browser', () => {
+    expect(localDay(new Date(2026, 10, 1, 23, 30))).toBe('2026-11-01');
+    expect(localDay('not a date')).toBeNull();
   });
 });

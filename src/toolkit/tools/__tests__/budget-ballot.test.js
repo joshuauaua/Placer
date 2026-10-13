@@ -49,3 +49,17 @@ describe("the Co-Budget's room", () => {
     expect(combined).not.toHaveProperty('nonsense');
   });
 });
+
+describe('telling its rooms apart', () => {
+  const { room } = findTool('budget-ballot');
+
+  it('labels a room by what it was set up with', () => {
+    expect(room.label({ budget: 1000, posts: [{ key: 'trees', label: 'Trees' }, { key: 'benches', label: 'Benches' }] })).toBe('Trees, Benches');
+  });
+
+  it('has no label for a room set up with nothing it can use', () => {
+    for (const config of [null, {}, 'garbage', { question: 7, prompt: '  ', questions: [], posts: 'none' }]) {
+      expect(room.label(config), JSON.stringify(config)).toBeNull();
+    }
+  });
+});
