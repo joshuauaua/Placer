@@ -102,9 +102,8 @@ account at that moment would cost the room the people it was opened for. Opening
 one means step 9 as well, since only a project's owner or collaborators can.
 
 Run `rooms.sql` in the SQL editor, the same way as `schema.sql`. It is
-re-runnable. Only Co-Budget can host a room today; the tools allowed to
-are enumerated in a CHECK constraint in that file, and adding a second one means
-editing both it and `src/toolkit/tools.js`.
+re-runnable. Which tools may host a room is set later, by `room-tools.sql` (see
+"Which tools can host a room" below).
 
 The access rules are deliberately unlike the survey's. Joining a room needs a
 *read*, which nothing else here has, so instead of a select policy on the rooms
@@ -549,6 +548,26 @@ Expect `rls` true on both tables; `notifications` with one SELECT, one UPDATE an
 DELETE policy and no INSERT; `notification_preferences` with SELECT, INSERT and UPDATE;
 and no triggers listed on `notifications` itself — they live on the five tables that
 cause a notification, not on the table that receives one.
+
+### Which tools can host a room
+
+Run `room-tools.sql` in the SQL editor after `rooms.sql` and `notifications-projects.sql`
+(or `supabase db push`), then every file in `room-tools/`. They are re-runnable.
+
+`toolkit_room_tools` has a row per tool that can run in a room, and
+`toolkit_rooms.tool` references it, so a room cannot be opened on a tool the database
+has not been told about. `toolkit_tool_name` reads the tool's name from it for the
+notifications' text. It replaces a CHECK constraint in `rooms.sql` that listed the
+tools: every new tool edited that list, so branches adding tools conflicted on it.
+
+A new tool adds `room-tools/<id>.sql`, inserting its row, and runs
+`node scripts/check-migrations.mjs --write` to generate its migration — see
+`room-tools/README.md`.
+
+```sql
+select id, name from public.toolkit_room_tools order by id;
+-- budget-ballot | Co-Budget, open-vote | Poll, pop-quiz | Pop Quiz, word-cloud | Word Cloud, …
+```
 
 ## 14. Pictures on Cloudflare R2
 

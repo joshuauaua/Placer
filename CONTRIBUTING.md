@@ -31,15 +31,21 @@ Four steps, and the register's own comment says the same thing:
    without rendering anything. The four originals sit directly in `src/lib/` because
    they predate this being a boundary — the rest of `src/lib/` is image processing and
    maps code, so new work goes in the `toolkit/` subdirectory.
-3. **An entry** in `src/toolkit/tools.js`: `id`, `name`, `tagline`, `blurb`,
-   `hint`, `color`, `icon`, `component`.
-4. **Tests.** The logic in `src/lib/toolkit/__tests__/`, the component in
-   `src/components/__tests__/ToolkitTools.test.jsx`.
+3. **An entry** in a file of its own, `src/toolkit/tools/<id>.js`, whose default
+   export has `id`, `added`, `category`, `name`, `tagline`, `blurb`, `color`, `icon`,
+   `createdBy` and `component`. Nothing lists the tools: `src/toolkit/tools.js`
+   gathers the folder.
+4. **Tests.** The logic in `src/lib/toolkit/__tests__/`, the component in a file of
+   its own, `src/components/__tests__/Tool<Name>.test.jsx`.
+
+Every step adds files rather than editing shared ones, so two branches each adding a
+tool merge without conflicts. Keep it that way: no test that counts the tools or names
+the newest.
 
 `icon` is a key into `src/components/Icon.jsx`; add a new mark there if none of the
 existing ones fits. A tool that can be run in a room (`room: { empty, combine }` in its
-entry) also has to be on the database's allowlist in `supabase/rooms.sql`, which is a
-database change — see below.
+entry) also needs a row in the database's `toolkit_room_tools`: a file of its own in
+`supabase/room-tools/` (see the README there), which is a database change — see below.
 
 ## What review will look for
 

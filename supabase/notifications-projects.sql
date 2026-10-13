@@ -148,7 +148,10 @@ $$;
 
 revoke all on function public.project_responses_level(uuid, uuid) from public;
 
--- A tool's name as the app shows it (src/toolkit/tools.js), for the alert's text.
+-- A tool's name as the app shows it (src/toolkit/tools/), for the alert's text.
+-- room-tools.sql replaces this with one that reads the names from toolkit_room_tools,
+-- so a new tool goes there, not here; this one is what the triggers below are created
+-- against on a database that has not run room-tools.sql yet.
 create or replace function public.toolkit_tool_name(p_tool text)
 returns text
 language sql

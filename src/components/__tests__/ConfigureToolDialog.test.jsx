@@ -1,14 +1,13 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
-import { ConfigureToolDialog } from '../ConfigureToolDialog';
+import { screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import {
   markProjectToolConfigured, readProjectSite, readProjectToolConfig, removeProjectImageFile, saveProjectSite,
   saveProjectToolConfig, uploadSceneImage,
 } from '../../services/projects';
 import { lastMap } from '../../test/maplibreStub';
 import { createRoom } from '../../services/rooms';
+import { PROJECT, configureTool as setup, next, save } from '../../test/configureTool';
 import { findTool } from '../../toolkit/tools';
-import { THEME } from '../../theme';
 
 vi.mock('../../services/projects', () => ({
   readProjectToolConfig: vi.fn(() => Promise.resolve(null)),
@@ -53,22 +52,8 @@ vi.mock('../AddressInput', () => ({
   ),
 }));
 
-const PROJECT = {
-  id: 'proj-1', name: 'Riverside Greenway', address: 'Folkets Park, Malmö', locationPoint: { lat: 55.59, lng: 13.01 },
-};
 const PHOTO = new File(['photo'], 'park.jpg', { type: 'image/jpeg' });
 
-// Rendered past the introduction, onto the tool's form, unless `intro` is asked for.
-const setup = (toolId, overrides = {}, { intro = false } = {}) => {
-  const props = {
-    t: THEME, project: PROJECT, tool: findTool(toolId), onClose: vi.fn(), onConfigured: vi.fn(), ...overrides,
-  };
-  render(<ConfigureToolDialog {...props} />);
-  if (!intro) fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
-  return props;
-};
-
-const save = (name = /Save and go live/) => fireEvent.click(screen.getByRole('button', { name }));
 const addPhoto = () => fireEvent.change(screen.getByLabelText(/Add a base image|Choose another/),
   { target: { files: [PHOTO] } });
 
@@ -182,8 +167,6 @@ describe('ConfigureToolDialog, Idea Visualizer', () => {
 });
 
 describe('ConfigureToolDialog, a tool that runs in a room', () => {
-  const next = () => fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-
   it('will not move past a stage with something missing, and says what', async () => {
     setup('open-vote');
 
@@ -213,64 +196,6 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
     await waitFor(() => expect(onConfigured).toHaveBeenCalled());
     expect(createRoom).toHaveBeenCalledWith('open-vote', 'proj-1', '90d',
       { question: 'Car-free on Sundays?', answers: ['Yes', 'No', 'Only in summer'] }, null);
-  });
-
-  it('asks for the Pop Quiz questions, then the time for each, then how long it stays open', async () => {
-    const { onConfigured } = setup('pop-quiz');
-
-    expect(screen.getByRole('heading', { name: 'Questions' })).toBeInTheDocument();
-    next();
-    expect(await screen.findByRole('alert')).toHaveTextContent('Write question 1.');
-
-    fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'Which way is north?' } });
-    ['Up', 'Down', 'Left', 'Right'].forEach((choice, index) => {
-      fireEvent.change(screen.getByLabelText(`Choice ${'ABCD'[index]} for question 1`), { target: { value: choice } });
-    });
-    fireEvent.click(screen.getByLabelText('B is the right answer to question 1'));
-    fireEvent.click(screen.getByRole('button', { name: 'Add a question' }));
-    fireEvent.change(screen.getByLabelText('Kind of question 2'), { target: { value: 'blank' } });
-    fireEvent.change(screen.getByLabelText('Question 2'), { target: { value: 'The square is called ___.' } });
-    fireEvent.change(screen.getByLabelText('Answer to question 2'), { target: { value: 'Möllan' } });
-    next();
-
-    expect(screen.getByRole('heading', { name: 'Time' })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Time per question'), { target: { value: '30' } });
-    next();
-    save();
-
-    await waitFor(() => expect(onConfigured).toHaveBeenCalled());
-    expect(createRoom).toHaveBeenCalledWith('pop-quiz', 'proj-1', expect.any(String), {
-      seconds: 30,
-      questions: [
-        { kind: 'choice', text: 'Which way is north?', choices: ['Up', 'Down', 'Left', 'Right'], correct: 1 },
-        { kind: 'blank', text: 'The square is called ___.', answer: 'Möllan' },
-      ],
-    }, null);
-  });
-
-  it('asks for the Word Cloud prompt, then the words per person, then how long it stays open', async () => {
-    const { onConfigured } = setup('word-cloud');
-
-    expect(screen.getByRole('heading', { name: 'Prompt' })).toBeInTheDocument();
-    next();
-    expect(await screen.findByRole('alert')).toHaveTextContent('Write what you want people to answer.');
-    fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'One word for the square?' } });
-    next();
-
-    expect(screen.getByRole('heading', { name: 'Words' })).toBeInTheDocument();
-    expect(screen.getByText('One word for the square?')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Words per person'), { target: { value: '1' } });
-    expect(screen.getByLabelText('Timer')).toHaveValue('');
-    expect(within(screen.getByLabelText('Timer')).getAllByRole('option')).toHaveLength(21);
-    fireEvent.change(screen.getByLabelText('Timer'), { target: { value: '90' } });
-    next();
-
-    expect(screen.getByRole('heading', { name: 'Open for' })).toBeInTheDocument();
-    save();
-
-    await waitFor(() => expect(onConfigured).toHaveBeenCalled());
-    expect(createRoom).toHaveBeenCalledWith('word-cloud', 'proj-1', expect.any(String),
-      { prompt: 'One word for the square?', limit: 1, timer: 90 }, null);
   });
 
   describe('starting on a date', () => {
@@ -416,8 +341,6 @@ describe('ConfigureToolDialog, a tool with nothing to set up', () => {
 });
 
 describe('ConfigureToolDialog, Site-Specific Spatial Mapping', () => {
-  const next = () => fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-
   it('asks for the site name first, and will not move on without one', async () => {
     setup('site-spatial-mapping');
 

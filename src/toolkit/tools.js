@@ -11,9 +11,12 @@
  * `image` is optional: an imported picture for the tool's card in the gallery.
  * Without one, the card draws a cover from the tool's icon on its category's colour.
  *
- * One entry per tool. Adding another means adding one object here and one
- * component under src/components/toolkit — the gallery, the routing and the copyable
- * link all read from this list.
+ * One file per tool, src/toolkit/tools/<id>.js, whose default export is its entry.
+ * Adding another means adding one file there and one component under
+ * src/components/toolkit — the gallery, the routing and the copyable link all read
+ * from TOOLS, which gathers them. Its tests go in files of its own as well:
+ * src/components/__tests__/Tool<Name>.test.jsx, and Tool<Name>Room.test.jsx for one
+ * that runs in a room.
  *
  * `room` is optional, and its presence is what lets a tool be played by a
  * roomful of people at once rather than one person. Two functions:
@@ -24,9 +27,10 @@
  *                      means something for this tool; `config` is the room's setup,
  *                      or null
  *
- * The tool also has to be in the enumerated list in supabase/rooms.sql, which
- * is the other half of the pair: the database will not host a room for a tool
- * it has not been told about.
+ * The tool also needs a row in the database's toolkit_room_tools, which is the other
+ * half of the pair: the database will not host a room for a tool it has not been told
+ * about. That is a file of its own too, supabase/room-tools/<id>.sql, and its
+ * migration (see supabase/room-tools.sql).
  *
  * `setup` is optional too, and only means something next to `room`: it is what the
  * organiser chooses before the room opens, so that a tool run for a project is about
@@ -65,48 +69,7 @@
  *              { id, expiresAt, config }. Without one, the page links to the room.
  */
 
-import { BudgetBallot } from '../components/toolkit/BudgetBallot';
-import { BudgetBallotOnPage } from '../components/toolkit/BudgetBallotOnPage';
-import { BudgetBallotSetup, BudgetStep, PostsStep } from '../components/toolkit/BudgetBallotSetup';
-import { DesireLines } from '../components/toolkit/DesireLines';
-import { DreamIt } from '../components/toolkit/DreamIt';
-import { FifteenMinute } from '../components/toolkit/FifteenMinute';
-import { OpenVote } from '../components/toolkit/OpenVote';
-import { AnswersStep, OpenVoteSetup, QuestionStep } from '../components/toolkit/OpenVoteSetup';
-import { OpenVoteOnPage } from '../components/toolkit/OpenVoteOnPage';
-import { PopQuiz } from '../components/toolkit/PopQuiz';
-import { PopQuizSetup, QuestionsStep, TimeStep } from '../components/toolkit/PopQuizSetup';
-import { ReimagineASpace } from '../components/toolkit/ReimagineASpace';
-import { SiteMapping } from '../components/toolkit/SiteMapping';
-import { SocialSpaceSurvey } from '../components/toolkit/SocialSpaceSurvey';
-import { StationaryActivityMap } from '../components/toolkit/StationaryActivityMap';
-
-// The Gehl tools are built on the Public Life Data Protocol, and say whose it is.
-const PUBLIC_LIFE_PROTOCOL_CREDIT = 'The Public Life Data Protocol was jointly developed by Gehl Institute, '
-  + 'Gehl, the City of Copenhagen, The City of San Francisco, and Seattle Department of Transportation.';
-import { StreetMixer } from '../components/toolkit/StreetMixer';
-import { WordCloud } from '../components/toolkit/WordCloud';
-import { WordCloudOnPage } from '../components/toolkit/WordCloudOnPage';
-import { PromptStep, WordCloudSetup, WordsStep } from '../components/toolkit/WordCloudSetup';
 import { CHARACTER } from '../theme';
-import {
-  ballotSetupProblems, budgetProblems, combineBallots, defaultBallotSetup, emptyBallot, postProblems,
-} from '../lib/budgetBallot';
-import {
-  answerProblems, combineVotes, defaultVoteSetup, emptyVote, questionProblems, voteSetupProblems,
-} from '../lib/openVote';
-import {
-  combineQuiz, defaultQuizSetup, emptyQuizState, questionProblems as quizQuestionProblems, quizSetupProblems,
-  timeProblems,
-} from '../lib/popQuiz';
-import {
-  cloudSetupProblems, combineWords, defaultCloudSetup, emptyWords, promptProblems, wordsProblems,
-} from '../lib/wordCloud';
-
-// Each tool wears one of the three character colours: `color` is the 700,
-// for text, icons and outlines on white, and `tint` the 100, for fills with ink
-// on them, `hover` the 300 a character button turns on hover. The brand kit has no other colours to give.
-const tone = (character) => ({ color: character.c700, tint: character.c100, hover: character.c300, wash: character.c50 });
 
 /**
  * The three kinds of tool, in the order the Toolkit lists them. Every tool's
@@ -134,227 +97,18 @@ export const CATEGORIES = [
   },
 ];
 
-export const TOOLS = [
-  {
-    id: 'street-mixer',
-    added: '2026-08-27',
-    category: 'imagine',
-    name: 'Street Section Mixer',
-    tagline: 'Twenty metres, and everything wants some.',
-    blurb: 'A street is a fixed width. Cycle track, bus lane, trees, parking, footway — they are all bidding for the same metres, and the only way to give one more is to take it from another.',
-    ...tone(CHARACTER.cityWorker),
-    icon: 'section',
-    createdBy: 'PLACER',
-    component: StreetMixer,
-  },
-  {
-    id: 'desire-lines',
-    added: '2026-08-27',
-    category: 'understand',
-    name: 'Desire Lines',
-    tagline: 'The path people take, not the one that got paved.',
-    blurb: 'A plaza paved the way plazas are paved, with the things people walk between in the corners. Draw the walks you would actually make and the argument for repaving draws itself.',
-    ...tone(CHARACTER.practitioner),
-    icon: 'path',
-    createdBy: 'PLACER',
-    component: DesireLines,
-  },
-  {
-    id: 'fifteen-minute',
-    added: '2026-08-27',
-    category: 'understand',
-    name: '15-Minute Reach',
-    tagline: 'Everything within a quarter-hour walk. Everything.',
-    blurb: 'Place a food shop, a school, a clinic, a park and a transit stop, and see how much of the neighbourhood can really walk to all five — around the railway rather than through it.',
-    ...tone(CHARACTER.practitioner),
-    icon: 'walk',
-    createdBy: 'PLACER',
-    component: FifteenMinute,
-  },
-  {
-    id: 'budget-ballot',
-    added: '2026-08-27',
-    category: 'plan',
-    name: 'Co-Budget',
-    tagline: 'A fixed budget, more on the list than it buys. Choose.',
-    blurb: 'Every post has a price per item, and the money runs out well before the list does. Spend the budget the way you would, and see what the room would fund together.',
-    ...tone(CHARACTER.citizen),
-    icon: 'coins',
-    createdBy: 'PLACER',
-    component: BudgetBallot,
-    onProjectPage: {
-      heading: 'How would you spend the budget?',
-      Embed: BudgetBallotOnPage,
-    },
-    setup: {
-      defaults: defaultBallotSetup,
-      problems: ballotSetupProblems,
-      Form: BudgetBallotSetup,
-      steps: [
-        { title: 'Budget', Form: BudgetStep, problems: budgetProblems },
-        { title: 'Posts', Form: PostsStep, problems: postProblems },
-      ],
-    },
-    room: {
-      empty: emptyBallot,
-      combine: combineBallots,
-    },
-  },
-  {
-    id: 'open-vote',
-    added: '2026-09-22',
-    category: 'plan',
-    name: 'Poll',
-    tagline: 'Ask anything, with the answers you choose.',
-    blurb: 'Type whatever you want to put to a room, write the answers people can pick from, then let them vote. There is no scale to calibrate — just a question, your answers, and a live tally as people pick.',
-    ...tone(CHARACTER.cityWorker),
-    icon: 'flag',
-    createdBy: 'PLACER',
-    component: OpenVote,
-    setup: {
-      defaults: defaultVoteSetup,
-      problems: voteSetupProblems,
-      Form: OpenVoteSetup,
-      steps: [
-        { title: 'Question', Form: QuestionStep, problems: questionProblems },
-        { title: 'Answers', Form: AnswersStep, problems: answerProblems },
-      ],
-    },
-    onProjectPage: {
-      heading: 'We want your opinion',
-      Embed: OpenVoteOnPage,
-    },
-    room: {
-      empty: emptyVote,
-      combine: combineVotes,
-    },
-  },
-  {
-    id: 'pop-quiz',
-    added: '2026-10-12',
-    category: 'understand',
-    name: 'Pop Quiz',
-    tagline: 'Twenty questions, a clock, and a scoreboard.',
-    blurb: 'Write a quiz of up to twenty questions, each with four choices or a blank to fill in. Everybody joins with a nickname, the questions go up one at a time, and a right answer scores more the sooner it comes — a quick way to find out what a room already knows about a place.',
-    ...tone(CHARACTER.cityWorker),
-    icon: 'flask',
-    createdBy: 'PLACER',
-    component: PopQuiz,
-    setup: {
-      defaults: defaultQuizSetup,
-      problems: quizSetupProblems,
-      Form: PopQuizSetup,
-      steps: [
-        { title: 'Questions', Form: QuestionsStep, problems: quizQuestionProblems },
-        { title: 'Time', Form: TimeStep, problems: timeProblems },
-      ],
-    },
-    onProjectPage: {
-      heading: 'Take the pop quiz',
-    },
-    room: {
-      empty: emptyQuizState,
-      combine: combineQuiz,
-    },
-  },
-  {
-    id: 'word-cloud',
-    added: '2026-10-12',
-    category: 'understand',
-    name: 'Word Cloud',
-    tagline: 'Ask anything, and watch the answers gather.',
-    blurb: 'Type whatever you want to put to a room and let everybody answer in a few words of their own. Each word joins the cloud as it is added, and grows every time another person says it — so what the room agrees on is the first thing you read.',
-    ...tone(CHARACTER.cityWorker),
-    icon: 'cloud',
-    createdBy: 'PLACER',
-    component: WordCloud,
-    setup: {
-      defaults: defaultCloudSetup,
-      problems: cloudSetupProblems,
-      Form: WordCloudSetup,
-      steps: [
-        { title: 'Prompt', Form: PromptStep, problems: promptProblems },
-        { title: 'Words', Form: WordsStep, problems: wordsProblems },
-      ],
-    },
-    onProjectPage: {
-      heading: 'Tell us in a word',
-      Embed: WordCloudOnPage,
-    },
-    room: {
-      empty: emptyWords,
-      combine: combineWords,
-    },
-  },
-  {
-    id: 'social-space-survey',
-    added: '2026-09-17',
-    category: 'understand',
-    name: 'The Social Space Survey',
-    tagline: 'Eighteen checks that read a space for strangers.',
-    blurb: 'A field tool from the Gehl Institute: tick what invites and what blocks, map the spatial patterns that bring strangers together, and judge how well different people could share the place. Walk it in five minutes — take the data with you.',
-    ...tone(CHARACTER.practitioner),
-    icon: 'bench',
-    createdBy: 'Gehl Institute',
-    credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
-    component: SocialSpaceSurvey,
-  },
-  {
-    id: 'site-spatial-mapping',
-    added: '2026-09-17',
-    category: 'understand',
-    name: 'Site-Specific Spatial Mapping Tool',
-    tagline: 'Pin a site on the map, answer eighteen cards, stay in touch.',
-    blurb: 'Pick a specific site on a Google Map with your location, tell us your age range and gender, work through the eighteen-question survey as a stack of cards, then optionally map markers, reflect in words, and leave contact details for follow-ups.',
-    ...tone(CHARACTER.cityWorker),
-    icon: 'pin',
-    createdBy: 'PLACER',
-    credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
-    component: SiteMapping,
-  },
-  {
-    id: 'stationary-activity-mapping',
-    added: '2026-09-17',
-    category: 'understand',
-    name: 'Stationary Activity Mapping',
-    tagline: 'Posture and activity, one person at a time, plotted on the map.',
-    blurb: 'A map-based field observation tool. Record each person as a posture and the activity or activities they are doing while holding it, and watch the map fill with points and the tally table take shape. The map is the canvas; the recording card floats over its left half.',
-    ...tone(CHARACTER.citizen),
-    icon: 'grid',
-    createdBy: 'PLACER',
-    credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
-    component: StationaryActivityMap,
-  },
-  {
-    id: 'reimagine-a-space',
-    added: '2026-10-06',
-    category: 'imagine',
-    name: 'Idea Visualizer',
-    tagline: 'A tool to help anyone quickly create a visual render of an idea they have.',
-    blurb: 'Pick a spot on the map and step into its Street View. Place benches, trees, lighting and more where they would go, say what the idea is and why, and post it to the map for others to see.',
-    ...tone(CHARACTER.citizen),
-    icon: 'sparkle',
-    createdBy: 'PLACER',
-    duration: 'About 5 minutes',
-    component: ReimagineASpace,
-    launch: true,
-    onProjectPage: {
-      heading: 'Share your idea for this place',
-    },
-  },
-  {
-    id: 'dream-it',
-    added: '2026-10-12',
-    category: 'imagine',
-    name: 'Dream It',
-    tagline: 'A prompt to set a room imagining, at the press of a button.',
-    blurb: 'An activity for unlocking imagination and making a safe space to share personal visions, desires and emotional connections to a place. Generate a prompt, and let people speak, imagine and listen to each other — about how the place could feel, function or inspire, rather than what is practical today.',
-    ...tone(CHARACTER.citizen),
-    icon: 'sparkle',
-    createdBy: 'PLACER',
-    component: DreamIt,
-  },
-];
+/**
+ * Every tool, oldest first: by `added`, then by id. Each lives in its own file under
+ * ./tools, named for its id, so a branch adding one adds a file rather than editing a
+ * list that every other new tool edits too.
+ */
+export const TOOLS = Object.entries(import.meta.glob('./tools/*.js', { eager: true, import: 'default' }))
+  .map(([path, tool]) => {
+    const file = path.slice('./tools/'.length, -'.js'.length);
+    if (tool?.id !== file) throw new Error(`src/toolkit/tools/${file}.js: its id is ${tool?.id}, not ${file}`);
+    return tool;
+  })
+  .sort((a, b) => a.added.localeCompare(b.added) || a.id.localeCompare(b.id));
 
 const BY_ID = new Map(TOOLS.map((tool) => [tool.id, tool]));
 
@@ -399,7 +153,7 @@ export const SORTS = [
 /**
  * The tools in one of the SORTS orders, as a new array. Recent goes by `added`,
  * A-Z by name, and Organisation by `createdBy` and then name. Tools added on the same
- * day keep their register order, later entries counting as newer.
+ * day keep their order in TOOLS, later entries counting as newer.
  */
 export function sortTools(tools, sort = 'recent', direction = 'desc') {
   const byName = (a, b) => a.tool.name.localeCompare(b.tool.name);

@@ -43,16 +43,9 @@ organisers let in, and anybody else can ask for access.
 ### Use the Toolkit
 
 The Toolkit at `/toolkit` is a gallery of small tools, grouped by what they help with:
-
-| Understand | Imagine | Plan |
-| --- | --- | --- |
-| Desire Lines | Street Section Mixer | Co-Budget |
-| 15-Minute Reach | Idea Visualizer | Poll |
-| The Social Space Survey | Dream It | |
-| Pop Quiz | | |
-| Word Cloud | | |
-| Site-Specific Spatial Mapping Tool | | |
-| Stationary Activity Mapping | | |
+**Understand** how a place is used, **Imagine** how it could change, and **Plan** the
+change. Each tool is a file of its own in `src/toolkit/tools/`; see `CONTRIBUTING.md`
+for adding one.
 
 Some tools can run in a **room**: a facilitator opens one, participants join from their
 own phones with a PIN or QR code, and their answers combine live. A project can attach

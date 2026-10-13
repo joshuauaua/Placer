@@ -83,11 +83,8 @@ alter table public.toolkit_rooms drop constraint if exists toolkit_rooms_pin_sha
 alter table public.toolkit_rooms add constraint toolkit_rooms_pin_shape
   check (pin ~ '^[0-9]{6}$');
 
--- The tools that may host a room. Extend this list when a second
--- tool opts in (src/toolkit/tools.js is the other half of the pair).
-alter table public.toolkit_rooms drop constraint if exists toolkit_rooms_tool_known;
-alter table public.toolkit_rooms add constraint toolkit_rooms_tool_known
-  check (tool in ('budget-ballot', 'open-vote', 'word-cloud', 'pop-quiz'));
+-- Which tools may host a room is room-tools.sql's to say: its toolkit_room_tools,
+-- which toolkit_rooms.tool references (the constraint toolkit_rooms_tool_known).
 
 revoke all on public.toolkit_rooms from anon;
 
