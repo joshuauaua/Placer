@@ -49,6 +49,7 @@ The Toolkit at `/toolkit` is a gallery of small tools, grouped by what they help
 | Desire Lines | Street Section Mixer | Co-Budget |
 | 15-Minute Reach | Idea Visualizer | Poll |
 | The Social Space Survey | | |
+| Word Cloud | | |
 | Site-Specific Spatial Mapping Tool | | |
 | Stationary Activity Mapping | | |
 

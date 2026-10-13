@@ -82,6 +82,9 @@ import { StationaryActivityMap } from '../components/toolkit/StationaryActivityM
 const PUBLIC_LIFE_PROTOCOL_CREDIT = 'The Public Life Data Protocol was jointly developed by Gehl Institute, '
   + 'Gehl, the City of Copenhagen, The City of San Francisco, and Seattle Department of Transportation.';
 import { StreetMixer } from '../components/toolkit/StreetMixer';
+import { WordCloud } from '../components/toolkit/WordCloud';
+import { WordCloudOnPage } from '../components/toolkit/WordCloudOnPage';
+import { PromptStep, WordCloudSetup, WordsStep } from '../components/toolkit/WordCloudSetup';
 import { CHARACTER } from '../theme';
 import {
   ballotSetupProblems, budgetProblems, combineBallots, defaultBallotSetup, emptyBallot, postProblems,
@@ -89,6 +92,9 @@ import {
 import {
   answerProblems, combineVotes, defaultVoteSetup, emptyVote, questionProblems, voteSetupProblems,
 } from '../lib/openVote';
+import {
+  cloudSetupProblems, combineWords, defaultCloudSetup, emptyWords, promptProblems, wordsProblems,
+} from '../lib/wordCloud';
 
 // Each tool wears one of the three character colours: `color` is the 700,
 // for text, icons and outlines on white, and `tint` the 100, for fills with ink
@@ -214,6 +220,35 @@ export const TOOLS = [
     room: {
       empty: emptyVote,
       combine: combineVotes,
+    },
+  },
+  {
+    id: 'word-cloud',
+    added: '2026-10-12',
+    category: 'understand',
+    name: 'Word Cloud',
+    tagline: 'Ask anything, and watch the answers gather.',
+    blurb: 'Type whatever you want to put to a room and let everybody answer in a few words of their own. Each word joins the cloud as it is added, and grows every time another person says it — so what the room agrees on is the first thing you read.',
+    ...tone(CHARACTER.cityWorker),
+    icon: 'cloud',
+    createdBy: 'PLACER',
+    component: WordCloud,
+    setup: {
+      defaults: defaultCloudSetup,
+      problems: cloudSetupProblems,
+      Form: WordCloudSetup,
+      steps: [
+        { title: 'Prompt', Form: PromptStep, problems: promptProblems },
+        { title: 'Words', Form: WordsStep, problems: wordsProblems },
+      ],
+    },
+    onProjectPage: {
+      heading: 'Tell us in a word',
+      Embed: WordCloudOnPage,
+    },
+    room: {
+      empty: emptyWords,
+      combine: combineWords,
     },
   },
   {
