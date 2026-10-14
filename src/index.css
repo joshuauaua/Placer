@@ -2346,9 +2346,9 @@ a {
 /* PLACER — Explore (see ExplorePage.jsx). A page that scrolls, with the footer
  * under it: the map in a frame as wide as the page — which is whatever the side nav,
  * open or closed, leaves of the window — and nearly a window tall. The frame has a
- * header of its own with the search at its left end, and the two cards float over
- * the map's left edge under it. Below 1024px there is no room for the cards on the
- * map, so they drop under it instead. */
+ * header of its own, with the filter dropdown at its left and the search in its
+ * middle, and the card for whatever is picked floats over the map's left edge under
+ * it. Below 1024px there is no room for the card on the map, so it drops under it. */
 .placer-explore {
   --placer-explore-bar: 64px;
   box-sizing: border-box;
@@ -2375,7 +2375,11 @@ a {
 .placer-explore-bar {
   flex: 0 0 var(--placer-explore-bar);
   box-sizing: border-box;
-  display: flex;
+  /* The outer columns share what is left equally, so the search sits in the true
+   * middle whatever the filter's width. */
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 480px) 1fr;
+  gap: 12px;
   align-items: center;
   padding: 0 12px;
   border-bottom: 1px solid;
@@ -2455,18 +2459,58 @@ a {
   text-decoration-thickness: 2px;
 }
 
-/* The width of the cards under it, so the two line up down the left. */
+/* The dropdown choosing what the map shows. */
+.placer-explore-filter-menu {
+  position: relative;
+  justify-self: start;
+}
+
+.placer-explore-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px 0 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--placer-font);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.placer-explore-filter-button:hover {
+  background: var(--placer-grey-100) !important;
+}
+
+.placer-explore-filter-button:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+.placer-explore-filter-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 280px;
+  box-sizing: border-box;
+  padding: 6px 16px;
+  border-radius: var(--placer-radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .placer-explore-search {
   position: relative;
-  width: 352px;
-  max-width: 100%;
+  width: 100%;
 }
 
 .placer-explore-results {
   position: absolute;
   top: 100%;
   left: 0;
-  width: max(100%, 420px);
+  width: 100%;
   max-width: calc(100vw - 48px);
   box-sizing: border-box;
   list-style: none;
@@ -2515,8 +2559,9 @@ a {
     border-radius: var(--placer-radius-lg) var(--placer-radius-lg) 0 0;
   }
 
-  .placer-explore-search {
-    width: 100%;
+  /* The filter at the left, and the search taking the rest. */
+  .placer-explore-bar {
+    grid-template-columns: auto 1fr;
   }
 
   .placer-explore-map {
@@ -2538,6 +2583,13 @@ a {
 
   .placer-explore-card {
     box-shadow: none;
+  }
+}
+
+/* On a phone the filter is its icon, which leaves the search the width of the bar. */
+@media (max-width: 639px) {
+  .placer-explore-filter-label {
+    display: none;
   }
 }
 

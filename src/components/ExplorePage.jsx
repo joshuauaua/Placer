@@ -1,9 +1,10 @@
 /* PLACER — Explore, at /explore: what is going on in the places around you.
  *
- * The map sits in a frame, with two cards floating over its left edge. The first
- * chooses what the map shows, and doubles as its legend; the second previews whatever
- * was picked on the map or from the search box in the frame's header, with a link through to its page and a Save,
- * which is a follow (services/follows.js) worded for keeping a place.
+ * The map sits in a frame with a header of its own: the search in the middle, and at
+ * the left a dropdown choosing what the map shows, which doubles as its legend. Once
+ * something is picked, on the map or from the search, a card over the map's left edge
+ * previews it, with a link through to its page and a Save, which is a follow
+ * (services/follows.js) worded for keeping a place.
  *
  * Projects are drawn where they have outlined themselves, the same outline their own
  * page shows, with a pin in the middle so a small one can still be found zoomed out.
@@ -85,48 +86,63 @@ function pinStyle(character, selected) {
   };
 }
 
-function FilterCard({ t, shown, counts, onToggle }) {
+/** What the map shows, as a dropdown off a pill in the frame's header. It stays open
+ * while layers are ticked on and off; a click elsewhere or Escape closes it. */
+function FilterMenu({ t, shown, counts, onToggle }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onPointer = (event) => { if (!ref.current?.contains(event.target)) setOpen(false); };
+    const onKey = (event) => { if (event.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
   return (
-    <section className="placer-explore-card" aria-labelledby="explore-filter-heading">
-      <h2 id="explore-filter-heading" style={{ fontSize: 18, fontWeight: 700, color: t.ink }}>Show on the map</h2>
-      <p style={{ fontSize: 14, color: t.inkDim, marginTop: 4, marginBottom: 16 }}>
-        Find the places that interest you
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {LAYERS.map((layer) => {
-          const on = !layer.soon && shown[layer.key];
-          return (
-            <label key={layer.key} className="placer-explore-filter"
-              style={{ cursor: layer.soon ? 'not-allowed' : 'pointer', color: layer.soon ? t.inkFaint : t.ink }}>
-              <input type="checkbox" checked={on} disabled={layer.soon}
-                onChange={() => onToggle(layer.key)} />
-              <span aria-hidden="true" style={{ width: 14, height: 14, borderRadius: '50%', flex: '0 0 auto',
-                background: layer.character.c100, border: `2px solid ${layer.character.c700}`,
-                opacity: layer.soon ? 0.4 : 1 }} />
-              <span style={{ flex: 1, fontSize: 15, fontWeight: 500 }}>{layer.label}</span>
-              {layer.soon
-                ? <span className="placer-mono" style={{ fontSize: 11, letterSpacing: '0.06em',
-                  textTransform: 'uppercase', color: t.inkFaint }}>Coming soon</span>
-                : <span style={{ fontSize: 13, color: t.inkDim }}>{counts[layer.key] ?? 0}</span>}
-            </label>
-          );
-        })}
-      </div>
-    </section>
+    <div ref={ref} className="placer-explore-filter-menu">
+      <button type="button" onClick={() => setOpen((was) => !was)} aria-expanded={open}
+        aria-controls="explore-filter-panel" aria-label="Show on the map"
+        className="placer-explore-filter-button"
+        style={{ border: `1px solid ${t.ink}`, background: t.surface, color: t.ink }}>
+        <Icon name="layers" size={16} stroke={2} />
+        <span className="placer-explore-filter-label">Show on the map</span>
+        <Icon name={open ? 'chevUp' : 'chevDown'} size={16} stroke={2.2} />
+      </button>
+      {open && (
+        <div id="explore-filter-panel" role="group" aria-label="Show on the map"
+          className="placer-explore-filter-panel"
+          style={{ background: t.surface, border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
+          {LAYERS.map((layer) => {
+            const on = !layer.soon && shown[layer.key];
+            return (
+              <label key={layer.key} className="placer-explore-filter"
+                style={{ cursor: layer.soon ? 'not-allowed' : 'pointer', color: layer.soon ? t.inkFaint : t.ink }}>
+                <input type="checkbox" checked={on} disabled={layer.soon}
+                  onChange={() => onToggle(layer.key)} />
+                <span aria-hidden="true" style={{ width: 14, height: 14, borderRadius: '50%', flex: '0 0 auto',
+                  background: layer.character.c100, border: `2px solid ${layer.character.c700}`,
+                  opacity: layer.soon ? 0.4 : 1 }} />
+                <span style={{ flex: 1, fontSize: 15, fontWeight: 500 }}>{layer.label}</span>
+                {layer.soon
+                  ? <span className="placer-mono" style={{ fontSize: 11, letterSpacing: '0.06em',
+                    textTransform: 'uppercase', color: t.inkFaint }}>Coming soon</span>
+                  : <span style={{ fontSize: 13, color: t.inkDim }}>{counts[layer.key] ?? 0}</span>}
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
 function PreviewCard({ t, place, accountId, onSignIn, onOpen }) {
-  if (!place) {
-    return (
-      <section className="placer-explore-card" aria-label="Selected place"
-        style={{ color: t.inkDim, fontSize: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Icon name="pin" size={18} stroke={2} />
-        Pick something on the map, or search for it, to see it here.
-      </section>
-    );
-  }
-
   const layer = LAYERS.find(({ kind }) => kind === place.kind);
   const kindName = KIND_NAMES[place.kind];
 
@@ -236,7 +252,9 @@ function ExploreSearch({ t, places, onPick, onPlace }) {
           onFocus={() => setOpen(true)}
           onBlur={() => setOpen(false)}
           onKeyDown={handleKeyDown}
-          style={{ flex: 1, minWidth: 0, border: 'none', background: 'transparent', outline: 'none',
+          // The full height of the box keeps the caret clear of the rounded corners every
+          // input gets from index.css, which would clip it at the start of the line.
+          style={{ flex: 1, minWidth: 0, height: '100%', border: 'none', background: 'transparent', outline: 'none',
             fontFamily: 'var(--placer-font)', fontSize: 14, fontWeight: 500, color: t.ink }} />
       </div>
       {listOpen && (
@@ -430,21 +448,23 @@ export function ExplorePage({ homeCenter = null, accountId = null, onSignIn,
     <div className="placer-explore" style={{ background: t.page }}>
       <PageHeader t={t} title="Explore" inset={32} maxWidth="none" style={{ marginBottom: 24 }} />
       <div className="placer-explore-frame" style={{ borderColor: t.line }}>
-        {/* The frame's own header, with the search at its left end. */}
+        {/* The frame's own header: what to show at its left, the search in its middle. */}
         <div className="placer-explore-bar" style={{ borderColor: t.line, background: t.surface }}>
+          <FilterMenu t={t} shown={shown}
+            counts={{ projects: projects.length, organisations: organisations.length }}
+            onToggle={(key) => setShown((current) => ({ ...current, [key]: !current[key] }))} />
           <ExploreSearch t={t} places={[...projects, ...organisations]} onPick={pickFromSearch} onPlace={goToPlace} />
         </div>
         <div className="placer-explore-map" style={{ background: t.surfaceAlt }}>
           <div ref={mapRef} data-testid="explore-map" style={{ position: 'absolute', inset: 0 }} />
         </div>
-        {/* Over the map's left edge from 1024px; under the map on a narrower screen,
-            where there is no room beside it. */}
-        <aside className="placer-explore-side">
-          <FilterCard t={t} shown={shown}
-            counts={{ projects: projects.length, organisations: organisations.length }}
-            onToggle={(key) => setShown((current) => ({ ...current, [key]: !current[key] }))} />
-          <PreviewCard t={t} place={selected} accountId={accountId} onSignIn={onSignIn} onOpen={openPlace} />
-        </aside>
+        {/* Only once something is picked: over the map's left edge from 1024px, and
+            under the map on a narrower screen, where there is no room beside it. */}
+        {selected && (
+          <aside className="placer-explore-side">
+            <PreviewCard t={t} place={selected} accountId={accountId} onSignIn={onSignIn} onOpen={openPlace} />
+          </aside>
+        )}
       </div>
     </div>
   );
