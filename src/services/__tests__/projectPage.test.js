@@ -24,6 +24,8 @@ let page;
 async function load() {
   vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
   vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'anon-key');
+  // Photos are addresses in the media bucket, so they need one configured.
+  vi.stubEnv('VITE_MEDIA_URL', 'https://media.example/');
   vi.resetModules();
   page = await import('../projectPage');
 }
@@ -88,7 +90,7 @@ describe('projectPage', () => {
     const comments = await page.readComments('proj-1');
 
     expect(rpc).toHaveBeenCalledWith('profile_photos', { p_ids: ['user-2', 'user-3'] });
-    expect(comments[0].authorPhoto).toMatch(/avatars\/user-2\/a\.jpg$/);
+    expect(comments[0].authorPhoto).toBe('https://media.example/avatars/user-2/a.jpg');
     expect(comments[1].authorPhoto).toBeNull();
     expect(comments[2].authorPhoto).toBeNull();
   });
