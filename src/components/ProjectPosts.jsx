@@ -5,6 +5,10 @@
  * signed in. A post can be removed by whoever may remove it (`canRemove`);
  * the database decides in the end (supabase/project-public-page.sql), this only
  * decides what to offer.
+ *
+ * An organiser of a project run for an organisation chooses, above the box, whether
+ * to post as the organisation or as themselves (`postAs`); a post made as the
+ * organisation shows its name and picture and links to it.
  */
 
 import { useState } from 'react';
@@ -17,8 +21,41 @@ function postedOn(iso) {
   return Number.isNaN(date.getTime()) ? '' : POSTED_FORMAT.format(date);
 }
 
-function Composer({ t, id, label, placeholder, submitLabel, max, onPost }) {
+/** The two names an organiser can post under, as a pair of choices with their pictures. */
+function PostAs({ t, id, postAs, asOrganisation, onChange }) {
+  const options = [
+    { key: 'organisation', label: postAs.organisation.name, photo: postAs.organisation.photo, role: 'Organisation' },
+    { key: 'me', label: postAs.me.name, photo: postAs.me.photo, role: 'Yourself' },
+  ];
+  return (
+    <fieldset style={{ border: 'none', padding: 0, margin: '0 0 12px' }}>
+      <legend className="placer-label" style={{ color: t.ink, marginBottom: 8 }}>Post as</legend>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {options.map((option) => {
+          const chosen = (option.key === 'organisation') === asOrganisation;
+          return (
+            <label key={option.key} className="placer-post-as"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '6px 14px 6px 6px',
+                borderRadius: 999, cursor: 'pointer', fontSize: 14, color: t.ink,
+                border: `1.5px solid ${chosen ? t.ink : t.lineStrong}`, background: chosen ? t.surfaceAlt : t.surface }}>
+              <input type="radio" name={`${id}-as`} value={option.key} checked={chosen}
+                onChange={() => onChange(option.key === 'organisation')} className="placer-visually-hidden" />
+              <Avatar name={option.label} photo={option.photo} size={28} />
+              <span>
+                <span style={{ display: 'block', fontWeight: 700, lineHeight: 1.2 }}>{option.label}</span>
+                <span className="placer-caption" style={{ display: 'block', color: t.inkDim }}>{option.role}</span>
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
+function Composer({ t, id, label, placeholder, submitLabel, max, onPost, postAs, organisationFirst }) {
   const [body, setBody] = useState('');
+  const [asOrganisation, setAsOrganisation] = useState(organisationFirst);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
@@ -28,7 +65,7 @@ function Composer({ t, id, label, placeholder, submitLabel, max, onPost }) {
     setSending(true);
     setError(null);
     try {
-      await onPost(body);
+      await onPost(body, postAs && asOrganisation ? postAs.organisation.id : null);
       setBody('');
     } catch (err) {
       console.error(err);
@@ -40,6 +77,7 @@ function Composer({ t, id, label, placeholder, submitLabel, max, onPost }) {
 
   return (
     <form onSubmit={send} style={{ marginBottom: 24 }}>
+      {postAs && <PostAs t={t} id={id} postAs={postAs} asOrganisation={asOrganisation} onChange={setAsOrganisation} />}
       <label htmlFor={id} className="placer-label" style={{ display: 'block', color: t.ink, marginBottom: 8 }}>
         {label}
       </label>
@@ -64,7 +102,7 @@ function Composer({ t, id, label, placeholder, submitLabel, max, onPost }) {
  * in its place.
  */
 export function ProjectPosts({ t, kind, posts, status, canPost, prompt = null, max, onPost, canRemove, onRemove,
-  onOpenProfile }) {
+  onOpenProfile, onOpenOrganisation, postAs = null, organisation = null }) {
   const update = kind === 'update';
   const [removing, setRemoving] = useState(null);
 
@@ -82,7 +120,8 @@ export function ProjectPosts({ t, kind, posts, status, canPost, prompt = null, m
   return (
     <div>
       {canPost ? (
-        <Composer t={t} id={`project-${kind}-body`} max={max} onPost={onPost}
+        <Composer t={t} id={`project-${kind}-body`} max={max} onPost={onPost} postAs={postAs}
+          organisationFirst={update}
           label={update ? 'Post an update' : 'Add a comment'}
           placeholder={update ? 'What is new with the project?' : 'Say what you think'}
           submitLabel={update ? 'Post update' : 'Comment'} />
@@ -103,35 +142,47 @@ export function ProjectPosts({ t, kind, posts, status, canPost, prompt = null, m
       )}
       {status === 'ready' && posts.length > 0 && (
         <ul aria-label={update ? 'Updates' : 'Comments'} style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-          {posts.map((post) => (
-            <li key={post.id} style={{ display: 'flex', gap: 14, padding: '18px 0', borderTop: `1px solid ${t.line}` }}>
-              <Avatar name={post.authorName} size={40} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
-                  {post.authorId && onOpenProfile ? (
-                    <a href={`/people/${post.authorId}`}
-                      onClick={(e) => { e.preventDefault(); onOpenProfile(post.authorId); }}
-                      style={{ fontSize: 15, fontWeight: 700, color: t.ink, textDecoration: 'none' }}>
-                      {post.authorName}
-                    </a>
-                  ) : <span style={{ fontSize: 15, fontWeight: 700, color: t.ink }}>{post.authorName}</span>}
-                  <span className="placer-caption" style={{ color: t.inkDim }}>{postedOn(post.createdAt)}</span>
-                  {canRemove(post) && (
-                    <button type="button" onClick={() => remove(post)} disabled={removing === post.id}
-                      aria-label={`Remove ${update ? 'update' : 'comment'} by ${post.authorName}`}
-                      style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', padding: 0,
-                        fontFamily: 'var(--placer-font)', fontSize: 13, color: t.inkDim, textDecoration: 'underline' }}>
-                      Remove
-                    </button>
-                  )}
+          {posts.map((post) => {
+            const asOrganisation = Boolean(post.organisationId);
+            return (
+              <li key={post.id} style={{ display: 'flex', gap: 14, padding: '18px 0', borderTop: `1px solid ${t.line}` }}>
+                <Avatar name={post.authorName} size={40}
+                  photo={asOrganisation && organisation?.id === post.organisationId ? organisation.photo : null} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+                    {asOrganisation ? (
+                      onOpenOrganisation ? (
+                        <a href={`/organisations/${post.organisationId}`}
+                          onClick={(e) => { e.preventDefault(); onOpenOrganisation(post.organisationId); }}
+                          style={{ fontSize: 15, fontWeight: 700, color: t.ink, textDecoration: 'none' }}>
+                          {post.authorName}
+                        </a>
+                      ) : <span style={{ fontSize: 15, fontWeight: 700, color: t.ink }}>{post.authorName}</span>
+                    ) : post.authorId && onOpenProfile ? (
+                      <a href={`/people/${post.authorId}`}
+                        onClick={(e) => { e.preventDefault(); onOpenProfile(post.authorId); }}
+                        style={{ fontSize: 15, fontWeight: 700, color: t.ink, textDecoration: 'none' }}>
+                        {post.authorName}
+                      </a>
+                    ) : <span style={{ fontSize: 15, fontWeight: 700, color: t.ink }}>{post.authorName}</span>}
+                    <span className="placer-caption" style={{ color: t.inkDim }}>{postedOn(post.createdAt)}</span>
+                    {canRemove(post) && (
+                      <button type="button" onClick={() => remove(post)} disabled={removing === post.id}
+                        aria-label={`Remove ${update ? 'update' : 'comment'} by ${post.authorName}`}
+                        style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', padding: 0,
+                          fontFamily: 'var(--placer-font)', fontSize: 13, color: t.inkDim, textDecoration: 'underline' }}>
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <p style={{ fontSize: 15.5, lineHeight: 1.6, color: t.ink, whiteSpace: 'pre-line',
+                    overflowWrap: 'anywhere' }}>
+                    {post.body}
+                  </p>
                 </div>
-                <p style={{ fontSize: 15.5, lineHeight: 1.6, color: t.ink, whiteSpace: 'pre-line',
-                  overflowWrap: 'anywhere' }}>
-                  {post.body}
-                </p>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

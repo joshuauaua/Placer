@@ -2,12 +2,16 @@
  *
  * A header first: the title and, under it, the project's summary as a subtitle; then
  * its image, with its dates, who it is by and where underneath, and a column beside
- * it, level with its top — the time it has left, its views
- * and its followers, each a big number over its words, and a Follow button. Then a bar of tabs that sticks to the top of the window — Project,
- * Updates, Comments and Relevant links — each a view of its own, the Project tab
- * opening with the project's description and goals. Under whichever is
- * showing, always: the Organizer (the organisation it is run for, or the account that
- * started it) beside its Collaborators, then three related projects.
+ * it, level with its top — the time it has left, its views and its followers, each a
+ * big number over its words, and a Follow button. Then a bar of tabs that sticks to
+ * the top of the window — Project, Updates, Comments and Relevant links — each a view
+ * of its own, the Project tab opening with the project's description and goals. Under
+ * whichever is showing, always: the Organizer (the organisation it is run for, or the
+ * account that started it) beside its Collaborators, then three related projects.
+ *
+ * Updates are posted by the project's organisers, comments by anybody signed in; an
+ * organiser of a project run for an organisation chooses to post either as the
+ * organisation or as themselves.
  *
  * The numbers, the owner's details, the collaborators, the updates and the comments
  * come from supabase/project-public-page.sql (services/projectPage.js). Each is extra:
@@ -571,6 +575,13 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
 
   const counts = { updates: updates.posts.length, comments: comments.posts.length, links: links.length };
 
+  // An organiser of a project run for an organisation may post as either
+  // (supabase/project-posts-as-organisation.sql).
+  const postsOrganisation = organisation ? { id: organisation.id, name: organisation.name, photo: organisation.avatar } : null;
+  const postAs = postsOrganisation && isOrganiser
+    ? { organisation: postsOrganisation, me: { name: accountName || 'You', photo: null } }
+    : null;
+
   const signInPrompt = (
     <div className="placer-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
@@ -747,8 +758,9 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
 
         {tab === 'updates' && (
           <ProjectPosts t={t} kind="update" posts={updates.posts} status={updates.status} canPost={isOrganiser}
-            max={UPDATE_MAX} onOpenProfile={onOpenProfile}
-            onPost={async (body) => addPost(setUpdates, await postUpdate(project.id, body))}
+            max={UPDATE_MAX} onOpenProfile={onOpenProfile} onOpenOrganisation={onOpenOrganisation}
+            postAs={postAs} organisation={postsOrganisation}
+            onPost={async (body, asOrganisation) => addPost(setUpdates, await postUpdate(project.id, body, asOrganisation))}
             canRemove={() => isOrganiser}
             onRemove={async (post) => { await removeUpdate(post.id); dropPost(setUpdates, post.id); }} />
         )}
@@ -756,8 +768,9 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         {tab === 'comments' && (
           <ProjectPosts t={t} kind="comment" posts={comments.posts} status={comments.status}
             canPost={Boolean(accountId)} prompt={onSignIn ? signInPrompt : null}
-            max={COMMENT_MAX} onOpenProfile={onOpenProfile}
-            onPost={async (body) => addPost(setComments, await postComment(project.id, body))}
+            max={COMMENT_MAX} onOpenProfile={onOpenProfile} onOpenOrganisation={onOpenOrganisation}
+            postAs={postAs} organisation={postsOrganisation}
+            onPost={async (body, asOrganisation) => addPost(setComments, await postComment(project.id, body, asOrganisation))}
             canRemove={(post) => isTeam || (Boolean(accountId) && post.authorId === accountId)}
             onRemove={async (post) => { await removeComment(post.id); dropPost(setComments, post.id); }} />
         )}

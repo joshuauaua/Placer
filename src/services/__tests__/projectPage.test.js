@@ -70,8 +70,8 @@ describe('projectPage', () => {
     expect(from).toHaveBeenCalledWith('project_comments');
     expect(eqSelect).toHaveBeenCalledWith('project_id', 'proj-1');
     expect(order).toHaveBeenCalledWith('created_at', { ascending: false });
-    expect(comments).toEqual([{ id: 'c1', projectId: 'proj-1', authorId: 'user-2', authorName: 'Lee', body: 'Hi',
-      createdAt: '2026-05-01T10:00:00Z' }]);
+    expect(comments).toEqual([{ id: 'c1', projectId: 'proj-1', authorId: 'user-2', authorName: 'Lee',
+      organisationId: null, body: 'Hi', createdAt: '2026-05-01T10:00:00Z' }]);
   });
 
   it('posts an update with only its project and its body, trimmed', async () => {
@@ -83,6 +83,18 @@ describe('projectPage', () => {
     expect(from).toHaveBeenCalledWith('project_updates');
     expect(insert).toHaveBeenCalledWith({ project_id: 'proj-1', body: 'News' });
     expect(update.body).toBe('News');
+  });
+
+  it('posts a comment as the organisation only when asked to', async () => {
+    await load();
+    single.mockResolvedValue({ data: { ...ROW, organisation_id: 'org-1', author_name: 'STPLN' }, error: null });
+
+    const comment = await page.postComment('proj-1', 'Hi', 'org-1');
+    await page.postComment('proj-1', 'Hi');
+
+    expect(insert).toHaveBeenNthCalledWith(1, { project_id: 'proj-1', body: 'Hi', organisation_id: 'org-1' });
+    expect(insert).toHaveBeenNthCalledWith(2, { project_id: 'proj-1', body: 'Hi' });
+    expect(comment).toMatchObject({ organisationId: 'org-1', authorName: 'STPLN' });
   });
 
   it('says so when a post is refused', async () => {

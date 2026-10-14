@@ -106,6 +106,8 @@ const PLAN = [
   { name: '20261013130001_toolkit_rooms_edit.sql', src: 'rooms-edit.sql' },
   { name: '20261014090001_profile_onboarding.sql', src: 'profile-onboarding.sql' },
   { name: '20261014120001_project_public_page.sql', src: 'project-public-page.sql' },
+  { name: '20261014150001_project_posts_as_organisation.sql', src: 'project-posts-as-organisation.sql' },
+  { name: '20261014160001_profile_activity.sql', src: 'profile-activity.sql' },
 ]
 
 const ROOM_TOOLS = 'room-tools'

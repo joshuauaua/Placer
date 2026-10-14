@@ -990,7 +990,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     fireEvent.change(screen.getByLabelText('Post an update'), { target: { value: 'Plans are up.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Post update' }));
 
-    await waitFor(() => expect(postUpdate).toHaveBeenCalledWith('proj-1', 'Plans are up.'));
+    await waitFor(() => expect(postUpdate).toHaveBeenCalledWith('proj-1', 'Plans are up.', null));
     const posts = within(screen.getByRole('list', { name: 'Updates' }));
     expect(posts.getAllByRole('listitem')[0]).toHaveTextContent('Plans are up.');
   });
@@ -1046,7 +1046,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
 
     fireEvent.change(screen.getByLabelText('Add a comment'), { target: { value: 'When is it?' } });
     fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
-    await waitFor(() => expect(postComment).toHaveBeenCalledWith('proj-1', 'When is it?'));
+    await waitFor(() => expect(postComment).toHaveBeenCalledWith('proj-1', 'When is it?', null));
     expect(await screen.findByText('When is it?')).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Remove comment by Lee' })[1]);
@@ -1077,5 +1077,90 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     fireEvent.click(await screen.findByRole('tab', { name: /Relevant links/ }));
 
     expect(screen.getByText('No links shared yet.')).toBeInTheDocument();
+  });
+
+  describe('posting as the organisation', () => {
+    const ORG = { id: 'org-1', name: 'STPLN', description: '', location: '', address: '', avatar: null,
+      createdAt: '2026-10-01T00:00:00Z' };
+
+    beforeEach(() => {
+      vi.mocked(readProject).mockResolvedValue({ ...PROJECT, organisationId: 'org-1' });
+      vi.mocked(readOrganisation).mockResolvedValue(ORG);
+      vi.mocked(readProjectSummary).mockResolvedValue({ ...SUMMARY, canPostUpdate: true });
+      vi.mocked(postUpdate).mockImplementation(async (projectId, body, organisationId) => ({
+        id: 'u9', authorId: 'user-1', authorName: organisationId ? 'STPLN' : 'Mara Quinn', organisationId,
+        body, createdAt: '2026-05-04T10:00:00Z' }));
+      vi.mocked(postComment).mockImplementation(async (projectId, body, organisationId) => ({
+        id: 'c9', authorId: 'user-1', authorName: organisationId ? 'STPLN' : 'Mara Quinn', organisationId,
+        body, createdAt: '2026-05-04T10:00:00Z' }));
+    });
+
+    const openTab = async (name) => {
+      await screen.findAllByRole('link', { name: 'STPLN' });
+      fireEvent.click(screen.getByRole('tab', { name }));
+    };
+
+    it('lets an organiser post an update as the organisation, which it starts on', async () => {
+      const props = setup({ accountId: 'user-1', accountName: 'Mara Quinn', onOpenOrganisation: vi.fn() });
+      await openTab(/Updates/);
+
+      const postAs = within(screen.getByRole('group', { name: 'Post as' }));
+      expect(postAs.getByRole('radio', { name: /STPLN/ })).toBeChecked();
+      expect(postAs.getByRole('radio', { name: /Mara Quinn/ })).not.toBeChecked();
+
+      fireEvent.change(screen.getByLabelText('Post an update'), { target: { value: 'Opening hours are up.' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Post update' }));
+
+      await waitFor(() => expect(postUpdate).toHaveBeenCalledWith('proj-1', 'Opening hours are up.', 'org-1'));
+      const first = within(within(screen.getByRole('list', { name: 'Updates' })).getAllByRole('listitem')[0]);
+      fireEvent.click(first.getByRole('link', { name: 'STPLN' }));
+      expect(props.onOpenOrganisation).toHaveBeenCalledWith('org-1');
+    });
+
+    it('lets an organiser post an update as themselves instead', async () => {
+      setup({ accountId: 'user-1', accountName: 'Mara Quinn' });
+      await openTab(/Updates/);
+
+      fireEvent.click(screen.getByRole('radio', { name: /Mara Quinn/ }));
+      fireEvent.change(screen.getByLabelText('Post an update'), { target: { value: 'Back next week.' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Post update' }));
+
+      await waitFor(() => expect(postUpdate).toHaveBeenCalledWith('proj-1', 'Back next week.', null));
+    });
+
+    it('starts an organiser comment as themselves, and can switch it to the organisation', async () => {
+      setup({ accountId: 'user-1', accountName: 'Mara Quinn' });
+      await openTab(/Comments/);
+
+      expect(screen.getByRole('radio', { name: /Mara Quinn/ })).toBeChecked();
+      fireEvent.click(screen.getByRole('radio', { name: /STPLN/ }));
+      fireEvent.change(screen.getByLabelText('Add a comment'), { target: { value: 'Thanks all!' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
+
+      await waitFor(() => expect(postComment).toHaveBeenCalledWith('proj-1', 'Thanks all!', 'org-1'));
+    });
+
+    it('gives anybody else no choice', async () => {
+      vi.mocked(readProjectSummary).mockResolvedValue({ ...SUMMARY, canPostUpdate: false });
+      setup({ accountId: 'user-3', accountName: 'Ines Berg' });
+      await openTab(/Comments/);
+
+      expect(screen.getByLabelText('Add a comment')).toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: 'Post as' })).not.toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText('Add a comment'), { target: { value: 'Count me in.' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
+      await waitFor(() => expect(postComment).toHaveBeenCalledWith('proj-1', 'Count me in.', null));
+    });
+
+    it('offers no choice on a project that is not run for an organisation', async () => {
+      vi.mocked(readProject).mockResolvedValue(PROJECT);
+      setup({ accountId: 'user-1', accountName: 'Mara Quinn' });
+
+      fireEvent.click(await screen.findByRole('tab', { name: /Updates/ }));
+
+      expect(await screen.findByLabelText('Post an update')).toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: 'Post as' })).not.toBeInTheDocument();
+    });
   });
 });
