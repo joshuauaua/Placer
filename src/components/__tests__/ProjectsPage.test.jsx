@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { ProjectsPage, sortProjects } from '../ProjectsPage';
-import { isSupabaseConfigured, readMyProjects } from '../../services/projects';
+import { isSupabaseConfigured, readVisibleProjects } from '../../services/projects';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/projects', () => ({
   isSupabaseConfigured: vi.fn(() => true),
-  readMyProjects: vi.fn(() => Promise.resolve([])),
+  readVisibleProjects: vi.fn(() => Promise.resolve([])),
   PROJECT_TYPE_NAMES: { steward: 'Have a say over a place', advocate: 'Pushing for change', other: 'Something else' },
   PROJECT_TYPES: [
     { key: 'steward', title: 'I have a say over a place', description: '' },
@@ -19,7 +19,7 @@ vi.mock('../../services/projects', () => ({
 const card = (pattern) => (name) => pattern.test(name) && !name.endsWith('favourites');
 
 function setup(props = {}) {
-  const handlers = { onNewProject: vi.fn(), onOpenProjectDashboard: vi.fn() };
+  const handlers = { onNewProject: vi.fn(), onOpenProjectDashboard: vi.fn(), onOpenProjectPage: vi.fn() };
   render(<ProjectsPage t={THEME} accountId="acct-1" {...handlers} {...props} />);
   return handlers;
 }
@@ -27,30 +27,49 @@ function setup(props = {}) {
 describe('ProjectsPage', () => {
   beforeEach(() => {
     isSupabaseConfigured.mockReturnValue(true);
-    readMyProjects.mockReset();
-    readMyProjects.mockResolvedValue([]);
+    readVisibleProjects.mockReset();
+    readVisibleProjects.mockResolvedValue([]);
   });
 
   afterEach(() => {
     localStorage.clear();
   });
 
-  it('lists the projects you own or collaborate on, and opens one on its dashboard', async () => {
-    readMyProjects.mockResolvedValue([
-      { id: 'p1', name: 'Harbour steps', description: 'Seating by the water' },
-      { id: 'p2', name: 'School street', description: '' },
+  it('lists everyone\'s projects, opening yours on its dashboard and others\' on their page', async () => {
+    readVisibleProjects.mockResolvedValue([
+      { id: 'p1', name: 'Harbour steps', description: 'Seating by the water', role: 'owner' },
+      { id: 'p2', name: 'School street', description: '', role: null },
+      { id: 'p3', name: 'Allotment gate', description: '', role: 'collaborator' },
     ]);
-    const { onOpenProjectDashboard } = setup();
+    const { onOpenProjectDashboard, onOpenProjectPage } = setup();
 
     fireEvent.click(await screen.findByRole('button', { name: card(/Harbour steps/) }));
+    fireEvent.click(screen.getByRole('button', { name: card(/School street/) }));
+    fireEvent.click(screen.getByRole('button', { name: card(/Allotment gate/) }));
 
-    expect(readMyProjects).toHaveBeenCalledWith('acct-1');
-    expect(screen.getByRole('button', { name: card(/School street/) })).toBeInTheDocument();
-    expect(onOpenProjectDashboard).toHaveBeenCalledWith('p1');
+    expect(readVisibleProjects).toHaveBeenCalledWith('acct-1');
+    expect(onOpenProjectDashboard.mock.calls).toEqual([['p1'], ['p3']]);
+    expect(onOpenProjectPage).toHaveBeenCalledWith('p2');
+  });
+
+  it('labels only your own projects as yours, in the grid and the list', async () => {
+    readVisibleProjects.mockResolvedValue([
+      { id: 'p1', name: 'Harbour steps', role: 'owner' },
+      { id: 'p2', name: 'School street', role: null },
+      { id: 'p3', name: 'Allotment gate', role: 'collaborator' },
+    ]);
+    setup();
+
+    expect(await screen.findByRole('button', { name: card(/Your project.*Harbour steps/) })).toBeInTheDocument();
+    expect(screen.getAllByText('Your project')).toHaveLength(1);
+
+    fireEvent.click(within(screen.getByRole('group', { name: 'View' })).getByRole('button', { name: 'List' }));
+    expect(screen.getByRole('button', { name: card(/Harbour steps.*Your project/) })).toBeInTheDocument();
+    expect(screen.getAllByText('Your project')).toHaveLength(1);
   });
 
   it('offers to create one beside the heading, with projects or without', async () => {
-    readMyProjects.mockResolvedValue([{ id: 'p1', name: 'Harbour steps', description: '' }]);
+    readVisibleProjects.mockResolvedValue([{ id: 'p1', name: 'Harbour steps', description: '' }]);
     const { onNewProject } = setup();
 
     await screen.findByRole('button', { name: card(/Harbour steps/) });
@@ -62,16 +81,16 @@ describe('ProjectsPage', () => {
   it('has the one create button, not a second, when there are none yet', async () => {
     setup();
 
-    expect(await screen.findByText(/Nothing yet/)).toBeInTheDocument();
+    expect(await screen.findByText(/No projects yet/)).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /Create a Project|Start a project/ })).toHaveLength(1);
   });
 
   it('says so when your projects cannot be loaded', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    readMyProjects.mockRejectedValue(new Error('boom'));
+    readVisibleProjects.mockRejectedValue(new Error('boom'));
     setup();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Could not load your projects');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not load projects');
   });
 
   it('asks for nothing with no Supabase project', async () => {
@@ -79,24 +98,26 @@ describe('ProjectsPage', () => {
     setup();
 
     expect(await screen.findByText('Projects are not available in this environment.')).toBeInTheDocument();
-    expect(readMyProjects).not.toHaveBeenCalled();
+    expect(readVisibleProjects).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'Create a Project' })).not.toBeInTheDocument();
   });
 
   describe('the toolbar', () => {
     const PROJECTS = [
-      { id: 'p1', name: 'Harbour steps', ownerId: 'acct-1', projectType: 'steward',
+      { id: 'p1', name: 'Harbour steps', role: 'owner', projectType: 'steward',
         createdAt: '2026-09-01T00:00:00Z', startDate: '2026-11-01' },
-      { id: 'p2', name: 'School street', ownerId: 'acct-2', projectType: 'advocate',
+      { id: 'p2', name: 'School street', role: 'collaborator', projectType: 'advocate',
         createdAt: '2026-09-20T00:00:00Z', startDate: null },
-      { id: 'p3', name: 'Allotment gate', ownerId: 'acct-1', projectType: 'other',
+      { id: 'p3', name: 'Allotment gate', role: 'owner', projectType: 'other',
         createdAt: '2026-08-15T00:00:00Z', startDate: '2026-10-05' },
+      { id: 'p4', name: 'Bus shelter', role: null, projectType: 'advocate',
+        createdAt: '2026-07-01T00:00:00Z', startDate: null },
     ];
     const names = () => screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
     const openMenu = () => fireEvent.click(screen.getByRole('button', { name: /^Show:/ }));
 
     beforeEach(() => {
-      readMyProjects.mockResolvedValue(PROJECTS);
+      readVisibleProjects.mockResolvedValue(PROJECTS);
     });
 
     it('starts with the newest first, and sorts by name and start date', async () => {
@@ -104,21 +125,25 @@ describe('ProjectsPage', () => {
       await screen.findByRole('button', { name: card(/Harbour steps/) });
       const sorts = within(screen.getByRole('group', { name: 'Sort' }));
 
-      expect(names()).toEqual(['School street', 'Harbour steps', 'Allotment gate']);
+      expect(names()).toEqual(['School street', 'Harbour steps', 'Allotment gate', 'Bus shelter']);
       fireEvent.click(sorts.getByRole('button', { name: 'A-Z' }));
-      expect(names()).toEqual(['Allotment gate', 'Harbour steps', 'School street']);
-      // Latest start first, and the one with no start date last.
+      expect(names()).toEqual(['Allotment gate', 'Bus shelter', 'Harbour steps', 'School street']);
+      // Latest start first, and the ones with no start date last.
       fireEvent.click(sorts.getByRole('button', { name: 'Start date' }));
-      expect(names()).toEqual(['Harbour steps', 'Allotment gate', 'School street']);
+      expect(names()).toEqual(['Harbour steps', 'Allotment gate', 'School street', 'Bus shelter']);
     });
 
-    it('shows only yours, only the ones you collaborate on, or one kind', async () => {
+    it('shows only yours, only the ones you collaborate on, only other people\'s, or one kind', async () => {
       setup();
       await screen.findByRole('button', { name: card(/Harbour steps/) });
 
       openMenu();
       fireEvent.click(screen.getByRole('menuitemradio', { name: 'Collaborating on' }));
       expect(names()).toEqual(['School street']);
+
+      openMenu();
+      fireEvent.click(screen.getByRole('menuitemradio', { name: "Other people's" }));
+      expect(names()).toEqual(['Bus shelter']);
 
       openMenu();
       fireEvent.click(screen.getByRole('menuitemradio', { name: 'Run by you' }));
