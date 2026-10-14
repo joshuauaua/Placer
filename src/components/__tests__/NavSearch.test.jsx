@@ -15,10 +15,16 @@ const RESULTS = [
   { kind: 'project', id: 'proj-1', name: 'Malmö Greenway', detail: 'Malmö Stad', image: null },
 ];
 
+// jsdom applies no stylesheet, so the box and its phone magnifier are both in the
+// page here; index.css shows only one of them at a time.
+const box = () => screen.getByRole('button', { name: /Search people, organisations and projects/ });
+
 const setup = () => {
   const onSelect = vi.fn();
   render(<NavSearch t={THEME} onSelect={onSelect} />);
-  return { onSelect, input: screen.getByRole('combobox', { name: /Search people, organisations and projects/ }) };
+  fireEvent.click(box());
+  const modal = screen.getByRole('dialog', { name: 'Search' });
+  return { onSelect, modal, input: within(modal).getByRole('combobox') };
 };
 
 describe('NavSearch', () => {
@@ -27,15 +33,38 @@ describe('NavSearch', () => {
     vi.mocked(search).mockResolvedValue(RESULTS);
   });
 
+  it('shows only a button in the bar, with no field or list until it is pressed', () => {
+    render(<NavSearch t={THEME} onSelect={vi.fn()} />);
+
+    expect(box()).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('opens a modal, portalled to the page, ready to type into', () => {
+    const { modal, input } = setup();
+
+    expect(modal).toHaveAttribute('aria-modal', 'true');
+    expect(modal.parentElement.parentElement).toBe(document.body);
+    expect(input).toHaveFocus();
+  });
+
+  it('opens the same modal from the phone magnifier', () => {
+    render(<NavSearch t={THEME} onSelect={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+
+    expect(screen.getByRole('dialog', { name: 'Search' })).toBeInTheDocument();
+  });
+
   it('suggests people, organisations and projects as you type, grouped by kind', async () => {
-    const { input } = setup();
+    const { modal, input } = setup();
 
     fireEvent.change(input, { target: { value: 'mal' } });
 
-    expect(await screen.findByRole('option', { name: /Mara Quinn/ })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'People' })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Organisations' })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Projects' })).toBeInTheDocument();
+    expect(await within(modal).findByRole('option', { name: /Mara Quinn/ })).toBeInTheDocument();
+    expect(within(modal).getByRole('group', { name: 'People' })).toBeInTheDocument();
+    expect(within(modal).getByRole('group', { name: 'Organisations' })).toBeInTheDocument();
+    expect(within(modal).getByRole('group', { name: 'Projects' })).toBeInTheDocument();
     expect(search).toHaveBeenCalledWith('mal');
   });
 
@@ -61,15 +90,15 @@ describe('NavSearch', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 
-  it('opens a suggestion when it is clicked, and clears the box', async () => {
+  it('opens a suggestion when it is clicked, and closes the modal', async () => {
     const { input, onSelect } = setup();
 
     fireEvent.change(input, { target: { value: 'mal' } });
     fireEvent.mouseDown(await screen.findByRole('option', { name: /^Malmö Stad/ }));
 
     expect(onSelect).toHaveBeenCalledWith(RESULTS[1]);
-    expect(input).toHaveValue('');
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(box()).toHaveFocus();
   });
 
   it('moves through the suggestions with the arrow keys and opens one with Enter', async () => {
@@ -86,14 +115,31 @@ describe('NavSearch', () => {
     expect(onSelect).toHaveBeenCalledWith(RESULTS[2]);
   });
 
-  it('closes on Escape', async () => {
+  it('closes on Escape, handing focus back to the box, and starts empty next time', async () => {
     const { input } = setup();
 
     fireEvent.change(input, { target: { value: 'mal' } });
     await screen.findByRole('listbox');
     fireEvent.keyDown(input, { key: 'Escape' });
 
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(box()).toHaveFocus();
+
+    fireEvent.click(box());
+    expect(screen.getByRole('combobox')).toHaveValue('');
+  });
+
+  it('closes from its close button, and from a press on the backdrop', () => {
+    const { modal } = setup();
+    fireEvent.click(within(modal).getByRole('button', { name: 'Close search' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(box());
+    const opened = screen.getByRole('dialog', { name: 'Search' });
+    fireEvent.mouseDown(opened);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.mouseDown(opened.parentElement);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('says when nothing matches', async () => {
@@ -113,70 +159,5 @@ describe('NavSearch', () => {
     fireEvent.change(input, { target: { value: 'mal' } });
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Could not search'));
-  });
-});
-
-describe('NavSearch on a phone', () => {
-  // jsdom applies no stylesheet, so the box and its magnifier are both in the page
-  // here; on a real phone index.css shows only the magnifier.
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(search).mockResolvedValue(RESULTS);
-  });
-
-  const openPanel = () => {
-    const onSelect = vi.fn();
-    render(<NavSearch t={THEME} onSelect={onSelect} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
-    return { onSelect, panel: screen.getByRole('dialog', { name: 'Search' }) };
-  };
-
-  it('opens the search as a panel, ready to type into', () => {
-    const { panel } = openPanel();
-
-    const input = within(panel).getByRole('combobox', { name: /Search people, organisations and projects/ });
-    expect(input).toHaveFocus();
-    expect(panel).toHaveClass('placer-search-panel');
-    // Portalled out of the bar, whose backdrop-filter would clip it.
-    expect(panel.parentElement).toBe(document.body);
-    expect(screen.getByRole('button', { name: 'Close search' })).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  it('lists the suggestions inside the panel', async () => {
-    const { panel } = openPanel();
-
-    fireEvent.change(within(panel).getByRole('combobox'), { target: { value: 'mal' } });
-
-    expect(await within(panel).findByRole('option', { name: /Mara Quinn/ })).toBeInTheDocument();
-    expect(screen.getAllByRole('listbox')).toHaveLength(1);
-  });
-
-  it('closes once a suggestion is chosen, and opens it', async () => {
-    const { panel, onSelect } = openPanel();
-
-    fireEvent.change(within(panel).getByRole('combobox'), { target: { value: 'mal' } });
-    fireEvent.mouseDown(await within(panel).findByRole('option', { name: /^Malmö Stad/ }));
-
-    expect(onSelect).toHaveBeenCalledWith(RESULTS[1]);
-    expect(screen.queryByRole('dialog', { name: 'Search' })).not.toBeInTheDocument();
-  });
-
-  it('closes on Escape, handing focus back to the magnifier', () => {
-    const { panel } = openPanel();
-
-    fireEvent.keyDown(within(panel).getByRole('combobox'), { key: 'Escape' });
-
-    expect(screen.queryByRole('dialog', { name: 'Search' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Search' })).toHaveFocus();
-  });
-
-  it('closes from its button, and from a press outside it', () => {
-    openPanel();
-    fireEvent.click(screen.getByRole('button', { name: 'Close search' }));
-    expect(screen.queryByRole('dialog', { name: 'Search' })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
-    fireEvent.mouseDown(document.body);
-    expect(screen.queryByRole('dialog', { name: 'Search' })).not.toBeInTheDocument();
   });
 });
