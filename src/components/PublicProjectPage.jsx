@@ -1,10 +1,17 @@
 /* PLACER — a project's public page.
  *
- * Read top to bottom like an article: a way back to all projects, the date and who
- * started it, the title, an image (the project's area on the map), the description,
- * then the tools the project has added and its news and resources. A floating card on
- * the right carries a table of contents that follows the reader down the page, and
- * three related projects close it.
+ * A header first: the title and, under it, the project's summary as a subtitle; then
+ * its image, with its dates, who it is by and where underneath, and a column beside
+ * it, level with its top — the time it has left, its views
+ * and its followers, each a big number over its words, and a Follow button. Then a bar of tabs that sticks to the top of the window — Project,
+ * Updates, Comments and Relevant links — each a view of its own, the Project tab
+ * opening with the project's description and goals. Under whichever is
+ * showing, always: the Organizer (the organisation it is run for, or the account that
+ * started it) beside its Collaborators, then three related projects.
+ *
+ * The numbers, the owner's details, the collaborators, the updates and the comments
+ * come from supabase/project-public-page.sql (services/projectPage.js). Each is extra:
+ * if it cannot be read, the page stands without it.
  *
  * The tools are only the ones its organisers chose for it (project_tools, see
  * supabase/project-setup.sql) and have set up, not the whole Toolkit, and each is
@@ -18,7 +25,7 @@
  * imagined is not a section of its own either: imagining is the Idea Visualizer, so the
  * imaginations show in that tool's section, and only once the project has added it.
  *
- * The layout lives in index.css (.placer-project-*), since the card's stickiness and
+ * The layout lives in index.css (.placer-project-*), since the tab bar's stickiness and
  * the single column on a phone need a media query.
  */
 
@@ -30,15 +37,23 @@ import { ProjectToolCard } from './toolkit/ProjectToolCard';
 import { findTool, isToolLive, projectSetupKind } from '../toolkit/tools';
 import { readImaginationsByProject } from '../services/imaginations';
 import {
-  readConfiguredProjectTools, readLinks, readProject, readProjectAccess, readProjectTools, requestProjectAccess, readPublicToolkitActivity, readRelatedProjects, recordProjectView,
+  readConfiguredProjectTools, readLinks, readOrganisationProjects, readProject, readProjectAccess, readProjectTools,
+  requestProjectAccess, readPublicToolkitActivity, readRelatedProjects, recordProjectView,
 } from '../services/projects';
-
-// The tool whose results are the project's imaginations (toolkit/tools.js).
-const REIMAGINE_TOOL = 'reimagine-a-space';
+import {
+  COMMENT_MAX, UPDATE_MAX, postComment, postUpdate, readComments, readProjectSummary, readUpdates, removeComment,
+  removeUpdate,
+} from '../services/projectPage';
 import { follow, isFollowing, unfollow } from '../services/follows';
 import { readOrganisation } from '../services/organisations';
 import { readProjectOpenRooms } from '../services/rooms';
+import { projectProgress } from '../lib/projectTimeline';
+import { ProjectPeople } from './ProjectPeople';
+import { ProjectPosts } from './ProjectPosts';
 import { CHARACTER } from '../theme';
+
+// The tool whose results are the project's imaginations (toolkit/tools.js).
+const REIMAGINE_TOOL = 'reimagine-a-space';
 
 // A fixed locale and UTC, so the label does not shift with the machine it renders on.
 const DATE_FORMAT = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -181,71 +196,6 @@ function RelatedCard({ t, project, onOpen }) {
 }
 
 /**
- * Which section the reader is in: the last one whose top has passed a line a fifth
- * of the way down the window. An IntersectionObserver watching a thin band there,
- * so it works whichever element is doing the scrolling (MainApp's content area).
- * Without IntersectionObserver the first section simply stays marked.
- */
-function useActiveSection(ids) {
-  const [picked, setActive] = useState(null);
-  // Until the reader has moved, or if the section they were in has gone, the first.
-  const active = ids.includes(picked) ? picked : ids[0] ?? null;
-  const key = ids.join('|');
-
-  useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined' || ids.length === 0) return undefined;
-
-    const observer = new IntersectionObserver((entries) => {
-      const hit = entries.filter((entry) => entry.isIntersecting)
-        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-      if (hit) setActive(hit.target.id);
-    }, { rootMargin: '-20% 0px -75% 0px' });
-
-    for (const id of ids) {
-      const element = document.getElementById(id);
-      if (element) observer.observe(element);
-    }
-    return () => observer.disconnect();
-    // `key` stands for `ids`, which is a new array on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-
-  return [active, setActive];
-}
-
-function TableOfContents({ t, sections, active, onPick }) {
-  return (
-    <nav aria-label="On this page" className="placer-project-toc placer-card" style={{ padding: 16 }}>
-      <div className="placer-caption" style={{ fontWeight: 700, color: t.inkDim, textTransform: 'uppercase',
-        padding: '0 12px', marginBottom: 8 }}>
-        On this page
-      </div>
-      <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {sections.map(({ id, label }) => {
-          const current = id === active;
-          return (
-            <li key={id}>
-              <a href={`#${id}`} aria-current={current ? 'location' : undefined}
-                onClick={(event) => { event.preventDefault(); onPick(id); }}
-                className="placer-project-toc-link"
-                style={{ fontWeight: current ? 700 : 400, background: current ? t.surfaceAlt : 'transparent',
-                  boxShadow: current ? `inset 2px 0 0 ${t.ink}` : 'none' }}>
-                {label}
-              </a>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
-  );
-}
-
-/**
- * `projectId` is read fresh here rather than trusting a `project` prop from App.jsx:
- * this page is the one a shared link actually points at, so it has to work reached
- * cold with nothing but the id in the URL.
- */
-/**
  * What a private project's link shows somebody who cannot see it: the name, and a way
  * to ask to be let in — signing in first, if they have not. The database decides what
  * they may know (project_access_preview in supabase/project-privacy.sql); nothing else
@@ -301,8 +251,45 @@ function LockedProject({ t, preview, accountId, accountName, onSignIn, projectId
   );
 }
 
+
+/** One line of the header's panel: a big number, and what it counts beneath it. */
+function Stat({ t, value, label }) {
+  return (
+    <div className="placer-project-stat" style={{ borderTop: `1px solid ${t.line}` }}>
+      <span style={{ display: 'block', fontSize: 40, fontWeight: 700, lineHeight: 1.1, color: t.ink,
+        letterSpacing: '-0.03em' }}>
+        {value}
+      </span>
+      <span style={{ display: 'block', fontSize: 15, color: t.inkDim, marginTop: 4 }}>{label}</span>
+    </div>
+  );
+}
+
+/** The time a project has left as a number and its words: 7 / days left. */
+function timeLeft(progress) {
+  const days = (n) => (n === 1 ? 'day' : 'days');
+  if (progress.state === 'ongoing') return { value: progress.daysLeft, label: `${days(progress.daysLeft)} left` };
+  if (progress.state === 'upcoming') return { value: progress.daysToStart, label: `${days(progress.daysToStart)} until it starts` };
+  if (progress.state === 'ended') return { value: 'Ended', label: 'this project has finished' };
+  return { value: 'Open', label: 'no end date set' };
+}
+
+const TABS = [
+  { id: 'project', label: 'Project' },
+  { id: 'updates', label: 'Updates' },
+  { id: 'comments', label: 'Comments' },
+  { id: 'links', label: 'Relevant links' },
+];
+
+const NUMBER = new Intl.NumberFormat('en-GB');
+
+/**
+ * `projectId` is read fresh here rather than trusting a `project` prop from App.jsx:
+ * this page is the one a shared link actually points at, so it has to work reached
+ * cold with nothing but the id in the URL.
+ */
 export function PublicProjectPage({ t, projectId, accountId, accountName = null, onSignIn, onBack, onOpenProject,
-  onOpenOrganisation, onOpenToolkit }) {
+  onOpenOrganisation, onOpenProfile, onOpenToolkit }) {
   const [project, setProject] = useState(null);
   // The tools its organisers added, as registry entries. A tool no longer in the
   // registry is skipped rather than shown broken.
@@ -317,6 +304,13 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const [related, setRelated] = useState([]);
   // The organisation it is run in the name of, if any — credited in place of the owner.
   const [organisation, setOrganisation] = useState(null);
+  const [organisationProjects, setOrganisationProjects] = useState(null);
+  // Its numbers, owner and collaborators (services/projectPage.js). Null until they
+  // arrive, and for good if they cannot be read: the page stands without them.
+  const [summary, setSummary] = useState(null);
+  const [updates, setUpdates] = useState({ status: 'loading', posts: [] });
+  const [comments, setComments] = useState({ status: 'loading', posts: [] });
+  const [tab, setTab] = useState('project');
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error' | 'notFound' | 'locked'
   // For 'locked': what the visitor may know about a private project they cannot see.
   const [preview, setPreview] = useState(null);
@@ -324,12 +318,18 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   // Set once the visitor clicks Follow, so a slower isFollowing answer cannot undo it.
   const followTouchedRef = useRef(false);
   const topRef = useRef(null);
+  const tabsRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
     setRelated([]);
     setOrganisation(null);
+    setOrganisationProjects(null);
+    setSummary(null);
+    setUpdates({ status: 'loading', posts: [] });
+    setComments({ status: 'loading', posts: [] });
+    setTab('project');
 
     Promise.all([
       readProject(projectId),
@@ -382,16 +382,35 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         // Only once the project is known to exist, so a broken link is not a view.
         recordProjectView(proj.id);
 
-        // Extra, not essential: the page stands without it, so a failure here is
-        // logged and the byline falls back to the owner.
+        // The rest is extra, not essential: the page stands without any of it, so a
+        // failure is logged and that part falls back or stays empty.
         if (proj.organisationId) {
           readOrganisation(proj.organisationId)
             .then((found) => { if (!cancelled) setOrganisation(found); })
             .catch((err) => console.error("Could not load this project's organisation:", err));
+          readOrganisationProjects(proj.organisationId)
+            .then((found) => { if (!cancelled) setOrganisationProjects(found.length); })
+            .catch((err) => console.error("Could not load the organisation's projects:", err));
         }
 
-        // Extra, not essential: the page stands without it, so a failure here is
-        // logged and the section simply does not appear.
+        readProjectSummary(proj.id)
+          .then((found) => { if (!cancelled) setSummary(found); })
+          .catch((err) => console.error("Could not load this project's numbers:", err));
+
+        readUpdates(proj.id)
+          .then((posts) => { if (!cancelled) setUpdates({ status: 'ready', posts }); })
+          .catch((err) => {
+            console.error("Could not load this project's updates:", err);
+            if (!cancelled) setUpdates({ status: 'error', posts: [] });
+          });
+
+        readComments(proj.id)
+          .then((posts) => { if (!cancelled) setComments({ status: 'ready', posts }); })
+          .catch((err) => {
+            console.error("Could not load this project's comments:", err);
+            if (!cancelled) setComments({ status: 'error', posts: [] });
+          });
+
         readRelatedProjects(proj)
           .then((others) => { if (!cancelled) setRelated(others ?? []); })
           .catch((err) => console.error('Could not load related projects:', err));
@@ -444,18 +463,22 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
     });
   });
 
-  const sections = [
-    { id: 'project-overview', label: 'Overview' },
-    ...(presented.length === 0 ? [{ id: 'project-take-part', label: 'Take part' }]
-      : presented.map(({ id, heading }) => ({ id, label: heading }))),
-    ...(links.length > 0 ? [{ id: 'project-resources', label: 'News & resources' }] : []),
-    ...(related.length > 0 ? [{ id: 'project-related', label: 'Related projects' }] : []),
-  ];
-  const [active, setActive] = useActiveSection(status === 'ready' ? sections.map((section) => section.id) : []);
+  const pickTab = (id) => {
+    setTab(id);
+    // Back to the top of the tabs if the reader had scrolled past them, so the new
+    // view starts at its beginning rather than wherever the last one was.
+    const bar = tabsRef.current;
+    if (bar && bar.getBoundingClientRect().top <= 1) bar.scrollIntoView?.({ block: 'start' });
+  };
 
-  const goTo = (id) => {
-    setActive(id);
-    document.getElementById(id)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  const onTabKey = (event) => {
+    const index = TABS.findIndex(({ id }) => id === tab);
+    const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    if (!step) return;
+    event.preventDefault();
+    const next = TABS[(index + step + TABS.length) % TABS.length].id;
+    pickTab(next);
+    document.getElementById(`project-tab-${next}`)?.focus();
   };
 
   const toggleFollow = async () => {
@@ -513,19 +536,72 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   }
 
   const date = dateLabel(project);
+  const left = timeLeft(projectProgress(project));
+  // Where it is, under the image: its place names, or else the address it was set up with.
+  const place = project.locations.length > 0 ? project.locations.join(', ') : project.address;
+  // The description, first under the Project tab (the summary is also the header's
+  // subtitle); a project set up before it had one has only its goals, and shows those
+  // there instead.
+  const intro = project.summary || project.description;
+  const goals = project.summary ? project.description : '';
+
+  const owner = summary?.owner ?? { id: project.ownerId, name: project.ownerName, photo: null };
+  const collaborators = summary?.collaborators ?? [];
+  // May remove any comment: the owner and the collaborators. May post and remove
+  // updates: the organisers only — the owner, and the admins of the organisation it is
+  // run for, which only the database can tell. It checks both again
+  // (supabase/project-public-page.sql); this only decides what to offer.
+  const isTeam = Boolean(accountId)
+    && (accountId === project.ownerId || collaborators.some((person) => person.id === accountId));
+  const isOrganiser = Boolean(accountId) && (summary ? summary.canPostUpdate : accountId === project.ownerId);
+
+  const organiser = organisation ? {
+    kind: 'organisation', id: organisation.id, name: organisation.name, photo: organisation.avatar,
+    description: organisation.description, location: organisation.location || organisation.address,
+    joinedAt: organisation.createdAt, projects: organisationProjects,
+  } : (project.organisationId ? null : {
+    kind: 'user', id: owner.id, name: owner.name || project.ownerName, photo: owner.photo,
+    description: owner.bio, location: owner.location, joinedAt: owner.joinedAt, projects: owner.projects,
+  });
+
+  const people = [
+    { id: owner.id, name: owner.name || project.ownerName, photo: owner.photo, role: 'Project owner' },
+    ...collaborators.filter((person) => person.id !== owner.id).map((person) => ({ ...person, role: 'Collaborator' })),
+  ];
+
+  const counts = { updates: updates.posts.length, comments: comments.posts.length, links: links.length };
+
+  const signInPrompt = (
+    <div className="placer-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+      <p style={{ fontSize: 15, color: t.inkDim }}>Sign in to join the conversation.</p>
+      <Btn t={t} size="sm" icon="user" onClick={onSignIn}>Sign in to comment</Btn>
+    </div>
+  );
+
+  const addPost = (setList, post) => setList((current) => ({ ...current, posts: [post, ...current.posts] }));
+  const dropPost = (setList, id) => setList((current) => ({ ...current, posts: current.posts.filter((p) => p.id !== id) }));
 
   return (
     <div ref={topRef} className="placer-project" style={{ background: t.page }}>
       {backButton}
 
-      <div className="placer-project-layout">
-        <article style={{ minWidth: 0 }}>
-          <header id="project-overview" className="placer-project-section">
+      <header>
+        <h1 style={{ color: t.ink, overflowWrap: 'anywhere' }}>{project.name}</h1>
+        {project.summary && (
+          <p className="placer-body-lg placer-project-subtitle" style={{ color: t.inkDim, whiteSpace: 'pre-line' }}>
+            {project.summary}
+          </p>
+        )}
+
+        <div className="placer-project-header">
+          <div style={{ minWidth: 0 }}>
+            <ProjectImage t={t} project={project} size={HERO_SIZE} frame={HERO_FRAME} />
             <div className="placer-label" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center',
-              gap: '4px 16px', color: t.inkDim, marginBottom: 12 }}>
+              gap: '8px 20px', color: t.inkDim, marginTop: 16 }}>
               {date && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Icon name="clock" size={16} stroke={2} />{date}
+                  <Icon name="calendar" size={16} stroke={2} />{date}
                 </span>
               )}
               {organisation ? (
@@ -533,121 +609,170 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
                   By{' '}
                   <a href={`/organisations/${organisation.id}`}
                     onClick={(e) => { e.preventDefault(); onOpenOrganisation?.(organisation.id); }}
-                    style={{ color: 'inherit', textDecoration: 'underline' }}>
+                    style={{ color: t.ink, fontWeight: 700, textDecoration: 'underline' }}>
                     {organisation.name}
                   </a>
                 </span>
-              ) : project.ownerName && <span>By {project.ownerName}</span>}
+              ) : project.ownerName && (
+                <span>
+                  By{' '}
+                  <a href={`/people/${project.ownerId}`}
+                    onClick={(e) => { e.preventDefault(); onOpenProfile?.(project.ownerId); }}
+                    style={{ color: t.ink, fontWeight: 700, textDecoration: 'underline' }}>
+                    {project.ownerName}
+                  </a>
+                </span>
+              )}
+              {place && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="pin" size={16} stroke={2} />{place}
+                </span>
+              )}
               {project.visibility === 'private' && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <Icon name="lock" size={16} stroke={2} />Private project
                 </span>
               )}
             </div>
+          </div>
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-              gap: 20, flexWrap: 'wrap', marginBottom: 24 }}>
-              <h1 style={{ color: t.ink, flex: '1 1 320px' }}>{project.name}</h1>
-              {accountId && (
-                <Btn t={t} variant={following ? 'outline' : 'primary'} icon="bookmark" onClick={toggleFollow}>
-                  {following ? 'Following' : 'Follow'}
-                </Btn>
-              )}
-            </div>
+          <aside aria-label="Project at a glance" className="placer-project-glance">
+            <Stat t={t} value={left.value} label={left.label} />
+            <Stat t={t} value={summary ? NUMBER.format(summary.views) : '–'}
+              label={summary?.views === 1 ? 'view' : 'views'} />
+            <Stat t={t} value={summary ? NUMBER.format(summary.followers) : '–'}
+              label={summary?.followers === 1 ? 'follower' : 'followers'} />
+            {/* Signed out, it asks them to sign in first: following needs an account. */}
+            <Btn t={t} size="lg" full variant={following ? 'outline' : 'primary'} icon="bookmark"
+              onClick={accountId ? toggleFollow : onSignIn} style={{ marginTop: 20, height: 56, fontSize: 16 }}>
+              {following ? 'Following this project' : 'Follow this project'}
+            </Btn>
+          </aside>
+        </div>
+      </header>
 
-            <ProjectImage t={t} project={project} size={HERO_SIZE} frame={HERO_FRAME} />
-
-            {project.locations.length > 0 && (
-              <p className="placer-label" style={{ display: 'flex', alignItems: 'center', gap: 6,
-                color: t.inkDim, marginTop: 12 }}>
-                <Icon name="pin" size={16} stroke={2} />{project.locations.join(', ')}
-              </p>
-            )}
-
-            {project.summary && (
-              <p className="placer-body-lg" style={{ color: t.ink, marginTop: 24, whiteSpace: 'pre-line' }}>
-                {project.summary}
-              </p>
-            )}
-
-            {/* A project set up before it had a description shows its goals as it always
-                has; one with both labels the goals, so the two read as different things. */}
-            {project.description && (project.summary ? (
-              <div style={{ marginTop: 24 }}>
-                <p className="placer-label" style={{ color: t.inkDim, marginBottom: 8 }}>Goals</p>
-                <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>
-                  {project.description}
-                </p>
-              </div>
-            ) : (
-              <p className="placer-body-lg" style={{ color: t.ink, marginTop: 24, whiteSpace: 'pre-line' }}>
-                {project.description}
-              </p>
-            ))}
-          </header>
-
-          {presented.length === 0 && (
-            <section id="project-take-part" className="placer-project-section" aria-labelledby="project-take-part-heading">
-              <h2 id="project-take-part-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 12 }}>
-                Take part
-              </h2>
-              <div className="placer-card" style={{ textAlign: 'center' }}>
-                <p style={{ fontSize: 16, color: t.inkDim }}>Nothing to take part in yet. Check back soon.</p>
-              </div>
-            </section>
-          )}
-
-          {presented.map(({ id, heading, tool, room }) => (
-            <section key={id} id={id} className="placer-project-section" aria-labelledby={`${id}-heading`}>
-              <h2 id={`${id}-heading`} className="placer-h2" style={{ color: t.ink, marginBottom: 20 }}>
-                {heading}
-              </h2>
-
-              {tool.id === REIMAGINE_TOOL ? (
-                <>
-                  <ToolCard t={t} tool={tool} onOpen={() => onOpenToolkit?.(project.id, tool.id)} />
-                  <div style={{ marginTop: 24 }}>
-                    {imaginations.length === 0 ? (
-                      <p style={{ fontSize: 16, color: t.inkDim }}>Nothing imagined for this project yet.</p>
-                    ) : (
-                      <div className="placer-project-grid">
-                        {imaginations.map((imagination) => (
-                          <ImaginationCard key={imagination.id} t={t} imagination={imagination} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : room && tool.onProjectPage?.Embed ? (
-                <tool.onProjectPage.Embed t={t} tool={tool} room={room} />
-              ) : (
-                <ProjectToolCard t={t} tool={tool} room={room} projectId={project.id} displayName={accountName} />
-              )}
-            </section>
-          ))}
-
-          {toolkitActivity > 0 && (
-            <p className="placer-caption" style={{ color: t.inkFaint, marginTop: -8, marginBottom: 32 }}>
-              {toolkitActivity} Toolkit {toolkitActivity === 1 ? 'session' : 'sessions'} run for this project so far.
-            </p>
-          )}
-
-          {links.length > 0 && (
-            <section id="project-resources" className="placer-project-section" aria-labelledby="project-resources-heading">
-              <h2 id="project-resources-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 12 }}>
-                News &amp; resources
-              </h2>
-              <div>
-                {links.map((link) => <LinkRow key={link.id} t={t} link={link} />)}
-              </div>
-            </section>
-          )}
-        </article>
-
-        <aside className="placer-project-aside">
-          <TableOfContents t={t} sections={sections} active={active} onPick={goTo} />
-        </aside>
+      <div ref={tabsRef} className="placer-project-tabs" style={{ background: t.page, borderBottom: `1px solid ${t.line}` }}>
+        <div role="tablist" aria-label="Project sections" onKeyDown={onTabKey}
+          style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
+          {TABS.map(({ id, label }) => {
+            const current = id === tab;
+            const count = counts[id];
+            return (
+              <button key={id} id={`project-tab-${id}`} type="button" role="tab" aria-selected={current}
+                aria-controls={`project-panel-${id}`} aria-label={count > 0 ? `${label} (${count})` : undefined}
+                tabIndex={current ? 0 : -1} onClick={() => pickTab(id)}
+                className="placer-project-tab"
+                style={{ color: current ? t.ink : t.inkDim, fontWeight: current ? 700 : 500,
+                  boxShadow: current ? `inset 0 -3px 0 ${t.ink}` : 'none' }}>
+                {label}
+                {count > 0 && (
+                  <span aria-hidden="true" style={{ marginLeft: 8, fontSize: 12, fontWeight: 700,
+                    padding: '2px 8px', borderRadius: 999, background: t.surfaceAlt, color: t.ink }}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      <div id={`project-panel-${tab}`} role="tabpanel" aria-labelledby={`project-tab-${tab}`}
+        className="placer-project-panel">
+        {tab === 'project' && (
+          <>
+            {intro && (
+              <section className="placer-project-section" aria-labelledby="project-about-heading">
+                <h2 id="project-about-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 12 }}>
+                  About the project
+                </h2>
+                <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{intro}</p>
+              </section>
+            )}
+
+            {goals && (
+              <section className="placer-project-section" aria-labelledby="project-goals-heading">
+                <h2 id="project-goals-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 12 }}>Goals</h2>
+                <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{goals}</p>
+              </section>
+            )}
+
+            {presented.length === 0 && (
+              <section id="project-take-part" className="placer-project-section" aria-labelledby="project-take-part-heading">
+                <h2 id="project-take-part-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 12 }}>
+                  Take part
+                </h2>
+                <div className="placer-card" style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: 16, color: t.inkDim }}>Nothing to take part in yet. Check back soon.</p>
+                </div>
+              </section>
+            )}
+
+            {presented.map(({ id, heading, tool, room }) => (
+              <section key={id} id={id} className="placer-project-section" aria-labelledby={`${id}-heading`}>
+                <h2 id={`${id}-heading`} className="placer-h2" style={{ color: t.ink, marginBottom: 20 }}>
+                  {heading}
+                </h2>
+
+                {tool.id === REIMAGINE_TOOL ? (
+                  <>
+                    <ToolCard t={t} tool={tool} onOpen={() => onOpenToolkit?.(project.id, tool.id)} />
+                    <div style={{ marginTop: 24 }}>
+                      {imaginations.length === 0 ? (
+                        <p style={{ fontSize: 16, color: t.inkDim }}>Nothing imagined for this project yet.</p>
+                      ) : (
+                        <div className="placer-project-grid">
+                          {imaginations.map((imagination) => (
+                            <ImaginationCard key={imagination.id} t={t} imagination={imagination} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : room && tool.onProjectPage?.Embed ? (
+                  <tool.onProjectPage.Embed t={t} tool={tool} room={room} />
+                ) : (
+                  <ProjectToolCard t={t} tool={tool} room={room} projectId={project.id} displayName={accountName} />
+                )}
+              </section>
+            ))}
+
+            {toolkitActivity > 0 && (
+              <p className="placer-caption" style={{ color: t.inkFaint, marginTop: -8, marginBottom: 32 }}>
+                {toolkitActivity} Toolkit {toolkitActivity === 1 ? 'session' : 'sessions'} run for this project so far.
+              </p>
+            )}
+          </>
+        )}
+
+        {tab === 'updates' && (
+          <ProjectPosts t={t} kind="update" posts={updates.posts} status={updates.status} canPost={isOrganiser}
+            max={UPDATE_MAX} onOpenProfile={onOpenProfile}
+            onPost={async (body) => addPost(setUpdates, await postUpdate(project.id, body))}
+            canRemove={() => isOrganiser}
+            onRemove={async (post) => { await removeUpdate(post.id); dropPost(setUpdates, post.id); }} />
+        )}
+
+        {tab === 'comments' && (
+          <ProjectPosts t={t} kind="comment" posts={comments.posts} status={comments.status}
+            canPost={Boolean(accountId)} prompt={onSignIn ? signInPrompt : null}
+            max={COMMENT_MAX} onOpenProfile={onOpenProfile}
+            onPost={async (body) => addPost(setComments, await postComment(project.id, body))}
+            canRemove={(post) => isTeam || (Boolean(accountId) && post.authorId === accountId)}
+            onRemove={async (post) => { await removeComment(post.id); dropPost(setComments, post.id); }} />
+        )}
+
+        {tab === 'links' && (links.length === 0 ? (
+          <div className="placer-card" style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: 16, color: t.inkDim }}>No links shared yet.</p>
+          </div>
+        ) : (
+          <div>{links.map((link) => <LinkRow key={link.id} t={t} link={link} />)}</div>
+        ))}
+      </div>
+
+      <ProjectPeople t={t} organiser={organiser} people={people} accountId={accountId}
+        onOpenOrganisation={onOpenOrganisation} onOpenProfile={onOpenProfile} />
 
       {related.length > 0 && (
         <section id="project-related" className="placer-project-section placer-project-related"

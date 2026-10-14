@@ -568,6 +568,30 @@ select pg_get_function_identity_arguments('public.toolkit_room_set_closes'::regp
 -- p_room_id uuid, p_closes_on date, p_time_zone text
 ```
 
+### A project's public page: updates, comments and its numbers
+
+Run `project-public-page.sql` in the SQL editor after `project-privacy.sql` and
+`media-photos.sql` (or `supabase db push`). It is re-runnable.
+
+It adds `project_updates`, which only a project's organisers post — its owner and the
+admins of the organisation it is run for (`project_is_organiser`), not its collaborators —
+and
+`project_comments`, which anybody signed in who can see the project may add and its
+author, owner or collaborators may remove. Both are readable by whoever can see the
+project (`project_can_view`), and who wrote each is set by a trigger from the poster's
+profile, never from what the client sends. `project_public_summary(project_id)` returns
+the public page's numbers (views, followers, and interactions: Toolkit contributions,
+imaginations and comments), the owner's public details with the day they joined and how
+many public projects they run, the collaborators' names and photos, never their
+email, and whether the caller may post an update. It returns null for a project the
+caller cannot see. `20261014130001_project_updates_organisers.sql` catches up a
+database that took the first version, which let collaborators post updates too.
+
+```sql
+select public.project_public_summary((select id from public.projects limit 1));
+select policyname, cmd, roles from pg_policies where tablename in ('project_updates', 'project_comments');
+```
+
 ### Which tools can host a room
 
 Run `room-tools.sql` in the SQL editor after `rooms.sql` and `notifications-projects.sql`

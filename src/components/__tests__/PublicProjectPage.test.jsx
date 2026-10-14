@@ -7,6 +7,10 @@ import {
   requestProjectAccess,
 } from '../../services/projects';
 import { follow, isFollowing, unfollow } from '../../services/follows';
+import {
+  postComment, postUpdate, readComments, readProjectSummary, readUpdates, removeComment,
+} from '../../services/projectPage';
+import { readOrganisation } from '../../services/organisations';
 import { readContributions, readProjectOpenRooms, saveContribution } from '../../services/rooms';
 import { THEME } from '../../theme';
 import { rememberAnswer } from '../../toolkit/rooms';
@@ -30,6 +34,23 @@ vi.mock('../../services/projects', () => ({
   uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),
   readProjectAccess: vi.fn(() => Promise.resolve(null)),
   requestProjectAccess: vi.fn(() => Promise.resolve('pending')),
+  readOrganisationProjects: vi.fn(() => Promise.resolve([])),
+}));
+
+vi.mock('../../services/projectPage', () => ({
+  UPDATE_MAX: 4000,
+  COMMENT_MAX: 2000,
+  readProjectSummary: vi.fn(() => Promise.resolve(null)),
+  readUpdates: vi.fn(() => Promise.resolve([])),
+  readComments: vi.fn(() => Promise.resolve([])),
+  postUpdate: vi.fn(),
+  postComment: vi.fn(),
+  removeUpdate: vi.fn(() => Promise.resolve()),
+  removeComment: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('../../services/organisations', () => ({
+  readOrganisation: vi.fn(() => Promise.resolve(null)),
 }));
 
 vi.mock('../../services/rooms', () => ({
@@ -83,7 +104,7 @@ describe('PublicProjectPage', () => {
     setup();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' })).toBeInTheDocument();
-    expect(screen.getByText('By Mara Quinn')).toBeInTheDocument();
+    expect(screen.getByText('By', { exact: false })).toHaveTextContent('By Mara Quinn');
     expect(screen.getByText('1 Jan 2026 – 31 Dec 2026')).toBeInTheDocument();
     expect(screen.getByText('Malmö, Folkets Park')).toBeInTheDocument();
     expect(screen.getByText(/Turn the old rail corridor/)).toBeInTheDocument();
@@ -115,7 +136,8 @@ describe('PublicProjectPage', () => {
 
     setup();
 
-    expect(await screen.findByRole('link', { name: /Council report/ })).toHaveAttribute('href', 'https://example.com/report');
+    fireEvent.click(await screen.findByRole('tab', { name: /Relevant links/ }));
+    expect(screen.getByRole('link', { name: /Council report/ })).toHaveAttribute('href', 'https://example.com/report');
   });
 
   it('dates a project without dates by the day it was started', async () => {
@@ -147,7 +169,6 @@ describe('PublicProjectPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Related Projects' })).toBeInTheDocument();
     expect(readRelatedProjects).toHaveBeenCalledWith(PROJECT);
-    expect(screen.getByRole('link', { name: 'Related projects' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Market Square/ }));
     expect(onOpenProject).toHaveBeenCalledWith('proj-3');
@@ -166,13 +187,14 @@ describe('PublicProjectPage', () => {
     consoleError.mockRestore();
   });
 
-  it('has no Follow button for a signed-out visitor', async () => {
+  it('asks a signed-out visitor to sign in to follow', async () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
 
-    setup({ accountId: null });
-    await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' });
+    const { onSignIn } = setup({ accountId: null, onSignIn: vi.fn() });
+    fireEvent.click(await screen.findByRole('button', { name: 'Follow this project' }));
 
-    expect(screen.queryByRole('button', { name: /Follow/ })).not.toBeInTheDocument();
+    expect(onSignIn).toHaveBeenCalled();
+    expect(follow).not.toHaveBeenCalled();
   });
 
   it('follows and unfollows the project', async () => {
@@ -180,14 +202,14 @@ describe('PublicProjectPage', () => {
     vi.mocked(isFollowing).mockResolvedValue(false);
 
     setup({ accountId: 'user-2' });
-    const button = await screen.findByRole('button', { name: 'Follow' });
+    const button = await screen.findByRole('button', { name: 'Follow this project' });
 
     fireEvent.click(button);
 
     await waitFor(() => expect(follow).toHaveBeenCalledWith('project', 'proj-1', 'Riverside Greenway'));
-    expect(await screen.findByRole('button', { name: 'Following' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Following this project' })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Following' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Following this project' }));
 
     await waitFor(() => expect(unfollow).toHaveBeenCalledWith('project', 'proj-1'));
   });
@@ -198,11 +220,11 @@ describe('PublicProjectPage', () => {
     vi.mocked(isFollowing).mockReturnValue(new Promise((resolve) => { answer = resolve; }));
 
     setup({ accountId: 'user-2' });
-    fireEvent.click(await screen.findByRole('button', { name: 'Follow' }));
-    await waitFor(() => expect(isFollowing).toHaveBeenCalled());
+    fireEvent.click(await screen.findByRole('button', { name: 'Follow this project' }));
+    await waitFor(() => expect(isFollowing).toHaveBeenCalledWith('project', 'proj-1'));
     await act(async () => { answer(false); });
 
-    expect(screen.getByRole('button', { name: 'Following' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Following this project' })).toBeInTheDocument();
   });
 
   it('shows a map of the drawn location outline at the top, when the project has one', async () => {
@@ -695,16 +717,16 @@ describe('PublicProjectPage, taking part', () => {
     expect(screen.queryByText('Pocket park')).not.toBeInTheDocument();
   });
 
-  it('lists its sections in the table of contents by their headings', async () => {
+  it('shows its tools under the Project tab, in the order they were added', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['reimagine-a-space', 'open-vote']);
     vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL]);
 
     setup();
 
-    const toc = within(await screen.findByRole('navigation', { name: 'On this page' }));
-    await screen.findByRole('heading', { name: 'We want your opinion' });
-    expect(toc.getAllByRole('link').map((link) => link.textContent))
-      .toEqual(['Overview', 'Share your idea for this place', 'We want your opinion']);
+    const panel = await screen.findByRole('tabpanel', { name: 'Project' });
+    await within(panel).findByRole('heading', { name: 'We want your opinion' });
+    expect(within(panel).getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent))
+      .toEqual(['About the project', 'Share your idea for this place', 'We want your opinion']);
   });
 
   it('skips a tool the Toolkit no longer has', async () => {
@@ -797,5 +819,263 @@ describe('PublicProjectPage, a private project', () => {
 
     expect(await screen.findByText('Private project')).toBeInTheDocument();
     expect(readProjectAccess).not.toHaveBeenCalled();
+  });
+});
+
+describe('PublicProjectPage, its header, tabs and people', () => {
+  const SUMMARY = {
+    views: 1234, followers: 7, interactions: 42,
+    owner: { id: 'user-1', name: 'Mara Quinn', bio: 'Landscape architect.', location: 'Malmö', photo: null,
+      joinedAt: '2025-03-10T10:00:00Z', projects: 3 },
+    collaborators: [{ id: 'user-3', name: 'Ines Berg', photo: null }],
+  };
+  const UPDATE = { id: 'u1', authorId: 'user-1', authorName: 'Mara Quinn', body: 'Workshop on Saturday.',
+    createdAt: '2026-05-02T10:00:00Z' };
+  const COMMENT = { id: 'c1', authorId: 'user-9', authorName: 'Oskar', body: 'Love this.',
+    createdAt: '2026-05-03T10:00:00Z' };
+
+  beforeEach(() => {
+    vi.mocked(readImaginationsByProject).mockResolvedValue([]);
+    vi.mocked(readLinks).mockResolvedValue([]);
+    vi.mocked(readPublicToolkitActivity).mockResolvedValue(0);
+    vi.mocked(readRelatedProjects).mockResolvedValue([
+      { id: 'proj-2', name: 'Harbour Steps', ownerName: 'Ines', description: '', locations: [], createdAt: '2026-02-01' },
+    ]);
+    vi.mocked(readProjectTools).mockResolvedValue([]);
+    vi.mocked(isFollowing).mockResolvedValue(false);
+    vi.mocked(readProject).mockResolvedValue({ ...PROJECT, summary: 'A park along the old railway.' });
+    vi.mocked(readProjectSummary).mockResolvedValue(SUMMARY);
+    vi.mocked(readUpdates).mockResolvedValue([UPDATE]);
+    vi.mocked(readComments).mockResolvedValue([COMMENT]);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows the time left, views and followers beside the image', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-12-21T12:00:00Z'));
+    setup();
+
+    const glance = within(await screen.findByRole('complementary', { name: 'Project at a glance' }));
+    expect(await glance.findByText('1,234')).toBeInTheDocument();
+    expect(glance.getByText('views')).toBeInTheDocument();
+    expect(glance.getByText('7')).toBeInTheDocument();
+    expect(glance.getByText('followers')).toBeInTheDocument();
+    expect(glance.getByText('10')).toBeInTheDocument();
+    expect(glance.getByText('days left')).toBeInTheDocument();
+    expect(glance.getByRole('button', { name: 'Follow this project' })).toBeInTheDocument();
+    expect(glance.queryByText(/Interactions|Tools live|People involved/)).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it('opens the Project tab with the description, then the goals', async () => {
+    setup();
+
+    const panel = within(await screen.findByRole('tabpanel', { name: 'Project' }));
+    expect(panel.getAllByRole('heading', { level: 2 }).slice(0, 2).map((heading) => heading.textContent))
+      .toEqual(['About the project', 'Goals']);
+    expect(panel.getByText('A park along the old railway.')).toBeInTheDocument();
+    expect(panel.getByText(/Turn the old rail corridor/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /Updates/ }));
+    expect(screen.queryByRole('heading', { name: 'About the project' })).not.toBeInTheDocument();
+  });
+
+  it('heads the page with the title and the summary as its subtitle, and the byline under the image', async () => {
+    setup();
+
+    const title = await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' });
+    expect(title.nextElementSibling).toHaveTextContent('A park along the old railway.');
+    const byline = screen.getByText('1 Jan 2026 – 31 Dec 2026').closest('div');
+    expect(byline).toHaveTextContent('By Mara Quinn');
+    expect(byline).toHaveTextContent('Malmö, Folkets Park');
+    // After the image in the page, not between it and the title.
+    expect(title.compareDocumentPosition(byline) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(byline.previousElementSibling.tagName).not.toBe('H1');
+  });
+
+  it('has four tabs, and keeps the people and related projects under every one', async () => {
+    setup();
+
+    const tabs = await screen.findAllByRole('tab');
+    expect(tabs.map((tab) => tab.textContent.replace(/\d+$/, ''))).toEqual(['Project', 'Updates', 'Comments', 'Relevant links']);
+    expect(screen.getByRole('tab', { name: 'Project' })).toHaveAttribute('aria-selected', 'true');
+
+    for (const name of [/Updates/, /Comments/, /Relevant links/]) {
+      fireEvent.click(screen.getByRole('tab', { name }));
+      expect(screen.getByRole('tab', { name })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('heading', { name: 'Organizer' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Collaborators' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Related Projects' })).toBeInTheDocument();
+    }
+  });
+
+  it('moves between tabs with the arrow keys', async () => {
+    setup();
+
+    const project = await screen.findByRole('tab', { name: 'Project' });
+    fireEvent.keyDown(project, { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: /Updates/ })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(screen.getByRole('tab', { name: /Updates/ }), { key: 'ArrowLeft' });
+    fireEvent.keyDown(project, { key: 'ArrowLeft' });
+    expect(screen.getByRole('tab', { name: /Relevant links/ })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('introduces the organiser, with what it has made and when it joined', async () => {
+    const props = setup({ accountId: 'user-2', onOpenProfile: vi.fn() });
+
+    const organizer = within((await screen.findByRole('heading', { name: 'Organizer' })).closest('section'));
+    expect(await organizer.findByText('Landscape architect.')).toBeInTheDocument();
+    expect(organizer.getByText('3 projects created')).toBeInTheDocument();
+    expect(organizer.getByText('On PLACER since March 2025')).toBeInTheDocument();
+    expect(organizer.getByText('Malmö')).toBeInTheDocument();
+    expect(organizer.getByRole('button', { name: 'Follow' })).toBeInTheDocument();
+
+    fireEvent.click(organizer.getByRole('link', { name: 'Mara Quinn' }));
+    expect(props.onOpenProfile).toHaveBeenCalledWith('user-1');
+  });
+
+  it('introduces the organisation instead, when the project is run for one', async () => {
+    vi.mocked(readProject).mockResolvedValue({ ...PROJECT, organisationId: 'org-1' });
+    vi.mocked(readOrganisation).mockResolvedValue({ id: 'org-1', name: 'STPLN', description: 'A culture hub.',
+      location: 'Malmö, Sweden', address: '', avatar: null, createdAt: '2026-10-01T00:00:00Z' });
+    const { readOrganisationProjects } = await import('../../services/projects');
+    vi.mocked(readOrganisationProjects).mockResolvedValue([{ id: 'a' }, { id: 'b' }]);
+    const props = setup({ onOpenOrganisation: vi.fn() });
+
+    const organizer = within((await screen.findByRole('heading', { name: 'Organizer' })).closest('section'));
+    expect(await organizer.findByText('A culture hub.')).toBeInTheDocument();
+    expect(await organizer.findByText('2 projects created')).toBeInTheDocument();
+    expect(organizer.getByText('Organisation')).toBeInTheDocument();
+
+    fireEvent.click(organizer.getByRole('link', { name: 'STPLN' }));
+    expect(props.onOpenOrganisation).toHaveBeenCalledWith('org-1');
+  });
+
+  it('lists the owner and the collaborators', async () => {
+    const props = setup({ onOpenProfile: vi.fn() });
+
+    const list = within(await screen.findByRole('list', { name: 'Collaborators' }));
+    await list.findByText('Ines Berg');
+    const links = list.getAllByRole('link');
+    expect(links).toHaveLength(2);
+    expect(links[0]).toHaveTextContent('Mara QuinnProject owner');
+    expect(links[1]).toHaveTextContent('Ines BergCollaborator');
+
+    fireEvent.click(list.getByRole('link', { name: /Ines Berg/ }));
+    expect(props.onOpenProfile).toHaveBeenCalledWith('user-3');
+  });
+
+  it('still shows the owner when the numbers cannot be read', async () => {
+    vi.mocked(readProjectSummary).mockRejectedValue(new Error('function does not exist'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    setup();
+
+    const list = within(await screen.findByRole('list', { name: 'Collaborators' }));
+    expect(list.getByText('Mara Quinn')).toBeInTheDocument();
+    expect(screen.getByRole('complementary', { name: 'Project at a glance' })).toHaveTextContent('–views');
+  });
+
+  it('shows updates to everyone, and lets the owner post them', async () => {
+    vi.mocked(readProjectSummary).mockResolvedValue({ ...SUMMARY, canPostUpdate: true });
+    vi.mocked(postUpdate).mockResolvedValue({ id: 'u2', authorId: 'user-1', authorName: 'Mara Quinn',
+      body: 'Plans are up.', createdAt: '2026-05-04T10:00:00Z' });
+    setup({ accountId: 'user-1' });
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Updates/ }));
+    expect(screen.getByText('Workshop on Saturday.')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Post an update'), { target: { value: 'Plans are up.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Post update' }));
+
+    await waitFor(() => expect(postUpdate).toHaveBeenCalledWith('proj-1', 'Plans are up.'));
+    const posts = within(screen.getByRole('list', { name: 'Updates' }));
+    expect(posts.getAllByRole('listitem')[0]).toHaveTextContent('Plans are up.');
+  });
+
+  it('does not offer to post an update to a visitor', async () => {
+    setup({ accountId: 'user-2' });
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Updates/ }));
+
+    expect(screen.getByText('Workshop on Saturday.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Post an update')).not.toBeInTheDocument();
+  });
+
+  it('does not offer a collaborator to post an update', async () => {
+    setup({ accountId: 'user-3' });
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Updates/ }));
+
+    expect(await screen.findByText('Workshop on Saturday.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Post an update')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Remove update/ })).not.toBeInTheDocument();
+  });
+
+  it("lets an admin of the project's organisation post an update", async () => {
+    vi.mocked(readProjectSummary).mockResolvedValue({ ...SUMMARY, canPostUpdate: true });
+    setup({ accountId: 'user-7' });
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Updates/ }));
+
+    expect(await screen.findByLabelText('Post an update')).toBeInTheDocument();
+  });
+
+  it('asks a signed-out visitor to sign in to comment', async () => {
+    const props = setup({ onSignIn: vi.fn() });
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Comments/ }));
+
+    expect(screen.getByText('Love this.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Add a comment')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in to comment' }));
+    expect(props.onSignIn).toHaveBeenCalled();
+  });
+
+  it('lets a signed-in visitor comment, and remove only their own', async () => {
+    vi.mocked(readComments).mockResolvedValue([COMMENT,
+      { id: 'c2', authorId: 'user-2', authorName: 'Lee', body: 'Count me in.', createdAt: '2026-05-01T10:00:00Z' }]);
+    vi.mocked(postComment).mockResolvedValue({ id: 'c3', authorId: 'user-2', authorName: 'Lee',
+      body: 'When is it?', createdAt: '2026-05-05T10:00:00Z' });
+    setup({ accountId: 'user-2' });
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Comments/ }));
+    expect(screen.queryByRole('button', { name: 'Remove comment by Oskar' })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Add a comment'), { target: { value: 'When is it?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
+    await waitFor(() => expect(postComment).toHaveBeenCalledWith('proj-1', 'When is it?'));
+    expect(await screen.findByText('When is it?')).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Remove comment by Lee' })[1]);
+    await waitFor(() => expect(removeComment).toHaveBeenCalledWith('c2'));
+    await waitFor(() => expect(screen.queryByText('Count me in.')).not.toBeInTheDocument());
+  });
+
+  it("lets the project's people remove anybody's comment", async () => {
+    setup({ accountId: 'user-1' });
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Comments/ }));
+
+    expect(screen.getByRole('button', { name: 'Remove comment by Oskar' })).toBeInTheDocument();
+  });
+
+  it('counts updates, comments and links on their tabs', async () => {
+    vi.mocked(readLinks).mockResolvedValue([{ id: 'l1', title: 'Report', url: 'https://example.com' }]);
+    setup();
+
+    expect(await screen.findByRole('tab', { name: 'Updates (1)' })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'Comments (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Relevant links (1)' })).toBeInTheDocument();
+  });
+
+  it('says when there are no links yet', async () => {
+    setup();
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Relevant links/ }));
+
+    expect(screen.getByText('No links shared yet.')).toBeInTheDocument();
   });
 });

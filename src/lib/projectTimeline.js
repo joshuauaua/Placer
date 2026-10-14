@@ -38,7 +38,8 @@ export function pluralDays(days) {
 /**
  * Where a project is in its time: `state` is 'undated', 'upcoming', 'ongoing' or
  * 'ended'; `percent` is how much of its time has passed, 0–100, or null when there is
- * no span to measure; `daysLeft` is the days to its end while it runs; `label` says
+ * no span to measure; `daysLeft` is the days to its end while it runs, and `daysToStart`
+ * the days until it starts while it is upcoming; `label` says
  * it in words.
  */
 export function projectProgress(project, now = new Date()) {
@@ -49,7 +50,7 @@ export function projectProgress(project, now = new Date()) {
   if (!end) {
     if (start && today < start) {
       const days = daysBetween(today, start);
-      return { state: 'upcoming', percent: 0, daysLeft: null, label: `Starts in ${pluralDays(days)}` };
+      return { state: 'upcoming', percent: 0, daysLeft: null, daysToStart: days, label: `Starts in ${pluralDays(days)}` };
     }
     return { state: 'undated', percent: null, daysLeft: null, label: 'No end date set' };
   }
@@ -58,7 +59,7 @@ export function projectProgress(project, now = new Date()) {
 
   if (start && today < start) {
     const days = daysBetween(today, start);
-    return { state: 'upcoming', percent: 0, daysLeft: null, label: `Starts in ${pluralDays(days)}` };
+    return { state: 'upcoming', percent: 0, daysLeft: null, daysToStart: days, label: `Starts in ${pluralDays(days)}` };
   }
 
   const daysLeft = daysBetween(today, end);
