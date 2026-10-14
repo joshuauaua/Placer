@@ -14,7 +14,7 @@
 
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
-import { Avatar, LoadingMark } from './UI';
+import { Avatar, PageLoader } from './UI';
 import { FollowButton } from './FollowButton';
 import { FollowListDialog } from './FollowListDialog';
 import { ProjectCard } from './ProjectCard';
@@ -125,7 +125,7 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
   );
 
   if (status === 'loading') {
-    return <div style={{ padding: 48, display: 'flex', justifyContent: 'center' }}><LoadingMark /></div>;
+    return <PageLoader />;
   }
 
   if (status === 'notFound') {

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { Icon } from './Icon';
-import { Btn, LoadingMark } from './UI';
+import { Btn, LoadingMark, PageLoader } from './UI';
 import { ProjectViewsChart } from './ProjectViewsChart';
 import { ProjectSetupPage } from './ProjectSetupPage';
 import { TOOLS, findTool, isToolLive, projectSetupKind } from '../toolkit/tools';
@@ -887,7 +887,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   };
 
   if (status === 'loading') {
-    return <div style={{ padding: 48, display: 'flex', justifyContent: 'center' }}><LoadingMark /></div>;
+    return <PageLoader />;
   }
 
   if (status === 'error' || !project) {

@@ -35,7 +35,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
-import { Btn, CatTag, LoadingMark, Vote } from './UI';
+import { Btn, CatTag, PageLoader, Vote } from './UI';
 import { ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
 import { ProjectToolCard } from './toolkit/ProjectToolCard';
 import { findTool, isToolLive, projectSetupKind } from '../toolkit/tools';
@@ -506,7 +506,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   );
 
   if (status === 'loading') {
-    return <div ref={topRef} style={{ padding: 48, display: 'flex', justifyContent: 'center' }}><LoadingMark /></div>;
+    return <div ref={topRef}><PageLoader /></div>;
   }
 
   if (status === 'locked') {

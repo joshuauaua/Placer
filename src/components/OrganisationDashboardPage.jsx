@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Btn, LoadingMark } from './UI';
+import { Btn, PageLoader } from './UI';
 import { ProjectCard } from './ProjectCard';
 import { OrganisationSetupPage } from './OrganisationSetupPage';
 import {
@@ -202,7 +202,7 @@ export function OrganisationDashboardPage({ t, accountId, organisationId,
   };
 
   if (status === 'loading') {
-    return <div style={{ padding: 48, display: 'flex', justifyContent: 'center' }}><LoadingMark /></div>;
+    return <PageLoader />;
   }
 
   if (status === 'notFound') {

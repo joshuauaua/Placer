@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { StoryblokComponent, StoryblokRichText, registerStoryblokBridge, storyblokEditable } from '@storyblok/react';
 import { Icon } from './Icon';
-import { Btn, LoadingMark } from './UI';
+import { Btn, PageLoader } from './UI';
 import { getResource, isStoryblokConfigured, toResource } from '../services/storyblok';
 
 // A Textarea field is a plain string, where a blank line starts a new paragraph; a
@@ -66,9 +66,7 @@ export function ResourceArticlePage({ t, slug }) {
         <div style={{ marginBottom: 32 }}>{back}</div>
 
         {article === undefined && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-            <LoadingMark />
-          </div>
+          <PageLoader />
         )}
 
         {article === null && (
