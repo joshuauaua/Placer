@@ -1,4 +1,13 @@
-/* PLACER — a project's dashboard: its numbers, its roster, and its documentation */
+/* PLACER — a project's dashboard, in three tabs under its name.
+ *
+ *   General           its numbers, the public page's views, and its documentation links
+ *   My Toolkit        the tools it uses, and the rooms open for them
+ *   Project Settings  its setup, collaborators, notifications, who may see a private
+ *                     project, and deleting it
+ *
+ * The dialogs a tab opens (configuring a tool, changing a room) are drawn outside the
+ * tabs, so switching tab never loses one half-way.
+ */
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
@@ -59,6 +68,12 @@ const inputStyle = (t) => ({
 });
 
 // `action`, when given, sits at the far right of the title's row.
+const DASHBOARD_TABS = [
+  { id: 'general', label: 'General' },
+  { id: 'toolkit', label: 'My Toolkit' },
+  { id: 'settings', label: 'Project Settings' },
+];
+
 function Card({ t, title, action, children }) {
   return (
     <section style={{ padding: 24, marginBottom: 24, background: t.surface, borderRadius: 12,
@@ -676,11 +691,12 @@ function DeleteProjectDialog({ t, project, onDeleted, onClose }) {
  * needs — everything else is read here. `isOwner` gates the roster and delete
  * controls; a plain collaborator sees everything else.
  */
-export function ProjectDashboardPage({ t, accountId, projectId, organisations = [],
+export function ProjectDashboardPage({ t, accountId, projectId, organisations = [], initialTab = 'general',
   onOpenRoom, onNavigateToPublic, onDeleted }) {
   const [project, setProject] = useState(null);
   const [status, setStatus] = useState('loading');
   const [editing, setEditing] = useState(false);
+  const [tab, setTab] = useState(initialTab);
   const [stats, setStats] = useState(null);
   // The public page's views: null while loading, false if they could not be read.
   const [views, setViews] = useState(null);
@@ -886,6 +902,16 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
     }
   };
 
+  const onTabKey = (event) => {
+    const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    if (!step) return;
+    event.preventDefault();
+    const index = DASHBOARD_TABS.findIndex(({ id }) => id === tab);
+    const next = DASHBOARD_TABS[(index + step + DASHBOARD_TABS.length) % DASHBOARD_TABS.length].id;
+    setTab(next);
+    document.getElementById(`dashboard-tab-${next}`)?.focus();
+  };
+
   if (status === 'loading') {
     return <PageLoader />;
   }
@@ -937,84 +963,188 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
           )}
         </div>
 
-        <StatTable t={t} stats={[
-          { label: 'Imaginations', value: stats?.imaginationsCount ?? 0 },
-          { label: 'Votes received', value: stats?.imaginationsUpvotes ?? 0 },
-          { label: 'Toolkit sessions', value: stats?.toolkitRoomsCount ?? 0 },
-          ...(views !== false ? [{ label: 'Page views', value: views ? views.total : '–' }] : []),
-        ]} />
+        <div role="tablist" aria-label="Dashboard sections" onKeyDown={onTabKey}
+          style={{ display: 'flex', gap: 4, overflowX: 'auto', borderBottom: `1px solid ${t.line}`, marginBottom: 32 }}>
+          {DASHBOARD_TABS.map(({ id, label }) => {
+            const current = id === tab;
+            return (
+              <button key={id} id={`dashboard-tab-${id}`} type="button" role="tab" aria-selected={current}
+                aria-controls={`dashboard-panel-${id}`} tabIndex={current ? 0 : -1} onClick={() => setTab(id)}
+                className="placer-project-tab"
+                style={{ color: current ? t.ink : t.inkDim, fontWeight: current ? 700 : 500,
+                  boxShadow: current ? `inset 0 -3px 0 ${t.ink}` : 'none' }}>
+                {label}
+              </button>
+            );
+          })}
+        </div>
 
-        {views && (
-          <Card t={t} title="Page views">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+        <div id={`dashboard-panel-${tab}`} role="tabpanel" aria-labelledby={`dashboard-tab-${tab}`}>
+          {tab === 'general' && (
+            <>
+              <StatTable t={t} stats={[
+                { label: 'Imaginations', value: stats?.imaginationsCount ?? 0 },
+                { label: 'Votes received', value: stats?.imaginationsUpvotes ?? 0 },
+                { label: 'Toolkit sessions', value: stats?.toolkitRoomsCount ?? 0 },
+                ...(views !== false ? [{ label: 'Page views', value: views ? views.total : '–' }] : []),
+              ]} />
+
+              {views && (
+                <Card t={t} title="Page views">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+                    <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
+                      <strong style={{ color: t.ink }}>{viewsInRange}</strong>{' '}
+                      {viewsInRange === 1 ? 'view' : 'views'} of the public page in the last {viewDays} days.
+                      Visits by you and your collaborators are not counted.
+                    </p>
+                    <div role="radiogroup" aria-label="Period" style={{ display: 'flex', gap: 6 }}>
+                      {[7, 30].map((n) => (
+                        <button key={n} type="button" role="radio" aria-checked={viewDays === n}
+                          onClick={() => setViewDays(n)}
+                          style={{ height: 32, padding: '0 12px', borderRadius: 8, cursor: 'pointer',
+                            fontFamily: 'var(--placer-font)', fontSize: 13, fontWeight: 500, color: t.ink,
+                            background: viewDays === n ? t.surfaceAlt : 'transparent',
+                            border: `1px solid ${viewDays === n ? t.ink : t.line}` }}>
+                          {n} days
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <ProjectViewsChart t={t} daily={views.daily} />
+                </Card>
+              )}
+
+              <Card t={t} title="Documentation">
+                <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
+                  News, articles and resources — links only, shown on the public page.
+                </p>
+                {links.length === 0 ? (
+                  <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: 16 }}>Nothing attached yet.</p>
+                ) : (
+                  <div style={{ marginBottom: 16 }}>
+                    {links.map((link) => <LinkRow key={link.id} t={t} link={link} onRemove={handleRemoveLink} />)}
+                  </div>
+                )}
+                <form onSubmit={handleAddLink} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <input type="text" value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)}
+                    placeholder="Title" aria-label="Link title" style={{ ...inputStyle(t), flex: '1 1 160px' }} />
+                  <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)}
+                    placeholder="https://…" aria-label="Link URL" style={{ ...inputStyle(t), flex: '2 1 220px' }} />
+                  <Btn t={t} variant="primary" size="sm" icon="plus" disabled={addingLink}
+                    ariaLabel="Add link">
+                    {addingLink ? 'Adding…' : 'Add'}
+                  </Btn>
+                </form>
+                {linkError && <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{linkError}</p>}
+              </Card>
+            </>
+          )}
+
+          {tab === 'toolkit' && (
+            <Card t={t} title="My Toolkit"
+              action={<AddToolkitTool t={t} chosen={tools} onChoose={handleAddTool} />}>
               <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
-                <strong style={{ color: t.ink }}>{viewsInRange}</strong>{' '}
-                {viewsInRange === 1 ? 'view' : 'views'} of the public page in the last {viewDays} days.
-                Visits by you and your collaborators are not counted.
+                The tools this project uses. Each is a template: configure it for this project
+                and it goes live on the public page.
               </p>
-              <div role="radiogroup" aria-label="Period" style={{ display: 'flex', gap: 6 }}>
-                {[7, 30].map((n) => (
-                  <button key={n} type="button" role="radio" aria-checked={viewDays === n}
-                    onClick={() => setViewDays(n)}
-                    style={{ height: 32, padding: '0 12px', borderRadius: 8, cursor: 'pointer',
-                      fontFamily: 'var(--placer-font)', fontSize: 13, fontWeight: 500, color: t.ink,
-                      background: viewDays === n ? t.surfaceAlt : 'transparent',
-                      border: `1px solid ${viewDays === n ? t.ink : t.line}` }}>
-                    {n} days
-                  </button>
-                ))}
-              </div>
-            </div>
-            <ProjectViewsChart t={t} daily={views.daily} />
-          </Card>
-        )}
 
-        <Card t={t} title="My Toolkit"
-          action={<AddToolkitTool t={t} chosen={tools} onChoose={handleAddTool} />}>
-          <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
-            The tools this project uses. Each is a template: configure it for this project
-            and it goes live on the public page.
-          </p>
+              {chosenTools.length === 0 ? (
+                <p style={{ fontSize: 13.5, color: t.inkFaint, marginTop: 16, marginBottom: 0 }}>
+                  No tools yet. Add one to configure it for this project.
+                </p>
+              ) : (
+                <div style={{ marginTop: 16 }}>
+                  {chosenTools.map((tool) => {
+                    const openRoom = (rooms ?? []).find((room) => room.tool === tool.id && room.status === 'open') ?? null;
+                    const scheduled = openRoom ? null
+                      : (rooms ?? []).find((room) => room.tool === tool.id && room.status === 'scheduled') ?? null;
+                    return (
+                      <ChosenToolRow key={tool.id} t={t} tool={tool}
+                        live={isToolLive(tool, { configured: configured.has(tool.id), openRoom })}
+                        inRoom={Boolean(openRoom)} scheduled={scheduled}
+                        rooms={(rooms ?? []).filter((room) => room.tool === tool.id && isCurrentRoom(room))}
+                        onConfigure={() => setConfiguring(tool.id)}
+                        onOpenRoom={handleOpenRoom} onEditRoom={setEditingRoom} onCloseRoom={handleCloseRoom}
+                        onDeleteRoom={handleDeleteRoom} />
+                    );
+                  })}
+                </div>
+              )}
 
-          {chosenTools.length === 0 ? (
-            <p style={{ fontSize: 13.5, color: t.inkFaint, marginTop: 16, marginBottom: 0 }}>
-              No tools yet. Add one to configure it for this project.
-            </p>
-          ) : (
-            <div style={{ marginTop: 16 }}>
-              {chosenTools.map((tool) => {
-                const openRoom = (rooms ?? []).find((room) => room.tool === tool.id && room.status === 'open') ?? null;
-                const scheduled = openRoom ? null
-                  : (rooms ?? []).find((room) => room.tool === tool.id && room.status === 'scheduled') ?? null;
-                return (
-                  <ChosenToolRow key={tool.id} t={t} tool={tool}
-                    live={isToolLive(tool, { configured: configured.has(tool.id), openRoom })}
-                    inRoom={Boolean(openRoom)} scheduled={scheduled}
-                    rooms={(rooms ?? []).filter((room) => room.tool === tool.id && isCurrentRoom(room))}
-                    onConfigure={() => setConfiguring(tool.id)}
-                    onOpenRoom={handleOpenRoom} onEditRoom={setEditingRoom} onCloseRoom={handleCloseRoom}
-                    onDeleteRoom={handleDeleteRoom} />
-                );
-              })}
-            </div>
+              {/* A room whose tool has since been taken off the list has no row to open out
+                  under, so it is listed on its own rather than lost from sight. */}
+              {otherRooms.length > 0 && (
+                <div style={{ marginTop: 24 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 4 }}>Other rooms</h3>
+                  <p style={{ fontSize: 13, color: t.inkDim, lineHeight: 1.55, marginBottom: 8 }}>
+                    Still open for tools no longer on this list.
+                  </p>
+                  {otherRooms.map((room) => (
+                    <RoomRow key={room.id} t={t} room={room} onOpen={handleOpenRoom} onEdit={setEditingRoom}
+                      onClose={handleCloseRoom} onDelete={handleDeleteRoom} />
+                  ))}
+                </div>
+              )}
+            </Card>
           )}
 
-          {/* A room whose tool has since been taken off the list has no row to open out
-              under, so it is listed on its own rather than lost from sight. */}
-          {otherRooms.length > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 4 }}>Other rooms</h3>
-              <p style={{ fontSize: 13, color: t.inkDim, lineHeight: 1.55, marginBottom: 8 }}>
-                Still open for tools no longer on this list.
-              </p>
-              {otherRooms.map((room) => (
-                <RoomRow key={room.id} t={t} room={room} onOpen={handleOpenRoom} onEdit={setEditingRoom}
-                  onClose={handleCloseRoom} onDelete={handleDeleteRoom} />
-              ))}
-            </div>
+          {tab === 'settings' && (
+            <>
+              {isOwner && (
+                <Card t={t} title="Project setup" action={(
+                  <Btn t={t} variant="outline" size="sm" icon="pencil" onClick={() => setEditing(true)}>
+                    Edit setup
+                  </Btn>
+                )}>
+                  <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
+                    Its name, description, goals, dates, place, picture and who can see it.
+                  </p>
+                </Card>
+              )}
+              <Card t={t} title="Collaborators">
+                {collaborators.length === 0 ? (
+                  <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: isOwner ? 16 : 0 }}>
+                    Just {project.ownerName} so far.
+                  </p>
+                ) : (
+                  <div style={{ marginBottom: isOwner ? 16 : 0 }}>
+                    {collaborators.map((collaborator) => (
+                      isOwner
+                        ? <CollaboratorRow key={collaborator.userId} t={t} collaborator={collaborator}
+                          onRemove={handleRemoveCollaborator} />
+                        : (
+                          <div key={collaborator.userId} style={{ padding: '10px 0', borderTop: `1px solid ${t.line}`,
+                            fontSize: 14, fontWeight: 700, color: t.ink }}>
+                            {collaborator.displayName || collaborator.email}
+                          </div>
+                        )
+                    ))}
+                  </div>
+                )}
+                {isOwner && (
+                  <form onSubmit={handleInvite} style={{ display: 'flex', gap: 8 }}>
+                    <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)}
+                      placeholder="Invite by email" aria-label="Invite a collaborator by email"
+                      style={{ ...inputStyle(t), flex: 1 }} />
+                    <Btn t={t} variant="primary" size="sm" icon="plus" disabled={inviting} ariaLabel="Add collaborator">
+                      {inviting ? 'Adding…' : 'Add'}
+                    </Btn>
+                  </form>
+                )}
+                {inviteError && (
+                  <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{inviteError}</p>
+                )}
+              </Card>
+
+              <ProjectNotifications t={t} projectId={project.id} />
+
+              {project.visibility === 'private' && <ProjectAccess t={t} projectId={project.id} />}
+
+              {isOwner && <DeleteProject t={t} project={project} onDeleted={onDeleted} />}
+            </>
           )}
-        </Card>
+        </div>
 
         {configuring && findTool(configuring) && (
           <ConfigureToolDialog t={t} project={project} tool={findTool(configuring)}
@@ -1028,68 +1158,6 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
           <RoomClosesDialog t={t} room={editingRoom} onClose={() => setEditingRoom(null)}
             onSaved={handleRoomEdited} />
         )}
-
-        <ProjectNotifications t={t} projectId={project.id} />
-
-        <Card t={t} title="Documentation">
-          <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
-            News, articles and resources — links only, shown on the public page.
-          </p>
-          {links.length === 0 ? (
-            <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: 16 }}>Nothing attached yet.</p>
-          ) : (
-            <div style={{ marginBottom: 16 }}>
-              {links.map((link) => <LinkRow key={link.id} t={t} link={link} onRemove={handleRemoveLink} />)}
-            </div>
-          )}
-          <form onSubmit={handleAddLink} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <input type="text" value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)}
-              placeholder="Title" aria-label="Link title" style={{ ...inputStyle(t), flex: '1 1 160px' }} />
-            <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="https://…" aria-label="Link URL" style={{ ...inputStyle(t), flex: '2 1 220px' }} />
-            <Btn t={t} variant="primary" size="sm" icon="plus" disabled={addingLink}
-              ariaLabel="Add link">
-              {addingLink ? 'Adding…' : 'Add'}
-            </Btn>
-          </form>
-          {linkError && <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{linkError}</p>}
-        </Card>
-
-        <Card t={t} title="Collaborators">
-          {collaborators.length === 0 ? (
-            <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: isOwner ? 16 : 0 }}>
-              Just {project.ownerName} so far.
-            </p>
-          ) : (
-            <div style={{ marginBottom: isOwner ? 16 : 0 }}>
-              {collaborators.map((collaborator) => (
-                isOwner
-                  ? <CollaboratorRow key={collaborator.userId} t={t} collaborator={collaborator} onRemove={handleRemoveCollaborator} />
-                  : (
-                    <div key={collaborator.userId} style={{ padding: '10px 0', borderTop: `1px solid ${t.line}`,
-                      fontSize: 14, fontWeight: 700, color: t.ink }}>
-                      {collaborator.displayName || collaborator.email}
-                    </div>
-                  )
-              ))}
-            </div>
-          )}
-          {isOwner && (
-            <form onSubmit={handleInvite} style={{ display: 'flex', gap: 8 }}>
-              <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="Invite by email" aria-label="Invite a collaborator by email"
-                style={{ ...inputStyle(t), flex: 1 }} />
-              <Btn t={t} variant="primary" size="sm" icon="plus" disabled={inviting} ariaLabel="Add collaborator">
-                {inviting ? 'Adding…' : 'Add'}
-              </Btn>
-            </form>
-          )}
-          {inviteError && <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{inviteError}</p>}
-        </Card>
-
-        {project.visibility === 'private' && <ProjectAccess t={t} projectId={project.id} />}
-
-        {isOwner && <DeleteProject t={t} project={project} onDeleted={onDeleted} />}
       </div>
     </div>
   );
