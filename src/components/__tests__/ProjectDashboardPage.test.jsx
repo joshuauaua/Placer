@@ -86,9 +86,14 @@ const PROJECT = {
 
 const STATS = { imaginationsCount: 4, imaginationsUpvotes: 19, toolkitRoomsCount: 2 };
 
+// The tab the dashboard opens on: each group of tests below sets the one its part of
+// the dashboard is under, and a test can set it for itself.
+let tab = 'general';
+beforeEach(() => { tab = 'general'; });
+
 const setup = (overrides = {}) => {
   const props = {
-    t: THEME, accountId: 'user-1', projectId: PROJECT.id,
+    t: THEME, accountId: 'user-1', projectId: PROJECT.id, initialTab: tab,
     onOpenToolkit: vi.fn(), onOpenRoom: vi.fn(), onNavigateToPublic: vi.fn(),
     ...overrides,
   };
@@ -108,6 +113,48 @@ describe('ProjectDashboardPage', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('has General, My Toolkit and Project Settings tabs, starting on General', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    setup();
+
+    const tabs = await screen.findAllByRole('tab');
+    expect(tabs.map((each) => each.textContent)).toEqual(['General', 'My Toolkit', 'Project Settings']);
+    expect(screen.getByRole('tab', { name: 'General' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('heading', { name: 'Documentation' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'My Toolkit' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Collaborators' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'My Toolkit' }));
+    expect(screen.getByRole('heading', { name: 'My Toolkit' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Documentation' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Project Settings' }));
+    const settings = within(screen.getByRole('tabpanel', { name: 'Project Settings' }));
+    for (const heading of ['Project setup', 'Collaborators']) {
+      expect(settings.getByRole('heading', { name: heading })).toBeInTheDocument();
+    }
+    expect(settings.getByRole('button', { name: /Delete project/ })).toBeInTheDocument();
+  });
+
+  it('opens the setup from Project Settings', async () => {
+    tab = 'settings';
+    setup();
+
+    fireEvent.click(within(await screen.findByRole('tabpanel', { name: 'Project Settings' }))
+      .getByRole('button', { name: /Edit setup/ }));
+
+    expect(await screen.findByRole('button', { name: /Save|Update/ })).toBeInTheDocument();
+  });
+
+  it('moves between tabs with the arrow keys', async () => {
+    setup();
+
+    fireEvent.keyDown(await screen.findByRole('tab', { name: 'General' }), { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: 'My Toolkit' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'My Toolkit' }), { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: 'Project Settings' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('shows the dashboard numbers', async () => {
@@ -195,6 +242,7 @@ describe('ProjectDashboardPage', () => {
   });
 
   it('adds a tool from a dialog of the tools, to the list, without configuring it yet', async () => {
+    tab = 'toolkit';
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
     setup();
     await screen.findByRole('button', { name: 'Configure Poll' });
@@ -218,6 +266,7 @@ describe('ProjectDashboardPage', () => {
   });
 
   it('closes the dialog of tools without adding one', async () => {
+    tab = 'toolkit';
     vi.mocked(readProjectTools).mockResolvedValue([]);
     setup();
 
@@ -232,6 +281,7 @@ describe('ProjectDashboardPage', () => {
   });
 
   it('lists the tools chosen at setup, each waiting to be configured', async () => {
+    tab = 'toolkit';
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'desire-lines']);
     setup();
 
@@ -242,6 +292,7 @@ describe('ProjectDashboardPage', () => {
   });
 
   it('shows a configured tool, and a room tool with its room open, as live', async () => {
+    tab = 'toolkit';
     vi.mocked(readProjectTools).mockResolvedValue(['desire-lines', 'open-vote']);
     vi.mocked(readConfiguredProjectTools).mockResolvedValueOnce(new Set(['desire-lines']));
     vi.mocked(readProjectRooms).mockResolvedValue([{
@@ -256,6 +307,7 @@ describe('ProjectDashboardPage', () => {
   });
 
   it('puts a tool with nothing to set up live from its dialog', async () => {
+    tab = 'toolkit';
     vi.mocked(readProjectTools).mockResolvedValue(['desire-lines']);
     setup();
 
@@ -270,6 +322,7 @@ describe('ProjectDashboardPage', () => {
   });
 
   it('configures a room tool by opening the project\'s room with its setup', async () => {
+    tab = 'toolkit';
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
     setup();
 
@@ -288,18 +341,21 @@ describe('ProjectDashboardPage', () => {
   });
 
   it('says so when no tools have been chosen', async () => {
+    tab = 'toolkit';
     setup();
 
     expect(await screen.findByText(/No tools yet/)).toBeInTheDocument();
   });
 
   it('lists collaborators, defaulting to just the owner', async () => {
+    tab = 'settings';
     setup();
 
     expect(await screen.findByText(/Just Mara Quinn so far/)).toBeInTheDocument();
   });
 
   it('invites a collaborator by email', async () => {
+    tab = 'settings';
     setup({ accountId: 'user-1' });
     vi.mocked(readCollaborators).mockResolvedValue([
       { userId: 'user-2', email: 'devon@example.com', displayName: 'Devon Park' },
@@ -314,6 +370,7 @@ describe('ProjectDashboardPage', () => {
   });
 
   it('says so when inviting fails', async () => {
+    tab = 'settings';
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(addCollaborator).mockRejectedValue(new Error('no PLACER account is registered to that email address'));
     setup({ accountId: 'user-1' });
@@ -334,6 +391,7 @@ describe('ProjectDashboardPage', () => {
   });
 
   it('removes a collaborator', async () => {
+    tab = 'settings';
     vi.mocked(readCollaborators).mockResolvedValue([
       { userId: 'user-2', email: 'devon@example.com', displayName: 'Devon Park' },
     ]);
@@ -385,6 +443,7 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
   const ENDED_ROOM = { ...LONG_ROOM, id: 'room-2', status: 'closed' };
 
   beforeEach(() => {
+    tab = 'toolkit';
     vi.mocked(readProject).mockResolvedValue(PROJECT);
     vi.mocked(readStats).mockResolvedValue(STATS);
     vi.mocked(readCollaborators).mockResolvedValue([]);
@@ -602,10 +661,13 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
   it('leaves the rest of the dashboard alone when the rooms cannot be read', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(readProjectRooms).mockRejectedValue(new Error('function project_rooms does not exist'));
+    tab = 'general';
 
     setup();
 
     expect(await screen.findByText('4')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'My Toolkit' }));
+    expect(screen.getByRole('heading', { name: 'My Toolkit' })).toBeInTheDocument();
     expect(screen.queryByText('Open rooms')).not.toBeInTheDocument();
     consoleError.mockRestore();
   });
@@ -613,6 +675,7 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
 
 describe('ProjectDashboardPage, deleting the project', () => {
   beforeEach(() => {
+    tab = 'settings';
     vi.mocked(readProject).mockResolvedValue(PROJECT);
     vi.mocked(readStats).mockResolvedValue(STATS);
     vi.mocked(readCollaborators).mockResolvedValue([]);
@@ -692,6 +755,7 @@ describe('ProjectDashboardPage, deleting the project', () => {
 
 describe('ProjectDashboardPage, notifications', () => {
   beforeEach(() => {
+    tab = 'settings';
     vi.mocked(readProject).mockResolvedValue(PROJECT);
     vi.mocked(readStats).mockResolvedValue(STATS);
     vi.mocked(readCollaborators).mockResolvedValue([]);
@@ -743,6 +807,7 @@ describe('ProjectDashboardPage, notifications', () => {
 
 describe('ProjectDashboardPage, a private project', () => {
   beforeEach(() => {
+    tab = 'settings';
     vi.mocked(readProject).mockResolvedValue({ ...PROJECT, visibility: 'private' });
     vi.mocked(readStats).mockResolvedValue(STATS);
     vi.mocked(readCollaborators).mockResolvedValue([]);
@@ -790,7 +855,7 @@ describe('ProjectDashboardPage, a private project', () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
     setup();
 
-    await screen.findByText('4');
+    await screen.findByRole('heading', { name: 'Collaborators' });
     expect(screen.queryByText('Who can see this project')).not.toBeInTheDocument();
   });
 });
