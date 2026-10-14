@@ -105,6 +105,7 @@ const PLAN = [
   { name: '20261013120001_toolkit_room_tools.sql', src: 'room-tools.sql' },
   { name: '20261013130001_toolkit_rooms_edit.sql', src: 'rooms-edit.sql' },
   { name: '20261014090001_profile_onboarding.sql', src: 'profile-onboarding.sql' },
+  { name: '20261014120001_project_public_page.sql', src: 'project-public-page.sql' },
 ]
 
 const ROOM_TOOLS = 'room-tools'
@@ -160,6 +161,7 @@ const HAND_WRITTEN = [
   '20261009090001_project_private_create.sql',
   '20261010090001_toolkit_tool_names.sql',
   '20261013090001_project_budgets_currencies.sql',
+  '20261014130001_project_updates_organisers.sql',
 ]
 
 export function render({ src, slice, note }, read = (f) => readFileSync(`${DIR}/${f}`, 'utf8')) {

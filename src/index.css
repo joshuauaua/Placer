@@ -1627,48 +1627,92 @@ a {
  * sections follow each other directly on a phone. */
 .placer-project {
   max-width: 1440px;
+  /* A flex item of the page, centred by its auto margins, which also stop it
+     stretching: without a width it would size to its content, and on a phone widen
+     to the tab bar's whole row rather than let the bar scroll sideways. */
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
   margin: 0 auto;
   padding: 32px var(--placer-margin) 96px;
 }
 
-.placer-project-layout {
+.placer-project-subtitle {
+  max-width: 820px;
+  margin-top: 12px;
+}
+
+.placer-project-header {
+  margin-top: 28px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 64px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 40px;
   align-items: start;
 }
 
-.placer-project-section {
-  /* Clear of the glass bar when the contents card scrolls a section into view. */
-  scroll-margin-top: 88px;
+/* Level with the image's top, with no card: a line above each number. */
+.placer-project-glance {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.placer-project-stat {
+  padding: 18px 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.placer-project-stat:first-child {
+  padding-top: 0;
+  border-top: none !important;
+}
+
+/* Sticks under the top of the scrolling page, over whichever view is showing. */
+.placer-project-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: 40px 0 32px;
+}
+
+.placer-project-tab {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--placer-font);
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.placer-project-tab:hover {
+  color: var(--placer-ink) !important;
+}
+
+.placer-project-panel {
+  max-width: 920px;
+  min-height: 240px;
   margin-bottom: 64px;
 }
 
-.placer-project-aside {
-  position: sticky;
-  top: 24px;
+.placer-project-section {
+  /* Clear of the sticky tab bar when a section is scrolled into view. */
+  scroll-margin-top: 72px;
+  margin-bottom: 64px;
 }
 
-/* Floating, so it carries the kit's one shadow all the time, not just on hover. */
-.placer-project-toc,
-.placer-project-toc:hover {
-  box-shadow: var(--placer-shadow);
-}
-
-.placer-project-toc-link {
-  display: block;
-  min-height: 40px;
-  padding: 10px 12px;
-  border-radius: var(--placer-radius-sm);
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--placer-ink);
-  text-decoration: none;
-  transition: background-color 0.15s ease;
-}
-
-.placer-project-toc-link:hover {
-  background: var(--placer-grey-100) !important;
+.placer-project-people {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px;
+  border-top: 1px solid var(--placer-grey-200);
+  padding-top: 48px;
+  margin-bottom: 64px;
 }
 
 .placer-project-grid {
@@ -1690,22 +1734,13 @@ a {
 }
 
 @media (max-width: 1023px) {
-  .placer-project-layout {
+  .placer-project-header,
+  .placer-project-people {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .placer-project-aside {
-    display: none;
   }
 
   .placer-project-related-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .placer-project-toc-link {
-    transition: none;
   }
 }
 
