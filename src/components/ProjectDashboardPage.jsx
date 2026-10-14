@@ -1,6 +1,7 @@
 /* PLACER — a project's dashboard, in three tabs under its name.
  *
- *   General           its numbers, the public page's views, and its documentation links
+ *   General           a table of its insights — who has seen it, who has taken part and
+ *                     how, and where it stands — and its documentation links
  *   My Toolkit        the tools it uses, and the rooms open for them
  *   Project Settings  its setup, collaborators, notifications, who may see a private
  *                     project, and deleting it
@@ -13,7 +14,6 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { Icon } from './Icon';
 import { Btn, LoadingMark, PageLoader } from './UI';
-import { ProjectViewsChart } from './ProjectViewsChart';
 import { ProjectSetupPage } from './ProjectSetupPage';
 import { TOOLS, findTool, isToolLive, projectSetupKind } from '../toolkit/tools';
 import { ConfigureToolDialog } from './ConfigureToolDialog';
@@ -49,6 +49,8 @@ import {
   saveProjectTools,
 } from '../services/projects';
 import { closeRoom, deleteRoom, setRoomCloses } from '../services/rooms';
+import { readComments, readProjectSummary, readUpdates } from '../services/projectPage';
+import { projectProgress } from '../lib/projectTimeline';
 import { DatePicker } from './DatePicker';
 import { readPreferences, readProjectResponses, saveProjectResponses } from '../services/notifications';
 import { ProjectResponsesChoice } from './ProjectResponsesChoice';
@@ -68,6 +70,8 @@ const inputStyle = (t) => ({
 });
 
 // `action`, when given, sits at the far right of the title's row.
+const NUMBER = new Intl.NumberFormat('en-GB');
+
 const DASHBOARD_TABS = [
   { id: 'general', label: 'General' },
   { id: 'toolkit', label: 'My Toolkit' },
@@ -234,25 +238,54 @@ function ProjectAccess({ t, projectId }) {
 
 /* The project's numbers as one small table: a column each, the label in
  * capitals along the top, the number under it, hairlines between. */
-function StatTable({ t, stats }) {
+/**
+ * Everything the dashboard knows about how the project is doing, as one table in three
+ * groups — who has seen it, who has taken part, and where it stands. `groups` is
+ * [{ title, rows: [{ label, value, note }] }]; a value still loading or that could not
+ * be read is '–'.
+ */
+function InsightsTable({ t, groups }) {
   return (
-    <div style={{ display: 'flex', marginBottom: 32, border: `1px solid ${t.ink}`, borderRadius: 10,
-      overflow: 'hidden', background: t.surface }}>
-      {stats.map(({ label, value }, i) => (
-        <div key={label} style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column',
-          borderLeft: i === 0 ? 'none' : `1px solid ${t.ink}` }}>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '14px 8px', borderBottom: `1px solid ${t.ink}`, fontSize: 12, fontWeight: 500,
-            letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center', color: t.ink }}>
-            {label}
-          </div>
-          <div className="placer-disp" style={{ padding: '20px 8px', fontSize: 26, fontWeight: 700,
-            textAlign: 'center', color: t.ink }}>
-            {value}
-          </div>
-        </div>
-      ))}
-    </div>
+    <section aria-labelledby="dashboard-insights" style={{ marginBottom: 24 }}>
+      <h2 id="dashboard-insights" style={{ fontSize: 16, fontWeight: 700, color: t.ink, margin: '0 0 12px' }}>
+        Insights
+      </h2>
+      {/* The frame is on a box around the table: a collapsed table's own border takes no
+          rounded corners. */}
+      <div style={{ border: `1px solid ${t.line}`, borderRadius: 12, overflow: 'hidden', background: t.surface }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--placer-font)' }}>
+          {groups.map(({ title, rows }, index) => (
+            <tbody key={title} style={{ borderTop: index === 0 ? 'none' : `1px solid ${t.line}` }}>
+              <tr>
+                <th scope="colgroup" colSpan={2} style={{ textAlign: 'left', padding: '14px 20px 8px',
+                  fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                  color: t.inkDim, background: t.surfaceAlt }}>
+                  {title}
+                </th>
+              </tr>
+              {rows.map(({ label, value, note }) => (
+                <tr key={label} style={{ borderTop: `1px solid ${t.line}` }}>
+                  <th scope="row" style={{ textAlign: 'left', padding: '12px 20px', fontWeight: 500, color: t.ink,
+                    fontSize: 14.5 }}>
+                    {label}
+                    {note && (
+                      <span style={{ display: 'block', fontSize: 12.5, fontWeight: 400, color: t.inkDim,
+                        marginTop: 2 }}>
+                        {note}
+                      </span>
+                    )}
+                  </th>
+                  <td className="placer-disp" style={{ padding: '12px 20px', textAlign: 'right', fontSize: 20,
+                    fontWeight: 700, color: t.ink, whiteSpace: 'nowrap' }}>
+                    {value}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+      </div>
+    </section>
   );
 }
 
@@ -277,11 +310,14 @@ function CollaboratorRow({ t, collaborator, onRemove }) {
 }
 
 /**
- * Adds a tool to the project: a button that opens the Toolkit's tools it does not have
- * yet in a dialog. Choosing one only adds it to the list, waiting to be configured.
+ * Adds a tool to the project: a button that opens the Toolkit's tools in a dialog.
+ * Choosing one it does not have yet only adds it to the list, waiting to be configured.
+ * A tool that runs in a room is offered even once the project has it, since a project
+ * can run several — two Polls asking different questions — and choosing it again sets
+ * up one more room (handleAddTool).
  */
 function AddToolkitTool({ t, chosen = [], onChoose }) {
-  const available = TOOLS.filter((tool) => !chosen.includes(tool.id));
+  const available = TOOLS.filter((tool) => !chosen.includes(tool.id) || projectSetupKind(tool) === 'room');
   const [open, setOpen] = useState(false);
 
   return (
@@ -344,13 +380,16 @@ function AddToolDialog({ t, tools, onChoose, onClose }) {
  * is live while a room of it is open; its row then opens out on click to show its
  * rooms, and any scheduled to start, with what the project runs them with (RoomRow).
  * It can have several at once, each set up on its own — two Polls asking different
- * questions — so Open another configures one more. Any other live tool can be
- * configured again.
+ * questions — and one more is added from the Add a tool dialog, not from here.
+ *
+ * Its one button is Configure until it is set up, and Edit after: for a tool that runs
+ * in a room, Edit changes its room, or opens the row out to its rooms when it has
+ * several, each with its own Edit; any other tool is configured again.
  */
 // A room still to come counts as well as one running: its QR code can go up early.
 const isCurrentRoom = (room) => room.status === 'open' || room.status === 'scheduled';
 
-function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, rooms = [], onConfigure, onOpenRoom,
+function ChosenToolRow({ t, tool, live, scheduled = null, rooms = [], onConfigure, onOpenRoom,
   onEditRoom, onCloseRoom, onDeleteRoom }) {
   const [expanded, setExpanded] = useState(false);
   const panelId = useId();
@@ -399,18 +438,18 @@ function ChosenToolRow({ t, tool, live, inRoom, scheduled = null, rooms = [], on
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>{summary}</div>
         )}
-        {roomTool && (inRoom || scheduled) ? (
-          <Btn t={t} variant="secondary" size="sm" icon="plus" onClick={onConfigure}
-            ariaLabel={`Open another ${tool.name}`}>
-            Open another
+        {roomTool && rooms.length > 0 ? (
+          <Btn t={t} variant="secondary" size="sm" icon="pencil" ariaLabel={`Edit ${tool.name}`}
+            onClick={() => (rooms.length === 1 ? onEditRoom(rooms[0]) : setExpanded(true))}>
+            Edit
           </Btn>
-        ) : scheduled ? null : !live ? (
+        ) : live || scheduled ? (
+          <Btn t={t} variant="secondary" size="sm" icon="pencil" onClick={onConfigure} ariaLabel={`Edit ${tool.name}`}>
+            Edit
+          </Btn>
+        ) : (
           <Btn t={t} variant="primary" size="sm" onClick={onConfigure} ariaLabel={`Configure ${tool.name}`}>
             Configure
-          </Btn>
-        ) : !inRoom && (
-          <Btn t={t} variant="secondary" size="sm" onClick={onConfigure} ariaLabel={`Configure ${tool.name} again`}>
-            Edit
           </Btn>
         )}
       </div>
@@ -700,7 +739,10 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   const [stats, setStats] = useState(null);
   // The public page's views: null while loading, false if they could not be read.
   const [views, setViews] = useState(null);
-  const [viewDays, setViewDays] = useState(30);
+  // The public page's followers and interactions, and how many updates and comments it
+  // has (services/projectPage.js): null while loading or when they could not be read.
+  const [summary, setSummary] = useState(null);
+  const [postCounts, setPostCounts] = useState(null);
   const [collaborators, setCollaborators] = useState([]);
   const [links, setLinks] = useState([]);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -779,21 +821,31 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   useEffect(() => {
     if (!projectId) return undefined;
     let cancelled = false;
-    readProjectViews(projectId, viewDays)
+    readProjectViews(projectId, 30)
       .then((found) => { if (!cancelled) setViews(found); })
       .catch((err) => {
         if (cancelled) return;
         console.error("Could not load this project's views:", err);
         setViews(false);
       });
+    readProjectSummary(projectId)
+      .then((found) => { if (!cancelled) setSummary(found); })
+      .catch((err) => console.error("Could not load this project's followers and interactions:", err));
+    Promise.all([readUpdates(projectId), readComments(projectId)])
+      .then(([updates, comments]) => {
+        if (!cancelled) setPostCounts({ updates: updates.length, comments: comments.length });
+      })
+      .catch((err) => console.error("Could not count this project's updates and comments:", err));
     return () => { cancelled = true; };
-  }, [projectId, viewDays]);
+  }, [projectId]);
 
   const isOwner = project?.ownerId === accountId;
   // A tool the registry no longer has is skipped rather than shown blank.
   const chosenTools = tools.map(findTool).filter(Boolean);
   const otherRooms = (rooms ?? []).filter((room) => isCurrentRoom(room) && !tools.includes(room.tool));
-  const viewsInRange = views ? views.daily.reduce((sum, d) => sum + d.views, 0) : 0;
+  // The daily views run oldest to newest, a day each for the last 30 days.
+  const viewsOver = (days) => (views ? views.daily.slice(-days).reduce((sum, d) => sum + d.views, 0) : null);
+  const shown = (value) => (value === null || value === undefined ? '–' : NUMBER.format(value));
 
   const handleInvite = async (e) => {
     e.preventDefault();
@@ -845,7 +897,12 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   // Adding a tool only puts it on the list, waiting to be configured: its row's
   // Configure is how it goes live.
   const handleAddTool = async (toolId) => {
-    if (tools.includes(toolId)) return;
+    // Already on the list: only a tool that runs in a room is offered again, and
+    // choosing it sets up one more room of it.
+    if (tools.includes(toolId)) {
+      if (projectSetupKind(findTool(toolId)) === 'room') setConfiguring(toolId);
+      return;
+    }
     setTools((current) => [...current, toolId]);
     try {
       await saveProjectTools(project.id, [...tools, toolId], accountId);
@@ -901,6 +958,37 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
       setLinks(await readLinks(project.id));
     }
   };
+
+  const liveTools = chosenTools.filter((tool) => {
+    const openRoom = (rooms ?? []).find((room) => room.tool === tool.id && room.status === 'open') ?? null;
+    return isToolLive(tool, { configured: configured.has(tool.id), openRoom });
+  }).length;
+  const responses = rooms ? rooms.reduce((sum, room) => sum + (room.contributions ?? 0), 0) : null;
+  const insightGroups = project ? [
+    { title: 'Audience', rows: [
+      { label: 'Page views', value: shown(views ? views.total : null),
+        note: 'All time. Visits by you and your collaborators are not counted.' },
+      { label: 'Page views, last 30 days', value: shown(viewsOver(30)) },
+      { label: 'Page views, last 7 days', value: shown(viewsOver(7)) },
+      { label: 'Followers', value: shown(summary?.followers) },
+    ] },
+    { title: 'Participation', rows: [
+      { label: 'Interactions', value: shown(summary?.interactions),
+        note: 'Toolkit responses, imaginations and comments together.' },
+      { label: 'Toolkit responses', value: shown(responses), note: 'Answers given in its tools\' rooms.' },
+      { label: 'Toolkit sessions', value: shown(stats?.toolkitRoomsCount), note: 'Rooms opened for its tools.' },
+      { label: 'Rooms open now', value: shown(rooms ? rooms.filter((room) => room.status === 'open').length : null) },
+      { label: 'Imaginations', value: shown(stats?.imaginationsCount) },
+      { label: 'Votes on imaginations', value: shown(stats?.imaginationsUpvotes) },
+      { label: 'Comments', value: shown(postCounts?.comments) },
+    ] },
+    { title: 'Project', rows: [
+      { label: 'Tools live', value: `${NUMBER.format(liveTools)} of ${NUMBER.format(chosenTools.length)}` },
+      { label: 'Updates posted', value: shown(postCounts?.updates) },
+      { label: 'People involved', value: shown(1 + collaborators.length), note: 'The owner and collaborators.' },
+      { label: 'Timeline', value: projectProgress(project).label },
+    ] },
+  ] : [];
 
   const onTabKey = (event) => {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
@@ -982,38 +1070,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
         <div id={`dashboard-panel-${tab}`} role="tabpanel" aria-labelledby={`dashboard-tab-${tab}`}>
           {tab === 'general' && (
             <>
-              <StatTable t={t} stats={[
-                { label: 'Imaginations', value: stats?.imaginationsCount ?? 0 },
-                { label: 'Votes received', value: stats?.imaginationsUpvotes ?? 0 },
-                { label: 'Toolkit sessions', value: stats?.toolkitRoomsCount ?? 0 },
-                ...(views !== false ? [{ label: 'Page views', value: views ? views.total : '–' }] : []),
-              ]} />
-
-              {views && (
-                <Card t={t} title="Page views">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-                    <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
-                      <strong style={{ color: t.ink }}>{viewsInRange}</strong>{' '}
-                      {viewsInRange === 1 ? 'view' : 'views'} of the public page in the last {viewDays} days.
-                      Visits by you and your collaborators are not counted.
-                    </p>
-                    <div role="radiogroup" aria-label="Period" style={{ display: 'flex', gap: 6 }}>
-                      {[7, 30].map((n) => (
-                        <button key={n} type="button" role="radio" aria-checked={viewDays === n}
-                          onClick={() => setViewDays(n)}
-                          style={{ height: 32, padding: '0 12px', borderRadius: 8, cursor: 'pointer',
-                            fontFamily: 'var(--placer-font)', fontSize: 13, fontWeight: 500, color: t.ink,
-                            background: viewDays === n ? t.surfaceAlt : 'transparent',
-                            border: `1px solid ${viewDays === n ? t.ink : t.line}` }}>
-                          {n} days
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <ProjectViewsChart t={t} daily={views.daily} />
-                </Card>
-              )}
+              <InsightsTable t={t} groups={insightGroups} />
 
               <Card t={t} title="Documentation">
                 <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
@@ -1062,7 +1119,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                     return (
                       <ChosenToolRow key={tool.id} t={t} tool={tool}
                         live={isToolLive(tool, { configured: configured.has(tool.id), openRoom })}
-                        inRoom={Boolean(openRoom)} scheduled={scheduled}
+                        scheduled={scheduled}
                         rooms={(rooms ?? []).filter((room) => room.tool === tool.id && isCurrentRoom(room))}
                         onConfigure={() => setConfiguring(tool.id)}
                         onOpenRoom={handleOpenRoom} onEditRoom={setEditingRoom} onCloseRoom={handleCloseRoom}

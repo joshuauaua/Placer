@@ -27,6 +27,13 @@ import { THEME } from '../../theme';
 
 // ProjectSetupPage is rendered in place for "Edit setup" (see the test below) and
 // imports from this same module path, so its calls need covering here too.
+vi.mock('../../services/projectPage', () => ({
+  readProjectSummary: vi.fn(() => Promise.resolve({ views: 158, followers: 6, interactions: 31,
+    owner: null, collaborators: [], canPostUpdate: true })),
+  readUpdates: vi.fn(() => Promise.resolve([{ id: 'u1' }, { id: 'u2' }])),
+  readComments: vi.fn(() => Promise.resolve([{ id: 'c1' }, { id: 'c2' }, { id: 'c3' }])),
+}));
+
 vi.mock('../../services/projects', async (importOriginal) => ({
   PROJECT_TYPES: (await importOriginal()).PROJECT_TYPES,
   BUDGET_CURRENCIES: (await importOriginal()).BUDGET_CURRENCIES,
@@ -37,7 +44,9 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   readStats: vi.fn(),
   readProjectViews: vi.fn(() => Promise.resolve({
     total: 158,
-    daily: [{ day: '2026-09-26', views: 21 }, { day: '2026-09-27', views: 13 }],
+    // 30 days, oldest first: 1 a day, and 5 on each of the last 7.
+    daily: Array.from({ length: 30 }, (_, i) => ({ day: `2026-09-${String(i + 1).padStart(2, '0')}`,
+      views: i >= 23 ? 5 : 1 })),
   })),
   readCollaborators: vi.fn(),
   readLinks: vi.fn(),
@@ -157,41 +166,66 @@ describe('ProjectDashboardPage', () => {
     expect(screen.getByRole('tab', { name: 'Project Settings' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('shows the dashboard numbers', async () => {
+  // The value beside a row of the insights table, found by its label (its note aside).
+  const insight = (label) => {
+    const header = screen.getAllByRole('rowheader').find((th) => th.firstChild.textContent === label);
+    return within(header.closest('tr')).getByRole('cell').textContent;
+  };
+
+  it('shows all its insights in one table, above its documentation', async () => {
     setup();
 
-    expect(await screen.findByText('4')).toBeInTheDocument();
-    expect(screen.getByText('19')).toBeInTheDocument();
-    expect(screen.getByText('2')).toBeInTheDocument();
-  });
-
-  it('shows the public page\'s total views, and the views per day', async () => {
-    setup();
-
-    expect(await screen.findByText('Page views', { selector: 'div' })).toBeInTheDocument();
-    expect(screen.getByText('158')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Page views' })).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /Views per day/ })).toBeInTheDocument();
-    // 21 + 13 across the days loaded.
-    expect(screen.getByText('34')).toBeInTheDocument();
+    const table = await screen.findByRole('table');
+    await waitFor(() => expect(insight('Followers')).toBe('6'));
+    expect(within(table).getAllByRole('columnheader').map((th) => th.textContent))
+      .toEqual(['Audience', 'Participation', 'Project']);
+    expect(insight('Page views')).toBe('158');
+    // 23 days at 1, and 7 at 5.
+    expect(insight('Page views, last 30 days')).toBe('58');
+    expect(insight('Page views, last 7 days')).toBe('35');
+    expect(insight('Interactions')).toBe('31');
+    expect(insight('Toolkit sessions')).toBe('2');
+    expect(insight('Imaginations')).toBe('4');
+    expect(insight('Votes on imaginations')).toBe('19');
+    expect(insight('Comments')).toBe('3');
+    expect(insight('Updates posted')).toBe('2');
+    expect(insight('People involved')).toBe('1');
     expect(readProjectViews).toHaveBeenCalledWith('proj-1', 30);
+
+    // No chart or period switch any more, and the documentation follows the table.
+    expect(screen.queryByRole('img', { name: /Views per day/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: '7 days' })).not.toBeInTheDocument();
+    const documentation = screen.getByRole('heading', { name: 'Documentation' });
+    expect(table.compareDocumentPosition(documentation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('switches the chart to the last 7 days', async () => {
+  it('counts responses and open rooms from the project\'s rooms, and tools live of those added', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'desire-lines']);
+    vi.mocked(readProjectRooms).mockResolvedValue([
+      { id: 'r1', tool: 'open-vote', status: 'open', contributions: 12, createdAt: '2026-09-27T10:00:00Z',
+        expiresAt: '2026-10-27T10:00:00Z', pin: '1', facilitatorToken: 'f', joinCode: 'a' },
+      { id: 'r2', tool: 'open-vote', status: 'closed', contributions: 5, createdAt: '2026-09-01T10:00:00Z',
+        expiresAt: '2026-09-02T10:00:00Z', pin: '2', facilitatorToken: 'g', joinCode: 'b' },
+    ]);
+    vi.mocked(readConfiguredProjectTools).mockResolvedValueOnce(new Set());
     setup();
 
-    fireEvent.click(await screen.findByRole('radio', { name: '7 days' }));
-
-    await waitFor(() => expect(readProjectViews).toHaveBeenCalledWith('proj-1', 7));
+    await screen.findByRole('table');
+    await waitFor(() => expect(insight('Toolkit responses')).toBe('17'));
+    expect(insight('Rooms open now')).toBe('1');
+    expect(insight('Tools live')).toBe('1 of 2');
   });
 
-  it('leaves the rest of the dashboard alone when the views cannot be read', async () => {
+  it('shows a dash for what could not be read, and keeps the rest', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(readProjectViews).mockRejectedValueOnce(new Error('network down'));
     setup();
 
-    expect(await screen.findByText('19')).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Page views' })).not.toBeInTheDocument());
+    await screen.findByRole('table');
+    await waitFor(() => expect(insight('Followers')).toBe('6'));
+    expect(insight('Page views')).toBe('–');
+    expect(insight('Page views, last 7 days')).toBe('–');
+    expect(insight('Imaginations')).toBe('4');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     consoleError.mockRestore();
   });
@@ -251,8 +285,9 @@ describe('ProjectDashboardPage', () => {
     expect(add).toHaveTextContent('');
     fireEvent.click(add);
     const dialog = within(screen.getByRole('dialog', { name: 'Add a tool' }));
-    // Only the tools the project does not have yet, in a list per category.
-    expect(dialog.queryByRole('button', { name: /^Poll/ })).not.toBeInTheDocument();
+    // The tools the project does not have yet, in a list per category — and the Poll it
+    // has, since a tool that runs in a room can be added again as another room.
+    expect(dialog.getByRole('button', { name: /^Poll/ })).toBeInTheDocument();
     expect(dialog.getAllByRole('list').map((list) => list.getAttribute('aria-labelledby')))
       .toEqual(['add-tool-understand', 'add-tool-imagine', 'add-tool-plan']);
     expect(within(dialog.getByRole('list', { name: 'Plan' })).getByRole('button', { name: /^Co-Budget/ }))
@@ -301,7 +336,7 @@ describe('ProjectDashboardPage', () => {
     }]);
     setup();
 
-    expect(await screen.findByRole('button', { name: 'Configure Desire Lines again' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Edit Desire Lines' })).toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByText('Live')).toHaveLength(2));
     expect(screen.queryByRole('button', { name: 'Configure Poll' })).not.toBeInTheDocument();
   });
@@ -480,11 +515,15 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
     expect(screen.queryByRole('region', { name: 'Poll rooms' })).not.toBeInTheDocument();
   });
 
-  it('opens another room of a tool that has one live, set up on its own', async () => {
+  it('opens another room of a tool that has one live from the Add a tool dialog, set up on its own', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
     setup();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Open another Poll' }));
+    await screen.findByRole('button', { name: 'Edit Poll' });
+    expect(screen.queryByRole('button', { name: /Open another/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Add a tool' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Add a tool' })).getByRole('button', { name: /^Poll/ }));
+    expect(saveProjectTools).not.toHaveBeenCalled();
     const dialog = screen.getByRole('dialog', { name: 'Configure Poll' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Get started' }));
     fireEvent.change(within(dialog).getByLabelText('The question'), { target: { value: 'Do we need more benches?' } });
@@ -495,6 +534,40 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
     await waitFor(() => expect(createRoom).toHaveBeenCalledWith('open-vote', 'proj-1', '30d',
       { question: 'Do we need more benches?', answers: ['Yes', 'No', 'Undecided'] }, null));
     expect(closeRoom).not.toHaveBeenCalled();
+  });
+
+  it("edits a tool's only room straight from its row", async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Poll' }));
+
+    expect(screen.getByRole('dialog', { name: 'Change when it closes' })).toBeInTheDocument();
+  });
+
+  it('opens the row out to its rooms when Edit has several to choose from', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    vi.mocked(readProjectRooms).mockResolvedValue([
+      { ...LONG_ROOM, config: { question: 'Should the square be car-free?' } },
+      { ...LONG_ROOM, id: 'room-3', config: { question: 'Do we need more benches?' } },
+    ]);
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Poll' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    const rooms = within(screen.getByRole('region', { name: 'Poll rooms' }));
+    expect(rooms.getByRole('button', { name: 'Change when Should the square be car-free? closes' })).toBeInTheDocument();
+    expect(rooms.getByRole('button', { name: 'Change when Do we need more benches? closes' })).toBeInTheDocument();
+  });
+
+  it('has only Configure or Edit on each row, never Open another', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'desire-lines']);
+    setup();
+
+    expect(await screen.findByRole('button', { name: 'Edit Poll' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Configure Desire Lines' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Open another/ })).not.toBeInTheDocument();
   });
 
   it('tells a tool\'s live rooms apart by what each was set up with', async () => {
