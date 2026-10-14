@@ -36,6 +36,8 @@ function postFrom(row) {
     authorName: row.author_name || 'Someone',
     // Set when it was posted as the project's organisation, whose name authorName is.
     organisationId: row.organisation_id ?? null,
+    // The author's profile photo, filled in by withAuthorPhotos; null for none.
+    authorPhoto: null,
     body: row.body,
     createdAt: row.created_at,
   };
@@ -76,6 +78,24 @@ export async function readProjectSummary(projectId) {
   };
 }
 
+/**
+ * `posts` with each person's profile photo (profile_photos, supabase/profile-photos.sql).
+ * A post made as an organisation shows the organisation's picture instead, so its
+ * author is not looked up. Without the photos the posts are returned as they are:
+ * the initials stand in.
+ */
+async function withAuthorPhotos(supabase, posts) {
+  const ids = [...new Set(posts.filter((post) => post.authorId && !post.organisationId).map((post) => post.authorId))];
+  if (ids.length === 0) return posts;
+  const { data, error } = await supabase.rpc('profile_photos', { p_ids: ids });
+  if (error) {
+    console.error('Could not load the photos beside these posts:', error.message);
+    return posts;
+  }
+  const photos = new Map((data ?? []).map((row) => [row.id, mediaUrl(row.avatar_path)]));
+  return posts.map((post) => (post.organisationId ? post : { ...post, authorPhoto: photos.get(post.authorId) ?? null }));
+}
+
 async function readPosts(table, projectId, what) {
   const supabase = await client();
   const { data, error } = await supabase
@@ -85,7 +105,7 @@ async function readPosts(table, projectId, what) {
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(`Could not load this project's ${what}: ${error.message}`);
-  return (data ?? []).map(postFrom);
+  return withAuthorPhotos(supabase, (data ?? []).map(postFrom));
 }
 
 async function addPost(table, projectId, body, what, organisationId) {
@@ -99,7 +119,7 @@ async function addPost(table, projectId, body, what, organisationId) {
     .single();
 
   if (error) throw new Error(`Could not post that ${what}: ${error.message}`);
-  return postFrom(data);
+  return (await withAuthorPhotos(supabase, [postFrom(data)]))[0];
 }
 
 async function removePost(table, id, what) {

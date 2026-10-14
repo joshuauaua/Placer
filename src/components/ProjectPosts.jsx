@@ -147,7 +147,9 @@ export function ProjectPosts({ t, kind, posts, status, canPost, prompt = null, m
             return (
               <li key={post.id} style={{ display: 'flex', gap: 14, padding: '18px 0', borderTop: `1px solid ${t.line}` }}>
                 <Avatar name={post.authorName} size={40}
-                  photo={asOrganisation && organisation?.id === post.organisationId ? organisation.photo : null} />
+                  photo={asOrganisation
+                    ? (organisation?.id === post.organisationId ? organisation.photo : null)
+                    : post.authorPhoto} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
                     {asOrganisation ? (

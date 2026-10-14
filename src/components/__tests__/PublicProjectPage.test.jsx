@@ -1163,4 +1163,21 @@ describe('PublicProjectPage, its header, tabs and people', () => {
       expect(screen.queryByRole('group', { name: 'Post as' })).not.toBeInTheDocument();
     });
   });
+
+  it("shows each comment's author photo, and the initials for someone without one", async () => {
+    vi.mocked(readComments).mockResolvedValue([
+      { ...COMMENT, authorPhoto: 'https://media.example/avatars/user-9.jpg' },
+      { id: 'c2', authorId: 'user-4', authorName: 'Lee Park', authorPhoto: null, body: 'Me too.',
+        createdAt: '2026-05-02T10:00:00Z' },
+    ]);
+    setup();
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Comments/ }));
+
+    const [withPhoto, without] = within(screen.getByRole('list', { name: 'Comments' })).getAllByRole('listitem');
+    expect(withPhoto.querySelector('img')).toHaveAttribute('src', 'https://media.example/avatars/user-9.jpg');
+    expect(without.querySelector('img')).toBeNull();
+    expect(without).toHaveTextContent('LP');
+  });
+
 });
