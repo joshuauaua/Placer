@@ -50,6 +50,8 @@ function renderPage(props = {}) {
 const markerFor = (title) => lastMap()?.markers.find((marker) => marker.getElement().title === title);
 const positionOf = (marker) => ({ lat: marker.getLngLat().lat, lng: marker.getLngLat().lng });
 
+const openFilter = () => fireEvent.click(screen.getByRole('button', { name: 'Show on the map' }));
+
 describe('ExplorePage', () => {
   let geocoder;
   beforeEach(() => {
@@ -66,17 +68,29 @@ describe('ExplorePage', () => {
     vi.mocked(readMapOrganisations).mockResolvedValue([]);
   });
 
-  it('frames the map beside the filter and preview cards, with search across the top', () => {
+  it('frames the map under a header with the filter dropdown and the search, and no card yet', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: 'Explore' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Show on the map' })).toBeInTheDocument();
-    expect(screen.getByText('Find the places that interest you')).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Selected place' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show on the map' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Search Explore' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Selected place' })).not.toBeInTheDocument();
+  });
+
+  it('closes the filter dropdown on Escape and on a click elsewhere', () => {
+    renderPage();
+    openFilter();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('group', { name: 'Show on the map' })).not.toBeInTheDocument();
+
+    openFilter();
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByRole('group', { name: 'Show on the map' })).not.toBeInTheDocument();
   });
 
   it('offers Projects, Case studies and Organisations, with case studies not yet available', () => {
     renderPage();
+    openFilter();
     expect(screen.getByRole('checkbox', { name: /projects/i })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: /organisations/i })).toBeChecked();
     const caseStudies = screen.getByRole('checkbox', { name: /case studies/i });
@@ -142,10 +156,13 @@ describe('ExplorePage', () => {
     await waitFor(() => expect(markerFor('Riverside Greenway')).toBeDefined());
     const drawn = markerFor('Riverside Greenway').getElement();
 
+    openFilter();
     fireEvent.click(screen.getByRole('checkbox', { name: /projects/i }));
 
     expect(markerFor('Riverside Greenway')).toBeUndefined();
     expect(drawn).not.toBeInTheDocument();
+    // The dropdown stays open for the next one.
+    expect(screen.getByRole('checkbox', { name: /organisations/i })).toBeInTheDocument();
   });
 
   it('makes the map once, and keeps it while the page re-renders', async () => {
@@ -178,10 +195,9 @@ describe('ExplorePage', () => {
       return screen.getByRole('region', { name: 'Selected place' });
     };
 
-    it('asks for a pick until there is one', () => {
+    it('is not shown until something is picked', () => {
       renderPage();
-      expect(screen.getByRole('region', { name: 'Selected place' }))
-        .toHaveTextContent(/pick something on the map/i);
+      expect(screen.queryByRole('region', { name: 'Selected place' })).not.toBeInTheDocument();
     });
 
     it('shows the image, type, location, title and first sentence of what was picked', async () => {
@@ -225,7 +241,7 @@ describe('ExplorePage', () => {
     it('closes when the map itself is clicked', async () => {
       const card = await pickProject();
       act(() => clickMap(lastMap(), { lat: 55, lng: 13 }));
-      expect(card).toHaveTextContent(/pick something on the map/i);
+      expect(card).not.toBeInTheDocument();
     });
   });
 

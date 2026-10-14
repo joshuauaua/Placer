@@ -56,18 +56,26 @@ function SectionLabel({ t, id, children, style }) {
 }
 
 /**
- * A large card with a gradient between two of the three brand colours, a small
- * label over a bold line, and an arrow. The colours are the 300 steps, which ink
- * reads well on from one end to the other.
+ * A large card in one of the three brand colours: a 50 field with overlapping circles
+ * of the 100, 300 and 700 steps stacked into the lower right corner, a small label over
+ * a bold line, and an arrow. The circles sit behind the words, and the dark 700 one is
+ * kept in the corner, clear of them.
  */
-function BasicsCard({ t, from, to, label, title, onClick }) {
+function BasicsCard({ t, hue, label, title, onClick }) {
+  const circle = (size, right, bottom, background) => (
+    <span aria-hidden="true" style={{ position: 'absolute', width: size, height: size, right, bottom,
+      borderRadius: '50%', background, pointerEvents: 'none' }} />
+  );
   return (
     <button type="button" onClick={onClick} className="placer-basics-card"
-      style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 32,
+      style={{ position: 'relative', overflow: 'hidden', isolation: 'isolate',
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 32,
         minHeight: 200, padding: 28, textAlign: 'left', cursor: 'pointer', border: 'none', borderRadius: 16,
-        background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)`, color: t.ink,
-        fontFamily: 'var(--placer-font)' }}>
-      <span>
+        background: hue.c50, color: t.ink, fontFamily: 'var(--placer-font)' }}>
+      {circle(340, -110, -150, hue.c100)}
+      {circle(210, -40, -90, hue.c300)}
+      {circle(96, 24, -30, hue.c700)}
+      <span style={{ position: 'relative' }}>
         <span className="placer-caption" style={{ display: 'block', textTransform: 'uppercase',
           letterSpacing: '0.08em', fontWeight: 700, marginBottom: 10 }}>
           {label}
@@ -77,7 +85,9 @@ function BasicsCard({ t, from, to, label, title, onClick }) {
           {title}
         </span>
       </span>
-      <Icon name="arrowRight" size={24} stroke={2.2} />
+      <span style={{ position: 'relative', display: 'flex' }}>
+        <Icon name="arrowRight" size={24} stroke={2.2} />
+      </span>
     </button>
   );
 }
@@ -307,10 +317,10 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
         <section aria-labelledby="dashboard-basics" style={{ marginBottom: 48 }}>
           <SectionLabel t={t} id="dashboard-basics">Getting Started</SectionLabel>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
-            <BasicsCard t={t} from={CHARACTER.cityWorker.c300} to={CHARACTER.practitioner.c300}
+            <BasicsCard t={t} hue={CHARACTER.practitioner}
               label="Quickstart tutorial" title="Create your first Project"
               onClick={() => onNavigate('quickstart')} />
-            <BasicsCard t={t} from={CHARACTER.practitioner.c300} to={CHARACTER.citizen.c300}
+            <BasicsCard t={t} hue={CHARACTER.cityWorker}
               label="Project Examples" title="Explore what other projects exist on the platform"
               onClick={() => onNavigate('projectExamples')} />
           </div>
