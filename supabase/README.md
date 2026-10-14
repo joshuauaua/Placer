@@ -592,6 +592,29 @@ select public.project_public_summary((select id from public.projects limit 1));
 select policyname, cmd, roles from pg_policies where tablename in ('project_updates', 'project_comments');
 ```
 
+### Posting as a project's organisation
+
+Run `project-posts-as-organisation.sql` after `project-public-page.sql` (or
+`supabase db push`). It is re-runnable.
+
+A project's organisers — its owner and the admins of the organisation it is run for —
+can post an update or a comment either as themselves or as that organisation.
+`organisation_id` on `project_updates` and `project_comments` is that choice; the
+author trigger checks it is the project's own organisation and that the poster
+organises the project, then names the post after the organisation. `author_id` stays
+the person, so they can still remove it.
+
+### A person's public profile: joined date and projects
+
+Run `profile-activity.sql` after `project-privacy.sql` and `media-photos.sql` (or
+`supabase db push`). It is re-runnable.
+
+`profile_public_activity(user_id)` returns when the account joined and the projects it
+owns or collaborates on, each with its role — only projects the caller may see
+(`project_can_view`). Null for an account that does not exist. The profile's Comments
+tab reads `project_comments` by author directly, leaving out those posted as an
+organisation.
+
 ### Which tools can host a room
 
 Run `room-tools.sql` in the SQL editor after `rooms.sql` and `notifications-projects.sql`

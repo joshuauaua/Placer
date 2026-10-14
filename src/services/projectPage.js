@@ -5,7 +5,9 @@
  * services/projects.js, there is nothing here without a Supabase project.
  *
  * Who wrote an update or a comment is set by the database from the signed-in
- * account, so neither post function takes an author.
+ * account, so neither post function takes an author — only, for a project's
+ * organisers, the organisation to post as instead of themselves
+ * (supabase/project-posts-as-organisation.sql).
  */
 
 import { getSupabase } from './supabase';
@@ -16,7 +18,7 @@ export const COMMENTS_TABLE = 'project_comments';
 export const UPDATE_MAX = 4000;
 export const COMMENT_MAX = 2000;
 
-const POST_COLUMNS = 'id, project_id, author_id, author_name, body, created_at';
+const POST_COLUMNS = 'id, project_id, author_id, author_name, organisation_id, body, created_at';
 
 async function client() {
   const supabase = await getSupabase();
@@ -32,6 +34,8 @@ function postFrom(row) {
     projectId: row.project_id,
     authorId: row.author_id ?? null,
     authorName: row.author_name || 'Someone',
+    // Set when it was posted as the project's organisation, whose name authorName is.
+    organisationId: row.organisation_id ?? null,
     body: row.body,
     createdAt: row.created_at,
   };
@@ -84,11 +88,13 @@ async function readPosts(table, projectId, what) {
   return (data ?? []).map(postFrom);
 }
 
-async function addPost(table, projectId, body, what) {
+async function addPost(table, projectId, body, what, organisationId) {
   const supabase = await client();
+  const row = { project_id: projectId, body: body.trim() };
+  if (organisationId) row.organisation_id = organisationId;
   const { data, error } = await supabase
     .from(table)
-    .insert({ project_id: projectId, body: body.trim() })
+    .insert(row)
     .select(POST_COLUMNS)
     .single();
 
@@ -104,14 +110,22 @@ async function removePost(table, id, what) {
 
 /** A project's updates, newest first. */
 export const readUpdates = (projectId) => readPosts(UPDATES_TABLE, projectId, 'updates');
-/** Post an update. The project's organisers only: its owner, or its organisation's admins. */
-export const postUpdate = (projectId, body) => addPost(UPDATES_TABLE, projectId, body, 'update');
+/**
+ * Post an update. The project's organisers only: its owner, or its organisation's
+ * admins. With `organisationId` (the project's), it is posted as the organisation.
+ */
+export const postUpdate = (projectId, body, organisationId = null) =>
+  addPost(UPDATES_TABLE, projectId, body, 'update', organisationId);
 /** Remove an update. The project's organisers only, as for posting one. */
 export const removeUpdate = (id) => removePost(UPDATES_TABLE, id, 'update');
 
 /** A project's comments, newest first. */
 export const readComments = (projectId) => readPosts(COMMENTS_TABLE, projectId, 'comments');
-/** Comment on a project. Anybody signed in who can see it. */
-export const postComment = (projectId, body) => addPost(COMMENTS_TABLE, projectId, body, 'comment');
+/**
+ * Comment on a project. Anybody signed in who can see it; an organiser may pass the
+ * project's `organisationId` to comment as the organisation.
+ */
+export const postComment = (projectId, body, organisationId = null) =>
+  addPost(COMMENTS_TABLE, projectId, body, 'comment', organisationId);
 /** Remove a comment. Its author, or the project's owner or a collaborator. */
 export const removeComment = (id) => removePost(COMMENTS_TABLE, id, 'comment');

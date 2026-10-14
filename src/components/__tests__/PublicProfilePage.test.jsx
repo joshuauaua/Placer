@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { PublicProfilePage } from '../PublicProfilePage';
 import { isSupabaseConfigured, readPublicProfile } from '../../services/auth';
 import { readImaginationsByUser } from '../../services/imaginations';
+import { readProfileActivity, readProfileComments } from '../../services/profileActivity';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/auth', () => ({
@@ -23,6 +24,11 @@ vi.mock('../../services/organisations', () => ({
   readProfileOrganisations: vi.fn(() => Promise.resolve([{ id: 'org-1', name: 'Malmö Stad' }])),
 }));
 
+vi.mock('../../services/profileActivity', () => ({
+  readProfileActivity: vi.fn(),
+  readProfileComments: vi.fn(),
+}));
+
 vi.mock('../../services/imaginations', () => ({
   readImaginationsByUser: vi.fn(() => Promise.resolve([])),
 }));
@@ -39,6 +45,14 @@ describe('PublicProfilePage', () => {
     vi.clearAllMocks();
     vi.mocked(isSupabaseConfigured).mockReturnValue(true);
     vi.mocked(readPublicProfile).mockResolvedValue(MARA);
+    vi.mocked(readProfileActivity).mockResolvedValue({ joinedAt: '2025-03-10T10:00:00Z', projects: [
+      { id: 'proj-1', name: 'Riverside Greenway', summary: 'A park.', description: '', image: null, role: 'owner' },
+      { id: 'proj-2', name: 'Harbour Steps', summary: '', description: 'Seats by the water.', image: null,
+        role: 'collaborator' },
+    ] });
+    vi.mocked(readProfileComments).mockResolvedValue([
+      { id: 'c1', body: 'Count me in.', createdAt: '2026-05-01T10:00:00Z', projectId: 'proj-3', projectName: 'Market Square' },
+    ]);
   });
 
   it('shows the name, bio and location', async () => {
@@ -50,10 +64,10 @@ describe('PublicProfilePage', () => {
     expect(readPublicProfile).toHaveBeenCalledWith('user-1');
   });
 
-  it('fills in the Details card, with the email and website as links', async () => {
+  it('lists the email and website as links under About', async () => {
     setup();
 
-    expect(await screen.findByRole('heading', { name: 'Details' })).toBeInTheDocument();
+    expect(await screen.findByRole('tabpanel', { name: 'About' })).toBeInTheDocument();
     // Organisations are their own pages now, so a person's profile no longer claims to be one.
     expect(screen.queryByText('Account type')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'hi@mara.se' })).toHaveAttribute('href', 'mailto:hi@mara.se');
@@ -162,5 +176,80 @@ describe('PublicProfilePage', () => {
 
     fireEvent.click(await screen.findByRole('link', { name: 'Malmö Stad' }));
     expect(onOpen).toHaveBeenCalledWith('organisation', 'org-1');
+  });
+
+  it('centres the photo, then the name, then when they joined', async () => {
+    setup();
+
+    const name = await screen.findByRole('heading', { level: 1, name: 'Mara Quinn' });
+    expect(await screen.findByText('Joined March 2025')).toBeInTheDocument();
+    expect(name.closest('header')).toHaveClass('placer-profile-head');
+    expect(name.compareDocumentPosition(screen.getByText('Joined March 2025')) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy();
+  });
+
+  it('has About, Projects and Comments tabs, starting on About', async () => {
+    setup();
+
+    const tabs = await screen.findAllByRole('tab');
+    expect(tabs.map((tab) => tab.textContent.replace(/\d+$/, ''))).toEqual(['About', 'Projects', 'Comments']);
+    expect(screen.getByRole('tab', { name: 'About' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel', { name: 'About' })).toHaveTextContent('Cyclist and tree enthusiast');
+  });
+
+  it('lists the projects they own or collaborate on, which open', async () => {
+    const onOpen = vi.fn();
+    setup({ onOpen });
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Projects (2)' }));
+
+    const panel = within(screen.getByRole('tabpanel', { name: /Projects/ }));
+    expect(panel.getByRole('button', { name: /Owner.*Riverside Greenway/ })).toBeInTheDocument();
+    fireEvent.click(panel.getByRole('button', { name: /Collaborator.*Harbour Steps/ }));
+    expect(onOpen).toHaveBeenCalledWith('project', 'proj-2');
+  });
+
+  it('lists the comments they have left, each linking to its project', async () => {
+    const onOpen = vi.fn();
+    setup({ onOpen });
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Comments (1)' }));
+
+    const panel = within(screen.getByRole('tabpanel', { name: /Comments/ }));
+    expect(panel.getByText('Count me in.')).toBeInTheDocument();
+    fireEvent.click(panel.getByRole('link', { name: 'Market Square' }));
+    expect(onOpen).toHaveBeenCalledWith('project', 'proj-3');
+    expect(readProfileComments).toHaveBeenCalledWith('user-1');
+  });
+
+  it('says so when there are no projects or comments yet', async () => {
+    vi.mocked(readProfileActivity).mockResolvedValue({ joinedAt: null, projects: [] });
+    vi.mocked(readProfileComments).mockResolvedValue([]);
+    setup();
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Projects' }));
+    expect(await screen.findByText('Mara Quinn is not involved in any projects yet.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Comments' }));
+    expect(screen.getByText('Mara Quinn has not commented on any projects yet.')).toBeInTheDocument();
+    expect(screen.queryByText(/^Joined/)).not.toBeInTheDocument();
+  });
+
+  it('still shows the profile when its projects and comments cannot be read', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(readProfileActivity).mockRejectedValue(new Error('function does not exist'));
+    vi.mocked(readProfileComments).mockRejectedValue(new Error('column does not exist'));
+    setup();
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Mara Quinn' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Projects' }));
+    expect(await screen.findByText(/Projects could not be loaded/)).toBeInTheDocument();
+  });
+
+  it('moves between tabs with the arrow keys', async () => {
+    setup();
+
+    fireEvent.keyDown(await screen.findByRole('tab', { name: 'About' }), { key: 'ArrowLeft' });
+
+    expect(screen.getByRole('tab', { name: /Comments/ })).toHaveAttribute('aria-selected', 'true');
   });
 });

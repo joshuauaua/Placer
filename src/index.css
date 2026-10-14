@@ -330,6 +330,54 @@ a {
   }
 }
 
+/* A person's public profile (PublicProfilePage.jsx): photo, name and the rest centred
+ * at the top, then its tabs and the one showing, in a column. The organisation page
+ * keeps the cover and two columns above. */
+.placer-profile {
+  width: 100%;
+  max-width: 880px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 56px 40px 80px;
+}
+
+.placer-profile-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.placer-profile-head .placer-profile-title {
+  margin-top: 12px;
+}
+
+.placer-profile-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  overflow-x: auto;
+  margin-bottom: 32px;
+}
+
+.placer-profile-panel {
+  min-height: 200px;
+}
+
+.placer-profile-projects {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 899px) {
+  .placer-profile {
+    padding: 32px 20px 56px;
+  }
+}
+
 /* The map legend (MapLegend.jsx): glass, bottom left. 40px up clears Google's logo
  * and terms line, which sit in the bottom 26px of the map and have to stay visible.
  * Below 1024px the search bar spans the map's foot, so the legend rides above it. */
@@ -1704,6 +1752,12 @@ a {
   /* Clear of the sticky tab bar when a section is scrolled into view. */
   scroll-margin-top: 72px;
   margin-bottom: 64px;
+}
+
+/* The Post as choice hides its radios, so its label shows where the keyboard is. */
+.placer-post-as:has(input:focus-visible) {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
 }
 
 .placer-project-people {
