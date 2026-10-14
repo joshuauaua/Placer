@@ -13,7 +13,8 @@ const insert = vi.fn(() => ({ select: insertSelect }));
 const eqDelete = vi.fn(() => Promise.resolve({ error: null }));
 const del = vi.fn(() => ({ eq: eqDelete }));
 const from = vi.fn(() => ({ select: () => ({ eq: eqSelect }), insert, delete: del }));
-const rpc = vi.fn();
+// No photos unless a test says otherwise (profile_photos, for the posts' authors).
+const rpc = vi.fn(() => Promise.resolve({ data: [], error: null }));
 const createClient = vi.fn(() => ({ from, rpc }));
 
 vi.mock('@supabase/supabase-js', () => ({ createClient }));
@@ -23,6 +24,8 @@ let page;
 async function load() {
   vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
   vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'anon-key');
+  // Photos are addresses in the media bucket, so they need one configured.
+  vi.stubEnv('VITE_MEDIA_URL', 'https://media.example/');
   vi.resetModules();
   page = await import('../projectPage');
 }
@@ -71,7 +74,37 @@ describe('projectPage', () => {
     expect(eqSelect).toHaveBeenCalledWith('project_id', 'proj-1');
     expect(order).toHaveBeenCalledWith('created_at', { ascending: false });
     expect(comments).toEqual([{ id: 'c1', projectId: 'proj-1', authorId: 'user-2', authorName: 'Lee',
-      organisationId: null, body: 'Hi', createdAt: '2026-05-01T10:00:00Z' }]);
+      organisationId: null, authorPhoto: null, body: 'Hi', createdAt: '2026-05-01T10:00:00Z' }]);
+  });
+
+  it("puts each author's profile photo beside their posts, but not beside the organisation's", async () => {
+    await load();
+    order.mockResolvedValueOnce({ data: [
+      ROW,
+      { ...ROW, id: 'c2', author_id: 'user-3', author_name: 'Ines' },
+      { ...ROW, id: 'c3', author_id: 'user-2', author_name: 'STPLN', organisation_id: 'org-1' },
+    ], error: null });
+    rpc.mockResolvedValueOnce({ data: [{ id: 'user-2', avatar_path: 'avatars/user-2/a.jpg' },
+      { id: 'user-3', avatar_path: null }], error: null });
+
+    const comments = await page.readComments('proj-1');
+
+    expect(rpc).toHaveBeenCalledWith('profile_photos', { p_ids: ['user-2', 'user-3'] });
+    expect(comments[0].authorPhoto).toBe('https://media.example/avatars/user-2/a.jpg');
+    expect(comments[1].authorPhoto).toBeNull();
+    expect(comments[2].authorPhoto).toBeNull();
+  });
+
+  it('still returns the posts when the photos cannot be read', async () => {
+    await load();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    order.mockResolvedValueOnce({ data: [ROW], error: null });
+    rpc.mockResolvedValueOnce({ data: null, error: { message: 'function does not exist' } });
+
+    const comments = await page.readComments('proj-1');
+
+    expect(comments).toHaveLength(1);
+    expect(comments[0].authorPhoto).toBeNull();
   });
 
   it('posts an update with only its project and its body, trimmed', async () => {

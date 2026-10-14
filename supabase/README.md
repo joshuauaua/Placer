@@ -615,6 +615,13 @@ owns or collaborates on, each with its role — only projects the caller may see
 tab reads `project_comments` by author directly, leaving out those posted as an
 organisation.
 
+### Profile photos beside posts
+
+Run `profile-photos.sql` after `media-photos.sql` (or `supabase db push`). It is
+re-runnable. `profile_photos(ids)` returns each account's `avatar_path` — already public
+through `profile_public()` — for up to 200 accounts at once, so a project's updates and
+comments can show their authors' photos in one call.
+
 ### Which tools can host a room
 
 Run `room-tools.sql` in the SQL editor after `rooms.sql` and `notifications-projects.sql`

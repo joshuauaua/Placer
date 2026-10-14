@@ -292,8 +292,8 @@ const NUMBER = new Intl.NumberFormat('en-GB');
  * this page is the one a shared link actually points at, so it has to work reached
  * cold with nothing but the id in the URL.
  */
-export function PublicProjectPage({ t, projectId, accountId, accountName = null, onSignIn, onBack, onOpenProject,
-  onOpenOrganisation, onOpenProfile, onOpenToolkit }) {
+export function PublicProjectPage({ t, projectId, accountId, accountName = null, accountPhoto = null, onSignIn,
+  onBack, onOpenProject, onOpenOrganisation, onOpenProfile, onOpenToolkit }) {
   const [project, setProject] = useState(null);
   // The tools its organisers added, as registry entries. A tool no longer in the
   // registry is skipped rather than shown broken.
@@ -579,7 +579,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   // (supabase/project-posts-as-organisation.sql).
   const postsOrganisation = organisation ? { id: organisation.id, name: organisation.name, photo: organisation.avatar } : null;
   const postAs = postsOrganisation && isOrganiser
-    ? { organisation: postsOrganisation, me: { name: accountName || 'You', photo: null } }
+    ? { organisation: postsOrganisation, me: { name: accountName || 'You', photo: accountPhoto } }
     : null;
 
   const signInPrompt = (

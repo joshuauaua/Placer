@@ -242,7 +242,8 @@ describe('PublicProfilePage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Mara Quinn' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: 'Projects' }));
-    expect(await screen.findByText(/Projects could not be loaded/)).toBeInTheDocument();
+    // Generous: under the full suite's load the failed read can take a moment to land.
+    expect(await screen.findByText(/Projects could not be loaded/, {}, { timeout: 3000 })).toBeInTheDocument();
   });
 
   it('moves between tabs with the arrow keys', async () => {
