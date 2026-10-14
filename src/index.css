@@ -528,6 +528,16 @@ a {
   display: flex;
 }
 
+.placer-page-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
 .placer-loading-mark svg {
   display: block;
   overflow: visible;

@@ -37,6 +37,21 @@ export function LoadingMark({ size = 56, label = 'Loading…' }) {
 }
 
 /**
+ * The loader for a whole page: the same mark, always in the middle of the window,
+ * whatever scrolls and however much of the page has drawn around it. Fixed rather
+ * than centred in its box, because the boxes it stood in were of every height — a
+ * view's 100vh under the nav bar, a page's padded top — so it landed somewhere
+ * different on each. It lets clicks through, so it never blocks what is already there.
+ */
+export function PageLoader({ label }) {
+  return (
+    <div className="placer-page-loader">
+      <LoadingMark label={label} />
+    </div>
+  );
+}
+
+/**
  * The wordmark: Helvetica Bold, uppercase, +8% tracking, in ink or white only.
  * `size` is the cap height; the font size is that over Helvetica's cap ratio.
  * Left unset it follows the kit — 20px caps on desktop, 16px on mobile (see

@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
-import { Avatar, Btn, LoadingMark } from './UI';
+import { Avatar, Btn, PageLoader } from './UI';
 import { ProjectCard } from './ProjectCard';
 import { FollowButton } from './FollowButton';
 import {
@@ -109,7 +109,7 @@ export function PublicOrganisationPage({ t, organisationId, accountId = null, is
   }, [organisationId, version]);
 
   if (status === 'loading') {
-    return <div style={{ padding: 48, display: 'flex', justifyContent: 'center' }}><LoadingMark /></div>;
+    return <PageLoader />;
   }
 
   if (status === 'notFound') {

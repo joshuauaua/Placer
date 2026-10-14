@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { Icon } from './Icon';
-import { Chip, LoadingMark } from './UI';
+import { Chip, PageLoader } from './UI';
 import { isStoryblokConfigured, listResources } from '../services/storyblok';
 
 // The tile colours a card without a cover picture cycles through.
@@ -222,9 +222,7 @@ export function ResourceIndex({ t, title, intro, noun, posts, loadError, onOpen 
         </div>
 
         {posts === null && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 20px' }}>
-            <LoadingMark />
-          </div>
+          <PageLoader />
         )}
 
         {/* Empty State */}

@@ -4,7 +4,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
 import { Switch, Route, Redirect, useLocation, useSearch } from 'wouter';
 import { THEME } from './theme';
-import { Btn, LoadingMark } from './components/UI';
+import { Btn, PageLoader } from './components/UI';
 import { Icon } from './components/Icon';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieBanner } from './components/CookieBanner';
@@ -164,11 +164,8 @@ function resourceSlugFrom(path) {
 }
 
 function LoadingFallback() {
-  return (
-    <div style={{ width: '100%', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <LoadingMark />
-    </div>
-  );
+  // Still a full window tall, so the footer is not drawn up under the loader.
+  return <div style={{ width: '100%', height: '100vh' }}><PageLoader /></div>;
 }
 
 // Views that need an account, and say so to someone who has logged out.
