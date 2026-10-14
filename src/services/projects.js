@@ -325,6 +325,30 @@ export async function readMyProjects(accountId) {
   return [...(ownedResult.data ?? []), ...collaborating].map(fromRow);
 }
 
+/**
+ * Every project this account can see, newest first, for the Projects page: the
+ * public ones, plus the private ones it owns, collaborates on or was let into (the
+ * projects read policy decides which — see supabase/project-privacy.sql). Each comes
+ * with `role`: 'owner', 'collaborator', or null for someone else's. Collaborating
+ * comes from readMyProjects, since that membership is not on the project row.
+ */
+export async function readVisibleProjects(accountId) {
+  const supabase = await client();
+  const [all, mine] = await Promise.all([
+    supabase.from(PROJECTS_TABLE).select(PROJECT_COLUMNS).order('created_at', { ascending: false }),
+    readMyProjects(accountId),
+  ]);
+
+  if (all.error) throw new Error(`Could not load projects: ${all.error.message}`);
+
+  const myIds = new Set(mine.map((project) => project.id));
+  const roleOf = (project) => {
+    if (accountId && project.ownerId === accountId) return 'owner';
+    return myIds.has(project.id) ? 'collaborator' : null;
+  };
+  return (all.data ?? []).map(fromRow).map((project) => ({ ...project, role: roleOf(project) }));
+}
+
 /** Change a project's setup. Only the fields given are touched. */
 export async function updateProject(id, patch) {
   const supabase = await client();

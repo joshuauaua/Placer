@@ -1,6 +1,7 @@
-/* PLACER — Projects: every project this account owns or collaborates on.
+/* PLACER — Projects: every project this account can see, its own marked "Your project".
  *
- * Reached from the side nav. Opening one goes to its dashboard, and "Create a
+ * Reached from the side nav. Opening one it owns or collaborates on goes to its
+ * dashboard, and anyone else's to its public page. "Create a
  * Project" at the top right starts a new one. The header's toolbar is the Toolkit's
  * (GalleryToolbar): a menu for whose projects and what kind, an order (Recent, A-Z,
  * Start date), favourites, and grid or list. Projects need an account and a Supabase project either way — see
@@ -15,7 +16,7 @@ import { PageHeader } from './PageHeader';
 import { ProjectCard } from './ProjectCard';
 import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from './GalleryToolbar';
 import {
-  PROJECT_TYPES, PROJECT_TYPE_NAMES, isSupabaseConfigured as projectsAvailable, readMyProjects,
+  PROJECT_TYPES, PROJECT_TYPE_NAMES, isSupabaseConfigured as projectsAvailable, readVisibleProjects,
 } from '../services/projects';
 
 // The menu's two questions: whose project it is, and what kind (PROJECT_TYPES' keys,
@@ -24,7 +25,10 @@ const ROLES = [
   { id: null, name: 'All projects' },
   { id: 'owner', name: 'Run by you' },
   { id: 'collaborator', name: 'Collaborating on' },
+  { id: 'others', name: "Other people's" },
 ];
+
+const YOUR_PROJECT = 'Your project';
 
 const SORTS = [
   { id: 'recent', name: 'Recent', direction: 'desc' },
@@ -54,7 +58,7 @@ export function sortProjects(projects, { id, direction }) {
 }
 
 /** One project as a row, for the list view. */
-function ProjectRow({ t, project, onOpen }) {
+function ProjectRow({ t, project, onOpen, label = null }) {
   return (
     <button type="button" onClick={() => onOpen(project.id)} className="placer-toolkit-row"
       style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0, textAlign: 'left',
@@ -67,7 +71,15 @@ function ProjectRow({ t, project, onOpen }) {
           : <Icon name="grid" size={20} stroke={2} />}
       </span>
       <span style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={{ fontSize: 17, fontWeight: 700 }}>{project.name}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          <span style={{ fontSize: 17, fontWeight: 700 }}>{project.name}</span>
+          {label && (
+            <span style={{ flex: '0 0 auto', padding: '2px 8px', borderRadius: 999, background: t.surfaceAlt,
+              fontSize: 12, fontWeight: 600 }}>
+              {label}
+            </span>
+          )}
+        </span>
         {(project.summary || project.description) && (
           <span style={{ fontSize: 14, color: t.inkDim, overflow: 'hidden', textOverflow: 'ellipsis',
             whiteSpace: 'nowrap' }}>
@@ -80,7 +92,7 @@ function ProjectRow({ t, project, onOpen }) {
   );
 }
 
-export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectDashboard }) {
+export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectDashboard, onOpenProjectPage }) {
   const [projects, setProjects] = useState([]);
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
   const [filters, setFilters] = useState(NO_FILTERS);
@@ -98,7 +110,7 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
 
     let cancelled = false;
 
-    readMyProjects(accountId)
+    readVisibleProjects(accountId)
       .then((found) => {
         if (cancelled) return;
         setProjects(found);
@@ -106,7 +118,7 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error('Could not load your projects:', err);
+        console.error('Could not load projects:', err);
         setStatus('error');
       });
 
@@ -114,12 +126,16 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
   }, [accountId]);
 
   const matching = sortProjects(projects.filter((project) => {
-    const owned = project.ownerId === accountId;
-    if (filters.role === 'owner' && !owned) return false;
-    if (filters.role === 'collaborator' && owned) return false;
+    if (filters.role === 'others' && project.role) return false;
+    if ((filters.role === 'owner' || filters.role === 'collaborator') && project.role !== filters.role) return false;
     if (filters.type && project.projectType !== filters.type) return false;
     return !favouritesOnly || favourites.includes(project.id);
   }), sort);
+  // Your own and the ones you collaborate on open on their dashboard; anyone else's
+  // on its public page, where you can take part.
+  const open = (project) => (project.role || !onOpenProjectPage
+    ? onOpenProjectDashboard(project.id) : onOpenProjectPage(project.id));
+  const labelOf = (project) => (project.role === 'owner' ? YOUR_PROJECT : null);
   const clearFilters = () => { setFilters(NO_FILTERS); setFavouritesOnly(false); };
   const roleName = ROLES.find((role) => role.id === filters.role).name;
 
@@ -166,13 +182,13 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
         {projectsAvailable() && status === 'error' && (
           <div role="alert" style={{ padding: 16, borderRadius: 12, background: '#F5F5F5',
             borderLeft: '4px solid #B3261E', fontSize: 14, fontWeight: 500, color: t.ink }}>
-            Could not load your projects. See the console for details.
+            Could not load projects. See the console for details.
           </div>
         )}
 
         {projectsAvailable() && status === 'ready' && projects.length === 0 && (
           <p style={{ fontSize: 14, color: t.inkFaint }}>
-            Nothing yet. A project gets a dashboard, a public page, and lets people
+            No projects yet. A project gets a dashboard, a public page, and lets people
             collaborate with you on it.
           </p>
         )}
@@ -193,7 +209,7 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
             gap: 20 }}>
             {matching.map((project) => (
               <div key={project.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
-                <ProjectCard t={t} project={project} onOpen={onOpenProjectDashboard} />
+                <ProjectCard t={t} project={project} label={labelOf(project)} onOpen={() => open(project)} />
                 <FavouriteButton t={t} name={project.name} favourite={favourites.includes(project.id)}
                   onToggle={() => toggleFavourite(project.id)}
                   style={{ position: 'absolute', top: 10, right: 10, background: t.surface,
@@ -208,7 +224,7 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
             {matching.map((project) => (
               <div key={project.id} style={{ display: 'flex', alignItems: 'center',
                 borderBottom: `1px solid ${t.line}` }}>
-                <ProjectRow t={t} project={project} onOpen={onOpenProjectDashboard} />
+                <ProjectRow t={t} project={project} label={labelOf(project)} onOpen={() => open(project)} />
                 <FavouriteButton t={t} name={project.name} favourite={favourites.includes(project.id)}
                   onToggle={() => toggleFavourite(project.id)} style={{ margin: '0 12px' }} />
               </div>

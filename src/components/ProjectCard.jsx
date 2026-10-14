@@ -1,7 +1,8 @@
-/* PLACER — one project, as a card that opens it. Shared by the profile and the
- * Projects page, which both list the projects an account owns or collaborates on. */
+/* PLACER — one project, as a card that opens it. Shared by the Projects page, the
+ * organisation pages and Project Examples. `label`, when given, is a small tag above
+ * the name — the Projects page's "Your project". */
 
-export function ProjectCard({ t, project, onOpen }) {
+export function ProjectCard({ t, project, onOpen, label = null }) {
   return (
     <button onClick={() => onOpen(project.id)} style={{ textAlign: 'left', padding: 20,
       background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, boxShadow: t.shadow,
@@ -10,6 +11,12 @@ export function ProjectCard({ t, project, onOpen }) {
       {project.image && (
         <img src={project.image} alt="" style={{ display: 'block', width: 'calc(100% + 40px)',
           margin: '-20px -20px 16px', aspectRatio: '16 / 9', objectFit: 'cover' }} />
+      )}
+      {label && (
+        <span style={{ display: 'inline-block', marginBottom: 8, padding: '2px 8px', borderRadius: 999,
+          background: t.surfaceAlt, color: t.ink, fontSize: 12, fontWeight: 600 }}>
+          {label}
+        </span>
       )}
       <h3 style={{ fontSize: 17, fontWeight: 700, color: t.ink, marginBottom: 6 }}>{project.name}</h3>
       {(project.summary || project.description) && (

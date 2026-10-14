@@ -729,7 +729,7 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'projects' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <ProjectsPage t={t} accountId={accountId} onNewProject={showNewProject}
-                  onOpenProjectDashboard={showProjectDashboard} />
+                  onOpenProjectDashboard={showProjectDashboard} onOpenProjectPage={showProjectPublic} />
               </Suspense>
             )}
 
