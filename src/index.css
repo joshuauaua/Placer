@@ -2121,6 +2121,32 @@ a {
   transition: transform 0.4s ease;
 }
 
+/* A tool with no picture: one flat colour, its category's 100. */
+.placer-toolkit-tile-shades {
+  background: var(--tile-100);
+}
+
+.placer-toolkit-tile-text {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 18px;
+  color: var(--tile-900);
+}
+
+.placer-toolkit-tile-pictured .placer-toolkit-tile-text {
+  max-width: none;
+  color: #FFFFFF;
+}
+
+.placer-toolkit-tile-pictured::after {
+  content: '';
+  position: absolute;
+  inset: 40% 0 0;
+  background: linear-gradient(to top, var(--tile-900), transparent);
+  pointer-events: none;
+}
+
 .placer-toolkit-tile-tag {
   position: absolute;
   top: 12px;
@@ -2158,8 +2184,8 @@ a {
   box-shadow: 8px -8px 0 0 var(--tile-shadow);
 }
 
-.placer-toolkit-tile:hover .placer-toolkit-tile-image,
-.placer-toolkit-tile:focus-visible .placer-toolkit-tile-image {
+.placer-toolkit-tile:hover img.placer-toolkit-tile-image,
+.placer-toolkit-tile:focus-visible img.placer-toolkit-tile-image {
   transform: scale(1.06);
 }
 

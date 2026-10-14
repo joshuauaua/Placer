@@ -69,39 +69,40 @@ function publishedOn(added) {
 }
 
 /**
- * One tool as a card, for the grid: its picture with the category's tag at the top
- * left and an arrow at the top right, then its name, its tagline and when it was
- * published. On hover the picture zooms a little, the arrow turns up to the right
- * and a shadow in the category's colour shows along the picture's top and right
- * (index.css). A tool without a picture gets a cover drawn from its icon.
+ * One tool as a card, for the grid: the category's tag at the top left and an arrow
+ * at the top right, and the tool's name and tagline written on the card itself, with
+ * when it was published underneath. The card is one flat colour, its category's 100,
+ * with the words in its 900. On hover the arrow turns up to the right and a shadow in
+ * the 300 shows along the card's top and right (index.css). A tool with a picture shows it instead, under a scrim in the
+ * 900 that the words are set on in white.
  */
 function Tile({ t, tool, onOpen }) {
-  const colour = findCategory(tool.category)?.colour;
+  const category = findCategory(tool.category);
+  const colour = category?.colour;
   return (
     <button
       onClick={onOpen}
       className="placer-toolkit-tile"
       style={{ '--tile-shadow': colour?.c300 ?? tool.hover, color: t.ink }}>
-      <span className="placer-toolkit-tile-frame">
-        {tool.image ? (
-          <img className="placer-toolkit-tile-image" src={tool.image} alt="" />
-        ) : (
-          <span className="placer-toolkit-tile-image" aria-hidden="true"
-            style={{ background: colour?.c100 ?? tool.tint, color: colour?.c700 ?? tool.color }}>
-            <Icon name={tool.icon} size={88} stroke={1.4} />
-          </span>
-        )}
+      <span className={`placer-toolkit-tile-frame${tool.image ? ' placer-toolkit-tile-pictured' : ''}`}
+        style={{ '--tile-100': colour?.c100 ?? tool.tint,
+          '--tile-900': colour?.c900 ?? tool.color }}>
+        {tool.image
+          ? <img className="placer-toolkit-tile-image" src={tool.image} alt="" />
+          : <span className="placer-toolkit-tile-image placer-toolkit-tile-shades" aria-hidden="true" />}
         <span className="placer-toolkit-tile-tag"
           style={{ background: colour?.c100, color: colour?.c900, borderColor: colour?.c700 }}>
-          {findCategory(tool.category)?.name}
+          {category?.name}
         </span>
         <span className="placer-toolkit-tile-arrow" aria-hidden="true">
           <Icon name="arrowRight" size={18} stroke={2.2} />
         </span>
+        <span className="placer-toolkit-tile-text">
+          <span className="placer-h3" style={{ display: 'block' }}>{tool.name}</span>
+          <span style={{ display: 'block', fontSize: 15, lineHeight: '22px', marginTop: 4 }}>{tool.tagline}</span>
+        </span>
       </span>
 
-      <span className="placer-h3">{tool.name}</span>
-      <span style={{ fontSize: 15, lineHeight: '22px', color: t.inkDim }}>{tool.tagline}</span>
       {/* Room on the right for the heart, which sits over the card (see the grid). */}
       <span className="placer-caption" style={{ color: t.inkDim, paddingRight: 44 }}>
         {publishedOn(tool.added)}{tool.createdBy && ` · By ${tool.createdBy}`}
