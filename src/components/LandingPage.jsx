@@ -3,7 +3,7 @@
  * The holding page for the project: what it is, who is building it, and who
  * funds it, with a way onto the waitlist, into User Labs and through the
  * Placemaking Trends survey. Shown as the home view only, with the nav bar
- * hidden (see App.jsx). The same hero as the Development branch's.
+ * hidden (see App.jsx).
  */
 
 import { useEffect, useState } from 'react';
@@ -16,7 +16,6 @@ import photoWaitlist from '../assets/about-malmo.jpg';
 import photoUserLabs from '../assets/user-labs.webp';
 import photoSurvey from '../assets/placemaking-trends-cover.webp';
 import { HaveYourSay } from './HaveYourSay';
-import { CHARACTER } from '../theme';
 
 // Trimmed to its artwork and stored at 160px tall, so a height here is enough
 // to size it and the width stays in proportion. Kept small and dimmed (see
@@ -26,28 +25,24 @@ const FUNDER_HEIGHT = 32;
 // How long each card stays up before the next one rotates in.
 const ROTATE_MS = 6000;
 
-/* The three things a visitor can do, one slide each, and each on one of the
- * three characters' colours in turn: a photo, then a bar tinted in that colour
- * with the title that says what the button is for, and the button. Each action is a render function so the card can hand
- * it the theme. */
+/* The three things a visitor can do, one slide each: a photo filling the slide,
+ * with the title and the button set over its foot. Each action is a render
+ * function so the card can hand it the theme. */
 const OPTIONS = [
   {
     key: 'waitlist',
-    colour: CHARACTER.practitioner,
     photo: photoWaitlist,
     title: 'Be the first to use PLACER',
     action: (t) => <HaveYourSay t={t} className="placer-landing-option-link" />,
   },
   {
     key: 'userLabs',
-    colour: CHARACTER.cityWorker,
     photo: photoUserLabs,
     title: 'Help shape what we build',
     action: () => <Link href="/user-labs" className="placer-landing-option-link">Apply to User Labs</Link>,
   },
   {
     key: 'survey',
-    colour: CHARACTER.citizen,
     photo: photoSurvey,
     title: 'Tell us about placemaking in your city',
     action: () => (
@@ -56,12 +51,12 @@ const OPTIONS = [
   },
 ];
 
-/* What PLACER is for, under the pitch: a step number, a title and a line for
- * each. */
+/* What PLACER is for, under the pitch: a step number, a title and a line on
+ * how, for each. */
 const FEATURES = [
-  { title: 'Understand', text: 'how your community uses a place' },
-  { title: 'Imagine', text: 'new possibilities' },
-  { title: 'Plan', text: 'meaningful change' },
+  { title: 'Understand', text: 'Map how people use, move through and feel about a place.' },
+  { title: 'Imagine', text: 'Sketch and test ideas together with the people who use it.' },
+  { title: 'Plan', text: 'Turn shared priorities into change the city can act on.' },
 ];
 
 // The width index.css treats as a phone, where the carousel gives way to a
@@ -132,10 +127,9 @@ function LandingCarousel({ t }) {
             data-active={i === active}
             role="group"
             aria-roledescription="slide"
-            aria-label={`${i + 1} of ${OPTIONS.length}`}
+            aria-label={`${i + 1} of ${OPTIONS.length}: ${option.title}`}
             aria-hidden={i !== active}
-            inert={i !== active}
-            style={{ '--placer-landing-option-bg': option.colour.c50 }}>
+            inert={i !== active}>
             <img className="placer-landing-option-photo" src={option.photo} alt="" />
             <div className="placer-landing-option-body">
               <h2 className="placer-landing-option-title">{option.title}</h2>
@@ -188,6 +182,7 @@ export function LandingPage({ t }) {
       height: '100%',
       overflowY: 'auto',
       display: 'flex',
+      flexDirection: 'column',
       backgroundColor: t.page,
       '--placer-landing-city': `url(${cityDrawing})`,
       '--placer-landing-city-mobile': `url(${cityDrawingMobile})`,
@@ -200,18 +195,26 @@ export function LandingPage({ t }) {
 
       {/* The card over the drawing: what PLACER is on the left, and on the right
         * the three things a visitor can do about it, as slides of one media card
-        * that take turns, with the credit along the bottom. A phone shows the
-        * pitch alone, ending in the waitlist button. */}
+        * that take turns. A phone shows the pitch alone, ending in the waitlist
+        * button. The credit sits under the card, on a strip of its own. */}
       <div className="placer-landing-column" style={{
         position: 'relative',
         margin: 'auto',
       }}>
         <div className="placer-landing-info">
-          {/* The wordmark, then the pitch. Their sizes are set in index.css so a
-            * phone can scale them down. */}
-          <h1 className="placer-disp placer-landing-title" style={{ color: t.ink }}>PLACER</h1>
+          {/* Where the project stands, so the survey and waitlist read as the way
+            * in for now; then the headline and the pitch. The nav bar already
+            * carries the wordmark, so the headline says what PLACER is for. Their
+            * sizes are set in index.css so a phone can scale them down. */}
+          <p className="placer-landing-badge">Currently in co-development</p>
 
-          <p className="placer-landing-pitch">Placer is the open toolkit for co-designing shared spaces.</p>
+          <h1 className="placer-disp placer-landing-title" style={{ color: t.ink }}>
+            The open toolkit for participatory placemaking.
+          </h1>
+
+          <p className="placer-landing-pitch">
+            PLACER is a web platform where residents, practitioners and city teams co-design shared spaces together.
+          </p>
 
           {/* What it does, in three numbered steps. */}
           <ol className="placer-landing-features">
@@ -239,24 +242,24 @@ export function LandingPage({ t }) {
         </div>
 
         {!mobile && <LandingCarousel t={t} />}
+      </div>
 
-        {/* The credit and the funder lockup run the full width of the card,
-          * under a rule. Hidden below 1024px (see index.css). */}
-        <div className="placer-landing-footer">
-          <p className="placer-landing-credit">
-            PLACER is developed by <CreditLink href="https://stpln.se/">STPLN</CreditLink>{' '}
-            and <CreditLink href="https://ankaraaks.com/">Ankara Aks</CreditLink>, funded
-            by the Swedish Institute.
-          </p>
+      {/* The credit and the funder lockup, on a quiet strip across the foot of
+        * the page rather than inside the card. */}
+      <div className="placer-landing-footer">
+        <p className="placer-landing-credit">
+          PLACER is developed by <CreditLink href="https://stpln.se/">STPLN</CreditLink>{' '}
+          and <CreditLink href="https://ankaraaks.com/">Ankara Aks</CreditLink>, funded
+          by the Swedish Institute.
+        </p>
 
-          {/* The lockup reads "Funded by Swedish Institute" as part of the artwork. */}
-          <img
-            className="placer-landing-funder"
-            src={logoSwedishInstitute}
-            alt="Funded by Swedish Institute"
-            style={{ height: FUNDER_HEIGHT, width: 'auto' }}
-          />
-        </div>
+        {/* The lockup reads "Funded by Swedish Institute" as part of the artwork. */}
+        <img
+          className="placer-landing-funder"
+          src={logoSwedishInstitute}
+          alt="Funded by Swedish Institute"
+          style={{ height: FUNDER_HEIGHT, width: 'auto' }}
+        />
       </div>
     </div>
   );
