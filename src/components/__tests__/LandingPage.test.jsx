@@ -10,7 +10,9 @@ const TITLES = [
 ];
 
 function activeTitle(container) {
-  return container.querySelector('.placer-landing-option[data-active="true"] h2').textContent;
+  // The title is not shown; it names the slide, after its position.
+  return container.querySelector('.placer-landing-option[data-active="true"]')
+    .getAttribute('aria-label').split(': ')[1];
 }
 
 describe('LandingPage carousel', () => {
@@ -25,7 +27,7 @@ describe('LandingPage carousel', () => {
     expect(cards).toHaveLength(3);
     cards.forEach((card, i) => {
       expect(card.querySelector('img.placer-landing-option-photo')).not.toBeNull();
-      expect(card).toHaveTextContent(TITLES[i]);
+      expect(card).toHaveAttribute('aria-label', `${i + 1} of 3: ${TITLES[i]}`);
     });
     expect(activeTitle(container)).toBe(TITLES[0]);
 

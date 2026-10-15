@@ -50,7 +50,7 @@ describe('App', () => {
 
   it('renders MainApp welcome view at root path', () => {
     renderAt('/');
-    expect(screen.getByText(/Placer is the open toolkit for co-designing shared spaces/)).toBeInTheDocument();
+    expect(screen.getByText(/The open toolkit for participatory placemaking/)).toBeInTheDocument();
   });
 
   it('sets the landing copy on a card over the city drawing, as decoration', () => {
@@ -62,7 +62,7 @@ describe('App', () => {
     expect(page.style.getPropertyValue('--placer-landing-city')).toMatch(/landing-city\.svg/);
     expect(page.style.getPropertyValue('--placer-landing-city-mobile')).toMatch(/landing-city-mobile\.svg/);
     expect(page.querySelector('.placer-landing-column')).toHaveTextContent(
-      /Placer is the open toolkit for co-designing shared spaces/i
+      /The open toolkit for participatory placemaking/i
     );
     expect(screen.getByText(/funded by the Swedish Institute/i)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Funded by Swedish Institute' })).toBeInTheDocument();
@@ -163,7 +163,7 @@ describe('App', () => {
     it('shows the 404 page rather than the landing page', () => {
       renderAt('/no-such-page');
       expect(screen.getByRole('heading', { level: 1, name: 'This page does not exist' })).toBeInTheDocument();
-      expect(screen.queryByText(/Placer is the open toolkit/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/The open toolkit for participatory placemaking/)).not.toBeInTheDocument();
     });
 
     it('leads somebody signed in back to their dashboard', async () => {
@@ -185,7 +185,7 @@ describe('App', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Go to the home page' }));
 
       expect(history.at(-1)).toBe('/');
-      expect(screen.getByText(/Placer is the open toolkit/)).toBeInTheDocument();
+      expect(screen.getByText(/The open toolkit for participatory placemaking/)).toBeInTheDocument();
     });
   });
 
