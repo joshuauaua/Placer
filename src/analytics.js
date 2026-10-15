@@ -71,6 +71,13 @@ function startPostHog({ recordConsentEvent }) {
     opt_out_persistence_by_default: true,
     // Keep the opt-in/out flag itself out of a cookie.
     opt_out_capturing_persistence_type: 'localStorage',
+    // Product analytics only: pageviews, autocapture and the app's own events.
+    // The project has session replay, error tracking and the Support widget
+    // switched on in PostHog, so each is turned off here rather than left to
+    // follow that setting — the privacy page promises none of them.
+    disable_session_recording: true,
+    capture_exceptions: false,
+    disable_conversations: true,
   });
 
   // PostHog's default $opt_in event is the audit trail for the consent, so it is
