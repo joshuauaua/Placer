@@ -79,6 +79,9 @@ describe('analytics consent gate', () => {
       opt_out_capturing_by_default: true,
       opt_out_persistence_by_default: true,
       opt_out_capturing_persistence_type: 'localStorage',
+      disable_session_recording: true,
+      capture_exceptions: false,
+      disable_conversations: true,
     });
     // No repeat consent event for a decision made on an earlier visit.
     expect(posthog.opt_in_capturing).toHaveBeenCalledWith({ captureEventName: false });

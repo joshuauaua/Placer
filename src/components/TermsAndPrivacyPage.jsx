@@ -106,7 +106,7 @@ function ConsentControls({ t }) {
   };
 
   const state = decision === GRANTED
-    ? 'Analytics are on for this browser. PostHog is receiving events, session recordings and error reports.'
+    ? 'Analytics are on for this browser. PostHog is receiving usage events.'
     : decision === DENIED
       ? 'Analytics are off. PostHog captures nothing and stores nothing in this browser.'
       : 'No choice recorded yet. Analytics are off until you accept.';
@@ -312,12 +312,12 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Usage analytics, if you accept them.</strong> PLACER can
-          send usage data to PostHog, an analytics provider, to see how the app is actually used
-          and where it breaks. That covers the features you open, the events PLACER emits (such as
-          posting an imagination), a recording of your session in the app, errors it hits, and the
-          device, browser and IP-derived approximate location behind them. It is off until you
-          accept: PLACER does not contact PostHog at all &mdash; no request, no cookie, no
-          recording &mdash; until you do, and rejecting the banner keeps it that way. Analytics
+          send usage data to PostHog, an analytics provider, to see how the app is actually used.
+          That covers the pages you visit and the features you open, the events PLACER emits (such
+          as starting or sending a survey), and the device, browser and IP-derived approximate
+          location behind them. Your session is not recorded. It is off until you accept: PLACER
+          does not contact PostHog at all &mdash; no request, no cookie &mdash; until you do, and
+          rejecting the banner keeps it that way. Analytics
           are never linked to a name or email address you give us in a survey or application.
         </P>
         <P t={t}>
@@ -467,8 +467,8 @@ export function TermsAndPrivacyPage({ t }) {
               'Until you unsubscribe',
             ],
             [
-              'Usage analytics sent to PostHog: the features you use, the events PLACER emits (for example posting an imagination), a session recording of your visit, error reports, and the device, browser and IP-derived approximate location behind them',
-              'Understanding how PLACER is used, and finding the parts of it that break',
+              'Usage analytics sent to PostHog: the features you use, the events PLACER emits (for example starting or sending a survey), and the device, browser and IP-derived approximate location behind them',
+              'Understanding how PLACER is used',
               'Consent (Art. 6(1)(a)) — off unless you accept, withdrawable at any time',
               'As configured in our PostHog project; nothing at all before you accept',
             ],
@@ -543,7 +543,7 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
         <Bullets t={t} items={[
           'Strictly necessary — your saved ideas, and the record of your analytics choice, are kept in local storage. This is what makes the feature you asked for work, and needs no consent.',
-          'Analytics — PostHog sets a cookie and local storage entries to recognise your browser across visits, and records your session. PostHog is not loaded at all until you accept: no request leaves your browser, nothing is written and nothing is recorded, and rejecting keeps it that way. The analytics controls above change your answer.',
+          'Analytics — PostHog sets a cookie and local storage entries to recognise your browser across visits. PostHog is not loaded at all until you accept: no request leaves your browser, nothing is written and nothing is recorded, and rejecting keeps it that way. The analytics controls above change your answer.',
         ]} />
         <P t={t}>
           Google may also set cookies of its own when serving map and Street View imagery.

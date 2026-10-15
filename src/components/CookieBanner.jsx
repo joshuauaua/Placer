@@ -60,7 +60,7 @@ export function CookieBanner({ t }) {
         <div style={{ flex: '1 1 420px', minWidth: 260 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: t.ink, marginBottom: 6 }}>Cookies</div>
           <div style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6 }}>
-            PLACER uses PostHog to understand how the app is used, including session recordings.
+            PLACER uses PostHog to understand how the app is used.
             Nothing is stored on your device and nothing is sent until you accept.{' '}
             <Link
               href="/terms-and-privacy"

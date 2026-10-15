@@ -191,6 +191,13 @@ describe('PlacemakingTrendsSurveyPage', () => {
         total_questions: TOTAL,
         opt_ins: 1,
       });
+      // The funnel steps leading up to it, each counted once.
+      expect(posthog.capture.mock.calls.filter(([event]) => event === 'survey_started')).toEqual([
+        ['survey_started', { source: 'placemaking_trends_survey' }],
+      ]);
+      expect(posthog.capture).toHaveBeenCalledWith('survey_step_reached', {
+        source: 'placemaking_trends_survey', step: 'optIn',
+      });
     });
 
     it('stores a response with no details when nothing is filled in', async () => {

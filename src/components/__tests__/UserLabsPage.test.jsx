@@ -5,6 +5,9 @@ import { saveSurveyResponse } from '../../services/api';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/api', () => ({ saveSurveyResponse: vi.fn() }));
+vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
+
+const posthog = (await import('posthog-js')).default;
 
 function fillIn() {
   fireEvent.click(screen.getByRole('radio', { name: /Ankara/ }));
@@ -18,6 +21,7 @@ function fillIn() {
 describe('UserLabsPage', () => {
   beforeEach(() => {
     saveSurveyResponse.mockReset();
+    posthog.capture.mockClear();
   });
 
   it('shows the upcoming lab above Apply', () => {
@@ -64,6 +68,13 @@ describe('UserLabsPage', () => {
       dietary: '',
       newsletter: true,
     });
+    // Choices only: no name, email or typed answer reaches PostHog.
+    expect(posthog.capture.mock.calls).toEqual([
+      ['survey_started', { source: 'user_labs_application' }],
+      ['survey_submitted', {
+        source: 'user_labs_application', lab: 'ankara', lab_date: '2026-10-21', newsletter: true,
+      }],
+    ]);
   });
 
   it('keeps the answers and offers email when saving fails', async () => {
