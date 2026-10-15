@@ -11,10 +11,15 @@
 import { Icon } from '../Icon';
 import { Btn } from '../UI';
 import { findCategory } from '../../toolkit/tools';
+import { toolText, useText } from '../../i18n';
+import { LanguagePicker } from '../LanguagePicker';
 
 // `breadcrumb`, when given, replaces All tools: a tool opened for a project leads
 // back to the project instead (ToolkitPage's projectTrail).
 export function ToolCover({ t, tool, onStart, onBack, breadcrumb = null }) {
+  const { text, language } = useText();
+  const category = findCategory(tool.category);
+  const tagline = toolText(tool, 'tagline', language);
   return (
     <div className="placer-cover" style={{ background: t.page }}>
       <div className="placer-cover-color" style={{ background: tool.tint }}>
@@ -22,31 +27,35 @@ export function ToolCover({ t, tool, onStart, onBack, breadcrumb = null }) {
       </div>
 
       <div className="placer-cover-copy">
-        {breadcrumb ?? (
-          <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack}
-            style={{ padding: '0 12px 0 6px', marginBottom: 24, color: t.inkDim }}>
-            All tools
-          </Btn>
-        )}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
+          flexWrap: 'wrap' }}>
+          {breadcrumb ?? (
+            <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack}
+              style={{ padding: '0 12px 0 6px', marginBottom: 24, color: t.inkDim }}>
+              {text('tool.allTools')}
+            </Btn>
+          )}
+          <LanguagePicker t={t} style={{ marginLeft: 'auto', marginBottom: 24 }} />
+        </div>
 
         <div className="placer-caption" style={{ textTransform: 'uppercase', color: tool.color,
           fontWeight: 700, marginBottom: 12 }}>
-          {findCategory(tool.category)?.name ?? 'Tool'}
+          {category ? text(`tool.categories.${category.id}`) : text('tool.tool')}
         </div>
         <h1 style={{ color: t.ink }}>
-          {tool.name}
+          {toolText(tool, 'name', language)}
         </h1>
-        {tool.tagline && (
+        {tagline && (
           <p className="placer-h3" style={{ marginTop: 16, color: t.ink }}>
-            {tool.tagline}
+            {tagline}
           </p>
         )}
         <p className="placer-body-lg" style={{ marginTop: 16, color: t.inkDim }}>
-          {tool.blurb}
+          {toolText(tool, 'blurb', language)}
         </p>
         {(tool.duration || tool.createdBy) && (
           <p className="placer-caption" style={{ marginTop: 16, color: t.inkFaint }}>
-            {[tool.duration, tool.createdBy && `By ${tool.createdBy}`]
+            {[toolText(tool, 'duration', language), tool.createdBy && text('tool.by', { name: tool.createdBy })]
               .filter(Boolean).join(' · ')}
           </p>
         )}
@@ -57,7 +66,7 @@ export function ToolCover({ t, tool, onStart, onBack, breadcrumb = null }) {
         )}
 
         <div className="placer-cover-action">
-          <Btn t={t} size="lg" onClick={onStart}>Get started</Btn>
+          <Btn t={t} size="lg" onClick={onStart}>{text('tool.getStarted')}</Btn>
         </div>
       </div>
     </div>

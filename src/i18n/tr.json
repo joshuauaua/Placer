@@ -1,0 +1,493 @@
+{
+  "common": {
+    "add": "Ekle",
+    "howItWorks": "Nasıl çalışır",
+    "people": {
+      "one": "{count} kişi",
+      "other": "{count} kişi"
+    },
+    "copied": "Kopyalandı",
+    "back": "Geri",
+    "language": "Dil",
+    "presets": "Hazır seçenekler"
+  },
+  "wordCloud": {
+    "cloudLabel": "Kelime bulutu",
+    "saidBy": ", {count} kişi söyledi",
+    "countsLabel": "Yanıtlar ve her birinin kaç kez verildiği",
+    "yourWord": "Kelimen",
+    "yourWords": "Kelimelerin",
+    "finished": "Bitti",
+    "allWordsUsed": "Tüm kelimelerini kullandın",
+    "typeAWord": "Bir kelime yaz",
+    "remove": "Kaldır: {word}",
+    "finishedNoMore": "Bitti — artık kelime alınmıyor.",
+    "oneWordEach": "Herkes bir kelime.",
+    "wordsUsed": {
+      "one": "{count} kelimeden {used} tanesi.",
+      "other": "{count} kelimeden {used} tanesi."
+    },
+    "timeLeft": "Kalan süre",
+    "paused": "duraklatıldı",
+    "roomsCloud": "Odanın bulutu",
+    "yourCloud": "Senin bulutun",
+    "emptyRoom": "Henüz kimse kelime eklemedi. Sen bir kelime eklediğin anda burada görünecek.",
+    "emptySolo": "Burada görmek için bir kelime ekle.",
+    "startTimer": "{seconds} saniyelik zamanlayıcıyı başlat",
+    "continue": "Devam et",
+    "pause": "Duraklat",
+    "stop": "Durdur",
+    "resetTimer": "Zamanlayıcıyı sıfırla",
+    "askSomething": "Bir şey sor",
+    "prompt": "Soru",
+    "promptPlaceholder": "Bu yer için tek bir kelime?",
+    "promptHint": "Yalnızca bu ekranda görünür — yüksek sesle oku ya da bir slayta koy. Sayılan şey aşağıdaki kelimeler, sorunun ifadesi değil.",
+    "timer": "Zamanlayıcı",
+    "timerHint": "İsteğe bağlı. Buluttan başlat; süre dolunca artık kelime alınmaz.",
+    "addYourWords": "Kelimelerini ekle",
+    "sentToRoom": "Odaya gönderildi.",
+    "removeToChange": "Fikrini değiştirmek için bir kelimeyi kaldır.",
+    "answers": "Yanıtlar",
+    "answersEmpty": "Her yanıt, kaç kez verildiğiyle birlikte burada listelenir.",
+    "howItWorks": "Bir oda aç ve PIN'ini ya da QR kodunu paylaş; katılan herkes kendi birkaç kelimesini ekler — yukarıdaki bulut canlı olarak büyür ve bir kelime, başka biri onu her söylediğinde daha da büyür. Bir projeden açılan oda 90 güne kadar açık kalabilir, böylece QR kodu bir afişe konabilir. Odayı kapatmak ya da sürenin dolması, içindeki tüm kelimeleri siler."
+  },
+  "openVote": {
+    "options": {
+      "yes": "Evet",
+      "no": "Hayır",
+      "undecided": "Kararsızım"
+    },
+    "theQuestion": "Soru",
+    "askSomething": "Bir şey sor",
+    "questionPlaceholder": "Evet mi, hayır mı?",
+    "questionHint": "Yalnızca bu ekranda görünür — yüksek sesle oku ya da bir slayta koy. Sayılan şey aşağıdaki oy, sorunun ifadesi değil.",
+    "castYourVote": "Oyunu ver",
+    "sentToRoom": "Odaya gönderildi.",
+    "changeYourMind": "İstediğin zaman fikrini değiştirebilirsin — yalnızca son oyun sayılır.",
+    "roomsVote": "Odanın oyu",
+    "cast": {
+      "one": "{count} oy",
+      "other": "{count} oy"
+    },
+    "emptyRoom": "Henüz kimse oy vermedi. Sen seçtiğin anda oyun burada görünecek.",
+    "result": "Sonuç",
+    "emptySolo": "Burada görmek için bir yanıt seç.",
+    "howItWorks": "Bir oda aç ve PIN'ini ya da QR kodunu paylaş; katılan herkes sorduğun soruya oy verir — yukarıdaki sayım, herkes seçtikçe canlı olarak güncellenir. Bir projeden açılan oda 90 güne kadar açık kalabilir, böylece QR kodu bir afişe konabilir. Odayı kapatmak ya da sürenin dolması, içindeki tüm oyları siler."
+  },
+  "budgetBallot": {
+    "units": {
+      "tree": {
+        "one": "ağaç",
+        "other": "ağaç"
+      },
+      "bench": {
+        "one": "bank",
+        "other": "bank"
+      },
+      "metre": {
+        "one": "metre",
+        "other": "metre"
+      },
+      "crossing": {
+        "one": "geçit",
+        "other": "geçit"
+      },
+      "set": {
+        "one": "set",
+        "other": "set"
+      },
+      "bay": {
+        "one": "park yeri",
+        "other": "park yeri"
+      },
+      "lamp": {
+        "one": "lamba",
+        "other": "lamba"
+      },
+      "garden": {
+        "one": "bahçe",
+        "other": "bahçe"
+      },
+      "item": {
+        "one": "adet",
+        "other": "adet"
+      }
+    },
+    "posts": {
+      "trees": {
+        "label": "Sokak ağaçları",
+        "note": "Saksıda değil, düzgün bir çukurda geniş taçlı türler."
+      },
+      "benches": {
+        "label": "Sırtlıklı banklar",
+        "note": "Her 50 metrede bir bank, bir güzergâhı yürünebilir kılar."
+      },
+      "footway": {
+        "label": "Genişletilmiş kaldırım",
+        "note": "Taşıt yolundan alınır, böylece bebek arabalı iki kişi yan yana geçebilir."
+      },
+      "cycleTrack": {
+        "label": "Korumalı bisiklet yolu",
+        "note": "Bordürle ayrılmış, çift yönlü, yan sokaklarda kesintisiz."
+      },
+      "crossings": {
+        "label": "Yükseltilmiş yaya geçitleri",
+        "note": "Kaldırımla aynı seviyede, böylece tırmanmak zorunda olan araba olur."
+      },
+      "play": {
+        "label": "Oyun ekipmanı",
+        "note": "Çitle çevrili bir oyun alanı yerine serbest, gayriresmî ekipman."
+      },
+      "parklets": {
+        "label": "Park yeri → parklet",
+        "note": "Ölçülen ticaret genelde artar. Dükkânlar yine de park yerini geri ister."
+      },
+      "lighting": {
+        "label": "Daha sıcak sokak aydınlatması",
+        "note": "Yalnızca yol yüzeyini değil, yürüyenleri baş hizasında aydınlatır."
+      },
+      "rainGarden": {
+        "label": "Yağmur bahçeleri",
+        "note": "Giderlerin alamadığı sağanağı tutar ve kendi kendine bakar."
+      }
+    },
+    "ownProblems": {
+      "tooMany": {
+        "one": "En fazla {count} kendi kalemini ekleyebilirsin.",
+        "other": "En fazla {count} kendi kalemini ekleyebilirsin."
+      },
+      "noName": "Kalemine bir ad ver.",
+      "tooLong": {
+        "one": "Adı {count} karakterden kısa olsun.",
+        "other": "Adı {count} karakterden kısa olsun."
+      },
+      "duplicate": "Bu adda bir kalem zaten var.",
+      "noCost": "Adet başına maliyetini tam sayı olarak gir.",
+      "overBudget": "Adet başına maliyeti tüm bütçeden fazla."
+    },
+    "otherPosts": {
+      "one": "Diğer ({count} kalem)",
+      "other": "Diğer ({count} kalem)"
+    },
+    "unspent": "Harcanmayan",
+    "summary": {
+      "title": "Bütçem — PLACER Araç Kutusu",
+      "spent": "Harcanan: {spent} / {budget}",
+      "nothing": "Henüz bir şey seçilmedi."
+    },
+    "committed": "Ayrılan",
+    "ofABudgetOf": "Toplam bütçe",
+    "budgetUsed": "Kullanılan bütçe",
+    "left": "{amount} kaldı",
+    "ownFull": {
+      "one": "Bu, {count} kendi kalemin eder; bir oy pusulasına eklenebilecek en fazla sayı bu.",
+      "other": "Bu, {count} kendi kalemin eder; bir oy pusulasına eklenebilecek en fazla sayı bu."
+    },
+    "ownName": "Kaleminin adı",
+    "ownNamePlaceholder": "ör. İçme suyu çeşmesi",
+    "ownCost": "Kaleminin adet başına maliyeti",
+    "perItem": "adet başına",
+    "removeOwn": "Kalemini kaldır: {label}",
+    "oneFewer": "Bir eksik: {label}",
+    "howMany": "{label}: kaç tane",
+    "oneMore": "Bir fazla: {label}",
+    "budgetStops": {
+      "one": "Sınır sokak değil, bütçe: en fazla {count}.",
+      "other": "Sınır sokak değil, bütçe: en fazla {count}."
+    },
+    "addOwn": "Kendi kalemini ekle",
+    "addOwnHint": "Listede eksik bir şey mi var? Bir tanesinin ne kadara mal olacağıyla birlikte ekle ve aynı bütçeden harca. Senin önerin olarak gösterilir.",
+    "presets": {
+      "empty": {
+        "label": "Sıfırdan başla",
+        "note": "Her kalem sıfırda."
+      },
+      "draft": {
+        "label": "Belediyenin taslağı",
+        "note": "Kaldırım, geçitler ve aydınlatma — paranın dörtte üçü zaten ayrılmış."
+      }
+    },
+    "theMoney": "Para",
+    "whatBudgetCanGoOn": "Bütçenin harcanabileceği kalemler",
+    "whatStreetCouldHave": "Sokağa neler gelebilir",
+    "roomsBallot": "Odanın oy pusulası",
+    "roomCommits": "Odanın ayırdığı",
+    "youCommit": "Senin ayırdığın",
+    "you": {
+      "one": "sen {count}",
+      "other": "sen {count}"
+    },
+    "averageHint": "Odadaki tüm oy pusulalarının ortalaması; bu yüzden hâlâ {budget} içine sığıyor. Seninkinden farklı olduğu yer, tartışmaya değer olan yer.",
+    "postsPeopleAdded": "Katılımcıların eklediği kalemler",
+    "emptyRoom": "Henüz kimse oy pusulası doldurmadı. Sen bir şey eklediğin anda seninki burada görünecek.",
+    "yourBallot": "Oy pusulan",
+    "emptyBallotSetUp": "Henüz bir şey seçilmedi. Harcamaya başlamak için bir kalemde + düğmesine bas.",
+    "emptyBallot": "Henüz bir şey seçilmedi. Bir kalemde + düğmesine bas ya da belediyenin taslağından başlayıp onu tartış.",
+    "copyBallot": "Oy pusulamı kopyala",
+    "ballotAsText": "Oy pusulan metin olarak"
+  },
+  "popQuiz": {
+    "pickNickname": "Bir takma ad seç",
+    "nicknameHint": "Skor tablosunda bu adla görüneceksin, yani herkes görecek.",
+    "nickname": "Takma ad",
+    "joinQuiz": "Yarışmaya katıl",
+    "answerWas": "Doğru yanıt: {answer}.",
+    "right": "Doğru!",
+    "plusPoints": {
+      "one": "+{count} puan.",
+      "other": "+{count} puan."
+    },
+    "timeRanOut": "Süre doldu.",
+    "skipped": "Atlandı.",
+    "notThisTime": "Bu sefer olmadı.",
+    "theRightAnswer": "(doğru yanıt)",
+    "youAnswered": "Yanıtın: {answer}.",
+    "yourAnswer": "Yanıtın",
+    "fillInBlank": "Boşluğu doldur",
+    "answer": "Yanıtla",
+    "questionOf": {
+      "one": "Soru {n} / {count}",
+      "other": "Soru {n} / {count}"
+    },
+    "skipQuestion": "Bu soruyu atla",
+    "lockedIn": "Yanıt kilitlendi.",
+    "shownWhenUp": "Doğru yanıt süre dolunca gösterilir.",
+    "answerIs": "Doğru yanıt: {answer}.",
+    "scoreboard": "Skor tablosu",
+    "nobodyJoined": "Henüz kimse katılmadı.",
+    "you": "(sen)",
+    "nRight": {
+      "one": "{count} doğru",
+      "other": "{count} doğru"
+    },
+    "youAreIn": "Katıldın",
+    "welcome": "Hoş geldin, {name}.",
+    "startsWhenReady": "Yarışma, kolaylaştırıcı hazır olduğunda başlar.",
+    "playersSoFar": {
+      "one": "Şimdiye kadar {count} oyuncu.",
+      "other": "Şimdiye kadar {count} oyuncu."
+    },
+    "thatIsTheQuiz": "Yarışma bitti",
+    "points": {
+      "one": "{count} puan",
+      "other": "{count} puan"
+    },
+    "rightOf": {
+      "one": "{count} sorudan {right} doğru.",
+      "other": "{count} sorudan {right} doğru."
+    },
+    "rightAndPlace": {
+      "one": "{count} sorudan {right} doğru; {players} kişi arasında {place}. sıradasın.",
+      "other": "{count} sorudan {right} doğru; {players} kişi arasında {place}. sıradasın."
+    },
+    "finalScores": "Son skorlar",
+    "readyWhenYouAre": "Sen hazır olduğunda başlıyoruz",
+    "hostLobby": {
+      "one": "{count} soru, her biri {seconds} saniye. Katılımcılar odanın PIN'i ya da QR koduyla katılıp bir takma ad seçer; herkes gelince başlat.",
+      "other": "{count} soru, her biri {seconds} saniye. Katılımcılar odanın PIN'i ya da QR koduyla katılıp bir takma ad seçer; herkes gelince başlat."
+    },
+    "startQuiz": "Yarışmayı başlat",
+    "players": "Oyuncular",
+    "showAnswer": "Yanıtı göster",
+    "showFinalScores": "Son skorları göster",
+    "nextQuestion": "Sonraki soru",
+    "answeredOf": {
+      "one": "{count} kişiden {answered} kişi yanıtladı",
+      "other": "{count} kişiden {answered} kişi yanıtladı"
+    },
+    "writeYourQuiz": "Yarışmanı yaz",
+    "playThisQuiz": "Bu yarışmayı oyna",
+    "howItWorks1": "Her biri dört seçenekli ya da doldurulacak bir boşluklu en fazla yirmi soru yaz ve denemek için burada oyna. Doğru yanıt 500 puan ve hız için 500 puana kadar ek puan kazandırır; yanlış, atlanmış ya da zamanında verilmemiş yanıt puan getirmez.",
+    "howItWorks2": "Bir grupla oynamak için Bilgi Yarışması'nı bir projeye ekle ve projenin panosundan ayarla. Herkes odaya PIN ya da QR koduyla katılıp bir takma ad seçer, sen soruları birer birer gösterirsin, skor tablosu da ardından gelir. Burada yazılan bir yarışma kaydedilmez.",
+    "youGot": {
+      "one": "{name}, {count} sorudan {right} tanesini bildin.",
+      "other": "{name}, {count} sorudan {right} tanesini bildin."
+    },
+    "playAgain": "Yeniden oyna",
+    "editQuiz": "Yarışmayı düzenle",
+    "seeYourScore": "Puanını gör",
+    "pointsSoFar": {
+      "one": "Şimdiye kadar {count} puan",
+      "other": "Şimdiye kadar {count} puan"
+    },
+    "noQuiz": "Burada yarışma yok",
+    "noQuizHint": "Bu oda oynanacak bir yarışma olmadan açıldı."
+  },
+  "dreamIt": {
+    "prompts": [
+      "Bu yerin bir sesi olsaydı ne söylerdi?",
+      "Burada eksik olan ve neşe ya da huzur getirecek şey ne?",
+      "Bu yeri 2050'de hayal et — burada neler oluyor?",
+      "Bu yerde ne tür hikâyeler yaşanabilir?",
+      "Burada daha çok vakit geçirmek istemeni ne sağlardı?",
+      "Bu yer bir duygu olsaydı, hangisi olmasını isterdin?",
+      "Burada mükemmel bir sabah nasıl görünürdü?",
+      "Burada kiminle karşılaşmak isterdin ve birlikte ne yapardınız?",
+      "Her şey mümkün olsaydı, bir çocuk bu yerde neyi severdi?",
+      "Buraya vardığında hangi sesleri duymak isterdin?",
+      "Bu yere tek bir hediye verebilseydin, ne olurdu?",
+      "Birinin burada hangi anıyı biriktirmesini isterdin?",
+      "Bu yerin herkese ait olduğunu hissettiren ne olurdu?",
+      "Bu yeri en güzel gününde hayal et — neler oluyor?",
+      "Soğuk, karanlık bir akşamda burada ne bulmak isterdin?"
+    ],
+    "whichPrompts": "Hangi soruları kullanmak istiyorsun?",
+    "modes": {
+      "existing": {
+        "name": "Hazır soruları kullan",
+        "note": {
+          "one": "{count} soru, kullanıma hazır.",
+          "other": "{count} soru, kullanıma hazır."
+        }
+      },
+      "own": {
+        "name": "Kendi sorularını yaz",
+        "note": "Yalnızca senin eklediğin sorular."
+      },
+      "both": {
+        "name": "Hazır soruları koru ve kendi sorularını ekle",
+        "note": "Senin soruların, bizimkilerle karıştırılır."
+      }
+    },
+    "addOwn": "Kendi sorularını ekle",
+    "writeOwn": "Kendi sorularını yaz",
+    "yourPrompt": "Sorun",
+    "yourPrompts": "Soruların",
+    "promptPlaceholder": "İnsanların neyi hayal etmesini istersin?",
+    "remove": "Kaldır: “{prompt}”",
+    "shuffledIn": {
+      "one": "Hazır {count} soruyla karıştırılacaklar.",
+      "other": "Hazır {count} soruyla karıştırılacaklar."
+    },
+    "notSaved": "Soruların kaydedilmez: sayfayı yenilemek ya da bu sayfadan çıkmak onları siler.",
+    "startWith": {
+      "one": "{count} soruyla başla",
+      "other": "{count} soruyla başla"
+    },
+    "generateHint": "Bir soru üret, yüksek sesle oku ve kimse yanıt vermeden önce herkese hayal etmesi için biraz zaman tanı.",
+    "generateAnother": "Başka bir soru üret",
+    "generate": "Bir soru üret",
+    "promptCount": {
+      "one": "{count} soru",
+      "other": "{count} soru"
+    },
+    "promptOf": {
+      "one": "Soru {n} / {count}",
+      "other": "Soru {n} / {count}"
+    },
+    "changePrompts": "Soruları değiştir",
+    "ownNotSaved": "Kendi soruların kaydedilmez: sayfayı yenilemek ya da bu sayfadan çıkmak onları siler.",
+    "whatFor": "Ne için",
+    "whatForBody": "Hayal Et, hayal gücünü açar ve insanların bir yerle ilgili kişisel vizyonlarını, isteklerini ve duygusal bağlarını paylaşabilecekleri güvenli bir alan yaratır. Pratik kısıtlar ya da hemen çözümler yerine, herkesi bu yerin gelecekte nasıl hissettirebileceğini, nasıl işleyebileceğini ya da nasıl ilham verebileceğini özgürce düşünmeye davet eder.",
+    "howToRun": "Nasıl yürütülür",
+    "steps": {
+      "1": "Soruları seç: bizimkiler, kendi soruların ya da ikisi birden.",
+      "2": "Bir soru üret ve yüksek sesle oku.",
+      "3": "İnsanlara hayal etmeleri için sessiz bir an tanı.",
+      "4": "Herkes sırayla konuşsun, bir hikâye anlatsın ya da tahminde bulunsun — diğerleri dinlesin.",
+      "5": "Oda hazır olduğunda yeni bir soru üret."
+    },
+    "noWrongAnswers": "Yanlış yanıt yok ve henüz çözülecek bir şey de yok. Konuşmak, hayal etmek ve birbirini dinlemek, bu yer için ortak bir duygu oluşturur."
+  },
+  "time": {
+    "underAMinute": "bir dakikadan az",
+    "m": "{count} dk",
+    "h": "{count} sa",
+    "d": "{count} g"
+  },
+  "room": {
+    "errors": {
+      "missing": "Böyle bir oda yok. Kapatılmış olabilir.",
+      "otherTool": "Bu oda başka bir araca ait.",
+      "unknownSetup": "Bu oda, aracın bu sürümünün gösteremeyeceği bir şekilde ayarlanmış."
+    },
+    "close": "Odayı kapat",
+    "closeConfirm": "Kapat — onayla",
+    "delete": "Odayı sil",
+    "deleteConfirm": "Sil — onayla",
+    "deleted": "Bu oda, içine eklenen her şeyle birlikte silindi. Araç tek başına çalışmaya devam ediyor ve yeni bir tur için yeni bir oda açılabilir.",
+    "opensOn": "Bu oda {date} tarihinde açılıyor.",
+    "notOpenYet": "Bu oda henüz açılmadı.",
+    "scheduledHint": "O zamana kadar odaya bir şey eklenemez; günü geldiğinde burada kendiliğinden açılır.",
+    "closed": "Bu oda kapandı. Artık bir şey eklenemez ve içindekiler silindi.",
+    "expired": "Bu odanın süresi doldu ve içindekiler silindi.",
+    "stillWorks": "Araç tek başına çalışmaya devam ediyor ve yeni bir tur için yeni bir oda açılabilir.",
+    "opening": "Oda açılıyor…",
+    "contributed": {
+      "one": "{count} kişi katkıda bulundu",
+      "other": "{count} kişi katkıda bulundu"
+    },
+    "youAreIn": "Bir odadasın",
+    "joinsEverybody": "Eklediğin her şey diğerlerininkine katılır.",
+    "countAndLeft": "{contributed}; odanın {left} süresi kaldı.",
+    "title": "Oda",
+    "left": "{left} kaldı",
+    "scanOrShare": "Kodu tara ya da bağlantıyı paylaş",
+    "openUntil": "{date} tarihine kadar açık",
+    "joinAt": "Katılmak için: {url}",
+    "pinLabel": "Oda PIN'i {pin}",
+    "copyLink": "Katılma bağlantısını kopyala",
+    "linkLabel": "Bu odaya katılma bağlantısı",
+    "downloadQr": "QR'ı indir",
+    "longHint": "Oda {date} tarihine kadar açık kalır. Buradan ya da projenin panosundan daha erken kapatabilirsin. Her iki durumda da içindekiler oda kapandıktan bir gün sonra silinir.",
+    "longHintLeft": "Oda {date} tarihine kadar açık kalır — {left} kaldı. Buradan ya da projenin panosundan daha erken kapatabilirsin. Her iki durumda da içindekiler oda kapandıktan bir gün sonra silinir.",
+    "shortHint": "Oda açıldıktan sonra iki saat sürer; kapatırsan daha erken biter. Her iki durumda da içindekiler silinir.",
+    "shortHintLeft": "Oda açıldıktan sonra iki saat sürer — {left} kaldı; kapatırsan daha erken biter. Her iki durumda da içindekiler silinir."
+  },
+  "tool": {
+    "allTools": "Tüm araçlar",
+    "tool": "Araç",
+    "by": "Hazırlayan: {name}",
+    "getStarted": "Başla",
+    "linkLabel": "Bu aracın bağlantısı",
+    "categories": {
+      "understand": "Anla",
+      "imagine": "Hayal et",
+      "plan": "Planla"
+    },
+    "copyLink": "Bağlantıyı kopyala",
+    "linkCopied": "Bağlantı kopyalandı"
+  },
+  "join": {
+    "unknownTool": "Bu oda, PLACER'ın bu sürümünde olmayan bir araç için.",
+    "title": "Bir odaya katıl",
+    "notConfigured": "Bu sitede odalar açık değil. Bir oda cihazlar arasında paylaşıldığı için arkasında bir veritabanı gerekir — bkz.",
+    "intro": "Kolaylaştırıcının ekranındaki altı haneyi yaz. Yanıtların odadaki herkesinkine katılır.",
+    "pin": "Oda PIN'i",
+    "looking": "Aranıyor…",
+    "join": "Katıl",
+    "deadLink": "Bu bağlantı artık bir odaya gitmiyor. Bir süre önce sona ermiş olabilir.",
+    "noRoom": "Bu PIN'e sahip açık bir oda yok. Kapatılmış olabilir ya da bir hane yanlış olabilir.",
+    "comeBack": "Katılmak için o zaman tekrar gel.",
+    "closedOn": "Bu oda {date} tarihinde kapandı.",
+    "hasClosed": "Bu oda kapandı.",
+    "thanks": "Baktığın için teşekkürler — artık yanıt kabul etmiyor."
+  },
+  "tools": {
+    "word-cloud": {
+      "name": "Kelime Bulutu",
+      "tagline": "Bir şey sor, yanıtların toplanışını izle.",
+      "blurb": "Odaya sormak istediğin her şeyi yaz ve herkesin kendi birkaç kelimesiyle yanıtlamasına izin ver. Her kelime eklendiği anda buluta katılır ve başka biri onu her söylediğinde büyür — böylece odanın üzerinde birleştiği şey, ilk okuduğun şey olur."
+    },
+    "open-vote": {
+      "name": "Anket",
+      "tagline": "Bir şey sor, yanıtları sen seç.",
+      "blurb": "Odaya sormak istediğin her şeyi yaz, insanların seçebileceği yanıtları belirle ve oy vermelerine izin ver. Ayarlanacak bir ölçek yok — yalnızca bir soru, senin yanıtların ve insanlar seçtikçe canlı bir sayım."
+    },
+    "budget-ballot": {
+      "name": "Ortak Bütçe",
+      "tagline": "Sabit bir bütçe, alabileceğinden uzun bir liste. Seç.",
+      "blurb": "Her kalemin adet başına bir fiyatı var ve para, liste bitmeden çok önce tükeniyor. Bütçeyi senin harcayacağın gibi harca ve odanın birlikte neyi finanse edeceğini gör."
+    },
+    "pop-quiz": {
+      "name": "Bilgi Yarışması",
+      "tagline": "Yirmi soru, bir saat ve bir skor tablosu.",
+      "blurb": "Her biri dört seçenekli ya da doldurulacak bir boşluklu en fazla yirmi soruluk bir yarışma yaz. Herkes bir takma adla katılır, sorular birer birer gösterilir ve doğru yanıt ne kadar erken gelirse o kadar çok puan getirir — bir odanın bir yer hakkında zaten ne bildiğini öğrenmenin hızlı bir yolu."
+    },
+    "dream-it": {
+      "name": "Hayal Et",
+      "tagline": "Bir düğmeye basınca odayı hayal kurmaya davet eden bir soru.",
+      "blurb": "Hayal gücünü açmak ve bir yerle ilgili kişisel vizyonları, istekleri ve duygusal bağları paylaşmak için güvenli bir alan yaratmaya yönelik bir etkinlik. Bir soru üret ve insanların konuşmasına, hayal etmesine ve birbirini dinlemesine izin ver — bugün neyin pratik olduğu yerine, bu yerin nasıl hissettirebileceği, nasıl işleyebileceği ya da nasıl ilham verebileceği üzerine."
+    }
+  }
+}

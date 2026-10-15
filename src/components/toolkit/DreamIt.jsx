@@ -20,19 +20,23 @@ import { Btn } from '../UI';
 import {
   MAX_OWN_PROMPTS, MAX_PROMPT_LENGTH, MODES, PROMPTS, addPrompt, deckPrompts, drawPrompt, writesOwn,
 } from '../../lib/dreamIt';
+import { useText } from '../../i18n';
 
 /** The first screen: which prompts to deal from. */
 function ChooseMode({ t, onChoose }) {
+  const { text } = useText();
   return (
-    <Panel t={t} title="Which prompts do you want to use?">
+    <Panel t={t} title={text('dreamIt.whichPrompts')}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
         {MODES.map((mode) => (
           <button key={mode.id} type="button" onClick={() => onChoose(mode.id)} className="placer-btn placer-btn-secondary"
             style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'left', padding: 20, minHeight: 120,
               borderRadius: 12, cursor: 'pointer', background: t.surface, color: t.ink,
               border: `1px solid ${t.lineStrong}`, fontFamily: 'var(--placer-font)' }}>
-            <span style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.3 }}>{mode.name}</span>
-            <span style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.5 }}>{mode.note}</span>
+            <span style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.3 }}>{text(`dreamIt.modes.${mode.id}.name`)}</span>
+            <span style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.5 }}>
+              {text(`dreamIt.modes.${mode.id}.note`, { count: PROMPTS.length })}
+            </span>
           </button>
         ))}
       </div>
@@ -42,6 +46,7 @@ function ChooseMode({ t, onChoose }) {
 
 /** The second screen, for a group writing prompts of its own. */
 function WritePrompts({ t, mode, own, onChange, onBack, onStart }) {
+  const { text } = useText();
   const id = useId();
   const [draft, setDraft] = useState('');
   const full = own.length >= MAX_OWN_PROMPTS;
@@ -54,25 +59,25 @@ function WritePrompts({ t, mode, own, onChange, onBack, onStart }) {
   };
 
   return (
-    <Panel t={t} title={mode === 'both' ? 'Add your own prompts' : 'Write your own prompts'}>
+    <Panel t={t} title={text(mode === 'both' ? 'dreamIt.addOwn' : 'dreamIt.writeOwn')}>
       <form onSubmit={add} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <input
           id={`${id}-prompt`}
-          aria-label="Your prompt"
+          aria-label={text('dreamIt.yourPrompt')}
           type="text"
           maxLength={MAX_PROMPT_LENGTH}
           value={draft}
           disabled={full}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder="What would you like people to imagine?"
+          placeholder={text('dreamIt.promptPlaceholder')}
           style={{ flex: 1, minWidth: 0, height: 48, padding: '0 14px', borderRadius: 12,
             border: `1px solid ${t.lineStrong}`, background: t.surface, color: t.ink,
             fontFamily: 'var(--placer-font)', fontSize: 16, fontWeight: 600 }} />
-        <Btn t={t} type="submit" variant="outline" icon="plus" disabled={full}>Add</Btn>
+        <Btn t={t} type="submit" variant="outline" icon="plus" disabled={full}>{text('common.add')}</Btn>
       </form>
 
       {own.length > 0 && (
-        <ol aria-label="Your prompts" style={{ listStyle: 'none', margin: '16px 0 0', padding: 0 }}>
+        <ol aria-label={text('dreamIt.yourPrompts')} style={{ listStyle: 'none', margin: '16px 0 0', padding: 0 }}>
           {own.map((prompt) => (
             <li key={prompt} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0',
               borderBottom: `1px solid ${t.line}` }}>
@@ -80,7 +85,7 @@ function WritePrompts({ t, mode, own, onChange, onBack, onStart }) {
                 overflowWrap: 'anywhere' }}>
                 {prompt}
               </span>
-              <Btn t={t} type="button" variant="ghost" size="sm" icon="close" ariaLabel={`Remove “${prompt}”`}
+              <Btn t={t} type="button" variant="ghost" size="sm" icon="close" ariaLabel={text('dreamIt.remove', { prompt })}
                 onClick={() => onChange(own.filter((entry) => entry !== prompt))}
                 style={{ width: 32, padding: 0, flexShrink: 0 }} />
             </li>
@@ -89,14 +94,14 @@ function WritePrompts({ t, mode, own, onChange, onBack, onStart }) {
       )}
 
       <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.6, margin: '16px 0 0' }}>
-        {mode === 'both' && `They will be shuffled in with the ${PROMPTS.length} existing prompts. `}
-        Your prompts are not saved: refreshing or leaving this page loses them.
+        {mode === 'both' && `${text('dreamIt.shuffledIn', { count: PROMPTS.length })} `}
+        {text('dreamIt.notSaved')}
       </p>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 20 }}>
-        <Btn t={t} variant="outline" icon="chevLeft" onClick={onBack}>Back</Btn>
+        <Btn t={t} variant="outline" icon="chevLeft" onClick={onBack}>{text('common.back')}</Btn>
         <Btn t={t} variant="primary" icon="sparkle" disabled={own.length === 0} onClick={onStart}>
-          Start with {deckPrompts(mode, own).length} {deckPrompts(mode, own).length === 1 ? 'prompt' : 'prompts'}
+          {text('dreamIt.startWith', { count: deckPrompts(mode, own).length })}
         </Btn>
       </div>
     </Panel>
@@ -105,6 +110,7 @@ function WritePrompts({ t, mode, own, onChange, onBack, onStart }) {
 
 /** The generator itself, dealing from the prompts it is given. */
 function Generator({ t, prompts, hasOwn, onChange }) {
+  const { text } = useText();
   const [prompt, setPrompt] = useState(null);
   const [deck, setDeck] = useState([]);
   const [dealt, setDealt] = useState(0);
@@ -117,7 +123,7 @@ function Generator({ t, prompts, hasOwn, onChange }) {
   };
 
   return (
-    <Panel t={t} title="Your prompt" style={{ padding: '20px 24px 40px' }}>
+    <Panel t={t} title={text('dreamIt.yourPrompt')} style={{ padding: '20px 24px 40px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28, textAlign: 'center' }}>
         <div aria-live="polite" style={{ minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {prompt ? (
@@ -127,25 +133,25 @@ function Generator({ t, prompts, hasOwn, onChange }) {
             </p>
           ) : (
             <p style={{ maxWidth: 520, margin: 0, fontSize: 17, color: t.inkDim, lineHeight: 1.6 }}>
-              Generate a prompt, read it aloud, and give everybody a moment to imagine before anyone answers.
+              {text('dreamIt.generateHint')}
             </p>
           )}
         </div>
         <Btn t={t} variant="primary" icon="sparkle" onClick={generate}
           style={{ height: 56, padding: '0 28px', fontSize: 17 }}>
-          {prompt ? 'Generate another prompt' : 'Generate a prompt'}
+          {text(prompt ? 'dreamIt.generateAnother' : 'dreamIt.generate')}
         </Btn>
         <p className="placer-mono" style={{ margin: 0, fontSize: 11, color: t.inkDim, letterSpacing: '0.04em',
           textTransform: 'uppercase' }}>
           {dealt === 0
-            ? `${prompts.length} ${prompts.length === 1 ? 'prompt' : 'prompts'}`
-            : `Prompt ${((dealt - 1) % prompts.length) + 1} of ${prompts.length}`}
+            ? text('dreamIt.promptCount', { count: prompts.length })
+            : text('dreamIt.promptOf', { n: ((dealt - 1) % prompts.length) + 1, count: prompts.length })}
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onChange}>Change the prompts</Btn>
+          <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onChange}>{text('dreamIt.changePrompts')}</Btn>
           {hasOwn && (
             <p style={{ margin: 0, fontSize: 12.5, color: t.inkDim }}>
-              Your own prompts are not saved: refreshing or leaving this page loses them.
+              {text('dreamIt.ownNotSaved')}
             </p>
           )}
         </div>
@@ -155,10 +161,13 @@ function Generator({ t, prompts, hasOwn, onChange }) {
 }
 
 export function DreamIt({ t }) {
+  const { text, language } = useText();
   const [mode, setMode] = useState(null);
   const [own, setOwn] = useState([]);
   const [playing, setPlaying] = useState(false);
-  const prompts = useMemo(() => deckPrompts(mode, own), [mode, own]);
+  // `language` too: our prompts are dealt in whichever language is chosen.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const prompts = useMemo(() => deckPrompts(mode, own), [mode, own, language]);
 
   const choose = (next) => {
     setMode(next);
@@ -184,25 +193,17 @@ export function DreamIt({ t }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20,
         alignItems: 'start' }}>
-        <Panel t={t} title="What it is for">
+        <Panel t={t} title={text('dreamIt.whatFor')}>
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6 }}>
-            Dream It unlocks imagination and makes a safe space for people to share personal visions,
-            desires and emotional connections to a place. Rather than practical constraints or immediate
-            solutions, it invites everybody to think freely about how the place could feel, function
-            or inspire in the future.
+            {text('dreamIt.whatForBody')}
           </p>
         </Panel>
-        <Panel t={t} title="How to run it">
+        <Panel t={t} title={text('dreamIt.howToRun')}>
           <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: t.inkDim, lineHeight: 1.7 }}>
-            <li>Choose the prompts: ours, your own, or both.</li>
-            <li>Generate a prompt and read it aloud.</li>
-            <li>Give people a quiet moment to imagine.</li>
-            <li>Let each person speak, tell a story or speculate — and let the others listen.</li>
-            <li>Generate another when the room is ready.</li>
+            {[1, 2, 3, 4, 5].map((step) => <li key={step}>{text(`dreamIt.steps.${step}`)}</li>)}
           </ol>
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginTop: 12 }}>
-            There are no wrong answers and nothing to solve yet. Speaking, imagining and listening to each
-            other is what builds a shared feeling for the place.
+            {text('dreamIt.noWrongAnswers')}
           </p>
         </Panel>
       </div>

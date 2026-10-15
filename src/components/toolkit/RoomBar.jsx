@@ -25,6 +25,8 @@ import { Btn, CopyButton } from '../UI';
 import { codeJoinUrl, formatPin, formatRoomDate, joinUrl, timeRemaining } from '../../toolkit/rooms';
 import { downloadQrSvg } from '../../lib/qrDownload';
 import { useEffect, useRef, useState } from 'react';
+import { useText } from '../../i18n';
+import { LanguagePicker } from '../LanguagePicker';
 
 /**
  * The time left, re-read every half minute. Coarse on purpose — the countdown is
@@ -45,6 +47,7 @@ function useTimeRemaining(expiresAt) {
 }
 
 function CloseRoom({ t, onClose }) {
+  const { text } = useText();
   // Closing ends it for everybody in the room, so it asks once first — the same
   // two-step the GDPR page uses for erasing data.
   const [confirming, setConfirming] = useState(false);
@@ -58,12 +61,13 @@ function CloseRoom({ t, onClose }) {
       onClick={() => (confirming ? onClose() : setConfirming(true))}
       onBlur={() => setConfirming(false)}
       style={confirming ? { borderColor: '#B3261E', color: '#B3261E' } : undefined}>
-      {confirming ? 'Close — confirm' : 'Close room'}
+      {text(confirming ? 'room.closeConfirm' : 'room.close')}
     </Btn>
   );
 }
 
 function DeleteRoom({ t, onDelete }) {
+  const { text } = useText();
   // Deleting takes everybody's contributions with it, for good, so it asks first the
   // same way closing does.
   const [confirming, setConfirming] = useState(false);
@@ -77,12 +81,13 @@ function DeleteRoom({ t, onDelete }) {
       onClick={() => (confirming ? onDelete() : setConfirming(true))}
       onBlur={() => setConfirming(false)}
       style={confirming ? { borderColor: '#B3261E', color: '#B3261E' } : undefined}>
-      {confirming ? 'Delete — confirm' : 'Delete room'}
+      {text(confirming ? 'room.deleteConfirm' : 'room.delete')}
     </Btn>
   );
 }
 
 export function RoomBar({ t, tool, room }) {
+  const { text } = useText();
   const left = useTimeRemaining(room.expiresAt);
   const qrRef = useRef(null);
 
@@ -92,8 +97,7 @@ export function RoomBar({ t, tool, room }) {
     return (
       <Panel t={t} style={{ marginBottom: 20 }}>
         <p role="status" style={{ fontSize: 14, color: t.ink, lineHeight: 1.6 }}>
-          This room has been deleted, along with everything contributed to it. The
-          tool still works on its own, and a new room can be opened for another round.
+          {text('room.deleted')}
         </p>
       </Panel>
     );
@@ -104,8 +108,7 @@ export function RoomBar({ t, tool, room }) {
     return (
       <Panel t={t} style={{ marginBottom: 20 }}>
         <p role="status" style={{ fontSize: 14, color: t.ink, lineHeight: 1.6 }}>
-          {opens ? `This room opens on ${opens}.` : 'This room has not opened yet.'} Nothing
-          can be added to it until then, and it opens here by itself when the day comes.
+          {opens ? text('room.opensOn', { date: opens }) : text('room.notOpenYet')} {text('room.scheduledHint')}
         </p>
       </Panel>
     );
@@ -115,10 +118,8 @@ export function RoomBar({ t, tool, room }) {
     return (
       <Panel t={t} style={{ marginBottom: 20 }}>
         <p role="status" style={{ fontSize: 14, color: t.ink, lineHeight: 1.6 }}>
-          {room.status === 'closed'
-            ? 'This room is closed. Nothing more can be added to it, and what it held has been let go.'
-            : 'This room has run out of time, and what it held has been let go.'}
-          {' '}The tool still works on its own, and a new room can be opened for another round.
+          {text(room.status === 'closed' ? 'room.closed' : 'room.expired')}
+          {' '}{text('room.stillWorks')}
         </p>
       </Panel>
     );
@@ -137,13 +138,13 @@ export function RoomBar({ t, tool, room }) {
   if (room.status === 'opening') {
     return (
       <Panel t={t} style={{ marginBottom: 20 }}>
-        <p role="status" style={{ fontSize: 14, color: t.inkDim }}>Opening the room…</p>
+        <p role="status" style={{ fontSize: 14, color: t.inkDim }}>{text('room.opening')}</p>
       </Panel>
     );
   }
 
   const people = room.participantCount;
-  const countLabel = `${people} ${people === 1 ? 'person has' : 'people have'} contributed`;
+  const countLabel = text('room.contributed', { count: people });
 
   // A participant: joined already, so no PIN and nothing to press.
   if (!room.isHost) {
@@ -153,11 +154,11 @@ export function RoomBar({ t, tool, room }) {
           <span style={{ color: tool.color, display: 'flex' }}>
             <Icon name="user" size={18} stroke={2.2} />
           </span>
-          <span style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>You are in a room</span>
-          <span style={{ fontSize: 13.5, color: t.inkDim }}>
-            Your ballot joins everybody else&rsquo;s. {countLabel}
-            {left ? `, and the room has ${left} left` : ''}.
+          <span style={{ fontSize: 14.5, fontWeight: 700, color: t.ink }}>{text('room.youAreIn')}</span>
+          <span style={{ fontSize: 13.5, color: t.inkDim, flex: '1 1 240px' }}>
+            {text('room.joinsEverybody')} {left ? text('room.countAndLeft', { contributed: countLabel, left }) : `${countLabel}.`}
           </span>
+          <LanguagePicker t={t} />
         </div>
       </Panel>
     );
@@ -169,7 +170,7 @@ export function RoomBar({ t, tool, room }) {
   const closesOn = formatRoomDate(room.expiresAt);
 
   return (
-    <Panel t={t} title="The room" style={{ marginBottom: 20 }} aside={
+    <Panel t={t} title={text('room.title')} style={{ marginBottom: 20 }} aside={
       <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>
         {countLabel}
         {left && (
@@ -177,7 +178,7 @@ export function RoomBar({ t, tool, room }) {
             {' · '}
             {/* Under ten minutes is the point at which it stops being background
                 information and starts being something to act on. */}
-            <span style={{ color: timeIsShort(left) ? '#B3261E' : t.inkDim }}>{left} left</span>
+            <span style={{ color: timeIsShort(room.expiresAt) ? '#B3261E' : t.inkDim }}>{text('room.left', { left })}</span>
           </>
         )}
       </span>
@@ -193,22 +194,22 @@ export function RoomBar({ t, tool, room }) {
           {long ? (
             <>
               <div style={{ fontSize: 12.5, fontWeight: 700, color: t.inkDim, marginBottom: 6 }}>
-                Scan the code or share the link
+                {text('room.scanOrShare')}
               </div>
               {/* No PIN to read out, so the headline is the thing a poster needs: until when. */}
               <div className="placer-disp"
                 style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.1, color: t.ink }}>
-                Open until {closesOn}
+                {text('room.openUntil', { date: closesOn })}
               </div>
             </>
           ) : (
             <>
               <div style={{ fontSize: 12.5, fontWeight: 700, color: t.inkDim, marginBottom: 6 }}>
-                Join at {typeof window === 'undefined' ? '' : window.location.host}/join
+                {text('room.joinAt', { url: `${typeof window === 'undefined' ? '' : window.location.host}/join` })}
               </div>
               {/* The PIN is the thing somebody reads aloud, so it is set as large as the
                   headline numbers in the tools themselves. */}
-              <div className="placer-disp" aria-label={`Room PIN ${formatPin(room.pin)}`}
+              <div className="placer-disp" aria-label={text('room.pinLabel', { pin: formatPin(room.pin) })}
                 style={{ fontSize: 46, fontWeight: 700, letterSpacing: '0.02em', lineHeight: 1.05,
                   color: t.ink, fontVariantNumeric: 'tabular-nums' }}>
                 {formatPin(room.pin)}
@@ -219,8 +220,8 @@ export function RoomBar({ t, tool, room }) {
           <CopyButton
             t={t}
             value={url}
-            label="Copy join link"
-            fieldLabel="Link to join this room"
+            label={text('room.copyLink')}
+            fieldLabel={text('room.linkLabel')}
             fieldWidth={320}
             style={{ marginTop: 14 }}
             actions={(
@@ -228,7 +229,7 @@ export function RoomBar({ t, tool, room }) {
                 {long && (
                   <Btn t={t} variant="quiet" size="sm" icon="arrowDown"
                     onClick={() => downloadQrSvg(qrRef.current, `placer-${tool.id}-qr.svg`)}>
-                    Download QR
+                    {text('room.downloadQr')}
                   </Btn>
                 )}
                 <CloseRoom t={t} onClose={room.close} />
@@ -239,8 +240,8 @@ export function RoomBar({ t, tool, room }) {
 
           <p style={{ fontSize: 12.5, color: t.inkFaint, lineHeight: 1.55, marginTop: 12 }}>
             {long
-              ? `The room stays open until ${closesOn}${left ? ` — ${left} left` : ''}. You can close it sooner from here or from the project's dashboard. Either way what it held is let go a day after it ends.`
-              : `The room lasts two hours from opening${left ? ` — ${left} left` : ''}, and closing it ends it sooner. Either way what it held is let go.`}
+              ? text(left ? 'room.longHintLeft' : 'room.longHint', { date: closesOn, left })
+              : text(left ? 'room.shortHintLeft' : 'room.shortHint', { left })}
           </p>
         </div>
       </div>
@@ -248,10 +249,10 @@ export function RoomBar({ t, tool, room }) {
   );
 }
 
-/** True for a countdown worth colouring: minutes only, and fewer than ten of them. */
-function timeIsShort(left) {
-  const match = /^(\d+)m$/.exec(left ?? '');
-  return left === 'under a minute' || (match !== null && Number(match[1]) < 10);
+/** True for a countdown worth colouring: fewer than ten minutes to go. */
+function timeIsShort(expiresAt, now = Date.now()) {
+  const left = new Date(expiresAt ?? 0).getTime() - now;
+  return Number.isFinite(left) && left > 0 && left < 10 * 60000;
 }
 
 export default RoomBar;

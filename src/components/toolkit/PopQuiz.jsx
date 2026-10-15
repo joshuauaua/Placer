@@ -23,6 +23,7 @@ import { Btn } from '../UI';
 import { Icon } from '../Icon';
 import { QuestionsEditor, TimeField } from './PopQuizSetup';
 import { rememberAnswer, rememberedAnswer } from '../../toolkit/rooms';
+import { useText } from '../../i18n';
 import {
   LETTERS, MAX_BLANK_LENGTH, MAX_NICKNAME_LENGTH, answerTo, answeredCount, cleanNickname, elapsed,
   emptyQuizState, paceAt, paceShown, pointsFor, quizQuestions, quizSeconds, quizSetupProblems, quizStage,
@@ -53,21 +54,22 @@ function useStage(pace, config) {
 }
 
 /** The first thing anybody playing is asked: what to be called on the scoreboard. */
-function NicknameForm({ t, onSubmit, action = 'Join the quiz' }) {
+function NicknameForm({ t, onSubmit, action }) {
+  const { text } = useText();
   const id = useId();
   const [draft, setDraft] = useState('');
   const nickname = cleanNickname(draft);
 
   return (
-    <Panel t={t} title="Pick a nickname">
+    <Panel t={t} title={text('popQuiz.pickNickname')}>
       <form onSubmit={(event) => { event.preventDefault(); if (nickname) onSubmit(nickname); }}
         style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 420 }}>
         <label htmlFor={`${id}-nickname`} style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.5 }}>
-          It is what you are called on the scoreboard, so everybody will see it.
+          {text('popQuiz.nicknameHint')}
         </label>
         <input
           id={`${id}-nickname`}
-          aria-label="Nickname"
+          aria-label={text('popQuiz.nickname')}
           type="text"
           maxLength={MAX_NICKNAME_LENGTH}
           value={draft}
@@ -76,7 +78,7 @@ function NicknameForm({ t, onSubmit, action = 'Join the quiz' }) {
           style={{ height: 52, padding: '0 14px', borderRadius: 12, border: `1px solid ${t.lineStrong}`,
             background: t.surface, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 18, fontWeight: 700 }} />
         <div>
-          <Btn t={t} type="submit" variant="primary" disabled={!nickname}>{action}</Btn>
+          <Btn t={t} type="submit" variant="primary" disabled={!nickname}>{action ?? text('popQuiz.joinQuiz')}</Btn>
         </div>
       </form>
     </Panel>
@@ -85,19 +87,22 @@ function NicknameForm({ t, onSubmit, action = 'Join the quiz' }) {
 
 /** What a closed question tells the person who answered it. */
 function Outcome({ t, question, answer, seconds }) {
+  const { text } = useText();
   const points = pointsFor(question, answer, seconds);
   const right = question.kind === 'blank' ? question.answer : `${LETTERS[question.correct]}, ${question.choices[question.correct]}`;
 
+  const answerWas = text('popQuiz.answerWas', { answer: right });
   let line;
-  if (points > 0) line = <><strong style={{ color: RIGHT }}>Right!</strong> +{points} points.</>;
-  else if (!answer) line = <><strong style={{ color: t.ink }}>Time ran out.</strong> The answer was {right}.</>;
-  else if (answer.skipped) line = <><strong style={{ color: t.ink }}>Skipped.</strong> The answer was {right}.</>;
-  else line = <><strong style={{ color: WRONG }}>Not this time.</strong> The answer was {right}.</>;
+  if (points > 0) line = <><strong style={{ color: RIGHT }}>{text('popQuiz.right')}</strong> {text('popQuiz.plusPoints', { count: points })}</>;
+  else if (!answer) line = <><strong style={{ color: t.ink }}>{text('popQuiz.timeRanOut')}</strong> {answerWas}</>;
+  else if (answer.skipped) line = <><strong style={{ color: t.ink }}>{text('popQuiz.skipped')}</strong> {answerWas}</>;
+  else line = <><strong style={{ color: WRONG }}>{text('popQuiz.notThisTime')}</strong> {answerWas}</>;
 
   return <p role="status" style={{ fontSize: 16, color: t.inkDim, margin: 0, lineHeight: 1.5 }}>{line}</p>;
 }
 
 function Choices({ t, question, answer, open, closed, canAnswer, onAnswer }) {
+  const { text } = useText();
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
       {question.choices.map((choice, index) => {
@@ -122,7 +127,7 @@ function Choices({ t, question, answer, open, closed, canAnswer, onAnswer }) {
               <span className="placer-visually-hidden">{LETTERS[index]}: </span>{choice}
             </span>
             {right && <Icon name="check" size={18} stroke={2.4} />}
-            {right && <span className="placer-visually-hidden"> (the right answer)</span>}
+            {right && <span className="placer-visually-hidden"> {text('popQuiz.theRightAnswer')}</span>}
           </button>
         );
       })}
@@ -131,12 +136,13 @@ function Choices({ t, question, answer, open, closed, canAnswer, onAnswer }) {
 }
 
 function Blank({ t, answer, open, canAnswer, onAnswer }) {
+  const { text, rich } = useText();
   const [draft, setDraft] = useState('');
   if (!canAnswer) return null;
   if (answer && !answer.skipped) {
     return (
       <p style={{ fontSize: 16, color: t.inkDim, margin: 0 }}>
-        You answered <strong style={{ color: t.ink }}>{String(answer.value)}</strong>.
+        {rich('popQuiz.youAnswered', { answer: <strong style={{ color: t.ink }}>{String(answer.value)}</strong> })}
       </p>
     );
   }
@@ -146,17 +152,17 @@ function Blank({ t, answer, open, canAnswer, onAnswer }) {
     <form onSubmit={(event) => { event.preventDefault(); if (draft.trim()) onAnswer(draft.trim()); }}
       style={{ display: 'flex', gap: 8, alignItems: 'center', maxWidth: 520 }}>
       <input
-        aria-label="Your answer"
+        aria-label={text('popQuiz.yourAnswer')}
         type="text"
         maxLength={MAX_BLANK_LENGTH}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
         autoComplete="off"
-        placeholder="Fill in the blank"
+        placeholder={text('popQuiz.fillInBlank')}
         style={{ flex: 1, minWidth: 0, height: 52, padding: '0 14px', borderRadius: 12,
           border: `1px solid ${t.lineStrong}`, background: t.surface, color: t.ink,
           fontFamily: 'var(--placer-font)', fontSize: 18, fontWeight: 700 }} />
-      <Btn t={t} type="submit" variant="primary" disabled={!draft.trim()}>Answer</Btn>
+      <Btn t={t} type="submit" variant="primary" disabled={!draft.trim()}>{text('popQuiz.answer')}</Btn>
     </form>
   );
 }
@@ -166,14 +172,15 @@ function Blank({ t, answer, open, canAnswer, onAnswer }) {
  * false for the facilitator, who sees it as the room does but takes no part.
  */
 function QuestionCard({ t, config, index, left, closed, answer = null, canAnswer = true, onAnswer, children }) {
+  const { text, rich } = useText();
   const questions = quizQuestions(config);
   const question = questions[index];
   const seconds = quizSeconds(config);
   const open = !closed;
 
   return (
-    <Panel t={t} title={`Question ${index + 1} of ${questions.length}`} aside={open && (
-      <span role="timer" aria-label="Time left" className="placer-mono"
+    <Panel t={t} title={text('popQuiz.questionOf', { n: index + 1, count: questions.length })} aside={open && (
+      <span role="timer" aria-label={text('wordCloud.timeLeft')} className="placer-mono"
         style={{ fontSize: 20, fontWeight: 700, color: left <= 5 ? WRONG : t.ink }}>
         {left}
       </span>
@@ -194,18 +201,18 @@ function QuestionCard({ t, config, index, left, closed, answer = null, canAnswer
 
         {canAnswer && open && !answer && (
           <div>
-            <Btn t={t} variant="ghost" size="sm" onClick={() => onAnswer(null)}>Skip this question</Btn>
+            <Btn t={t} variant="ghost" size="sm" onClick={() => onAnswer(null)}>{text('popQuiz.skipQuestion')}</Btn>
           </div>
         )}
         {canAnswer && open && answer && (
           <p role="status" style={{ fontSize: 15, color: t.inkDim, margin: 0 }}>
-            {answer.skipped ? 'Skipped.' : 'Answer locked in.'} The answer is shown when the time is up.
+            {text(answer.skipped ? 'popQuiz.skipped' : 'popQuiz.lockedIn')} {text('popQuiz.shownWhenUp')}
           </p>
         )}
         {closed && canAnswer && <Outcome t={t} question={question} answer={answer} seconds={seconds} />}
         {closed && !canAnswer && question.kind === 'blank' && (
           <p style={{ fontSize: 16, color: t.inkDim, margin: 0 }}>
-            The answer is <strong style={{ color: RIGHT }}>{question.answer}</strong>.
+            {rich('popQuiz.answerIs', { answer: <strong style={{ color: RIGHT }}>{question.answer}</strong> })}
           </p>
         )}
         {children}
@@ -215,11 +222,13 @@ function QuestionCard({ t, config, index, left, closed, answer = null, canAnswer
 }
 
 /** The players in order of score, with whoever is looking picked out. */
-function Scoreboard({ t, players, me = null, title = 'Scoreboard' }) {
+function Scoreboard({ t, players, me = null, title }) {
+  const { text } = useText();
+  title ??= text('popQuiz.scoreboard');
   return (
     <Panel t={t} title={title}>
       {players.length === 0 ? (
-        <p style={{ fontSize: 14, color: t.inkDim, margin: 0 }}>Nobody has joined yet.</p>
+        <p style={{ fontSize: 14, color: t.inkDim, margin: 0 }}>{text('popQuiz.nobodyJoined')}</p>
       ) : (
         <ol aria-label={title} style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {players.map((player, index) => (
@@ -228,9 +237,9 @@ function Scoreboard({ t, players, me = null, title = 'Scoreboard' }) {
               <span className="placer-mono" style={{ width: 24, fontSize: 12, color: t.inkDim }}>{index + 1}</span>
               <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: player.nickname === me ? 700 : 600,
                 color: t.ink, overflowWrap: 'anywhere' }}>
-                {player.nickname}{player.nickname === me && <span style={{ color: t.inkDim, fontWeight: 500 }}> (you)</span>}
+                {player.nickname}{player.nickname === me && <span style={{ color: t.inkDim, fontWeight: 500 }}> {text('popQuiz.you')}</span>}
               </span>
-              <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>{player.correct} right</span>
+              <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>{text('popQuiz.nRight', { count: player.correct })}</span>
               <span className="placer-mono" style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>{player.score}</span>
             </li>
           ))}
@@ -245,6 +254,7 @@ const record = (value, pace, config) => (value === null ? { skipped: true } : { 
 
 /** Somebody who joined a room: a nickname, then whatever the facilitator has put up. */
 function PlayerGame({ t, room }) {
+  const { text } = useText();
   const config = room.config;
   // What this browser has answered is kept (toolkit/rooms' rememberAnswer), so a
   // refresh half way through does not cost somebody their nickname or their score.
@@ -272,12 +282,12 @@ function PlayerGame({ t, room }) {
 
   if (stage === 'lobby') {
     return (
-      <Panel t={t} title="You are in">
+      <Panel t={t} title={text('popQuiz.youAreIn')}>
         <p role="status" style={{ fontSize: 18, fontWeight: 700, color: t.ink, margin: '0 0 8px' }}>
-          Welcome, {mine.nickname}.
+          {text('popQuiz.welcome', { name: mine.nickname })}
         </p>
         <p style={{ fontSize: 15, color: t.inkDim, margin: 0, lineHeight: 1.6 }}>
-          The quiz starts when the facilitator is ready. {players.length} {players.length === 1 ? 'player' : 'players'} so far.
+          {text('popQuiz.startsWhenReady')} {text('popQuiz.playersSoFar', { count: players.length })}
         </p>
       </Panel>
     );
@@ -287,16 +297,18 @@ function PlayerGame({ t, room }) {
     const place = players.findIndex((player) => player.nickname === mine.nickname) + 1;
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <Panel t={t} title="That is the quiz">
+        <Panel t={t} title={text('popQuiz.thatIsTheQuiz')}>
           <p role="status" className="placer-disp" style={{ fontSize: 32, fontWeight: 700, color: t.ink, margin: 0,
             letterSpacing: '-0.02em' }}>
-            {own.score} points
+            {text('popQuiz.points', { count: own.score })}
           </p>
           <p style={{ fontSize: 15, color: t.inkDim, margin: '8px 0 0' }}>
-            {own.correct} of {quizQuestions(config).length} right{place > 0 ? `, and number ${place} of ${players.length}.` : '.'}
+            {place > 0
+              ? text('popQuiz.rightAndPlace', { right: own.correct, count: quizQuestions(config).length, place, players: players.length })
+              : text('popQuiz.rightOf', { right: own.correct, count: quizQuestions(config).length })}
           </p>
         </Panel>
-        <Scoreboard t={t} players={players} me={mine.nickname} title="Final scores" />
+        <Scoreboard t={t} players={players} me={mine.nickname} title={text('popQuiz.finalScores')} />
       </div>
     );
   }
@@ -313,6 +325,7 @@ function PlayerGame({ t, room }) {
 
 /** The facilitator of a room: they set the pace, and watch the scores. */
 function HostGame({ t, room }) {
+  const { text } = useText();
   const config = room.config;
   const total = quizQuestions(config).length;
   const { pace: heard, players } = room.combined ?? { pace: null, players: [] };
@@ -333,20 +346,19 @@ function HostGame({ t, room }) {
   if (stage === 'lobby') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <Panel t={t} title="Ready when you are">
+        <Panel t={t} title={text('popQuiz.readyWhenYouAre')}>
           <p style={{ fontSize: 15, color: t.inkDim, margin: '0 0 16px', lineHeight: 1.6 }}>
-            {total} {total === 1 ? 'question' : 'questions'}, {quizSeconds(config)} seconds each. People join with the
-            room&rsquo;s PIN or QR code and pick a nickname; start once everybody is in.
+            {text('popQuiz.hostLobby', { count: total, seconds: quizSeconds(config) })}
           </p>
-          <Btn t={t} variant="primary" icon="play" onClick={() => setPace(paceAt(0))}>Start the quiz</Btn>
+          <Btn t={t} variant="primary" icon="play" onClick={() => setPace(paceAt(0))}>{text('popQuiz.startQuiz')}</Btn>
         </Panel>
-        <Scoreboard t={t} players={players} title="Players" />
+        <Scoreboard t={t} players={players} title={text('popQuiz.players')} />
       </div>
     );
   }
 
   if (stage === 'over') {
-    return <Scoreboard t={t} players={players} title="Final scores" />;
+    return <Scoreboard t={t} players={players} title={text('popQuiz.finalScores')} />;
   }
 
   const last = index >= total - 1;
@@ -355,14 +367,14 @@ function HostGame({ t, room }) {
       <QuestionCard t={t} config={config} index={index} left={left} closed={stage === 'answer'} canAnswer={false}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           {stage === 'question' ? (
-            <Btn t={t} variant="primary" onClick={() => setPace(paceShown(pace))}>Show the answer</Btn>
+            <Btn t={t} variant="primary" onClick={() => setPace(paceShown(pace))}>{text('popQuiz.showAnswer')}</Btn>
           ) : (
             <Btn t={t} variant="primary" icon="arrowRight" onClick={() => setPace(paceAt(index + 1))}>
-              {last ? 'Show the final scores' : 'Next question'}
+              {text(last ? 'popQuiz.showFinalScores' : 'popQuiz.nextQuestion')}
             </Btn>
           )}
           <span role="status" className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>
-            {answeredCount(players, index)} of {players.length} answered
+            {text('popQuiz.answeredOf', { answered: answeredCount(players, index), count: players.length })}
           </span>
         </div>
       </QuestionCard>
@@ -373,6 +385,7 @@ function HostGame({ t, room }) {
 
 /** Outside a room: write a quiz, then play it alone to see how it goes. */
 function SoloGame({ t }) {
+  const { text } = useText();
   const [quiz, setQuiz] = useState(sampleQuiz);
   const [tried, setTried] = useState(false);
   const [phase, setPhase] = useState('write'); // 'write' | 'name' | 'play'
@@ -391,7 +404,7 @@ function SoloGame({ t }) {
   if (phase === 'write') {
     return (
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(260px, 1fr)', gap: 20, alignItems: 'start' }}>
-        <Panel t={t} title="Write your quiz">
+        <Panel t={t} title={text('popQuiz.writeYourQuiz')}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <QuestionsEditor t={t} questions={quiz.questions} onChange={(questions) => setQuiz({ ...quiz, questions })} />
             <TimeField t={t} seconds={quiz.seconds} onChange={(seconds) => setQuiz({ ...quiz, seconds })} />
@@ -404,44 +417,40 @@ function SoloGame({ t }) {
             <div>
               <Btn t={t} variant="primary" icon="play"
                 onClick={() => { setTried(true); if (problems.length === 0) setPhase('name'); }}>
-                Play this quiz
+                {text('popQuiz.playThisQuiz')}
               </Btn>
             </div>
           </div>
         </Panel>
 
-        <Panel t={t} title="How it works">
+        <Panel t={t} title={text('common.howItWorks')}>
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
-            Write up to twenty questions, each with four choices or a blank to fill in, and play them through
-            here to try it out. A right answer scores 500 points and up to 500 more for speed; a wrong one, a
-            skipped one or none in time scores nothing.
+            {text('popQuiz.howItWorks1')}
           </p>
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '12px 0 0' }}>
-            To play with a group, add Pop Quiz to a project and set it up from the project&rsquo;s dashboard.
-            Everybody joins the room with its PIN or QR code and picks a nickname, you put the questions up one
-            at a time, and the scoreboard follows. A quiz written here is not saved.
+            {text('popQuiz.howItWorks2')}
           </p>
         </Panel>
       </div>
     );
   }
 
-  if (phase === 'name') return <NicknameForm t={t} action="Start the quiz" onSubmit={play} />;
+  if (phase === 'name') return <NicknameForm t={t} action={text('popQuiz.startQuiz')} onSubmit={play} />;
 
   if (stage === 'over') {
     const own = scoreOf(mine, quiz);
     return (
-      <Panel t={t} title="That is the quiz">
+      <Panel t={t} title={text('popQuiz.thatIsTheQuiz')}>
         <p role="status" className="placer-disp" style={{ fontSize: 32, fontWeight: 700, color: t.ink, margin: 0,
           letterSpacing: '-0.02em' }}>
-          {own.score} points
+          {text('popQuiz.points', { count: own.score })}
         </p>
         <p style={{ fontSize: 15, color: t.inkDim, margin: '8px 0 20px' }}>
-          {mine.nickname}, you got {own.correct} of {total} right.
+          {text('popQuiz.youGot', { name: mine.nickname, right: own.correct, count: total })}
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Btn t={t} variant="primary" icon="play" onClick={() => play()}>Play again</Btn>
-          <Btn t={t} variant="outline" icon="pencil" onClick={() => setPhase('write')}>Edit the quiz</Btn>
+          <Btn t={t} variant="primary" icon="play" onClick={() => play()}>{text('popQuiz.playAgain')}</Btn>
+          <Btn t={t} variant="outline" icon="pencil" onClick={() => setPhase('write')}>{text('popQuiz.editQuiz')}</Btn>
         </div>
       </Panel>
     );
@@ -459,10 +468,10 @@ function SoloGame({ t }) {
       {stage === 'answer' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <Btn t={t} variant="primary" icon="arrowRight" onClick={() => setPace(paceAt(index + 1))}>
-            {index >= total - 1 ? 'See your score' : 'Next question'}
+            {text(index >= total - 1 ? 'popQuiz.seeYourScore' : 'popQuiz.nextQuestion')}
           </Btn>
           <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>
-            {scoreOf(mine, quiz).score} points so far
+            {text('popQuiz.pointsSoFar', { count: scoreOf(mine, quiz).score })}
           </span>
         </div>
       )}
@@ -471,11 +480,12 @@ function SoloGame({ t }) {
 }
 
 export function PopQuiz({ t, room }) {
+  const { text } = useText();
   if (room?.status === 'open') {
     if (!room.config) {
       return (
-        <Panel t={t} title="No quiz here">
-          <p style={{ fontSize: 15, color: t.inkDim, margin: 0 }}>This room was opened without a quiz to play.</p>
+        <Panel t={t} title={text('popQuiz.noQuiz')}>
+          <p style={{ fontSize: 15, color: t.inkDim, margin: 0 }}>{text('popQuiz.noQuizHint')}</p>
         </Panel>
       );
     }

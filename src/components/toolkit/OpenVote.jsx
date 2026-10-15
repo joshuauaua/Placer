@@ -18,7 +18,21 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Meter, Panel } from '../ToolLayout';
 import { Btn } from '../UI';
 import { AnswersEditor } from './OpenVoteSetup';
-import { DEFAULT_ANSWERS, DEFAULT_QUESTION, pollOptions, tally } from '../../lib/openVote';
+import { DEFAULT_ANSWERS, OPTIONS, pollOptions, tally } from '../../lib/openVote';
+import { useText } from '../../i18n';
+
+/**
+ * The options with Yes, No and Undecided — the answers a poll starts with — in the
+ * reader's language. Display only: the key a vote is saved under stays as it was.
+ * Any other answer is shown as its organiser wrote it.
+ */
+export function useOptionLabels(options) {
+  const { text } = useText();
+  return options.map((option) => {
+    const standard = OPTIONS.find((entry) => entry.label === option.label);
+    return standard ? { ...option, label: text(`openVote.options.${standard.key}`) } : option;
+  });
+}
 
 function VoteMeters({ t, options, result }) {
   return (
@@ -38,6 +52,7 @@ function VoteMeters({ t, options, result }) {
 }
 
 export function OpenVote({ t, tool, room }) {
+  const { text } = useText();
   const [question, setQuestion] = useState('');
   const [answers, setAnswers] = useState(DEFAULT_ANSWERS);
   const fixedQuestion = room?.config?.question ?? null;
@@ -49,6 +64,7 @@ export function OpenVote({ t, tool, room }) {
     () => pollOptions(room?.config ? room.config.answers : editable ? answers : null),
     [room?.config, editable, answers],
   );
+  const shown = useOptionLabels(options);
 
   // Rewriting or removing the answer that was picked takes the pick away with it.
   useEffect(() => {
@@ -75,30 +91,29 @@ export function OpenVote({ t, tool, room }) {
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(280px, 1fr)', gap: 20, alignItems: 'start' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
         {fixedQuestion ? (
-          <Panel t={t} title="The question">
+          <Panel t={t} title={text('openVote.theQuestion')}>
             <p style={{ fontSize: 22, fontWeight: 700, color: t.ink, lineHeight: 1.35, letterSpacing: '-0.02em' }}>
               {fixedQuestion}
             </p>
           </Panel>
         ) : (
-        <Panel t={t} title="Ask something">
+        <Panel t={t} title={text('openVote.askSomething')}>
           <label htmlFor="open-vote-question"
             style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: t.inkDim, marginBottom: 8 }}>
-            The question
+            {text('openVote.theQuestion')}
           </label>
           <input
             id="open-vote-question"
             type="text"
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
-            placeholder={DEFAULT_QUESTION}
+            placeholder={text('openVote.questionPlaceholder')}
             style={{ width: '100%', padding: '12px 14px', fontSize: 18, fontWeight: 700, borderRadius: 12,
               border: `1.5px solid ${t.line}`, background: t.chrome, color: t.ink,
               fontFamily: 'var(--placer-font)', outline: 'none' }}
           />
           <p style={{ fontSize: 12.5, color: t.inkFaint, marginTop: 8, lineHeight: 1.5 }}>
-            Shown on this screen only — read it aloud, or put it on a slide. What gets
-            counted is the vote below, not the wording.
+            {text('openVote.questionHint')}
           </p>
           {editable && (
             <div style={{ marginTop: 20 }}>
@@ -108,9 +123,9 @@ export function OpenVote({ t, tool, room }) {
         </Panel>
         )}
 
-        <Panel t={t} title="Cast your vote">
+        <Panel t={t} title={text('openVote.castYourVote')}>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {options.map((option) => {
+            {shown.map((option) => {
               const active = choice === option.key;
               return (
                 <Btn
@@ -134,7 +149,7 @@ export function OpenVote({ t, tool, room }) {
           </div>
           {choice && (
             <p style={{ fontSize: 12.5, color: t.inkDim, marginTop: 14 }}>
-              {inRoom ? 'Sent to the room.' : 'Change your mind any time — only the last vote counts.'}
+              {text(inRoom ? 'openVote.sentToRoom' : 'openVote.changeYourMind')}
             </p>
           )}
         </Panel>
@@ -142,38 +157,34 @@ export function OpenVote({ t, tool, room }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
         {inRoom ? (
-          <Panel t={t} title="The room's vote" aside={
+          <Panel t={t} title={text('openVote.roomsVote')} aside={
             <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
-              {room.participantCount} cast
+              {text('openVote.cast', { count: room.participantCount })}
             </span>
           }>
             {roomResult && roomResult.total > 0 ? (
-              <VoteMeters t={t} options={options} result={roomResult} />
+              <VoteMeters t={t} options={shown} result={roomResult} />
             ) : (
               <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
-                Nobody has voted yet. Yours will show up here as soon as you pick one.
+                {text('openVote.emptyRoom')}
               </p>
             )}
           </Panel>
         ) : (
-          <Panel t={t} title="Result">
+          <Panel t={t} title={text('openVote.result')}>
             {choice ? (
-              <VoteMeters t={t} options={options} result={soloResult} />
+              <VoteMeters t={t} options={shown} result={soloResult} />
             ) : (
               <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
-                Pick an answer to see it here.
+                {text('openVote.emptySolo')}
               </p>
             )}
           </Panel>
         )}
 
-        <Panel t={t} title="How it works">
+        <Panel t={t} title={text('common.howItWorks')}>
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6 }}>
-            Open a room and share its PIN or QR code, and everybody who joins votes on
-            whatever you asked — the tally above updates live as each person picks.
-            Opened from a project, a room can stay open for up to 90 days, so its QR code
-            can go on a poster. Closing the room, or its time running out, lets go of
-            every vote in it.
+            {text('openVote.howItWorks')}
           </p>
         </Panel>
       </div>

@@ -26,11 +26,12 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Panel } from '../ToolLayout';
+import { useText } from '../../i18n';
 import { Btn } from '../UI';
 import { TimerSelect } from './WordCloudSetup';
 import { CHARACTER_LIST } from '../../theme';
 import {
-  DEFAULT_PROMPT, MAX_WORD_LENGTH, addWord, cloudTimer, cloudWords, countWords, formatCountdown, isPaused,
+  MAX_WORD_LENGTH, addWord, cloudTimer, cloudWords, countWords, formatCountdown, isPaused,
   pauseTimer, resumeTimer, roomTimer, secondsLeft, startTimer, stopTimer, wordLimit,
 } from '../../lib/wordCloud';
 
@@ -50,17 +51,18 @@ function wordColor(word) {
  * `scale` enlarges the type, for the tool's own page where the cloud is the main thing.
  */
 export function Cloud({ result, minHeight = 160, scale = 1 }) {
+  const { text } = useText();
   const cloud = useMemo(() => cloudWords(result), [result]);
   return (
-    <ul aria-label="Word cloud" style={{ listStyle: 'none', margin: 0, padding: '8px 0', minHeight,
+    <ul aria-label={text('wordCloud.cloudLabel')} style={{ listStyle: 'none', margin: 0, padding: '8px 0', minHeight,
       display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', alignContent: 'center',
       gap: '4px 18px' }}>
       {cloud.map(({ word, count, weight }) => (
-        <li key={word} title={`${count} ${count === 1 ? 'person' : 'people'}`}
+        <li key={word} title={text('common.people', { count })}
           style={{ fontSize: Math.round((16 + weight * 38) * scale), fontWeight: 700, lineHeight: 1.15,
             letterSpacing: '-0.02em', color: wordColor(word), overflowWrap: 'anywhere' }}>
           {word}
-          <span className="placer-visually-hidden">, said by {count}</span>
+          <span className="placer-visually-hidden">{text('wordCloud.saidBy', { count })}</span>
         </li>
       ))}
     </ul>
@@ -69,8 +71,9 @@ export function Cloud({ result, minHeight = 160, scale = 1 }) {
 
 /** The same count as a list: every answer with how many times it was given, the most given first. */
 export function WordCounts({ t, result }) {
+  const { text } = useText();
   return (
-    <ol aria-label="Answers and how many times each was given" style={{ listStyle: 'none', margin: 0, padding: 0,
+    <ol aria-label={text('wordCloud.countsLabel')} style={{ listStyle: 'none', margin: 0, padding: 0,
       maxHeight: 260, overflowY: 'auto' }}>
       {result.words.map(({ word, count }) => (
         <li key={word} style={{ display: 'flex', alignItems: 'baseline', gap: 12, padding: '7px 0',
@@ -91,6 +94,7 @@ export function WordCounts({ t, result }) {
  * typed along with the rest.
  */
 export function WordEntry({ t, words, limit, draft, onDraft, onChange, disabled = false, over = false }) {
+  const { text } = useText();
   const id = useId();
   const full = words.length >= limit;
   disabled = disabled || over;
@@ -107,28 +111,28 @@ export function WordEntry({ t, words, limit, draft, onDraft, onChange, disabled 
       <form onSubmit={add} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <input
           id={`${id}-word`}
-          aria-label="Your word"
+          aria-label={text('wordCloud.yourWord')}
           type="text"
           maxLength={MAX_WORD_LENGTH}
           value={draft}
           onChange={(event) => onDraft(event.target.value)}
           disabled={disabled || full}
-          placeholder={over ? 'Finished' : full ? 'That is all your words' : 'Type a word'}
+          placeholder={text(over ? 'wordCloud.finished' : full ? 'wordCloud.allWordsUsed' : 'wordCloud.typeAWord')}
           style={{ flex: 1, minWidth: 0, height: 48, padding: '0 14px', borderRadius: 12,
             border: `1px solid ${t.lineStrong}`, background: t.surface, color: t.ink,
             fontFamily: 'var(--placer-font)', fontSize: 17, fontWeight: 600 }} />
-        <Btn t={t} type="submit" variant="outline" icon="plus" disabled={disabled || full}>Add</Btn>
+        <Btn t={t} type="submit" variant="outline" icon="plus" disabled={disabled || full}>{text('common.add')}</Btn>
       </form>
 
       {words.length > 0 && (
-        <ul aria-label="Your words" style={{ listStyle: 'none', margin: '12px 0 0', padding: 0,
+        <ul aria-label={text('wordCloud.yourWords')} style={{ listStyle: 'none', margin: '12px 0 0', padding: 0,
           display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {words.map((word) => (
             <li key={word} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 36,
               padding: '0 4px 0 12px', borderRadius: 12, border: `1px solid ${t.lineStrong}`, background: t.surfaceAlt,
               color: t.ink, fontSize: 15, fontWeight: 600 }}>
               {word}
-              <Btn t={t} type="button" variant="ghost" size="sm" icon="close" ariaLabel={`Remove ${word}`}
+              <Btn t={t} type="button" variant="ghost" size="sm" icon="close" ariaLabel={text('wordCloud.remove', { word })}
                 disabled={disabled} onClick={() => onChange(words.filter((entry) => entry !== word))}
                 style={{ width: 28, height: 28, padding: 0 }} />
             </li>
@@ -137,8 +141,8 @@ export function WordEntry({ t, words, limit, draft, onDraft, onChange, disabled 
       )}
 
       <p style={{ fontSize: 12.5, color: t.inkFaint, marginTop: 10 }}>
-        {over ? 'Finished — no more words are being taken.'
-          : limit === 1 ? 'One word each.' : `${words.length} of ${limit} words.`}
+        {over ? text('wordCloud.finishedNoMore')
+          : limit === 1 ? text('wordCloud.oneWordEach') : text('wordCloud.wordsUsed', { count: limit, used: words.length })}
       </p>
     </div>
   );
@@ -172,16 +176,18 @@ export function useCountdown(timer) {
 
 /** The countdown as it is shown: the time left, that it is paused, or that it is over. */
 export function Countdown({ t, left, paused = false }) {
+  const { text } = useText();
   if (left === null) return null;
   return (
-    <span role="timer" aria-label="Time left" className="placer-mono"
+    <span role="timer" aria-label={text('wordCloud.timeLeft')} className="placer-mono"
       style={{ fontSize: left > 0 ? 20 : 13, fontWeight: 700, color: left > 0 && !paused ? t.ink : t.inkDim }}>
-      {left > 0 ? `${formatCountdown(left)}${paused ? ' · paused' : ''}` : 'Finished'}
+      {left > 0 ? `${formatCountdown(left)}${paused ? ` · ${text('wordCloud.paused')}` : ''}` : text('wordCloud.finished')}
     </span>
   );
 }
 
 export function WordCloud({ t, room }) {
+  const { text } = useText();
   const [prompt, setPrompt] = useState('');
   const [words, setWords] = useState([]);
   const [draft, setDraft] = useState('');
@@ -252,7 +258,7 @@ export function WordCloud({ t, room }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <Panel t={t} title={inRoom ? "The room's cloud" : 'Your cloud'} aside={shownPrompt && (
+      <Panel t={t} title={text(inRoom ? 'wordCloud.roomsCloud' : 'wordCloud.yourCloud')} aside={shownPrompt && (
         <p style={{ maxWidth: '70%', margin: 0, textAlign: 'right', fontSize: 15, fontWeight: 700, color: t.ink,
           lineHeight: 1.35, overflowWrap: 'anywhere' }}>
           {shownPrompt}
@@ -261,9 +267,7 @@ export function WordCloud({ t, room }) {
         {empty ? (
           <p style={{ minHeight: 320, display: 'flex', alignItems: 'center', justifyContent: 'center',
             textAlign: 'center', fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
-            {inRoom
-              ? 'Nobody has added a word yet. Yours will show up here as soon as you add one.'
-              : 'Add a word to see it here.'}
+            {text(inRoom ? 'wordCloud.emptyRoom' : 'wordCloud.emptySolo')}
           </p>
         ) : (
           <Cloud result={result} minHeight={320} scale={1.5} />
@@ -272,27 +276,27 @@ export function WordCloud({ t, room }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minHeight: 36, marginTop: 8 }}>
           {inRoom && (
             <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
-              {roomResult?.people ?? 0} {roomResult?.people === 1 ? 'person' : 'people'}
+              {text('common.people', { count: roomResult?.people ?? 0 })}
             </span>
           )}
           <div style={{ flex: 1 }} />
           <Countdown t={t} left={left} paused={paused} />
           {canStart && (
             <Btn t={t} variant="primary" size="sm" icon="clock" onClick={() => setTimer(startTimer(seconds))}>
-              Start the {seconds} second timer
+              {text('wordCloud.startTimer', { seconds })}
             </Btn>
           )}
           {underWay && (
             <>
               <Btn t={t} variant="outline" size="sm"
                 onClick={() => setTimer(paused ? resumeTimer(timer) : pauseTimer(timer))}>
-                {paused ? 'Continue' : 'Pause'}
+                {text(paused ? 'wordCloud.continue' : 'wordCloud.pause')}
               </Btn>
-              <Btn t={t} variant="primary" size="sm" onClick={() => setTimer(stopTimer())}>Stop</Btn>
+              <Btn t={t} variant="primary" size="sm" onClick={() => setTimer(stopTimer())}>{text('wordCloud.stop')}</Btn>
             </>
           )}
           {over && editable && (
-            <Btn t={t} variant="outline" size="sm" onClick={() => setOwnTimer(null)}>Reset the timer</Btn>
+            <Btn t={t} variant="outline" size="sm" onClick={() => setOwnTimer(null)}>{text('wordCloud.resetTimer')}</Btn>
           )}
         </div>
       </Panel>
@@ -303,69 +307,64 @@ export function WordCloud({ t, room }) {
           {/* A prompt fixed by the room's setup is already on the cloud card, so only one
               still being written gets a card here. */}
           {!fixedPrompt && (
-            <Panel t={t} title="Ask something">
+            <Panel t={t} title={text('wordCloud.askSomething')}>
               <label htmlFor="word-cloud-prompt"
                 style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: t.inkDim, marginBottom: 8 }}>
-                The prompt
+                {text('wordCloud.prompt')}
               </label>
               <input
                 id="word-cloud-prompt"
                 type="text"
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
-                placeholder={DEFAULT_PROMPT}
+                placeholder={text('wordCloud.promptPlaceholder')}
                 style={{ width: '100%', padding: '12px 14px', fontSize: 18, fontWeight: 700, borderRadius: 12,
                   border: `1.5px solid ${t.line}`, background: t.chrome, color: t.ink,
                   fontFamily: 'var(--placer-font)', outline: 'none' }}
               />
               <p style={{ fontSize: 12.5, color: t.inkFaint, marginTop: 8, lineHeight: 1.5 }}>
-                Shown on this screen only — read it aloud, or put it on a slide. What gets
-                counted is the words below, not the wording.
+                {text('wordCloud.promptHint')}
               </p>
               {editable && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 16 }}>
                   <label htmlFor="word-cloud-timer" style={{ fontSize: 12.5, fontWeight: 700, color: t.inkDim }}>
-                    Timer
+                    {text('wordCloud.timer')}
                   </label>
                   <TimerSelect t={t} id="word-cloud-timer" value={ownSeconds} disabled={timer !== null && !over}
                     onChange={(next) => { setOwnSeconds(next); setOwnTimer(null); }} />
                   <p style={{ fontSize: 12.5, color: t.inkFaint, lineHeight: 1.5 }}>
-                    Optional. Start it from the cloud; when it runs out, no more words are taken.
+                    {text('wordCloud.timerHint')}
                   </p>
                 </div>
               )}
             </Panel>
           )}
 
-          <Panel t={t} title="Add your words">
+          <Panel t={t} title={text('wordCloud.addYourWords')}>
             <WordEntry t={t} words={words} limit={limit} draft={draft} onDraft={setDraft} onChange={change}
               over={over} />
             {words.length > 0 && !over && (
               <p style={{ fontSize: 12.5, color: t.inkDim, marginTop: 6 }}>
-                {inRoom ? 'Sent to the room.' : 'Remove a word to change your mind.'}
+                {text(inRoom ? 'wordCloud.sentToRoom' : 'wordCloud.removeToChange')}
               </p>
             )}
           </Panel>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
-          <Panel t={t} title="Answers">
+          <Panel t={t} title={text('wordCloud.answers')}>
             {empty ? (
               <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
-                Each answer is listed here, with how many times it was given.
+                {text('wordCloud.answersEmpty')}
               </p>
             ) : (
               <WordCounts t={t} result={result} />
             )}
           </Panel>
 
-          <Panel t={t} title="How it works">
+          <Panel t={t} title={text('common.howItWorks')}>
             <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6 }}>
-              Open a room and share its PIN or QR code, and everybody who joins adds a few
-              words of their own — the cloud above grows live, and a word gets larger each
-              time another person says it. Opened from a project, a room can stay open for
-              up to 90 days, so its QR code can go on a poster. Closing the room, or its
-              time running out, lets go of every word in it.
+              {text('wordCloud.howItWorks')}
             </p>
           </Panel>
         </div>

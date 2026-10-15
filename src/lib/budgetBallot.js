@@ -15,6 +15,7 @@
 export const BUDGET = 250000;
 
 import { CURRENCIES, CURRENCY_CODES, DEFAULT_CURRENCY } from './currency';
+import { formatLocale, text } from '../i18n';
 
 /**
  * What a ballot can be counted in, chosen with the budget (budgetProblems): the same
@@ -234,14 +235,14 @@ export function combineBallots(states, config) {
 export function ownPostProblems({ label, unitCost }, ballot, own = []) {
   const name = typeof label === 'string' ? label.trim() : '';
   const problems = [];
-  if (own.length >= MAX_OWN_POSTS) problems.push(`You can add up to ${MAX_OWN_POSTS} posts of your own.`);
-  if (!name) problems.push('Give your post a name.');
-  else if (name.length > MAX_OWN_POST_LABEL) problems.push(`Keep its name under ${MAX_OWN_POST_LABEL} characters.`);
+  if (own.length >= MAX_OWN_POSTS) problems.push(text('budgetBallot.ownProblems.tooMany', { count: MAX_OWN_POSTS }));
+  if (!name) problems.push(text('budgetBallot.ownProblems.noName'));
+  else if (name.length > MAX_OWN_POST_LABEL) problems.push(text('budgetBallot.ownProblems.tooLong', { count: MAX_OWN_POST_LABEL }));
   else if ([...ballot.posts, ...own].some((post) => post.label.trim().toLowerCase() === name.toLowerCase())) {
-    problems.push('There is already a post with that name.');
+    problems.push(text('budgetBallot.ownProblems.duplicate'));
   }
-  if (!Number.isInteger(unitCost) || unitCost <= 0) problems.push('Give it a cost per item, as a whole number.');
-  else if (unitCost > ballot.budget) problems.push('That costs more per item than the whole budget.');
+  if (!Number.isInteger(unitCost) || unitCost <= 0) problems.push(text('budgetBallot.ownProblems.noCost'));
+  else if (unitCost > ballot.budget) problems.push(text('budgetBallot.ownProblems.overBudget'));
   return problems;
 }
 
@@ -335,34 +336,47 @@ export const PIE_POSTS = 4;
  * smallest fold into one "Other" slice, so the pie never has more than six.
  */
 export function pieSlices(result) {
-  let posts = result.items.map((item) => ({ key: item.key, label: item.label, quantity: item.quantity, cost: item.cost }));
+  let posts = result.items.map((item) => ({ key: item.key, label: postLabel(item), quantity: item.quantity, cost: item.cost }));
   if (posts.length > PIE_POSTS + 1) {
     const kept = new Set([...posts].sort((a, b) => b.cost - a.cost).slice(0, PIE_POSTS).map((post) => post.key));
     const folded = posts.filter((post) => !kept.has(post.key));
     posts = [
       ...posts.filter((post) => kept.has(post.key)),
-      { key: 'other', label: `Other (${folded.length} posts)`, cost: folded.reduce((sum, post) => sum + post.cost, 0), other: true },
+      { key: 'other', label: text('budgetBallot.otherPosts', { count: folded.length }), cost: folded.reduce((sum, post) => sum + post.cost, 0), other: true },
     ];
   }
   const slices = [...posts];
   const unspent = Math.max(0, result.budget - result.spent);
-  if (unspent > 0) slices.push({ key: 'unspent', label: 'Unspent', cost: unspent, unspent: true });
+  if (unspent > 0) slices.push({ key: 'unspent', label: text('budgetBallot.unspent'), cost: unspent, unspent: true });
   const whole = slices.reduce((sum, slice) => sum + slice.cost, 0);
   return slices.map((slice) => ({ ...slice, share: whole > 0 ? slice.cost / whole : 0 }));
 }
 
 /**
- * "3 benches", not "3 benchs". Enough of a rule for the units in this catalogue —
- * anything ending in a sibilant takes -es.
+ * "3 benches", not "3 benchs", in the reader's language: the units of the Toolkit's
+ * street and `item` each have their forms in the dictionary (budgetBallot.units).
  */
 export function pluralise(unit, quantity) {
-  if (quantity === 1) return unit;
-  return /(?:s|x|z|ch|sh)$/.test(unit) ? `${unit}es` : `${unit}s`;
+  return text(`budgetBallot.units.${unit}`, { count: quantity });
+}
+
+/**
+ * A post's name and note in the reader's language. Only the Toolkit's own street has
+ * translations; a post an organiser or a participant wrote is shown as written.
+ */
+export function postLabel(post) {
+  const street = INTERVENTIONS[post.key];
+  return street && street.label === post.label ? text(`budgetBallot.posts.${post.key}.label`) : post.label;
+}
+
+export function postNote(post) {
+  const street = INTERVENTIONS[post.key];
+  return street && post.note && street.note === post.note ? text(`budgetBallot.posts.${post.key}.note`) : post.note;
 }
 
 /** An amount in a ballot's currency, to the whole unit: "€250,000", "SEK 250,000". */
 export function formatMoney(amount, currency = DEFAULT_CURRENCY) {
-  return new Intl.NumberFormat('en-GB', {
+  return new Intl.NumberFormat(formatLocale(), {
     style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0,
   }).format(Math.round(amount));
 }
@@ -373,23 +387,25 @@ export function formatEuros(amount) {
 
 /** The currency's own mark, for beside a field: "€", "£", "SEK". */
 export function currencySymbol(currency = DEFAULT_CURRENCY) {
-  return new Intl.NumberFormat('en-GB', { style: 'currency', currency })
+  return new Intl.NumberFormat(formatLocale(), { style: 'currency', currency })
     .formatToParts(0).find((part) => part.type === 'currency')?.value ?? currency;
 }
 
 /** A plain-text version of a ballot, for the copy button. */
 export function summaryText(result) {
   const lines = [
-    'My budget — PLACER Toolkit',
-    `Spent ${formatMoney(result.spent, result.currency)} of ${formatMoney(result.budget, result.currency)}`,
+    text('budgetBallot.summary.title'),
+    text('budgetBallot.summary.spent', {
+      spent: formatMoney(result.spent, result.currency), budget: formatMoney(result.budget, result.currency),
+    }),
     '',
   ];
 
   if (result.items.length === 0) {
-    lines.push('Nothing chosen yet.');
+    lines.push(text('budgetBallot.summary.nothing'));
   } else {
     for (const item of result.items) {
-      lines.push(`- ${item.label}: ${item.quantity} ${pluralise(item.unit, item.quantity)} — ${formatMoney(item.cost, result.currency)}`);
+      lines.push(`- ${postLabel(item)}: ${item.quantity} ${pluralise(item.unit, item.quantity)} — ${formatMoney(item.cost, result.currency)}`);
     }
   }
 
