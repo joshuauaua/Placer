@@ -242,7 +242,7 @@ export function CatTag({ cat, t, size = 'md', solid }) {
 
 export function Chip({ t, children, active, color, icon, dot, onClick, ariaPressed, title }) {
   return (
-    <button onClick={onClick} aria-pressed={ariaPressed} title={title}
+    <button type="button" onClick={onClick} aria-pressed={ariaPressed} title={title}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 32, padding: '0 12px',
       borderRadius: 12, cursor: 'pointer', whiteSpace: 'nowrap',
       fontFamily: 'var(--placer-font)', fontWeight: 500, fontSize: 14, letterSpacing: '0.01em',

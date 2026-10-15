@@ -103,7 +103,8 @@ describe('filterTools', () => {
     const rooms = ids({ groupOnly: true });
     expect(rooms).toEqual(TOOLS.filter((tool) => tool.room).map((tool) => tool.id));
     expect(rooms).toEqual(expect.arrayContaining(['budget-ballot', 'open-vote']));
-    expect(rooms).not.toContain('desire-lines');
+    expect(rooms).toContain('desire-lines');
+    expect(rooms).not.toContain('street-mixer');
   });
 
   it('combines filters', () => {

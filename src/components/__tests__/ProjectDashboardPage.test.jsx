@@ -200,7 +200,7 @@ describe('ProjectDashboardPage', () => {
   });
 
   it('counts responses and open rooms from the project\'s rooms, and tools live of those added', async () => {
-    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'desire-lines']);
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'street-mixer']);
     vi.mocked(readProjectRooms).mockResolvedValue([
       { id: 'r1', tool: 'open-vote', status: 'open', contributions: 12, createdAt: '2026-09-27T10:00:00Z',
         expiresAt: '2026-10-27T10:00:00Z', pin: '1', facilitatorToken: 'f', joinCode: 'a' },
@@ -317,41 +317,41 @@ describe('ProjectDashboardPage', () => {
 
   it('lists the tools chosen at setup, each waiting to be configured', async () => {
     tab = 'toolkit';
-    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'desire-lines']);
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'street-mixer']);
     setup();
 
     expect(await screen.findByRole('button', { name: 'Configure Poll' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Configure Desire Lines' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Configure Street Section Mixer' })).toBeInTheDocument();
     expect(screen.getAllByText('Not configured')).toHaveLength(2);
     expect(readProjectTools).toHaveBeenCalledWith('proj-1');
   });
 
   it('shows a configured tool, and a room tool with its room open, as live', async () => {
     tab = 'toolkit';
-    vi.mocked(readProjectTools).mockResolvedValue(['desire-lines', 'open-vote']);
-    vi.mocked(readConfiguredProjectTools).mockResolvedValueOnce(new Set(['desire-lines']));
+    vi.mocked(readProjectTools).mockResolvedValue(['street-mixer', 'open-vote']);
+    vi.mocked(readConfiguredProjectTools).mockResolvedValueOnce(new Set(['street-mixer']));
     vi.mocked(readProjectRooms).mockResolvedValue([{
       id: 'room-1', tool: 'open-vote', pin: '123456', facilitatorToken: 'facilitator-1', status: 'open',
       createdAt: '2026-09-27T10:00:00Z', expiresAt: '2026-10-27T10:00:00Z', contributors: 0, joinCode: 'abc',
     }]);
     setup();
 
-    expect(await screen.findByRole('button', { name: 'Edit Desire Lines' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Edit Street Section Mixer' })).toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByText('Live')).toHaveLength(2));
     expect(screen.queryByRole('button', { name: 'Configure Poll' })).not.toBeInTheDocument();
   });
 
   it('puts a tool with nothing to set up live from its dialog', async () => {
     tab = 'toolkit';
-    vi.mocked(readProjectTools).mockResolvedValue(['desire-lines']);
+    vi.mocked(readProjectTools).mockResolvedValue(['street-mixer']);
     setup();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Configure Desire Lines' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Configure Street Section Mixer' }));
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Get started' }));
-    vi.mocked(readConfiguredProjectTools).mockResolvedValueOnce(new Set(['desire-lines']));
+    vi.mocked(readConfiguredProjectTools).mockResolvedValueOnce(new Set(['street-mixer']));
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Go live' }));
 
-    await waitFor(() => expect(markProjectToolConfigured).toHaveBeenCalledWith('proj-1', 'desire-lines'));
+    await waitFor(() => expect(markProjectToolConfigured).toHaveBeenCalledWith('proj-1', 'street-mixer'));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(await screen.findByText('Live')).toBeInTheDocument();
   });
@@ -562,11 +562,11 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
   });
 
   it('has only Configure or Edit on each row, never Open another', async () => {
-    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'desire-lines']);
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'street-mixer']);
     setup();
 
     expect(await screen.findByRole('button', { name: 'Edit Poll' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Configure Desire Lines' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Configure Street Section Mixer' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Open another/ })).not.toBeInTheDocument();
   });
 

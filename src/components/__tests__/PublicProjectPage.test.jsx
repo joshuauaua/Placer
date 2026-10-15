@@ -476,29 +476,29 @@ describe('PublicProjectPage, taking part', () => {
   });
 
   it('leaves out a tool that has not been configured for the project yet', async () => {
-    vi.mocked(readProjectTools).mockResolvedValue(['desire-lines', 'reimagine-a-space']);
-    vi.mocked(readConfiguredProjectTools).mockResolvedValueOnce(new Set(['desire-lines']));
+    vi.mocked(readProjectTools).mockResolvedValue(['street-mixer', 'reimagine-a-space']);
+    vi.mocked(readConfiguredProjectTools).mockResolvedValueOnce(new Set(['street-mixer']));
 
     setup();
 
-    expect(await screen.findByRole('heading', { name: 'Try Desire Lines' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Try Street Section Mixer' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Share your idea for this place' })).not.toBeInTheDocument();
   });
 
   it('opens a tool out on the page to take part in, rather than leaving for the Toolkit', async () => {
-    vi.mocked(readProjectTools).mockResolvedValue(['desire-lines']);
+    vi.mocked(readProjectTools).mockResolvedValue(['street-mixer']);
     const { onOpenToolkit } = setup();
-    const section = within(await screen.findByRole('region', { name: 'Try Desire Lines' }));
-    const card = section.getByRole('button', { name: /Desire Lines/, expanded: false });
+    const section = within(await screen.findByRole('region', { name: 'Try Street Section Mixer' }));
+    const card = section.getByRole('button', { name: /Street Section Mixer/, expanded: false });
 
     fireEvent.click(card);
 
     expect(card).toHaveAttribute('aria-expanded', 'true');
-    expect(section.getByRole('button', { name: /clear/i })).toBeInTheDocument();
+    expect(section.getAllByRole('button', { name: /^Widen /i }).length).toBeGreaterThan(0);
     expect(onOpenToolkit).not.toHaveBeenCalled();
 
     fireEvent.click(card);
-    expect(section.queryByRole('button', { name: /clear/i })).not.toBeInTheDocument();
+    expect(section.queryAllByRole('button', { name: /^Widen /i })).toHaveLength(0);
   });
 
   it('uses Site-Specific Spatial Mapping on the site the project set it up on', async () => {
@@ -519,7 +519,7 @@ describe('PublicProjectPage, taking part', () => {
 
   it('still shows the project when it cannot tell which tools are configured', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.mocked(readProjectTools).mockResolvedValue(['desire-lines']);
+    vi.mocked(readProjectTools).mockResolvedValue(['street-mixer']);
     vi.mocked(readConfiguredProjectTools).mockRejectedValueOnce(new Error('network down'));
 
     setup();

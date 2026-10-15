@@ -81,7 +81,7 @@ class FakeMap {
   isStyleLoaded() { return this.loaded; }
   triggerRepaint() { queueMicrotask(() => this.fire('idle')); }
 
-  addSource(id, source) { this.sources.set(id, source); }
+  addSource(id, source) { this.sources.set(id, { ...source, setData(data) { this.data = data; } }); }
   getSource(id) { return this.sources.get(id); }
   removeSource(id) { this.sources.delete(id); }
   addLayer(layer) { this.layers.set(layer.id, layer); }
@@ -94,6 +94,10 @@ class FakeMap {
   }
 
   getCanvas() { return this.canvas; }
+  // Panning is switched off while somebody draws; a test reads whether it is on.
+  dragPan = { on: true, enable() { this.on = true; }, disable() { this.on = false; } };
+  // Pixels from the container's top-left, as a point a little way from the centre.
+  unproject([x, y]) { return { lng: this.center.lng + x / 10000, lat: this.center.lat - y / 10000 }; }
   getContainer() { return this.container; }
   getZoom() { return this.zoom; }
   getCenter() { return this.center; }

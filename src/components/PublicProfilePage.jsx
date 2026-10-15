@@ -18,6 +18,7 @@ import { Avatar, PageLoader } from './UI';
 import { FollowButton } from './FollowButton';
 import { FollowListDialog } from './FollowListDialog';
 import { ProjectCard } from './ProjectCard';
+import { SavedInquiries } from './SavedInquiries';
 import { isSupabaseConfigured, readPublicProfile } from '../services/auth';
 import { readFollowCounts } from '../services/follows';
 import { readProfileOrganisations } from '../services/organisations';
@@ -28,6 +29,8 @@ const TABS = [
   { id: 'projects', label: 'Projects' },
   { id: 'comments', label: 'Comments' },
 ];
+
+const INQUIRIES_TAB = { id: 'inquiries', label: 'Saved inquiries' };
 
 const JOINED_FORMAT = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' });
 const POSTED_FORMAT = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -146,6 +149,8 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
   }
 
   const isYou = accountId && accountId === person.id;
+  // What somebody has kept from the Toolkit is for them alone.
+  const tabs = isYou ? [...TABS, INQUIRIES_TAB] : TABS;
   // The address as people read it, without the https:// or a trailing slash.
   const websiteLabel = person.website.replace(/^https?:\/\//i, '').replace(/\/$/, '');
 
@@ -155,8 +160,8 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
     if (!step) return;
     event.preventDefault();
-    const index = TABS.findIndex(({ id }) => id === tab);
-    const next = TABS[(index + step + TABS.length) % TABS.length].id;
+    const index = tabs.findIndex(({ id }) => id === tab);
+    const next = tabs[(index + step + tabs.length) % tabs.length].id;
     setTab(next);
     document.getElementById(`profile-tab-${next}`)?.focus();
   };
@@ -205,7 +210,7 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
 
         <div role="tablist" aria-label="Profile sections" onKeyDown={onTabKey} className="placer-profile-tabs"
           style={{ borderBottom: `1px solid ${t.line}` }}>
-          {TABS.map(({ id, label }) => {
+          {tabs.map(({ id, label }) => {
             const current = id === tab;
             const count = id === 'projects' ? activity.projects.length : id === 'comments' ? comments.list.length : 0;
             return (
@@ -286,6 +291,8 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
                 </div>
               )
           )}
+
+          {tab === 'inquiries' && isYou && <SavedInquiries t={t} />}
 
           {tab === 'comments' && (
             comments.status === 'loading' ? loading
