@@ -65,17 +65,35 @@ jobs:
         with:
           node-version: '24'
 
+      # The pull request that adds this workflow has no script on its base branch yet.
+      # Then the pull request's own script checks, but nothing is drafted: drafting is
+      # the only step that sees the key.
+      - name: Choose the script
+        id: script
+        run: |
+          if [ -f base/scripts/i18n.mjs ]; then
+            echo "path=base/scripts/i18n.mjs" >> "$GITHUB_OUTPUT"
+            echo "draft=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=pr/scripts/i18n.mjs" >> "$GITHUB_OUTPUT"
+            echo "draft=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Exit 3 means behind; anything else non-zero is the script failing, which fails
+      # the job rather than passing for "behind".
       - name: What is behind
         id: check
         run: |
-          if node base/scripts/i18n.mjs check --root pr; then
-            echo "behind=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "behind=true" >> "$GITHUB_OUTPUT"
-          fi
+          status=0
+          node "${{ steps.script.outputs.path }}" check --root pr || status=$?
+          case $status in
+            0) echo "behind=false" >> "$GITHUB_OUTPUT" ;;
+            3) echo "behind=true" >> "$GITHUB_OUTPUT" ;;
+            *) exit "$status" ;;
+          esac
 
       - name: Draft the missing and reworded strings
-        if: steps.check.outputs.behind == 'true' && env.SAME_REPO == 'true' && env.HAS_KEY == 'true'
+        if: steps.check.outputs.behind == 'true' && steps.script.outputs.draft == 'true' && env.SAME_REPO == 'true' && env.HAS_KEY == 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
@@ -83,7 +101,7 @@ jobs:
           node base/scripts/i18n.mjs translate --root pr
 
       - name: Commit the drafts to the pull request
-        if: steps.check.outputs.behind == 'true' && env.SAME_REPO == 'true' && env.HAS_KEY == 'true'
+        if: steps.check.outputs.behind == 'true' && steps.script.outputs.draft == 'true' && env.SAME_REPO == 'true' && env.HAS_KEY == 'true'
         working-directory: pr
         run: |
           git add src/i18n
@@ -96,11 +114,16 @@ jobs:
 
       - name: Fail if anything is still behind
         run: |
-          if ! node base/scripts/i18n.mjs check --root pr; then
+          status=0
+          node "${{ steps.script.outputs.path }}" check --root pr || status=$?
+          if [ "$status" -ne 0 ] && [ "$status" -ne 3 ]; then exit "$status"; fi
+          if [ "$status" -eq 3 ]; then
             {
               echo "### Translations are behind the English"
               echo
-              if [ "$SAME_REPO" != "true" ]; then
+              if [ "${{ steps.script.outputs.draft }}" != "true" ]; then
+                echo "The base branch has no scripts/i18n.mjs yet, so nothing was drafted."
+              elif [ "$SAME_REPO" != "true" ]; then
                 echo "This pull request comes from a fork, so nothing was drafted for it."
               elif [ "$HAS_KEY" != "true" ]; then
                 echo "No ANTHROPIC_API_KEY secret is set, so nothing was drafted."

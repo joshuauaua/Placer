@@ -3,7 +3,7 @@
  *
  *   node scripts/i18n.mjs check
  *       Lists what each language is missing, and what it translated from English that
- *       has since been reworded (src/i18n/fingerprint.js). Exits 1 if there is any.
+ *       has since been reworded (src/i18n/fingerprint.js). Exits 3 if there is any.
  *
  *   node scripts/i18n.mjs translate [--lang tr]
  *       Drafts every missing and stale string with Claude, writes it into the
@@ -56,7 +56,8 @@ function check() {
   }
   if (behind > 0) {
     console.log('\nRun `node scripts/i18n.mjs translate` to draft them, then have a native speaker check the diff.');
-    process.exitCode = 1;
+    // Not 1, which is also what a crash exits with: the workflow tells the two apart.
+    process.exitCode = 3;
   }
 }
 
