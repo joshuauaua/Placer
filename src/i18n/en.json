@@ -462,5 +462,40 @@
     "closedOn": "This room closed on {date}.",
     "hasClosed": "This room has closed.",
     "thanks": "Thanks for looking — it is not taking any more answers."
+  },
+  "tools": {
+    "word-cloud": {
+      "name": "Word Cloud",
+      "tagline": "Ask anything, and watch the answers gather.",
+      "blurb": "Type whatever you want to put to a room and let everybody answer in a few words of their own. Each word joins the cloud as it is added, and grows every time another person says it — so what the room agrees on is the first thing you read."
+    },
+    "open-vote": {
+      "name": "Poll",
+      "tagline": "Ask anything, with the answers you choose.",
+      "blurb": "Type whatever you want to put to a room, write the answers people can pick from, then let them vote. There is no scale to calibrate — just a question, your answers, and a live tally as people pick."
+    },
+    "budget-ballot": {
+      "name": "Co-Budget",
+      "tagline": "A fixed budget, more on the list than it buys. Choose.",
+      "blurb": "Every post has a price per item, and the money runs out well before the list does. Spend the budget the way you would, and see what the room would fund together."
+    },
+    "pop-quiz": {
+      "name": "Pop Quiz",
+      "tagline": "Twenty questions, a clock, and a scoreboard.",
+      "blurb": "Write a quiz of up to twenty questions, each with four choices or a blank to fill in. Everybody joins with a nickname, the questions go up one at a time, and a right answer scores more the sooner it comes — a quick way to find out what a room already knows about a place."
+    },
+    "dream-it": {
+      "name": "Dream It",
+      "tagline": "A prompt to set a room imagining, at the press of a button.",
+      "blurb": "An activity for unlocking imagination and making a safe space to share personal visions, desires and emotional connections to a place. Generate a prompt, and let people speak, imagine and listen to each other — about how the place could feel, function or inspire, rather than what is practical today."
+    }
+  },
+  "settings": {
+    "language": {
+      "title": "Language",
+      "description": "The language PLACER is shown in on this browser",
+      "choose": "Show PLACER in",
+      "scope": "Kept for this browser. Joining a room and the Toolkit's live tools are translated so far; the rest of PLACER is still in English while it is being translated."
+    }
   }
 }

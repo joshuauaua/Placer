@@ -12,7 +12,10 @@
     "test": "vp test",
     "test:run": "vp test run",
     "deps:check": "node scripts/check-deps.mjs",
-    "migrations:check": "node scripts/check-migrations.mjs"
+    "migrations:check": "node scripts/check-migrations.mjs",
+    "i18n:check": "node scripts/i18n.mjs check",
+    "i18n:translate": "node scripts/i18n.mjs translate",
+    "i18n:stamp": "node scripts/i18n.mjs stamp"
   },
   "dependencies": {
     "@storyblok/react": "^7.3.1",

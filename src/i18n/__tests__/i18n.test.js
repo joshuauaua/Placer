@@ -4,21 +4,15 @@ import { createElement } from 'react';
 import en from '../en.json';
 import tr from '../tr.json';
 import it_ from '../it.json';
+import sources from '../sources.json';
+import { drift, fingerprint, flatten } from '../fingerprint';
 import {
   LANGUAGES, STORAGE_KEY, currentLanguage, formatLocale, matchLanguage, setLanguage, text, toolText, translate,
   translateRich,
 } from '..';
 import { TOOLS } from '../../toolkit/tools';
 
-const PLURAL = ['zero', 'one', 'two', 'few', 'many', 'other'];
-const isPlural = (node) => node && typeof node === 'object' && !Array.isArray(node)
-  && Object.keys(node).length > 0 && Object.keys(node).every((key) => PLURAL.includes(key));
-
-/** Every string in a dictionary by its dotted key, plural forms kept together. */
-function entries(node, prefix = '') {
-  if (typeof node === 'string' || isPlural(node)) return [[prefix, node]];
-  return Object.entries(node).flatMap(([key, value]) => entries(value, prefix ? `${prefix}.${key}` : key));
-}
+const entries = (dictionary) => flatten(dictionary);
 
 const placeholders = (value) =>
   [...new Set(JSON.stringify(value).match(/\{\w+\}/g) ?? [])].sort();
@@ -28,14 +22,20 @@ afterEach(() => {
   localStorage.clear();
 });
 
+// A string missing from a language, or translated from English since reworded, is
+// not a failure here: the screen falls back to English, and the translations
+// workflow drafts it on the pull request (scripts/i18n.mjs check).
 describe('the dictionaries', () => {
   const english = new Map(entries(en));
 
   for (const [name, dictionary] of [['tr', tr], ['it', it_]]) {
-    it(`${name} has every English string, and nothing English does not`, () => {
-      const own = new Map(entries(dictionary).filter(([key]) => !key.startsWith('tools.')));
-      expect([...english.keys()].filter((key) => !own.has(key))).toEqual([]);
-      expect([...own.keys()].filter((key) => !english.has(key))).toEqual([]);
+    it(`${name} has nothing the English does not`, () => {
+      expect(entries(dictionary).map(([key]) => key).filter((key) => !english.has(key))).toEqual([]);
+    });
+
+    it(`${name} records a fingerprint only for strings it has`, () => {
+      const own = new Map(entries(dictionary));
+      expect(Object.keys(sources[name] ?? {}).filter((key) => !own.has(key) || !english.has(key))).toEqual([]);
     });
 
     it(`${name} keeps every placeholder the English has`, () => {
@@ -45,15 +45,37 @@ describe('the dictionaries', () => {
       expect(mismatched.map(([key]) => key)).toEqual([]);
     });
 
-    it(`${name} only translates tools that exist`, () => {
-      const ids = new Set(TOOLS.map((tool) => tool.id));
-      expect(Object.keys(dictionary.tools ?? {}).filter((id) => !ids.has(id))).toEqual([]);
-    });
   }
+
+  // The English of a translated tool is copied from its registry entry, so that
+  // rewording the registry makes the translations stale. This keeps the two equal.
+  it("has each translated tool's English exactly as the registry has it", () => {
+    for (const [id, fields] of Object.entries(en.tools)) {
+      const tool = TOOLS.find((entry) => entry.id === id);
+      expect(tool, id).toBeTruthy();
+      for (const [field, value] of Object.entries(fields)) expect(value, `${id}.${field}`).toBe(tool[field]);
+    }
+  });
 
   it('has as many Dream It prompts in every language', () => {
     expect(tr.dreamIt.prompts).toHaveLength(en.dreamIt.prompts.length);
     expect(it_.dreamIt.prompts).toHaveLength(en.dreamIt.prompts.length);
+  });
+});
+
+describe('fingerprints', () => {
+  it('change when the English does, and only then', () => {
+    expect(fingerprint('Join a room')).toBe(fingerprint('Join a room'));
+    expect(fingerprint('Join a room')).not.toBe(fingerprint('Join a session'));
+    expect(fingerprint({ one: '1 person', other: '{count} people' }))
+      .not.toBe(fingerprint({ one: '1 person', other: '{count} persons' }));
+  });
+
+  it('tell missing strings from reworded ones', () => {
+    const english = { a: 'One', b: 'Two', c: { one: '1 thing', other: '{count} things' } };
+    const translated = { a: 'Bir', b: 'İki' };
+    const recorded = { a: fingerprint('One'), b: fingerprint('Two, before rewording') };
+    expect(drift(english, translated, recorded)).toEqual({ missing: ['c'], stale: ['b'] });
   });
 });
 

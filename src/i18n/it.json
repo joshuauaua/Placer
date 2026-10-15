@@ -492,5 +492,13 @@
       "tagline": "Una domanda per far immaginare una stanza, con un clic.",
       "blurb": "Un'attività per liberare l'immaginazione e creare uno spazio sicuro in cui condividere visioni personali, desideri e legami emotivi con un luogo. Genera una domanda e lascia che le persone parlino, immaginino e si ascoltino a vicenda — su come il luogo potrebbe far sentire, funzionare o ispirare, invece che su ciò che è pratico oggi."
     }
+  },
+  "settings": {
+    "language": {
+      "title": "Lingua",
+      "description": "La lingua in cui PLACER viene mostrato su questo browser",
+      "choose": "Mostra PLACER in",
+      "scope": "Salvata per questo browser. Per ora sono tradotti l'ingresso nelle stanze e gli strumenti dal vivo del Toolkit; il resto di PLACER è ancora in inglese mentre viene tradotto."
+    }
   }
 }

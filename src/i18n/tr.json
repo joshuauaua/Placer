@@ -489,5 +489,13 @@
       "tagline": "Bir düğmeye basınca odayı hayal kurmaya davet eden bir soru.",
       "blurb": "Hayal gücünü açmak ve bir yerle ilgili kişisel vizyonları, istekleri ve duygusal bağları paylaşmak için güvenli bir alan yaratmaya yönelik bir etkinlik. Bir soru üret ve insanların konuşmasına, hayal etmesine ve birbirini dinlemesine izin ver — bugün neyin pratik olduğu yerine, bu yerin nasıl hissettirebileceği, nasıl işleyebileceği ya da nasıl ilham verebileceği üzerine."
     }
+  },
+  "settings": {
+    "language": {
+      "title": "Dil",
+      "description": "PLACER'ın bu tarayıcıda gösterildiği dil",
+      "choose": "PLACER'ı şu dilde göster",
+      "scope": "Bu tarayıcı için kaydedilir. Şimdilik bir odaya katılma ve Araç Kutusu'nun canlı araçları çevrildi; PLACER'ın geri kalanı çevrilene kadar İngilizce."
+    }
   }
 }

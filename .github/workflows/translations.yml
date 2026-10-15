@@ -1,0 +1,112 @@
+# PLACER — keeping the Turkish and Italian text in step with the English.
+#
+# When a pull request changes the English (src/i18n/en.json, or a translated tool's
+# name and blurb), this checks the other languages against it (scripts/i18n.mjs). Any
+# string missing, or translated from English that has since been reworded, is drafted
+# with Claude and committed to the pull request as "Draft translations", for a native
+# speaker to read in the diff before it is merged.
+#
+# Secrets, and why this is safe with them:
+#   ANTHROPIC_API_KEY         — needed to draft. Without it the job only reports what
+#                               is behind, and `node scripts/i18n.mjs translate` run
+#                               locally does the same job.
+#   TRANSLATIONS_PUSH_TOKEN   — optional. A fine-grained token with Contents: write on
+#                               this repository. A commit pushed with the default token
+#                               does not start a new run of the pull request's checks, so
+#                               without this the drafted commit shows no checks until the
+#                               next push.
+#
+# `pull_request`, never `pull_request_target`, so a pull request from a fork gets no
+# secrets and a read-only token: it is checked, never drafted for. A branch in this
+# repository was pushed by somebody who can already write here. Even then the script
+# that runs is the base branch's, not the pull request's: the pull request contributes
+# only the JSON being translated, and the SDK is installed beside that script with
+# --ignore-scripts, so nothing in the pull request is executed while the key is set.
+
+name: translations
+
+on:
+  pull_request:
+    branches: [Development, main]
+    paths:
+      - 'src/i18n/**'
+      - 'src/toolkit/tools/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: translations-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  translations:
+    name: translations are up to date
+    runs-on: ubuntu-latest
+    env:
+      SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+      HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    steps:
+      - name: Check out the pull request
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.head_ref }}
+          path: pr
+          token: ${{ secrets.TRANSLATIONS_PUSH_TOKEN || github.token }}
+
+      - name: Check out the base branch, whose script is the one that runs
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: What is behind
+        id: check
+        run: |
+          if node base/scripts/i18n.mjs check --root pr; then
+            echo "behind=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "behind=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Draft the missing and reworded strings
+        if: steps.check.outputs.behind == 'true' && env.SAME_REPO == 'true' && env.HAS_KEY == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npm install --prefix base/scripts --no-save --no-package-lock --ignore-scripts @anthropic-ai/sdk@0.131.0
+          node base/scripts/i18n.mjs translate --root pr
+
+      - name: Commit the drafts to the pull request
+        if: steps.check.outputs.behind == 'true' && env.SAME_REPO == 'true' && env.HAS_KEY == 'true'
+        working-directory: pr
+        run: |
+          git add src/i18n
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898333+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Draft translations for the changed English" \
+            -m "Drafted by Claude (scripts/i18n.mjs) for a native speaker to review."
+          git push
+
+      - name: Fail if anything is still behind
+        run: |
+          if ! node base/scripts/i18n.mjs check --root pr; then
+            {
+              echo "### Translations are behind the English"
+              echo
+              if [ "$SAME_REPO" != "true" ]; then
+                echo "This pull request comes from a fork, so nothing was drafted for it."
+              elif [ "$HAS_KEY" != "true" ]; then
+                echo "No ANTHROPIC_API_KEY secret is set, so nothing was drafted."
+              fi
+              echo "Run \`node scripts/i18n.mjs translate\` (needs ANTHROPIC_API_KEY), or translate by hand"
+              echo "and run \`node scripts/i18n.mjs stamp --lang <xx> <key>\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
