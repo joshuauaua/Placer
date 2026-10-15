@@ -29,6 +29,12 @@ vi.mock('../../services/profileActivity', () => ({
   readProfileComments: vi.fn(),
 }));
 
+vi.mock('../../services/inquiries', () => ({
+  readInquiries: vi.fn(() => Promise.resolve([{ id: 'i1', tool: 'desire-lines', title: 'Market square', note: 'Worn bare.',
+    createdAt: '2026-10-15T09:00:00Z', config: {} }])),
+  deleteInquiry: vi.fn(),
+}));
+
 vi.mock('../../services/imaginations', () => ({
   readImaginationsByUser: vi.fn(() => Promise.resolve([])),
 }));
@@ -39,6 +45,34 @@ const MARA = { id: 'user-1', name: 'Mara Quinn', bio: 'Cyclist and tree enthusia
 
 const setup = (props = {}) =>
   render(<PublicProfilePage t={THEME} userId="user-1" {...props} />);
+
+describe('the saved inquiries tab', () => {
+  beforeEach(() => {
+    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+    vi.mocked(readPublicProfile).mockResolvedValue(MARA);
+    vi.mocked(readProfileActivity).mockResolvedValue({ joinedAt: '2025-03-10T10:00:00Z', projects: [] });
+    vi.mocked(readProfileComments).mockResolvedValue([]);
+  });
+
+  it("is on somebody's own profile, and lists what they kept", async () => {
+    setup({ accountId: 'user-1' });
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Saved inquiries' }));
+
+    expect(await screen.findByRole('list', { name: 'Saved inquiries' })).toHaveTextContent('Market square');
+  });
+
+  it("is not on anybody else's profile, nor for somebody signed out", async () => {
+    const { unmount } = setup({ accountId: 'user-2' });
+    await screen.findByRole('tab', { name: 'About' });
+    expect(screen.queryByRole('tab', { name: 'Saved inquiries' })).not.toBeInTheDocument();
+    unmount();
+
+    setup();
+    await screen.findByRole('tab', { name: 'About' });
+    expect(screen.queryByRole('tab', { name: 'Saved inquiries' })).not.toBeInTheDocument();
+  });
+});
 
 describe('PublicProfilePage', () => {
   beforeEach(() => {

@@ -170,13 +170,13 @@ describe('the gallery', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Category: Understand' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: tile(/Poll/i) })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: tile(/Desire Lines/i) })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: tile(/15-Minute/i) })).toBeInTheDocument();
 
     openMenu();
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Works with a group' }));
     expect(screen.getByRole('button', { name: tile(/Pop Quiz/i) })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: tile(/Word Cloud/i) })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: tile(/Desire Lines/i) })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: tile(/15-Minute/i) })).not.toBeInTheDocument();
 
     openMenu();
     fireEvent.click(screen.getByRole('menuitemradio', { name: 'All tools' }));

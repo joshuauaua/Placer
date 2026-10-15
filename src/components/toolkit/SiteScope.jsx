@@ -19,6 +19,15 @@ export const SITE_ASPECT = '10 / 7';
 const PLACE_ZOOM = 17;
 const DEFAULT_CENTER = { lat: 52.5206, lng: 13.4095 };
 
+/**
+ * Whether a scope is somewhere somebody took the map: not the city it opens on, which
+ * the map reports as its view before anyone has touched it.
+ */
+export function isFramed(scope) {
+  if (!scope?.point) return false;
+  return Math.abs(scope.point.lat - DEFAULT_CENTER.lat) > 1e-6 || Math.abs(scope.point.lng - DEFAULT_CENTER.lng) > 1e-6;
+}
+
 /** What a map is showing, as a scope: { point, zoom, bounds }. */
 function scopeOf(map) {
   const center = map.getCenter();
@@ -31,7 +40,7 @@ function scopeOf(map) {
 }
 
 /** Frame a map on a scope: its bounds when there are some, its centre and zoom otherwise. */
-function frame(map, scope) {
+export function frame(map, scope) {
   if (scope.bounds) {
     const [west, south, east, north] = scope.bounds;
     map.fitBounds([[west, south], [east, north]], { padding: 0, animate: false });
@@ -45,7 +54,9 @@ function frame(map, scope) {
  * every pan, zoom and pick reports a new one through `onChange`. `address` and
  * `onAddress` are the search field's text, and `onPlace` hears of each place picked.
  */
-export function SiteScopePicker({ t, scope, onChange, address, onAddress, onPlace, startAt = null, color, fieldStyle }) {
+export function SiteScopePicker({ t, scope, onChange, address, onAddress, onPlace, startAt = null, color, fieldStyle,
+  between = null, aspect = SITE_ASPECT,
+  frameHint = 'Drag and zoom until the map shows the whole site. Everybody taking part sees it from exactly this view, and places their markers on it.' }) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
   const pinRef = useRef(null);
@@ -111,10 +122,11 @@ export function SiteScopePicker({ t, scope, onChange, address, onAddress, onPlac
       <PlaceSearch id="site-scope-search" value={address} onChange={onAddress} onPick={pick}
         near={pin} placeholder="Square, park, address…" style={fieldStyle} />
 
+      {between}
+
       <div style={{ fontSize: 14, fontWeight: 700, color: t.ink, margin: '20px 0 6px' }}>Frame the site *</div>
       <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 10, lineHeight: 1.5 }}>
-        Drag and zoom until the map shows the whole site. Everybody taking part sees it from exactly
-        this view, and places their markers on it.
+        {frameHint}
       </div>
       {failed ? (
         <p style={{ fontSize: 13, color: t.inkFaint, lineHeight: 1.6, margin: 0 }}>
@@ -123,7 +135,7 @@ export function SiteScopePicker({ t, scope, onChange, address, onAddress, onPlac
         </p>
       ) : (
         <div ref={mapEl} role="application" aria-label="The site's view. Drag and zoom to frame it."
-          style={{ width: '100%', aspectRatio: SITE_ASPECT, borderRadius: 12, overflow: 'hidden',
+          style={{ width: '100%', aspectRatio: aspect, borderRadius: 12, overflow: 'hidden',
             border: `1.5px solid ${t.line}`, background: t.surfaceAlt }} />
       )}
     </div>

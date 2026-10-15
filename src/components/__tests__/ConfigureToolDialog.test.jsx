@@ -86,7 +86,7 @@ describe('ConfigureToolDialog, its introduction', () => {
   });
 
   it('closes from the introduction on Cancel', () => {
-    const props = setup('desire-lines', {}, { intro: true });
+    const props = setup('street-mixer', {}, { intro: true });
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
@@ -312,18 +312,18 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
 
 describe('ConfigureToolDialog, a tool with nothing to set up', () => {
   it('puts it live', async () => {
-    const { onConfigured } = setup('desire-lines');
+    const { onConfigured } = setup('street-mixer');
 
     save('Go live');
 
     await waitFor(() => expect(onConfigured).toHaveBeenCalled());
-    expect(markProjectToolConfigured).toHaveBeenCalledWith('proj-1', 'desire-lines');
+    expect(markProjectToolConfigured).toHaveBeenCalledWith('proj-1', 'street-mixer');
   });
 
   it('says why when it cannot, and stays open', async () => {
     markProjectToolConfigured.mockRejectedValueOnce(new Error('Could not put that tool live: denied'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { onConfigured } = setup('desire-lines');
+    const { onConfigured } = setup('street-mixer');
 
     save('Go live');
 
@@ -332,7 +332,7 @@ describe('ConfigureToolDialog, a tool with nothing to set up', () => {
   });
 
   it('closes on Cancel', () => {
-    const { onClose } = setup('desire-lines');
+    const { onClose } = setup('street-mixer');
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 

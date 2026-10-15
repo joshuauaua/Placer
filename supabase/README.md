@@ -622,6 +622,14 @@ re-runnable. `profile_photos(ids)` returns each account's `avatar_path` — alre
 through `profile_public()` — for up to 200 accounts at once, so a project's updates and
 comments can show their authors' photos in one call.
 
+### Inquiries kept on a profile
+
+Run `profile-inquiries.sql` after `auth.sql` (or `supabase db push`). It is re-runnable.
+`profile_inquiries` holds what somebody signed in chose to keep from a tool used on its
+own — for Desire Lines the site, its marks, the note on why it matters and the walks drawn
+— to start a project's tool from later. Private to the account: its row-level security lets
+only the owner read, add or delete them.
+
 ### Which tools can host a room
 
 Run `room-tools.sql` in the SQL editor after `rooms.sql` and `notifications-projects.sql`

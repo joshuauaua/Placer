@@ -1,268 +1,248 @@
 /* PLACER — Toolkit: Desire Lines.
  *
- * The plaza is paved the way plazas are paved — a ring and a cross — and the things
- * people walk between are in the corners. Draw the walks you would actually make and
- * the worn line appears where the paving is not.
+ * The path people take, not the one that got paved. Pick a site on the map and draw
+ * the walks you really make across it.
  *
- * The geometry, the raster and the paving suggestions are in src/lib/desireLines.js.
+ * On its own, the tool starts by choosing the site — search for a place or pan and zoom
+ * the map to it, then Use this site, which fixes that view — and saying why the site is
+ * of interest, which stays beside the map. Then you draw. Nothing is saved unless you
+ * are signed in and keep it on your profile as an inquiry (services/inquiries.js), to
+ * start a project's Desire Lines from later; or download it.
+ *
+ * Run for a project, in a room its organiser opened (`room.config`, see `setup` in
+ * toolkit/tools/desire-lines.js), the sites are the ones they chose, and what everybody
+ * draws goes to the room. Anybody may then choose to lay the others' walks over their
+ * own — hidden to begin with — and see where they follow them and where they do not.
+ *
+ * The board is DesireLinesBoard, the map DesireLinesMap, the geometry
+ * src/lib/desireLines.js.
  */
 
-import { useMemo, useRef, useState } from 'react';
-import { Meter, Panel, Readout } from '../ToolLayout';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'wouter';
+import { Panel } from '../ToolLayout';
 import { Btn } from '../UI';
+import { SiteScopePicker, isFramed } from './SiteScope';
+import { DesireLinesBoard } from './DesireLinesBoard';
+import { useIdentity } from '../useIdentity';
+import { saveInquiry } from '../../services/inquiries';
 import {
-  DESTINATIONS,
-  PAVING,
-  PLAZA,
-  distance,
-  journeyStats,
-  neighbourJourneys,
-  suggestPaving,
+  MAX_NOTE, MAX_SITE_NAME, SOLO_SITE, elementsOthersOn, inquiryConfig, emptyDesire, othersOn as othersOnSite, paletteOf, sitesOf,
 } from '../../lib/desireLines';
 
-const MIN_JOURNEYS_TO_PAVE = 3;
+function fieldStyle(t) {
+  return {
+    width: '100%', height: 48, padding: '0 14px', borderRadius: 12, border: `1px solid ${t.lineStrong}`,
+    background: t.surface, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 15, boxSizing: 'border-box',
+  };
+}
 
-export function DesireLines({ t, tool }) {
-  const [lines, setLines] = useState([]);
-  const [pending, setPending] = useState(null);
-  const [dragTo, setDragTo] = useState(null);
-  const [showSuggestions, setShowSuggestions] = useState(true);
-  const [batches, setBatches] = useState(0);
-  const svgRef = useRef(null);
-  const nextId = useRef(0);
+/** The first thing the tool asks: where. */
+function ChooseSite({ t, tool, onChoose }) {
+  const [scope, setScope] = useState(null);
+  const [address, setAddress] = useState('');
+  const [name, setName] = useState('');
+  const [note, setNote] = useState('');
 
-  const stats = useMemo(() => journeyStats(lines), [lines]);
-  const suggestions = useMemo(
-    () => (showSuggestions ? suggestPaving(lines, { minJourneys: MIN_JOURNEYS_TO_PAVE }) : []),
-    [lines, showSuggestions]
+  return (
+    <Panel t={t} title="Choose your site">
+      <label htmlFor="desire-lines-name" style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink,
+        marginBottom: 8 }}>
+        Site name
+      </label>
+      <input id="desire-lines-name" type="text" value={name} maxLength={MAX_SITE_NAME} style={fieldStyle(t)}
+        onChange={(event) => setName(event.target.value)} placeholder="The market square" />
+      <div style={{ height: 20 }} />
+      <SiteScopePicker
+        t={t}
+        scope={scope}
+        onChange={setScope}
+        address={address}
+        onAddress={setAddress}
+        onPlace={(result) => setName((current) => current || result.name || result.label)}
+        color={tool.color}
+        fieldStyle={fieldStyle(t)}
+        aspect="10 / 4.2"
+        between={(
+      <div style={{ marginTop: 20 }}>
+        <label htmlFor="desire-lines-note" style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink,
+          marginBottom: 6 }}>
+          Why are you interested in this site? (optional)
+        </label>
+        <textarea id="desire-lines-note" value={note} maxLength={MAX_NOTE} rows={4}
+          onChange={(event) => setNote(event.target.value)}
+          placeholder="What you have noticed, or want to find out, about how people move here."
+          style={{ ...fieldStyle(t), height: 'auto', padding: 14, lineHeight: 1.5, resize: 'vertical' }} />
+        <span style={{ display: 'block', fontSize: 12.5, color: t.inkDim, marginTop: 4 }}>
+          Shown beside the map, and kept with the site if you save it to your profile.
+        </span>
+      </div>
+        )}
+        frameHint="Search for the place, or drag and zoom the map to it, until it shows the site you want to draw on. You can still move around once you start."
+      />
+      <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
+        <Btn t={t} variant="primary" icon="pin" disabled={!isFramed(scope)}
+          onClick={() => onChoose({ name: name || address.trim() || 'Your site', scope, note: note.trim() })}>
+          Use this site
+        </Btn>
+      </div>
+    </Panel>
   );
+}
 
-  function addLine(from, to) {
-    if (distance(from, to) < 4) return;
-    nextId.current += 1;
-    setLines((current) => [...current, { id: `mine-${nextId.current}`, walker: 'you', from, to }]);
+/** Keeping the site, its marks and the walks drawn so far on the signed-in account's profile. */
+function KeepOnProfile({ t, site, state }) {
+  const { status, accountId } = useIdentity();
+  const [, navigate] = useLocation();
+  const [saving, setSaving] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const snapshot = JSON.stringify(state);
+  const [savedAs, setSavedAs] = useState(null);
+
+  // Drawing more after keeping it makes it something else to keep.
+  useEffect(() => {
+    if (savedAs && savedAs !== snapshot) setSaving('idle');
+  }, [snapshot, savedAs]);
+
+  // No accounts to keep anything on (a checkout with no Supabase project).
+  if (status === 'local' || status === 'loading') return null;
+
+  if (status === 'signedOut') {
+    return (
+      <p style={{ margin: 0, fontSize: 13.5, color: t.inkDim, lineHeight: 1.6 }}>
+        Sign in to keep this on your profile and start a project from it later.
+      </p>
+    );
   }
 
-  /** Two clicks on the markers is the accessible way to draw a walk. */
-  function tapDestination(destination) {
-    const point = { x: destination.x, y: destination.y };
-    if (!pending) {
-      setPending({ ...point, label: destination.label });
-      return;
+  const keep = async () => {
+    setSaving('saving');
+    try {
+      await saveInquiry({
+        tool: 'desire-lines', title: site.name, note: site.note ?? '', config: inquiryConfig({ site, note: site.note, state }),
+      });
+      setSavedAs(snapshot);
+      setSaving('saved');
+    } catch (err) {
+      console.error('Could not keep the inquiry:', err);
+      setSaving('error');
     }
-    if (pending.label === destination.label) {
-      setPending(null);
-      return;
-    }
-    addLine({ x: pending.x, y: pending.y }, point);
-    setPending(null);
-  }
+  };
 
-  /** Plaza coordinates from a pointer event, in metres. */
-  function pointFrom(event) {
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect || !rect.width || !rect.height) return null;
-    return {
-      x: ((event.clientX - rect.left) / rect.width) * PLAZA.width,
-      y: ((event.clientY - rect.top) / rect.height) * PLAZA.height,
-    };
-  }
+  return (
+    <Panel t={t} title="Keep it">
+      <p style={{ margin: '0 0 12px', fontSize: 13.5, color: t.inkDim, lineHeight: 1.6 }}>
+        Save this site, your marks and your walks on your profile as an inquiry, to start or add to
+        a project&rsquo;s Desire Lines later.
+      </p>
+      <Btn t={t} variant="primary" size="sm" icon="bookmark" disabled={saving === 'saving' || saving === 'saved'}
+        onClick={keep}>
+        {saving === 'saving' ? 'Saving…' : saving === 'saved' ? 'Saved to your profile' : 'Save to my profile'}
+      </Btn>
+      {saving === 'saved' && accountId && (
+        <p role="status" style={{ margin: '12px 0 0', fontSize: 13.5, color: t.ink }}>
+          <a href={`/people/${accountId}`} onClick={(event) => { event.preventDefault(); navigate(`/people/${accountId}`); }}
+            style={{ color: t.ink, fontWeight: 700 }}>
+            See your saved inquiries
+          </a>
+        </p>
+      )}
+      {saving === 'error' && (
+        <p role="alert" style={{ margin: '12px 0 0', fontSize: 13.5, color: t.ink }}>
+          It did not save. Please try again.
+        </p>
+      )}
+    </Panel>
+  );
+}
 
-  function startDrag(event) {
-    const point = pointFrom(event);
-    if (!point) return;
-    setPending(point);
-    setDragTo(point);
-  }
+/** The tool on its own: choose a site, then draw on it. */
+function Solo({ t, tool }) {
+  const [site, setSite] = useState(null);
+  const [state, setState] = useState(emptyDesire);
 
-  function moveDrag(event) {
-    if (!pending || !dragTo) return;
-    const point = pointFrom(event);
-    if (point) setDragTo(point);
-  }
+  if (!site) return <ChooseSite t={t} tool={tool} onChoose={setSite} />;
 
-  function endDrag(event) {
-    if (!pending || !dragTo) return;
-    const point = pointFrom(event) ?? dragTo;
-    addLine({ x: pending.x, y: pending.y }, point);
-    setPending(null);
-    setDragTo(null);
-  }
+  return (
+    <DesireLinesBoard
+      t={t}
+      tool={tool}
+      sites={[{ id: SOLO_SITE, name: site.name, scope: site.scope }]}
+      state={state}
+      onChange={setState}
+      about={site.note || null}
+      footer={(
+        <>
+          <KeepOnProfile t={t} site={site} state={state} />
+          <Btn t={t} variant="quiet" size="sm" icon="pin" onClick={() => { setSite(null); setState(emptyDesire()); }}>
+            Choose another site
+          </Btn>
+        </>
+      )}
+    />
+  );
+}
 
-  function addNeighbours() {
-    // A new seed each time, so a second batch is ten different people.
-    const seed = 20260827 + batches * 977;
-    setBatches((count) => count + 1);
-    setLines((current) => [...current, ...neighbourJourneys(10, seed)]);
+/** A project's room: its sites, with everybody's walks going to the room. */
+function InRoom({ t, tool, room }) {
+  const sites = useMemo(
+    () => sitesOf(room.config).map((site) => ({
+      id: site.id, name: site.name, elements: site.elements,
+      scope: { point: site.point, zoom: site.zoom, bounds: site.bounds },
+    })),
+    [room.config],
+  );
+  const palette = useMemo(() => paletteOf(room.config), [room.config]);
+  const [state, setState] = useState(emptyDesire);
+  // Held in a ref: the room object is rebuilt on every render, so depending on it would
+  // publish again on every change that comes in.
+  const roomRef = useRef(room);
+  roomRef.current = room;
+  const touched = useRef(false);
+
+  const change = (next) => {
+    touched.current = true;
+    setState(next);
+  };
+
+  useEffect(() => {
+    const current = roomRef.current;
+    if (touched.current && current?.status === 'open') current.publish(state);
+  }, [state]);
+
+  const combined = room.status === 'open' ? room.combined : null;
+  const othersOn = useCallback((siteId, mine) => ({
+    paths: othersOnSite(combined, siteId, mine.paths),
+    elements: elementsOthersOn(combined, siteId, mine.elements),
+  }), [combined]);
+
+  if (sites.length === 0) {
+    return (
+      <Panel t={t} title="Desire Lines">
+        <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
+          This room was opened without a site to draw on.
+        </p>
+      </Panel>
+    );
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(280px, 1fr)', gap: 20, alignItems: 'start' }}>
-      <Panel t={t} title="The plaza" aside={
-        <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>
-          {pending && !dragTo
-            ? `From ${pending.label} — now pick where you are going`
-            : `${lines.length} ${lines.length === 1 ? 'journey' : 'journeys'} drawn`}
-        </span>
-      }>
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${PLAZA.width} ${PLAZA.height}`}
-          role="img"
-          aria-label="Plaza with paved paths, destinations, and the walks drawn across it"
-          onPointerDown={startDrag}
-          onPointerMove={moveDrag}
-          onPointerUp={endDrag}
-          style={{ width: '100%', display: 'block', borderRadius: 12, background: '#E7EDE3',
-            border: `1px solid ${t.line}`, touchAction: 'none', cursor: 'crosshair' }}>
-          {/* The paving, as designed */}
-          {PAVING.map((rect, index) => (
-            <rect key={`paving-${index}`} x={rect.x} y={rect.y} width={rect.w} height={rect.h} fill="#E6E6E6" />
-          ))}
-
-          {/* Where enough people have walked to be worth paving */}
-          {suggestions.map((cell) => (
-            <rect
-              key={`suggest-${cell.index}`}
-              x={cell.x - PLAZA.cell / 2}
-              y={cell.y - PLAZA.cell / 2}
-              width={PLAZA.cell}
-              height={PLAZA.cell}
-              fill={tool.color}
-              opacity={0.18 + Math.min(0.32, cell.journeys * 0.04)}
-            />
-          ))}
-
-          {/* Every walk drawn so far. They overlap, so the common line darkens. */}
-          {lines.map((line) => (
-            <line
-              key={line.id}
-              x1={line.from.x} y1={line.from.y} x2={line.to.x} y2={line.to.y}
-              stroke={line.walker === 'you' ? tool.color : '#6E6E6E'}
-              strokeWidth={line.walker === 'you' ? 0.9 : 0.6}
-              strokeLinecap="round"
-              opacity={line.walker === 'you' ? 0.55 : 0.32}
-            />
-          ))}
-
-          {/* The walk being dragged out right now */}
-          {pending && dragTo && (
-            <line x1={pending.x} y1={pending.y} x2={dragTo.x} y2={dragTo.y}
-              stroke={tool.color} strokeWidth={1} strokeDasharray="2 1.5" strokeLinecap="round" />
-          )}
-
-          {DESTINATIONS.map((destination) => {
-            const waiting = pending?.label === destination.label;
-            return (
-              <g
-                key={destination.id}
-                role="button"
-                tabIndex={0}
-                aria-label={waiting ? `Walking from ${destination.label} — pick a destination` : `Walk from ${destination.label}`}
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  tapDestination(destination);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key !== 'Enter' && event.key !== ' ') return;
-                  event.preventDefault();
-                  tapDestination(destination);
-                }}
-                style={{ cursor: 'pointer' }}>
-                <circle cx={destination.x} cy={destination.y} r={2.6}
-                  fill={waiting ? tool.color : t.surface} stroke={tool.color} strokeWidth={0.8} />
-                <text
-                  x={destination.x < PLAZA.width / 2 ? destination.x + 4 : destination.x - 4}
-                  y={destination.y + 1.2}
-                  textAnchor={destination.x < PLAZA.width / 2 ? 'start' : 'end'}
-                  fontSize={3.2}
-                  style={{ fontFamily: 'var(--placer-font)' }}
-                  fontWeight={700}
-                  fill={t.ink}>
-                  {destination.label}
-                </text>
-              </g>
-            );
-          })}
-        </svg>
-
-        <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Btn t={t} variant="quiet" size="sm" icon="user" onClick={addNeighbours}>
-            Add ten neighbours
-          </Btn>
-          <Btn
-            t={t}
-            variant="quiet"
-            size="sm"
-            icon={showSuggestions ? 'check' : 'grid'}
-            ariaPressed={showSuggestions}
-            onClick={() => setShowSuggestions((shown) => !shown)}
-            style={showSuggestions ? { borderColor: tool.color, color: tool.color } : undefined}>
-            Show where to pave
-          </Btn>
-          <div style={{ flex: 1 }} />
-          <Btn
-            t={t}
-            variant="quiet"
-            size="sm"
-            icon="rotate"
-            disabled={lines.length === 0}
-            onClick={() => { setLines([]); setPending(null); setDragTo(null); }}>
-            Clear
-          </Btn>
-        </div>
-        <p style={{ marginTop: 10, fontSize: 12.5, color: t.inkDim, lineHeight: 1.6 }}>
-          Drag anywhere across the plaza to draw a walk, or click one marker and then another.
-        </p>
-      </Panel>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
-        <Panel t={t} title="What the walking says">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
-            <Readout t={t} label="Journeys drawn" value={stats.count} />
-            <Readout t={t} label="Leaving the paving" value={Math.round(stats.cuttingShare * 100)} unit="%"
-              tone={stats.cuttingShare > 0.5 ? tool.color : undefined} />
-          </div>
-
-          <Meter t={t} label="Walks that cut across" value={stats.cuttingShare} color={tool.color}
-            caption={`${stats.cutting} of ${stats.count || 0}`} />
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginTop: 18 }}>
-            <Readout t={t} label="Saved by cutting" value={stats.averageSaved} unit="m avg" />
-            <Readout t={t} label="Longest detour dodged" value={stats.longestSaved} unit="m" />
-          </div>
-        </Panel>
-
-        <Panel t={t} title="Pave here">
-          {suggestions.length === 0 ? (
-            <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
-              {showSuggestions
-                ? `Nothing yet. A route needs ${MIN_JOURNEYS_TO_PAVE} separate journeys before it counts as a line rather than a whim.`
-                : 'Suggestions are hidden.'}
-            </p>
-          ) : (
-            <>
-              <Readout t={t} label="Unpaved ground worth paving"
-                value={Math.round(suggestions.length * PLAZA.cell * PLAZA.cell)} unit="m²" />
-              <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65, marginTop: 12 }}>
-                The busiest patch has been crossed {suggestions[0].journeys} times. Paving what people
-                have already chosen costs less than fencing off what they have not.
-              </p>
-            </>
-          )}
-        </Panel>
-
-        <Panel t={t} title="Why this matters">
-          <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
-            A desire line is the cheapest survey there is: the ground records the route people
-            preferred before anyone was asked. Consultations that start from the worn path tend to
-            get shorter arguments than the ones that start from the drawing.
-          </p>
-        </Panel>
-      </div>
-    </div>
+    <DesireLinesBoard
+      t={t}
+      tool={tool}
+      sites={sites}
+      state={state}
+      onChange={change}
+      othersOn={combined ? othersOn : null}
+      palette={palette}
+      about={room.config?.note || null}
+    />
   );
+}
+
+export function DesireLines({ t, tool, room = null }) {
+  return room?.config
+    ? <InRoom t={t} tool={tool} room={room} />
+    : <Solo t={t} tool={tool} />;
 }
 
 export default DesireLines;
