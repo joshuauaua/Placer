@@ -157,6 +157,38 @@ describe('App', () => {
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
   });
 
+  describe('an address the app does not know', () => {
+    afterEach(() => localStorage.clear());
+
+    it('shows the 404 page rather than the landing page', () => {
+      renderAt('/no-such-page');
+      expect(screen.getByRole('heading', { level: 1, name: 'This page does not exist' })).toBeInTheDocument();
+      expect(screen.queryByText(/Placer is the open toolkit/)).not.toBeInTheDocument();
+    });
+
+    it('leads somebody signed in back to their dashboard', async () => {
+      const { hook, history } = memoryLocation({ path: '/projects/abc/nope', record: true });
+      render(<Router hook={hook}><App /></Router>);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Go to your dashboard' }));
+
+      expect(history.at(-1)).toBe('/dashboard');
+      expect(await screen.findByRole('heading', { level: 1, name: /^Welcome back/ })).toBeInTheDocument();
+    });
+
+    it('leads anybody else back to the home page, or on to Explore', () => {
+      localStorage.setItem('placemaking_profile', JSON.stringify({ signedIn: false }));
+      const { hook, history } = memoryLocation({ path: '/old-link', record: true });
+      render(<Router hook={hook}><App /></Router>);
+
+      expect(screen.getByRole('button', { name: 'Explore the map' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Go to the home page' }));
+
+      expect(history.at(-1)).toBe('/');
+      expect(screen.getByText(/Placer is the open toolkit/)).toBeInTheDocument();
+    });
+  });
+
   describe('/admin/imaginations route', () => {
     let originalValue;
 

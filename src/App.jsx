@@ -11,6 +11,7 @@ import { CookieBanner } from './components/CookieBanner';
 import { BugReportButton } from './components/BugReportButton';
 // Not lazy: the home view, so there is nothing to defer.
 import { LandingPage } from './components/LandingPage';
+import { NotFoundPage } from './components/NotFoundPage';
 // Not lazy: the nav bar renders it on every view, so there is nothing to defer.
 import { GlassNavbar } from './components/GlassNavbar';
 import { SiteFooter } from './components/SiteFooter';
@@ -275,9 +276,13 @@ function MainApp({ initialView = 'welcome' }) {
   const newProjectOrganisationId = new URLSearchParams(useSearch()).get('organisation');
   const personId = personIdFrom(location);
   const resourceSlug = resourceSlugFrom(location);
+  // An address none of those know, and that is not the home page the views without
+  // an address of their own sit at, is a 404.
+  const knownPath = location === '/' || Boolean(accountView || staticView || inToolkit || projectRoute
+    || organisationRoute || personId || resourceSlug);
   const view = accountView ?? staticView
     ?? (inToolkit ? 'toolkit' : projectView ?? organisationView ?? (personId ? 'profilePublic'
-      : resourceSlug ? 'resourceArticle' : currentView));
+      : resourceSlug ? 'resourceArticle' : knownPath ? currentView : 'notFound'));
 
   // Pages scroll inside .placer-scroll-view, not the window, so that is what goes back
   // to the top: whenever the page changes, and when the side nav is used (even for the
@@ -351,7 +356,7 @@ function MainApp({ initialView = 'welcome' }) {
       navigate(STATIC_PATHS[next]);
       return;
     }
-    if (inToolkit || accountView || staticView || personId || resourceSlug || organisationRoute) navigate('/');
+    if (inToolkit || accountView || staticView || personId || resourceSlug || organisationRoute || !knownPath) navigate('/');
     setCurrentView(next);
   };
 
@@ -596,6 +601,15 @@ function MainApp({ initialView = 'welcome' }) {
                 landing page flash up before the redirect to their dashboard. */}
             {view === 'welcome' && identityLoading && <LoadingFallback />}
             {view === 'welcome' && !identityLoading && <LandingPage t={t} />}
+
+            {view === 'notFound' && (
+              <NotFoundPage t={t} signedIn={Boolean(profile)}
+                onNavigate={(next) => {
+                  if (next === 'map') handleExplore();
+                  else show(next);
+                  scrollPageToTop();
+                }} />
+            )}
 
             {view === 'map' && (
               <Suspense fallback={<LoadingFallback />}>
