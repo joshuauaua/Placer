@@ -4,6 +4,7 @@
 
 import { Icon } from './Icon';
 import { Btn, Chip, CopyButton } from './UI';
+import { text as plainText, toolText, useText } from '../i18n';
 
 /** The permanent link to a tool, for the copy button. */
 export function toolUrl(id) {
@@ -22,12 +23,13 @@ export function toolUrl(id) {
  * `breadcrumb`, when given, replaces All tools, as on ToolCover.
  */
 export function ToolLayout({ t, tool, onBack, actions, breadcrumb = null, children }) {
+  const { text, language } = useText();
   return (
     <div>
       {breadcrumb ?? (
         <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack}
           style={{ padding: '0 12px 0 6px', marginBottom: 18, color: t.inkDim }}>
-          All tools
+          {text('tool.allTools')}
         </Btn>
       )}
 
@@ -40,13 +42,13 @@ export function ToolLayout({ t, tool, onBack, actions, breadcrumb = null, childr
               <Icon name={tool.icon} size={22} stroke={2.2} />
             </span>
             <h1 className="placer-disp" style={{ fontSize: 32, fontWeight: 700, color: t.ink, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-              {tool.name}
+              {toolText(tool, 'name', language)}
             </h1>
           </div>
-          <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6, maxWidth: 660 }}>{tool.blurb}</p>
+          <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6, maxWidth: 660 }}>{toolText(tool, 'blurb', language)}</p>
           {tool.createdBy && (
             <p className="placer-mono" style={{ marginTop: 12, fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: t.inkFaint }}>
-              By {tool.createdBy}
+              {text('tool.by', { name: tool.createdBy })}
             </p>
           )}
           {tool.credit && (
@@ -58,7 +60,8 @@ export function ToolLayout({ t, tool, onBack, actions, breadcrumb = null, childr
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {actions}
           <CopyButton t={t} value={toolUrl(tool.id)}
-            fieldLabel="Link to this tool" fieldWidth={260}
+            label={text('tool.copyLink')} copiedLabel={text('tool.linkCopied')}
+            fieldLabel={text('tool.linkLabel')} fieldWidth={260}
             style={{ alignItems: 'flex-end' }} />
         </div>
       </div>
@@ -130,7 +133,7 @@ export function Meter({ t, label, value, color, caption, signed }) {
 }
 
 /** The row of preset buttons every tool opens with. */
-export function PresetRow({ t, presets, active, onPick, color, label = 'Presets' }) {
+export function PresetRow({ t, presets, active, onPick, color, label = plainText('common.presets') }) {
   return (
     // Grouped and named, because a preset can share a name with something in the
     // tool's own palette — "Play street" is both a preset and a segment type.

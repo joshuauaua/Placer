@@ -23,15 +23,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Panel, PresetRow, Readout } from '../ToolLayout';
 import { CopyButton } from '../UI';
-import { COUNCIL_DRAFT, emptyBallot, ownPostProposals, summaryText, tally } from '../../lib/budgetBallot';
+import { COUNCIL_DRAFT, emptyBallot, ownPostProposals, postLabel, summaryText, tally } from '../../lib/budgetBallot';
 import { MoneySummary, PostList, ballotState, useBallot } from './BudgetBallotParts';
+import { useText } from '../../i18n';
 
-const PRESETS = [
-  { key: 'empty', label: 'Start from nothing', note: 'Every line at zero.' },
-  { key: 'draft', label: "The council's draft", note: 'Footway, crossings and lighting — three quarters of the money already committed.' },
-];
+const PRESETS = ['empty', 'draft'];
 
 export function BudgetBallot({ t, tool, room }) {
+  const { text } = useText();
+  const presets = PRESETS.map((key) => ({
+    key, label: text(`budgetBallot.presets.${key}.label`), note: text(`budgetBallot.presets.${key}.note`),
+  }));
   const config = room?.config ?? null;
   const state = useBallot(config);
   const { ballot, ownAllowed, quantities, own, result, money } = state;
@@ -89,65 +91,64 @@ export function BudgetBallot({ t, tool, room }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(300px, 1fr)', gap: 20, alignItems: 'start' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
-        <Panel t={t} title="The money" aside={
+        <Panel t={t} title={text('budgetBallot.theMoney')} aside={
           <span className="placer-mono" style={{ fontSize: 12, color: result.remaining === 0 ? tool.color : t.inkDim }}>
-            {money(result.remaining)} left
+            {text('budgetBallot.left', { amount: money(result.remaining) })}
           </span>
         }>
           <MoneySummary t={t} tool={tool} state={state} />
           {!config && (
-            <PresetRow t={t} presets={PRESETS} active={preset} onPick={pickPreset} color={tool.color} />
+            <PresetRow t={t} presets={presets} label={text('common.presets')} active={preset} onPick={pickPreset} color={tool.color} />
           )}
         </Panel>
 
-        <Panel t={t} title={config ? 'What the budget can go on' : 'What the street could have'}>
+        <Panel t={t} title={text(config ? 'budgetBallot.whatBudgetCanGoOn' : 'budgetBallot.whatStreetCouldHave')}>
           <PostList t={t} tool={tool} state={state} onChange={() => { setPreset(null); setTouched(true); }} />
         </Panel>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
         {inRoom && (
-          <Panel t={t} title="The room's ballot" aside={
+          <Panel t={t} title={text('budgetBallot.roomsBallot')} aside={
             <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
-              {room.participantCount} cast
+              {text('openVote.cast', { count: room.participantCount })}
             </span>
           }>
             {roomResult ? (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 16 }}>
-                  <Readout t={t} label="The room commits" value={money(roomResult.spent)}
+                  <Readout t={t} label={text('budgetBallot.roomCommits')} value={money(roomResult.spent)}
                     tone={tool.color} />
-                  <Readout t={t} label="You commit" value={money(result.spent)} />
+                  <Readout t={t} label={text('budgetBallot.youCommit')} value={money(result.spent)} />
                 </div>
                 <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {roomResult.items.map((item) => (
                     <li key={item.key} style={{ display: 'flex', gap: 10, fontSize: 13.5 }}>
                       <span style={{ color: t.ink, fontWeight: 500, flex: 1, minWidth: 0 }}>
-                        {item.label} × {item.quantity}
+                        {postLabel(item)} × {item.quantity}
                       </span>
                       <span className="placer-mono" style={{ color: t.inkDim }}>
-                        you {result.quantities[item.key]}
+                        {text('budgetBallot.you', { count: result.quantities[item.key] })}
                       </span>
                     </li>
                   ))}
                 </ul>
                 <p style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.6, marginTop: 12 }}>
-                  The average of every ballot in the room, which is why it still fits inside
-                  {' '}{money(budget)}. Where it differs from yours is the argument worth having.
+                  {text('budgetBallot.averageHint', { budget: money(budget) })}
                 </p>
                 {proposals.length > 0 && (
                   <div style={{ marginTop: 16 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 700, color: t.ink, marginBottom: 6 }}>
-                      Posts people added
+                      {text('budgetBallot.postsPeopleAdded')}
                     </div>
-                    <ul aria-label="Posts people added"
+                    <ul aria-label={text('budgetBallot.postsPeopleAdded')}
                       style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {proposals.map((proposal) => (
                         <li key={proposal.label.toLowerCase()} style={{ display: 'flex', gap: 10, fontSize: 13.5 }}>
                           <span style={{ color: t.ink, fontWeight: 500, flex: 1, minWidth: 0 }}>
                             {proposal.label}
                             <span style={{ color: t.inkDim, fontWeight: 400 }}>
-                              {' '}· {proposal.people} {proposal.people === 1 ? 'person' : 'people'}
+                              {' '}· {text('common.people', { count: proposal.people })}
                             </span>
                           </span>
                           <span className="placer-mono" style={{ color: t.inkDim }}>{money(proposal.spent)}</span>
@@ -159,25 +160,23 @@ export function BudgetBallot({ t, tool, room }) {
               </>
             ) : (
               <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
-                Nobody has cast a ballot yet. Yours will show up here as soon as you add something.
+                {text('budgetBallot.emptyRoom')}
               </p>
             )}
           </Panel>
         )}
 
-        <Panel t={t} title="Your ballot">
+        <Panel t={t} title={text('budgetBallot.yourBallot')}>
           {result.items.length === 0 ? (
             <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
-              {config
-                ? 'Nothing chosen yet. Press + on a post to start spending.'
-                : "Nothing chosen yet. Press + on a post, or start from the council's draft and argue with it."}
+              {text(config ? 'budgetBallot.emptyBallotSetUp' : 'budgetBallot.emptyBallot')}
             </p>
           ) : (
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
               {result.items.map((item) => (
                 <li key={item.key} style={{ display: 'flex', gap: 10, fontSize: 13.5 }}>
                   <span style={{ color: t.ink, fontWeight: 500, flex: 1, minWidth: 0 }}>
-                    {item.label} × {item.quantity}
+                    {postLabel(item)} × {item.quantity}
                   </span>
                   <span className="placer-mono" style={{ color: t.inkDim }}>{money(item.cost)}</span>
                 </li>
@@ -191,9 +190,9 @@ export function BudgetBallot({ t, tool, room }) {
             variant="primary"
             size="sm"
             icon="send"
-            label="Copy my ballot"
-            copiedLabel="Copied"
-            fieldLabel="Your ballot as text"
+            label={text('budgetBallot.copyBallot')}
+            copiedLabel={text('common.copied')}
+            fieldLabel={text('budgetBallot.ballotAsText')}
             multiline
             disabled={result.items.length === 0}
             style={{ alignItems: 'flex-start' }}

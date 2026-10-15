@@ -23,6 +23,8 @@
  * two sides together.
  */
 
+import { formatLocale, text } from '../i18n';
+
 /** This browser's participant token. */
 const PARTICIPANT_KEY = 'placemaking_room_participant';
 /** Rooms this browser opened: { [roomId]: { pin, token, code } }. */
@@ -98,9 +100,11 @@ export function timeRemaining(expiresAt, now = Date.now()) {
   const left = deadline - now;
   if (left <= 0) return null;
 
+  // In the reader's language: the units are time.d, time.h and time.m in the dictionary.
+  const unit = (count, name) => text(`time.${name}`, { count });
   const minutes = Math.floor(left / 60000);
-  if (minutes < 1) return 'under a minute';
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1) return text('time.underAMinute');
+  if (minutes < 60) return unit(minutes, 'm');
 
   const hours = Math.floor(minutes / 60);
   // Past two days, minutes stop meaning anything to somebody reading a countdown on a
@@ -108,18 +112,18 @@ export function timeRemaining(expiresAt, now = Date.now()) {
   if (hours >= 48) {
     const days = Math.floor(hours / 24);
     const restHours = hours % 24;
-    return restHours === 0 ? `${days}d` : `${days}d ${restHours}h`;
+    return restHours === 0 ? unit(days, 'd') : `${unit(days, 'd')} ${unit(restHours, 'h')}`;
   }
 
   const rest = minutes % 60;
-  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
+  return rest === 0 ? unit(hours, 'h') : `${unit(hours, 'h')} ${unit(rest, 'm')}`;
 }
 
 /** '2026-10-24T…' → '24 October 2026', for saying when a long room ends. */
 export function formatRoomDate(value) {
   const date = new Date(value ?? NaN);
   if (!Number.isFinite(date.getTime())) return null;
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  return date.toLocaleDateString(formatLocale(), { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 /** Today in this browser's calendar, as 'YYYY-MM-DD'. */

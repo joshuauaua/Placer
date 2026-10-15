@@ -5,6 +5,7 @@ import { SettingsPage } from '../SettingsPage';
 import { saveProfile } from '../../services/profile';
 import { removeProfileImageFile, updatePassword, uploadProfilePhoto } from '../../services/auth';
 import { THEME } from '../../theme';
+import { STORAGE_KEY as LANGUAGE_KEY, setLanguage } from '../../i18n';
 
 vi.mock('../../services/auth', () => ({
   updatePassword: vi.fn(() => Promise.resolve()),
@@ -134,7 +135,7 @@ describe('SettingsPage, options', () => {
     setup({ email: 'mara@example.com', onNewOrganisation: vi.fn() });
 
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent))
-      .toEqual(['Profile Settings', 'Account', 'Data and Privacy']);
+      .toEqual(['Profile Settings', 'Account', 'Preferences', 'Data and Privacy']);
     expect(screen.queryByLabelText('Your name')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: PROFILE })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: PASSWORD })).toBeInTheDocument();
@@ -153,6 +154,24 @@ describe('SettingsPage, options', () => {
     const { onNavigate } = setup({ option: 'Your data' });
 
     expect(onNavigate).toHaveBeenCalledWith('terms');
+  });
+
+  describe('Language', () => {
+    afterEach(() => setLanguage('en'));
+
+    it('switches the language, keeps it for this browser, and says so in the new one', () => {
+      setup({ option: 'Language' });
+
+      expect(screen.getByRole('radio', { name: 'English' })).toBeChecked();
+      fireEvent.click(screen.getByRole('radio', { name: 'Türkçe' }));
+
+      expect(screen.getByRole('radio', { name: 'Türkçe' })).toBeChecked();
+      expect(localStorage.getItem(LANGUAGE_KEY)).toBe('tr');
+      expect(document.documentElement.lang).toBe('tr');
+      // The option's own words follow at once, so the way back is in the language now showing.
+      expect(screen.getByRole('heading', { level: 2, name: 'Dil' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'English' })).toBeInTheDocument();
+    });
   });
 });
 

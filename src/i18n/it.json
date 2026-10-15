@@ -1,0 +1,504 @@
+{
+  "common": {
+    "add": "Aggiungi",
+    "howItWorks": "Come funziona",
+    "people": {
+      "one": "{count} persona",
+      "other": "{count} persone"
+    },
+    "copied": "Copiato",
+    "back": "Indietro",
+    "language": "Lingua",
+    "presets": "Preimpostazioni"
+  },
+  "wordCloud": {
+    "cloudLabel": "Nuvola di parole",
+    "saidBy": {
+      "one": ", detta da {count} persona",
+      "other": ", detta da {count} persone"
+    },
+    "countsLabel": "Le risposte e quante volte è stata data ciascuna",
+    "yourWord": "La tua parola",
+    "yourWords": "Le tue parole",
+    "finished": "Finito",
+    "allWordsUsed": "Hai usato tutte le tue parole",
+    "typeAWord": "Scrivi una parola",
+    "remove": "Rimuovi {word}",
+    "finishedNoMore": "Finito — non si accettano più parole.",
+    "oneWordEach": "Una parola a testa.",
+    "wordsUsed": {
+      "one": "{used} di {count} parola.",
+      "other": "{used} di {count} parole."
+    },
+    "timeLeft": "Tempo rimasto",
+    "paused": "in pausa",
+    "roomsCloud": "La nuvola della stanza",
+    "yourCloud": "La tua nuvola",
+    "emptyRoom": "Nessuno ha ancora aggiunto una parola. La tua comparirà qui appena la aggiungi.",
+    "emptySolo": "Aggiungi una parola per vederla qui.",
+    "startTimer": "Avvia il timer di {seconds} secondi",
+    "continue": "Continua",
+    "pause": "Pausa",
+    "stop": "Ferma",
+    "resetTimer": "Azzera il timer",
+    "askSomething": "Chiedi qualcosa",
+    "prompt": "La domanda",
+    "promptPlaceholder": "Una parola per questo luogo?",
+    "promptHint": "Si vede solo su questo schermo — leggila ad alta voce o mettila su una slide. Conta ciò che si scrive qui sotto, non la formulazione.",
+    "timer": "Timer",
+    "timerHint": "Facoltativo. Avvialo dalla nuvola; quando scade, non si accettano più parole.",
+    "addYourWords": "Aggiungi le tue parole",
+    "sentToRoom": "Inviato alla stanza.",
+    "removeToChange": "Rimuovi una parola se cambi idea.",
+    "answers": "Risposte",
+    "answersEmpty": "Qui compare ogni risposta, con quante volte è stata data.",
+    "howItWorks": "Apri una stanza e condividi il suo PIN o codice QR: chi si unisce aggiunge qualche parola sua — la nuvola qui sopra cresce in diretta, e una parola diventa più grande ogni volta che un'altra persona la dice. Aperta da un progetto, una stanza può restare aperta fino a 90 giorni, così il suo codice QR può finire su un manifesto. Chiudere la stanza, o lo scadere del suo tempo, cancella tutte le parole che contiene."
+  },
+  "openVote": {
+    "options": {
+      "yes": "Sì",
+      "no": "No",
+      "undecided": "Indeciso"
+    },
+    "theQuestion": "La domanda",
+    "askSomething": "Chiedi qualcosa",
+    "questionPlaceholder": "Sì o no?",
+    "questionHint": "Si vede solo su questo schermo — leggila ad alta voce o mettila su una slide. Conta il voto qui sotto, non la formulazione.",
+    "castYourVote": "Esprimi il tuo voto",
+    "sentToRoom": "Inviato alla stanza.",
+    "changeYourMind": "Puoi cambiare idea quando vuoi — conta solo l'ultimo voto.",
+    "roomsVote": "Il voto della stanza",
+    "cast": {
+      "one": "{count} voto",
+      "other": "{count} voti"
+    },
+    "emptyRoom": "Nessuno ha ancora votato. Il tuo voto comparirà qui appena scegli.",
+    "result": "Risultato",
+    "emptySolo": "Scegli una risposta per vederla qui.",
+    "howItWorks": "Apri una stanza e condividi il suo PIN o codice QR: chi si unisce vota su ciò che hai chiesto — il conteggio qui sopra si aggiorna in diretta a ogni scelta. Aperta da un progetto, una stanza può restare aperta fino a 90 giorni, così il suo codice QR può finire su un manifesto. Chiudere la stanza, o lo scadere del suo tempo, cancella tutti i voti che contiene."
+  },
+  "budgetBallot": {
+    "units": {
+      "tree": {
+        "one": "albero",
+        "other": "alberi"
+      },
+      "bench": {
+        "one": "panchina",
+        "other": "panchine"
+      },
+      "metre": {
+        "one": "metro",
+        "other": "metri"
+      },
+      "crossing": {
+        "one": "attraversamento",
+        "other": "attraversamenti"
+      },
+      "set": {
+        "one": "set",
+        "other": "set"
+      },
+      "bay": {
+        "one": "stallo",
+        "other": "stalli"
+      },
+      "lamp": {
+        "one": "lampione",
+        "other": "lampioni"
+      },
+      "garden": {
+        "one": "giardino",
+        "other": "giardini"
+      },
+      "item": {
+        "one": "unità",
+        "other": "unità"
+      }
+    },
+    "posts": {
+      "trees": {
+        "label": "Alberi stradali",
+        "note": "Specie a chioma ampia in una buca vera, non in un vaso."
+      },
+      "benches": {
+        "label": "Panchine con schienale",
+        "note": "Una panchina ogni 50 metri trasforma un percorso in uno percorribile a piedi."
+      },
+      "footway": {
+        "label": "Marciapiede allargato",
+        "note": "Sottratto alla carreggiata, così due persone con il passeggino possono incrociarsi."
+      },
+      "cycleTrack": {
+        "label": "Pista ciclabile protetta",
+        "note": "Separata da un cordolo, a doppio senso, continua anche agli incroci laterali."
+      },
+      "crossings": {
+        "label": "Attraversamenti rialzati",
+        "note": "A livello del marciapiede, così è l'auto a dover salire."
+      },
+      "play": {
+        "label": "Attrezzature per il gioco",
+        "note": "Elementi liberi e informali invece di un parco giochi recintato."
+      },
+      "parklets": {
+        "label": "Stallo di sosta → parklet",
+        "note": "Gli affari misurati di solito crescono. I negozi chiedono comunque indietro il parcheggio."
+      },
+      "lighting": {
+        "label": "Illuminazione stradale più calda",
+        "note": "Illumina all'altezza del viso di chi cammina, non solo il manto stradale."
+      },
+      "rainGarden": {
+        "label": "Giardini della pioggia",
+        "note": "Raccolgono gli acquazzoni che i tombini non reggono, e si curano da soli."
+      }
+    },
+    "ownProblems": {
+      "tooMany": {
+        "one": "Puoi aggiungere al massimo {count} voce tua.",
+        "other": "Puoi aggiungere al massimo {count} voci tue."
+      },
+      "noName": "Dai un nome alla tua voce.",
+      "tooLong": {
+        "one": "Il nome deve stare sotto {count} carattere.",
+        "other": "Il nome deve stare sotto i {count} caratteri."
+      },
+      "duplicate": "Esiste già una voce con questo nome.",
+      "noCost": "Indica un costo per unità, come numero intero.",
+      "overBudget": "Costa più per unità dell'intero budget."
+    },
+    "otherPosts": {
+      "one": "Altro ({count} voce)",
+      "other": "Altro ({count} voci)"
+    },
+    "unspent": "Non speso",
+    "summary": {
+      "title": "Il mio budget — PLACER Toolkit",
+      "spent": "Spesi {spent} su {budget}",
+      "nothing": "Ancora niente di scelto."
+    },
+    "committed": "Impegnato",
+    "ofABudgetOf": "Su un budget di",
+    "budgetUsed": "Budget usato",
+    "left": "{amount} rimasti",
+    "ownFull": {
+      "one": "Hai {count} voce tua, il massimo che una scheda può aggiungere.",
+      "other": "Hai {count} voci tue, il massimo che una scheda può aggiungere."
+    },
+    "ownName": "Nome della tua voce",
+    "ownNamePlaceholder": "es. Fontanella",
+    "ownCost": "Costo per unità della tua voce",
+    "perItem": "per unità",
+    "removeOwn": "Rimuovi la tua voce: {label}",
+    "oneFewer": "Uno in meno: {label}",
+    "howMany": "{label}: quanti",
+    "oneMore": "Uno in più: {label}",
+    "budgetStops": {
+      "one": "Il budget si ferma a {count}, non la strada.",
+      "other": "Il budget si ferma a {count}, non la strada."
+    },
+    "addOwn": "Aggiungi una voce tua",
+    "addOwnHint": "Manca qualcosa nell'elenco? Aggiungila con il costo di un'unità e spendici dallo stesso budget. Viene mostrata come tua proposta.",
+    "presets": {
+      "empty": {
+        "label": "Parti da zero",
+        "note": "Ogni riga a zero."
+      },
+      "draft": {
+        "label": "La bozza del comune",
+        "note": "Marciapiede, attraversamenti e illuminazione — tre quarti dei soldi già impegnati."
+      }
+    },
+    "theMoney": "I soldi",
+    "whatBudgetCanGoOn": "Su cosa si può spendere il budget",
+    "whatStreetCouldHave": "Cosa potrebbe avere la strada",
+    "roomsBallot": "La scheda della stanza",
+    "roomCommits": "La stanza impegna",
+    "youCommit": "Tu impegni",
+    "you": {
+      "one": "tu {count}",
+      "other": "tu {count}"
+    },
+    "averageHint": "La media di tutte le schede della stanza, ed è per questo che sta ancora dentro {budget}. Dove differisce dalla tua è la discussione che vale la pena fare.",
+    "postsPeopleAdded": "Voci aggiunte dai partecipanti",
+    "emptyRoom": "Nessuno ha ancora compilato una scheda. La tua comparirà qui appena aggiungi qualcosa.",
+    "yourBallot": "La tua scheda",
+    "emptyBallotSetUp": "Ancora niente di scelto. Premi + su una voce per iniziare a spendere.",
+    "emptyBallot": "Ancora niente di scelto. Premi + su una voce, oppure parti dalla bozza del comune e discutila.",
+    "copyBallot": "Copia la mia scheda",
+    "ballotAsText": "La tua scheda come testo"
+  },
+  "popQuiz": {
+    "pickNickname": "Scegli un soprannome",
+    "nicknameHint": "È il nome con cui comparirai in classifica, quindi lo vedranno tutti.",
+    "nickname": "Soprannome",
+    "joinQuiz": "Partecipa al quiz",
+    "answerWas": "La risposta era {answer}.",
+    "right": "Giusto!",
+    "plusPoints": {
+      "one": "+{count} punto.",
+      "other": "+{count} punti."
+    },
+    "timeRanOut": "Tempo scaduto.",
+    "skipped": "Saltata.",
+    "notThisTime": "Non stavolta.",
+    "theRightAnswer": "(la risposta giusta)",
+    "youAnswered": "Hai risposto {answer}.",
+    "yourAnswer": "La tua risposta",
+    "fillInBlank": "Completa lo spazio vuoto",
+    "answer": "Rispondi",
+    "questionOf": {
+      "one": "Domanda {n} di {count}",
+      "other": "Domanda {n} di {count}"
+    },
+    "skipQuestion": "Salta questa domanda",
+    "lockedIn": "Risposta registrata.",
+    "shownWhenUp": "La risposta giusta compare allo scadere del tempo.",
+    "answerIs": "La risposta è {answer}.",
+    "scoreboard": "Classifica",
+    "nobodyJoined": "Non si è ancora unito nessuno.",
+    "you": "(tu)",
+    "nRight": {
+      "one": "{count} giusta",
+      "other": "{count} giuste"
+    },
+    "youAreIn": "Ci sei",
+    "welcome": "Benvenuto/a, {name}.",
+    "startsWhenReady": "Il quiz inizia quando il facilitatore è pronto.",
+    "playersSoFar": {
+      "one": "Finora {count} giocatore.",
+      "other": "Finora {count} giocatori."
+    },
+    "thatIsTheQuiz": "Il quiz è finito",
+    "points": {
+      "one": "{count} punto",
+      "other": "{count} punti"
+    },
+    "rightOf": {
+      "one": "{right} giuste su {count}.",
+      "other": "{right} giuste su {count}."
+    },
+    "rightAndPlace": {
+      "one": "{right} giuste su {count}, al {place}° posto su {players}.",
+      "other": "{right} giuste su {count}, al {place}° posto su {players}."
+    },
+    "finalScores": "Classifica finale",
+    "readyWhenYouAre": "Quando sei pronto",
+    "hostLobby": {
+      "one": "{count} domanda, {seconds} secondi ciascuna. I partecipanti entrano con il PIN o il codice QR della stanza e scelgono un soprannome; inizia quando ci sono tutti.",
+      "other": "{count} domande, {seconds} secondi ciascuna. I partecipanti entrano con il PIN o il codice QR della stanza e scelgono un soprannome; inizia quando ci sono tutti."
+    },
+    "startQuiz": "Inizia il quiz",
+    "players": "Giocatori",
+    "showAnswer": "Mostra la risposta",
+    "showFinalScores": "Mostra la classifica finale",
+    "nextQuestion": "Domanda successiva",
+    "answeredOf": {
+      "one": "{answered} su {count} hanno risposto",
+      "other": "{answered} su {count} hanno risposto"
+    },
+    "writeYourQuiz": "Scrivi il tuo quiz",
+    "playThisQuiz": "Gioca questo quiz",
+    "howItWorks1": "Scrivi fino a venti domande, ognuna con quattro opzioni o uno spazio da completare, e giocale qui per provarle. Una risposta giusta vale 500 punti più fino a 500 per la velocità; una sbagliata, saltata o non data in tempo non vale nulla.",
+    "howItWorks2": "Per giocare con un gruppo, aggiungi Quiz lampo a un progetto e configuralo dalla dashboard del progetto. Tutti entrano nella stanza con il PIN o il codice QR e scelgono un soprannome, tu mostri le domande una alla volta e la classifica segue. Un quiz scritto qui non viene salvato.",
+    "youGot": {
+      "one": "{name}, hai risposto giusto a {right} su {count}.",
+      "other": "{name}, hai risposto giusto a {right} su {count}."
+    },
+    "playAgain": "Gioca di nuovo",
+    "editQuiz": "Modifica il quiz",
+    "seeYourScore": "Vedi il tuo punteggio",
+    "pointsSoFar": {
+      "one": "{count} punto finora",
+      "other": "{count} punti finora"
+    },
+    "noQuiz": "Nessun quiz qui",
+    "noQuizHint": "Questa stanza è stata aperta senza un quiz da giocare."
+  },
+  "dreamIt": {
+    "prompts": [
+      "Se questo luogo avesse una voce, cosa direbbe?",
+      "Cosa manca qui che porterebbe gioia o conforto?",
+      "Immagina questo luogo nel 2050 — cosa succede qui?",
+      "Che tipo di storie potrebbero svolgersi in questo luogo?",
+      "Cosa ti farebbe venire voglia di passare più tempo qui?",
+      "Se questo luogo fosse un'emozione, quale vorresti che fosse?",
+      "Come sarebbe una mattina perfetta qui?",
+      "Chi vorresti incontrare qui, e cosa fareste insieme?",
+      "Cosa amerebbe un bambino di questo luogo, se tutto fosse possibile?",
+      "Quali suoni vorresti sentire quando arrivi?",
+      "Se potessi fare un solo regalo a questo luogo, quale sarebbe?",
+      "Quale ricordo vorresti che qualcuno creasse qui?",
+      "Cosa farebbe sentire questo luogo di tutti?",
+      "Immagina questo luogo nel suo giorno migliore — cosa sta succedendo?",
+      "Cosa vorresti trovare qui in una sera fredda e buia?"
+    ],
+    "whichPrompts": "Quali domande vuoi usare?",
+    "modes": {
+      "existing": {
+        "name": "Usa le domande già pronte",
+        "note": {
+          "one": "{count} domanda, pronta all'uso.",
+          "other": "{count} domande, pronte all'uso."
+        }
+      },
+      "own": {
+        "name": "Scrivi le tue domande",
+        "note": "Solo le domande che aggiungi tu."
+      },
+      "both": {
+        "name": "Tieni quelle pronte e aggiungi le tue",
+        "note": "Le tue domande, mescolate con le nostre."
+      }
+    },
+    "addOwn": "Aggiungi le tue domande",
+    "writeOwn": "Scrivi le tue domande",
+    "yourPrompt": "La tua domanda",
+    "yourPrompts": "Le tue domande",
+    "promptPlaceholder": "Cosa vorresti che le persone immaginassero?",
+    "remove": "Rimuovi “{prompt}”",
+    "shuffledIn": {
+      "one": "Verranno mescolate con la {count} domanda già pronta.",
+      "other": "Verranno mescolate con le {count} domande già pronte."
+    },
+    "notSaved": "Le tue domande non vengono salvate: ricaricare o lasciare questa pagina le cancella.",
+    "startWith": {
+      "one": "Inizia con {count} domanda",
+      "other": "Inizia con {count} domande"
+    },
+    "generateHint": "Genera una domanda, leggila ad alta voce e lascia a tutti un momento per immaginare prima che qualcuno risponda.",
+    "generateAnother": "Genera un'altra domanda",
+    "generate": "Genera una domanda",
+    "promptCount": {
+      "one": "{count} domanda",
+      "other": "{count} domande"
+    },
+    "promptOf": {
+      "one": "Domanda {n} di {count}",
+      "other": "Domanda {n} di {count}"
+    },
+    "changePrompts": "Cambia le domande",
+    "ownNotSaved": "Le tue domande non vengono salvate: ricaricare o lasciare questa pagina le cancella.",
+    "whatFor": "A cosa serve",
+    "whatForBody": "Immagina libera l'immaginazione e crea uno spazio sicuro in cui le persone possono condividere visioni personali, desideri e legami emotivi con un luogo. Invece di vincoli pratici o soluzioni immediate, invita tutti a pensare liberamente a come il luogo potrebbe far sentire, funzionare o ispirare in futuro.",
+    "howToRun": "Come condurlo",
+    "steps": {
+      "1": "Scegli le domande: le nostre, le tue o entrambe.",
+      "2": "Genera una domanda e leggila ad alta voce.",
+      "3": "Lascia alle persone un momento di silenzio per immaginare.",
+      "4": "Lascia che ognuno parli, racconti una storia o fantastichi — e che gli altri ascoltino.",
+      "5": "Generane un'altra quando la stanza è pronta."
+    },
+    "noWrongAnswers": "Non ci sono risposte sbagliate e ancora niente da risolvere. Parlare, immaginare e ascoltarsi a vicenda è ciò che costruisce un sentimento condiviso per il luogo."
+  },
+  "time": {
+    "underAMinute": "meno di un minuto",
+    "m": "{count} min",
+    "h": "{count} h",
+    "d": "{count} g"
+  },
+  "room": {
+    "errors": {
+      "missing": "Questa stanza non esiste. Forse è già stata chiusa.",
+      "otherTool": "Questa stanza appartiene a un altro strumento.",
+      "unknownSetup": "Questa stanza è stata configurata in un modo che questa versione dello strumento non sa mostrare."
+    },
+    "close": "Chiudi la stanza",
+    "closeConfirm": "Chiudi — conferma",
+    "delete": "Elimina la stanza",
+    "deleteConfirm": "Elimina — conferma",
+    "deleted": "Questa stanza è stata eliminata, insieme a tutto ciò che vi era stato aggiunto. Lo strumento funziona comunque da solo, e si può aprire una nuova stanza per un altro giro.",
+    "opensOn": "Questa stanza apre il {date}.",
+    "notOpenYet": "Questa stanza non è ancora aperta.",
+    "scheduledHint": "Fino ad allora non si può aggiungere nulla, e si aprirà qui da sola quando sarà il giorno.",
+    "closed": "Questa stanza è chiusa. Non si può aggiungere altro, e ciò che conteneva è stato cancellato.",
+    "expired": "Il tempo di questa stanza è scaduto, e ciò che conteneva è stato cancellato.",
+    "stillWorks": "Lo strumento funziona comunque da solo, e si può aprire una nuova stanza per un altro giro.",
+    "opening": "Apertura della stanza…",
+    "contributed": {
+      "one": "{count} persona ha partecipato",
+      "other": "{count} persone hanno partecipato"
+    },
+    "youAreIn": "Sei in una stanza",
+    "joinsEverybody": "Ciò che aggiungi si unisce a quello di tutti gli altri.",
+    "countAndLeft": "{contributed}, e alla stanza restano {left}.",
+    "title": "La stanza",
+    "left": "{left} rimasti",
+    "scanOrShare": "Inquadra il codice o condividi il link",
+    "openUntil": "Aperta fino al {date}",
+    "joinAt": "Partecipa su {url}",
+    "pinLabel": "PIN della stanza {pin}",
+    "copyLink": "Copia il link per partecipare",
+    "linkLabel": "Link per entrare in questa stanza",
+    "downloadQr": "Scarica il QR",
+    "longHint": "La stanza resta aperta fino al {date}. Puoi chiuderla prima da qui o dalla dashboard del progetto. In ogni caso ciò che contiene viene cancellato un giorno dopo la chiusura.",
+    "longHintLeft": "La stanza resta aperta fino al {date} — {left} rimasti. Puoi chiuderla prima da qui o dalla dashboard del progetto. In ogni caso ciò che contiene viene cancellato un giorno dopo la chiusura.",
+    "shortHint": "La stanza dura due ore dall'apertura, e chiuderla la termina prima. In ogni caso ciò che contiene viene cancellato.",
+    "shortHintLeft": "La stanza dura due ore dall'apertura — {left} rimasti, e chiuderla la termina prima. In ogni caso ciò che contiene viene cancellato."
+  },
+  "tool": {
+    "allTools": "Tutti gli strumenti",
+    "tool": "Strumento",
+    "by": "Di {name}",
+    "getStarted": "Inizia",
+    "linkLabel": "Link a questo strumento",
+    "categories": {
+      "understand": "Capire",
+      "imagine": "Immaginare",
+      "plan": "Pianificare"
+    },
+    "copyLink": "Copia il link",
+    "linkCopied": "Link copiato"
+  },
+  "join": {
+    "unknownTool": "Questa stanza è per uno strumento che questa versione di PLACER non ha.",
+    "title": "Entra in una stanza",
+    "notConfigured": "Le stanze non sono attive su questo sito. Una stanza è condivisa tra dispositivi, quindi serve un database — vedi",
+    "intro": "Scrivi le sei cifre sullo schermo del facilitatore. Le tue risposte si uniscono a quelle di tutti gli altri nella stanza.",
+    "pin": "PIN della stanza",
+    "looking": "Ricerca in corso…",
+    "join": "Entra",
+    "deadLink": "Questo link non porta più a una stanza. Forse è terminata da un po'.",
+    "noRoom": "Nessuna stanza aperta ha questo PIN. Forse è stata chiusa, o una delle cifre è sbagliata.",
+    "comeBack": "Torna allora per partecipare.",
+    "closedOn": "Questa stanza ha chiuso il {date}.",
+    "hasClosed": "Questa stanza ha chiuso.",
+    "thanks": "Grazie per essere passato — non accetta più risposte."
+  },
+  "tools": {
+    "word-cloud": {
+      "name": "Nuvola di parole",
+      "tagline": "Chiedi qualsiasi cosa e guarda le risposte raccogliersi.",
+      "blurb": "Scrivi ciò che vuoi chiedere a una stanza e lascia che ognuno risponda con qualche parola sua. Ogni parola entra nella nuvola appena aggiunta e cresce ogni volta che un'altra persona la dice — così ciò su cui la stanza è d'accordo è la prima cosa che leggi."
+    },
+    "open-vote": {
+      "name": "Sondaggio",
+      "tagline": "Chiedi qualsiasi cosa, con le risposte che scegli tu.",
+      "blurb": "Scrivi ciò che vuoi chiedere a una stanza, scrivi le risposte tra cui scegliere e lascia votare. Nessuna scala da calibrare — solo una domanda, le tue risposte e un conteggio in diretta mentre le persone scelgono."
+    },
+    "budget-ballot": {
+      "name": "Bilancio condiviso",
+      "tagline": "Un budget fisso, più voci di quante ne possa comprare. Scegli.",
+      "blurb": "Ogni voce ha un prezzo per unità, e i soldi finiscono ben prima dell'elenco. Spendi il budget come faresti tu e scopri cosa finanzierebbe la stanza tutta insieme."
+    },
+    "pop-quiz": {
+      "name": "Quiz lampo",
+      "tagline": "Venti domande, un cronometro e una classifica.",
+      "blurb": "Scrivi un quiz fino a venti domande, ognuna con quattro opzioni o uno spazio da completare. Tutti entrano con un soprannome, le domande compaiono una alla volta e una risposta giusta vale di più quanto prima arriva — un modo rapido per scoprire cosa una stanza sa già di un luogo."
+    },
+    "dream-it": {
+      "name": "Immagina",
+      "tagline": "Una domanda per far immaginare una stanza, con un clic.",
+      "blurb": "Un'attività per liberare l'immaginazione e creare uno spazio sicuro in cui condividere visioni personali, desideri e legami emotivi con un luogo. Genera una domanda e lascia che le persone parlino, immaginino e si ascoltino a vicenda — su come il luogo potrebbe far sentire, funzionare o ispirare, invece che su ciò che è pratico oggi."
+    }
+  },
+  "settings": {
+    "language": {
+      "title": "Lingua",
+      "description": "La lingua in cui PLACER viene mostrato su questo browser",
+      "choose": "Mostra PLACER in",
+      "scope": "Salvata per questo browser. Per ora sono tradotti l'ingresso nelle stanze e gli strumenti dal vivo del Toolkit; il resto di PLACER è ancora in inglese mentre viene tradotto."
+    }
+  }
+}

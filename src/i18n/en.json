@@ -1,0 +1,501 @@
+{
+  "common": {
+    "add": "Add",
+    "howItWorks": "How it works",
+    "people": {
+      "one": "{count} person",
+      "other": "{count} people"
+    },
+    "copied": "Copied",
+    "back": "Back",
+    "language": "Language",
+    "presets": "Presets"
+  },
+  "wordCloud": {
+    "cloudLabel": "Word cloud",
+    "saidBy": ", said by {count}",
+    "countsLabel": "Answers and how many times each was given",
+    "yourWord": "Your word",
+    "yourWords": "Your words",
+    "finished": "Finished",
+    "allWordsUsed": "That is all your words",
+    "typeAWord": "Type a word",
+    "remove": "Remove {word}",
+    "finishedNoMore": "Finished — no more words are being taken.",
+    "oneWordEach": "One word each.",
+    "wordsUsed": {
+      "one": "{used} of {count} word.",
+      "other": "{used} of {count} words."
+    },
+    "timeLeft": "Time left",
+    "paused": "paused",
+    "roomsCloud": "The room's cloud",
+    "yourCloud": "Your cloud",
+    "emptyRoom": "Nobody has added a word yet. Yours will show up here as soon as you add one.",
+    "emptySolo": "Add a word to see it here.",
+    "startTimer": "Start the {seconds} second timer",
+    "continue": "Continue",
+    "pause": "Pause",
+    "stop": "Stop",
+    "resetTimer": "Reset the timer",
+    "askSomething": "Ask something",
+    "prompt": "The prompt",
+    "promptPlaceholder": "One word for this place?",
+    "promptHint": "Shown on this screen only — read it aloud, or put it on a slide. What gets counted is the words below, not the wording.",
+    "timer": "Timer",
+    "timerHint": "Optional. Start it from the cloud; when it runs out, no more words are taken.",
+    "addYourWords": "Add your words",
+    "sentToRoom": "Sent to the room.",
+    "removeToChange": "Remove a word to change your mind.",
+    "answers": "Answers",
+    "answersEmpty": "Each answer is listed here, with how many times it was given.",
+    "howItWorks": "Open a room and share its PIN or QR code, and everybody who joins adds a few words of their own — the cloud above grows live, and a word gets larger each time another person says it. Opened from a project, a room can stay open for up to 90 days, so its QR code can go on a poster. Closing the room, or its time running out, lets go of every word in it."
+  },
+  "openVote": {
+    "options": {
+      "yes": "Yes",
+      "no": "No",
+      "undecided": "Undecided"
+    },
+    "theQuestion": "The question",
+    "askSomething": "Ask something",
+    "questionPlaceholder": "Yes or No?",
+    "questionHint": "Shown on this screen only — read it aloud, or put it on a slide. What gets counted is the vote below, not the wording.",
+    "castYourVote": "Cast your vote",
+    "sentToRoom": "Sent to the room.",
+    "changeYourMind": "Change your mind any time — only the last vote counts.",
+    "roomsVote": "The room's vote",
+    "cast": {
+      "one": "{count} cast",
+      "other": "{count} cast"
+    },
+    "emptyRoom": "Nobody has voted yet. Yours will show up here as soon as you pick one.",
+    "result": "Result",
+    "emptySolo": "Pick an answer to see it here.",
+    "howItWorks": "Open a room and share its PIN or QR code, and everybody who joins votes on whatever you asked — the tally above updates live as each person picks. Opened from a project, a room can stay open for up to 90 days, so its QR code can go on a poster. Closing the room, or its time running out, lets go of every vote in it."
+  },
+  "budgetBallot": {
+    "units": {
+      "tree": {
+        "one": "tree",
+        "other": "trees"
+      },
+      "bench": {
+        "one": "bench",
+        "other": "benches"
+      },
+      "metre": {
+        "one": "metre",
+        "other": "metres"
+      },
+      "crossing": {
+        "one": "crossing",
+        "other": "crossings"
+      },
+      "set": {
+        "one": "set",
+        "other": "sets"
+      },
+      "bay": {
+        "one": "bay",
+        "other": "bays"
+      },
+      "lamp": {
+        "one": "lamp",
+        "other": "lamps"
+      },
+      "garden": {
+        "one": "garden",
+        "other": "gardens"
+      },
+      "item": {
+        "one": "item",
+        "other": "items"
+      }
+    },
+    "posts": {
+      "trees": {
+        "label": "Street trees",
+        "note": "Big canopy species in a proper pit, not a tub."
+      },
+      "benches": {
+        "label": "Benches with backs",
+        "note": "A bench every 50 metres is what turns a route into a walkable one."
+      },
+      "footway": {
+        "label": "Widened footway",
+        "note": "Taken from the carriageway, so two people with buggies can pass."
+      },
+      "cycleTrack": {
+        "label": "Protected cycle track",
+        "note": "Kerb-separated, both directions, continuous across side roads."
+      },
+      "crossings": {
+        "label": "Raised crossings",
+        "note": "Level with the footway, so the car is the one that has to climb."
+      },
+      "play": {
+        "label": "Play equipment",
+        "note": "Loose, informal kit rather than a fenced playground."
+      },
+      "parklets": {
+        "label": "Parking bay → parklet",
+        "note": "Measured trade usually goes up. The shops still ask for the parking back."
+      },
+      "lighting": {
+        "label": "Warmer street lighting",
+        "note": "Lit at head height for people walking, not just at the road surface."
+      },
+      "rainGarden": {
+        "label": "Rain gardens",
+        "note": "Takes the downpour the drains cannot, and looks after itself."
+      }
+    },
+    "ownProblems": {
+      "tooMany": {
+        "one": "You can add up to {count} post of your own.",
+        "other": "You can add up to {count} posts of your own."
+      },
+      "noName": "Give your post a name.",
+      "tooLong": {
+        "one": "Keep its name under {count} character.",
+        "other": "Keep its name under {count} characters."
+      },
+      "duplicate": "There is already a post with that name.",
+      "noCost": "Give it a cost per item, as a whole number.",
+      "overBudget": "That costs more per item than the whole budget."
+    },
+    "otherPosts": {
+      "one": "Other ({count} post)",
+      "other": "Other ({count} posts)"
+    },
+    "unspent": "Unspent",
+    "summary": {
+      "title": "My budget — PLACER Toolkit",
+      "spent": "Spent {spent} of {budget}",
+      "nothing": "Nothing chosen yet."
+    },
+    "committed": "Committed",
+    "ofABudgetOf": "Of a budget of",
+    "budgetUsed": "Budget used",
+    "left": "{amount} left",
+    "ownFull": {
+      "one": "That is {count} of your own, which is as many as one ballot can add.",
+      "other": "That is {count} of your own, which is as many as one ballot can add."
+    },
+    "ownName": "Your post's name",
+    "ownNamePlaceholder": "e.g. Drinking fountain",
+    "ownCost": "Your post's cost per item",
+    "perItem": "per item",
+    "removeOwn": "Remove your post: {label}",
+    "oneFewer": "One fewer: {label}",
+    "howMany": "{label}: how many",
+    "oneMore": "One more: {label}",
+    "budgetStops": {
+      "one": "The budget stops at {count}, not the street.",
+      "other": "The budget stops at {count}, not the street."
+    },
+    "addOwn": "Add your own post",
+    "addOwnHint": "Something missing from the list? Add it with what one would cost, and spend on it from the same budget. It is shown as your proposal.",
+    "presets": {
+      "empty": {
+        "label": "Start from nothing",
+        "note": "Every line at zero."
+      },
+      "draft": {
+        "label": "The council's draft",
+        "note": "Footway, crossings and lighting — three quarters of the money already committed."
+      }
+    },
+    "theMoney": "The money",
+    "whatBudgetCanGoOn": "What the budget can go on",
+    "whatStreetCouldHave": "What the street could have",
+    "roomsBallot": "The room's ballot",
+    "roomCommits": "The room commits",
+    "youCommit": "You commit",
+    "you": {
+      "one": "you {count}",
+      "other": "you {count}"
+    },
+    "averageHint": "The average of every ballot in the room, which is why it still fits inside {budget}. Where it differs from yours is the argument worth having.",
+    "postsPeopleAdded": "Posts people added",
+    "emptyRoom": "Nobody has cast a ballot yet. Yours will show up here as soon as you add something.",
+    "yourBallot": "Your ballot",
+    "emptyBallotSetUp": "Nothing chosen yet. Press + on a post to start spending.",
+    "emptyBallot": "Nothing chosen yet. Press + on a post, or start from the council's draft and argue with it.",
+    "copyBallot": "Copy my ballot",
+    "ballotAsText": "Your ballot as text"
+  },
+  "popQuiz": {
+    "pickNickname": "Pick a nickname",
+    "nicknameHint": "It is what you are called on the scoreboard, so everybody will see it.",
+    "nickname": "Nickname",
+    "joinQuiz": "Join the quiz",
+    "answerWas": "The answer was {answer}.",
+    "right": "Right!",
+    "plusPoints": {
+      "one": "+{count} point.",
+      "other": "+{count} points."
+    },
+    "timeRanOut": "Time ran out.",
+    "skipped": "Skipped.",
+    "notThisTime": "Not this time.",
+    "theRightAnswer": "(the right answer)",
+    "youAnswered": "You answered {answer}.",
+    "yourAnswer": "Your answer",
+    "fillInBlank": "Fill in the blank",
+    "answer": "Answer",
+    "questionOf": {
+      "one": "Question {n} of {count}",
+      "other": "Question {n} of {count}"
+    },
+    "skipQuestion": "Skip this question",
+    "lockedIn": "Answer locked in.",
+    "shownWhenUp": "The answer is shown when the time is up.",
+    "answerIs": "The answer is {answer}.",
+    "scoreboard": "Scoreboard",
+    "nobodyJoined": "Nobody has joined yet.",
+    "you": "(you)",
+    "nRight": {
+      "one": "{count} right",
+      "other": "{count} right"
+    },
+    "youAreIn": "You are in",
+    "welcome": "Welcome, {name}.",
+    "startsWhenReady": "The quiz starts when the facilitator is ready.",
+    "playersSoFar": {
+      "one": "{count} player so far.",
+      "other": "{count} players so far."
+    },
+    "thatIsTheQuiz": "That is the quiz",
+    "points": {
+      "one": "{count} point",
+      "other": "{count} points"
+    },
+    "rightOf": {
+      "one": "{right} of {count} right.",
+      "other": "{right} of {count} right."
+    },
+    "rightAndPlace": {
+      "one": "{right} of {count} right, and number {place} of {players}.",
+      "other": "{right} of {count} right, and number {place} of {players}."
+    },
+    "finalScores": "Final scores",
+    "readyWhenYouAre": "Ready when you are",
+    "hostLobby": {
+      "one": "{count} question, {seconds} seconds each. People join with the room's PIN or QR code and pick a nickname; start once everybody is in.",
+      "other": "{count} questions, {seconds} seconds each. People join with the room's PIN or QR code and pick a nickname; start once everybody is in."
+    },
+    "startQuiz": "Start the quiz",
+    "players": "Players",
+    "showAnswer": "Show the answer",
+    "showFinalScores": "Show the final scores",
+    "nextQuestion": "Next question",
+    "answeredOf": {
+      "one": "{answered} of {count} answered",
+      "other": "{answered} of {count} answered"
+    },
+    "writeYourQuiz": "Write your quiz",
+    "playThisQuiz": "Play this quiz",
+    "howItWorks1": "Write up to twenty questions, each with four choices or a blank to fill in, and play them through here to try it out. A right answer scores 500 points and up to 500 more for speed; a wrong one, a skipped one or none in time scores nothing.",
+    "howItWorks2": "To play with a group, add Pop Quiz to a project and set it up from the project's dashboard. Everybody joins the room with its PIN or QR code and picks a nickname, you put the questions up one at a time, and the scoreboard follows. A quiz written here is not saved.",
+    "youGot": {
+      "one": "{name}, you got {right} of {count} right.",
+      "other": "{name}, you got {right} of {count} right."
+    },
+    "playAgain": "Play again",
+    "editQuiz": "Edit the quiz",
+    "seeYourScore": "See your score",
+    "pointsSoFar": {
+      "one": "{count} point so far",
+      "other": "{count} points so far"
+    },
+    "noQuiz": "No quiz here",
+    "noQuizHint": "This room was opened without a quiz to play."
+  },
+  "dreamIt": {
+    "prompts": [
+      "If this place had a voice, what would it say?",
+      "What is missing here that would bring joy or comfort?",
+      "Imagine this place in 2050 — what happens here?",
+      "What kind of stories could unfold in this place?",
+      "What would make you want to spend more time here?",
+      "If this place were a feeling, which one would you want it to be?",
+      "What would a perfect morning here look like?",
+      "Who do you wish you could meet here, and what would you do together?",
+      "What would a child love about this place if anything were possible?",
+      "What sounds would you like to hear when you arrive?",
+      "If you could give this place one gift, what would it be?",
+      "What memory would you like somebody to make here?",
+      "What would make this place feel like it belongs to everyone?",
+      "Imagine this place on its best day — what is going on?",
+      "What would you want to find here on a cold, dark evening?"
+    ],
+    "whichPrompts": "Which prompts do you want to use?",
+    "modes": {
+      "existing": {
+        "name": "Use the existing prompts",
+        "note": {
+          "one": "{count} prompt, ready to go.",
+          "other": "{count} prompts, ready to go."
+        }
+      },
+      "own": {
+        "name": "Write your own prompts",
+        "note": "Only the prompts you add."
+      },
+      "both": {
+        "name": "Keep the existing ones and add your own",
+        "note": "Your prompts, shuffled in with ours."
+      }
+    },
+    "addOwn": "Add your own prompts",
+    "writeOwn": "Write your own prompts",
+    "yourPrompt": "Your prompt",
+    "yourPrompts": "Your prompts",
+    "promptPlaceholder": "What would you like people to imagine?",
+    "remove": "Remove “{prompt}”",
+    "shuffledIn": {
+      "one": "They will be shuffled in with the {count} existing prompt.",
+      "other": "They will be shuffled in with the {count} existing prompts."
+    },
+    "notSaved": "Your prompts are not saved: refreshing or leaving this page loses them.",
+    "startWith": {
+      "one": "Start with {count} prompt",
+      "other": "Start with {count} prompts"
+    },
+    "generateHint": "Generate a prompt, read it aloud, and give everybody a moment to imagine before anyone answers.",
+    "generateAnother": "Generate another prompt",
+    "generate": "Generate a prompt",
+    "promptCount": {
+      "one": "{count} prompt",
+      "other": "{count} prompts"
+    },
+    "promptOf": {
+      "one": "Prompt {n} of {count}",
+      "other": "Prompt {n} of {count}"
+    },
+    "changePrompts": "Change the prompts",
+    "ownNotSaved": "Your own prompts are not saved: refreshing or leaving this page loses them.",
+    "whatFor": "What it is for",
+    "whatForBody": "Dream It unlocks imagination and makes a safe space for people to share personal visions, desires and emotional connections to a place. Rather than practical constraints or immediate solutions, it invites everybody to think freely about how the place could feel, function or inspire in the future.",
+    "howToRun": "How to run it",
+    "steps": {
+      "1": "Choose the prompts: ours, your own, or both.",
+      "2": "Generate a prompt and read it aloud.",
+      "3": "Give people a quiet moment to imagine.",
+      "4": "Let each person speak, tell a story or speculate — and let the others listen.",
+      "5": "Generate another when the room is ready."
+    },
+    "noWrongAnswers": "There are no wrong answers and nothing to solve yet. Speaking, imagining and listening to each other is what builds a shared feeling for the place."
+  },
+  "time": {
+    "underAMinute": "under a minute",
+    "m": "{count}m",
+    "h": "{count}h",
+    "d": "{count}d"
+  },
+  "room": {
+    "errors": {
+      "missing": "That room does not exist. It may already have been closed.",
+      "otherTool": "That room belongs to a different tool.",
+      "unknownSetup": "This room was set up in a way this version of the tool cannot show."
+    },
+    "close": "Close room",
+    "closeConfirm": "Close — confirm",
+    "delete": "Delete room",
+    "deleteConfirm": "Delete — confirm",
+    "deleted": "This room has been deleted, along with everything contributed to it. The tool still works on its own, and a new room can be opened for another round.",
+    "opensOn": "This room opens on {date}.",
+    "notOpenYet": "This room has not opened yet.",
+    "scheduledHint": "Nothing can be added to it until then, and it opens here by itself when the day comes.",
+    "closed": "This room is closed. Nothing more can be added to it, and what it held has been let go.",
+    "expired": "This room has run out of time, and what it held has been let go.",
+    "stillWorks": "The tool still works on its own, and a new room can be opened for another round.",
+    "opening": "Opening the room…",
+    "contributed": {
+      "one": "{count} person has contributed",
+      "other": "{count} people have contributed"
+    },
+    "youAreIn": "You are in a room",
+    "joinsEverybody": "What you add joins everybody else's.",
+    "countAndLeft": "{contributed}, and the room has {left} left.",
+    "title": "The room",
+    "left": "{left} left",
+    "scanOrShare": "Scan the code or share the link",
+    "openUntil": "Open until {date}",
+    "joinAt": "Join at {url}",
+    "pinLabel": "Room PIN {pin}",
+    "copyLink": "Copy join link",
+    "linkLabel": "Link to join this room",
+    "downloadQr": "Download QR",
+    "longHint": "The room stays open until {date}. You can close it sooner from here or from the project's dashboard. Either way what it held is let go a day after it ends.",
+    "longHintLeft": "The room stays open until {date} — {left} left. You can close it sooner from here or from the project's dashboard. Either way what it held is let go a day after it ends.",
+    "shortHint": "The room lasts two hours from opening, and closing it ends it sooner. Either way what it held is let go.",
+    "shortHintLeft": "The room lasts two hours from opening — {left} left, and closing it ends it sooner. Either way what it held is let go."
+  },
+  "tool": {
+    "allTools": "All tools",
+    "tool": "Tool",
+    "by": "By {name}",
+    "getStarted": "Get started",
+    "linkLabel": "Link to this tool",
+    "categories": {
+      "understand": "Understand",
+      "imagine": "Imagine",
+      "plan": "Plan"
+    },
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied"
+  },
+  "join": {
+    "unknownTool": "That room is for a tool this version of PLACER does not have.",
+    "title": "Join a room",
+    "notConfigured": "Rooms are not switched on for this site. A room is shared between devices, so it needs a database behind it — see",
+    "intro": "Type the six digits on the facilitator's screen. Your answers join everyone else's in the room.",
+    "pin": "Room PIN",
+    "looking": "Looking for it…",
+    "join": "Join",
+    "deadLink": "That link does not lead to a room any more. It may have ended a while ago.",
+    "noRoom": "No open room has that PIN. It may have been closed, or one of the digits may be off.",
+    "comeBack": "Come back then to take part.",
+    "closedOn": "This room closed on {date}.",
+    "hasClosed": "This room has closed.",
+    "thanks": "Thanks for looking — it is not taking any more answers."
+  },
+  "tools": {
+    "word-cloud": {
+      "name": "Word Cloud",
+      "tagline": "Ask anything, and watch the answers gather.",
+      "blurb": "Type whatever you want to put to a room and let everybody answer in a few words of their own. Each word joins the cloud as it is added, and grows every time another person says it — so what the room agrees on is the first thing you read."
+    },
+    "open-vote": {
+      "name": "Poll",
+      "tagline": "Ask anything, with the answers you choose.",
+      "blurb": "Type whatever you want to put to a room, write the answers people can pick from, then let them vote. There is no scale to calibrate — just a question, your answers, and a live tally as people pick."
+    },
+    "budget-ballot": {
+      "name": "Co-Budget",
+      "tagline": "A fixed budget, more on the list than it buys. Choose.",
+      "blurb": "Every post has a price per item, and the money runs out well before the list does. Spend the budget the way you would, and see what the room would fund together."
+    },
+    "pop-quiz": {
+      "name": "Pop Quiz",
+      "tagline": "Twenty questions, a clock, and a scoreboard.",
+      "blurb": "Write a quiz of up to twenty questions, each with four choices or a blank to fill in. Everybody joins with a nickname, the questions go up one at a time, and a right answer scores more the sooner it comes — a quick way to find out what a room already knows about a place."
+    },
+    "dream-it": {
+      "name": "Dream It",
+      "tagline": "A prompt to set a room imagining, at the press of a button.",
+      "blurb": "An activity for unlocking imagination and making a safe space to share personal visions, desires and emotional connections to a place. Generate a prompt, and let people speak, imagine and listen to each other — about how the place could feel, function or inspire, rather than what is practical today."
+    }
+  },
+  "settings": {
+    "language": {
+      "title": "Language",
+      "description": "The language PLACER is shown in on this browser",
+      "choose": "Show PLACER in",
+      "scope": "Kept for this browser. Joining a room and the Toolkit's live tools are translated so far; the rest of PLACER is still in English while it is being translated."
+    }
+  }
+}
