@@ -368,6 +368,8 @@ a {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  /* Faint, so the linework sets the scene without competing with the card. */
+  opacity: 0.2;
   will-change: transform;
   animation: placer-landing-zoom 40s ease-in-out infinite alternate;
 }
@@ -384,8 +386,9 @@ a {
 }
 
 .placer-landing {
-  /* The nav bar floats over the top 64px, so the card centres in what is left. */
-  padding: 88px 24px 24px;
+  /* The nav bar floats over the top 64px, so the card centres in what is left.
+   * No bottom padding: the credit strip runs to the page's foot. */
+  padding: 88px 24px 0;
 }
 
 /* PLACER — the landing card.
@@ -395,33 +398,29 @@ a {
  * the component.
  *
  * A wide card centred in the space under the nav bar, on a 12-column grid: the
- * wordmark, pitch and numbered steps in the left five columns, and the right
- * seven taken by the media, a photo over a tinted bar with the title and a
- * button, rotating through three slides with their dots over the photo. The
- * media bleeds through the card's padding to its top and right edges and stops
- * at the footer, where the credit and funder lockup run the full width under
- * a hairline.
+ * badge, headline, pitch and numbered steps in the left five columns, and the
+ * right seven taken by the media, a photo over a tinted bar with a button,
+ * rotating through three slides with their dots over the photo. The media
+ * bleeds through the card's padding to its top, right and bottom edges.
  *
- * Below 1024px only the pitch is left, full width: the carousel and the
- * credit row both go.
+ * Below 1024px only the pitch is left, full width: the carousel goes.
  */
 .placer-landing-column {
   width: 100%;
   max-width: 1240px;
   --placer-landing-pad-y: 40px;
   --placer-landing-pad-x: 56px;
-  padding: var(--placer-landing-pad-y) var(--placer-landing-pad-x) 24px;
+  padding: var(--placer-landing-pad-y) var(--placer-landing-pad-x);
   border-radius: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 12px 40px rgba(17, 17, 17, 0.12);
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.06), 0 12px 32px rgba(17, 17, 17, 0.1);
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: 1fr auto;
   column-gap: 48px;
 }
 
-/* The nav bar's matte glass, but frosted further so the copy stays readable
- * over the line drawing. It sits on a layer behind the content rather than on
+/* Near-solid white with a crisp edge, so the copy never reads as floating over
+ * the line drawing. It sits on a layer behind the content rather than on
  * the card itself: a backdrop-filter on the card would make it the containing
  * block for the waitlist dialog, which is position:fixed inside a slide, and
  * trap it there. For the same reason nothing here sets a z-index or isolation;
@@ -431,9 +430,9 @@ a {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: rgba(255, 255, 255, 0.72);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  backdrop-filter: blur(24px) saturate(140%);
+  background: rgba(255, 255, 255, 0.96);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   pointer-events: none;
 }
 
@@ -447,26 +446,41 @@ a {
   grid-column: 1 / span 5;
   grid-row: 1;
   align-self: center;
-  padding-bottom: 32px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
 }
 
+/* Where the project stands: a small pill over the headline, in the accent
+ * purple. */
+.placer-landing-badge {
+  margin: 0 0 16px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--placer-purple-100);
+  background: var(--placer-purple-50);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--placer-purple-700);
+}
+
+/* The headline: what PLACER is for, in sentence case. */
 .placer-landing-title {
-  /* The wordmark: uppercase Helvetica Bold at its brand tracking (+8%), a step
-   * down from Display so it heads the pitch rather than shouting over it. */
-  font-size: 48px !important;
-  line-height: 52px !important;
+  font-size: 40px !important;
+  line-height: 46px !important;
   font-weight: 700 !important;
-  letter-spacing: 0.08em !important;
-  text-transform: uppercase;
+  letter-spacing: -0.02em !important;
+  max-width: 16ch;
   margin: 0 0 16px;
 }
 
 .placer-landing-pitch {
   margin: 0;
-  max-width: 34ch;
+  max-width: 40ch;
   font-size: var(--placer-body-lg);
   font-weight: 400;
   line-height: var(--placer-body-lg-lh);
@@ -474,7 +488,7 @@ a {
 }
 
 /* Understand, Imagine, Plan: a step number in a small circle before each,
- * then the title in ink and the line in grey, with room between the rows. */
+ * then the title in bold ink over its line in grey, with room between the rows. */
 .placer-landing-features {
   list-style: none;
   margin: 24px 0;
@@ -488,7 +502,7 @@ a {
 
 .placer-landing-feature {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
 }
 
@@ -512,7 +526,8 @@ a {
 }
 
 .placer-landing-feature-title {
-  font-weight: 500;
+  display: block;
+  font-weight: 700;
   color: var(--placer-ink);
 }
 
@@ -543,42 +558,41 @@ a {
   background: var(--placer-ink);
 }
 
-/* The right seven columns above the footer, pulled out through the padding to
- * the card's top and right edges, its foot on the footer's hairline. */
+/* The right seven columns, pulled out through the padding to the card's top,
+ * right and bottom edges. */
 .placer-landing-actions {
   grid-column: 6 / -1;
   grid-row: 1;
-  margin: calc(-1 * var(--placer-landing-pad-y)) calc(-1 * var(--placer-landing-pad-x)) 0 0;
+  margin: calc(-1 * var(--placer-landing-pad-y)) calc(-1 * var(--placer-landing-pad-x))
+    calc(-1 * var(--placer-landing-pad-y)) 0;
   position: relative;
   min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
-/* All three slides share one grid area, so the stack is as tall as the tallest
- * and the slides, colour and all, cross-fade in place. Two rows, the photo's and
- * the bar's, which the slides take on as a subgrid: every bar is as tall as the
- * tallest, so the photo's foot sits in one place and the dots can sit on it.
+/* All three slides share one grid area, so they cross-fade in place, and the
+ * stack fills the media's height, the photos covering it whatever its shape.
  * Only opacity changes: a transform would trap the waitlist dialog, which is
  * position:fixed inside its slide. */
 .placer-landing-slides {
   flex: 1 1 auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(360px, 1fr);
 }
 
-/* One slide: the photo filling whatever height the bar leaves, the tinted bar
- * along the bottom. Its top-right corner follows the card's (7px, less the
- * card's 1px border); the card cannot clip it, as overflow on the card would
- * trap the waitlist dialog. */
+/* One slide: the photo filling it, the title and button over its foot on a
+ * dark fade so they read on any picture. Its right-hand corners follow the
+ * card's (7px, less the card's 1px border); the card cannot clip it, as
+ * overflow on the card would trap the waitlist dialog. */
 .placer-landing-option {
   grid-column: 1;
-  grid-row: 1 / -1;
-  display: grid;
-  grid-template-rows: subgrid;
-  border-top-right-radius: 6px;
-  background: var(--placer-landing-option-bg);
+  grid-row: 1;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 0 6px 6px 0;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.6s ease, visibility 0s linear 0.6s;
@@ -591,32 +605,40 @@ a {
 }
 
 .placer-landing-option-photo {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 240px;
   object-fit: cover;
-  border-top-right-radius: 6px;
+  border-radius: inherit;
 }
 
-/* The bar under the photo: the button on the left, the title on the right.
- * Reversed visually only, so a screen reader still hears the title first. */
+/* The title over the photo's foot, the button under it, on a layer the size of
+ * the slide that carries the fade. The fade is on this layer rather than a
+ * pseudo-element under it, since the photo would paint over that, and nothing
+ * here takes a z-index, which would trap the waitlist dialog under the nav. */
 .placer-landing-option-body {
+  position: absolute;
+  inset: 0;
   display: flex;
-  flex-direction: row-reverse;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px 24px;
-  padding: 20px 24px;
-  border-top: 1px solid rgba(17, 17, 17, 0.06);
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 32px;
+  border-radius: inherit;
+  background: linear-gradient(to top, rgba(17, 17, 17, 0.8) 0%, rgba(17, 17, 17, 0.5) 30%, rgba(17, 17, 17, 0) 65%);
 }
 
 .placer-landing-option-title {
-  text-align: right;
-  font-size: 18px;
-  line-height: 24px;
+  margin: 0;
+  max-width: 20ch;
+  font-size: 28px;
+  line-height: 34px;
   font-weight: 700;
-  color: #111111;
+  letter-spacing: -0.01em;
+  color: #FFFFFF;
 }
 
 /* The call to action as a compact primary button: ink fill, white label,
@@ -662,15 +684,30 @@ a {
   outline-offset: 2px;
 }
 
-/* Centred along the photo's foot, on a small smoked pill so they read on any
- * picture. The blur is safe here: the waitlist dialog is not inside it. */
+/* On the photo, the button turns white with an ink label. */
+.placer-landing-option .placer-landing-option-link {
+  background: #FFFFFF;
+  color: var(--placer-ink);
+}
+
+.placer-landing-option .placer-landing-option-link:hover {
+  background: var(--placer-grey-100);
+}
+
+.placer-landing-option .placer-landing-option-link:focus-visible {
+  outline-color: #FFFFFF;
+}
+
+/* In the photo's bottom-right corner, level with the button, on a small smoked
+ * pill so they read on any picture. The blur is safe here: the waitlist dialog
+ * is not inside it. */
 .placer-landing-dots {
   grid-column: 1;
   grid-row: 1;
   align-self: end;
-  justify-self: center;
+  justify-self: end;
   position: relative;
-  margin-bottom: 12px;
+  margin: 0 32px 40px 0;
   display: flex;
   gap: 0;
   padding: 0 4px;
@@ -719,17 +756,19 @@ a {
   }
 }
 
-/* Spans all twelve columns under the pitch and the media, the credit at one
- * end, the lockup the other. */
+/* A quiet strip across the foot of the page, out of the card: the credit at
+ * one end, the lockup the other. It bleeds through the page's side padding to
+ * run edge to edge. */
 .placer-landing-footer {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  padding-top: 20px;
+  position: relative;
+  margin: 32px -24px 0;
+  padding: 16px max(24px, calc((100% - 1240px) / 2 + 24px));
+  background: rgba(255, 255, 255, 0.92);
   border-top: 1px solid rgba(17, 17, 17, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 32px;
+  gap: 16px 32px;
 }
 
 .placer-landing-credit {
@@ -779,7 +818,14 @@ a {
   }
 
   .placer-landing {
-    padding: 88px 16px 24px;
+    padding: 88px 16px 0;
+  }
+
+  .placer-landing-footer {
+    margin: 32px -16px 0;
+    padding: 16px;
+    flex-direction: column;
+    text-align: center;
   }
 
   /* A little narrower than the screen, so more of the drawing shows each side. */
@@ -795,7 +841,6 @@ a {
 
   .placer-landing-info {
     grid-column: 1 / -1;
-    padding-bottom: 0;
     align-items: center;
     text-align: center;
   }
@@ -834,9 +879,8 @@ a {
   /* The hierarchy, top down: the wordmark, the pitch in ink, the steps a size
    * under it, then the tagline and the button. */
   .placer-landing-pitch {
-    font-size: 20px;
-    line-height: 28px;
-    font-weight: 500;
+    font-size: 17px;
+    line-height: 26px;
     color: var(--placer-ink);
   }
 
@@ -861,8 +905,8 @@ a {
   }
 
   .placer-landing-title {
-    font-size: 56px !important;
-    line-height: 60px !important;
+    font-size: 32px !important;
+    line-height: 38px !important;
     margin-bottom: 16px;
   }
 
@@ -881,9 +925,8 @@ a {
     font-size: 16px;
   }
 
-  /* A phone shows the pitch alone: the carousel and the credit row go. */
-  .placer-landing-actions,
-  .placer-landing-footer {
+  /* A phone shows the pitch alone: the carousel goes. */
+  .placer-landing-actions {
     display: none;
   }
 }
@@ -1004,6 +1047,50 @@ a {
 .placer-glass-nav-end {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+}
+
+/* The main pages as plain text links on a wide screen; the menu takes over
+ * below 1024px. */
+.placer-glass-nav-links {
+  display: flex;
+  gap: 4px;
+}
+
+.placer-glass-nav-link {
+  all: unset;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: var(--placer-radius-sm);
+  font-family: var(--placer-font);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--placer-grey-700);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.placer-glass-nav-link:hover,
+.placer-glass-nav-link[aria-current="page"] {
+  color: var(--placer-ink);
+  background: rgba(17, 17, 17, 0.05);
+}
+
+.placer-glass-nav-link:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+@media (min-width: 1024px) {
+  .placer-glass-nav-end .placer-menu-root {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .placer-glass-nav-links {
+    display: none;
+  }
 }
 
 /* Browsers without backdrop-filter get a near-opaque bar instead of an

@@ -39,7 +39,7 @@ describe('App', () => {
     renderAt('/');
 
     expect(
-      screen.getByText(/Placer is the open toolkit for co-designing shared spaces/i)
+      screen.getByText(/The open toolkit for participatory placemaking/i)
     ).toBeInTheDocument();
     expect(screen.queryByText('a toolkit for participatory placemaking')).not.toBeInTheDocument();
     expect(screen.getByText(/funded by the Swedish Institute/i)).toBeInTheDocument();
@@ -47,7 +47,9 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: 'Ankara Aks' })).toHaveAttribute('href', 'https://ankaraaks.com/');
     expect(screen.getByRole('img', { name: 'Funded by Swedish Institute' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Join the Waitlist' })).toBeInTheDocument();
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    // Only the holding page's own bar, with its main links: not the full nav bar.
+    expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument();
+    expect(screen.queryByText('Sandbox')).not.toBeInTheDocument();
   });
 
   it('sets the landing copy on a card over the city drawing, as decoration', () => {
@@ -59,7 +61,7 @@ describe('App', () => {
     expect(page.style.getPropertyValue('--placer-landing-city')).toMatch(/landing-city\.svg/);
     expect(page.style.getPropertyValue('--placer-landing-city-mobile')).toMatch(/landing-city-mobile\.svg/);
     expect(page.querySelector('.placer-landing-column')).toHaveTextContent(
-      /Placer is the open toolkit for co-designing shared spaces/i
+      /The open toolkit for participatory placemaking/i
     );
     // Nothing decorative should reach the accessibility tree as an image.
     expect(screen.queryAllByRole('img', { name: '' })).toHaveLength(0);
@@ -70,7 +72,7 @@ describe('App', () => {
     renderAt('/');
 
     expect(screen.getByRole('navigation')).toBeInTheDocument();
-    expect(screen.getByText(/Placer is the open toolkit for co-designing shared spaces/i)).toBeInTheDocument();
+    expect(screen.getByText(/The open toolkit for participatory placemaking/i)).toBeInTheDocument();
   });
 
   it('renders SurveyPage at /survey', async () => {
