@@ -21,6 +21,8 @@ export const DENIED = 'denied';
 
 // Whether posthog.init() has run in this page load.
 let started = false;
+// The signed-in account, so it can be applied when PostHog starts after sign-in.
+let accountId = null;
 
 // Read at call time rather than module load so tests can stub the environment.
 export function isAnalyticsConfigured() {
@@ -88,9 +90,36 @@ function startPostHog({ recordConsentEvent }) {
     posthog.opt_in_capturing({ captureEventName: false });
   }
 
+  if (accountId) posthog.identify(accountId);
+
   // The automatic init-time pageview is dropped while opted out, so without this
   // the session would have no entry page.
   posthog.capture('$pageview');
+}
+
+/**
+ * Record a product event. A no-op until the visitor has accepted analytics.
+ * Properties carry ids, counts and choices only — never a name, an email address or
+ * anything somebody typed, which the privacy page promises stays out of PostHog.
+ */
+export function track(event, properties) {
+  if (!started) return;
+  posthog.capture(event, properties);
+}
+
+/**
+ * Link this browser's events to an account, by its id only, or unlink them on sign
+ * out. Every useIdentity() reports the same account, so repeats are ignored.
+ */
+export function identifyAccount(id) {
+  const next = id ?? null;
+  if (next === accountId) return;
+  const previous = accountId;
+  accountId = next;
+  if (!started) return;
+  if (next) posthog.identify(next);
+  // Only on a real sign-out, so the next person on this browser is not linked to it.
+  else if (previous) posthog.reset();
 }
 
 /** Called once on boot. Loads PostHog only for a visitor who already accepted. */

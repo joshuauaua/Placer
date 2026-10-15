@@ -14,6 +14,7 @@
 import { getSupabase, isSupabaseConfigured } from './supabase';
 import { mediaUrl, preparePhoto, removeMedia, uploadMedia } from './media';
 import { CURRENCY_CODES } from '../lib/currency';
+import { track } from '../analytics';
 
 export const PROJECTS_TABLE = 'projects';
 export const COLLABORATORS_TABLE = 'project_collaborators';
@@ -168,6 +169,11 @@ export async function createProject({ ownerId, ownerName, name, summary = '', de
     .single();
 
   if (error) throw new Error(`Could not start that project: ${error.message}`);
+  track('project_created', {
+    project_id: data.id, project_type: projectType, visibility,
+    has_organisation: Boolean(organisationId), has_dates: Boolean(startDate || endDate),
+    location_count: locations.length,
+  });
   return fromRow(data);
 }
 
@@ -377,6 +383,7 @@ export async function updateProject(id, patch) {
     .single();
 
   if (error) throw new Error(`Could not save that project: ${error.message}`);
+  track('project_updated', { project_id: id, fields: Object.keys(row) });
   return fromRow(data);
 }
 
@@ -430,6 +437,7 @@ export async function deleteProject(id) {
   // The media function lets anyone clear the files of a project that no longer exists.
   await removeProjectImageFile(existing?.image_path);
   for (const row of toolRows ?? []) await removeProjectImageFile(row.config?.imagePath);
+  track('project_deleted', { project_id: id });
   return { success: true };
 }
 
@@ -458,6 +466,7 @@ export async function addCollaborator(projectId, email) {
     p_project_id: projectId, p_email: email,
   });
   if (error) throw new Error(`Could not add that collaborator: ${error.message}`);
+  track('project_collaborator_added', { project_id: projectId });
   return { success: true };
 }
 
@@ -496,6 +505,7 @@ export async function addLink(projectId, { title, url, addedBy }) {
     .single();
 
   if (error) throw new Error(`Could not add that link: ${error.message}`);
+  track('project_link_added', { project_id: projectId });
   return { id: data.id, title: data.title, url: data.url, addedBy: data.added_by, createdAt: data.created_at };
 }
 
@@ -551,6 +561,7 @@ export async function requestProjectAccess(projectId, displayName) {
   });
 
   if (error) throw new Error(`Could not ask to see that project: ${error.message}`);
+  track('project_access_requested', { project_id: projectId });
   return data;
 }
 
@@ -580,6 +591,7 @@ export async function decideAccess(projectId, userId, approve) {
     p_project_id: projectId, p_user_id: userId, p_approve: approve,
   });
   if (error) throw new Error(`Could not answer that request: ${error.message}`);
+  track('project_access_decided', { project_id: projectId, approved: approve });
 }
 
 /** Take somebody's access away, or withdraw your own request. */
@@ -634,6 +646,13 @@ export async function saveProjectTools(projectId, toolIds, addedBy) {
     if (error) throw new Error(`Could not remove those tools: ${error.message}`);
   }
 
+  if (adding.length > 0 || removing.length > 0) {
+    track('project_tools_changed', {
+      project_id: projectId, added: adding, removed: removing,
+      tool_count: current.length - removing.length + adding.length,
+    });
+  }
+
   return [...current.filter((tool) => !removing.includes(tool)), ...adding];
 }
 
@@ -675,6 +694,7 @@ export async function saveProjectToolConfig(projectId, tool, { address = '', poi
 
   if (error) throw new Error(`Could not save how that tool is set up: ${error.message}`);
   if (!data?.length) throw new Error('Could not save how that tool is set up: it is not one of the project\'s tools.');
+  track('tool_configured', { project_id: projectId, tool, setup: 'scene', has_image: Boolean(imagePath) });
 }
 
 /**
@@ -724,6 +744,7 @@ export async function saveProjectSite(projectId, tool, { name, address = '', poi
 
   if (error) throw new Error(`Could not save the project's site: ${error.message}`);
   if (!data?.length) throw new Error('Could not save the project\'s site: it is not one of the project\'s tools.');
+  track('tool_configured', { project_id: projectId, tool, setup: 'site' });
 }
 
 /**
@@ -760,6 +781,7 @@ export async function markProjectToolConfigured(projectId, tool) {
 
   if (error) throw new Error(`Could not put that tool live: ${error.message}`);
   if (!data?.length) throw new Error('Could not put that tool live: it is not one of the project\'s tools.');
+  track('tool_configured', { project_id: projectId, tool, setup: 'none' });
 }
 
 /**
@@ -843,6 +865,7 @@ export async function saveProjectBudget(projectId, { hasBudget, amount = null, c
     }, { onConflict: 'project_id' });
 
   if (error) throw new Error(`Could not save the project's budget: ${error.message}`);
+  track('project_budget_saved', { project_id: projectId, has_budget: hasBudget, currency });
 }
 
 /**

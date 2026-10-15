@@ -435,10 +435,11 @@ export function TermsAndPrivacyPage({ t }) {
           <strong style={{ color: t.ink }}>Usage analytics, if you accept them.</strong> PLACER can
           send usage data to PostHog, an analytics provider, to see how the app is actually used.
           That covers the pages you visit and the features you open, the events PLACER emits (such
-          as posting an imagination), and the device, browser and IP-derived approximate location
+          as creating a project or setting up a tool), and the device, browser and IP-derived approximate location
           behind them. Your session is not recorded. It is off until you accept: PLACER does not
           contact PostHog at all &mdash; no request, no cookie &mdash; until you do, and rejecting
-          the banner keeps it that way. Analytics
+          the banner keeps it that way. Once you sign in, these events are linked to your
+          account&rsquo;s ID, so that we can see how the app is used over time. Analytics
           never carry your name or your email address: an address you give in the survey stays with
           your answers, your account address stays with your account, and neither is sent to
           PostHog.
@@ -617,7 +618,7 @@ export function TermsAndPrivacyPage({ t }) {
               'Two hours from the room being opened — or up to 90 days, for a room a project opened to run longer — or sooner if the facilitator closes it. After that it cannot be reached at all, and it is deleted within a day',
             ],
             [
-              'Usage analytics sent to PostHog: the features you use, the events PLACER emits (for example posting an imagination), and the device, browser and IP-derived approximate location behind them',
+              'Usage analytics sent to PostHog: the features you use, the events PLACER emits (for example creating a project or setting up a tool), the ID of your account when you are signed in, and the device, browser and IP-derived approximate location behind them',
               'Understanding how PLACER is used',
               'Consent (Art. 6(1)(a)) — off unless you accept, withdrawable at any time',
               'As configured in our PostHog project; nothing at all before you accept',

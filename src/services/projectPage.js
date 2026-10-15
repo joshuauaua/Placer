@@ -12,6 +12,7 @@
 
 import { getSupabase } from './supabase';
 import { mediaUrl } from './media';
+import { track } from '../analytics';
 
 export const UPDATES_TABLE = 'project_updates';
 export const COMMENTS_TABLE = 'project_comments';
@@ -119,6 +120,7 @@ async function addPost(table, projectId, body, what, organisationId) {
     .single();
 
   if (error) throw new Error(`Could not post that ${what}: ${error.message}`);
+  track(`project_${what}_posted`, { project_id: projectId, as_organisation: Boolean(organisationId) });
   return (await withAuthorPhotos(supabase, [postFrom(data)]))[0];
 }
 

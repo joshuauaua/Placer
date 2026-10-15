@@ -10,6 +10,7 @@
  */
 
 import { getSupabase } from './supabase';
+import { track } from '../analytics';
 
 const PROFILES_TABLE = 'profiles';
 const storageKey = (accountId) => `placer:onboarded:${accountId}`;
@@ -61,6 +62,7 @@ export async function needsOnboarding(accountId) {
 export async function markOnboarded(accountId) {
   if (!accountId) return;
   rememberHere(accountId);
+  track('onboarding_finished');
   const supabase = await getSupabase();
   if (!supabase) return;
 

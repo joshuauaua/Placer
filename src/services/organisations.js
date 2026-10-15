@@ -12,6 +12,7 @@
 import { getSupabase, isSupabaseConfigured } from './supabase';
 import { normaliseWebsite } from './auth';
 import { mediaUrl, preparePhoto, removeMedia, uploadMedia } from './media';
+import { track } from '../analytics';
 
 export const ORGANISATIONS_TABLE = 'organisations';
 export const ADMINS_TABLE = 'organisation_admins';
@@ -101,6 +102,7 @@ export async function createOrganisation({ createdBy, ...fields }) {
     .single();
 
   if (error) throw new Error(`Could not create that organisation: ${error.message}`);
+  track('organisation_created', { organisation_id: data.id });
   return fromRow(data);
 }
 
@@ -192,6 +194,7 @@ export async function updateOrganisation(id, patch) {
     .single();
 
   if (error) throw new Error(`Could not save that organisation: ${error.message}`);
+  track('organisation_updated', { organisation_id: id, fields: Object.keys(patch) });
   return fromRow(data);
 }
 
@@ -274,6 +277,7 @@ export async function closeOrganisation(id) {
   // function lets anyone clear the files of an organisation that no longer exists.
   await removeOrganisationCoverFile(existing?.cover_path);
   await removeOrganisationAvatarFile(existing?.avatar_path);
+  track('organisation_closed', { organisation_id: id });
   return { success: true };
 }
 
@@ -299,6 +303,7 @@ export async function addAdmin(organisationId, email) {
     p_organisation_id: organisationId, p_email: email,
   });
   if (error) throw new Error(`Could not add that admin: ${error.message}`);
+  track('organisation_admin_added', { organisation_id: organisationId });
   return { success: true };
 }
 
@@ -328,6 +333,7 @@ export async function claimOrganisation(organisationId) {
   const supabase = await client();
   const { error } = await supabase.rpc('organisation_claim', { p_organisation_id: organisationId });
   if (error) throw new Error(`Could not claim that organisation: ${error.message}`);
+  track('organisation_claimed', { organisation_id: organisationId });
   return { success: true };
 }
 

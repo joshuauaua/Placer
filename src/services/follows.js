@@ -20,6 +20,7 @@
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
 import { mediaUrl } from './media';
+import { track } from '../analytics';
 
 export const FOLLOWS_TABLE = 'follows';
 
@@ -125,6 +126,7 @@ export async function follow(type, targetId, label) {
       { id: `follow-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
         type, targetId, label, createdAt: new Date().toISOString() },
     ]);
+    track('followed', { type });
     return;
   }
 
@@ -142,12 +144,14 @@ export async function follow(type, targetId, label) {
   );
 
   if (error) throw new Error(`Could not follow that: ${error.message}`);
+  track('followed', { type });
 }
 
 /** Unfollow something. Unfollowing something not followed is a no-op. */
 export async function unfollow(type, targetId) {
   if (!isSupabaseConfigured()) {
     writeLocalList(readLocalList().filter((entry) => !localMatch(entry, type, targetId)));
+    track('unfollowed', { type });
     return;
   }
 
@@ -159,6 +163,7 @@ export async function unfollow(type, targetId) {
     .eq('followed_id', targetId);
 
   if (error) throw new Error(`Could not unfollow that: ${error.message}`);
+  track('unfollowed', { type });
 }
 
 /*
