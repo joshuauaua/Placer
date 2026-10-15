@@ -398,6 +398,13 @@ describe('SurveyPage', () => {
         questions_answered: TOTAL,
         total_questions: TOTAL,
       });
+      // The funnel steps leading up to it, each counted once.
+      expect(posthog.capture.mock.calls.filter(([event]) => event === 'survey_started')).toEqual([
+        ['survey_started', { source: 'community_survey' }],
+      ]);
+      expect(posthog.capture).toHaveBeenCalledWith('survey_step_reached', {
+        source: 'community_survey', step: 'email',
+      });
     });
 
     it('stores a response with no address when the field is left empty', async () => {

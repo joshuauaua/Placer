@@ -11,6 +11,7 @@
  */
 
 import { useState } from 'react';
+import posthog from 'posthog-js';
 
 import userLabsPhoto from '../assets/user-labs.webp';
 import { saveSurveyResponse } from '../services/api';
@@ -98,6 +99,14 @@ function ApplicationForm({ t, onCancel, onSubmitted }) {
         role: form.role.trim(),
         motivation: form.motivation.trim(),
         dietary: form.dietary.trim(),
+        newsletter: form.newsletter,
+      });
+      // The same events as the surveys, so all three forms sit in one funnel.
+      // Choices only: nothing the applicant typed goes to PostHog.
+      posthog.capture('survey_submitted', {
+        source: SOURCE,
+        lab: form.lab,
+        lab_date: UPCOMING_LAB.date,
         newsletter: form.newsletter,
       });
       onSubmitted(form);
@@ -256,7 +265,10 @@ export function UserLabsPage({ t }) {
           <UpcomingLab t={t} />
           <button
             type="button"
-            onClick={() => setStep('form')}
+            onClick={() => {
+              posthog.capture('survey_started', { source: SOURCE });
+              setStep('form');
+            }}
             className="placer-split-action"
             style={{ background: t.primaryBg, color: t.primaryFg }}
           >

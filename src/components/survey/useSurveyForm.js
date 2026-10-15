@@ -46,6 +46,16 @@ export function useSurveyForm({ content, submit, source }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
 
+  // Where a respondent got to, for a started → step → submitted funnel in PostHog.
+  // Each step counts once per visit, so going back and forth does not inflate it.
+  const reached = useRef(new Set());
+  const markReached = (name) => {
+    if (reached.current.has(name)) return;
+    reached.current.add(name);
+    if (name === 'started') posthog.capture('survey_started', { source });
+    else posthog.capture('survey_step_reached', { source, step: name });
+  };
+
   // The survey scrolls inside its own pane rather than the window, so moving
   // between questions has to reset that pane and not the page.
   const scrollRef = useRef(null);
@@ -149,6 +159,8 @@ export function useSurveyForm({ content, submit, source }) {
 
   const handleNext = () => {
     if (step === 'intro') {
+      markReached('started');
+      markReached(SECTIONS[0]);
       setStep(SECTIONS[0]);
       setQuestionIndex(0);
       scrollToTop();
@@ -160,9 +172,11 @@ export function useSurveyForm({ content, submit, source }) {
     } else if (isSectionStep(step)) {
       const nextSection = SECTIONS[SECTIONS.indexOf(step) + 1];
       if (nextSection) {
+        markReached(nextSection);
         setStep(nextSection);
         setQuestionIndex(0);
       } else {
+        markReached('email');
         setStep('email');
       }
     }
