@@ -5,6 +5,7 @@ import { Icon } from './Icon';
 import { Btn } from './UI';
 import { ImaginationCard } from './ImaginationCard';
 import { ImaginationPreview } from './ImaginationPreview';
+import { LayeredCircles } from './LayeredCircles';
 import { NotificationItem } from './NotificationItem';
 import { OnboardingDialog } from './OnboardingDialog';
 import { postsAreShared, readLocalImaginations } from '../services/imaginations';
@@ -62,19 +63,13 @@ function SectionLabel({ t, id, children, style }) {
  * kept in the corner, clear of them.
  */
 function BasicsCard({ t, hue, label, title, onClick }) {
-  const circle = (size, right, bottom, background) => (
-    <span aria-hidden="true" style={{ position: 'absolute', width: size, height: size, right, bottom,
-      borderRadius: '50%', background, pointerEvents: 'none' }} />
-  );
   return (
     <button type="button" onClick={onClick} className="placer-basics-card"
       style={{ position: 'relative', overflow: 'hidden', isolation: 'isolate',
         display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 32,
         minHeight: 200, padding: 28, textAlign: 'left', cursor: 'pointer', border: 'none', borderRadius: 16,
         background: hue.c50, color: t.ink, fontFamily: 'var(--placer-font)' }}>
-      {circle(340, -110, -150, hue.c100)}
-      {circle(210, -40, -90, hue.c300)}
-      {circle(96, 24, -30, hue.c700)}
+      <LayeredCircles hue={hue} />
       <span style={{ position: 'relative' }}>
         <span className="placer-caption" style={{ display: 'block', textTransform: 'uppercase',
           letterSpacing: '0.08em', fontWeight: 700, marginBottom: 10 }}>

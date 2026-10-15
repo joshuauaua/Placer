@@ -2038,6 +2038,26 @@ a {
   }
 }
 
+/* PLACER — the 404 page (see NotFoundPage.jsx): one card, inset from the page's
+ * edges like the dashboard's, with its words in the upper left. */
+.placer-not-found {
+  padding: 32px;
+}
+
+.placer-not-found-body {
+  padding: 56px;
+}
+
+@media (max-width: 639px) {
+  .placer-not-found {
+    padding: 16px;
+  }
+
+  .placer-not-found-body {
+    padding: 32px 24px 160px;
+  }
+}
+
 /* PLACER — the dashboard's "Getting Started" cards (see DashboardPage.jsx). */
 .placer-basics-card {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
