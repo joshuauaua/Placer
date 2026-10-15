@@ -630,6 +630,12 @@ own — for Desire Lines the site, its marks, the note on why it matters and the
 — to start a project's tool from later. Private to the account: its row-level security lets
 only the owner read, add or delete them.
 
+### Room limits big enough for a map
+
+Run `room-size-limits.sql` after `rooms.sql` and `rooms-config.sql` (or `supabase db push`).
+It is re-runnable. It raises the cap on a participant's answer from 4000 characters, and on a
+room's setup from 16 KB, to 64 KB each — Desire Lines' walks and marked-up sites need the room.
+
 ### Which tools can host a room
 
 Run `room-tools.sql` in the SQL editor after `rooms.sql` and `notifications-projects.sql`
