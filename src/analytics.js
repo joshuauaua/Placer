@@ -21,6 +21,8 @@ export const DENIED = 'denied';
 
 // Whether posthog.init() has run in this page load.
 let started = false;
+// The signed-in account, so it can be applied when PostHog starts after sign-in.
+let accountId = null;
 
 // Read at call time rather than module load so tests can stub the environment.
 export function isAnalyticsConfigured() {
@@ -71,6 +73,13 @@ function startPostHog({ recordConsentEvent }) {
     opt_out_persistence_by_default: true,
     // Keep the opt-in/out flag itself out of a cookie.
     opt_out_capturing_persistence_type: 'localStorage',
+    // Product analytics only: pageviews, autocapture and the app's own events.
+    // The project has session replay, error tracking and the Support widget
+    // switched on in PostHog, so each is turned off here rather than left to
+    // follow that setting — the privacy page promises none of them.
+    disable_session_recording: true,
+    capture_exceptions: false,
+    disable_conversations: true,
   });
 
   // PostHog's default $opt_in event is the audit trail for the consent, so it is
@@ -81,9 +90,36 @@ function startPostHog({ recordConsentEvent }) {
     posthog.opt_in_capturing({ captureEventName: false });
   }
 
+  if (accountId) posthog.identify(accountId);
+
   // The automatic init-time pageview is dropped while opted out, so without this
   // the session would have no entry page.
   posthog.capture('$pageview');
+}
+
+/**
+ * Record a product event. A no-op until the visitor has accepted analytics.
+ * Properties carry ids, counts and choices only — never a name, an email address or
+ * anything somebody typed, which the privacy page promises stays out of PostHog.
+ */
+export function track(event, properties) {
+  if (!started) return;
+  posthog.capture(event, properties);
+}
+
+/**
+ * Link this browser's events to an account, by its id only, or unlink them on sign
+ * out. Every useIdentity() reports the same account, so repeats are ignored.
+ */
+export function identifyAccount(id) {
+  const next = id ?? null;
+  if (next === accountId) return;
+  const previous = accountId;
+  accountId = next;
+  if (!started) return;
+  if (next) posthog.identify(next);
+  // Only on a real sign-out, so the next person on this browser is not linked to it.
+  else if (previous) posthog.reset();
 }
 
 /** Called once on boot. Loads PostHog only for a visitor who already accepted. */

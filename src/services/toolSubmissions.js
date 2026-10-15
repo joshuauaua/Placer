@@ -10,6 +10,7 @@
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
 import { OPERATOR } from '../legal';
+import { track } from '../analytics';
 
 export const TOOL_SUBMISSIONS_TABLE = 'tool_submissions';
 
@@ -60,6 +61,7 @@ export async function submitTool(fields) {
   // No .select(): the table has no read policy, so asking for the row back would fail.
   const { error } = await supabase.from(TOOL_SUBMISSIONS_TABLE).insert(clean(fields));
   if (error) throw new Error(error.message || 'The submission could not be sent.');
+  track('tool_submitted');
 }
 
 /** A mailto: link carrying the same submission, for a build with no Supabase project. */

@@ -5,6 +5,7 @@ import { useLocation } from 'wouter';
 import { Btn } from './UI';
 import { Icon } from './Icon';
 import { readSession } from '../services/auth';
+import { track } from '../analytics';
 
 /**
  * Where a confirmation link, a Google sign-in and a password reset all come back to.
@@ -42,6 +43,8 @@ export function AuthCallback({ t }) {
           setFailed('That link has expired or has already been used.');
           return;
         }
+        // Google, a confirmed sign-up and a password reset all come back this way.
+        track('signed_in', { method: 'redirect' });
         // replace, not push: the code is spent, so going back to this URL would only
         // fail, and nobody wants the browser's back button to land on a dead link.
         navigate(next, { replace: true });

@@ -13,6 +13,7 @@
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
+import { track } from '../analytics';
 
 export const CONTRIBUTIONS_TABLE = 'toolkit_contributions';
 
@@ -81,6 +82,10 @@ export async function createRoom(toolId, projectId = null, lifetime = '2h', conf
     throw new Error(`Could not open a room: ${error.message}`);
   }
 
+  track('room_opened', {
+    tool: toolId, project_id: projectId, lifetime, scheduled: Boolean(opensOn), has_setup: Boolean(config),
+  });
+
   return {
     id: data.room_id,
     pin: data.pin,
@@ -105,6 +110,7 @@ export async function joinRoom(pin) {
   if (error) throw new Error(`Could not join that room: ${error.message}`);
   if (!data) return null;
 
+  track('room_joined', { tool: data.tool, via: 'pin' });
   return { id: data.room_id, tool: data.tool };
 }
 
@@ -124,6 +130,7 @@ export async function joinRoomByCode(code) {
   if (error) throw new Error(`Could not join that room: ${error.message}`);
   if (!data) return null;
 
+  track('room_joined', { tool: data.tool, via: 'code', status: data.status });
   return {
     id: data.room_id, tool: data.tool, status: data.status, endsAt: data.expires_at, opensAt: data.opens_at ?? null,
   };
@@ -188,6 +195,7 @@ export async function rescheduleRoom(roomId, { lifetime, config, opensOn = null 
   const { data, error } = await supabase.rpc('toolkit_room_reschedule', params).single();
 
   if (error) throw new Error(`Could not change the room: ${error.message}`);
+  track('room_rescheduled', { lifetime, scheduled: Boolean(opensOn) });
   return { opensAt: data.opens_at, expiresAt: data.expires_at };
 }
 
@@ -213,6 +221,9 @@ export async function setRoomCloses(roomId, closesOn) {
  * underneath them — closed or run out of time — which is a normal thing to happen
  * rather than an error.
  */
+// Rooms this page load has already sent a contribution to.
+const contributedTo = new Set();
+
 export async function saveContribution({ roomId, participantToken, displayName, state }) {
   const supabase = await client();
   const { data, error } = await supabase.rpc('toolkit_contribution_save', {
@@ -223,6 +234,11 @@ export async function saveContribution({ roomId, participantToken, displayName, 
   });
 
   if (error) throw new Error(`Could not save your contribution: ${error.message}`);
+  // Saved again on every change, so only the first one in each room is an event.
+  if (data === true && !contributedTo.has(roomId)) {
+    contributedTo.add(roomId);
+    track('room_contributed', { room_id: roomId });
+  }
   return data === true;
 }
 
@@ -256,6 +272,7 @@ export async function closeRoom(roomId, facilitatorToken) {
   });
 
   if (error) throw new Error(`Could not close the room: ${error.message}`);
+  if (data === true) track('room_closed', { room_id: roomId });
   return data === true;
 }
 

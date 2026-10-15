@@ -7,6 +7,7 @@
  */
 
 import { getSupabase } from './supabase';
+import { track } from '../analytics';
 
 /** The table survey responses are appended to. */
 export const SURVEY_TABLE = 'survey_responses';
@@ -312,6 +313,7 @@ export const saveSurveyResponse = async (response) => {
     if (error) {
       throw new Error(`Could not save the survey response: ${error.message}`);
     }
+    track('survey_submitted', { source: response.source });
     return { ...row, submittedAt: new Date().toISOString() };
   }
 

@@ -8,6 +8,7 @@
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
 import { OPERATOR } from '../legal';
+import { track } from '../analytics';
 
 export const BUG_REPORTS_TABLE = 'bug_reports';
 
@@ -42,6 +43,7 @@ export async function submitBugReport(message) {
   // No .select(): the table has no read policy, so asking for the row back would fail.
   const { error } = await supabase.from(BUG_REPORTS_TABLE).insert({ message: text, ...context() });
   if (error) throw new Error(error.message || 'The report could not be sent.');
+  track('bug_report_submitted');
 }
 
 /** A mailto: link carrying the same report, for a build with no Supabase project. */

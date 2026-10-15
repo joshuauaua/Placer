@@ -23,6 +23,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
+import { identifyAccount } from '../analytics';
 import { readProfile, saveProfile, signIn as signInLocally, signOut as signOutLocally } from '../services/profile';
 import {
   isSupabaseConfigured,
@@ -68,6 +69,7 @@ export function useIdentity() {
       const previousId = accountRef.current;
       accountRef.current = next?.id ?? null;
       setAccount(next);
+      identifyAccount(next?.id);
 
       if (!next) {
         setProfileState(null);

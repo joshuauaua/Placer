@@ -17,6 +17,7 @@
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
+import { track } from '../analytics';
 
 export const NOTIFICATIONS_TABLE = 'notifications';
 export const PREFERENCES_TABLE = 'notification_preferences';
@@ -157,6 +158,7 @@ export async function savePreferences(patch) {
     .upsert({ user_id: userId, ...patch, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
 
   if (error) throw new Error(`Could not save your notification settings: ${error.message}`);
+  track('notification_settings_saved', { settings: patch });
 }
 
 /**
@@ -202,4 +204,5 @@ export async function saveProjectResponses(projectId, level) {
     );
 
   if (error) throw new Error(`Could not save this project's notification settings: ${error.message}`);
+  track('project_notification_settings_saved', { project_id: projectId, level });
 }

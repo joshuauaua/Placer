@@ -20,6 +20,7 @@
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
 import { mediaUrl, preparePhoto, removeMedia, uploadMedia } from './media';
+import { track } from '../analytics';
 
 export const PROFILES_TABLE = 'profiles';
 // The folders covers and profile photos go under in the R2 bucket
@@ -140,6 +141,7 @@ export async function signUpWithPassword({ email, password, displayName, inviteC
     throw new Error(`Could not create your account: ${error.message}`);
   }
 
+  track('signed_up', { method: 'password', needs_confirmation: !data?.session });
   return { needsConfirmation: !data?.session };
 }
 
@@ -155,9 +157,14 @@ export async function signInWithPassword({ email, password }) {
   if (error) {
     // Anything Supabase treats as "those credentials do not work" is a null rather
     // than a throw; a genuine fault (no network, project down) still throws.
-    if (error.status === 400) return null;
+    if (error.status === 400) {
+      track('sign_in_failed', { method: 'password' });
+      return null;
+    }
     throw new Error(`Could not sign you in: ${error.message}`);
   }
+
+  track('signed_in', { method: 'password' });
 
   return accountFrom(data?.user ?? null);
 }
@@ -175,6 +182,7 @@ export async function signInWithGoogle() {
   });
 
   if (error) throw new Error(`Could not reach Google: ${error.message}`);
+  track('sign_in_started', { method: 'google' });
 }
 
 /**
@@ -188,6 +196,7 @@ export async function sendPasswordReset(email) {
   });
 
   if (error) throw new Error(`Could not send the reset email: ${error.message}`);
+  track('password_reset_requested');
 }
 
 /** Set a new password. Needs the session the reset link established. */
@@ -196,6 +205,7 @@ export async function updatePassword(password) {
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) throw new Error(`Could not change your password: ${error.message}`);
+  track('password_changed');
 }
 
 /** Sign out, and drop the stored session. */
@@ -204,6 +214,7 @@ export async function signOutOfAccount() {
   const { error } = await supabase.auth.signOut();
 
   if (error) throw new Error(`Could not sign you out: ${error.message}`);
+  track('signed_out');
 }
 
 /** The signed-in account, or null. */
@@ -291,6 +302,7 @@ export async function saveOwnProfile({ name, bio, location, locationPoint, accou
     .maybeSingle();
 
   if (error) throw new Error(`Could not save your profile: ${error.message}`);
+  track('profile_updated', { fields: Object.keys(patch) });
   if (!data) return null;
 
   return profileFrom(supabase, data);

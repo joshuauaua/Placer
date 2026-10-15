@@ -6,6 +6,8 @@ vi.mock('posthog-js', () => ({
     opt_in_capturing: vi.fn(),
     opt_out_capturing: vi.fn(),
     capture: vi.fn(),
+    identify: vi.fn(),
+    reset: vi.fn(),
   },
 }));
 
@@ -79,6 +81,9 @@ describe('analytics consent gate', () => {
       opt_out_capturing_by_default: true,
       opt_out_persistence_by_default: true,
       opt_out_capturing_persistence_type: 'localStorage',
+      disable_session_recording: true,
+      capture_exceptions: false,
+      disable_conversations: true,
     });
     // No repeat consent event for a decision made on an earlier visit.
     expect(posthog.opt_in_capturing).toHaveBeenCalledWith({ captureEventName: false });
@@ -209,5 +214,52 @@ describe('consent stored under the pre-rename key', () => {
 
     expect(analytics.readConsent()).toBeNull();
     expect(localStorage.getItem(CONSENT_KEY)).toBeNull();
+  });
+
+  describe('events and accounts', () => {
+    it('sends nothing before the visitor accepts', () => {
+      configure();
+      analytics.initAnalytics();
+
+      analytics.track('project_created', { project_id: 'p1' });
+      analytics.identifyAccount('user-1');
+
+      expect(posthog.capture).not.toHaveBeenCalled();
+      expect(posthog.identify).not.toHaveBeenCalled();
+    });
+
+    it('captures events once analytics are on', () => {
+      configure();
+      analytics.grantConsent();
+
+      analytics.track('project_created', { project_id: 'p1' });
+
+      expect(posthog.capture).toHaveBeenCalledWith('project_created', { project_id: 'p1' });
+    });
+
+    it('links an account known before consent once PostHog starts', () => {
+      configure();
+      analytics.identifyAccount('user-1');
+      expect(posthog.identify).not.toHaveBeenCalled();
+
+      analytics.grantConsent();
+
+      expect(posthog.identify).toHaveBeenCalledWith('user-1');
+    });
+
+    it('identifies each account once, and resets only on a real sign-out', () => {
+      configure();
+      analytics.grantConsent();
+
+      analytics.identifyAccount(null);
+      expect(posthog.reset).not.toHaveBeenCalled();
+
+      analytics.identifyAccount('user-1');
+      analytics.identifyAccount('user-1');
+      expect(posthog.identify).toHaveBeenCalledTimes(1);
+
+      analytics.identifyAccount(null);
+      expect(posthog.reset).toHaveBeenCalledTimes(1);
+    });
   });
 });
