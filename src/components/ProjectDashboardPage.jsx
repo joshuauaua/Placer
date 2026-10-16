@@ -1,10 +1,10 @@
 /* PLACER — a project's dashboard, in three tabs under its name.
  *
  *   General           a table of its insights — who has seen it, who has taken part and
- *                     how, and where it stands — and its documentation links
+ *                     how, and where it stands
  *   My Toolkit        the tools it uses, and the rooms open for them
- *   Project Settings  its setup, collaborators, notifications, who may see a private
- *                     project, and deleting it
+ *   Project Settings  its setup, collaborators, documentation links, notifications, who
+ *                     may see a private project, and deleting it
  *
  * The dialogs a tab opens (configuring a tool, changing a room) are drawn outside the
  * tabs, so switching tab never loses one half-way.
@@ -1069,33 +1069,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
 
         <div id={`dashboard-panel-${tab}`} role="tabpanel" aria-labelledby={`dashboard-tab-${tab}`}>
           {tab === 'general' && (
-            <>
-              <InsightsTable t={t} groups={insightGroups} />
-
-              <Card t={t} title="Documentation">
-                <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
-                  News, articles and resources — links only, shown on the public page.
-                </p>
-                {links.length === 0 ? (
-                  <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: 16 }}>Nothing attached yet.</p>
-                ) : (
-                  <div style={{ marginBottom: 16 }}>
-                    {links.map((link) => <LinkRow key={link.id} t={t} link={link} onRemove={handleRemoveLink} />)}
-                  </div>
-                )}
-                <form onSubmit={handleAddLink} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <input type="text" value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)}
-                    placeholder="Title" aria-label="Link title" style={{ ...inputStyle(t), flex: '1 1 160px' }} />
-                  <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)}
-                    placeholder="https://…" aria-label="Link URL" style={{ ...inputStyle(t), flex: '2 1 220px' }} />
-                  <Btn t={t} variant="primary" size="sm" icon="plus" disabled={addingLink}
-                    ariaLabel="Add link">
-                    {addingLink ? 'Adding…' : 'Add'}
-                  </Btn>
-                </form>
-                {linkError && <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{linkError}</p>}
-              </Card>
-            </>
+            <InsightsTable t={t} groups={insightGroups} />
           )}
 
           {tab === 'toolkit' && (
@@ -1192,6 +1166,30 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                 {inviteError && (
                   <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{inviteError}</p>
                 )}
+              </Card>
+
+              <Card t={t} title="Documentation">
+                <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
+                  News, articles and resources — links only, shown on the public page.
+                </p>
+                {links.length === 0 ? (
+                  <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: 16 }}>Nothing attached yet.</p>
+                ) : (
+                  <div style={{ marginBottom: 16 }}>
+                    {links.map((link) => <LinkRow key={link.id} t={t} link={link} onRemove={handleRemoveLink} />)}
+                  </div>
+                )}
+                <form onSubmit={handleAddLink} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <input type="text" value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)}
+                    placeholder="Title" aria-label="Link title" style={{ ...inputStyle(t), flex: '1 1 160px' }} />
+                  <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)}
+                    placeholder="https://…" aria-label="Link URL" style={{ ...inputStyle(t), flex: '2 1 220px' }} />
+                  <Btn t={t} variant="primary" size="sm" icon="plus" disabled={addingLink}
+                    ariaLabel="Add link">
+                    {addingLink ? 'Adding…' : 'Add'}
+                  </Btn>
+                </form>
+                {linkError && <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{linkError}</p>}
               </Card>
 
               <ProjectNotifications t={t} projectId={project.id} />

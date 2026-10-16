@@ -131,7 +131,8 @@ describe('ProjectDashboardPage', () => {
     const tabs = await screen.findAllByRole('tab');
     expect(tabs.map((each) => each.textContent)).toEqual(['General', 'My Toolkit', 'Project Settings']);
     expect(screen.getByRole('tab', { name: 'General' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('heading', { name: 'Documentation' })).toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Documentation' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'My Toolkit' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Collaborators' })).not.toBeInTheDocument();
 
@@ -141,7 +142,7 @@ describe('ProjectDashboardPage', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Project Settings' }));
     const settings = within(screen.getByRole('tabpanel', { name: 'Project Settings' }));
-    for (const heading of ['Project setup', 'Collaborators']) {
+    for (const heading of ['Project setup', 'Collaborators', 'Documentation']) {
       expect(settings.getByRole('heading', { name: heading })).toBeInTheDocument();
     }
     expect(settings.getByRole('button', { name: /Delete project/ })).toBeInTheDocument();
@@ -172,7 +173,7 @@ describe('ProjectDashboardPage', () => {
     return within(header.closest('tr')).getByRole('cell').textContent;
   };
 
-  it('shows all its insights in one table, above its documentation', async () => {
+  it('shows all its insights in one table', async () => {
     setup();
 
     const table = await screen.findByRole('table');
@@ -192,11 +193,9 @@ describe('ProjectDashboardPage', () => {
     expect(insight('People involved')).toBe('1');
     expect(readProjectViews).toHaveBeenCalledWith('proj-1', 30);
 
-    // No chart or period switch any more, and the documentation follows the table.
+    // No chart or period switch any more.
     expect(screen.queryByRole('img', { name: /Views per day/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: '7 days' })).not.toBeInTheDocument();
-    const documentation = screen.getByRole('heading', { name: 'Documentation' });
-    expect(table.compareDocumentPosition(documentation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('counts responses and open rooms from the project\'s rooms, and tools live of those added', async () => {
@@ -444,6 +443,7 @@ describe('ProjectDashboardPage', () => {
     });
     setup();
     await screen.findByText('Riverside Greenway');
+    fireEvent.click(screen.getByRole('tab', { name: 'Project Settings' }));
 
     fireEvent.change(screen.getByLabelText('Link title'), { target: { value: 'Council report' } });
     fireEvent.change(screen.getByLabelText('Link URL'), { target: { value: 'https://example.com/report' } });
@@ -460,8 +460,10 @@ describe('ProjectDashboardPage', () => {
       { id: 'link-1', title: 'Council report', url: 'https://example.com/report' },
     ]);
     setup();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Project Settings' }));
+    const documentation = within(screen.getByRole('heading', { name: 'Documentation' }).closest('section'));
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Remove' }));
+    fireEvent.click(await documentation.findByRole('button', { name: 'Remove' }));
 
     await waitFor(() => expect(removeLink).toHaveBeenCalledWith('link-1'));
     expect(screen.queryByRole('link', { name: 'Council report' })).not.toBeInTheDocument();
