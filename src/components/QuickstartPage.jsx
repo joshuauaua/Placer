@@ -6,7 +6,6 @@
  */
 
 import { Btn } from './UI';
-import { CHARACTER } from '../theme';
 
 // A step's `points` are labelled items listed under its body, and `after` a line
 // that follows them.
@@ -59,18 +58,12 @@ const NEXT = [
   },
 ];
 
-// The step numbers cycle through the three brand colours.
-const NUMBER_COLOURS = [CHARACTER.cityWorker, CHARACTER.practitioner, CHARACTER.citizen];
-
 function Step({ t, number, title, body, points, after }) {
-  const colour = NUMBER_COLOURS[(number - 1) % NUMBER_COLOURS.length];
   return (
     <li style={{ display: 'flex', gap: 20, alignItems: 'flex-start', padding: '20px 0',
       borderBottom: `1px solid ${t.line}` }}>
-      <span aria-hidden="true" className="placer-disp" style={{ width: 44, height: 44, borderRadius: 12,
-        flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: colour.c100, boxShadow: `inset 0 0 0 1px ${colour.c700}`, color: t.ink,
-        fontSize: 18, fontWeight: 700 }}>
+      <span aria-hidden="true" className="placer-disp" style={{ width: 28, flex: '0 0 auto', color: t.ink,
+        fontSize: 24, fontWeight: 700, lineHeight: 1 }}>
         {number}
       </span>
       <div>
