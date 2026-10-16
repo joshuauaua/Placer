@@ -9,7 +9,7 @@
 
 import { useEffect, useRef } from 'react';
 import { addPin, createMap, fitPoints, showAreas } from '../lib/map';
-import { CHARACTER } from '../theme';
+import { PALETTE } from '../theme';
 
 const SIZE = { width: 1000, height: 240 };
 
@@ -19,8 +19,8 @@ const drawnShapes = (project) =>
 /** The zoom a project's address is shown at: a few streets around it. */
 const POINT_ZOOM = 16;
 
-const AREA = { fill: CHARACTER.cityWorker.c300, stroke: CHARACTER.cityWorker.c700 };
-const PIN = { fill: CHARACTER.cityWorker.c100, ring: CHARACTER.cityWorker.c700 };
+const AREA = { fill: PALETTE.blue.c300, stroke: PALETTE.blue.c700 };
+const PIN = { fill: PALETTE.blue.c100, ring: PALETTE.blue.c700 };
 
 /** Whether ProjectLocationMap has anything to draw for this project. */
 export function hasProjectMap(project) {

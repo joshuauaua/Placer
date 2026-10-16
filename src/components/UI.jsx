@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Icon } from './Icon';
 import { copyText } from '../lib/clipboard';
-import { CAT, CHARACTER_LIST, NEUTRAL } from '../theme';
+import { CAT, PALETTE_LIST, NEUTRAL } from '../theme';
 
 /* The loading state: the PLACER letters from the brand file LOADING WB.svg, P L
  * over C R, each turning in place one after the next, clockwise, then a beat
@@ -114,20 +114,19 @@ export function Logo({ t, size }) {
 // name's initials — which is what a new account shows until a photo is added. Same
 // circle either way, so adding or removing a photo is a same-size swap.
 //
-// The brand kit's avatar: a character's 100 fill, a 2px ring in its 700 and ink
-// initials. Nobody has a character on their profile yet, so the name picks one of
-// the three, the same way every time. `ring` still adds an outer ring when asked.
+// The brand kit's avatar: a theme colour's 100 fill, a 2px ring in its 700 and ink
+// initials. The name picks one of the three, the same way every time. `ring` still adds an outer ring when asked.
 export function Avatar({ name = '', size = 40, ring, photo }) {
   const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
-  const character = CHARACTER_LIST[(name.charCodeAt(0) + name.length || 0) % CHARACTER_LIST.length];
+  const colour = PALETTE_LIST[(name.charCodeAt(0) + name.length || 0) % PALETTE_LIST.length];
   return (
-    <div style={{ width: size, height: size, borderRadius: '50%', background: character.c100, color: '#111111',
+    <div style={{ width: size, height: size, borderRadius: '50%', background: colour.c100, color: '#111111',
       display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto',
       fontFamily: 'var(--placer-font)', fontWeight: 700, fontSize: Math.max(12, Math.round(size * 0.4)),
-      // A photo would paint over the inset character ring, so it keeps only the outer one.
+      // A photo would paint over the inset colour ring, so it keeps only the outer one.
       boxShadow: photo
         ? (ring ? `0 0 0 2px ${ring}` : 'none')
-        : `inset 0 0 0 2px ${character.c700}${ring ? `, 0 0 0 2px ${ring}` : ''}` }}>
+        : `inset 0 0 0 2px ${colour.c700}${ring ? `, 0 0 0 2px ${ring}` : ''}` }}>
       {photo
         // Decorative: the name is always beside it, or in the button's label.
         ? <img src={photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%',
@@ -158,13 +157,13 @@ export function Btn({ t, children, variant = 'primary', icon, size = 'md', style
     outline: { background: '#FFFFFF', color: t.ink, border: `1px solid ${t.ink}` },
     quiet:   { background: '#FFFFFF', color: t.ink, border: `1px solid ${t.lineStrong}` },
     ghost:   { background: 'transparent', color: t.ink, border: '1px solid transparent' },
-    // A character button: `tone` is { color, tint, hover } — the 700, 100 and 300 of
-    // one character. The 100 fill with a 700 hairline and ink text, 300 on hover.
-    character: tone ? { background: tone.tint, color: t.ink, border: `1px solid ${tone.color}`,
+    // A tinted button: `tone` is { color, tint, hover } — the 700, 100 and 300 of
+    // one theme colour. The 100 fill with a 700 hairline and ink text, 300 on hover.
+    tinted: tone ? { background: tone.tint, color: t.ink, border: `1px solid ${tone.color}`,
       '--placer-btn-hover': tone.hover } : {},
   };
   const hover = variant === 'primary' || variant === 'accent' ? 'primary'
-    : variant === 'ghost' ? 'ghost' : variant === 'character' ? 'character' : 'secondary';
+    : variant === 'ghost' ? 'ghost' : variant === 'tinted' ? 'tinted' : 'secondary';
   const disabledLook = disabled ? { background: '#E6E6E6', color: '#6E6E6E', border: '1px solid transparent' } : null;
   return (
     <button disabled={disabled} onClick={onClick} onBlur={onBlur} type={type}

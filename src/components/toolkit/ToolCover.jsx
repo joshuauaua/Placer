@@ -1,7 +1,7 @@
 /* PLACER — the cover page every toolkit tool opens on.
  *
  * The layout of the landingpage branch's User Labs page (PhotoSplit there): a
- * block of the tool's character tint fills the left half where User Labs has
+ * block of the tool's colour tint fills the left half where User Labs has
  * its photo, and the copy sits centred on the right, ending in the one button
  * that starts the tool. On a phone they stack, colour first. Everything on it is
  * read from the registry entry, so the tile, the cover and the header above the

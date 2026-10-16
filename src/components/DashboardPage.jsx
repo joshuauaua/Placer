@@ -7,15 +7,13 @@ import { ImaginationCard } from './ImaginationCard';
 import { ImaginationPreview } from './ImaginationPreview';
 import { LayeredCircles } from './LayeredCircles';
 import { NotificationItem } from './NotificationItem';
-import { OnboardingDialog } from './OnboardingDialog';
 import { postsAreShared, readLocalImaginations } from '../services/imaginations';
 import {
   PROJECT_TYPE_NAMES, isSupabaseConfigured as projectsAvailable, readMyProjects,
 } from '../services/projects';
 import { listNotifications } from '../services/notifications';
-import { markOnboarded, needsOnboarding } from '../services/onboarding';
 import { byUrgency, nextSteps, projectProgress } from '../lib/projectTimeline';
-import { CHARACTER } from '../theme';
+import { PALETTE } from '../theme';
 import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
 
 // How many of each the dashboard shows before View All.
@@ -23,13 +21,13 @@ const PROJECTS_SHOWN = 3;
 const STEPS_SHOWN = 5;
 const ACTIVITY_SHOWN = 5;
 
-// A project's picture stand-in, by kind: the character the kind of project is closest to.
-const TYPE_TINTS = { steward: CHARACTER.cityWorker, advocate: CHARACTER.citizen, other: CHARACTER.practitioner };
+// A project's picture stand-in, by kind: one theme colour for each kind of project.
+const TYPE_TINTS = { steward: PALETTE.blue, advocate: PALETTE.orange, other: PALETTE.purple };
 
 const STEP_KINDS = {
-  deadline: { label: 'Deadline', character: CHARACTER.citizen },
-  milestone: { label: 'Milestone', character: CHARACTER.cityWorker },
-  action: { label: 'To do', character: CHARACTER.practitioner },
+  deadline: { label: 'Deadline', colour: PALETTE.orange },
+  milestone: { label: 'Milestone', colour: PALETTE.blue },
+  action: { label: 'To do', colour: PALETTE.purple },
 };
 
 // One of the three things the dashboard offers to do next, as a card-sized button.
@@ -94,7 +92,7 @@ function BasicsCard({ t, hue, label, title, onClick }) {
  */
 function DashboardProjectCard({ t, project, onOpen }) {
   const progress = projectProgress(project);
-  const tint = TYPE_TINTS[project.projectType] ?? CHARACTER.cityWorker;
+  const tint = TYPE_TINTS[project.projectType] ?? PALETTE.blue;
   return (
     <button type="button" onClick={() => onOpen(project.id)} {...ARROW_ITEM} className="placer-dashboard-project"
       style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', padding: 0, overflow: 'hidden',
@@ -209,25 +207,6 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
     return () => { cancelled = true; };
   }, [accountId]);
 
-  // The welcome tour, the first time an account reaches its dashboard — which is
-  // where signing in lands. Signed-in accounts only: the local, no-project mode has
-  // nobody to remember it for.
-  const [onboarding, setOnboarding] = useState(false);
-
-  useEffect(() => {
-    if (!accountId) return undefined;
-    let cancelled = false;
-    needsOnboarding(accountId)
-      .then((needed) => { if (!cancelled) setOnboarding(needed); })
-      .catch((err) => console.error('Could not check for the welcome tour:', err));
-    return () => { cancelled = true; };
-  }, [accountId]);
-
-  const finishOnboarding = () => {
-    setOnboarding(false);
-    markOnboarded(accountId);
-  };
-
   useEffect(() => {
     if (!shared) return undefined;
 
@@ -271,13 +250,6 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
   return (
     <div onKeyDown={moveWithArrows} style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '96px 40px 48px' }} className="placer-scroll">
-      {onboarding && (
-        <OnboardingDialog t={t} name={name} onClose={finishOnboarding}
-          onExplore={() => (onExplore ? onExplore() : onNavigate('map'))}
-          onOpenToolkit={() => onNavigate('toolkit')}
-          onNewProject={onNewProject}
-          onEditProfile={() => onNavigate('settings')} />
-      )}
       {selected && (
         <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)}
           accountId={accountId} authorName={name} onSignIn={onSignIn}
@@ -315,10 +287,10 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
         <section aria-labelledby="dashboard-basics" style={{ marginBottom: 48 }}>
           <SectionLabel t={t} id="dashboard-basics">Getting Started</SectionLabel>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
-            <BasicsCard t={t} hue={CHARACTER.practitioner}
+            <BasicsCard t={t} hue={PALETTE.purple}
               label="Quickstart tutorial" title="Create your first Project"
               onClick={() => onNavigate('quickstart')} />
-            <BasicsCard t={t} hue={CHARACTER.cityWorker}
+            <BasicsCard t={t} hue={PALETTE.blue}
               label="Project Examples" title="Explore what other projects exist on the platform"
               onClick={() => onNavigate('projects')} />
           </div>
@@ -387,7 +359,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
                           borderRadius: 12, textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--placer-font)' }}>
                         <span className="placer-mono" style={{ flex: '0 0 auto', fontSize: 10.5, letterSpacing: '0.06em',
                           textTransform: 'uppercase', padding: '3px 8px', borderRadius: 999, marginTop: 1,
-                          background: kind.character.c100, color: kind.character.c900 }}>
+                          background: kind.colour.c100, color: kind.colour.c900 }}>
                           {kind.label}
                         </span>
                         <span style={{ flex: 1, minWidth: 0 }}>

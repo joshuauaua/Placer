@@ -3,7 +3,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AuthPage } from '../AuthPage';
 import {
   sendPasswordReset,
-  signInWithGoogle,
   signInWithPassword,
   signUpWithPassword,
 } from '../../services/auth';
@@ -11,7 +10,6 @@ import { THEME } from '../../theme';
 
 vi.mock('../../services/auth', () => ({
   sendPasswordReset: vi.fn(() => Promise.resolve()),
-  signInWithGoogle: vi.fn(() => Promise.resolve()),
   signInWithPassword: vi.fn(),
   signUpWithPassword: vi.fn(),
 }));
@@ -96,12 +94,10 @@ describe('AuthPage, signing in', () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it('offers Google as well', async () => {
+  it('does not offer Google for now', () => {
     setup();
 
-    fireEvent.click(submit('Continue with Google'));
-
-    await waitFor(() => expect(signInWithGoogle).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: 'Continue with Google' })).not.toBeInTheDocument();
   });
 
   it('asks for an address before it will send a reset link', async () => {
@@ -163,12 +159,6 @@ describe('AuthPage, signing up', () => {
 
     expect(screen.getByLabelText('Invite code')).toBeInTheDocument();
     expect(submit('Create account')).toBeDisabled();
-  });
-
-  it('does not offer Google, which cannot carry an invite code', () => {
-    setup('signup');
-
-    expect(screen.queryByRole('button', { name: 'Continue with Google' })).not.toBeInTheDocument();
   });
 
   it('sends somebody to their inbox rather than pretending they are signed in', async () => {

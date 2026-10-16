@@ -3,10 +3,9 @@
 import { useState } from 'react';
 import { Btn } from './UI';
 import { Icon } from './Icon';
-import { CHARACTER } from '../theme';
+import { PALETTE } from '../theme';
 import {
   sendPasswordReset,
-  signInWithGoogle,
   signInWithPassword,
   signUpWithPassword,
 } from '../services/auth';
@@ -52,9 +51,9 @@ function Field({ t, id, label, type, value, onChange, autoComplete, hint }) {
   );
 }
 
-// The page sits on the practitioner's purple 100, as the survey dialog does; the
+// The page sits on purple 100, as the survey dialog does; the
 // form card stays white so the inputs keep their contrast.
-const PAGE_BG = CHARACTER.practitioner.c100;
+const PAGE_BG = PALETTE.purple.c100;
 
 function Shell({ t, title, blurb, children }) {
   return (
@@ -95,7 +94,7 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
   const [inviteCode, setInviteCode] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(null); // null | 'password' | 'google' | 'reset'
+  const [busy, setBusy] = useState(null); // null | 'password' | 'reset'
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [sentTo, setSentTo] = useState(null);
@@ -167,21 +166,6 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
       console.error('Could not complete sign in:', err);
       setError(err?.message ?? 'Something went wrong. Try again.');
     } finally {
-      setBusy(null);
-    }
-  };
-
-  const handleGoogle = async () => {
-    setBusy('google');
-    setError(null);
-    try {
-      // Navigates away, so nothing after this runs on success — including anything that
-      // might have saved unfinished work. Hence the warning shot first.
-      if (onLeaving) await onLeaving();
-      await signInWithGoogle();
-    } catch (err) {
-      console.error('Could not reach Google:', err);
-      setError(err?.message ?? 'Could not reach Google. Try again.');
       setBusy(null);
     }
   };
@@ -265,25 +249,6 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
             : (signingUp ? 'Create account' : 'Sign in')}
         </Btn>
       </form>
-
-      {/* Sign in only. A Google sign-in cannot carry an invite code, so during the beta
-          it can reach an existing account but never make a new one (supabase/invites.sql). */}
-      {!signingUp && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '22px 0' }}>
-            <div style={{ flex: 1, height: 1, background: t.line }} />
-            <span className="placer-mono" style={{ fontSize: 11, letterSpacing: '0.06em',
-              textTransform: 'uppercase', color: t.inkFaint, fontWeight: 500 }}>
-              or
-            </span>
-            <div style={{ flex: 1, height: 1, background: t.line }} />
-          </div>
-
-          <Btn t={t} variant="outline" full type="button" onClick={handleGoogle} disabled={Boolean(busy)}>
-            {busy === 'google' ? 'Taking you to Google…' : 'Continue with Google'}
-          </Btn>
-        </>
-      )}
 
       <div style={{ marginTop: 22, paddingTop: 20, borderTop: `1px solid ${t.line}`,
         fontSize: 14.5, color: t.inkDim, lineHeight: 1.7 }}>

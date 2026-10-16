@@ -110,6 +110,7 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganis
             onClick={item.onSelect}
             aria-label={item.label}
             aria-current={current ? 'page' : undefined}
+            data-tour={item.key}
             title={item.label}
             className={`placer-side-nav-link${item.bottom ? ' placer-side-nav-bottom' : ''}`}
           >

@@ -22,19 +22,19 @@ import { Icon } from './Icon';
 import { Btn } from './UI';
 import { FollowButton } from './FollowButton';
 import { PageHeader } from './PageHeader';
-import { CHARACTER, THEME } from '../theme';
+import { PALETTE, THEME } from '../theme';
 import { geocodePlace } from '../lib/geocode';
 import { addPin, createMap, onBackgroundClick, showAreas, stylePin, toLngLat } from '../lib/map';
 import { isSupabaseConfigured, readMapProjects } from '../services/projects';
 import { readMapOrganisations } from '../services/organisations';
 
-// Each layer in a character's colours: projects are run by the city, so blue, the same
-// as their outline everywhere else; organisations are the practitioners, so purple.
+// Each layer in its own theme colour: projects blue, the same as their outline
+// everywhere else; case studies orange; organisations purple.
 // Pins are the 100 with a 2px ring in the 700, areas the 300 outlined in the 700.
 export const LAYERS = [
-  { key: 'projects', label: 'Projects', kind: 'project', character: CHARACTER.cityWorker },
-  { key: 'caseStudies', label: 'Case studies', kind: 'caseStudy', character: CHARACTER.citizen, soon: true },
-  { key: 'organisations', label: 'Organisations', kind: 'organisation', character: CHARACTER.practitioner },
+  { key: 'projects', label: 'Projects', kind: 'project', colour: PALETTE.blue },
+  { key: 'caseStudies', label: 'Case studies', kind: 'caseStudy', colour: PALETTE.orange, soon: true },
+  { key: 'organisations', label: 'Organisations', kind: 'organisation', colour: PALETTE.purple },
 ];
 
 const KIND_NAMES = { project: 'Project', organisation: 'Organisation', caseStudy: 'Case study' };
@@ -76,11 +76,11 @@ function toPlace(kind, item, position) {
       href: `/organisations/${encodeURIComponent(item.id)}` };
 }
 
-function pinStyle(character, selected) {
+function pinStyle(colour, selected) {
   return {
     size: selected ? 26 : 18,
-    fill: selected ? character.c300 : character.c100,
-    ring: character.c700,
+    fill: selected ? colour.c300 : colour.c100,
+    ring: colour.c700,
     ringWidth: selected ? 3 : 2,
     zIndex: selected ? 2 : 1,
   };
@@ -126,7 +126,7 @@ function FilterMenu({ t, shown, counts, onToggle }) {
                 <input type="checkbox" checked={on} disabled={layer.soon}
                   onChange={() => onToggle(layer.key)} />
                 <span aria-hidden="true" style={{ width: 14, height: 14, borderRadius: '50%', flex: '0 0 auto',
-                  background: layer.character.c100, border: `2px solid ${layer.character.c700}`,
+                  background: layer.colour.c100, border: `2px solid ${layer.colour.c700}`,
                   opacity: layer.soon ? 0.4 : 1 }} />
                 <span style={{ flex: 1, fontSize: 15, fontWeight: 500 }}>{layer.label}</span>
                 {layer.soon
@@ -149,8 +149,8 @@ function PreviewCard({ t, place, accountId, onSignIn, onOpen }) {
   return (
     <section className="placer-explore-card placer-explore-preview" aria-label="Selected place"
       style={{ padding: 0, overflow: 'hidden' }}>
-      <div style={{ aspectRatio: '16 / 9', background: layer.character.c50, display: 'flex',
-        alignItems: 'center', justifyContent: 'center', color: layer.character.c700 }}>
+      <div style={{ aspectRatio: '16 / 9', background: layer.colour.c50, display: 'flex',
+        alignItems: 'center', justifyContent: 'center', color: layer.colour.c700 }}>
         {place.image
           ? <img src={place.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           : <Icon name={place.kind === 'organisation' ? 'building' : 'pin'} size={32} stroke={1.8} />}
@@ -159,7 +159,7 @@ function PreviewCard({ t, place, accountId, onSignIn, onOpen }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 13,
           color: t.inkDim, marginBottom: 8 }}>
           <span className="placer-mono" style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase',
-            padding: '3px 8px', borderRadius: 999, background: layer.character.c100, color: layer.character.c900 }}>
+            padding: '3px 8px', borderRadius: 999, background: layer.colour.c100, color: layer.colour.c900 }}>
             {kindName}
           </span>
           {place.location && (
@@ -270,7 +270,7 @@ function ExploreSearch({ t, places, onPick, onPlace }) {
                 style={{ background: index === active ? t.surfaceAlt : 'transparent' }}>
                 {layer
                   ? <span aria-hidden="true" style={{ width: 12, height: 12, borderRadius: '50%', flex: '0 0 auto',
-                    background: layer.character.c100, border: `2px solid ${layer.character.c700}` }} />
+                    background: layer.colour.c100, border: `2px solid ${layer.colour.c700}` }} />
                   : <Icon name="crosshair" size={15} stroke={2} style={{ color: t.inkDim, flex: '0 0 auto' }} />}
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: 'block', fontWeight: 500, color: t.ink }}>
@@ -377,18 +377,18 @@ export function ExplorePage({ homeCenter = null, accountId = null, onSignIn,
     };
 
     const areas = visible.flatMap((place) => {
-      const { character } = LAYERS.find(({ kind }) => kind === place.kind);
+      const { colour } = LAYERS.find(({ kind }) => kind === place.kind);
       return (place.shapes ?? []).map((shape) => ({
-        path: shape?.path ?? [], fill: character.c300, stroke: character.c700, place,
+        path: shape?.path ?? [], fill: colour.c300, stroke: colour.c700, place,
       }));
     });
     const removeAreas = showAreas(map, 'explore-areas', areas,
       { fillOpacity: 0.35, onClick: (area) => pick(area.place) });
 
     const pins = visible.map((place) => {
-      const { character } = LAYERS.find(({ kind }) => kind === place.kind);
+      const { colour } = LAYERS.find(({ kind }) => kind === place.kind);
       const marker = addPin(map, place.position, {
-        ...pinStyle(character, false), title: place.title, onClick: () => pick(place),
+        ...pinStyle(colour, false), title: place.title, onClick: () => pick(place),
       });
       markers.set(`${place.kind}-${place.id}`, marker.getElement());
       return marker;
@@ -411,9 +411,9 @@ export function ExplorePage({ homeCenter = null, accountId = null, onSignIn,
     const key = selected && `${selected.kind}-${selected.id}`;
     const element = key && markersRef.current.get(key);
     if (!element) return undefined;
-    const { character } = LAYERS.find(({ kind }) => kind === selected.kind);
-    stylePin(element, pinStyle(character, true));
-    return () => stylePin(element, pinStyle(character, false));
+    const { colour } = LAYERS.find(({ kind }) => kind === selected.kind);
+    stylePin(element, pinStyle(colour, true));
+    return () => stylePin(element, pinStyle(colour, false));
   }, [selected, visible]);
 
   useEffect(() => {

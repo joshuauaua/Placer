@@ -58,7 +58,7 @@ describe('HaveYourSay', () => {
     expect(trigger()).toHaveTextContent(LABEL);
     expect(trigger()).not.toHaveAttribute('aria-label');
     expect(trigger()).toHaveStyle({
-      // A character button: the practitioner's purple 100, with ink text.
+      // A tinted button: purple 100, with ink text.
       backgroundColor: '#DDD2FA',
       color: '#111111',
     });

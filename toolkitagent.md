@@ -283,7 +283,7 @@ export default {
 ```
 
 The file has to be named for the `id`; the register refuses one that is not. Shared
-helpers — the character colours (`tone`) and the Public Life Data Protocol credit — are
+helpers — the theme colours (`tone`) and the Public Life Data Protocol credit — are
 in `src/toolkit/toolParts.js`.
 
 The tool will automatically appear on the Toolkit page, be reachable at

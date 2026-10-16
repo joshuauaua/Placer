@@ -1,7 +1,7 @@
 # PLACER Brand Kit
 Desktop & Mobile · v1.0
 
-The platform is black and white. The only colours are the three character colours: blue for the city worker, orange for the citizen and purple for the design practitioner.
+The platform is black and white. The only colours are the three theme colours: blue, orange and purple. They are not tied to a kind of user or a role; they are the app's palette, and what gives each project, tool and page its colour.
 
 ---
 
@@ -38,12 +38,14 @@ Font: **Helvetica** (Bold 700, Medium 500, Regular 400) · Fallback: Arial
 | error | #B3261E | Form errors | 6.5 : 1 |
 | success | #1E7B3A | Confirmations | 5.3 : 1 |
 
-### Character colours
+### Theme colours
 
-| Step | City worker (blue) | Citizen (orange) | Design practitioner (purple) | Use |
+In code: `PALETTE.blue`, `PALETTE.orange` and `PALETTE.purple` (`src/theme.js`), and `--placer-blue-*`, `--placer-orange-*` and `--placer-purple-*` in CSS.
+
+| Step | Blue | Orange | Purple | Use |
 |---|---|---|---|---|
 | 50 | #EEF5FE | #FFF3E8 | #F4F0FE | Hover / selected backgrounds, comment highlight |
-| 100 | #C6DEF8 | #FFD9B8 | #DDD2FA | Chips, avatars, pins, character buttons, favicon |
+| 100 | #C6DEF8 | #FFD9B8 | #DDD2FA | Chips, avatars, pins, tinted buttons, favicon |
 | 300 | #8DBBEF | #FDB27A | #B39DF2 | Map areas, chart fills, button hover (no text) |
 | 700 | #1D5FA8 | #9E4600 | #5B3CB8 | Text, icons, outlines on white |
 | 900 | #123F73 | #6B2E00 | #3A2480 | Text on 50 / 100 tints |
@@ -62,6 +64,19 @@ Font: **Helvetica** (Bold 700, Medium 500, Regular 400) · Fallback: Arial
 | orange-100 / 300 as text on white | 1.3 – 1.8 : 1 | Not allowed |
 
 Only black text on pastels. Never white text on a pastel.
+
+### Where each colour goes
+
+A colour is picked for the thing it decorates, never for who is looking at it or who made it.
+
+| Thing | Colour |
+|---|---|
+| Toolkit | Categories: Understand blue · Imagine orange · Plan purple. Each tool sets its own colour in its file, `...tone(PALETTE.blue)` |
+| Project picture stand-in | By project type: steward blue · advocate orange · other purple |
+| Explore layers | Projects blue · Case studies orange · Organisations purple |
+| Map | Imagination pins orange · project areas blue |
+| Avatar without a photo | One of the three, picked from the name so it stays the same |
+| Dashboard next steps | Deadline orange · Milestone blue · To do purple |
 
 ---
 
@@ -161,7 +176,7 @@ Used for: map panels, sidebar, mobile tab bar, bottom sheet, map search bar, gla
 | Text link | Ink, 1px underline |
 | Disabled | grey-200 fill, grey-500 text |
 | Glass button | Matte glass, maps only |
-| Character button | 100 fill · 1px 700 border · ink text · hover 300 |
+| Tinted button | 100 fill · 1px 700 border · ink text · hover 300 |
 | Focus | 2px ink ring · 2px offset |
 
 **Input**
@@ -182,7 +197,7 @@ Used for: map panels, sidebar, mobile tab bar, bottom sheet, map search bar, gla
 
 ---
 
-## Characters in use
+## Theme colours in use
 
 | Element | Spec |
 |---|---|
@@ -210,12 +225,7 @@ Used for: map panels, sidebar, mobile tab bar, bottom sheet, map search bar, gla
 
 The site's favicon is the bench illustration in black on a white square (`public/favicon.svg`, with PNG fallbacks drawn from it).
 
-| Account | Bench colour |
-|---|---|
-| Default | White |
-| City worker | blue-100 #C6DEF8 |
-| Citizen | orange-100 #FFD9B8 |
-| Design practitioner | purple-100 #DDD2FA |
+The bench is white by default. Variants in blue-100 #C6DEF8, orange-100 #FFD9B8 and purple-100 #DDD2FA are available for a project or campaign that wants its own colour.
 
 | Property | Value |
 |---|---|
@@ -232,7 +242,7 @@ The site's favicon is the bench illustration in black on a white square (`public
 |---|---|
 | Projection | Isometric, 30° |
 | Stroke | 1.5px ink, round caps and joins · white fill |
-| Tint circle | Character 100 behind the object · object at 64% of the circle |
+| Tint circle | A theme colour's 100 behind the object · object at 64% of the circle |
 | Size | Desktop 72–160px high · Mobile 48–72px high |
 | Clear space | 48px from text |
 | Mobile | Max 3 per screen |

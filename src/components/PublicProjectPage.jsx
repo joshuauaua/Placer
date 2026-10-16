@@ -54,7 +54,7 @@ import { readProjectOpenRooms } from '../services/rooms';
 import { projectProgress } from '../lib/projectTimeline';
 import { ProjectPeople } from './ProjectPeople';
 import { ProjectPosts } from './ProjectPosts';
-import { CHARACTER } from '../theme';
+import { PALETTE } from '../theme';
 
 // The tool whose results are the project's imaginations (toolkit/tools.js).
 const REIMAGINE_TOOL = 'reimagine-a-space';
@@ -82,9 +82,9 @@ const THUMB_SIZE = { width: 400, height: 225 };
 /** Stands in for the map when a project has no drawn area, so the page keeps its shape. */
 function ImagePlaceholder({ t, frame }) {
   return (
-    <div aria-hidden="true" style={{ ...frame, borderRadius: 16, background: CHARACTER.cityWorker.c50,
+    <div aria-hidden="true" style={{ ...frame, borderRadius: 16, background: PALETTE.blue.c50,
       border: `1px solid ${t.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <span style={{ width: 72, height: 72, borderRadius: '50%', background: CHARACTER.cityWorker.c100,
+      <span style={{ width: 72, height: 72, borderRadius: '50%', background: PALETTE.blue.c100,
         display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.ink }}>
         <Icon name="pin" size={32} stroke={1.5} />
       </span>

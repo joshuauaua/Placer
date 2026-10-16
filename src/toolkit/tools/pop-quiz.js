@@ -1,6 +1,6 @@
 import { PopQuiz } from '../../components/toolkit/PopQuiz';
 import { PopQuizSetup, QuestionsStep, TimeStep } from '../../components/toolkit/PopQuizSetup';
-import { CHARACTER } from '../../theme';
+import { PALETTE } from '../../theme';
 import {
   combineQuiz, defaultQuizSetup, emptyQuizState, questionProblems as quizQuestionProblems, quizSetupProblems,
   timeProblems,
@@ -14,7 +14,7 @@ export default {
   name: 'Pop Quiz',
   tagline: 'Twenty questions, a clock, and a scoreboard.',
   blurb: 'Write a quiz of up to twenty questions, each with four choices or a blank to fill in. Everybody joins with a nickname, the questions go up one at a time, and a right answer scores more the sooner it comes — a quick way to find out what a room already knows about a place.',
-  ...tone(CHARACTER.cityWorker),
+  ...tone(PALETTE.blue),
   icon: 'flask',
   createdBy: 'PLACER',
   component: PopQuiz,

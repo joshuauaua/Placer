@@ -22,7 +22,7 @@ export function ReimagineASpace({ t, tool, onLaunch }) {
         <li>Say what the idea is and why, and post it for others to see.</li>
       </ol>
       {onLaunch && (
-        <Btn t={t} variant="character" tone={tool} icon="pin" onClick={onLaunch}>
+        <Btn t={t} variant="tinted" tone={tool} icon="pin" onClick={onLaunch}>
           Choose a spot on the map
         </Btn>
       )}

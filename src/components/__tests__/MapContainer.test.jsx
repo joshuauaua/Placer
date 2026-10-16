@@ -5,7 +5,7 @@ import { fetchImaginations } from '../../services/api';
 import { isSupabaseConfigured, readProjectLocations } from '../../services/projects';
 import { stitchPanoTiles } from '../../lib/panoStitch';
 import { resetGoogleMapsLoaderForTests } from '../../lib/googleMaps';
-import { CHARACTER } from '../../theme';
+import { PALETTE } from '../../theme';
 import { clickLayer, clickMap, lastMap, maps } from '../../test/maplibreStub';
 import { photonFeature, stubPhoton } from '../../test/photon';
 
@@ -584,7 +584,7 @@ describe('MapContainer', () => {
       await waitFor(() => expect(pins()).toHaveLength(2));
     });
 
-    it('draws each pin in the citizen pin style and labels it with the title', async () => {
+    it('draws each pin in the orange pin style and labels it with the title', async () => {
       vi.mocked(fetchImaginations).mockResolvedValue(SAVED);
 
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
@@ -595,7 +595,7 @@ describe('MapContainer', () => {
       expect(first.getLngLat()).toEqual({ lat: 55.61, lng: 12.99 });
       expect(screen.getByRole('button', { name: 'Pocket park' })).toBe(first.getElement());
       for (const element of pinElements()) {
-        expect(element).toHaveStyle({ backgroundColor: CHARACTER.citizen.c100 });
+        expect(element).toHaveStyle({ backgroundColor: PALETTE.orange.c100 });
         expect(element.style.border).toContain('2px solid');
       }
     });
@@ -664,7 +664,7 @@ describe('MapContainer', () => {
       await waitFor(() => expect(areas()).toHaveLength(1));
       expect(areas()[0].geometry.coordinates[0].slice(0, 3))
         .toEqual(TRIANGLE.map(({ lat, lng }) => [lng, lat]));
-      expect(areas()[0].properties).toEqual({ fill: CHARACTER.cityWorker.c300, stroke: CHARACTER.cityWorker.c700 });
+      expect(areas()[0].properties).toEqual({ fill: PALETTE.blue.c300, stroke: PALETTE.blue.c700 });
     });
 
     it('draws a polygon for every shape across every project', async () => {

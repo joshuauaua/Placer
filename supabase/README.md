@@ -907,6 +907,49 @@ Expect `rls` true on all three; SELECT, INSERT, UPDATE and DELETE policies on
 `organisations`, one SELECT on `organisation_admins`, and none on
 `organisation_former_admins`, which only the functions read.
 
+## 19. Case study submissions
+
+The Resources page's **Submit a case study** button (also its own address,
+`/resources/submit-case-study`) opens a form for a customer or partner to tell us about
+a project: company, industry, the problem, the solution, the results, an optional
+testimonial, and a contact name and email. Each one is a row in
+`case_study_submissions` (`case-study-submissions.sql`, also a migration). Like
+`tool_submissions`, the browser can add a row and never read one back.
+
+**Where the content team reads them:** Dashboard -> Table Editor ->
+`case_study_submissions`, or in the SQL editor:
+
+```sql
+select created_at, company, industry, contact_name, contact_email,
+       problem, solution, results, testimonial, logo_path, image_path
+from public.case_study_submissions order by created_at desc;
+```
+
+Give the team access through Dashboard -> Organization -> Team. Never hand them a
+`service_role` key.
+
+**Logo and picture.** These are optional, and only someone signed in can attach them: an
+upload goes through the `media` function (step 14), which needs an account, into
+`case-studies/<user id>/`. The row keeps the key, so the file is at
+`<VITE_MEDIA_URL>/<logo_path>`. The bucket is read publicly, the same as every other
+picture, so the address is unguessable but not private. Deploy the function again so it
+accepts the new folder:
+
+```sh
+supabase functions deploy media
+```
+
+**In Slack (optional, requires step 15).** Run `case-study-submissions-slack.sql` in the
+SQL editor, and deploy `survey-to-slack` again so it knows the new table. Submissions
+go to the survey channel unless `SLACK_CASE_STUDY_WEBHOOK_URL` is set:
+
+```sh
+supabase secrets set SLACK_CASE_STUDY_WEBHOOK_URL=https://hooks.slack.com/services/…
+supabase functions deploy survey-to-slack
+```
+
+**Everyone in the channel sees the contact's name and email.**
+
 ## Still to decide
 
 - **Projects have one role beyond the owner, not several.** A collaborator can edit

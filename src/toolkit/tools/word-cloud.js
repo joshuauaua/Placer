@@ -1,7 +1,7 @@
 import { WordCloud } from '../../components/toolkit/WordCloud';
 import { WordCloudOnPage } from '../../components/toolkit/WordCloudOnPage';
 import { PromptStep, WordCloudSetup, WordsStep } from '../../components/toolkit/WordCloudSetup';
-import { CHARACTER } from '../../theme';
+import { PALETTE } from '../../theme';
 import {
   cloudSetupProblems, combineWords, defaultCloudSetup, emptyWords, promptProblems, wordsProblems,
 } from '../../lib/wordCloud';
@@ -14,7 +14,7 @@ export default {
   name: 'Word Cloud',
   tagline: 'Ask anything, and watch the answers gather.',
   blurb: 'Type whatever you want to put to a room and let everybody answer in a few words of their own. Each word joins the cloud as it is added, and grows every time another person says it — so what the room agrees on is the first thing you read.',
-  ...tone(CHARACTER.cityWorker),
+  ...tone(PALETTE.blue),
   icon: 'cloud',
   createdBy: 'PLACER',
   component: WordCloud,

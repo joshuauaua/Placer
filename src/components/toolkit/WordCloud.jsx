@@ -29,14 +29,14 @@ import { Panel } from '../ToolLayout';
 import { useText } from '../../i18n';
 import { Btn } from '../UI';
 import { TimerSelect } from './WordCloudSetup';
-import { CHARACTER_LIST } from '../../theme';
+import { PALETTE_LIST } from '../../theme';
 import {
   MAX_WORD_LENGTH, addWord, cloudTimer, cloudWords, countWords, formatCountdown, isPaused,
   pauseTimer, resumeTimer, roomTimer, secondsLeft, startTimer, stopTimer, wordLimit,
 } from '../../lib/wordCloud';
 
 // The brand's three colours, each in the two tones dark enough to read as type on white.
-const WORD_COLORS = CHARACTER_LIST.flatMap((character) => [character.c700, character.c900]);
+const WORD_COLORS = PALETTE_LIST.flatMap((colour) => [colour.c700, colour.c900]);
 
 // A word keeps its colour however the cloud around it changes, so it is chosen by the
 // word itself rather than by where it currently sits.

@@ -4,7 +4,7 @@
  * The kit has one typeface, so the display face and the "mono" labels both resolve
  * to it; the class names stay because the components use them.
  *
- * The type scale, the neutrals and the three character colours are custom
+ * The type scale, the neutrals and the three theme colours are custom
  * properties so inline styles and SVG attributes can read them too. The type
  * scale switches at the kit's one breakpoint, 1024px.
  */
@@ -206,7 +206,7 @@ a {
   background: var(--placer-grey-700) !important;
 }
 
-.placer-btn-character:not(:disabled):hover {
+.placer-btn-tinted:not(:disabled):hover {
   background: var(--placer-btn-hover) !important;
 }
 
@@ -1254,7 +1254,7 @@ a {
 /* PLACER — the landing page's feedback, User Labs and survey triggers.
  *
  * The landing card shows its calls to action as text links now (see
- * .placer-landing-option-link); these are the character-button look.
+ * .placer-landing-option-link); these are the tinted-button look.
  *
  * The geometry lives here rather than inline because an inline style cannot be
  * overridden by a media query. Only the colours are set in the component.
@@ -1280,7 +1280,7 @@ a {
   transition: background-color 0.15s ease;
 }
 
-/* Character buttons: the 100 fill, 300 on hover. */
+/* Tinted buttons: the 100 fill, 300 on hover. */
 .placer-feedback-trigger:hover {
   background: var(--placer-purple-300) !important;
 }
@@ -1974,7 +1974,7 @@ a {
 
 /* PLACER — a toolkit tool's cover page (see toolkit/ToolCover.jsx).
  *
- * The tool's character tint fills the left half and the copy sits centred
+ * The tool's colour tint fills the left half and the copy sits centred
  * on the right. Below 1024px they stack, tint first.
  */
 .placer-cover {
@@ -2979,4 +2979,21 @@ a {
   .placer-site-mapping[data-panel="survey"] .placer-site-mapping-map {
     display: none;
   }
+}
+
+/* The welcome tour's spotlight (OnboardingDialog): a ring in the step's 300 that
+ * breathes round the item it asks somebody to click. Still for reduced motion. */
+.placer-tour-spotlight {
+  outline: 3px solid var(--placer-tour-ring);
+  outline-offset: 0;
+  animation: placer-tour-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes placer-tour-pulse {
+  0%, 100% { outline-offset: 0; }
+  50% { outline-offset: 5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-tour-spotlight { animation: none; }
 }

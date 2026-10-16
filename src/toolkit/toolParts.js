@@ -1,9 +1,9 @@
 /* PLACER — what more than one tool's register entry (src/toolkit/tools/) shares. */
 
-// Each tool wears one of the three character colours: `color` is the 700,
+// Each tool wears one of the three theme colours: `color` is the 700,
 // for text, icons and outlines on white, and `tint` the 100, for fills with ink
-// on them, `hover` the 300 a character button turns on hover. The brand kit has no other colours to give.
-export const tone = (character) => ({ color: character.c700, tint: character.c100, hover: character.c300, wash: character.c50 });
+// on them, `hover` the 300 a tinted button turns on hover. The brand kit has no other colours to give.
+export const tone = (colour) => ({ color: colour.c700, tint: colour.c100, hover: colour.c300, wash: colour.c50 });
 
 /**
  * A room's label (`room.label` in a register entry) from text in its setup: trimmed,

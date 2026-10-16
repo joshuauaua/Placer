@@ -18,7 +18,7 @@ import { useId, useMemo, useState } from 'react';
 import { Panel, Readout } from '../ToolLayout';
 import { Btn, Chip } from '../UI';
 import { DesireLinesMap } from './DesireLinesMap';
-import { CHARACTER, CHARACTER_LIST } from '../../theme';
+import { PALETTE, PALETTE_LIST } from '../../theme';
 import {
   MAX_ELEMENT_NOTE, MAX_LABEL, addElement, addPath, alignment, clearSite, compare, elementName, elementsOf, makeElement, makePath,
   pathLength, pathsOf, removeElement, removePath, toGeoJSON, BASE_TYPES,
@@ -26,8 +26,8 @@ import {
 
 // One colour for each walk, so they can be told apart: the brand's three hues, each in the
 // two tones dark enough to read on the map, cycling after six.
-const WALK_COLORS = CHARACTER_LIST.flatMap((character) => [character.c700]).concat(
-  CHARACTER_LIST.map((character) => character.c900),
+const WALK_COLORS = PALETTE_LIST.flatMap((colour) => [colour.c700]).concat(
+  PALETTE_LIST.map((colour) => colour.c900),
 );
 export const walkColor = (index) => WALK_COLORS[index % WALK_COLORS.length];
 
@@ -72,8 +72,8 @@ export function DesireLinesBoard({
   const theirs = found.paths;
   const comparing = showOthers && theirs.length > 0;
   const colors = {
-    aligned: tool.color, differs: CHARACTER.citizen.c700, others: '#6E6E6E',
-    entrance: tool.color, obstacle: CHARACTER.citizen.c700, other: '#111111',
+    aligned: tool.color, differs: PALETTE.orange.c700, others: '#6E6E6E',
+    entrance: tool.color, obstacle: PALETTE.orange.c700, other: '#111111',
   };
   const placingType = palette.find((type) => type.id === placing) ?? palette[0];
   const needsName = Boolean(placingType.blank);

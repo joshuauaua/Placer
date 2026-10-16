@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PostPage } from '../PostPage';
 import { THEME } from '../../theme';
 import { postImagination, postsAreShared } from '../../services/imaginations';
-import { signInWithGoogle, signInWithPassword, signUpWithPassword } from '../../services/auth';
+import { signInWithPassword, signUpWithPassword } from '../../services/auth';
 
 vi.mock('../../services/imaginations', () => ({
   postImagination: vi.fn(),
@@ -16,7 +16,6 @@ vi.mock('../../services/imaginations', () => ({
 // so it reaches services/auth through AuthForm.
 vi.mock('../../services/auth', () => ({
   sendPasswordReset: vi.fn(() => Promise.resolve()),
-  signInWithGoogle: vi.fn(() => Promise.resolve()),
   signInWithPassword: vi.fn(() => Promise.resolve({ id: 'user-1', email: 'mara@example.com' })),
   signUpWithPassword: vi.fn(() => Promise.resolve({ needsConfirmation: true })),
 }));
@@ -184,7 +183,6 @@ describe('PostPage, reached without an account', () => {
   const signedOut = (props = {}) => setup({ needsAccount: true, onStashDraft: vi.fn(), ...props });
 
   beforeEach(() => {
-    vi.mocked(signInWithGoogle).mockClear();
     vi.mocked(signInWithPassword).mockClear();
     vi.mocked(signUpWithPassword).mockClear();
   });
@@ -227,19 +225,6 @@ describe('PostPage, reached without an account', () => {
 
     await waitFor(() => expect(signInWithPassword).toHaveBeenCalled());
     expect(onStashDraft).not.toHaveBeenCalled();
-  });
-
-  it('parks the imagination before handing off to Google', async () => {
-    const onStashDraft = vi.fn();
-    signedOut({ onStashDraft });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
-
-    await waitFor(() => expect(signInWithGoogle).toHaveBeenCalled());
-    // Order is the assertion: a redirect that beat the save would lose the drawing.
-    expect(onStashDraft).toHaveBeenCalled();
-    expect(onStashDraft.mock.invocationCallOrder[0])
-      .toBeLessThan(vi.mocked(signInWithGoogle).mock.invocationCallOrder[0]);
   });
 
   it('parks the imagination before a signup that has to be confirmed by email', async () => {

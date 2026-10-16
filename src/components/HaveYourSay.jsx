@@ -10,7 +10,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 
 import { Icon } from './Icon';
 import defaultSurveyContent from './waitlistSurvey/content/default.json';
-import { CHARACTER } from '../theme';
+import { PALETTE } from '../theme';
 
 // The survey drags in the whole flow, its content and the api layer. Most
 // visitors to a holding page never open it, so it is fetched on the click
@@ -44,11 +44,11 @@ export const LANDING_SURVEY_CONTENT = {
   ),
 };
 
-// The one call to action on the holding page, as a character button: the
-// practitioner's purple 100 with a 1px 700 hairline and ink text, 300 on hover
+// The one call to action on the holding page, as a tinted button: the
+// purple 100 with a 1px 700 hairline and ink text, 300 on hover
 // (see index.css). The brand kit's only colours are the three characters'.
-const TRIGGER_BG = CHARACTER.practitioner.c100;
-const TRIGGER_BORDER = CHARACTER.practitioner.c700;
+const TRIGGER_BG = PALETTE.purple.c100;
+const TRIGGER_BORDER = PALETTE.purple.c700;
 const TRIGGER_FG = '#111111';
 
 // The survey it opens sits on the same purple, so the dialog reads as the
@@ -74,7 +74,7 @@ function Fallback({ t }) {
   );
 }
 
-// `className` swaps the character button for another look, such as the landing
+// `className` swaps the tinted button for another look, such as the landing
 // card's text link, and drops the button's own colours with it.
 export function HaveYourSay({ t, className }) {
   const [open, setOpen] = useState(false);

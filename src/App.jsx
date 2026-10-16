@@ -22,6 +22,8 @@ import { useIdentity } from './components/useIdentity';
 import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
 import { readReimagineScene } from './services/projects';
 import { isNewProjectShortcut } from './lib/shortcuts';
+import { CASE_STUDY_FORM_PATH } from './lib/routes';
+import { WelcomeTour } from './components/WelcomeTour';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -114,9 +116,11 @@ const STATIC_PATHS = {
   // Linked from the landing page's Apply to User Labs card.
   userLabs: '/user-labs',
 };
-const STATIC_VIEWS = Object.fromEntries(
-  Object.entries(STATIC_PATHS).map(([view, path]) => [path, view]),
-);
+const STATIC_VIEWS = {
+  ...Object.fromEntries(Object.entries(STATIC_PATHS).map(([view, path]) => [path, view])),
+  // The Resources page with its case study form open over it (ResourcesPage reads it).
+  [CASE_STUDY_FORM_PATH]: 'resources',
+};
 
 /**
  * `/projects/new`, `/projects/<id>` (the public page) or `/projects/<id>/dashboard`,
@@ -158,9 +162,11 @@ function personIdFrom(path) {
 /**
  * `/resources/<slug>`, one article from Storyblok — read off the location for the
  * same reason a person's public profile is. The slug is the story's full slug, so it
- * may contain slashes when the story sits in a folder. Null for anything else.
+ * may contain slashes when the story sits in a folder. Null for anything else,
+ * including the case study form's address, which is the Resources page itself.
  */
 function resourceSlugFrom(path) {
+  if (path === CASE_STUDY_FORM_PATH) return null;
   const match = /^\/resources\/(.+)$/.exec(path);
   return match ? decodeURIComponent(match[1]) : null;
 }
@@ -615,6 +621,19 @@ function MainApp({ initialView = 'welcome' }) {
               onNewProject={() => { showNewProject(); scrollPageToTop(); }} showOrganisations={isSupabaseConfigured()} />
           )}
 
+          {/* The welcome tour, over whichever page it has led to: its steps go to the
+              projects, the map, the Toolkit, a new project and Settings, and it carries on
+              over each. */}
+          {!identityLoading && profile && (
+            <WelcomeTour t={t} accountId={accountId} name={profile.name}
+              autoOpen={view === 'dashboard'}
+              onOpenProjects={() => { show('projects'); scrollPageToTop(); }}
+              onExplore={() => { handleExplore(); scrollPageToTop(); }}
+              onOpenToolkit={() => { show('toolkit'); scrollPageToTop(); }}
+              onNewProject={() => { showNewProject(); scrollPageToTop(); }}
+              onEditProfile={() => { show('settings'); scrollPageToTop(); }} />
+          )}
+
           <div className="placer-app-page">
             {/* Held back while the session is read, so somebody signed in does not see the
                 landing page flash up before the redirect to their dashboard. */}
@@ -671,7 +690,7 @@ function MainApp({ initialView = 'welcome' }) {
 
             {view === 'resources' && (
               <Suspense fallback={<LoadingFallback />}>
-                <ResourcesPage t={t} />
+                <ResourcesPage t={t} signedIn={Boolean(accountId)} />
               </Suspense>
             )}
 
@@ -804,7 +823,8 @@ function MainApp({ initialView = 'welcome' }) {
                 <SettingsPage t={t} profile={profile} email={accountEmail}
                   onSaveProfile={handleSaveProfile} onNavigate={show}
                   organisations={organisations} onNewOrganisation={showNewOrganisation}
-                  onOpenOrganisationDashboard={showOrganisationDashboard} />
+                  onOpenOrganisationDashboard={showOrganisationDashboard}
+                  onReplayTour={() => navigate('/dashboard?tour')} />
               </Suspense>
             )}
 

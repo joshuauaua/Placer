@@ -1,7 +1,7 @@
 import { DesireLines } from '../../components/toolkit/DesireLines';
 import { DesireLinesOnPage } from '../../components/toolkit/DesireLinesOnPage';
 import { DesireLinesSetup } from '../../components/toolkit/DesireLinesSetup';
-import { CHARACTER } from '../../theme';
+import { PALETTE } from '../../theme';
 import { combineDesire, defaultSetup, emptyDesire, setupProblems } from '../../lib/desireLines';
 import { roomText, tone } from '../toolParts';
 
@@ -12,7 +12,7 @@ export default {
   name: 'Desire Lines',
   tagline: 'The path people take, not the one that got paved.',
   blurb: 'Pick a site on the map and draw the walks you actually make across it — the shortcuts, the detours around what was built. Run for a project, its organisers choose the sites and everyone draws on them, and you can lay the others’ walks over your own to see where you walk the same way and where you do not.',
-  ...tone(CHARACTER.practitioner),
+  ...tone(PALETTE.purple),
   icon: 'path',
   createdBy: 'PLACER',
   component: DesireLines,

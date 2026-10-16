@@ -1,56 +1,89 @@
 /* PLACER — the welcome tour, the first time somebody signs in.
  *
- * Five steps over the dashboard: what PLACER is, then Explore, the Toolkit, projects
- * and the profile, each with a button that goes there. Next and Back (or the arrow
- * keys) move between them; Skip, the close button or Escape end the tour from any
- * step, as does Get started on the last one or any step's own button. Every way out
- * calls `onClose`, which is where DashboardPage records that the tour has been seen
+ * A cover saying what PLACER is, with one button, Get started. Then five steps:
+ * projects — the heart of it — the Toolkit, Explore, starting a project and the
+ * profile, each with a button that goes there. The cover is not counted as a step and
+ * has no dot. Going there
+ * does not end the tour: the page changes underneath and the tour moves on to its next
+ * step, over the new page (WelcomeTour keeps it open across pages). Only the last
+ * step's button ends it. Next
+ * and Back (or the arrow keys) move between steps; the close button or Escape end the
+ * tour from any step, as does Done on the last one. Every way out calls
+ * `onClose`, which is where WelcomeTour records that the tour has been seen
  * (services/onboarding.js), so it opens once per account however it was left.
  *
  * A click outside the panel does nothing: on a first visit that is far more likely a
  * stray click than a wish to skip the whole tour.
+ *
+ * A step with a `spotlight` points at the real thing instead of offering a button: the
+ * screen darkens around the side nav's item for it (SideNav marks each with data-tour),
+ * a ring pulses round it, and clicking it there does what the item does. Where that item is not on screen the step falls back to its `action` button.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn } from './UI';
-import { CHARACTER } from '../theme';
+import { PALETTE } from '../theme';
 import { CATEGORIES } from '../toolkit/tools';
 
-/** The steps, in order. `action` names the prop its button calls, and is left out when there is none. */
+/**
+ * The steps, in order. Each shows an `icon` from the set, or an `image` in its place.
+ * `action` names the prop its button calls, and is left out when there is none.
+ */
 export const ONBOARDING_STEPS = [
   {
     id: 'welcome',
-    icon: 'sparkle',
-    colour: CHARACTER.practitioner,
+    cover: true,
+    // The bench from the favicon (public/favicon.svg), PLACER's own mark, rather than
+    // an icon from the set. It is drawn on white, the same as the tile it sits in.
+    image: '/favicon.svg',
+    colour: PALETTE.purple,
     title: (name) => (name ? `Welcome to PLACER, ${name}` : 'Welcome to PLACER'),
     body: 'PLACER is an open toolkit for shaping public places together with the people '
       + 'who use them. Here is a quick look around, in five steps.',
   },
   {
-    id: 'explore',
-    icon: 'pin',
-    colour: CHARACTER.cityWorker,
-    title: () => 'Explore what is happening',
-    body: 'The Explore map shows projects and organisations near you. Follow the ones you '
-      + 'care about, and their news lands in Your Activity on the dashboard.',
-    action: { label: 'Open the map', icon: 'pin', call: 'onExplore' },
+    id: 'projects',
+    icon: 'grid',
+    colour: PALETTE.orange,
+    title: () => 'Projects are where change starts',
+    body: 'A project is how people say what they want to change about a place, and bring '
+      + 'others in to shape it. Everything in PLACER gathers around one: its people, its '
+      + 'tools, its updates and its decisions. Have a look at what others have started.',
+    spotlight: { target: 'projects', label: 'Projects', call: 'onOpenProjects',
+      hint: 'Click Projects in the menu, highlighted, to see them.' },
+    action: { label: 'See the projects', icon: 'grid', call: 'onOpenProjects' },
   },
   {
     id: 'toolkit',
     icon: 'layers',
-    colour: CHARACTER.citizen,
-    title: () => 'Try the Toolkit',
-    body: 'Tools to understand a place, imagine what it could be and plan what happens next: '
-      + 'polls, word clouds, site mapping, co-budgets and more. Try one on your own, or run '
-      + 'it live with a room full of people.',
+    colour: PALETTE.blue,
+    title: () => 'Check out the Toolkit',
+    body: 'In the Toolkit you can explore the tools. They come from expert organisations, and '
+      + 'each one is for understanding a place and collecting data about it, imagining and '
+      + 'visualising ideas for it, or planning to drive change in it. Some are done on your '
+      + 'own and some in a group, and they come in all sizes and shapes. We recommend mixing '
+      + 'and matching them to fit what your project needs.',
     categories: true,
+    spotlight: { target: 'toolkit', label: 'Toolkit', call: 'onOpenToolkit',
+      hint: 'Click Toolkit in the menu, highlighted, to see the tools.' },
     action: { label: 'Browse the Toolkit', icon: 'layers', call: 'onOpenToolkit' },
+  },
+  {
+    id: 'explore',
+    icon: 'pin',
+    colour: PALETTE.orange,
+    title: () => 'Explore what is happening',
+    body: 'The Explore map shows projects and organisations near you. Follow the ones you '
+      + 'care about, and their news lands in Your Activity on the dashboard.',
+    spotlight: { target: 'map', label: 'Explore', call: 'onExplore',
+      hint: 'Click Explore in the menu, highlighted, to open the map.' },
+    action: { label: 'Open the map', icon: 'pin', call: 'onExplore' },
   },
   {
     id: 'project',
     icon: 'grid',
-    colour: CHARACTER.practitioner,
+    colour: PALETTE.purple,
     title: () => 'Start a project',
     body: 'A project gathers people around one place. Give it a location and dates, choose '
       + 'its tools, and share a public page where anyone can take part.',
@@ -59,7 +92,7 @@ export const ONBOARDING_STEPS = [
   {
     id: 'profile',
     icon: 'user',
-    colour: CHARACTER.cityWorker,
+    colour: PALETTE.blue,
     title: () => 'Make your profile yours',
     body: 'Add a photo, a short bio and your home area, so people know who is behind a '
       + 'project, and the map opens where you are.',
@@ -67,19 +100,53 @@ export const ONBOARDING_STEPS = [
   },
 ];
 
-export function OnboardingDialog({ t, name = '', onClose, onExplore, onOpenToolkit, onNewProject, onEditProfile }) {
+// How far the spotlight's hole reaches past the item it is cut round.
+const SPOTLIGHT_PAD = 6;
+
+/** Where the side nav's `target` item is on screen, or null when it is not there to point at. */
+function findTarget(target) {
+  const element = target && document.querySelector(`[data-tour="${target}"]`);
+  const rect = element?.getBoundingClientRect();
+  if (!rect || rect.width === 0 || rect.height === 0) return null;
+  return { top: rect.top, left: rect.left, width: rect.width, height: rect.height };
+}
+
+export function OnboardingDialog({ t, name = '', onClose, onOpenProjects, onExplore, onOpenToolkit, onNewProject,
+  onEditProfile }) {
   const [index, setIndex] = useState(0);
   const panelRef = useRef(null);
-  const handlers = { onExplore, onOpenToolkit, onNewProject, onEditProfile };
+  const handlers = { onOpenProjects, onExplore, onOpenToolkit, onNewProject, onEditProfile };
 
   const step = ONBOARDING_STEPS[index];
   const last = index === ONBOARDING_STEPS.length - 1;
-  const action = step.action && handlers[step.action.call] ? step.action : null;
+  // The cover comes first and is not one of the numbered steps.
+  const numbered = ONBOARDING_STEPS.filter((s) => !s.cover);
+  const stepNumber = (s) => numbered.indexOf(s) + 1;
   const titleId = 'onboarding-title';
 
+  // The spotlit item's place, measured when the step opens and again whenever the window
+  // changes size (the side nav collapses, or becomes the bottom bar).
+  const [spot, setSpot] = useState(null);
+  const spotlight = step.spotlight && handlers[step.spotlight.call] ? step.spotlight : null;
+  useLayoutEffect(() => {
+    if (!spotlight) {
+      setSpot(null);
+      return undefined;
+    }
+    const measure = () => setSpot(findTarget(spotlight.target));
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [spotlight]);
+  const spotlit = spotlight && spot;
+
+  const action = !spotlit && step.action && handlers[step.action.call] ? step.action : null;
+
+  // On the panel from the start, and again at each step: a step's button that has just
+  // been used is gone, and focus would otherwise drop to the page underneath.
   useEffect(() => {
     panelRef.current?.focus();
-  }, []);
+  }, [index]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -95,14 +162,37 @@ export function OnboardingDialog({ t, name = '', onClose, onExplore, onOpenToolk
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const go = () => {
-    onClose();
-    handlers[action.call]();
+  // Go where the step points, then on to the next step over that page; from the last
+  // step there is nothing left to show, so the tour ends.
+  const go = (call) => {
+    if (last) onClose();
+    else setIndex(index + 1);
+    handlers[call]();
+  };
+
+  const hole = spotlit && {
+    position: 'fixed', top: spot.top - SPOTLIGHT_PAD, left: spot.left - SPOTLIGHT_PAD,
+    width: spot.width + SPOTLIGHT_PAD * 2, height: spot.height + SPOTLIGHT_PAD * 2, borderRadius: 16,
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 190, background: 'rgba(0, 0, 0, 0.4)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+    // With a spotlight the dimming is the hole's own shadow, so the item shows through.
+    // When the item is low on the screen (the phone's bottom bar), the panel keeps above it.
+    <div style={{ position: 'fixed', inset: 0, zIndex: 190, background: spotlit ? 'transparent' : 'rgba(0, 0, 0, 0.4)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+      paddingBottom: spotlit && spot.top > window.innerHeight / 2
+        ? window.innerHeight - spot.top + SPOTLIGHT_PAD + 16 : 16 }}>
+      {spotlit && (
+        <>
+          <div aria-hidden="true" className="placer-tour-spotlight"
+            style={{ ...hole, pointerEvents: 'none', boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.4)',
+              '--placer-tour-ring': step.colour.c300 }} />
+          {/* Over the item itself, so the click lands here rather than on the dimmed page;
+              it does what the item would. */}
+          <button type="button" onClick={() => go(spotlight.call)} aria-label={spotlight.label}
+            style={{ ...hole, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }} />
+        </>
+      )}
       <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId}
         aria-describedby="onboarding-body" tabIndex={-1}
         style={{ position: 'relative', width: '100%', maxWidth: 520, maxHeight: 'calc(100vh - 32px)',
@@ -120,15 +210,19 @@ export function OnboardingDialog({ t, name = '', onClose, onExplore, onOpenToolk
           <span style={{ width: 88, height: 88, borderRadius: 24, display: 'flex', alignItems: 'center',
             justifyContent: 'center', background: t.surface, color: step.colour.c700,
             boxShadow: `inset 0 0 0 1.5px ${step.colour.c700}` }}>
-            <Icon name={step.icon} size={40} stroke={1.8} />
+            {step.image
+              ? <img src={step.image} alt="" width={72} height={72} style={{ display: 'block' }} />
+              : <Icon name={step.icon} size={40} stroke={1.8} />}
           </span>
         </div>
 
         <div style={{ padding: '24px 28px 0' }}>
-          <p className="placer-mono" style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em',
-            textTransform: 'uppercase', color: step.colour.c700, margin: '0 0 8px' }}>
-            Step {index + 1} of {ONBOARDING_STEPS.length}
-          </p>
+          {!step.cover && (
+            <p className="placer-mono" style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em',
+              textTransform: 'uppercase', color: step.colour.c700, margin: '0 0 8px' }}>
+              Step {stepNumber(step)} of {numbered.length}
+            </p>
+          )}
           <h2 id={titleId} className="placer-disp" style={{ fontSize: 26, fontWeight: 700,
             letterSpacing: '-0.02em', lineHeight: 1.2, margin: '0 0 10px', overflowWrap: 'anywhere' }}>
             {step.title(name)}
@@ -148,35 +242,51 @@ export function OnboardingDialog({ t, name = '', onClose, onExplore, onOpenToolk
               ))}
             </ul>
           )}
+          {spotlit && (
+            <p role="note" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 18, marginBottom: 0,
+              padding: '10px 12px', borderRadius: 12, background: step.colour.c50, color: step.colour.c900,
+              fontSize: 14.5, fontWeight: 500, lineHeight: 1.45 }}>
+              <Icon name={step.icon} size={16} stroke={2.2} style={{ flex: '0 0 auto' }} />
+              {spotlight.hint}
+            </p>
+          )}
           {action && (
             <div style={{ marginTop: 18 }}>
-              <Btn t={t} variant="outline" size="sm" icon={action.icon} onClick={go}>{action.label}</Btn>
+              <Btn t={t} variant="outline" size="sm" icon={action.icon} onClick={() => go(action.call)}>{action.label}</Btn>
             </div>
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-          flexWrap: 'wrap', padding: '24px 28px 24px' }}>
-          <ol aria-label="Steps" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', gap: 6 }}>
-            {ONBOARDING_STEPS.map((s, i) => (
-              <li key={s.id}>
-                <button type="button" onClick={() => setIndex(i)}
-                  aria-label={`Step ${i + 1}: ${s.title('')}`} aria-current={i === index ? 'step' : undefined}
-                  style={{ display: 'block', width: i === index ? 22 : 8, height: 8, padding: 0, border: 'none',
-                    borderRadius: 999, cursor: 'pointer',
-                    background: i === index ? t.ink : t.lineStrong }} />
-              </li>
-            ))}
-          </ol>
-          <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
-            {index === 0
-              ? <Btn t={t} variant="ghost" onClick={onClose}>Skip</Btn>
-              : <Btn t={t} variant="ghost" icon="chevLeft" onClick={() => setIndex(index - 1)}>Back</Btn>}
-            {last
-              ? <Btn t={t} onClick={onClose}>Get started</Btn>
-              : <Btn t={t} onClick={() => setIndex(index + 1)}>Next</Btn>}
+        {step.cover ? (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '24px 28px 24px' }}>
+            <Btn t={t} icon="arrowRight" onClick={() => setIndex(index + 1)}>Get started</Btn>
           </div>
-        </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            flexWrap: 'wrap', padding: '24px 28px 24px' }}>
+            <ol aria-label="Steps" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', gap: 6 }}>
+              {numbered.map((s) => {
+                const i = ONBOARDING_STEPS.indexOf(s);
+                return (
+                  <li key={s.id}>
+                    <button type="button" onClick={() => setIndex(i)}
+                      aria-label={`Step ${stepNumber(s)}: ${s.title('')}`}
+                      aria-current={i === index ? 'step' : undefined}
+                      style={{ display: 'block', width: i === index ? 22 : 8, height: 8, padding: 0, border: 'none',
+                        borderRadius: 999, cursor: 'pointer',
+                        background: i === index ? t.ink : t.lineStrong }} />
+                  </li>
+                );
+              })}
+            </ol>
+            <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+              <Btn t={t} variant="ghost" icon="chevLeft" onClick={() => setIndex(index - 1)}>Back</Btn>
+              {last
+                ? <Btn t={t} onClick={onClose}>Done</Btn>
+                : <Btn t={t} onClick={() => setIndex(index + 1)}>Next</Btn>}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ import { Icon } from './Icon';
 import { Btn } from './UI';
 import { ImaginationPreview } from './ImaginationPreview';
 import { MapLegend } from './MapLegend';
-import { CHARACTER, THEME } from '../theme';
+import { PALETTE, THEME } from '../theme';
 import { readImaginations } from '../services/imaginations';
 import { isSupabaseConfigured, readProjectLocations } from '../services/projects';
 import {
@@ -30,14 +30,14 @@ import { addPin, addPlainMarker, createMap, onBackgroundClick, showAreas, toLngL
 import { PageHeader } from './PageHeader';
 import { PlaceSearch } from './PlaceSearch';
 
-// An imagination's pin, in the brand kit's pin style: a 24px circle in a character's
-// 100 with a 2px ring in its 700. Imaginations come from citizens, so orange.
-const PIN = { fill: CHARACTER.citizen.c100, ring: CHARACTER.citizen.c700 };
+// An imagination's pin, in the brand kit's pin style: a 24px circle in a theme colour's
+// 100 with a 2px ring in its 700. Imaginations are orange.
+const PIN = { fill: PALETTE.orange.c100, ring: PALETTE.orange.c700 };
 
-// A project's drawn area: a map area is a character's 300, outlined in its 700.
+// A project's drawn area: a map area is a theme colour's 300, outlined in its 700.
 // Projects are set up by the city, so blue — the same LocationMapPicker and
 // ProjectLocationMap draw it in while it is being set up and shown off.
-const PROJECT_AREA = { fill: CHARACTER.cityWorker.c300, stroke: CHARACTER.cityWorker.c700 };
+const PROJECT_AREA = { fill: PALETTE.blue.c300, stroke: PALETTE.blue.c700 };
 
 // Below this resolution gain, tiling is not worth its extra requests: the gain
 // comes from spending a whole 640px tile on a slice of the view, so it shrinks as
@@ -268,7 +268,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
   // map is captured around.
   useEffect(() => {
     if (!map || !hasCoords(currentPosition)) return undefined;
-    const marker = addPlainMarker(map, currentPosition, { color: CHARACTER.citizen.c700 });
+    const marker = addPlainMarker(map, currentPosition, { color: PALETTE.orange.c700 });
     return () => marker.remove();
   }, [map, currentPosition]);
 
