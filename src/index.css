@@ -159,6 +159,24 @@ textarea {
   border-radius: var(--placer-radius-sm) !important;
 }
 
+/* Dropdowns draw their own chevron, so neither it nor the text runs into the rounded
+ * corners: room on both sides, whatever padding a component gives one inline. The
+ * chevron is two gradients in currentColor, so it follows the theme's ink. The
+ * !importants are what beat the inline `background` and `padding` shorthands. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-start: 16px !important;
+  padding-inline-end: 40px !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%) !important;
+  background-position: calc(100% - 21px) 50%, calc(100% - 16px) 50% !important;
+  background-size: 5px 5px, 5px 5px !important;
+  background-repeat: no-repeat !important;
+  text-overflow: ellipsis;
+}
+
 input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):focus-visible,
 select:focus-visible,
 textarea:focus-visible {
