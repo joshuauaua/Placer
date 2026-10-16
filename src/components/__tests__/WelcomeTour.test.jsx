@@ -23,7 +23,7 @@ function Harness({ path = '/dashboard', accountId = 'user-1' }) {
     <Router hook={hook} searchHook={searchHook}>
       <h1>{`Page: ${page}`}</h1>
       <WelcomeTour t={THEME} accountId={accountId} name="Mara Quinn" autoOpen={page === 'dashboard'}
-        onExplore={() => setPage('map')} onOpenToolkit={() => setPage('toolkit')}
+        onOpenProjects={() => setPage('projects')} onExplore={() => setPage('map')} onOpenToolkit={() => setPage('toolkit')}
         onNewProject={() => setPage('new project')} onEditProfile={() => setPage('settings')} />
     </Router>
   );
@@ -53,17 +53,21 @@ describe('WelcomeTour', () => {
     await screen.findByRole('dialog');
 
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'See the projects' }));
+    expect(screen.getByRole('heading', { level: 1, name: 'Page: projects' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toHaveTextContent('Step 3 of 6');
+
     fireEvent.click(screen.getByRole('button', { name: 'Open the map' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Page: map' })).toBeInTheDocument();
-    expect(screen.getByRole('dialog')).toHaveTextContent('Step 3 of 5');
+    expect(screen.getByRole('dialog')).toHaveTextContent('Step 4 of 6');
 
     fireEvent.click(screen.getByRole('button', { name: 'Browse the Toolkit' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Page: toolkit' })).toBeInTheDocument();
-    expect(screen.getByRole('dialog')).toHaveTextContent('Step 4 of 5');
+    expect(screen.getByRole('dialog')).toHaveTextContent('Step 5 of 6');
 
     fireEvent.click(screen.getByRole('button', { name: 'Create a project' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Page: new project' })).toBeInTheDocument();
-    expect(screen.getByRole('dialog')).toHaveTextContent('Step 5 of 5');
+    expect(screen.getByRole('dialog')).toHaveTextContent('Step 6 of 6');
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit my profile' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Page: settings' })).toBeInTheDocument();

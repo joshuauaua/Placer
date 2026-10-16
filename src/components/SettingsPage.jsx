@@ -704,7 +704,7 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
     tour: {
       category: 'Preferences', icon: 'sparkle', title: 'Take the welcome tour again',
       show: Boolean(onReplayTour),
-      description: 'The five-step look around PLACER you saw when you first signed in',
+      description: 'The look around PLACER you saw when you first signed in',
       onSelect: onReplayTour,
     },
     analytics: {

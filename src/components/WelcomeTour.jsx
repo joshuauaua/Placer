@@ -1,8 +1,8 @@
 /* PLACER — when the welcome tour (OnboardingDialog) is open, kept above whatever page is.
  *
- * The tour's steps send somebody somewhere — the map, the Toolkit, a new project — and
- * the tour carries on over that page, at its next step, so it has to outlive the page it
- * started on. App renders this once, beside the pages rather than inside one.
+ * The tour's steps send somebody somewhere — the projects, the map, the Toolkit, a new
+ * project — and the tour carries on over that page, at its next step, so it has to
+ * outlive the page it started on. App renders this once, beside the pages rather than inside one.
  *
  * It opens by itself the first time an account reaches its dashboard (`autoOpen`, see
  * services/onboarding.js), and whenever the address carries `?tour` — Settings' "Take
@@ -19,7 +19,7 @@ import { markOnboarded, needsOnboarding } from '../services/onboarding';
 const OnboardingDialog = lazy(() => import('./OnboardingDialog'));
 
 export function WelcomeTour({ t, accountId = null, name = '', autoOpen = false,
-  onExplore, onOpenToolkit, onNewProject, onEditProfile }) {
+  onOpenProjects, onExplore, onOpenToolkit, onNewProject, onEditProfile }) {
   const [location, navigate] = useLocation();
   const requested = new URLSearchParams(useSearch()).has('tour');
   const [open, setOpen] = useState(false);
@@ -52,8 +52,8 @@ export function WelcomeTour({ t, accountId = null, name = '', autoOpen = false,
 
   return (
     <Suspense fallback={null}>
-      <OnboardingDialog t={t} name={name} onClose={close} onExplore={onExplore}
-        onOpenToolkit={onOpenToolkit} onNewProject={onNewProject} onEditProfile={onEditProfile} />
+      <OnboardingDialog t={t} name={name} onClose={close} onOpenProjects={onOpenProjects}
+        onExplore={onExplore} onOpenToolkit={onOpenToolkit} onNewProject={onNewProject} onEditProfile={onEditProfile} />
     </Suspense>
   );
 }

@@ -621,11 +621,13 @@ function MainApp({ initialView = 'welcome' }) {
               onNewProject={() => { showNewProject(); scrollPageToTop(); }} showOrganisations={isSupabaseConfigured()} />
           )}
 
-          {/* The welcome tour, over whichever page it has led to: its steps go to the map,
-              the Toolkit, a new project and Settings, and it carries on over each. */}
+          {/* The welcome tour, over whichever page it has led to: its steps go to the
+              projects, the map, the Toolkit, a new project and Settings, and it carries on
+              over each. */}
           {!identityLoading && profile && (
             <WelcomeTour t={t} accountId={accountId} name={profile.name}
               autoOpen={view === 'dashboard'}
+              onOpenProjects={() => { show('projects'); scrollPageToTop(); }}
               onExplore={() => { handleExplore(); scrollPageToTop(); }}
               onOpenToolkit={() => { show('toolkit'); scrollPageToTop(); }}
               onNewProject={() => { showNewProject(); scrollPageToTop(); }}

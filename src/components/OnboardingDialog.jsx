@@ -1,7 +1,7 @@
 /* PLACER — the welcome tour, the first time somebody signs in.
  *
- * Five steps: what PLACER is, then Explore, the Toolkit, projects and the profile,
- * each with a button that goes there. Going there does not end the tour: the page
+ * Six steps: what PLACER is, then projects — the heart of it — Explore, the Toolkit,
+ * starting a project and the profile, each with a button that goes there. Going there does not end the tour: the page
  * changes underneath and the tour moves on to its next step, over the new page
  * (WelcomeTour keeps it open across pages). Only the last step's button ends it. Next
  * and Back (or the arrow keys) move between steps; Skip, the close button or Escape
@@ -36,7 +36,19 @@ export const ONBOARDING_STEPS = [
     colour: PALETTE.purple,
     title: (name) => (name ? `Welcome to PLACER, ${name}` : 'Welcome to PLACER'),
     body: 'PLACER is an open toolkit for shaping public places together with the people '
-      + 'who use them. Here is a quick look around, in five steps.',
+      + 'who use them. Here is a quick look around, in six steps.',
+  },
+  {
+    id: 'projects',
+    icon: 'grid',
+    colour: PALETTE.orange,
+    title: () => 'Projects are where change starts',
+    body: 'A project is how people say what they want to change about a place, and bring '
+      + 'others in to shape it. Everything in PLACER gathers around one: its people, its '
+      + 'tools, its updates and its decisions. Have a look at what others have started.',
+    spotlight: { target: 'projects', label: 'Projects', call: 'onOpenProjects',
+      hint: 'Click Projects in the menu, highlighted, to see them.' },
+    action: { label: 'See the projects', icon: 'grid', call: 'onOpenProjects' },
   },
   {
     id: 'explore',
@@ -91,10 +103,11 @@ function findTarget(target) {
   return { top: rect.top, left: rect.left, width: rect.width, height: rect.height };
 }
 
-export function OnboardingDialog({ t, name = '', onClose, onExplore, onOpenToolkit, onNewProject, onEditProfile }) {
+export function OnboardingDialog({ t, name = '', onClose, onOpenProjects, onExplore, onOpenToolkit, onNewProject,
+  onEditProfile }) {
   const [index, setIndex] = useState(0);
   const panelRef = useRef(null);
-  const handlers = { onExplore, onOpenToolkit, onNewProject, onEditProfile };
+  const handlers = { onOpenProjects, onExplore, onOpenToolkit, onNewProject, onEditProfile };
 
   const step = ONBOARDING_STEPS[index];
   const last = index === ONBOARDING_STEPS.length - 1;
