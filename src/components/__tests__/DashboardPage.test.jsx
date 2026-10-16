@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { Router } from 'wouter';
+import { memoryLocation } from 'wouter/memory-location';
 import { DashboardPage } from '../DashboardPage';
 import { postsAreShared, readImaginations, readLocalImaginations } from '../../services/imaginations';
 import { readMyProjects } from '../../services/projects';
@@ -72,6 +74,23 @@ describe('DashboardPage', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(markOnboarded).toHaveBeenCalledWith('user-1');
+  });
+
+  it('opens the tour again at /dashboard?tour, however often it has been seen', async () => {
+    const { hook, searchHook, history } = memoryLocation({ path: '/dashboard?tour', record: true });
+    render(
+      <Router hook={hook} searchHook={searchHook}>
+        <DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()} />
+      </Router>
+    );
+
+    const tour = screen.getByRole('dialog', { name: 'Welcome to PLACER, Mara Quinn' });
+    expect(needsOnboarding).not.toHaveBeenCalled();
+
+    fireEvent.click(within(tour).getByRole('button', { name: 'Skip' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(history.at(-1)).toBe('/dashboard');
   });
 
   it("goes where a tour step's button points", async () => {

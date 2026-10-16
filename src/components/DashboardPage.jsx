@@ -1,6 +1,7 @@
 /* PLACER — your dashboard: shortcuts to what to do next */
 
 import { useEffect, useState } from 'react';
+import { useLocation, useSearch } from 'wouter';
 import { Icon } from './Icon';
 import { Btn } from './UI';
 import { ImaginationCard } from './ImaginationCard';
@@ -212,10 +213,20 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
   // The welcome tour, the first time an account reaches its dashboard — which is
   // where signing in lands. Signed-in accounts only: the local, no-project mode has
   // nobody to remember it for.
-  const [onboarding, setOnboarding] = useState(false);
+  //
+  // `/dashboard?tour` opens it again whenever asked — Settings' "Take the welcome tour
+  // again" links there — and closing it then drops the `?tour`, so a reload does not
+  // bring it back.
+  const [, navigate] = useLocation();
+  const tourRequested = new URLSearchParams(useSearch()).has('tour');
+  const [onboarding, setOnboarding] = useState(tourRequested);
 
   useEffect(() => {
-    if (!accountId) return undefined;
+    if (tourRequested) setOnboarding(true);
+  }, [tourRequested]);
+
+  useEffect(() => {
+    if (!accountId || tourRequested) return undefined;
     let cancelled = false;
     needsOnboarding(accountId)
       .then((needed) => { if (!cancelled) setOnboarding(needed); })
@@ -225,7 +236,8 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
 
   const finishOnboarding = () => {
     setOnboarding(false);
-    markOnboarded(accountId);
+    if (accountId) markOnboarded(accountId);
+    if (tourRequested) navigate('/dashboard', { replace: true });
   };
 
   useEffect(() => {

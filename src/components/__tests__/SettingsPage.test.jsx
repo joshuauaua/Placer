@@ -117,6 +117,15 @@ describe('SettingsPage', () => {
     expect(onNavigate).toHaveBeenCalledWith('terms');
   });
 
+  it('offers the welcome tour again, under Preferences', () => {
+    const onReplayTour = vi.fn();
+    setup({ onReplayTour });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Take the welcome tour again' }));
+
+    expect(onReplayTour).toHaveBeenCalled();
+  });
+
   it('has no password to change for a local-only profile', () => {
     setup();
 

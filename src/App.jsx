@@ -809,7 +809,8 @@ function MainApp({ initialView = 'welcome' }) {
                 <SettingsPage t={t} profile={profile} email={accountEmail}
                   onSaveProfile={handleSaveProfile} onNavigate={show}
                   organisations={organisations} onNewOrganisation={showNewOrganisation}
-                  onOpenOrganisationDashboard={showOrganisationDashboard} />
+                  onOpenOrganisationDashboard={showOrganisationDashboard}
+                  onReplayTour={() => navigate('/dashboard?tour')} />
               </Suspense>
             )}
 

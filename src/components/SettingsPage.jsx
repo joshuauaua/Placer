@@ -630,7 +630,7 @@ function NotificationPreferences({ t }) {
 }
 
 export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
-  organisations = [], onNewOrganisation, onOpenOrganisationDashboard }) {
+  organisations = [], onNewOrganisation, onOpenOrganisationDashboard, onReplayTour }) {
   const { text } = useText();
   // The open option's key, or null for the list of them.
   const [open, setOpen] = useState(null);
@@ -700,6 +700,12 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
       category: 'Preferences', icon: 'comment', title: text('settings.language.title'), show: true,
       description: text('settings.language.description'),
       cards: <LanguageSetting t={t} />,
+    },
+    tour: {
+      category: 'Preferences', icon: 'sparkle', title: 'Take the welcome tour again',
+      show: Boolean(onReplayTour),
+      description: 'The five-step look around PLACER you saw when you first signed in',
+      onSelect: onReplayTour,
     },
     analytics: {
       category: 'Data and Privacy', icon: 'chart', title: 'Analytics', show: true,
