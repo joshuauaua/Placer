@@ -14,6 +14,7 @@ import { Btn } from './UI';
 import { Icon } from './Icon';
 import { PageHeader } from './PageHeader';
 import { ProjectCard } from './ProjectCard';
+import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
 import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from './GalleryToolbar';
 import {
   PROJECT_TYPES, PROJECT_TYPE_NAMES, isSupabaseConfigured as projectsAvailable, readVisibleProjects,
@@ -60,7 +61,7 @@ export function sortProjects(projects, { id, direction }) {
 /** One project as a row, for the list view. */
 function ProjectRow({ t, project, onOpen, label = null }) {
   return (
-    <button type="button" onClick={() => onOpen(project.id)} className="placer-toolkit-row"
+    <button type="button" onClick={() => onOpen(project.id)} {...ARROW_ITEM} className="placer-toolkit-row"
       style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0, textAlign: 'left',
         cursor: 'pointer', padding: '16px 20px', border: 'none', background: 'transparent', color: t.ink,
         fontFamily: 'var(--placer-font)' }}>
@@ -205,8 +206,8 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
         )}
 
         {projectsAvailable() && status === 'ready' && matching.length > 0 && view === 'grid' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: 20 }}>
+          <div onKeyDown={moveWithArrows} style={{ display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
             {matching.map((project) => (
               <div key={project.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
                 <ProjectCard t={t} project={project} label={labelOf(project)} onOpen={() => open(project)} />
@@ -220,7 +221,7 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
         )}
 
         {projectsAvailable() && status === 'ready' && matching.length > 0 && view === 'list' && (
-          <div style={{ borderTop: `1px solid ${t.line}` }}>
+          <div onKeyDown={moveWithArrows} style={{ borderTop: `1px solid ${t.line}` }}>
             {matching.map((project) => (
               <div key={project.id} style={{ display: 'flex', alignItems: 'center',
                 borderBottom: `1px solid ${t.line}` }}>

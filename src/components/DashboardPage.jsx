@@ -16,6 +16,7 @@ import { listNotifications } from '../services/notifications';
 import { markOnboarded, needsOnboarding } from '../services/onboarding';
 import { byUrgency, nextSteps, projectProgress } from '../lib/projectTimeline';
 import { CHARACTER } from '../theme';
+import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
 
 // How many of each the dashboard shows before View All.
 const PROJECTS_SHOWN = 3;
@@ -35,7 +36,7 @@ const STEP_KINDS = {
 /** A Quick Actions card: a grey tile with the icon above the label, both centred. */
 function Shortcut({ t, icon, label, onClick }) {
   return (
-    <button type="button" onClick={onClick} className="placer-quick-action"
+    <button type="button" onClick={onClick} {...ARROW_ITEM} className="placer-quick-action"
       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         gap: 14, minHeight: 160, padding: 24, textAlign: 'center', background: t.surfaceAlt,
         border: 'none', borderRadius: 16, cursor: 'pointer',
@@ -64,7 +65,7 @@ function SectionLabel({ t, id, children, style }) {
  */
 function BasicsCard({ t, hue, label, title, onClick }) {
   return (
-    <button type="button" onClick={onClick} className="placer-basics-card"
+    <button type="button" onClick={onClick} {...ARROW_ITEM} className="placer-basics-card"
       style={{ position: 'relative', overflow: 'hidden', isolation: 'isolate',
         display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 32,
         minHeight: 200, padding: 28, textAlign: 'left', cursor: 'pointer', border: 'none', borderRadius: 16,
@@ -95,7 +96,7 @@ function DashboardProjectCard({ t, project, onOpen }) {
   const progress = projectProgress(project);
   const tint = TYPE_TINTS[project.projectType] ?? CHARACTER.cityWorker;
   return (
-    <button type="button" onClick={() => onOpen(project.id)} className="placer-dashboard-project"
+    <button type="button" onClick={() => onOpen(project.id)} {...ARROW_ITEM} className="placer-dashboard-project"
       style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', padding: 0, overflow: 'hidden',
         background: t.surface, border: `1px solid ${t.line}`, borderRadius: 16, cursor: 'pointer',
         fontFamily: 'var(--placer-font)', color: t.ink }}>
@@ -265,8 +266,10 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
     else onNavigate(step.target);
   };
 
+  // The arrow keys move between every card on the page, section to section, as they
+  // are laid out (lib/arrowKeys.js).
   return (
-    <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
+    <div onKeyDown={moveWithArrows} style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '96px 40px 48px' }} className="placer-scroll">
       {onboarding && (
         <OnboardingDialog t={t} name={name} onClose={finishOnboarding}
@@ -377,7 +380,8 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
                   const kind = STEP_KINDS[step.kind];
                   return (
                     <li key={step.id} style={{ borderTop: `1px solid ${t.line}` }}>
-                      <button type="button" onClick={() => actOn(step)} className="placer-notification-row"
+                      <button type="button" onClick={() => actOn(step)} {...ARROW_ITEM}
+                        className="placer-notification-row"
                         style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: 'calc(100% + 20px)',
                           margin: '0 -10px', padding: '12px 10px', border: 'none', background: 'transparent',
                           borderRadius: 12, textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--placer-font)' }}>

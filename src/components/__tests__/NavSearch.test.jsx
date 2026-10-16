@@ -132,15 +132,25 @@ describe('NavSearch', () => {
 
     fireEvent.change(input, { target: { value: 'mal' } });
     await screen.findByRole('option', { name: /Mara Quinn/ });
-    // Listed Tools, Projects, People: Desire Lines, Malmö Greenway, then Mara Quinn,
-    // whatever order the search handed them back in.
-    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    // Listed Tools, Projects, People: Desire Lines (highlighted from the start), Malmö
+    // Greenway, then Mara Quinn, whatever order the search handed them back in.
+    expect(screen.getByRole('option', { name: /Desire Lines/ })).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     fireEvent.keyDown(input, { key: 'ArrowDown' });
 
     expect(screen.getByRole('option', { name: /Mara Quinn/ })).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(onSelect).toHaveBeenCalledWith(RESULTS[1]);
+  });
+
+  it('opens the best match on Enter, without the arrow keys', async () => {
+    const { input, onSelect } = setup();
+
+    fireEvent.change(input, { target: { value: 'mal' } });
+    await screen.findByRole('option', { name: /Mara Quinn/ });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onSelect).toHaveBeenCalledWith(RESULTS[0]);
   });
 
   it('closes on Escape, handing focus back to the box, and starts empty next time', async () => {

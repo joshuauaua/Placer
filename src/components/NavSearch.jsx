@@ -4,7 +4,8 @@
  * it is only a button dressed as a search box; pressing it opens the search in a
  * modal, with the field across its top and the suggestions listed under it, grouped
  * by kind, a moment after the typing stops so that a word is one request rather than
- * one per letter. Arrow keys move through them, Enter opens the highlighted one.
+ * one per letter. The first is highlighted as they arrive; arrow keys move through
+ * them, wrapping at either end, and Enter opens the highlighted one.
  * Escape, a click on the backdrop, or choosing a suggestion closes the modal and
  * hands focus back to the button.
  *
@@ -96,7 +97,8 @@ export function NavSearch({ t, onSelect }) {
         .then((found) => {
           if (!current) return;
           setResults(inGroupOrder(found));
-          setActive(-1);
+          // The first is highlighted from the start, so Enter opens the best match.
+          setActive(found.length > 0 ? 0 : -1);
           setStatus('ready');
         })
         .catch((err) => {
@@ -129,6 +131,12 @@ export function NavSearch({ t, onSelect }) {
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
+
+  // The highlighted suggestion stays in view as the arrow keys move down a long list.
+  useEffect(() => {
+    if (active < 0) return;
+    document.getElementById(`${listId}-option-${active}`)?.scrollIntoView?.({ block: 'nearest' });
+  }, [active, listId]);
 
   // The modal opens ready to type into.
   useEffect(() => {

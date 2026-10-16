@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Btn, PageLoader } from './UI';
 import { ProjectCard } from './ProjectCard';
+import { moveWithArrows } from '../lib/arrowKeys';
 import { OrganisationSetupPage } from './OrganisationSetupPage';
 import {
   addAdmin, closeOrganisation, readAdmins, readOrganisation, removeAdmin,
@@ -287,7 +288,8 @@ export function OrganisationDashboardPage({ t, accountId, organisationId,
             )}
           </div>
           {projects.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+            <div onKeyDown={moveWithArrows}
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
               {projects.map((project) => (
                 <ProjectCard key={project.id} t={t} project={project} onOpen={onOpenProjectDashboard} />
               ))}

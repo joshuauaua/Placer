@@ -18,6 +18,7 @@ import { Icon } from './Icon';
 import { PageHeader } from './PageHeader';
 import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from './GalleryToolbar';
 import { isSupabaseConfigured, readAllOrganisations } from '../services/organisations';
+import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
 
 const SHOW = [
   { id: null, name: 'All organisations' },
@@ -69,7 +70,7 @@ function YoursLabel({ t }) {
  * name, town and the start of its description. Without a cover it is just that row. */
 function OrganisationCard({ t, organisation, yours, onOpen }) {
   return (
-    <button type="button" onClick={() => onOpen(organisation.id)} style={{ flex: 1, textAlign: 'left',
+    <button type="button" onClick={() => onOpen(organisation.id)} {...ARROW_ITEM} style={{ flex: 1, textAlign: 'left',
       padding: 20, background: t.surface, border: `1px solid ${yours ? t.ink : t.line}`, borderRadius: 12,
       boxShadow: t.shadow, cursor: 'pointer', fontFamily: 'var(--placer-font)', overflow: 'hidden' }}>
       {/* The negative margins undo the card's padding. */}
@@ -111,7 +112,7 @@ function OrganisationCard({ t, organisation, yours, onOpen }) {
 /** One organisation as a row, for the list view. */
 function OrganisationRow({ t, organisation, yours, onOpen }) {
   return (
-    <button type="button" onClick={() => onOpen(organisation.id)} className="placer-toolkit-row"
+    <button type="button" onClick={() => onOpen(organisation.id)} {...ARROW_ITEM} className="placer-toolkit-row"
       style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0, textAlign: 'left',
         cursor: 'pointer', padding: '16px 20px', border: 'none', background: 'transparent', color: t.ink,
         fontFamily: 'var(--placer-font)' }}>
@@ -237,8 +238,8 @@ export function OrganisationsPage({ t, organisations = [], onNewOrganisation, on
         )}
 
         {matching.length > 0 && view === 'grid' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: 20 }}>
+          <div onKeyDown={moveWithArrows} style={{ display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
             {matching.map((organisation) => (
               <div key={organisation.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
                 <OrganisationCard t={t} organisation={organisation} yours={yourIds.has(organisation.id)}
@@ -253,7 +254,7 @@ export function OrganisationsPage({ t, organisations = [], onNewOrganisation, on
         )}
 
         {matching.length > 0 && view === 'list' && (
-          <div style={{ borderTop: `1px solid ${t.line}` }}>
+          <div onKeyDown={moveWithArrows} style={{ borderTop: `1px solid ${t.line}` }}>
             {matching.map((organisation) => (
               <div key={organisation.id} style={{ display: 'flex', alignItems: 'center',
                 borderBottom: `1px solid ${t.line}` }}>
