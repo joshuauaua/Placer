@@ -12,11 +12,14 @@ const setup = (handlers = {}) => {
   return props;
 };
 
-const next = () => fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+// Next, or Get started on the cover, which is the same thing there.
+const next = () => fireEvent.click(screen.queryByRole('button', { name: 'Next' })
+  ?? screen.getByRole('button', { name: 'Get started' }));
 
 describe('OnboardingDialog', () => {
-  it('has six steps', () => {
+  it('has a cover and five steps', () => {
     expect(ONBOARDING_STEPS).toHaveLength(6);
+    expect(ONBOARDING_STEPS.filter((s) => s.cover)).toHaveLength(1);
   });
 
   it('shows the bench from the favicon on the welcome step', () => {
@@ -24,18 +27,30 @@ describe('OnboardingDialog', () => {
     expect(container.querySelector('img[src="/favicon.svg"]')).toBeInTheDocument();
   });
 
-  it('opens on a welcome by name, which can be skipped', () => {
+  it('opens on a cover by name: not a numbered step, and only Get started', () => {
     const { onClose } = setup();
 
     expect(screen.getByRole('dialog', { name: 'Welcome to PLACER, Mara' })).toBeInTheDocument();
-    expect(screen.getByText('Step 1 of 6')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Step \d of/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Steps' })).not.toBeInTheDocument();
+    for (const name of ['Back', 'Next', 'Skip']) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
+    }
 
-    fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+    expect(screen.getByText('Step 1 of 5')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^Step \d:/ })).toHaveLength(5);
+    expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('goes through all six steps and back, and Get started ends it', () => {
+  it('goes back to the cover from the first step', () => {
+    setup();
+    next();
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByRole('button', { name: 'Get started' })).toBeInTheDocument();
+  });
+
+  it('goes through all five steps and back, and Done ends it', () => {
     const { onClose } = setup();
 
     const titles = ['Projects are where change starts', 'Check out the Toolkit', 'Explore what is happening',
@@ -43,7 +58,7 @@ describe('OnboardingDialog', () => {
     titles.forEach((title, i) => {
       next();
       expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();
-      expect(screen.getByText(`Step ${i + 2} of 6`)).toBeInTheDocument();
+      expect(screen.getByText(`Step ${i + 1} of 5`)).toBeInTheDocument();
     });
     expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument();
 
@@ -51,17 +66,18 @@ describe('OnboardingDialog', () => {
     expect(screen.getByRole('heading', { name: 'Start a project' })).toBeInTheDocument();
 
     next();
-    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('jumps to a step from its dot', () => {
     setup();
+    next();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Step 5: Start a project' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Step 4: Start a project' }));
 
     expect(screen.getByRole('heading', { name: 'Start a project' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Step 5: Start a project' })).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByRole('button', { name: 'Step 4: Start a project' })).toHaveAttribute('aria-current', 'step');
   });
 
   it("names the Toolkit's three categories", () => {
@@ -88,7 +104,7 @@ describe('OnboardingDialog', () => {
 
     expect(props[handler]).toHaveBeenCalledTimes(1);
     expect(props.onClose).not.toHaveBeenCalled();
-    expect(screen.getByText(`Step ${steps + 2} of 6`)).toBeInTheDocument();
+    expect(screen.getByText(`Step ${steps + 1} of 5`)).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toHaveFocus();
   });
 
@@ -104,7 +120,8 @@ describe('OnboardingDialog', () => {
 
   it('leaves out a step\'s button when there is nothing for it to do', () => {
     setup({ onNewProject: undefined });
-    fireEvent.click(screen.getByRole('button', { name: 'Step 5: Start a project' }));
+    next();
+    fireEvent.click(screen.getByRole('button', { name: 'Step 4: Start a project' }));
 
     expect(screen.queryByRole('button', { name: 'Create a project' })).not.toBeInTheDocument();
   });
@@ -114,9 +131,9 @@ describe('OnboardingDialog', () => {
     const dialog = screen.getByRole('dialog');
 
     fireEvent.keyDown(dialog, { key: 'ArrowRight' });
-    expect(screen.getByText('Step 2 of 6')).toBeInTheDocument();
+    expect(screen.getByText('Step 1 of 5')).toBeInTheDocument();
     fireEvent.keyDown(dialog, { key: 'ArrowLeft' });
-    expect(screen.getByText('Step 1 of 6')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Get started' })).toBeInTheDocument();
 
     fireEvent.keyDown(dialog, { key: 'Escape' });
     fireEvent.click(screen.getByRole('button', { name: 'Close the welcome tour' }));
@@ -150,7 +167,7 @@ describe('OnboardingDialog', () => {
       fireEvent.click(spot);
       expect(onExplore).toHaveBeenCalled();
       expect(onClose).not.toHaveBeenCalled();
-      expect(screen.getByText('Step 5 of 6')).toBeInTheDocument();
+      expect(screen.getByText('Step 4 of 5')).toBeInTheDocument();
     });
 
     it('points at Projects in the menu on the projects step', () => {
@@ -161,7 +178,7 @@ describe('OnboardingDialog', () => {
       expect(screen.getByRole('note')).toHaveTextContent('Click Projects in the menu');
       fireEvent.click(screen.getByRole('button', { name: 'Projects' }));
       expect(onOpenProjects).toHaveBeenCalled();
-      expect(screen.getByText('Step 3 of 6')).toBeInTheDocument();
+      expect(screen.getByText('Step 2 of 5')).toBeInTheDocument();
     });
 
     it('points at Toolkit in the menu on the Toolkit step', () => {
@@ -173,7 +190,7 @@ describe('OnboardingDialog', () => {
       expect(screen.getByRole('note')).toHaveTextContent('Click Toolkit in the menu');
       fireEvent.click(screen.getByRole('button', { name: 'Toolkit' }));
       expect(onOpenToolkit).toHaveBeenCalled();
-      expect(screen.getByText('Step 4 of 6')).toBeInTheDocument();
+      expect(screen.getByText('Step 3 of 5')).toBeInTheDocument();
     });
 
     it('keeps the button when the menu is not there to point at', () => {

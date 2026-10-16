@@ -1,12 +1,14 @@
 /* PLACER — the welcome tour, the first time somebody signs in.
  *
- * Six steps: what PLACER is, then projects — the heart of it — the Toolkit, Explore,
- * starting a project and the profile, each with a button that goes there. Going there
+ * A cover saying what PLACER is, with one button, Get started. Then five steps:
+ * projects — the heart of it — the Toolkit, Explore, starting a project and the
+ * profile, each with a button that goes there. The cover is not counted as a step and
+ * has no dot. Going there
  * does not end the tour: the page changes underneath and the tour moves on to its next
  * step, over the new page (WelcomeTour keeps it open across pages). Only the last
  * step's button ends it. Next
- * and Back (or the arrow keys) move between steps; Skip, the close button or Escape
- * end the tour from any step, as does Get started on the last one. Every way out calls
+ * and Back (or the arrow keys) move between steps; the close button or Escape end the
+ * tour from any step, as does Done on the last one. Every way out calls
  * `onClose`, which is where WelcomeTour records that the tour has been seen
  * (services/onboarding.js), so it opens once per account however it was left.
  *
@@ -31,13 +33,14 @@ import { CATEGORIES } from '../toolkit/tools';
 export const ONBOARDING_STEPS = [
   {
     id: 'welcome',
+    cover: true,
     // The bench from the favicon (public/favicon.svg), PLACER's own mark, rather than
     // an icon from the set. It is drawn on white, the same as the tile it sits in.
     image: '/favicon.svg',
     colour: PALETTE.purple,
     title: (name) => (name ? `Welcome to PLACER, ${name}` : 'Welcome to PLACER'),
     body: 'PLACER is an open toolkit for shaping public places together with the people '
-      + 'who use them. Here is a quick look around, in six steps.',
+      + 'who use them. Here is a quick look around, in five steps.',
   },
   {
     id: 'projects',
@@ -116,6 +119,9 @@ export function OnboardingDialog({ t, name = '', onClose, onOpenProjects, onExpl
 
   const step = ONBOARDING_STEPS[index];
   const last = index === ONBOARDING_STEPS.length - 1;
+  // The cover comes first and is not one of the numbered steps.
+  const numbered = ONBOARDING_STEPS.filter((s) => !s.cover);
+  const stepNumber = (s) => numbered.indexOf(s) + 1;
   const titleId = 'onboarding-title';
 
   // The spotlit item's place, measured when the step opens and again whenever the window
@@ -211,10 +217,12 @@ export function OnboardingDialog({ t, name = '', onClose, onOpenProjects, onExpl
         </div>
 
         <div style={{ padding: '24px 28px 0' }}>
-          <p className="placer-mono" style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em',
-            textTransform: 'uppercase', color: step.colour.c700, margin: '0 0 8px' }}>
-            Step {index + 1} of {ONBOARDING_STEPS.length}
-          </p>
+          {!step.cover && (
+            <p className="placer-mono" style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em',
+              textTransform: 'uppercase', color: step.colour.c700, margin: '0 0 8px' }}>
+              Step {stepNumber(step)} of {numbered.length}
+            </p>
+          )}
           <h2 id={titleId} className="placer-disp" style={{ fontSize: 26, fontWeight: 700,
             letterSpacing: '-0.02em', lineHeight: 1.2, margin: '0 0 10px', overflowWrap: 'anywhere' }}>
             {step.title(name)}
@@ -249,28 +257,36 @@ export function OnboardingDialog({ t, name = '', onClose, onOpenProjects, onExpl
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-          flexWrap: 'wrap', padding: '24px 28px 24px' }}>
-          <ol aria-label="Steps" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', gap: 6 }}>
-            {ONBOARDING_STEPS.map((s, i) => (
-              <li key={s.id}>
-                <button type="button" onClick={() => setIndex(i)}
-                  aria-label={`Step ${i + 1}: ${s.title('')}`} aria-current={i === index ? 'step' : undefined}
-                  style={{ display: 'block', width: i === index ? 22 : 8, height: 8, padding: 0, border: 'none',
-                    borderRadius: 999, cursor: 'pointer',
-                    background: i === index ? t.ink : t.lineStrong }} />
-              </li>
-            ))}
-          </ol>
-          <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
-            {index === 0
-              ? <Btn t={t} variant="ghost" onClick={onClose}>Skip</Btn>
-              : <Btn t={t} variant="ghost" icon="chevLeft" onClick={() => setIndex(index - 1)}>Back</Btn>}
-            {last
-              ? <Btn t={t} onClick={onClose}>Get started</Btn>
-              : <Btn t={t} onClick={() => setIndex(index + 1)}>Next</Btn>}
+        {step.cover ? (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '24px 28px 24px' }}>
+            <Btn t={t} icon="arrowRight" onClick={() => setIndex(index + 1)}>Get started</Btn>
           </div>
-        </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            flexWrap: 'wrap', padding: '24px 28px 24px' }}>
+            <ol aria-label="Steps" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', gap: 6 }}>
+              {numbered.map((s) => {
+                const i = ONBOARDING_STEPS.indexOf(s);
+                return (
+                  <li key={s.id}>
+                    <button type="button" onClick={() => setIndex(i)}
+                      aria-label={`Step ${stepNumber(s)}: ${s.title('')}`}
+                      aria-current={i === index ? 'step' : undefined}
+                      style={{ display: 'block', width: i === index ? 22 : 8, height: 8, padding: 0, border: 'none',
+                        borderRadius: 999, cursor: 'pointer',
+                        background: i === index ? t.ink : t.lineStrong }} />
+                  </li>
+                );
+              })}
+            </ol>
+            <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+              <Btn t={t} variant="ghost" icon="chevLeft" onClick={() => setIndex(index - 1)}>Back</Btn>
+              {last
+                ? <Btn t={t} onClick={onClose}>Done</Btn>
+                : <Btn t={t} onClick={() => setIndex(index + 1)}>Next</Btn>}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

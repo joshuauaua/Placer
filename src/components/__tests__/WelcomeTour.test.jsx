@@ -41,7 +41,7 @@ describe('WelcomeTour', () => {
     const tour = await screen.findByRole('dialog', { name: 'Welcome to PLACER, Mara Quinn' });
     expect(needsOnboarding).toHaveBeenCalledWith('user-1');
 
-    fireEvent.click(within(tour).getByRole('button', { name: 'Skip' }));
+    fireEvent.click(within(tour).getByRole('button', { name: 'Close the welcome tour' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(markOnboarded).toHaveBeenCalledWith('user-1');
@@ -52,22 +52,22 @@ describe('WelcomeTour', () => {
     render(<Harness />);
     await screen.findByRole('dialog');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
     fireEvent.click(screen.getByRole('button', { name: 'See the projects' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Page: projects' })).toBeInTheDocument();
-    expect(screen.getByRole('dialog')).toHaveTextContent('Step 3 of 6');
+    expect(screen.getByRole('dialog')).toHaveTextContent('Step 2 of 5');
 
     fireEvent.click(screen.getByRole('button', { name: 'Browse the Toolkit' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Page: toolkit' })).toBeInTheDocument();
-    expect(screen.getByRole('dialog')).toHaveTextContent('Step 4 of 6');
+    expect(screen.getByRole('dialog')).toHaveTextContent('Step 3 of 5');
 
     fireEvent.click(screen.getByRole('button', { name: 'Open the map' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Page: map' })).toBeInTheDocument();
-    expect(screen.getByRole('dialog')).toHaveTextContent('Step 5 of 6');
+    expect(screen.getByRole('dialog')).toHaveTextContent('Step 4 of 5');
 
     fireEvent.click(screen.getByRole('button', { name: 'Create a project' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Page: new project' })).toBeInTheDocument();
-    expect(screen.getByRole('dialog')).toHaveTextContent('Step 6 of 6');
+    expect(screen.getByRole('dialog')).toHaveTextContent('Step 5 of 5');
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit my profile' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Page: settings' })).toBeInTheDocument();
