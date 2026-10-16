@@ -124,13 +124,13 @@ describe('ProjectDashboardPage', () => {
     vi.clearAllMocks();
   });
 
-  it('has General, My Toolkit and Project Settings tabs, starting on General', async () => {
+  it('has Project Insights, My Toolkit and Project Settings tabs, starting on Project Insights', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
     setup();
 
     const tabs = await screen.findAllByRole('tab');
-    expect(tabs.map((each) => each.textContent)).toEqual(['General', 'My Toolkit', 'Project Settings']);
-    expect(screen.getByRole('tab', { name: 'General' })).toHaveAttribute('aria-selected', 'true');
+    expect(tabs.map((each) => each.textContent)).toEqual(['Project Insights', 'My Toolkit', 'Project Settings']);
+    expect(screen.getByRole('tab', { name: 'Project Insights' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Documentation' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'My Toolkit' })).not.toBeInTheDocument();
@@ -161,7 +161,7 @@ describe('ProjectDashboardPage', () => {
   it('moves between tabs with the arrow keys', async () => {
     setup();
 
-    fireEvent.keyDown(await screen.findByRole('tab', { name: 'General' }), { key: 'ArrowRight' });
+    fireEvent.keyDown(await screen.findByRole('tab', { name: 'Project Insights' }), { key: 'ArrowRight' });
     expect(screen.getByRole('tab', { name: 'My Toolkit' })).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(screen.getByRole('tab', { name: 'My Toolkit' }), { key: 'ArrowRight' });
     expect(screen.getByRole('tab', { name: 'Project Settings' })).toHaveAttribute('aria-selected', 'true');

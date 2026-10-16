@@ -1,6 +1,6 @@
 /* PLACER — a project's dashboard, in three tabs under its name.
  *
- *   General           a table of its insights — who has seen it, who has taken part and
+ *   Project Insights  a table of its insights — who has seen it, who has taken part and
  *                     how, and where it stands
  *   My Toolkit        the tools it uses, and the rooms open for them
  *   Project Settings  its setup, collaborators, documentation links, notifications, who
@@ -73,7 +73,7 @@ const inputStyle = (t) => ({
 const NUMBER = new Intl.NumberFormat('en-GB');
 
 const DASHBOARD_TABS = [
-  { id: 'general', label: 'General' },
+  { id: 'general', label: 'Project Insights' },
   { id: 'toolkit', label: 'My Toolkit' },
   { id: 'settings', label: 'Project Settings' },
 ];
