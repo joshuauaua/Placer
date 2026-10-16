@@ -1050,49 +1050,6 @@ a {
   align-items: center;
 }
 
-/* The main pages as plain text links on a wide screen; the menu takes over
- * below 1024px. */
-.placer-glass-nav-links {
-  display: flex;
-  gap: 4px;
-}
-
-.placer-glass-nav-link {
-  all: unset;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: var(--placer-radius-sm);
-  font-family: var(--placer-font);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
-  color: var(--placer-grey-700);
-  transition: color 0.15s ease, background-color 0.15s ease;
-}
-
-.placer-glass-nav-link:hover,
-.placer-glass-nav-link[aria-current="page"] {
-  color: var(--placer-ink);
-  background: rgba(17, 17, 17, 0.05);
-}
-
-.placer-glass-nav-link:focus-visible {
-  outline: 2px solid var(--placer-ink);
-  outline-offset: 2px;
-}
-
-@media (min-width: 1024px) {
-  .placer-glass-nav-end .placer-menu-root {
-    display: none;
-  }
-}
-
-@media (max-width: 1023px) {
-  .placer-glass-nav-links {
-    display: none;
-  }
-}
-
 /* Browsers without backdrop-filter get a near-opaque bar instead of an
    unreadable clear one. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {

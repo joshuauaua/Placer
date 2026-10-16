@@ -47,8 +47,9 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: 'Ankara Aks' })).toHaveAttribute('href', 'https://ankaraaks.com/');
     expect(screen.getByRole('img', { name: 'Funded by Swedish Institute' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Join the Waitlist' })).toBeInTheDocument();
-    // Only the holding page's own bar, with its main links: not the full nav bar.
-    expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument();
+    // Only the holding page's own bar, with its menu: not the full nav bar.
+    expect(screen.getByRole('button', { name: /menu/i })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
     expect(screen.queryByText('Sandbox')).not.toBeInTheDocument();
   });
 
