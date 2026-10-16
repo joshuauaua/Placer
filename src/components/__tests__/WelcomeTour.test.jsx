@@ -57,12 +57,12 @@ describe('WelcomeTour', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Page: projects' })).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toHaveTextContent('Step 3 of 6');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Open the map' }));
-    expect(screen.getByRole('heading', { level: 1, name: 'Page: map' })).toBeInTheDocument();
-    expect(screen.getByRole('dialog')).toHaveTextContent('Step 4 of 6');
-
     fireEvent.click(screen.getByRole('button', { name: 'Browse the Toolkit' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Page: toolkit' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toHaveTextContent('Step 4 of 6');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open the map' }));
+    expect(screen.getByRole('heading', { level: 1, name: 'Page: map' })).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toHaveTextContent('Step 5 of 6');
 
     fireEvent.click(screen.getByRole('button', { name: 'Create a project' }));

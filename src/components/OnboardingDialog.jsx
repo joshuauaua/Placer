@@ -1,9 +1,10 @@
 /* PLACER — the welcome tour, the first time somebody signs in.
  *
- * Six steps: what PLACER is, then projects — the heart of it — Explore, the Toolkit,
- * starting a project and the profile, each with a button that goes there. Going there does not end the tour: the page
- * changes underneath and the tour moves on to its next step, over the new page
- * (WelcomeTour keeps it open across pages). Only the last step's button ends it. Next
+ * Six steps: what PLACER is, then projects — the heart of it — the Toolkit, Explore,
+ * starting a project and the profile, each with a button that goes there. Going there
+ * does not end the tour: the page changes underneath and the tour moves on to its next
+ * step, over the new page (WelcomeTour keeps it open across pages). Only the last
+ * step's button ends it. Next
  * and Back (or the arrow keys) move between steps; Skip, the close button or Escape
  * end the tour from any step, as does Get started on the last one. Every way out calls
  * `onClose`, which is where WelcomeTour records that the tour has been seen
@@ -51,26 +52,30 @@ export const ONBOARDING_STEPS = [
     action: { label: 'See the projects', icon: 'grid', call: 'onOpenProjects' },
   },
   {
+    id: 'toolkit',
+    icon: 'layers',
+    colour: PALETTE.blue,
+    title: () => 'Check out the Toolkit',
+    body: 'In the Toolkit you can explore the tools. They come from expert organisations, and '
+      + 'each one is for understanding a place and collecting data about it, imagining and '
+      + 'visualising ideas for it, or planning to drive change in it. Some are done on your '
+      + 'own and some in a group, and they come in all sizes and shapes. We recommend mixing '
+      + 'and matching them to fit what your project needs.',
+    categories: true,
+    spotlight: { target: 'toolkit', label: 'Toolkit', call: 'onOpenToolkit',
+      hint: 'Click Toolkit in the menu, highlighted, to see the tools.' },
+    action: { label: 'Browse the Toolkit', icon: 'layers', call: 'onOpenToolkit' },
+  },
+  {
     id: 'explore',
     icon: 'pin',
-    colour: PALETTE.blue,
+    colour: PALETTE.orange,
     title: () => 'Explore what is happening',
     body: 'The Explore map shows projects and organisations near you. Follow the ones you '
       + 'care about, and their news lands in Your Activity on the dashboard.',
     spotlight: { target: 'map', label: 'Explore', call: 'onExplore',
       hint: 'Click Explore in the menu, highlighted, to open the map.' },
     action: { label: 'Open the map', icon: 'pin', call: 'onExplore' },
-  },
-  {
-    id: 'toolkit',
-    icon: 'layers',
-    colour: PALETTE.orange,
-    title: () => 'Try the Toolkit',
-    body: 'Tools to understand a place, imagine what it could be and plan what happens next: '
-      + 'polls, word clouds, site mapping, co-budgets and more. Try one on your own, or run '
-      + 'it live with a room full of people.',
-    categories: true,
-    action: { label: 'Browse the Toolkit', icon: 'layers', call: 'onOpenToolkit' },
   },
   {
     id: 'project',
