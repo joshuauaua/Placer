@@ -12,6 +12,8 @@
  * highlighted option is announced through aria-activedescendant while focus stays in
  * the input.
  *
+ * ⌘K (Ctrl+K off a Mac) opens it from anywhere, as the box says (lib/shortcuts.js).
+ *
  * On a phone the box would crowd the bar, so it collapses to its magnifier (index.css
  * swaps the two below 640px); either opens the same modal. The modal is portalled to
  * <body> so that its backdrop covers the bar too, rather than sitting in the bar's
@@ -23,6 +25,7 @@ import { createPortal } from 'react-dom';
 import { Avatar } from './UI';
 import { Icon } from './Icon';
 import { MIN_QUERY_LENGTH, search } from '../services/search';
+import { isSearchShortcut, searchShortcutLabel } from '../lib/shortcuts';
 
 // How long typing has to pause before a search is sent.
 const DEBOUNCE_MS = 200;
@@ -72,6 +75,7 @@ export function NavSearch({ t, onSelect }) {
   // Whichever of the box and the magnifier opened the modal, to hand focus back to.
   const openerRef = useRef(null);
   const listId = useId();
+  const boxRef = useRef(null);
 
   const trimmed = query.trim();
   const searchable = trimmed.length >= MIN_QUERY_LENGTH;
@@ -108,6 +112,23 @@ export function NavSearch({ t, onSelect }) {
       clearTimeout(timer);
     };
   }, [trimmed, searchable]);
+
+  // ⌘K / Ctrl+K opens it from anywhere — or, open already, puts the caret back in the
+  // field — and hands focus back to the box when it closes. Not over another dialog,
+  // which has the page's attention until it is closed.
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (!isSearchShortcut(e)) return;
+      const dialog = document.querySelector('[aria-modal="true"]');
+      if (dialog && !dialog.contains(inputRef.current)) return;
+      e.preventDefault();
+      openerRef.current = boxRef.current;
+      setOpen(true);
+      inputRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   // The modal opens ready to type into.
   useEffect(() => {
@@ -222,13 +243,17 @@ export function NavSearch({ t, onSelect }) {
     <div className="placer-nav-search">
       {/* Its display is left to index.css rather than set here: an inline display would
           beat the rule that hides the box on a phone. */}
-      <button type="button" className="placer-nav-search-field" onClick={openModal}
-        aria-haspopup="dialog" aria-label={LABEL}
+      <button type="button" ref={boxRef} className="placer-nav-search-field" onClick={openModal}
+        aria-haspopup="dialog" aria-label={LABEL} aria-keyshortcuts="Meta+K Control+K"
         style={{ alignItems: 'center', gap: 8, height: 40, padding: '0 12px', borderRadius: 12,
           border: `1px solid ${t.lineStrong}`, background: t.surface, color: t.inkDim, cursor: 'text',
           fontFamily: 'var(--placer-font)', fontSize: 14.5, textAlign: 'left' }}>
         <Icon name="search" size={18} stroke={2} style={{ flex: '0 0 auto' }} />
-        <span>Search</span>
+        <span style={{ flex: 1 }}>Search</span>
+        <kbd aria-hidden="true" style={{ padding: '2px 6px', borderRadius: 6, border: `1px solid ${t.line}`,
+          fontFamily: 'var(--placer-font)', fontSize: 12, color: t.inkDim }}>
+          {searchShortcutLabel()}
+        </kbd>
       </button>
 
       <button type="button" className="placer-nav-search-trigger" onClick={openModal}

@@ -21,6 +21,7 @@ import { clearPendingImagination, readPendingImagination, savePendingImagination
 import { useIdentity } from './components/useIdentity';
 import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
 import { readReimagineScene } from './services/projects';
+import { isNewProjectShortcut } from './lib/shortcuts';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -289,6 +290,21 @@ function MainApp({ initialView = 'welcome' }) {
   // page already open). The nav bar and side nav sit outside what scrolls, so they stay put.
   const scrollPageToTop = () => document.querySelector('.placer-scroll-view')?.scrollTo?.(0, 0);
   useEffect(() => { scrollPageToTop(); }, [view, location]);
+
+  // N starts a new project, for anyone with the side nav's New project button to press
+  // — never while something is being typed (lib/shortcuts.js).
+  const canStartProject = !identityLoading && Boolean(profile);
+  useEffect(() => {
+    if (!canStartProject) return undefined;
+    const onKeyDown = (e) => {
+      if (!isNewProjectShortcut(e) || view === 'projectNew') return;
+      e.preventDefault();
+      navigate('/projects/new');
+      scrollPageToTop();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [canStartProject, view, navigate]);
 
   // The side nav is fixed and runs from the nav bar down to the footer: as the footer
   // comes up into the window, tell the CSS how much of the window it has taken.

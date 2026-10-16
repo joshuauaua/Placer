@@ -51,6 +51,29 @@ describe('NavSearch', () => {
     expect(input).toHaveFocus();
   });
 
+  it('opens from anywhere with ⌘K or Ctrl+K, and hands focus back to the box', () => {
+    render(<NavSearch t={THEME} onSelect={vi.fn()} />);
+
+    fireEvent.keyDown(document.body, { key: 'k', metaKey: true });
+    const input = within(screen.getByRole('dialog', { name: 'Search' })).getByRole('combobox');
+    expect(input).toHaveFocus();
+
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(box()).toHaveFocus();
+
+    fireEvent.keyDown(document.body, { key: 'k', ctrlKey: true });
+    expect(screen.getByRole('dialog', { name: 'Search' })).toBeInTheDocument();
+  });
+
+  it('leaves ⌘K alone while another dialog is open', () => {
+    render(<><div role="dialog" aria-modal="true" /><NavSearch t={THEME} onSelect={vi.fn()} /></>);
+
+    fireEvent.keyDown(document.body, { key: 'k', metaKey: true });
+
+    expect(screen.queryByRole('dialog', { name: 'Search' })).not.toBeInTheDocument();
+  });
+
   it('opens the same modal from the phone magnifier', () => {
     render(<NavSearch t={THEME} onSelect={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
