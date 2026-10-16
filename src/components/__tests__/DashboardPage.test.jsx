@@ -1,12 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
-import { Router } from 'wouter';
-import { memoryLocation } from 'wouter/memory-location';
 import { DashboardPage } from '../DashboardPage';
 import { postsAreShared, readImaginations, readLocalImaginations } from '../../services/imaginations';
 import { readMyProjects } from '../../services/projects';
 import { listNotifications } from '../../services/notifications';
-import { markOnboarded, needsOnboarding } from '../../services/onboarding';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/imaginations', () => ({
@@ -29,11 +26,6 @@ vi.mock('../../services/projects', () => ({
 
 vi.mock('../../services/notifications', () => ({
   listNotifications: vi.fn(() => Promise.resolve([])),
-}));
-
-vi.mock('../../services/onboarding', () => ({
-  needsOnboarding: vi.fn(() => Promise.resolve(false)),
-  markOnboarded: vi.fn(() => Promise.resolve()),
 }));
 
 const MINE = [
@@ -61,57 +53,6 @@ const setup = ({ saved = MINE, local = [], shared = false, handlers = {} } = {})
 describe('DashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it('opens the welcome tour the first time, and records it once closed', async () => {
-    vi.mocked(needsOnboarding).mockResolvedValueOnce(true);
-    setup();
-
-    const tour = await screen.findByRole('dialog', { name: 'Welcome to PLACER, Mara Quinn' });
-    expect(needsOnboarding).toHaveBeenCalledWith('user-1');
-
-    fireEvent.click(within(tour).getByRole('button', { name: 'Skip' }));
-
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(markOnboarded).toHaveBeenCalledWith('user-1');
-  });
-
-  it('opens the tour again at /dashboard?tour, however often it has been seen', async () => {
-    const { hook, searchHook, history } = memoryLocation({ path: '/dashboard?tour', record: true });
-    render(
-      <Router hook={hook} searchHook={searchHook}>
-        <DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()} />
-      </Router>
-    );
-
-    const tour = screen.getByRole('dialog', { name: 'Welcome to PLACER, Mara Quinn' });
-    expect(needsOnboarding).not.toHaveBeenCalled();
-
-    fireEvent.click(within(tour).getByRole('button', { name: 'Skip' }));
-
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(history.at(-1)).toBe('/dashboard');
-  });
-
-  it("goes where a tour step's button points", async () => {
-    vi.mocked(needsOnboarding).mockResolvedValueOnce(true);
-    const onNavigate = vi.fn();
-    render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={onNavigate} />);
-
-    const tour = await screen.findByRole('dialog');
-    fireEvent.click(within(tour).getByRole('button', { name: 'Step 5: Make your profile yours' }));
-    fireEvent.click(within(tour).getByRole('button', { name: 'Edit my profile' }));
-
-    expect(onNavigate).toHaveBeenCalledWith('settings');
-    expect(markOnboarded).toHaveBeenCalledWith('user-1');
-  });
-
-  it('does not open the tour for an account that has seen it, or without an account', async () => {
-    setup();
-    render(<DashboardPage t={THEME} profile={PROFILE} onNavigate={vi.fn()} />);
-
-    await waitFor(() => expect(needsOnboarding).toHaveBeenCalledTimes(1));
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('gets you started: a quickstart tutorial and project examples', () => {

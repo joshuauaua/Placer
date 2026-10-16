@@ -78,15 +78,26 @@ describe('OnboardingDialog', () => {
     [1, 'Open the map', 'onExplore'],
     [2, 'Browse the Toolkit', 'onOpenToolkit'],
     [3, 'Create a project', 'onNewProject'],
-    [4, 'Edit my profile', 'onEditProfile'],
-  ])('step %i goes to %s, ending the tour', (steps, label, handler) => {
+  ])('step %i goes to %s and carries on to the next step', (steps, label, handler) => {
     const props = setup();
     for (let i = 0; i < steps; i += 1) next();
 
     fireEvent.click(screen.getByRole('button', { name: label }));
 
-    expect(props.onClose).toHaveBeenCalledTimes(1);
     expect(props[handler]).toHaveBeenCalledTimes(1);
+    expect(props.onClose).not.toHaveBeenCalled();
+    expect(screen.getByText(`Step ${steps + 2} of 5`)).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toHaveFocus();
+  });
+
+  it('ends the tour from the last step\'s button', () => {
+    const props = setup();
+    for (let i = 0; i < 4; i += 1) next();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit my profile' }));
+
+    expect(props.onEditProfile).toHaveBeenCalledTimes(1);
+    expect(props.onClose).toHaveBeenCalledTimes(1);
   });
 
   it('leaves out a step\'s button when there is nothing for it to do', () => {
@@ -133,8 +144,9 @@ describe('OnboardingDialog', () => {
       expect(spot).toHaveStyle({ top: '114px', left: '14px', width: '252px', height: '60px' });
 
       fireEvent.click(spot);
-      expect(onClose).toHaveBeenCalled();
       expect(onExplore).toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled();
+      expect(screen.getByText('Step 3 of 5')).toBeInTheDocument();
     });
 
     it('keeps the button when the menu is not there to point at', () => {

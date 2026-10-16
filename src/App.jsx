@@ -23,6 +23,7 @@ import { isSupabaseConfigured, readMyOrganisations } from './services/organisati
 import { readReimagineScene } from './services/projects';
 import { isNewProjectShortcut } from './lib/shortcuts';
 import { CASE_STUDY_FORM_PATH } from './lib/routes';
+import { WelcomeTour } from './components/WelcomeTour';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -618,6 +619,17 @@ function MainApp({ initialView = 'welcome' }) {
               onNavigate={(next) => { show(next); scrollPageToTop(); }}
               onExplore={() => { handleExplore(); scrollPageToTop(); }}
               onNewProject={() => { showNewProject(); scrollPageToTop(); }} showOrganisations={isSupabaseConfigured()} />
+          )}
+
+          {/* The welcome tour, over whichever page it has led to: its steps go to the map,
+              the Toolkit, a new project and Settings, and it carries on over each. */}
+          {!identityLoading && profile && (
+            <WelcomeTour t={t} accountId={accountId} name={profile.name}
+              autoOpen={view === 'dashboard'}
+              onExplore={() => { handleExplore(); scrollPageToTop(); }}
+              onOpenToolkit={() => { show('toolkit'); scrollPageToTop(); }}
+              onNewProject={() => { showNewProject(); scrollPageToTop(); }}
+              onEditProfile={() => { show('settings'); scrollPageToTop(); }} />
           )}
 
           <div className="placer-app-page">

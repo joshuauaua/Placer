@@ -1,10 +1,12 @@
 /* PLACER — the welcome tour, the first time somebody signs in.
  *
- * Five steps over the dashboard: what PLACER is, then Explore, the Toolkit, projects
- * and the profile, each with a button that goes there. Next and Back (or the arrow
- * keys) move between them; Skip, the close button or Escape end the tour from any
- * step, as does Get started on the last one or any step's own button. Every way out
- * calls `onClose`, which is where DashboardPage records that the tour has been seen
+ * Five steps: what PLACER is, then Explore, the Toolkit, projects and the profile,
+ * each with a button that goes there. Going there does not end the tour: the page
+ * changes underneath and the tour moves on to its next step, over the new page
+ * (WelcomeTour keeps it open across pages). Only the last step's button ends it. Next
+ * and Back (or the arrow keys) move between steps; Skip, the close button or Escape
+ * end the tour from any step, as does Get started on the last one. Every way out calls
+ * `onClose`, which is where WelcomeTour records that the tour has been seen
  * (services/onboarding.js), so it opens once per account however it was left.
  *
  * A click outside the panel does nothing: on a first visit that is far more likely a
@@ -12,8 +14,7 @@
  *
  * A step with a `spotlight` points at the real thing instead of offering a button: the
  * screen darkens around the side nav's item for it (SideNav marks each with data-tour),
- * a ring pulses round it, and clicking it there does what the item does and ends the
- * tour. Where that item is not on screen the step falls back to its `action` button.
+ * a ring pulses round it, and clicking it there does what the item does. Where that item is not on screen the step falls back to its `action` button.
  */
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -117,9 +118,11 @@ export function OnboardingDialog({ t, name = '', onClose, onExplore, onOpenToolk
 
   const action = !spotlit && step.action && handlers[step.action.call] ? step.action : null;
 
+  // On the panel from the start, and again at each step: a step's button that has just
+  // been used is gone, and focus would otherwise drop to the page underneath.
   useEffect(() => {
     panelRef.current?.focus();
-  }, []);
+  }, [index]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -135,8 +138,11 @@ export function OnboardingDialog({ t, name = '', onClose, onExplore, onOpenToolk
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  // Go where the step points, then on to the next step over that page; from the last
+  // step there is nothing left to show, so the tour ends.
   const go = (call) => {
-    onClose();
+    if (last) onClose();
+    else setIndex(index + 1);
     handlers[call]();
   };
 

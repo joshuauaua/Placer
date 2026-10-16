@@ -1,20 +1,17 @@
 /* PLACER — your dashboard: shortcuts to what to do next */
 
 import { useEffect, useState } from 'react';
-import { useLocation, useSearch } from 'wouter';
 import { Icon } from './Icon';
 import { Btn } from './UI';
 import { ImaginationCard } from './ImaginationCard';
 import { ImaginationPreview } from './ImaginationPreview';
 import { LayeredCircles } from './LayeredCircles';
 import { NotificationItem } from './NotificationItem';
-import { OnboardingDialog } from './OnboardingDialog';
 import { postsAreShared, readLocalImaginations } from '../services/imaginations';
 import {
   PROJECT_TYPE_NAMES, isSupabaseConfigured as projectsAvailable, readMyProjects,
 } from '../services/projects';
 import { listNotifications } from '../services/notifications';
-import { markOnboarded, needsOnboarding } from '../services/onboarding';
 import { byUrgency, nextSteps, projectProgress } from '../lib/projectTimeline';
 import { PALETTE } from '../theme';
 import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
@@ -210,36 +207,6 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
     return () => { cancelled = true; };
   }, [accountId]);
 
-  // The welcome tour, the first time an account reaches its dashboard — which is
-  // where signing in lands. Signed-in accounts only: the local, no-project mode has
-  // nobody to remember it for.
-  //
-  // `/dashboard?tour` opens it again whenever asked — Settings' "Take the welcome tour
-  // again" links there — and closing it then drops the `?tour`, so a reload does not
-  // bring it back.
-  const [, navigate] = useLocation();
-  const tourRequested = new URLSearchParams(useSearch()).has('tour');
-  const [onboarding, setOnboarding] = useState(tourRequested);
-
-  useEffect(() => {
-    if (tourRequested) setOnboarding(true);
-  }, [tourRequested]);
-
-  useEffect(() => {
-    if (!accountId || tourRequested) return undefined;
-    let cancelled = false;
-    needsOnboarding(accountId)
-      .then((needed) => { if (!cancelled) setOnboarding(needed); })
-      .catch((err) => console.error('Could not check for the welcome tour:', err));
-    return () => { cancelled = true; };
-  }, [accountId]);
-
-  const finishOnboarding = () => {
-    setOnboarding(false);
-    if (accountId) markOnboarded(accountId);
-    if (tourRequested) navigate('/dashboard', { replace: true });
-  };
-
   useEffect(() => {
     if (!shared) return undefined;
 
@@ -283,13 +250,6 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
   return (
     <div onKeyDown={moveWithArrows} style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '96px 40px 48px' }} className="placer-scroll">
-      {onboarding && (
-        <OnboardingDialog t={t} name={name} onClose={finishOnboarding}
-          onExplore={() => (onExplore ? onExplore() : onNavigate('map'))}
-          onOpenToolkit={() => onNavigate('toolkit')}
-          onNewProject={onNewProject}
-          onEditProfile={() => onNavigate('settings')} />
-      )}
       {selected && (
         <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)}
           accountId={accountId} authorName={name} onSignIn={onSignIn}
