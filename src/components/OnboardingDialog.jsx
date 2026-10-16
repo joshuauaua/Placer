@@ -17,11 +17,16 @@ import { Btn } from './UI';
 import { PALETTE } from '../theme';
 import { CATEGORIES } from '../toolkit/tools';
 
-/** The steps, in order. `action` names the prop its button calls, and is left out when there is none. */
+/**
+ * The steps, in order. Each shows an `icon` from the set, or an `image` in its place.
+ * `action` names the prop its button calls, and is left out when there is none.
+ */
 export const ONBOARDING_STEPS = [
   {
     id: 'welcome',
-    icon: 'sparkle',
+    // The bench from the favicon (public/favicon.svg), PLACER's own mark, rather than
+    // an icon from the set. It is drawn on white, the same as the tile it sits in.
+    image: '/favicon.svg',
     colour: PALETTE.purple,
     title: (name) => (name ? `Welcome to PLACER, ${name}` : 'Welcome to PLACER'),
     body: 'PLACER is an open toolkit for shaping public places together with the people '
@@ -120,7 +125,9 @@ export function OnboardingDialog({ t, name = '', onClose, onExplore, onOpenToolk
           <span style={{ width: 88, height: 88, borderRadius: 24, display: 'flex', alignItems: 'center',
             justifyContent: 'center', background: t.surface, color: step.colour.c700,
             boxShadow: `inset 0 0 0 1.5px ${step.colour.c700}` }}>
-            <Icon name={step.icon} size={40} stroke={1.8} />
+            {step.image
+              ? <img src={step.image} alt="" width={72} height={72} style={{ display: 'block' }} />
+              : <Icon name={step.icon} size={40} stroke={1.8} />}
           </span>
         </div>
 

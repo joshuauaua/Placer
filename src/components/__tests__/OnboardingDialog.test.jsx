@@ -19,6 +19,11 @@ describe('OnboardingDialog', () => {
     expect(ONBOARDING_STEPS).toHaveLength(5);
   });
 
+  it('shows the bench from the favicon on the welcome step', () => {
+    const { container } = render(<OnboardingDialog t={THEME} name="Mara" onClose={vi.fn()} />);
+    expect(container.querySelector('img[src="/favicon.svg"]')).toBeInTheDocument();
+  });
+
   it('opens on a welcome by name, which can be skipped', () => {
     const { onClose } = setup();
 
