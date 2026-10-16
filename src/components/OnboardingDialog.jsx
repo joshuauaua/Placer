@@ -9,9 +9,14 @@
  *
  * A click outside the panel does nothing: on a first visit that is far more likely a
  * stray click than a wish to skip the whole tour.
+ *
+ * A step with a `spotlight` points at the real thing instead of offering a button: the
+ * screen darkens around the side nav's item for it (SideNav marks each with data-tour),
+ * a ring pulses round it, and clicking it there does what the item does and ends the
+ * tour. Where that item is not on screen the step falls back to its `action` button.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn } from './UI';
 import { PALETTE } from '../theme';
@@ -39,6 +44,8 @@ export const ONBOARDING_STEPS = [
     title: () => 'Explore what is happening',
     body: 'The Explore map shows projects and organisations near you. Follow the ones you '
       + 'care about, and their news lands in Your Activity on the dashboard.',
+    spotlight: { target: 'map', label: 'Explore', call: 'onExplore',
+      hint: 'Click Explore in the menu, highlighted, to open the map.' },
     action: { label: 'Open the map', icon: 'pin', call: 'onExplore' },
   },
   {
@@ -72,6 +79,17 @@ export const ONBOARDING_STEPS = [
   },
 ];
 
+// How far the spotlight's hole reaches past the item it is cut round.
+const SPOTLIGHT_PAD = 6;
+
+/** Where the side nav's `target` item is on screen, or null when it is not there to point at. */
+function findTarget(target) {
+  const element = target && document.querySelector(`[data-tour="${target}"]`);
+  const rect = element?.getBoundingClientRect();
+  if (!rect || rect.width === 0 || rect.height === 0) return null;
+  return { top: rect.top, left: rect.left, width: rect.width, height: rect.height };
+}
+
 export function OnboardingDialog({ t, name = '', onClose, onExplore, onOpenToolkit, onNewProject, onEditProfile }) {
   const [index, setIndex] = useState(0);
   const panelRef = useRef(null);
@@ -79,8 +97,25 @@ export function OnboardingDialog({ t, name = '', onClose, onExplore, onOpenToolk
 
   const step = ONBOARDING_STEPS[index];
   const last = index === ONBOARDING_STEPS.length - 1;
-  const action = step.action && handlers[step.action.call] ? step.action : null;
   const titleId = 'onboarding-title';
+
+  // The spotlit item's place, measured when the step opens and again whenever the window
+  // changes size (the side nav collapses, or becomes the bottom bar).
+  const [spot, setSpot] = useState(null);
+  const spotlight = step.spotlight && handlers[step.spotlight.call] ? step.spotlight : null;
+  useLayoutEffect(() => {
+    if (!spotlight) {
+      setSpot(null);
+      return undefined;
+    }
+    const measure = () => setSpot(findTarget(spotlight.target));
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [spotlight]);
+  const spotlit = spotlight && spot;
+
+  const action = !spotlit && step.action && handlers[step.action.call] ? step.action : null;
 
   useEffect(() => {
     panelRef.current?.focus();
@@ -100,14 +135,34 @@ export function OnboardingDialog({ t, name = '', onClose, onExplore, onOpenToolk
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const go = () => {
+  const go = (call) => {
     onClose();
-    handlers[action.call]();
+    handlers[call]();
+  };
+
+  const hole = spotlit && {
+    position: 'fixed', top: spot.top - SPOTLIGHT_PAD, left: spot.left - SPOTLIGHT_PAD,
+    width: spot.width + SPOTLIGHT_PAD * 2, height: spot.height + SPOTLIGHT_PAD * 2, borderRadius: 16,
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 190, background: 'rgba(0, 0, 0, 0.4)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+    // With a spotlight the dimming is the hole's own shadow, so the item shows through.
+    // When the item is low on the screen (the phone's bottom bar), the panel keeps above it.
+    <div style={{ position: 'fixed', inset: 0, zIndex: 190, background: spotlit ? 'transparent' : 'rgba(0, 0, 0, 0.4)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+      paddingBottom: spotlit && spot.top > window.innerHeight / 2
+        ? window.innerHeight - spot.top + SPOTLIGHT_PAD + 16 : 16 }}>
+      {spotlit && (
+        <>
+          <div aria-hidden="true" className="placer-tour-spotlight"
+            style={{ ...hole, pointerEvents: 'none', boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.4)',
+              '--placer-tour-ring': step.colour.c300 }} />
+          {/* Over the item itself, so the click lands here rather than on the dimmed page;
+              it does what the item would. */}
+          <button type="button" onClick={() => go(spotlight.call)} aria-label={spotlight.label}
+            style={{ ...hole, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }} />
+        </>
+      )}
       <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId}
         aria-describedby="onboarding-body" tabIndex={-1}
         style={{ position: 'relative', width: '100%', maxWidth: 520, maxHeight: 'calc(100vh - 32px)',
@@ -155,9 +210,17 @@ export function OnboardingDialog({ t, name = '', onClose, onExplore, onOpenToolk
               ))}
             </ul>
           )}
+          {spotlit && (
+            <p role="note" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 18, marginBottom: 0,
+              padding: '10px 12px', borderRadius: 12, background: step.colour.c50, color: step.colour.c900,
+              fontSize: 14.5, fontWeight: 500, lineHeight: 1.45 }}>
+              <Icon name={step.icon} size={16} stroke={2.2} style={{ flex: '0 0 auto' }} />
+              {spotlight.hint}
+            </p>
+          )}
           {action && (
             <div style={{ marginTop: 18 }}>
-              <Btn t={t} variant="outline" size="sm" icon={action.icon} onClick={go}>{action.label}</Btn>
+              <Btn t={t} variant="outline" size="sm" icon={action.icon} onClick={() => go(action.call)}>{action.label}</Btn>
             </div>
           )}
         </div>

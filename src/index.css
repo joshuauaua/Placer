@@ -2980,3 +2980,20 @@ a {
     display: none;
   }
 }
+
+/* The welcome tour's spotlight (OnboardingDialog): a ring in the step's 300 that
+ * breathes round the item it asks somebody to click. Still for reduced motion. */
+.placer-tour-spotlight {
+  outline: 3px solid var(--placer-tour-ring);
+  outline-offset: 0;
+  animation: placer-tour-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes placer-tour-pulse {
+  0%, 100% { outline-offset: 0; }
+  50% { outline-offset: 5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-tour-spotlight { animation: none; }
+}

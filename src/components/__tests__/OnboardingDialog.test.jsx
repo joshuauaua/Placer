@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vite-plus/test';
+import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ONBOARDING_STEPS, OnboardingDialog } from '../OnboardingDialog';
 import { THEME } from '../../theme';
@@ -108,5 +108,41 @@ describe('OnboardingDialog', () => {
     fireEvent.keyDown(dialog, { key: 'Escape' });
     fireEvent.click(screen.getByRole('button', { name: 'Close the welcome tour' }));
     expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
+  describe('the Explore step, with the side nav on screen', () => {
+    let item;
+    afterEach(() => item?.remove());
+
+    const withNavItem = () => {
+      item = document.createElement('button');
+      item.dataset.tour = 'map';
+      item.getBoundingClientRect = () => ({ top: 120, left: 20, width: 240, height: 48 });
+      document.body.append(item);
+    };
+
+    it('points at Explore in the menu instead of offering a button', () => {
+      withNavItem();
+      const { onClose, onExplore } = setup();
+      next();
+
+      expect(screen.getByRole('note')).toHaveTextContent('Click Explore in the menu');
+      expect(screen.queryByRole('button', { name: 'Open the map' })).not.toBeInTheDocument();
+
+      const spot = screen.getByRole('button', { name: 'Explore' });
+      expect(spot).toHaveStyle({ top: '114px', left: '14px', width: '252px', height: '60px' });
+
+      fireEvent.click(spot);
+      expect(onClose).toHaveBeenCalled();
+      expect(onExplore).toHaveBeenCalled();
+    });
+
+    it('keeps the button when the menu is not there to point at', () => {
+      setup();
+      next();
+
+      expect(screen.queryByRole('note')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Open the map' })).toBeInTheDocument();
+    });
   });
 });
