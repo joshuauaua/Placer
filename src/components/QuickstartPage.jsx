@@ -1,56 +1,68 @@
 /* PLACER — Quickstart: a walk through creating a first project.
  *
- * Reached from the dashboard's "Getting Started" cards. It describes the five
- * steps of ProjectSetupPage in order, then what the project gives you once it
- * exists, and ends where it should: on the button that starts one. Keep the steps
- * in step with ProjectSetupPage's STEPS.
+ * Reached from the dashboard's "Getting Started" cards. It describes setting up a
+ * project in five steps, then what the project gives you once it is live, and ends
+ * where it should: on the button that starts one.
  */
 
 import { Btn } from './UI';
 import { CHARACTER } from '../theme';
 
+// A step's `points` are labelled items listed under its body, and `after` a line
+// that follows them.
 const STEPS = [
   {
-    title: 'Read what a project is',
-    body: 'A project brings people together around a place: to imagine what it could be, and to decide or push for what happens to it. The first screen explains what you get.',
+    title: 'Understand What a Project Is',
+    body: 'A project brings people together around a place. It serves as a digital hub where communities can understand a location, reimagine its future, make decisions, and drive real-world change.',
   },
   {
-    title: 'Choose what kind of project it is',
-    body: 'Say whether you have a say over the place, want to push for change in it, or something else. The next step asks its questions with that in mind.',
+    title: 'Choose Your Project Type',
+    body: 'Indicate whether you have official decision-making authority over the site, are advocating for community change, or are pursuing another goal. This tailors the remaining setup steps to your focus.',
   },
   {
-    title: 'Fill in the basics',
-    body: 'Give it a name, write its goals, and add start and end dates if it has them. If you are an admin of an organisation, you can run it in the organisation’s name.',
+    title: 'Fill In the Basics',
+    points: [
+      { label: 'Details', text: 'Provide a clear, recognizable name and define your core goals.' },
+      { label: 'Timeline', text: 'Set start and end dates to give your project structure.' },
+      { label: 'Organization', text: 'Choose whether to publish under an organization account or as an individual.' },
+      { label: 'Location', text: 'Enter key addresses or draw custom boundaries and target areas directly on the interactive map.' },
+    ],
   },
   {
-    title: 'Mark the place',
-    body: 'List the places it is about, one per line, and draw the area it covers on the map.',
+    title: 'Select Your Interactive Tools',
+    body: 'Choose from a library of engagement tools created by expert organizations. Select and layer tools based on what your project needs to achieve:',
+    points: [
+      { label: 'Understand', text: 'Collect local data, run community surveys, and gather baseline insights.' },
+      { label: 'Imagine', text: 'Use visual interactive tools to help participants explore possibilities and share ideas.' },
+      { label: 'Plan', text: 'Mobilize action with community polls, co-budgeting exercises, and decision-making modules.' },
+    ],
+    after: 'Participants can engage with these tools throughout the lifecycle of your project via a direct link, PIN, or QR code.',
   },
   {
-    title: 'Add an image',
-    body: 'A landscape photo is shown at the top of the project’s page and on its card. You can skip it and add one later.',
+    title: 'Add Visuals & Customize the Page',
+    body: 'Upload a crisp landscape photo to serve as the main project banner and preview card image. Customize the page layout to make sure it looks inviting and informative to the public before you launch.',
   },
 ];
 
 const NEXT = [
   {
-    title: 'Run it from its dashboard',
-    body: 'Add collaborators, share links, and see how many people have viewed the project’s page.',
+    title: 'Manage from the Dashboard',
+    body: 'Monitor page views, invite collaborators, and manage team access settings.',
   },
   {
-    title: 'Share its public page',
-    body: 'Anyone can open it from a link, follow the project, and imagine something for it on the map.',
+    title: 'Share the Public Page',
+    body: 'Distribute your project link so the community can follow updates and map out ideas in real time.',
   },
   {
-    title: 'Gather views with the Toolkit',
-    body: 'Open a Toolkit room for the project, such as a poll or a co-budget, and let people join with a PIN or a QR code.',
+    title: 'Gather & Track Input',
+    body: 'Use your selected Toolkit modules to host interactive sessions, collect feedback, and turn community input into action.',
   },
 ];
 
 // The step numbers cycle through the three brand colours.
 const NUMBER_COLOURS = [CHARACTER.cityWorker, CHARACTER.practitioner, CHARACTER.citizen];
 
-function Step({ t, number, title, body }) {
+function Step({ t, number, title, body, points, after }) {
   const colour = NUMBER_COLOURS[(number - 1) % NUMBER_COLOURS.length];
   return (
     <li style={{ display: 'flex', gap: 20, alignItems: 'flex-start', padding: '20px 0',
@@ -63,7 +75,18 @@ function Step({ t, number, title, body }) {
       </span>
       <div>
         <h3 style={{ fontSize: 19, fontWeight: 700, color: t.ink, marginBottom: 6 }}>{title}</h3>
-        <p style={{ fontSize: 16, lineHeight: 1.6, color: t.inkDim }}>{body}</p>
+        {body && <p style={{ fontSize: 16, lineHeight: 1.6, color: t.inkDim }}>{body}</p>}
+        {points && (
+          <ul style={{ margin: body ? '8px 0 0' : 0, paddingLeft: 20, fontSize: 16, lineHeight: 1.6,
+            color: t.inkDim }}>
+            {points.map((point) => (
+              <li key={point.label} style={{ marginBottom: 4 }}>
+                <strong style={{ color: t.ink }}>{point.label}:</strong> {point.text}
+              </li>
+            ))}
+          </ul>
+        )}
+        {after && <p style={{ fontSize: 16, lineHeight: 1.6, color: t.inkDim, marginTop: 8 }}>{after}</p>}
       </div>
     </li>
   );
@@ -80,21 +103,21 @@ export function QuickstartPage({ t, onNewProject }) {
         </div>
         <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
           letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 16 }}>
-          Create your first Project
+          Create Your First Project
         </h1>
         <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, marginBottom: 40 }}>
-          Starting a project takes five short steps and a few minutes. Here is what each
-          one asks, and what you can do once it is set up.
+          Launch a project in five quick steps. Here is how to set it up and what you can do
+          once your project is live.
         </p>
 
-        <h2 className="placer-h2" style={{ color: t.ink, marginBottom: 4 }}>The five steps</h2>
+        <h2 className="placer-h2" style={{ color: t.ink, marginBottom: 4 }}>Setting Up Your Project</h2>
         <ol style={{ listStyle: 'none', padding: 0, margin: '0 0 48px' }}>
           {STEPS.map((step, index) => (
             <Step key={step.title} t={t} number={index + 1} {...step} />
           ))}
         </ol>
 
-        <h2 className="placer-h2" style={{ color: t.ink, marginBottom: 4 }}>Once it exists</h2>
+        <h2 className="placer-h2" style={{ color: t.ink, marginBottom: 4 }}>What You Can Do Once It’s Live</h2>
         <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 48px' }}>
           {NEXT.map((item) => (
             <li key={item.title} style={{ padding: '16px 0', borderBottom: `1px solid ${t.line}` }}>

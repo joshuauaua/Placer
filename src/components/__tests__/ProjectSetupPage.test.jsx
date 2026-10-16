@@ -88,8 +88,8 @@ describe('ProjectSetupPage, starting a project', () => {
   it('opens on a cover saying what a project is', () => {
     setup();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Start a project' })).toBeInTheDocument();
-    expect(screen.getByText(/brings people together around a place/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Start a Project' })).toBeInTheDocument();
+    expect(screen.getByText(/Bring people together around a place/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Name *')).not.toBeInTheDocument();
   });
 
@@ -97,7 +97,7 @@ describe('ProjectSetupPage, starting a project', () => {
     setup();
     fireEvent.click(screen.getByRole('button', { name: /Create a new project/ }));
 
-    expect(screen.getByText('Step 2 of 6 · Project type')).toBeInTheDocument();
+    expect(screen.getByText('Step 2 of 5 · Project type')).toBeInTheDocument();
     expect(screen.getAllByRole('radio')).toHaveLength(3);
     expect(screen.getByRole('radio', { name: /I have a say over a place/ })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /I want to push for change/ })).toBeInTheDocument();
@@ -146,7 +146,7 @@ describe('ProjectSetupPage, starting a project', () => {
     expect(screen.getByLabelText('Name *')).toHaveValue('Riverside Greenway');
   });
 
-  it('starts a project with what was filled in across the six steps', async () => {
+  it('starts a project with what was filled in across the five steps', async () => {
     createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
     const { onSaved } = setup();
 
@@ -154,15 +154,13 @@ describe('ProjectSetupPage, starting a project', () => {
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
     fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'A park along the old rail line.' } });
     fireEvent.change(screen.getByLabelText('Goals'), { target: { value: 'Turn the old rail corridor into a park.' } });
-    next();
-    expect(screen.getByText('Step 4 of 6 · The place')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
     next();
-    expect(screen.getByText('Step 5 of 6 · Tools')).toBeInTheDocument();
+    expect(screen.getByText('Step 4 of 5 · Tools')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Co-Budget/ }));
     fireEvent.click(screen.getByRole('button', { name: /Desire Lines/ }));
     next();
-    expect(screen.getByText('Step 6 of 6 · An image')).toBeInTheDocument();
+    expect(screen.getByText('Step 5 of 5 · Visuals')).toBeInTheDocument();
     expect(createProject).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
 
@@ -180,11 +178,9 @@ describe('ProjectSetupPage, starting a project', () => {
     expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['budget-ballot', 'desire-lines'], 'user-1');
   });
 
-  it('asks for the place as an address, with no outline to draw', () => {
+  it('asks for the place as an address in the basics, with no outline to draw', () => {
     setup();
     toBasics();
-    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
-    next();
 
     expect(screen.getByLabelText('Address')).toBeInTheDocument();
     expect(screen.queryByText('Location outline')).not.toBeInTheDocument();
@@ -196,7 +192,6 @@ describe('ProjectSetupPage, starting a project', () => {
 
     toBasics();
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
-    next();
     fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
     // Edited by hand after picking: the point no longer says where the text is.
     fireEvent.change(screen.getByLabelText('Address'), { target: { value: 'The old rail yard' } });
@@ -213,7 +208,6 @@ describe('ProjectSetupPage, starting a project', () => {
     setup();
     toBasics();
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
-    next();
     next();
 
     const tools = within(screen.getByRole('group', { name: 'Toolkit tools' })).getAllByRole('button');
@@ -241,7 +235,6 @@ describe('ProjectSetupPage, starting a project', () => {
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
     next();
     next();
-    next();
     fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
@@ -256,7 +249,6 @@ describe('ProjectSetupPage, starting a project', () => {
 
     toBasics();
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
-    next();
     next();
     fireEvent.click(screen.getByRole('button', { name: /Co-Budget/ }));
     next();
@@ -290,7 +282,6 @@ describe('ProjectSetupPage, starting a project', () => {
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
     next();
     next();
-    next();
     fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
 
     await waitFor(() => expect(createProject).toHaveBeenCalledWith(
@@ -311,7 +302,7 @@ describe('ProjectSetupPage, starting a project', () => {
 
     fireEvent.submit(screen.getByLabelText('Name *').closest('form'));
 
-    expect(screen.getByText('Step 4 of 6 · The place')).toBeInTheDocument();
+    expect(screen.getByText('Step 4 of 5 · Tools')).toBeInTheDocument();
     expect(createProject).not.toHaveBeenCalled();
   });
 
@@ -321,7 +312,6 @@ describe('ProjectSetupPage, starting a project', () => {
 
     toBasics();
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'x'.repeat(200) } });
-    next();
     next();
     next();
     fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
@@ -369,7 +359,7 @@ describe('ProjectSetupPage, editing a project', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Edit project' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Create a new project/ })).not.toBeInTheDocument();
-    expect(screen.queryByText(/Step \d of 6/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Step \d of 5/)).not.toBeInTheDocument();
   });
 
   it('keeps the place names of a project whose address was not touched', async () => {
@@ -451,7 +441,6 @@ describe('ProjectSetupPage, the budget question', () => {
   const startFromBasics = () => {
     next();
     next();
-    next();
     fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
   };
 
@@ -500,7 +489,6 @@ describe('ProjectSetupPage, the budget question', () => {
     toBasics();
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
     fireEvent.click(within(budgetQuestion()).getByRole('radio', { name: 'Yes' }));
-    next();
     fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
     next();
     next();
@@ -518,7 +506,6 @@ describe('ProjectSetupPage, the budget question', () => {
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
     fireEvent.click(within(budgetQuestion()).getByRole('radio', { name: 'Yes' }));
     fireEvent.change(screen.getByLabelText('Currency'), { target: { value: 'TRY' } });
-    next();
     fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
     next();
     next();
@@ -631,7 +618,6 @@ describe('ProjectSetupPage, public or private', () => {
     fireEvent.click(screen.getByRole('radio', { name: /^Private/ }));
     next();
     next();
-    next();
     fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
@@ -659,7 +645,6 @@ describe('ProjectSetupPage, Idea Visualizer', () => {
   const toTools = () => {
     toBasics();
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
-    next();
     fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
     next();
   };
