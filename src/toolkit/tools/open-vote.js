@@ -1,7 +1,7 @@
 import { OpenVote } from '../../components/toolkit/OpenVote';
 import { OpenVoteOnPage } from '../../components/toolkit/OpenVoteOnPage';
 import { AnswersStep, OpenVoteSetup, QuestionStep } from '../../components/toolkit/OpenVoteSetup';
-import { CHARACTER } from '../../theme';
+import { PALETTE } from '../../theme';
 import {
   answerProblems, combineVotes, defaultVoteSetup, emptyVote, questionProblems, voteSetupProblems,
 } from '../../lib/openVote';
@@ -14,7 +14,7 @@ export default {
   name: 'Poll',
   tagline: 'Ask anything, with the answers you choose.',
   blurb: 'Type whatever you want to put to a room, write the answers people can pick from, then let them vote. There is no scale to calibrate — just a question, your answers, and a live tally as people pick.',
-  ...tone(CHARACTER.cityWorker),
+  ...tone(PALETTE.blue),
   icon: 'flag',
   createdBy: 'PLACER',
   component: OpenVote,

@@ -1,7 +1,7 @@
 /* PLACER — what any address the app does not know shows, inside the usual nav bar
  * and footer.
  *
- * One large card in the design practitioner's purple with overlapping circles in its
+ * One large card in purple with overlapping circles in its
  * deeper steps, the same as the dashboard's Getting Started cards (LayeredCircles),
  * saying the page is not there and offering the way back: the dashboard for somebody
  * signed in, the home page for anybody else, and Explore for either.
@@ -9,9 +9,9 @@
 
 import { Btn } from './UI';
 import { LayeredCircles } from './LayeredCircles';
-import { CHARACTER } from '../theme';
+import { PALETTE } from '../theme';
 
-const HUE = CHARACTER.practitioner;
+const HUE = PALETTE.purple;
 
 export function NotFoundPage({ t, signedIn, onNavigate }) {
   return (

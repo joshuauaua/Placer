@@ -1,5 +1,5 @@
 import { ReimagineASpace } from '../../components/toolkit/ReimagineASpace';
-import { CHARACTER } from '../../theme';
+import { PALETTE } from '../../theme';
 import { tone } from '../toolParts';
 
 export default {
@@ -9,7 +9,7 @@ export default {
   name: 'Idea Visualizer',
   tagline: 'A tool to help anyone quickly create a visual render of an idea they have.',
   blurb: 'Pick a spot on the map and step into its Street View. Place benches, trees, lighting and more where they would go, say what the idea is and why, and post it to the map for others to see.',
-  ...tone(CHARACTER.citizen),
+  ...tone(PALETTE.orange),
   icon: 'sparkle',
   createdBy: 'PLACER',
   duration: 'About 5 minutes',

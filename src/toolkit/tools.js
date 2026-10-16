@@ -81,11 +81,11 @@
  *              { id, expiresAt, config }. Without one, the page links to the room.
  */
 
-import { CHARACTER } from '../theme';
+import { PALETTE } from '../theme';
 
 /**
  * The three kinds of tool, in the order the Toolkit lists them. Every tool's
- * `category` is one of these ids. Each has a character's colour, for its tag and
+ * `category` is one of these ids. Each has a theme colour, for its tag and
  * its cards' hover: blue to understand, orange to imagine, purple to plan.
  */
 export const CATEGORIES = [
@@ -93,19 +93,19 @@ export const CATEGORIES = [
     id: 'understand',
     name: 'Understand',
     description: 'Tools for understanding how a place is used today.',
-    colour: CHARACTER.cityWorker,
+    colour: PALETTE.blue,
   },
   {
     id: 'imagine',
     name: 'Imagine',
     description: 'Tools for imagining how a place could change.',
-    colour: CHARACTER.citizen,
+    colour: PALETTE.orange,
   },
   {
     id: 'plan',
     name: 'Plan',
     description: 'Tools for planning the change, together, in one place.',
-    colour: CHARACTER.practitioner,
+    colour: PALETTE.purple,
   },
 ];
 

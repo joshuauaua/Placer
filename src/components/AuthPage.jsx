@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Btn } from './UI';
 import { Icon } from './Icon';
-import { CHARACTER } from '../theme';
+import { PALETTE } from '../theme';
 import {
   sendPasswordReset,
   signInWithGoogle,
@@ -52,9 +52,9 @@ function Field({ t, id, label, type, value, onChange, autoComplete, hint }) {
   );
 }
 
-// The page sits on the practitioner's purple 100, as the survey dialog does; the
+// The page sits on purple 100, as the survey dialog does; the
 // form card stays white so the inputs keep their contrast.
-const PAGE_BG = CHARACTER.practitioner.c100;
+const PAGE_BG = PALETTE.purple.c100;
 
 function Shell({ t, title, blurb, children }) {
   return (

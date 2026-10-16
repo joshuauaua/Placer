@@ -12,7 +12,7 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import { Btn, Chip } from '../UI';
 import { SiteScopePicker, isFramed } from './SiteScope';
 import { DesireLinesMap } from './DesireLinesMap';
-import { CHARACTER } from '../../theme';
+import { PALETTE } from '../../theme';
 import { useIdentity } from '../useIdentity';
 import { readInquiries } from '../../services/inquiries';
 import {
@@ -61,8 +61,8 @@ function SiteElements({ t, tool, site, palette, onChange }) {
   const kind = kinds.find((type) => type.id === placing) ?? kinds[0];
   const scope = useMemo(() => ({ point: site.point, zoom: site.zoom, bounds: site.bounds }), [site]);
   const colors = {
-    aligned: tool.color, differs: CHARACTER.citizen.c700, others: '#6E6E6E',
-    entrance: tool.color, obstacle: CHARACTER.citizen.c700, other: '#111111',
+    aligned: tool.color, differs: PALETTE.orange.c700, others: '#6E6E6E',
+    entrance: tool.color, obstacle: PALETTE.orange.c700, other: '#111111',
   };
   const placed = site.elements ?? [];
   const shown = placed.map((element) => ({

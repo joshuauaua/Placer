@@ -1,11 +1,12 @@
 /* PLACER — design tokens, from the brand kit (design.md).
  *
- * The platform is black and white. The only colours are the three character
- * colours: blue for the city worker, orange for the citizen and purple for the
- * design practitioner. Each comes in five steps with fixed jobs:
+ * The platform is black and white. The only colours are the three theme colours:
+ * blue, orange and purple. They belong to nobody in particular — not a kind of
+ * user, not a role — and are there to give the app, and each project in it, some
+ * colour. Each comes in five steps with fixed jobs:
  *
  *   50  hover / selected backgrounds, comment highlight
- *   100 chips, avatars, pins, character buttons — only ink text on it, never white
+ *   100 chips, avatars, pins, tinted buttons — only ink text on it, never white
  *   300 map areas, chart fills, button hover — never text
  *   700 text, icons and outlines on white
  *   900 text on a 50 / 100 tint
@@ -23,19 +24,19 @@ export const NEUTRAL = {
   success: '#1E7B3A',
 };
 
-export const CHARACTER = {
-  cityWorker: { key: 'cityWorker', label: 'City worker', c50: '#EEF5FE', c100: '#C6DEF8', c300: '#8DBBEF', c700: '#1D5FA8', c900: '#123F73' },
-  citizen: { key: 'citizen', label: 'Citizen', c50: '#FFF3E8', c100: '#FFD9B8', c300: '#FDB27A', c700: '#9E4600', c900: '#6B2E00' },
-  practitioner: { key: 'practitioner', label: 'Design practitioner', c50: '#F4F0FE', c100: '#DDD2FA', c300: '#B39DF2', c700: '#5B3CB8', c900: '#3A2480' },
+export const PALETTE = {
+  blue: { key: 'blue', label: 'Blue', c50: '#EEF5FE', c100: '#C6DEF8', c300: '#8DBBEF', c700: '#1D5FA8', c900: '#123F73' },
+  orange: { key: 'orange', label: 'Orange', c50: '#FFF3E8', c100: '#FFD9B8', c300: '#FDB27A', c700: '#9E4600', c900: '#6B2E00' },
+  purple: { key: 'purple', label: 'Purple', c50: '#F4F0FE', c100: '#DDD2FA', c300: '#B39DF2', c700: '#5B3CB8', c900: '#3A2480' },
 };
 
-export const CHARACTER_LIST = Object.values(CHARACTER);
+export const PALETTE_LIST = Object.values(PALETTE);
 
 // The one shadow the kit allows: glass, the sidebar, dropdowns, modals, card hover.
 export const SHADOW = '0 8px 24px rgba(0,0,0,0.10)';
 
-// Category coding. The brand has no category colours — the three hues belong to the
-// characters — so a category is told apart by its icon and label, and drawn in ink.
+// Category coding. The brand has no category colours — there are only the three
+// theme colours — so a category is told apart by its icon and label, and drawn in ink.
 export const CAT = {
   green:   { key: 'green',   label: 'Green space',       color: NEUTRAL.ink, icon: 'tree' },
   seating: { key: 'seating', label: 'Public seating',    color: NEUTRAL.ink, icon: 'bench' },

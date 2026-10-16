@@ -1,7 +1,7 @@
 import { BudgetBallot } from '../../components/toolkit/BudgetBallot';
 import { BudgetBallotOnPage } from '../../components/toolkit/BudgetBallotOnPage';
 import { BudgetBallotSetup, BudgetStep, PostsStep } from '../../components/toolkit/BudgetBallotSetup';
-import { CHARACTER } from '../../theme';
+import { PALETTE } from '../../theme';
 import {
   ballotSetupProblems, budgetProblems, combineBallots, defaultBallotSetup, emptyBallot, postProblems,
 } from '../../lib/budgetBallot';
@@ -14,7 +14,7 @@ export default {
   name: 'Co-Budget',
   tagline: 'A fixed budget, more on the list than it buys. Choose.',
   blurb: 'Every post has a price per item, and the money runs out well before the list does. Spend the budget the way you would, and see what the room would fund together.',
-  ...tone(CHARACTER.citizen),
+  ...tone(PALETTE.orange),
   icon: 'coins',
   createdBy: 'PLACER',
   component: BudgetBallot,

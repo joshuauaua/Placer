@@ -14,7 +14,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn } from './UI';
-import { CHARACTER } from '../theme';
+import { PALETTE } from '../theme';
 import { CATEGORIES } from '../toolkit/tools';
 
 /** The steps, in order. `action` names the prop its button calls, and is left out when there is none. */
@@ -22,7 +22,7 @@ export const ONBOARDING_STEPS = [
   {
     id: 'welcome',
     icon: 'sparkle',
-    colour: CHARACTER.practitioner,
+    colour: PALETTE.purple,
     title: (name) => (name ? `Welcome to PLACER, ${name}` : 'Welcome to PLACER'),
     body: 'PLACER is an open toolkit for shaping public places together with the people '
       + 'who use them. Here is a quick look around, in five steps.',
@@ -30,7 +30,7 @@ export const ONBOARDING_STEPS = [
   {
     id: 'explore',
     icon: 'pin',
-    colour: CHARACTER.cityWorker,
+    colour: PALETTE.blue,
     title: () => 'Explore what is happening',
     body: 'The Explore map shows projects and organisations near you. Follow the ones you '
       + 'care about, and their news lands in Your Activity on the dashboard.',
@@ -39,7 +39,7 @@ export const ONBOARDING_STEPS = [
   {
     id: 'toolkit',
     icon: 'layers',
-    colour: CHARACTER.citizen,
+    colour: PALETTE.orange,
     title: () => 'Try the Toolkit',
     body: 'Tools to understand a place, imagine what it could be and plan what happens next: '
       + 'polls, word clouds, site mapping, co-budgets and more. Try one on your own, or run '
@@ -50,7 +50,7 @@ export const ONBOARDING_STEPS = [
   {
     id: 'project',
     icon: 'grid',
-    colour: CHARACTER.practitioner,
+    colour: PALETTE.purple,
     title: () => 'Start a project',
     body: 'A project gathers people around one place. Give it a location and dates, choose '
       + 'its tools, and share a public page where anyone can take part.',
@@ -59,7 +59,7 @@ export const ONBOARDING_STEPS = [
   {
     id: 'profile',
     icon: 'user',
-    colour: CHARACTER.cityWorker,
+    colour: PALETTE.blue,
     title: () => 'Make your profile yours',
     body: 'Add a photo, a short bio and your home area, so people know who is behind a '
       + 'project, and the map opens where you are.',

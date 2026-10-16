@@ -4,7 +4,7 @@
  * key, no account and no request quota, so a map is there whether or not anything is
  * configured. Its Positron style is already the pale ground the brand kit asks for;
  * `quieten` below takes the rest of the way there, switching off the points of
- * interest so the character-coloured pins and areas are the only colour on screen.
+ * interest so the theme-coloured pins and areas are the only colour on screen.
  *
  * MapLibre takes [lng, lat] where the rest of the app keeps { lat, lng } — toLngLat
  * and fromLngLat are the one place that is translated.

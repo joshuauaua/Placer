@@ -1,5 +1,5 @@
 import { StreetMixer } from '../../components/toolkit/StreetMixer';
-import { CHARACTER } from '../../theme';
+import { PALETTE } from '../../theme';
 import { tone } from '../toolParts';
 
 export default {
@@ -9,7 +9,7 @@ export default {
   name: 'Street Section Mixer',
   tagline: 'Twenty metres, and everything wants some.',
   blurb: 'A street is a fixed width. Cycle track, bus lane, trees, parking, footway — they are all bidding for the same metres, and the only way to give one more is to take it from another.',
-  ...tone(CHARACTER.cityWorker),
+  ...tone(PALETTE.blue),
   icon: 'section',
   createdBy: 'PLACER',
   component: StreetMixer,
