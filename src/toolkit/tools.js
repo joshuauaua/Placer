@@ -52,6 +52,14 @@
  * tool as `room.config`. A room opened without one — or before there was such a
  * thing — has a null `room.config`, and the tool behaves as it does outside a room.
  *
+ * `hidden` is optional, and is the switch for taking a tool off the platform without
+ * deleting it — one still being made, say, that is not ready by a deadline. Set it to
+ * true and the tool is left out of TOOLS and findTool, so it is gone everywhere they
+ * are read: the Toolkit's gallery and its page (a 404), what a project can add, and,
+ * for a project that already has it, its dashboard and its public page. Nothing is
+ * deleted: a project keeps its row in project_tools, and its rooms, and taking the
+ * line out again brings it all back.
+ *
  * `credit` is optional: a sentence acknowledging where the method comes from, shown
  * under who made it wherever the tool describes itself (ToolCover, ToolLayout,
  * ConfigureToolDialog).
@@ -106,13 +114,24 @@ export const CATEGORIES = [
  * ./tools, named for its id, so a branch adding one adds a file rather than editing a
  * list that every other new tool edits too.
  */
-export const TOOLS = Object.entries(import.meta.glob('./tools/*.js', { eager: true, import: 'default' }))
+export const REGISTERED_TOOLS = Object.entries(import.meta.glob('./tools/*.js', { eager: true, import: 'default' }))
   .map(([path, tool]) => {
     const file = path.slice('./tools/'.length, -'.js'.length);
     if (tool?.id !== file) throw new Error(`src/toolkit/tools/${file}.js: its id is ${tool?.id}, not ${file}`);
     return tool;
   })
   .sort((a, b) => a.added.localeCompare(b.added) || a.id.localeCompare(b.id));
+
+/** The tools that are not switched off with `hidden`, in the order they were given. */
+export function shownTools(tools) {
+  return tools.filter((tool) => !tool.hidden);
+}
+
+/**
+ * Every tool on the platform: the register less the hidden ones. Everything but the
+ * register's own tests reads this, never REGISTERED_TOOLS.
+ */
+export const TOOLS = shownTools(REGISTERED_TOOLS);
 
 const BY_ID = new Map(TOOLS.map((tool) => [tool.id, tool]));
 
@@ -207,7 +226,7 @@ export function findCategory(id) {
   return CATEGORIES.find((category) => category.id === id) ?? null;
 }
 
-/** The tool with this id, or null — an unknown id is a 404, not a crash. */
+/** The tool with this id, or null — an unknown or hidden id is a 404, not a crash. */
 export function findTool(id) {
   return BY_ID.get(id) ?? null;
 }

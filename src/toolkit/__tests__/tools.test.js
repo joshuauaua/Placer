@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { CATEGORIES, ORGANISATIONS, TOOLS, filterTools, findCategory, findTool } from '../tools';
+import {
+  CATEGORIES, ORGANISATIONS, REGISTERED_TOOLS, TOOLS, filterTools, findCategory, findTool, shownTools,
+} from '../tools';
 
 describe('the register', () => {
   it('credits the Public Life Data Protocol on the tools built on it, and only those', () => {
@@ -17,13 +19,13 @@ describe('the register', () => {
   });
 
   it('puts every tool in one of the categories', () => {
-    for (const tool of TOOLS) {
+    for (const tool of REGISTERED_TOOLS) {
       expect(findCategory(tool.category), tool.id).not.toBeNull();
     }
   });
 
   it('says which organisation created every tool', () => {
-    for (const tool of TOOLS) {
+    for (const tool of REGISTERED_TOOLS) {
       expect(typeof tool.createdBy, tool.id).toBe('string');
       expect(tool.createdBy.length, tool.id).toBeGreaterThan(0);
     }
@@ -36,7 +38,7 @@ describe('the register', () => {
   it('gives every room-capable tool both halves of the contract', () => {
     // A `room` with only one of these would fail at runtime, in a room, in front of
     // people — so it is checked here instead.
-    for (const tool of TOOLS.filter((entry) => entry.room)) {
+    for (const tool of REGISTERED_TOOLS.filter((entry) => entry.room)) {
       expect(typeof tool.room.empty).toBe('function');
       expect(typeof tool.room.combine).toBe('function');
     }
@@ -45,7 +47,7 @@ describe('the register', () => {
   it('gives every tool with a setup a room to use it in, and all three parts', () => {
     // A setup is fixed when a room opens, so on a tool with no room it would never
     // be asked for.
-    for (const tool of TOOLS.filter((entry) => entry.setup)) {
+    for (const tool of REGISTERED_TOOLS.filter((entry) => entry.setup)) {
       expect(tool.room, tool.id).toBeTruthy();
       expect(typeof tool.setup.defaults, tool.id).toBe('function');
       expect(typeof tool.setup.problems, tool.id).toBe('function');
@@ -56,10 +58,22 @@ describe('the register', () => {
   it('starts every setup from one the tool can check', () => {
     // Not necessarily one it accepts: a Poll has no question until the organiser
     // writes one.
-    for (const tool of TOOLS.filter((entry) => entry.setup)) {
+    for (const tool of REGISTERED_TOOLS.filter((entry) => entry.setup)) {
       const problems = tool.setup.problems(tool.setup.defaults());
       expect(Array.isArray(problems), tool.id).toBe(true);
       for (const problem of problems) expect(typeof problem, tool.id).toBe('string');
+    }
+  });
+
+  it('leaves a hidden tool out, and keeps the others in their order', () => {
+    const tools = [{ id: 'a' }, { id: 'b', hidden: true }, { id: 'c', hidden: false }];
+    expect(shownTools(tools).map((tool) => tool.id)).toEqual(['a', 'c']);
+  });
+
+  it('shows every tool in the register that is not hidden, and finds none that is', () => {
+    expect(TOOLS).toEqual(shownTools(REGISTERED_TOOLS));
+    for (const tool of REGISTERED_TOOLS.filter((entry) => entry.hidden)) {
+      expect(findTool(tool.id), tool.id).toBeNull();
     }
   });
 
