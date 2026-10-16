@@ -157,6 +157,12 @@ describe('App', () => {
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
   });
 
+  it('opens the Resources page with the case study form on a direct visit to its address', async () => {
+    renderAt('/resources/submit-case-study');
+    expect(await screen.findByRole('dialog', { name: 'Submit a case study' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Resources' })).toBeInTheDocument();
+  });
+
   describe('an address the app does not know', () => {
     afterEach(() => localStorage.clear());
 

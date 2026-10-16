@@ -22,6 +22,7 @@ import { useIdentity } from './components/useIdentity';
 import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
 import { readReimagineScene } from './services/projects';
 import { isNewProjectShortcut } from './lib/shortcuts';
+import { CASE_STUDY_FORM_PATH } from './lib/routes';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -114,9 +115,11 @@ const STATIC_PATHS = {
   // Linked from the landing page's Apply to User Labs card.
   userLabs: '/user-labs',
 };
-const STATIC_VIEWS = Object.fromEntries(
-  Object.entries(STATIC_PATHS).map(([view, path]) => [path, view]),
-);
+const STATIC_VIEWS = {
+  ...Object.fromEntries(Object.entries(STATIC_PATHS).map(([view, path]) => [path, view])),
+  // The Resources page with its case study form open over it (ResourcesPage reads it).
+  [CASE_STUDY_FORM_PATH]: 'resources',
+};
 
 /**
  * `/projects/new`, `/projects/<id>` (the public page) or `/projects/<id>/dashboard`,
@@ -158,9 +161,11 @@ function personIdFrom(path) {
 /**
  * `/resources/<slug>`, one article from Storyblok — read off the location for the
  * same reason a person's public profile is. The slug is the story's full slug, so it
- * may contain slashes when the story sits in a folder. Null for anything else.
+ * may contain slashes when the story sits in a folder. Null for anything else,
+ * including the case study form's address, which is the Resources page itself.
  */
 function resourceSlugFrom(path) {
+  if (path === CASE_STUDY_FORM_PATH) return null;
   const match = /^\/resources\/(.+)$/.exec(path);
   return match ? decodeURIComponent(match[1]) : null;
 }
@@ -671,7 +676,7 @@ function MainApp({ initialView = 'welcome' }) {
 
             {view === 'resources' && (
               <Suspense fallback={<LoadingFallback />}>
-                <ResourcesPage t={t} />
+                <ResourcesPage t={t} signedIn={Boolean(accountId)} />
               </Suspense>
             )}
 

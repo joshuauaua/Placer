@@ -1,11 +1,13 @@
-// PLACER — posts each new survey response, bug report and tool submission to a Slack channel.
+// PLACER — posts each new survey response, bug report, tool submission and case study
+// submission to a Slack channel.
 //
-// Called by insert triggers on public.survey_responses, public.bug_reports and
-// public.tool_submissions (see supabase/README.md sections 15 to 17), never by the
-// browser:
+// Called by insert triggers on public.survey_responses, public.bug_reports,
+// public.tool_submissions and public.case_study_submissions (see supabase/README.md
+// sections 15 to 17), never by the browser:
 //
 //   POST, header x-webhook-secret: <SURVEY_WEBHOOK_SECRET>,
-//         body: { type: 'INSERT', table: 'survey_responses' | 'bug_reports' | 'tool_submissions',
+//         body: { type: 'INSERT', table: 'survey_responses' | 'bug_reports' | 'tool_submissions'
+//                 | 'case_study_submissions',
 //                 record: {...} }
 //         ->  { ok: true }
 //
@@ -21,6 +23,7 @@
 //   SLACK_WEBHOOK_URL      the channel's Incoming Webhook URL
 //   SLACK_BUG_WEBHOOK_URL  optional; bug reports go here instead when set
 //   SLACK_TOOL_WEBHOOK_URL optional; tool submissions go here instead when set
+//   SLACK_CASE_STUDY_WEBHOOK_URL optional; case study submissions go here instead when set
 //   SURVEY_WEBHOOK_SECRET  any long random string; the triggers send the same
 
 const SOURCES: Record<string, string> = {
@@ -104,11 +107,26 @@ function toolMessage(record: Record<string, any>): string {
   ].join('\n');
 }
 
+function caseStudyMessage(record: Record<string, any>): string {
+  const attached = [record.has_logo && 'logo', record.has_image && 'picture'].filter(Boolean);
+  return [
+    `:bookmark_tabs: *New case study submission — ${esc(record.company)}*`,
+    `*Industry:* ${esc(record.industry)}`,
+    '*Results:*',
+    // Quoted so a multi-line answer stays visibly one block.
+    esc(record.results).split('\n').map((line) => `> ${line}`).join('\n'),
+    `*Contact:* ${esc(record.contact_name)} <${esc(record.contact_email)}>`,
+    `*Attached:* ${attached.length ? attached.join(', ') : '_nothing_'}`,
+    `*Submitted:* ${esc(record.created_at)}  ·  id \`${esc(record.id)}\``,
+  ].join('\n');
+}
+
 Deno.serve(async (req) => {
   const secret = Deno.env.get('SURVEY_WEBHOOK_SECRET');
   const slackUrl = Deno.env.get('SLACK_WEBHOOK_URL');
   const bugSlackUrl = Deno.env.get('SLACK_BUG_WEBHOOK_URL') || slackUrl;
   const toolSlackUrl = Deno.env.get('SLACK_TOOL_WEBHOOK_URL') || slackUrl;
+  const caseStudySlackUrl = Deno.env.get('SLACK_CASE_STUDY_WEBHOOK_URL') || slackUrl;
   if (!secret || !slackUrl) {
     return Response.json({ error: 'not configured' }, { status: 500 });
   }
@@ -127,6 +145,8 @@ Deno.serve(async (req) => {
     [url, text] = [bugSlackUrl!, bugMessage(payload.record)];
   } else if (payload.table === 'tool_submissions') {
     [url, text] = [toolSlackUrl!, toolMessage(payload.record)];
+  } else if (payload.table === 'case_study_submissions') {
+    [url, text] = [caseStudySlackUrl!, caseStudyMessage(payload.record)];
   } else {
     return Response.json({ ok: true, skipped: true });
   }

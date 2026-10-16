@@ -70,6 +70,10 @@ const FOLDERS: Record<string, Folder> = {
   // folder, since `organisations` is swept down to the cover.
   'organisation-avatars': { types: PHOTO_TYPES, maxBytes: 1 * MB, owner: 'organisation',
     current: { table: 'organisations', column: 'avatar_path' } },
+  // A logo or picture sent with a case study submission
+  // (supabase/case-study-submissions.sql). The submission row is never readable from
+  // the browser, so there is no `current` to keep; each counts against the account.
+  'case-studies': { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'account' },
 };
 const ACCOUNT_FOLDERS = Object.keys(FOLDERS).filter((name) => FOLDERS[name].owner === 'account');
 const PROJECT_FOLDERS = Object.keys(FOLDERS).filter((name) => FOLDERS[name].owner === 'project');

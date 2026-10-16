@@ -1,16 +1,21 @@
 /* PLACER — Resources Page */
 
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { Icon } from './Icon';
-import { Chip, PageLoader } from './UI';
+import { Btn, Chip, PageLoader } from './UI';
 import { isStoryblokConfigured, listResources } from '../services/storyblok';
+import { CASE_STUDY_FORM_PATH } from '../lib/routes';
+
+// Loaded when it is opened, so the Resources page does not carry the form and its upload code.
+const CaseStudyDialog = lazy(() => import('./CaseStudyDialog'));
 
 // The tile colours a card without a cover picture cycles through.
 const TILE_COLOURS = ['#C6DEF8', '#DDD2FA', '#FFD9B8'];
 
-export function ResourcesPage({ t }) {
-  const [, navigate] = useLocation();
+export function ResourcesPage({ t, signedIn = false }) {
+  const [location, navigate] = useLocation();
+  const formOpen = location === CASE_STUDY_FORM_PATH;
   const fromStoryblok = isStoryblokConfigured();
   const [posts, setPosts] = useState(fromStoryblok ? null : []);
   const [loadError, setLoadError] = useState(null);
@@ -28,24 +33,37 @@ export function ResourcesPage({ t }) {
   }, [fromStoryblok]);
 
   return (
-    <ResourceIndex
-      t={t}
-      title="Resources"
-      intro="Guides, case studies, and insights to help you reimagine your community spaces."
-      noun="resources"
-      posts={posts}
-      loadError={loadError}
-      onOpen={(post) => navigate(`/resources/${post.slug}`)}
-    />
+    <>
+      <ResourceIndex
+        t={t}
+        title="Resources"
+        intro="Guides, case studies, and insights to help you reimagine your community spaces."
+        noun="resources"
+        posts={posts}
+        loadError={loadError}
+        onOpen={(post) => navigate(`/resources/${post.slug}`)}
+        action={(
+          <Btn t={t} variant="primary" icon="plus" onClick={() => navigate(CASE_STUDY_FORM_PATH)}>
+            Submit a case study
+          </Btn>
+        )}
+      />
+      {formOpen && (
+        <Suspense fallback={null}>
+          <CaseStudyDialog t={t} signedIn={signedIn}
+            onClose={() => navigate('/resources')} />
+        </Suspense>
+      )}
+    </>
   );
 }
 
 /**
  * The page's layout without its data, shared with the Guides page: a heading, a row
  * of tag filters, and a grid of cards. `posts` is null while loading; a post opens
- * with `onOpen` only if it has a `slug`.
+ * with `onOpen` only if it has a `slug`. `action`, if given, sits beside the heading.
  */
-export function ResourceIndex({ t, title, intro, noun, posts, loadError, onOpen }) {
+export function ResourceIndex({ t, title, intro, noun, posts, loadError, onOpen, action }) {
   const [selectedTag, setSelectedTag] = useState(null);
   const allTags = ['All', ...new Set((posts ?? []).flatMap(post => post.tags))];
 
@@ -63,7 +81,9 @@ export function ResourceIndex({ t, title, intro, noun, posts, loadError, onOpen 
     }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         {/* Header */}
-        <div style={{ marginBottom: 48 }}>
+        <div style={{ marginBottom: 48, display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end',
+          justifyContent: 'space-between', gap: 24 }}>
+          <div>
           <h1 className="placer-disp" style={{
             fontSize: 48,
             fontWeight: 700,
@@ -81,6 +101,8 @@ export function ResourceIndex({ t, title, intro, noun, posts, loadError, onOpen 
           }}>
             {intro}
           </p>
+          </div>
+          {action}
         </div>
 
         {/* Filter Tags */}
