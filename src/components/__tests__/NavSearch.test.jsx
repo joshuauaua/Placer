@@ -10,14 +10,16 @@ vi.mock('../../services/search', () => ({
 }));
 
 const RESULTS = [
+  { kind: 'tool', id: 'desire-lines', name: 'Desire Lines', detail: 'Understand · PLACER', image: null, icon: 'path' },
   { kind: 'person', id: 'user-1', name: 'Mara Quinn', detail: 'Malmö', image: null },
   { kind: 'organisation', id: 'org-1', name: 'Malmö Stad', detail: 'Malmö', image: null },
   { kind: 'project', id: 'proj-1', name: 'Malmö Greenway', detail: 'Malmö Stad', image: null },
+  { kind: 'caseStudy', id: 'case-studies/folkets-park', name: 'Folkets Park', detail: 'A park, reimagined.', image: null },
 ];
 
 // jsdom applies no stylesheet, so the box and its phone magnifier are both in the
 // page here; index.css shows only one of them at a time.
-const box = () => screen.getByRole('button', { name: /Search people, organisations and projects/ });
+const box = () => screen.getByRole('button', { name: /Search tools, projects, people and case studies/ });
 
 const setup = () => {
   const onSelect = vi.fn();
@@ -49,6 +51,29 @@ describe('NavSearch', () => {
     expect(input).toHaveFocus();
   });
 
+  it('opens from anywhere with ⌘K or Ctrl+K, and hands focus back to the box', () => {
+    render(<NavSearch t={THEME} onSelect={vi.fn()} />);
+
+    fireEvent.keyDown(document.body, { key: 'k', metaKey: true });
+    const input = within(screen.getByRole('dialog', { name: 'Search' })).getByRole('combobox');
+    expect(input).toHaveFocus();
+
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(box()).toHaveFocus();
+
+    fireEvent.keyDown(document.body, { key: 'k', ctrlKey: true });
+    expect(screen.getByRole('dialog', { name: 'Search' })).toBeInTheDocument();
+  });
+
+  it('leaves ⌘K alone while another dialog is open', () => {
+    render(<><div role="dialog" aria-modal="true" /><NavSearch t={THEME} onSelect={vi.fn()} /></>);
+
+    fireEvent.keyDown(document.body, { key: 'k', metaKey: true });
+
+    expect(screen.queryByRole('dialog', { name: 'Search' })).not.toBeInTheDocument();
+  });
+
   it('opens the same modal from the phone magnifier', () => {
     render(<NavSearch t={THEME} onSelect={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
@@ -56,15 +81,16 @@ describe('NavSearch', () => {
     expect(screen.getByRole('dialog', { name: 'Search' })).toBeInTheDocument();
   });
 
-  it('suggests people, organisations and projects as you type, grouped by kind', async () => {
+  it('suggests tools, projects, people, organisations and case studies as you type, grouped by kind', async () => {
     const { modal, input } = setup();
 
     fireEvent.change(input, { target: { value: 'mal' } });
 
     expect(await within(modal).findByRole('option', { name: /Mara Quinn/ })).toBeInTheDocument();
-    expect(within(modal).getByRole('group', { name: 'People' })).toBeInTheDocument();
-    expect(within(modal).getByRole('group', { name: 'Organisations' })).toBeInTheDocument();
-    expect(within(modal).getByRole('group', { name: 'Projects' })).toBeInTheDocument();
+    expect(within(modal).getAllByRole('group').map((group) => group.getAttribute('aria-label')))
+      .toEqual(['Tools', 'Projects', 'People', 'Organisations', 'Case studies']);
+    expect(within(modal).getByRole('option', { name: /Desire Lines/ })).toBeInTheDocument();
+    expect(within(modal).getByRole('option', { name: /Folkets Park/ })).toBeInTheDocument();
     expect(search).toHaveBeenCalledWith('mal');
   });
 
@@ -96,23 +122,35 @@ describe('NavSearch', () => {
     fireEvent.change(input, { target: { value: 'mal' } });
     fireEvent.mouseDown(await screen.findByRole('option', { name: /^Malmö Stad/ }));
 
-    expect(onSelect).toHaveBeenCalledWith(RESULTS[1]);
+    expect(onSelect).toHaveBeenCalledWith(RESULTS[2]);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(box()).toHaveFocus();
   });
 
-  it('moves through the suggestions with the arrow keys and opens one with Enter', async () => {
+  it('moves down the suggestions as they are listed with the arrow keys, and opens one with Enter', async () => {
     const { input, onSelect } = setup();
 
     fireEvent.change(input, { target: { value: 'mal' } });
     await screen.findByRole('option', { name: /Mara Quinn/ });
-    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    // Listed Tools, Projects, People: Desire Lines (highlighted from the start), Malmö
+    // Greenway, then Mara Quinn, whatever order the search handed them back in.
+    expect(screen.getByRole('option', { name: /Desire Lines/ })).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     fireEvent.keyDown(input, { key: 'ArrowDown' });
 
-    expect(screen.getByRole('option', { name: /Malmö Greenway/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('option', { name: /Mara Quinn/ })).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(input, { key: 'Enter' });
-    expect(onSelect).toHaveBeenCalledWith(RESULTS[2]);
+    expect(onSelect).toHaveBeenCalledWith(RESULTS[1]);
+  });
+
+  it('opens the best match on Enter, without the arrow keys', async () => {
+    const { input, onSelect } = setup();
+
+    fireEvent.change(input, { target: { value: 'mal' } });
+    await screen.findByRole('option', { name: /Mara Quinn/ });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onSelect).toHaveBeenCalledWith(RESULTS[0]);
   });
 
   it('closes on Escape, handing focus back to the box, and starts empty next time', async () => {

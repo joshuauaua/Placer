@@ -7,15 +7,17 @@
  * nothing in `tools` is left out.
  *
  * Given `chosen`, each row is a toggle (aria-pressed) with a tick for the chosen;
- * without it, a row is a button that hands its tool to `onPick` once.
+ * without it, a row is a button that hands its tool to `onPick` once. The arrow keys
+ * move between the rows, across the categories (lib/arrowKeys.js).
  */
 import { Icon } from '../Icon';
 import { CATEGORIES } from '../../toolkit/tools';
+import { ARROW_ITEM, moveWithArrows } from '../../lib/arrowKeys';
 
 function ToolRow({ t, tool, colour, chosen, onClick }) {
   const toggle = chosen !== undefined;
   return (
-    <button type="button" aria-pressed={toggle ? chosen : undefined} onClick={onClick}
+    <button type="button" aria-pressed={toggle ? chosen : undefined} onClick={onClick} {...ARROW_ITEM}
       style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 12px',
         textAlign: 'left', cursor: 'pointer', borderRadius: 10, fontFamily: 'var(--placer-font)', color: t.ink,
         background: chosen ? colour.c50 : 'transparent',
@@ -49,7 +51,8 @@ export function ToolsByCategory({ t, tools, chosen, onPick, label = 'Toolkit too
     .filter((section) => section.tools.length > 0);
 
   return (
-    <div role="group" aria-label={label} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div role="group" aria-label={label} onKeyDown={moveWithArrows}
+      style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       {sections.map(({ category, tools: inCategory }) => {
         const headingId = `${idPrefix}-${category.id}`;
         return (

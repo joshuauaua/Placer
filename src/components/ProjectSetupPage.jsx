@@ -1,9 +1,10 @@
 /* PLACER — start or edit a project: what kind it is, what it is trying to do, where,
  * and which tools it will use.
  *
- * Starting one is six steps, one screen each: a cover saying what a project is, the
+ * Starting one is five steps, one screen each: a cover saying what a project is, the
  * kind of project (services/projects.js's PROJECT_TYPES, which work as templates for
- * what follows), the basics, the place, the tools, and an image. Editing one is the
+ * what follows), the basics with the place, the tools, and an image. They are the
+ * steps QuickstartPage walks through, so keep the two in step. Editing one is the
  * same fields on a single page, since whoever is editing already knows what a project
  * is.
  *
@@ -58,7 +59,7 @@ function Field({ t, label, htmlFor, hint, children }) {
 }
 
 /** The six steps of starting a project, in order. */
-const STEPS = ['What is a project', 'Project type', 'The basics', 'The place', 'Tools', 'An image'];
+const STEPS = ['What is a project', 'Project type', 'The basics', 'Tools', 'Visuals'];
 const LAST_STEP = STEPS.length - 1;
 
 // The tool whose scene has a base image to delete when it is dropped (toolkit/tools.js).
@@ -616,19 +617,29 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
     );
   }
 
-  // Step 1: the cover.
+  // Step 1: the cover, in the middle of the screen.
   if (step === 0) {
     return page(
+      <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
-        {heading('Start a project')}
+        {heading('Start a Project')}
         <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, marginBottom: 28 }}>
-          A project brings people together around a place: to imagine what it could be,
-          and to decide or push for what happens to it.
+          Bring people together around a place to understand it, collaborate on ideas, and shape
+          decisions that drive real change.
         </p>
         <ul style={{ margin: '0 0 36px', paddingLeft: 20, fontSize: 16, color: t.ink, lineHeight: 1.7 }}>
-          <li>A dashboard to run it from, and a public page anyone can open from a link.</li>
-          <li>Collaborators who can help you set it up and run it.</li>
-          <li>Imaginations posted to it, and Toolkit rooms to gather people&rsquo;s views.</li>
+          <li>
+            <strong>A Dedicated Hub:</strong> A central dashboard to manage your workflow, paired with a
+            public page to share via a direct link.
+          </li>
+          <li>
+            <strong>Team Collaboration:</strong> Invite co-hosts and contributors to help build, run, and
+            manage the project.
+          </li>
+          <li>
+            <strong>Interactive Toolkit:</strong> Gather feedback, map ideas, and launch interactive tools
+            like surveys, polls, and co-budgeting.
+          </li>
         </ul>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <Btn t={t} variant="primary" icon="plus" onClick={() => setStep(1)}>
@@ -638,6 +649,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
             <Btn t={t} type="button" variant="ghost" onClick={onCancel}>Cancel</Btn>
           )}
         </div>
+      </div>
       </div>
     );
   }
@@ -668,13 +680,13 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
           ))}
         </div>
         {heading(step === 1 ? 'What kind of project?' : step === 2 ? 'The basics'
-          : step === 3 ? 'Where is it?' : step === 4 ? 'Add tools' : 'Add an image')}
+          : step === 3 ? 'Add tools' : 'Add visuals')}
         {step === 1 && (
           <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6 }}>
             This shapes how the rest of the project is set up. You can change it later.
           </p>
         )}
-        {step === 4 && (
+        {step === 3 && (
           <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6 }}>
             Choose the tools this project will use. Each is a template: once the project is started,
             configure it from the project&rsquo;s dashboard and it goes live on its page.
@@ -683,10 +695,9 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
       </div>
 
       {step === 1 && <ProjectTypeChoice t={t} value={projectType} onChange={setProjectType} />}
-      {step === 2 && basics}
-      {step === 3 && place}
-      {step === 4 && toolsField}
-      {step === 5 && image}
+      {step === 2 && <>{basics}{place}</>}
+      {step === 3 && toolsField}
+      {step === 4 && image}
 
       {errorBox}
 

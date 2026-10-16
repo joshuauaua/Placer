@@ -35,6 +35,7 @@ import { CATEGORIES, SORTS, TOOLS, filterTools, findCategory, findTool, sortTool
 import { projectIdFrom, roomIdFrom } from '../toolkit/rooms';
 import { isSupabaseConfigured } from '../services/rooms';
 import { readProjectCrumb } from '../services/projects';
+import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
 
 /**
  * The way back from a tool opened for a project. For somebody who can edit it — the
@@ -82,6 +83,7 @@ function Tile({ t, tool, onOpen }) {
   return (
     <button
       onClick={onOpen}
+      {...ARROW_ITEM}
       className="placer-toolkit-tile"
       style={{ '--tile-shadow': colour?.c300 ?? tool.hover, color: t.ink }}>
       <span className={`placer-toolkit-tile-frame${tool.image ? ' placer-toolkit-tile-pictured' : ''}`}
@@ -130,6 +132,7 @@ function Row({ t, tool, onOpen }) {
   return (
     <button
       onClick={onOpen}
+      {...ARROW_ITEM}
       className="placer-toolkit-row"
       style={{ display: 'flex', alignItems: 'center', gap: 16, width: '100%', textAlign: 'left', cursor: 'pointer',
         flex: 1, minWidth: 0, padding: '16px 20px', border: 'none', background: 'transparent',
@@ -314,7 +317,8 @@ export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
             )}
 
             {matching.length > 0 && view === 'grid' && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+              <div onKeyDown={moveWithArrows}
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
                 {matching.map((entry) => (
                   <div key={entry.id} style={{ position: 'relative', display: 'flex', alignSelf: 'start' }}>
                     <Tile t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
@@ -327,7 +331,7 @@ export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
             )}
 
             {matching.length > 0 && view === 'list' && (
-              <div style={{ borderTop: `1px solid ${t.line}` }}>
+              <div onKeyDown={moveWithArrows} style={{ borderTop: `1px solid ${t.line}` }}>
                 {matching.map((entry) => (
                   <div key={entry.id} style={{ display: 'flex', alignItems: 'center',
                     borderBottom: `1px solid ${t.line}` }}>

@@ -93,8 +93,9 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganis
       <button
         onClick={onNewProject}
         aria-label="New project"
+        aria-keyshortcuts="N"
         aria-current={view === 'projectNew' ? 'page' : undefined}
-        title="New project"
+        title="New project (N)"
         className="placer-side-nav-link placer-side-nav-primary"
       >
         <Icon name="plus" size={20} stroke={2.2} />

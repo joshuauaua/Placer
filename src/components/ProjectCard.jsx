@@ -1,10 +1,12 @@
-/* PLACER — one project, as a card that opens it. Shared by the Projects page, the
- * organisation pages and Project Examples. `label`, when given, is a small tag above
+/* PLACER — one project, as a card that opens it. Shared by the Projects page and the
+ * organisation pages. `label`, when given, is a small tag above
  * the name — the Projects page's "Your project". */
+
+import { ARROW_ITEM } from '../lib/arrowKeys';
 
 export function ProjectCard({ t, project, onOpen, label = null }) {
   return (
-    <button onClick={() => onOpen(project.id)} style={{ textAlign: 'left', padding: 20,
+    <button onClick={() => onOpen(project.id)} {...ARROW_ITEM} style={{ textAlign: 'left', padding: 20,
       background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, boxShadow: t.shadow,
       cursor: 'pointer', fontFamily: 'var(--placer-font)', overflow: 'hidden' }}>
       {/* Edge to edge across the top, so the negative margins undo the card's padding. */}

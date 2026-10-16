@@ -21,6 +21,7 @@ import { clearPendingImagination, readPendingImagination, savePendingImagination
 import { useIdentity } from './components/useIdentity';
 import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
 import { readReimagineScene } from './services/projects';
+import { isNewProjectShortcut } from './lib/shortcuts';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -34,7 +35,6 @@ const ResourceArticlePage = lazy(() => import('./components/ResourceArticlePage'
 const GuidesPage = lazy(() => import('./components/GuidesPage'));
 const FaqPage = lazy(() => import('./components/FaqPage'));
 const QuickstartPage = lazy(() => import('./components/QuickstartPage'));
-const ProjectExamplesPage = lazy(() => import('./components/ProjectExamplesPage'));
 const ContactPage = lazy(() => import('./components/ContactPage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const DescribePage = lazy(() => import('./components/DescribePage'));
@@ -88,6 +88,8 @@ const ACCOUNT_VIEWS = {
   '/dashboard': 'dashboard',
   // The dashboard's old address, so a bookmark from when it was the profile still works.
   '/profile': 'dashboard',
+  // Where Project Examples was, before the dashboard's card went to Projects instead.
+  '/project-examples': 'projects',
   '/activity': 'activity',
   '/projects': 'projects',
   '/organisations': 'organisations',
@@ -108,7 +110,6 @@ const STATIC_PATHS = {
   guides: '/guides',
   faq: '/faq',
   quickstart: '/quickstart',
-  projectExamples: '/project-examples',
   terms: '/terms-and-privacy',
   // Linked from the landing page's Apply to User Labs card.
   userLabs: '/user-labs',
@@ -290,6 +291,21 @@ function MainApp({ initialView = 'welcome' }) {
   const scrollPageToTop = () => document.querySelector('.placer-scroll-view')?.scrollTo?.(0, 0);
   useEffect(() => { scrollPageToTop(); }, [view, location]);
 
+  // N starts a new project, for anyone with the side nav's New project button to press
+  // — never while something is being typed (lib/shortcuts.js).
+  const canStartProject = !identityLoading && Boolean(profile);
+  useEffect(() => {
+    if (!canStartProject) return undefined;
+    const onKeyDown = (e) => {
+      if (!isNewProjectShortcut(e) || view === 'projectNew') return;
+      e.preventDefault();
+      navigate('/projects/new');
+      scrollPageToTop();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [canStartProject, view, navigate]);
+
   // The side nav is fixed and runs from the nav bar down to the footer: as the footer
   // comes up into the window, tell the CSS how much of the window it has taken.
   useEffect(() => {
@@ -327,6 +343,9 @@ function MainApp({ initialView = 'welcome' }) {
   const showPublicPage = (kind, id) => {
     if (kind === 'person' || kind === 'user') showPublicProfile(id);
     else if (kind === 'organisation') showOrganisationPublic(id);
+    else if (kind === 'tool') navigate(`/toolkit/${encodeURIComponent(id)}`);
+    // A case study's id is its article's full slug, whose folders keep their slashes.
+    else if (kind === 'caseStudy') navigate(`/resources/${encodeURI(id)}`);
     else showProjectPublic(id);
   };
   const showProjectDashboard = (id) => navigate(`/projects/${id}/dashboard`);
@@ -671,13 +690,6 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'quickstart' && (
               <Suspense fallback={<LoadingFallback />}>
                 <QuickstartPage t={t} onNewProject={showNewProject} />
-              </Suspense>
-            )}
-
-            {view === 'projectExamples' && (
-              <Suspense fallback={<LoadingFallback />}>
-                <ProjectExamplesPage t={t} onOpenProject={showProjectPublic}
-                  onNewProject={profile ? showNewProject : undefined} />
               </Suspense>
             )}
 

@@ -7,14 +7,14 @@ describe('QuickstartPage', () => {
   it('walks through the five steps of starting a project, in order', () => {
     render(<QuickstartPage t={THEME} onNewProject={vi.fn()} />);
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Create your first Project' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Create Your First Project' })).toBeInTheDocument();
     const steps = within(screen.getAllByRole('list')[0]).getAllByRole('heading', { level: 3 });
     expect(steps.map((step) => step.textContent)).toEqual([
-      'Read what a project is',
-      'Choose what kind of project it is',
-      'Fill in the basics',
-      'Mark the place',
-      'Add an image',
+      'Understand What a Project Is',
+      'Choose Your Project Type',
+      'Fill In the Basics',
+      'Select Your Interactive Tools',
+      'Add Visuals & Customize the Page',
     ]);
   });
 

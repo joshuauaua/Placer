@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { Avatar, Btn, PageLoader } from './UI';
 import { ProjectCard } from './ProjectCard';
+import { moveWithArrows } from '../lib/arrowKeys';
 import { FollowButton } from './FollowButton';
 import {
   canClaimOrganisation, claimOrganisation, isSupabaseConfigured, readOrganisation,
@@ -220,7 +221,8 @@ export function PublicOrganisationPage({ t, organisationId, accountId = null, is
           {projects.length === 0 ? (
             <p style={{ fontSize: 16, color: t.inkFaint }}>No projects yet.</p>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
+            <div onKeyDown={moveWithArrows}
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
               {projects.map((project) => (
                 <ProjectCard key={project.id} t={t} project={project} onOpen={(id) => onOpenProject?.(id)} />
               ))}
