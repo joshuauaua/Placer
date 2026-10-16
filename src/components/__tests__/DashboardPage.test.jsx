@@ -105,7 +105,7 @@ describe('DashboardPage', () => {
     fireEvent.click(screen.getByRole('button',
       { name: /Project Examples\s*Explore what other projects exist on the platform/ }));
 
-    expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['quickstart', 'projectExamples']);
+    expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['quickstart', 'projects']);
   });
 
   it('lists the quick actions under their own label', () => {

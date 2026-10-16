@@ -317,7 +317,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
               onClick={() => onNavigate('quickstart')} />
             <BasicsCard t={t} hue={CHARACTER.cityWorker}
               label="Project Examples" title="Explore what other projects exist on the platform"
-              onClick={() => onNavigate('projectExamples')} />
+              onClick={() => onNavigate('projects')} />
           </div>
         </section>
 

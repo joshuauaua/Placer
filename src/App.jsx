@@ -34,7 +34,6 @@ const ResourceArticlePage = lazy(() => import('./components/ResourceArticlePage'
 const GuidesPage = lazy(() => import('./components/GuidesPage'));
 const FaqPage = lazy(() => import('./components/FaqPage'));
 const QuickstartPage = lazy(() => import('./components/QuickstartPage'));
-const ProjectExamplesPage = lazy(() => import('./components/ProjectExamplesPage'));
 const ContactPage = lazy(() => import('./components/ContactPage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const DescribePage = lazy(() => import('./components/DescribePage'));
@@ -88,6 +87,8 @@ const ACCOUNT_VIEWS = {
   '/dashboard': 'dashboard',
   // The dashboard's old address, so a bookmark from when it was the profile still works.
   '/profile': 'dashboard',
+  // Where Project Examples was, before the dashboard's card went to Projects instead.
+  '/project-examples': 'projects',
   '/activity': 'activity',
   '/projects': 'projects',
   '/organisations': 'organisations',
@@ -108,7 +109,6 @@ const STATIC_PATHS = {
   guides: '/guides',
   faq: '/faq',
   quickstart: '/quickstart',
-  projectExamples: '/project-examples',
   terms: '/terms-and-privacy',
   // Linked from the landing page's Apply to User Labs card.
   userLabs: '/user-labs',
@@ -671,13 +671,6 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'quickstart' && (
               <Suspense fallback={<LoadingFallback />}>
                 <QuickstartPage t={t} onNewProject={showNewProject} />
-              </Suspense>
-            )}
-
-            {view === 'projectExamples' && (
-              <Suspense fallback={<LoadingFallback />}>
-                <ProjectExamplesPage t={t} onOpenProject={showProjectPublic}
-                  onNewProject={profile ? showNewProject : undefined} />
               </Suspense>
             )}
 

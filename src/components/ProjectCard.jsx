@@ -1,5 +1,5 @@
-/* PLACER — one project, as a card that opens it. Shared by the Projects page, the
- * organisation pages and Project Examples. `label`, when given, is a small tag above
+/* PLACER — one project, as a card that opens it. Shared by the Projects page and the
+ * organisation pages. `label`, when given, is a small tag above
  * the name — the Projects page's "Your project". */
 
 export function ProjectCard({ t, project, onOpen, label = null }) {
