@@ -617,16 +617,18 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
     );
   }
 
-  // Step 1: the cover.
+  // Step 1: the cover, centred on the screen both ways.
   if (step === 0) {
     return page(
-      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+      <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center' }}>
         {heading('Start a Project')}
         <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, marginBottom: 28 }}>
           Bring people together around a place to understand it, collaborate on ideas, and shape
           decisions that drive real change.
         </p>
-        <ul style={{ margin: '0 0 36px', paddingLeft: 20, fontSize: 16, color: t.ink, lineHeight: 1.7 }}>
+        <ul style={{ margin: '0 0 36px', padding: 0, listStyle: 'none', fontSize: 16, color: t.ink,
+          lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <li>
             <strong>A Dedicated Hub:</strong> A central dashboard to manage your workflow, paired with a
             public page to share via a direct link.
@@ -640,7 +642,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
             like surveys, polls, and co-budgeting.
           </li>
         </ul>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
           <Btn t={t} variant="primary" icon="plus" onClick={() => setStep(1)}>
             Create a new project
           </Btn>
@@ -648,6 +650,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
             <Btn t={t} type="button" variant="ghost" onClick={onCancel}>Cancel</Btn>
           )}
         </div>
+      </div>
       </div>
     );
   }
