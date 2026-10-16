@@ -1,6 +1,6 @@
 /* PLACER — the search in the middle of the nav bar.
  *
- * Finds people, organisations and projects by name (services/search.js). In the bar
+ * Finds tools, projects, people, organisations and case studies (services/search.js). In the bar
  * it is only a button dressed as a search box; pressing it opens the search in a
  * modal, with the field across its top and the suggestions listed under it, grouped
  * by kind, a moment after the typing stops so that a word is one request rather than
@@ -28,10 +28,28 @@ import { MIN_QUERY_LENGTH, search } from '../services/search';
 const DEBOUNCE_MS = 200;
 
 const GROUPS = [
+  { kind: 'tool', label: 'Tools' },
+  { kind: 'project', label: 'Projects' },
   { kind: 'person', label: 'People' },
   { kind: 'organisation', label: 'Organisations' },
-  { kind: 'project', label: 'Projects' },
+  { kind: 'caseStudy', label: 'Case studies' },
 ];
+
+// What a result without a picture of its own shows instead. A tool brings its own icon.
+const ICONS = { organisation: 'building', project: 'grid', caseStudy: 'bookmark', tool: 'flask' };
+
+const LABEL = 'Search tools, projects, people and case studies';
+
+/**
+ * The results in the order the groups are listed, so that the arrow keys, which go by
+ * position here, move down the list as it is drawn.
+ */
+function inGroupOrder(results) {
+  const rank = (result) => GROUPS.findIndex(({ kind }) => kind === result.kind);
+  return results.map((result, index) => ({ result, index }))
+    .sort((a, b) => rank(a.result) - rank(b.result) || a.index - b.index)
+    .map(({ result }) => result);
+}
 
 function Thumbnail({ t, result }) {
   if (result.kind === 'person') return <Avatar name={result.name} photo={result.image} size={32} />;
@@ -39,7 +57,7 @@ function Thumbnail({ t, result }) {
     <span aria-hidden="true" style={{ width: 32, height: 32, borderRadius: 8, flex: '0 0 auto',
       background: result.image ? `center / cover no-repeat url("${result.image}")` : t.surfaceAlt,
       display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.inkDim }}>
-      {!result.image && <Icon name={result.kind === 'organisation' ? 'building' : 'grid'} size={16} stroke={2} />}
+      {!result.image && <Icon name={result.icon ?? ICONS[result.kind] ?? 'grid'} size={16} stroke={2} />}
     </span>
   );
 }
@@ -73,7 +91,7 @@ export function NavSearch({ t, onSelect }) {
       search(trimmed)
         .then((found) => {
           if (!current) return;
-          setResults(found);
+          setResults(inGroupOrder(found));
           setActive(-1);
           setStatus('ready');
         })
@@ -205,7 +223,7 @@ export function NavSearch({ t, onSelect }) {
       {/* Its display is left to index.css rather than set here: an inline display would
           beat the rule that hides the box on a phone. */}
       <button type="button" className="placer-nav-search-field" onClick={openModal}
-        aria-haspopup="dialog" aria-label="Search people, organisations and projects"
+        aria-haspopup="dialog" aria-label={LABEL}
         style={{ alignItems: 'center', gap: 8, height: 40, padding: '0 12px', borderRadius: 12,
           border: `1px solid ${t.lineStrong}`, background: t.surface, color: t.inkDim, cursor: 'text',
           fontFamily: 'var(--placer-font)', fontSize: 14.5, textAlign: 'left' }}>
@@ -230,13 +248,13 @@ export function NavSearch({ t, onSelect }) {
                 ref={inputRef}
                 type="search"
                 role="combobox"
-                aria-label="Search people, organisations and projects"
+                aria-label={LABEL}
                 aria-expanded={showList}
                 aria-controls={listId}
                 aria-autocomplete="list"
                 aria-activedescendant={showList && active >= 0 ? optionId(active) : undefined}
                 value={query}
-                placeholder="Search people, organisations and projects"
+                placeholder={LABEL}
                 autoComplete="off"
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}

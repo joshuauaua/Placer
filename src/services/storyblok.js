@@ -113,6 +113,20 @@ export async function listResources() {
   return stories.map(toResource);
 }
 
+/** The articles that match `query`, newest first, `limit` at most. */
+export async function searchResources(query, limit = 4) {
+  const api = getStoryblok();
+  if (!api) return [];
+  const { data } = await api.get('cdn/stories', {
+    content_type: CONTENT_TYPE,
+    version: storyblokVersion(),
+    search_term: query,
+    per_page: limit,
+    sort_by: 'first_published_at:desc',
+  });
+  return (data.stories ?? []).map(toResource);
+}
+
 /**
  * One article by its full slug (folders included, 'guides/street-trees'), or null
  * when there is none — or when the story there is not an article.

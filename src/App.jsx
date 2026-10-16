@@ -327,6 +327,9 @@ function MainApp({ initialView = 'welcome' }) {
   const showPublicPage = (kind, id) => {
     if (kind === 'person' || kind === 'user') showPublicProfile(id);
     else if (kind === 'organisation') showOrganisationPublic(id);
+    else if (kind === 'tool') navigate(`/toolkit/${encodeURIComponent(id)}`);
+    // A case study's id is its article's full slug, whose folders keep their slashes.
+    else if (kind === 'caseStudy') navigate(`/resources/${encodeURI(id)}`);
     else showProjectPublic(id);
   };
   const showProjectDashboard = (id) => navigate(`/projects/${id}/dashboard`);
