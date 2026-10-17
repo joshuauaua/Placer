@@ -51,6 +51,56 @@ function VoteMeters({ t, options, result }) {
   );
 }
 
+// The example the tally preview starts from, and how many votes it gathers before it
+// begins again.
+const PREVIEW_START = ['yes', 'yes', 'yes', 'no', 'no', 'undecided'].map((choice) => ({ choice }));
+const PREVIEW_MAX = 30;
+const PREVIEW_TICK_MS = 1200;
+
+/**
+ * A made-up poll filling up on its own, for the tool's introduction in
+ * ConfigureToolDialog: what the room's live tally will look like once people pick.
+ * Holds still for anybody who has asked for less motion.
+ */
+export function OpenVotePreview({ t }) {
+  const { text } = useText();
+  const [votes, setVotes] = useState(PREVIEW_START);
+  const shown = useOptionLabels(OPTIONS);
+
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const timer = setInterval(() => {
+      setVotes((current) => {
+        if (current.length >= PREVIEW_MAX) return PREVIEW_START;
+        // Leaning Yes, so a lead forms and is sometimes caught.
+        const roll = Math.random();
+        const choice = roll < 0.45 ? 'yes' : roll < 0.8 ? 'no' : 'undecided';
+        return [...current, { choice }];
+      });
+    }, PREVIEW_TICK_MS);
+    return () => clearInterval(timer);
+  }, []);
+
+  const result = tally(votes, OPTIONS);
+  return (
+    <div role="img" aria-label={text('openVote.preview.label')}
+      style={{ padding: '14px 16px 4px', borderRadius: 12, border: `1px solid ${t.line}`, background: t.surface }}>
+      <div aria-hidden="true">
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>{text('openVote.preview.question')}</span>
+          <div style={{ flex: 1 }} />
+          <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint, whiteSpace: 'nowrap' }}>
+            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 3, marginRight: 6,
+              background: '#B3261E', verticalAlign: 'middle' }} />
+            {text('openVote.preview.votes', { count: result.total })}
+          </span>
+        </div>
+        <VoteMeters t={t} options={shown} result={result} />
+      </div>
+    </div>
+  );
+}
+
 export function OpenVote({ t, tool, room }) {
   const { text } = useText();
   const [question, setQuestion] = useState('');

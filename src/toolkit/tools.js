@@ -64,6 +64,9 @@
  * under who made it wherever the tool describes itself (ToolCover, ToolLayout,
  * ConfigureToolDialog).
  *
+ * `Preview` is optional: a small component, { t }, shown in ConfigureToolDialog's
+ * introduction under the blurb — the tool at work, before anything is set up.
+ *
  * `launch` marks a tool that is a flow of App's own rather than a component on the
  * Toolkit's page: Get started on its cover hands over to that flow (ToolkitPage's
  * onLaunchTool), carrying the project it was opened for. Idea Visualizer is one —
