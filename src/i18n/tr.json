@@ -49,7 +49,10 @@
     "removeToChange": "Fikrini değiştirmek için bir kelimeyi kaldır.",
     "answers": "Yanıtlar",
     "answersEmpty": "Her yanıt, kaç kez verildiğiyle birlikte burada listelenir.",
-    "howItWorks": "Bir oda aç ve PIN'ini ya da QR kodunu paylaş; katılan herkes kendi birkaç kelimesini ekler — yukarıdaki bulut canlı olarak büyür ve bir kelime, başka biri onu her söylediğinde daha da büyür. Bir projeden açılan oda 90 güne kadar açık kalabilir, böylece QR kodu bir afişe konabilir. Odayı kapatmak ya da sürenin dolması, içindeki tüm kelimeleri siler."
+    "howItWorks": "Bir oda aç ve PIN'ini ya da QR kodunu paylaş; katılan herkes kendi birkaç kelimesini ekler — yukarıdaki bulut canlı olarak büyür ve bir kelime, başka biri onu her söylediğinde daha da büyür. Bir projeden açılan oda 90 güne kadar açık kalabilir, böylece QR kodu bir afişe konabilir. Odayı kapatmak ya da sürenin dolması, içindeki tüm kelimeleri siler.",
+    "fullScreen": "Tam ekran",
+    "exitFullScreen": "Tam ekrandan çık",
+    "fullScreenLabel": "Tam ekran kelime bulutu"
   },
   "openVote": {
     "options": {
@@ -466,8 +469,8 @@
   "tools": {
     "word-cloud": {
       "name": "Kelime Bulutu",
-      "tagline": "Bir şey sor, yanıtların toplanışını izle.",
-      "blurb": "Odaya sormak istediğin her şeyi yaz ve herkesin kendi birkaç kelimesiyle yanıtlamasına izin ver. Her kelime eklendiği anda buluta katılır ve başka biri onu her söylediğinde büyür — böylece odanın üzerinde birleştiği şey, ilk okuduğun şey olur."
+      "tagline": "Bir şey sor, yanıtları canlı izle.",
+      "blurb": "Bir gruba bir soru sor ve herkesin kendi birkaç kelimesiyle yanıtlamasına izin ver. Her kelime eklendiği anda buluta katılır ve başka biri onu her söylediğinde büyür."
     },
     "open-vote": {
       "name": "Anket",
