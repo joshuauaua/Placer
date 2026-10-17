@@ -17,14 +17,7 @@ import { MapLegend } from './MapLegend';
 import { PALETTE, THEME } from '../theme';
 import { readImaginations } from '../services/imaginations';
 import { isSupabaseConfigured, readProjectLocations } from '../services/projects';
-import {
-  DEFAULT_SIZE,
-  fetchAsDataUrl,
-  fovFromPanoramaZoom,
-  streetViewBackgroundTiles,
-  streetViewStaticUrl,
-} from '../lib/staticMaps';
-import { tilingGain } from '../lib/panoGeometry';
+import { captureStreetView as captureStreetViewImage, readPanoramaView as readView } from '../lib/streetViewCapture';
 import { loadGoogleMaps } from '../lib/googleMaps';
 import { addPin, addPlainMarker, createMap, onBackgroundClick, showAreas, toLngLat } from '../lib/map';
 import { PageHeader } from './PageHeader';
@@ -38,17 +31,6 @@ const PIN = { fill: PALETTE.orange.c100, ring: PALETTE.orange.c700 };
 // Projects are set up by the city, so blue — the same LocationMapPicker and
 // ProjectLocationMap draw it in while it is being set up and shown off.
 const PROJECT_AREA = { fill: PALETTE.blue.c300, stroke: PALETTE.blue.c700 };
-
-// Below this resolution gain, tiling is not worth its extra requests: the gain
-// comes from spending a whole 640px tile on a slice of the view, so it shrinks as
-// the panorama zooms in and the wide shot is already spending its own 640px on a
-// narrow arc. At two columns this bows out somewhere around fov 30.
-const MIN_TILING_GAIN = 1.25;
-
-// Ceiling on the stitched output, independent of the gain. Composing runs one
-// inverse projection per output pixel, and past the 1000x700 stage the extra
-// pixels cost time for detail nothing displays.
-const MAX_TILING_SCALE = 2;
 
 const hasCoords = (position) =>
   Number.isFinite(position?.lat) && Number.isFinite(position?.lng);
@@ -344,87 +326,13 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
 
   // Snapshot the live panorama, or null when the user is looking at the map
   // rather than a Street View panorama.
-  const readPanoramaView = () => {
-    const panorama = panoramaRef.current;
-    if (!panorama?.getVisible?.()) {
-      return null;
-    }
+  const readPanoramaView = () => readView(panoramaRef.current, currentPosition);
 
-    const position = panorama.getPosition?.();
-    const pov = panorama.getPov?.() || {};
-    const zoom = panorama.getZoom?.();
-
-    return {
-      // getPosition() is null until the panorama settles on a photo; the map's
-      // last known position is the best stand-in until it does.
-      position: position
-        ? { lat: position.lat(), lng: position.lng() }
-        : currentPosition,
-      heading: Number(pov.heading),
-      pitch: Number(pov.pitch) || 0,
-      zoom,
-      fov: fovFromPanoramaZoom(zoom),
-    };
-  };
-
-  // Fetch the view as a grid of narrow tiles and stitch them into one frame
-  // sharper than the 640px cap allows on its own. Returns null when tiling is not
-  // worth its extra requests, or when composing the tiles failed, leaving the
-  // caller on the single wide request.
-  //
-  // Fetch failures are not caught here on purpose. A 404 means the spot has no
-  // coverage and the caller's map fallback is the answer; anything else — a
-  // rejected key, a network fault — would meet the single wide request in exactly
-  // the same way, so retrying it just spends another request to learn the same
-  // thing.
-  const captureTiledStreetView = async (view) => {
-    const wide = { width: DEFAULT_SIZE.width, height: DEFAULT_SIZE.height, fov: view.fov };
-    const sources = streetViewBackgroundTiles({
-      apiKey,
-      location: view.position,
-      heading: view.heading,
-      pitch: view.pitch,
-      fov: view.fov,
-      wideSize: DEFAULT_SIZE,
-    });
-    const tiles = sources.map(({ tile }) => tile);
-    const gain = tilingGain(tiles, wide);
-    if (gain < MIN_TILING_GAIN) return null;
-
-    const images = await Promise.all(sources.map(({ url }) => fetchAsDataUrl(url)));
-
-    try {
-      const { stitchPanoTiles } = await import('../lib/panoStitch');
-      return await stitchPanoTiles({
-        images,
-        tiles,
-        wide,
-        scale: Math.min(gain, MAX_TILING_SCALE),
-      });
-    } catch (error) {
-      // Composing is all that can still fail with the images already in hand, and
-      // a wide capture does not depend on it — so that one is worth a try.
-      console.warn('Could not stitch the tiled capture — falling back to one wide image', error);
-      return null;
-    }
-  };
-
-  // Ask Google's servers for the panorama image. Falls back to the map at that
-  // spot when it has no Street View coverage (signalled by a 404, which
-  // return_error_code=true in streetViewStaticUrl makes Google send instead of a
-  // gray placeholder image).
+  // Ask Google's servers for the panorama image (src/lib/streetViewCapture.js). Falls
+  // back to the map at that spot when it has no Street View coverage.
   const captureStreetView = async (view) => {
     try {
-      const stitched = await captureTiledStreetView(view);
-      if (stitched) return stitched;
-
-      return await fetchAsDataUrl(streetViewStaticUrl({
-        apiKey,
-        location: view.position,
-        heading: view.heading,
-        pitch: view.pitch,
-        fov: view.fov,
-      }));
+      return await captureStreetViewImage(apiKey, view);
     } catch (error) {
       if (error.status !== 404) {
         throw error;
