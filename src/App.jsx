@@ -357,12 +357,6 @@ function MainApp({ initialView = 'welcome' }) {
   const showProjectDashboard = (id) => navigate(`/projects/${id}/dashboard`);
   const showProjectPublic = (id) => navigate(`/projects/${id}`);
   const showPublicProfile = (id) => navigate(`/people/${encodeURIComponent(id)}`);
-  // Sent straight to the chosen tool with the project attached, rather than
-  // to the gallery, because the gallery has nowhere to carry ?project= through into
-  // picking one. Only a tool with a row in toolkit_room_tools (supabase/room-tools.sql)
-  // can actually host a room, so ?project= is inert on any other tool until it opts in too.
-  const showProjectToolkit = (id, toolId) =>
-    navigate(`/toolkit/${encodeURIComponent(toolId)}?project=${encodeURIComponent(id)}`);
   // A room the project already has, from its dashboard — the dashboard has already
   // told this browser it may run it, so it opens as the facilitator's view.
   const showProjectRoom = (toolId, roomId) =>
@@ -389,10 +383,10 @@ function MainApp({ initialView = 'welcome' }) {
   // Toolkit, or from a project's page with the project attached. Its Get started hands
   // back here to run the flow.
   //
-  // A project that has set the tool up (its location and base image, see
-  // ProjectSetupPage's SceneSetup) skips the map: everyone draws on the organiser's
-  // photo, pinned at the organiser's location. One that has not, or whose image cannot
-  // be loaded, gets the map as before, so taking part is never blocked.
+  // A project with the tool's room open (its address and the Street View photo the
+  // organiser took, see IdeaVisualizerSetup) skips the map: everyone draws on that
+  // photo, pinned at that address. One without, or whose photo cannot be loaded, gets
+  // the map as before, so taking part is never blocked.
   const handleLaunchTool = async (toolId, projectId) => {
     if (toolId !== REIMAGINE_TOOL) return;
     posthog.capture('imagination_started', { project: Boolean(projectId) });
@@ -873,8 +867,7 @@ function MainApp({ initialView = 'welcome' }) {
                   onBack={() => show('projects')}
                   onOpenProject={showProjectPublic}
                   onOpenOrganisation={showOrganisationPublic}
-                  onOpenProfile={showPublicProfile}
-                  onOpenToolkit={showProjectToolkit} />
+                  onOpenProfile={showPublicProfile} />
               </Suspense>
             )}
           </div>

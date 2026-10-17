@@ -46,7 +46,9 @@
  *
  * and optionally `steps`, for a setup asked for in stages rather than on one screen:
  * each a { title, Form, problems } over the same setup, with `problems` covering only
- * its own part (setupSteps, and SetupSteps which walks through them).
+ * its own part (setupSteps, and SetupSteps which walks through them). A tool with
+ * steps, even one, has when its room starts and how long it stays open as a stage of
+ * its own after them.
  *
  * The setup is fixed when the room opens (supabase/rooms-config.sql) and reaches the
  * tool as `room.config`. A room opened without one — or before there was such a
@@ -63,6 +65,10 @@
  * `credit` is optional: a sentence acknowledging where the method comes from, shown
  * under who made it wherever the tool describes itself (ToolCover, ToolLayout,
  * ConfigureToolDialog).
+ *
+ * `setupNote` is optional: what ConfigureToolDialog's introduction says configuring
+ * the tool involves, in place of the sentence for its kind of setup — or null to say
+ * nothing past the tool's own blurb.
  *
  * `launch` marks a tool that is a flow of App's own rather than a component on the
  * Toolkit's page: Get started on its cover hands over to that flow (ToolkitPage's
@@ -197,7 +203,6 @@ export function sortTools(tools, sort = 'recent', direction = 'desc') {
  * out, and a project adds the ones it wants and fills them in for itself from its own
  * page (ConfigureToolDialog). How a tool is filled in for a project:
  *
- *   'scene'  — Idea Visualizer: the place, and the photo of it people add to
  *   'site'   — Site-Specific Spatial Mapping: the site's name, and the view of it on
  *              the map that everybody maps it in
  *   'room'   — a tool that runs in a room: its `setup`, if it has one, and how long the
@@ -205,7 +210,6 @@ export function sortTools(tools, sort = 'recent', direction = 'desc') {
  *   'none'   — nothing to fill in; configuring it only puts it live
  */
 export function projectSetupKind(tool) {
-  if (tool.id === 'reimagine-a-space') return 'scene';
   if (tool.id === 'site-spatial-mapping') return 'site';
   if (tool.room) return 'room';
   return 'none';
