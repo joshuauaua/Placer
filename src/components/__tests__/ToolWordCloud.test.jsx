@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { act, render, screen, fireEvent, within } from '@testing-library/react';
 import { WordCloud } from '../toolkit/WordCloud';
+import { WordCloudOnPage } from '../toolkit/WordCloudOnPage';
 import { findTool } from '../../toolkit/tools';
 import { THEME } from '../../theme';
 
@@ -83,6 +84,34 @@ describe('Word Cloud', () => {
     expect(card.getByText('What is missing here?')).toBeInTheDocument();
   });
 
+  it('shows the cloud over the whole screen, still filling in, until it is closed', () => {
+    mount(WordCloud, 'word-cloud');
+    fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'What is missing here?' } });
+    add('green');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Full screen' }));
+
+    const full = within(screen.getByRole('dialog', { name: 'Word cloud in full screen' }));
+    expect(full.getByText('What is missing here?')).toBeInTheDocument();
+    expect(within(full.getByRole('list', { name: 'Word cloud' })).getByText('green')).toBeInTheDocument();
+
+    add('quiet');
+    expect(within(full.getByRole('list', { name: 'Word cloud' })).getByText('quiet')).toBeInTheDocument();
+
+    fireEvent.click(full.getByRole('button', { name: 'Exit full screen' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('closes the full screen cloud on Escape', () => {
+    mount(WordCloud, 'word-cloud');
+    fireEvent.click(screen.getByRole('button', { name: 'Full screen' }));
+    expect(screen.getByRole('dialog', { name: 'Word cloud in full screen' })).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   describe('with a timer', () => {
     afterEach(() => vi.useRealTimers());
 
@@ -158,5 +187,27 @@ describe('Word Cloud', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Reset the timer' }));
       expect(screen.getByLabelText('Your word')).toBeEnabled();
     });
+  });
+});
+
+describe('Word Cloud on a project page', () => {
+  it('offers the cloud in full screen once this browser has sent its words', async () => {
+    const service = {
+      saveContribution: vi.fn().mockResolvedValue(true),
+      readContributions: vi.fn().mockResolvedValue([{ state: { words: ['green'] } }, { state: { words: ['shade'] } }]),
+      subscribeToRoom: vi.fn(() => () => {}),
+    };
+    render(<WordCloudOnPage t={THEME} service={service}
+      room={{ id: 'room-full-screen', expiresAt: null, config: { prompt: 'One word for the square?' } }} />);
+    expect(screen.queryByRole('button', { name: 'Full screen' })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Your word'), { target: { value: 'green' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send my word' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Full screen' }));
+
+    const full = within(screen.getByRole('dialog', { name: 'Word cloud in full screen' }));
+    expect(full.getByText('One word for the square?')).toBeInTheDocument();
+    expect(within(full.getByRole('list', { name: 'Word cloud' })).getByText('shade')).toBeInTheDocument();
+    expect(full.getByText('2 people')).toBeInTheDocument();
   });
 });

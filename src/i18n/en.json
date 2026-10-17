@@ -49,7 +49,10 @@
     "removeToChange": "Remove a word to change your mind.",
     "answers": "Answers",
     "answersEmpty": "Each answer is listed here, with how many times it was given.",
-    "howItWorks": "Open a room and share its PIN or QR code, and everybody who joins adds a few words of their own — the cloud above grows live, and a word gets larger each time another person says it. Opened from a project, a room can stay open for up to 90 days, so its QR code can go on a poster. Closing the room, or its time running out, lets go of every word in it."
+    "howItWorks": "Open a room and share its PIN or QR code, and everybody who joins adds a few words of their own — the cloud above grows live, and a word gets larger each time another person says it. Opened from a project, a room can stay open for up to 90 days, so its QR code can go on a poster. Closing the room, or its time running out, lets go of every word in it.",
+    "fullScreen": "Full screen",
+    "exitFullScreen": "Exit full screen",
+    "fullScreenLabel": "Word cloud in full screen"
   },
   "openVote": {
     "options": {
@@ -466,8 +469,8 @@
   "tools": {
     "word-cloud": {
       "name": "Word Cloud",
-      "tagline": "Ask anything, and watch the answers gather.",
-      "blurb": "Type whatever you want to put to a room and let everybody answer in a few words of their own. Each word joins the cloud as it is added, and grows every time another person says it — so what the room agrees on is the first thing you read."
+      "tagline": "Ask anything, and watch the answers live.",
+      "blurb": "Ask a question to a group of people and let everybody answer in a few words of their own. Each word joins the cloud as it is added, and grows every time another person says it."
     },
     "open-vote": {
       "name": "Poll",
