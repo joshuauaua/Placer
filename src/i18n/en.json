@@ -72,7 +72,15 @@
     "emptyRoom": "Nobody has voted yet. Yours will show up here as soon as you pick one.",
     "result": "Result",
     "emptySolo": "Pick an answer to see it here.",
-    "howItWorks": "Open a room and share its PIN or QR code, and everybody who joins votes on whatever you asked — the tally above updates live as each person picks. Opened from a project, a room can stay open for up to 90 days, so its QR code can go on a poster. Closing the room, or its time running out, lets go of every vote in it."
+    "howItWorks": "Open a room and share its PIN or QR code, and everybody who joins votes on whatever you asked — the tally above updates live as each person picks. Opened from a project, a room can stay open for up to 90 days, so its QR code can go on a poster. Closing the room, or its time running out, lets go of every vote in it.",
+    "preview": {
+      "label": "An example poll, its tally changing as votes come in",
+      "question": "Should the square get more benches?",
+      "votes": {
+        "one": "{count} vote",
+        "other": "{count} votes"
+      }
+    }
   },
   "budgetBallot": {
     "units": {
@@ -471,8 +479,8 @@
     },
     "open-vote": {
       "name": "Poll",
-      "tagline": "Ask anything, with the answers you choose.",
-      "blurb": "Type whatever you want to put to a room, write the answers people can pick from, then let them vote. There is no scale to calibrate — just a question, your answers, and a live tally as people pick."
+      "tagline": "Ask anything, get answers.",
+      "blurb": "Ask a question to a group of people and let them vote. Just a question, answers, and a live tally as people pick."
     },
     "budget-ballot": {
       "name": "Co-Budget",

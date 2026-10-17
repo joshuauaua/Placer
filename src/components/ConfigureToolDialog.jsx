@@ -454,6 +454,11 @@ function Intro({ t, tool, kind, onStart, onCancel }) {
         </p>
       )}
       <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '0 0 12px' }}>{tool.blurb}</p>
+      {tool.Preview && (
+        <div style={{ margin: '4px 0 16px' }}>
+          <tool.Preview t={t} />
+        </div>
+      )}
       {(tool.duration || tool.createdBy) && (
         <p className="placer-caption" style={{ color: t.inkFaint, margin: '0 0 16px' }}>
           {[tool.duration, tool.createdBy && `By ${tool.createdBy}`].filter(Boolean).join(' · ')}
