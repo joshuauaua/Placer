@@ -3,7 +3,7 @@ import { act, render, screen, fireEvent, waitFor, within } from '@testing-librar
 import { PublicProjectPage } from '../PublicProjectPage';
 import { readImaginationsByProject } from '../../services/imaginations';
 import {
-  readConfiguredProjectTools, readLinks, readProject, readProjectAccess, readProjectSite, readProjectTools, readPublicToolkitActivity, readRelatedProjects,
+  readConfiguredProjectTools, readLinks, readProject, readProjectAccess, readProjectTools, readPublicToolkitActivity, readRelatedProjects,
   requestProjectAccess,
 } from '../../services/projects';
 import { follow, isFollowing, unfollow } from '../../services/follows';
@@ -29,7 +29,6 @@ vi.mock('../../services/projects', () => ({
   // Every tool configured unless a test says otherwise, so a tool added is a tool shown.
   readConfiguredProjectTools: vi.fn(async () => new Set((await import('../../toolkit/tools')).TOOLS.map((tool) => tool.id))),
   readProjectToolConfig: vi.fn(() => Promise.resolve(null)),
-  readProjectSite: vi.fn(() => Promise.resolve(null)),
   saveProjectToolConfig: vi.fn(() => Promise.resolve()),
   uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),
   readProjectAccess: vi.fn(() => Promise.resolve(null)),
@@ -501,20 +500,103 @@ describe('PublicProjectPage, taking part', () => {
     expect(section.queryAllByRole('button', { name: /^Widen /i })).toHaveLength(0);
   });
 
-  it('uses Site-Specific Spatial Mapping on the site the project set it up on', async () => {
-    vi.mocked(readProjectTools).mockResolvedValue(['site-spatial-mapping']);
-    vi.mocked(readProjectSite).mockResolvedValueOnce({
-      name: 'Folkets Park', address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 }, zoom: 17,
-      bounds: [13.0, 55.585, 13.02, 55.595],
+  describe('Site-Specific Spatial Mapping', () => {
+    const SITE_ROOM = {
+      id: 'room-site', tool: 'site-spatial-mapping', expiresAt: '2026-12-01T00:00:00Z',
+      config: {
+        name: 'Folkets Park', address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 }, zoom: 17,
+        bounds: [13.0, 55.585, 13.02, 55.595],
+      },
+    };
+    // Somebody who recorded before: yes to the first question, no to the rest.
+    const EARLIER = {
+      answers: { seating: true, views: false },
+      markers: [{ type: 'barrier', x: 0.5, y: 0.5 }],
+      mood: 2,
+      notes: { change: 'More shade.' },
+      profile: { ageRange: null, gender: null },
+      here: null,
+    };
+
+    const throughTheSurvey = async (section) => {
+      fireEvent.click(await section.findByRole('group', { name: /Tap where you are to drop your pin/ }));
+      fireEvent.click(section.getByRole('button', { name: 'Start the survey' }));
+      fireEvent.click(section.getByRole('button', { name: 'Continue to the survey' }));
+      for (let i = 0; i < 18; i += 1) fireEvent.click(section.getByRole('button', { name: 'Yes' }));
+    };
+
+    it('is used on the room\'s site, set into the page', async () => {
+      vi.mocked(readProjectTools).mockResolvedValue(['site-spatial-mapping']);
+      vi.mocked(readProjectOpenRooms).mockResolvedValue([SITE_ROOM]);
+      setup();
+      const section = within(await screen.findByRole('region', { name: 'Map the site with us' }));
+
+      expect(await section.findByText('Where are you? · Folkets Park')).toBeInTheDocument();
+      expect(section.queryByLabelText('Site name')).not.toBeInTheDocument();
     });
-    setup();
-    const section = within(await screen.findByRole('region', { name: 'Try Site-Specific Spatial Mapping Tool' }));
 
-    fireEvent.click(section.getByRole('button', { name: /Site-Specific Spatial Mapping Tool/ }));
+    it('records the answers, without contact details, in place of staying involved', async () => {
+      vi.mocked(readProjectTools).mockResolvedValue(['site-spatial-mapping']);
+      vi.mocked(readProjectOpenRooms).mockResolvedValue([SITE_ROOM]);
+      setup();
+      const section = within(await screen.findByRole('region', { name: 'Map the site with us' }));
+      await throughTheSurvey(section);
 
-    expect(await section.findByRole('button', { name: 'Start the survey' })).toBeInTheDocument();
-    expect(readProjectSite).toHaveBeenCalledWith('proj-1', 'site-spatial-mapping');
-    expect(section.queryByLabelText('Site name')).not.toBeInTheDocument();
+      expect(section.queryByText(/Want to stay involved/)).not.toBeInTheDocument();
+      expect(section.getAllByRole('button', { name: 'Finish & export data' }).length).toBeGreaterThan(0);
+      expect(section.queryByRole('button', { name: 'See other answers' })).not.toBeInTheDocument();
+
+      fireEvent.click(section.getByRole('button', { name: 'Record my answers' }));
+
+      await waitFor(() => expect(saveContribution).toHaveBeenCalled());
+      const { roomId, displayName, state } = vi.mocked(saveContribution).mock.calls[0][0];
+      expect(roomId).toBe('room-site');
+      expect(displayName).toBeNull();
+      expect(state.answers.seating).toBe(true);
+      expect(state.here).not.toBeNull();
+      expect(state).not.toHaveProperty('contact');
+      expect(await section.findByRole('button', { name: 'Answers recorded' })).toBeDisabled();
+    });
+
+    it('then shows everybody\'s tally, and all their answers on asking', async () => {
+      vi.mocked(readProjectTools).mockResolvedValue(['site-spatial-mapping']);
+      vi.mocked(readProjectOpenRooms).mockResolvedValue([SITE_ROOM]);
+      setup();
+      const section = within(await screen.findByRole('region', { name: 'Map the site with us' }));
+      await throughTheSurvey(section);
+      vi.mocked(readContributions).mockResolvedValue([{ state: EARLIER }, { state: { answers: { seating: true } } }]);
+      fireEvent.click(section.getByRole('button', { name: 'Record my answers' }));
+
+      // Recording is followed by the room telling the page about it.
+      const { subscribeToRoom } = await import('../../services/rooms');
+      await act(async () => { vi.mocked(subscribeToRoom).mock.calls.at(-1)[1](); });
+
+      const tally = within(await section.findByRole('heading', { name: "Everyone's answers so far" }).then((h) => h.closest('section')));
+      expect(tally.getByText('2 people')).toBeInTheDocument();
+      expect(tally.getByText('100% yes')).toBeInTheDocument();
+
+      fireEvent.click(section.getAllByRole('button', { name: 'See other answers' })[0]);
+
+      const all = within(section.getByRole('heading', { name: "Everyone's answers" }).closest('section'));
+      expect(all.getByText('1. A variety of seating and resting places')).toBeInTheDocument();
+      expect(all.getByText('2/2')).toBeInTheDocument();
+      expect(all.getByText('More shade.')).toBeInTheDocument();
+    });
+
+    it('carries on from what this browser recorded before', async () => {
+      vi.mocked(readProjectTools).mockResolvedValue(['site-spatial-mapping']);
+      vi.mocked(readProjectOpenRooms).mockResolvedValue([SITE_ROOM]);
+      const every = Object.fromEntries(['seating', 'views', 'slopes', 'gateways', 'exercise', 'playground', 'lawn',
+        'plaza', 'vendors', 'storefronts', 'tables', 'teamSports', 'restrooms', 'lighting', 'fences', 'offLimits',
+        'grade', 'exclusion'].map((key) => [key, true]));
+      rememberAnswer('room-site', { ...EARLIER, answers: every });
+      setup();
+      const section = within(await screen.findByRole('region', { name: 'Map the site with us' }));
+
+      expect(await section.findByText('Section 1 complete')).toBeInTheDocument();
+      expect(section.getByRole('button', { name: 'Answers recorded' })).toBeDisabled();
+      expect(section.getAllByRole('button', { name: 'See other answers' }).length).toBeGreaterThan(0);
+    });
   });
 
   it('still shows the project when it cannot tell which tools are configured', async () => {

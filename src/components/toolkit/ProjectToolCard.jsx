@@ -3,7 +3,7 @@
  * The card opens out in place, with the tool inside it, rather than sending somebody
  * off to the Toolkit — so taking part never leaves the project. A tool the project
  * opened a room for is played in that room, as it would be from the room's link
- * (useRoom), and a tool set up on a site is used on it (useProjectSite).
+ * (useRoom).
  *
  * The tool is only made once the card is opened: nothing is loaded for a tool nobody
  * has opened, and closing it puts it away.
@@ -13,26 +13,21 @@ import { useId, useState } from 'react';
 import { Icon } from '../Icon';
 import { RoomBar } from './RoomBar';
 import { useRoom } from './useRoom';
-import { useProjectSite } from './useProjectSite';
 
 /** The tool itself, in its room if it has one. */
-function ProjectToolRun({ t, tool, room, projectId, displayName }) {
+function ProjectToolRun({ t, tool, room, displayName }) {
   const roomState = useRoom({ tool, roomId: room?.id ?? null, displayName });
-  const { site, loading } = useProjectSite(tool, projectId);
   const Tool = tool.component;
 
-  if (loading) {
-    return <p style={{ fontSize: 14, color: t.inkDim, margin: 0 }}>Loading the project&rsquo;s site…</p>;
-  }
   return (
     <>
       <RoomBar t={t} tool={tool} room={roomState} />
-      <Tool t={t} tool={tool} room={roomState} projectSite={site} />
+      <Tool t={t} tool={tool} room={roomState} />
     </>
   );
 }
 
-export function ProjectToolCard({ t, tool, room = null, projectId, displayName = null }) {
+export function ProjectToolCard({ t, tool, room = null, displayName = null }) {
   const panelId = useId();
   const [open, setOpen] = useState(false);
 
@@ -56,7 +51,7 @@ export function ProjectToolCard({ t, tool, room = null, projectId, displayName =
 
       {open && (
         <div id={panelId} style={{ padding: 20, borderTop: `1px solid ${t.line}` }}>
-          <ProjectToolRun t={t} tool={tool} room={room} projectId={projectId} displayName={displayName} />
+          <ProjectToolRun t={t} tool={tool} room={room} displayName={displayName} />
         </div>
       )}
     </div>

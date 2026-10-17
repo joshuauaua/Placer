@@ -743,7 +743,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
                 ) : room && tool.onProjectPage?.Embed ? (
                   <tool.onProjectPage.Embed t={t} tool={tool} room={room} />
                 ) : (
-                  <ProjectToolCard t={t} tool={tool} room={room} projectId={project.id} displayName={accountName} />
+                  <ProjectToolCard t={t} tool={tool} room={room} displayName={accountName} />
                 )}
               </section>
             ))}
