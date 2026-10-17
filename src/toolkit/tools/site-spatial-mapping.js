@@ -1,6 +1,11 @@
 import { SiteMapping } from '../../components/toolkit/SiteMapping';
+import { SiteMappingOnPage } from '../../components/toolkit/SiteMappingOnPage';
+import { SiteLocationStep, SiteMappingSetup, SiteNameStep } from '../../components/toolkit/SiteMappingSetup';
 import { PALETTE } from '../../theme';
-import { PUBLIC_LIFE_PROTOCOL_CREDIT, tone } from '../toolParts';
+import {
+  combineSiteAnswers, defaultSiteSetup, emptyRecorded, siteLocationProblems, siteNameProblems, siteSetupProblems,
+} from '../../lib/toolkit/siteMapping';
+import { PUBLIC_LIFE_PROTOCOL_CREDIT, roomText, tone } from '../toolParts';
 
 export default {
   id: 'site-spatial-mapping',
@@ -8,10 +13,28 @@ export default {
   category: 'understand',
   name: 'Site-Specific Spatial Mapping Tool',
   tagline: 'Pin a site on the map, answer eighteen cards, stay in touch.',
-  blurb: 'Pick a specific site on a Google Map with your location, tell us your age range and gender, work through the eighteen-question survey as a stack of cards, then optionally map markers, reflect in words, and leave contact details for follow-ups.',
+  blurb: 'Pick a specific site on a map. Work through the eighteen-question survey. Then reflect.',
   ...tone(PALETTE.blue),
   icon: 'pin',
   createdBy: 'PLACER',
   credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
   component: SiteMapping,
+  setup: {
+    defaults: defaultSiteSetup,
+    problems: siteSetupProblems,
+    Form: SiteMappingSetup,
+    steps: [
+      { title: 'Site name', Form: SiteNameStep, problems: siteNameProblems },
+      { title: 'Specific location', Form: SiteLocationStep, problems: siteLocationProblems },
+    ],
+  },
+  onProjectPage: {
+    heading: 'Map the site with us',
+    Embed: SiteMappingOnPage,
+  },
+  room: {
+    empty: emptyRecorded,
+    combine: combineSiteAnswers,
+    label: (config) => roomText(config?.name),
+  },
 };

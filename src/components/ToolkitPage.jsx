@@ -30,7 +30,6 @@ import { RoomBar } from './toolkit/RoomBar';
 import { ToolCover } from './toolkit/ToolCover';
 import { ContributeToolDialog } from './ContributeToolDialog';
 import { useRoom } from './toolkit/useRoom';
-import { useProjectSite } from './toolkit/useProjectSite';
 import { CATEGORIES, SORTS, TOOLS, filterTools, findCategory, findTool, sortTools } from '../toolkit/tools';
 import { projectIdFrom, roomIdFrom } from '../toolkit/rooms';
 import { isSupabaseConfigured } from '../services/rooms';
@@ -187,9 +186,6 @@ export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
     return () => { cancelled = true; };
   }, [projectId]);
 
-  // A tool set up on a site for the project is used on that site (useProjectSite).
-  const { site: projectSite, loading: siteLoading } = useProjectSite(tool, projectId);
-
   const room = useRoom({
     tool,
     roomId: roomIdFrom(search),
@@ -288,12 +284,8 @@ export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
             breadcrumb={breadcrumb}
             onBack={() => navigate('/toolkit')}>
             <RoomBar t={t} tool={tool} room={room} />
-            {siteLoading ? (
-              <p style={{ fontSize: 14, color: t.inkDim }}>Loading the project&rsquo;s site…</p>
-            ) : (
-              <Tool t={t} tool={tool} room={room} projectSite={projectSite}
-                onLaunch={tool.launch && onLaunchTool ? () => onLaunchTool(tool.id, projectId) : undefined} />
-            )}
+            <Tool t={t} tool={tool} room={room}
+              onLaunch={tool.launch && onLaunchTool ? () => onLaunchTool(tool.id, projectId) : undefined} />
           </ToolLayout>
         ) : (
           <>

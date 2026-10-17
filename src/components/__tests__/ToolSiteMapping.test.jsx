@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vite-plus/test';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { SiteMapping } from '../toolkit/SiteMapping';
 import { findTool } from '../../toolkit/tools';
@@ -18,6 +18,10 @@ import {
   isValidEmail,
   parseSiteSearch,
   placeMarker,
+  combineSiteAnswers,
+  recordedAnswers,
+  siteFromConfig,
+  siteSetupProblems,
 } from '../../lib/toolkit/siteMapping';
 
 function mount() {
@@ -213,7 +217,7 @@ describe('Site-Specific Spatial Mapping Tool, in a project', () => {
     bounds: [13.0, 55.585, 13.02, 55.595],
   };
   const mountInProject = () => render(
-    <SiteMapping t={THEME} tool={findTool('site-spatial-mapping')} projectSite={SITE} />,
+    <SiteMapping t={THEME} tool={findTool('site-spatial-mapping')} room={{ config: SITE }} />,
   );
 
   it('opens on the project\'s site, with no picker', () => {
@@ -283,3 +287,107 @@ describe('Site-Specific Spatial Mapping Tool, in a project', () => {
     expect(screen.queryByRole('button', { name: /change site/i })).not.toBeInTheDocument();
   });
 });
+
+describe('Site-Specific Spatial Mapping Tool, recorded to a project\'s room', () => {
+  it('asks the organiser for a name and a place before the room can open', () => {
+    expect(siteSetupProblems({ name: '', point: null })).toEqual([
+      'Give the site a name.', 'Search for the address, then frame the site on the map.',
+    ]);
+    expect(siteSetupProblems({ name: 'Lindenplatz', point: { lat: 52.5, lng: 13.4 } })).toEqual([]);
+    expect(siteFromConfig({ name: ' Lindenplatz ', point: { lat: 52.5, lng: 13.4 }, zoom: 17, bounds: [1, 2] }))
+      .toEqual({ name: 'Lindenplatz', lat: 52.5, lng: 13.4, scope: { point: { lat: 52.5, lng: 13.4 }, zoom: 17, bounds: null } });
+    expect(siteFromConfig({ name: 'Nowhere' })).toBeNull();
+  });
+
+  it('records the answers, markers and reflection, but never contact details or self-described gender', () => {
+    const state = {
+      ...emptyState(),
+      answers: answerQuestion(emptyAnswers(), 'seating', true),
+      markers: [{ id: 'm1', type: 'magnet', x: 0.2, y: 0.4 }, { id: 'm2', type: 'nonsense', x: 0.5, y: 0.5 }],
+      mood: 3,
+      notes: { moment: '  A kid on a scooter.  ', change: '   ' },
+      profile: { ageRange: '25-34', gender: 'self-describe', genderSelf: 'mine' },
+      contact: { name: 'Ada', email: 'ada@example.org', phone: '1', consent: true },
+      here: { x: 1.4, y: 0.5 },
+    };
+
+    const recorded = recordedAnswers(state);
+
+    expect(recorded).not.toHaveProperty('contact');
+    expect(recorded.profile).toEqual({ ageRange: '25-34', gender: null });
+    expect(recorded.answers.seating).toBe(true);
+    expect(recorded.answers.views).toBeNull();
+    expect(recorded.markers).toEqual([{ type: 'magnet', x: 0.2, y: 0.4 }]);
+    expect(recorded.notes).toEqual({ moment: 'A kid on a scooter.' });
+    expect(recorded.here).toEqual({ x: 1, y: 0.5 });
+    expect(JSON.stringify(recorded)).not.toContain('ada@example.org');
+  });
+
+  it('tallies everybody who recorded, and ignores what is not an answer', () => {
+    const tally = combineSiteAnswers([
+      { answers: { seating: true, views: false }, markers: [{ type: 'barrier', x: 0.1, y: 0.1 }], mood: 0, notes: { change: 'Shade' } },
+      { answers: { seating: false }, mood: 0 },
+      { answers: {} },
+      null,
+      'nonsense',
+    ]);
+
+    expect(tally.people).toBe(2);
+    expect(tally.yes.seating).toBe(1);
+    expect(tally.answered.seating).toBe(2);
+    expect(tally.answered.views).toBe(1);
+    expect(tally.moods[0]).toBe(2);
+    expect(tally.markerCounts.barrier).toBe(1);
+    expect(tally.notes.change).toEqual(['Shade']);
+  });
+
+  const SITE = { name: 'Folkets Park', address: '', point: { lat: 55.59, lng: 13.01 }, zoom: 17, bounds: null };
+
+  function throughTheSurvey() {
+    fireEvent.click(screen.getByRole('group', { name: /Tap where you are to drop your pin/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start the survey' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to the survey' }));
+    answerAll();
+  }
+
+  it('records from a room it is open in, in place of staying involved', () => {
+    const publish = vi.fn();
+    render(<SiteMapping t={THEME} tool={findTool('site-spatial-mapping')}
+      room={{ status: 'open', config: SITE, combined: combineSiteAnswers([]), publish }} />);
+    throughTheSurvey();
+
+    expect(screen.queryByText(/Want to stay involved/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Record my answers' }));
+
+    expect(publish).toHaveBeenCalledWith(expect.objectContaining({ answers: expect.objectContaining({ seating: true }) }));
+    expect(screen.getByRole('button', { name: 'Answers recorded' })).toBeDisabled();
+    expect(screen.getAllByRole('button', { name: 'See other answers' }).length).toBeGreaterThan(0);
+  });
+
+  it('keeps staying involved on the Toolkit\'s own page, where nothing is recorded', () => {
+    mount();
+    loadPresetSite();
+    answerAll();
+
+    expect(screen.getByText(/Want to stay involved/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Record my answers' })).not.toBeInTheDocument();
+  });
+
+  it('offers recording again once the answers change', () => {
+    const onRecord = vi.fn();
+    const { rerender } = render(<SiteMapping t={THEME} tool={findTool('site-spatial-mapping')} room={{ config: SITE }}
+      recording={{ sent: null, status: 'idle', others: null, onRecord }} />);
+    throughTheSurvey();
+    fireEvent.click(screen.getByRole('button', { name: 'Record my answers' }));
+    const sent = onRecord.mock.calls[0][0];
+    rerender(<SiteMapping t={THEME} tool={findTool('site-spatial-mapping')} room={{ config: SITE }}
+      recording={{ sent, status: 'idle', others: combineSiteAnswers([sent]), onRecord }} />);
+
+    expect(screen.getByRole('button', { name: 'Answers recorded' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Add qualitative reflection (optional)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Welcome' }));
+
+    expect(screen.getByRole('button', { name: 'Update my answers' })).toBeEnabled();
+  });
+});
+
