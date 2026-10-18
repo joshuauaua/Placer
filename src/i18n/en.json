@@ -49,7 +49,10 @@
     "removeToChange": "Remove a word to change your mind.",
     "answers": "Answers",
     "answersEmpty": "Each answer is listed here, with how many times it was given.",
-    "howItWorks": "Open a room and share its PIN or QR code, and everybody who joins adds a few words of their own — the cloud above grows live, and a word gets larger each time another person says it. Opened from a project, a room can stay open for up to 90 days, so its QR code can go on a poster. Closing the room, or its time running out, lets go of every word in it."
+    "howItWorks": "Open a room and share its PIN or QR code, and everybody who joins adds a few words of their own — the cloud above grows live, and a word gets larger each time another person says it. Opened from a project, a room can stay open for up to 90 days, so its QR code can go on a poster. Closing the room, or its time running out, lets go of every word in it.",
+    "fullScreen": "Full screen",
+    "exitFullScreen": "Exit full screen",
+    "fullScreenLabel": "Word cloud in full screen"
   },
   "openVote": {
     "options": {
@@ -72,7 +75,15 @@
     "emptyRoom": "Nobody has voted yet. Yours will show up here as soon as you pick one.",
     "result": "Result",
     "emptySolo": "Pick an answer to see it here.",
-    "howItWorks": "Open a room and share its PIN or QR code, and everybody who joins votes on whatever you asked — the tally above updates live as each person picks. Opened from a project, a room can stay open for up to 90 days, so its QR code can go on a poster. Closing the room, or its time running out, lets go of every vote in it."
+    "howItWorks": "Open a room and share its PIN or QR code, and everybody who joins votes on whatever you asked — the tally above updates live as each person picks. Opened from a project, a room can stay open for up to 90 days, so its QR code can go on a poster. Closing the room, or its time running out, lets go of every vote in it.",
+    "preview": {
+      "label": "An example poll, its tally changing as votes come in",
+      "question": "Should the square get more benches?",
+      "votes": {
+        "one": "{count} vote",
+        "other": "{count} votes"
+      }
+    }
   },
   "budgetBallot": {
     "units": {
@@ -466,13 +477,13 @@
   "tools": {
     "word-cloud": {
       "name": "Word Cloud",
-      "tagline": "Ask anything, and watch the answers gather.",
-      "blurb": "Type whatever you want to put to a room and let everybody answer in a few words of their own. Each word joins the cloud as it is added, and grows every time another person says it — so what the room agrees on is the first thing you read."
+      "tagline": "Ask anything, and watch the answers live.",
+      "blurb": "Ask a question to a group of people and let everybody answer in a few words of their own. Each word joins the cloud as it is added, and grows every time another person says it."
     },
     "open-vote": {
       "name": "Poll",
-      "tagline": "Ask anything, with the answers you choose.",
-      "blurb": "Type whatever you want to put to a room, write the answers people can pick from, then let them vote. There is no scale to calibrate — just a question, your answers, and a live tally as people pick."
+      "tagline": "Ask anything, get answers.",
+      "blurb": "Ask a question to a group of people and let them vote. Just a question, answers, and a live tally as people pick."
     },
     "budget-ballot": {
       "name": "Co-Budget",

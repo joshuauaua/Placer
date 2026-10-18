@@ -63,6 +63,7 @@ const ICON_ELEMENTS = {
       <path d="M20 12H9a5 5 0 000 10h1" />
     </>
   ),
+  expand: <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />,
   move: <path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3" />,
   rotate: (
     <>

@@ -66,9 +66,8 @@
  * under who made it wherever the tool describes itself (ToolCover, ToolLayout,
  * ConfigureToolDialog).
  *
- * `setupNote` is optional: what ConfigureToolDialog's introduction says configuring
- * the tool involves, in place of the sentence for its kind of setup — or null to say
- * nothing past the tool's own blurb.
+ * `Preview` is optional: a small component, { t }, shown in ConfigureToolDialog's
+ * introduction under the blurb — the tool at work, before anything is set up.
  *
  * `launch` marks a tool that is a flow of App's own rather than a component on the
  * Toolkit's page: Get started on its cover hands over to that flow (ToolkitPage's
