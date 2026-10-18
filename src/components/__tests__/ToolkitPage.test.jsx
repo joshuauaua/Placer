@@ -236,15 +236,14 @@ describe('the gallery', () => {
   });
 
   it('clears every filter at once', async () => {
-    // A category none of whose tools runs in a room, so the two filters together match nothing.
-    const soloCategory = CATEGORIES.find(({ id }) => !TOOLS.some((tool) => tool.category === id && tool.room));
     renderPageAt('/toolkit');
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
 
+    // A favourite that does not run in a room, so favourites with a group match nothing.
+    fireEvent.click(screen.getByRole('button', { name: 'Add Street Section Mixer to favourites' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Favourites' }));
     fireEvent.click(screen.getByRole('button', { name: /^Category:/ }));
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Works with a group' }));
-    fireEvent.click(screen.getByRole('button', { name: /^Category:/ }));
-    fireEvent.click(screen.getByRole('menuitemradio', { name: soloCategory.name }));
     expect(screen.getByText('No tools match those filters.')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
@@ -439,7 +438,7 @@ describe('Idea Visualizer', () => {
     renderWith('/toolkit/reimagine-a-space', '', vi.fn());
 
     expect(screen.getByRole('heading', { name: 'Idea Visualizer' })).toBeInTheDocument();
-    expect(screen.getByText('A tool to help anyone quickly create a visual render of an idea they have.')).toBeInTheDocument();
+    expect(screen.getByText('A tool to help anyone quickly create a visualization of an idea they have.')).toBeInTheDocument();
     expect(screen.getByText('Imagine')).toBeInTheDocument();
   });
 

@@ -22,12 +22,11 @@
  * presented in its own section under a heading said to the visitor rather than a
  * "Tools" list: a Poll is "We want your opinion" with the poll right there
  * (onProjectPage in toolkit/tools.js). Every other tool is taken part in right there
- * too, in a card that opens out with the tool inside (ProjectToolCard) — only the Idea
- * Visualizer, a full-screen flow of its own, leaves the page. Only live tools are shown: configured for the
+ * too, in a card that opens out with the tool inside (ProjectToolCard). Only live tools are shown: configured for the
  * project from its dashboard, or for one that runs in a room, with a room open for it
  * (isToolLive in toolkit/tools.js, supabase/project-open-rooms.sql). What people have
- * imagined is not a section of its own either: imagining is the Idea Visualizer, so the
- * imaginations show in that tool's section, and only once the project has added it.
+ * imagined is not a section of its own either: imagining is the Idea Visualizer, so what
+ * was posted to the map for the project shows in that tool's section, under the tool.
  *
  * The layout lives in index.css (.placer-project-*), since the tab bar's stickiness and
  * the single column on a phone need a media query.
@@ -152,26 +151,6 @@ function LinkRow({ t, link }) {
   );
 }
 
-/** One Toolkit tool, opened with this project attached. */
-function ToolCard({ t, tool, onOpen }) {
-  return (
-    <button onClick={onOpen} className="placer-card"
-      style={{ textAlign: 'left', cursor: 'pointer', display: 'flex', gap: 16, alignItems: 'flex-start',
-        padding: 16, fontFamily: 'var(--placer-font)', color: t.ink }}>
-      <span style={{ width: 40, height: 40, borderRadius: 12, flex: '0 0 auto', background: tool.tint,
-        boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name={tool.icon} size={20} stroke={2} />
-      </span>
-      <span style={{ minWidth: 0 }}>
-        <span style={{ display: 'block', fontSize: 16, lineHeight: '24px', fontWeight: 700 }}>{tool.name}</span>
-        <span style={{ display: 'block', fontSize: 14, lineHeight: '20px', color: t.inkDim, marginTop: 2 }}>
-          {tool.tagline}
-        </span>
-      </span>
-    </button>
-  );
-}
-
 function RelatedCard({ t, project, onOpen }) {
   return (
     <button onClick={onOpen} className="placer-card"
@@ -293,7 +272,7 @@ const NUMBER = new Intl.NumberFormat('en-GB');
  * cold with nothing but the id in the URL.
  */
 export function PublicProjectPage({ t, projectId, accountId, accountName = null, accountPhoto = null, onSignIn,
-  onBack, onOpenProject, onOpenOrganisation, onOpenProfile, onOpenToolkit }) {
+  onBack, onOpenProject, onOpenOrganisation, onOpenProfile }) {
   const [project, setProject] = useState(null);
   // The tools its organisers added, as registry entries. A tool no longer in the
   // registry is skipped rather than shown broken.
@@ -725,23 +704,23 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
                   {heading}
                 </h2>
 
-                {tool.id === REIMAGINE_TOOL ? (
+                {room && tool.onProjectPage?.Embed ? (
                   <>
-                    <ToolCard t={t} tool={tool} onOpen={() => onOpenToolkit?.(project.id, tool.id)} />
-                    <div style={{ marginTop: 24 }}>
-                      {imaginations.length === 0 ? (
-                        <p style={{ fontSize: 16, color: t.inkDim }}>Nothing imagined for this project yet.</p>
-                      ) : (
+                    <tool.onProjectPage.Embed t={t} tool={tool} room={room} />
+                    {/* Ideas posted to the map for the project, from the Toolkit's own flow. */}
+                    {tool.id === REIMAGINE_TOOL && imaginations.length > 0 && (
+                      <div style={{ marginTop: 24 }}>
+                        <h3 style={{ fontSize: 16, fontWeight: 700, color: t.ink, margin: '0 0 12px' }}>
+                          Posted to the map
+                        </h3>
                         <div className="placer-project-grid">
                           {imaginations.map((imagination) => (
                             <ImaginationCard key={imagination.id} t={t} imagination={imagination} />
                           ))}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </>
-                ) : room && tool.onProjectPage?.Embed ? (
-                  <tool.onProjectPage.Embed t={t} tool={tool} room={room} />
                 ) : (
                   <ProjectToolCard t={t} tool={tool} room={room} projectId={project.id} displayName={accountName} />
                 )}

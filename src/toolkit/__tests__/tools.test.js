@@ -125,7 +125,7 @@ describe('filterTools', () => {
     expect(ids({ category: 'understand', query: 'map' })).toEqual(
       expect.arrayContaining(['site-spatial-mapping', 'stationary-activity-mapping']),
     );
-    expect(ids({ category: 'imagine', groupOnly: true })).toEqual([]);
+    expect(ids({ category: 'imagine', groupOnly: true })).toEqual(['reimagine-a-space']);
   });
 
   it('lists each organisation once, alphabetically', () => {

@@ -4,8 +4,6 @@
  * project fills it in for itself here before it goes live on the project's public
  * page. What there is to fill in depends on the tool (projectSetupKind):
  *
- *   scene — Idea Visualizer: the place, and the photo of it people add their ideas
- *           to (project_tools.config, supabase/project-tool-config.sql)
  *   site  — Site-Specific Spatial Mapping: the site's name, then the place and the view
  *           of it on the map that everybody maps it in (SiteScope.jsx)
  *   room  — a tool that runs in a room: its own setup form, if it has one, and how long
@@ -20,15 +18,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Btn } from './UI';
 import { Icon } from './Icon';
-import { ImagePicker } from './ImagePicker';
-import { AddressInput } from './AddressInput';
 import { DatePicker } from './DatePicker';
 import {
-  markProjectToolConfigured, readProjectSite, readProjectToolConfig, removeProjectImageFile, saveProjectSite,
-  saveProjectToolConfig, uploadSceneImage,
+  markProjectToolConfigured, readProjectSite, saveProjectSite,
 } from '../services/projects';
 import { createRoom, rescheduleRoom } from '../services/rooms';
-import { checkPickedImage } from '../services/media';
 import { suggestCurrency } from '../lib/currency';
 import {
   ROOM_LIFETIMES, formatRoomDate, localDay, rememberHostedRoom, roomLifetime, scheduleRange,
@@ -63,105 +57,6 @@ function Field({ t, label, htmlFor, hint, children }) {
       {hint && <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 10, lineHeight: 1.5 }}>{hint}</div>}
       {children}
     </div>
-  );
-}
-
-/**
- * Idea Visualizer's scene: where the place is, and the photo of it that people place
- * benches, trees and the rest on. Both are required — without them there is nothing
- * for anyone to draw on. A new scene starts at the project's own address, which is
- * usually the place in question.
- */
-function SceneForm({ t, project, tool, busy, setBusy, onDone, onError, onCancel }) {
-  const [saved, setSaved] = useState(undefined); // undefined while loading
-  const [address, setAddress] = useState('');
-  const [point, setPoint] = useState(null);
-  const [pending, setPending] = useState(null); // { file, url } | null
-  const [cleared, setCleared] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    readProjectToolConfig(project.id, tool.id)
-      .then((scene) => {
-        if (cancelled) return;
-        setSaved(scene);
-        setAddress(scene?.address || project.address || '');
-        setPoint(scene ? scene.point : project.locationPoint ?? null);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        console.error('Could not load how Idea Visualizer is set up:', err);
-        setSaved(null);
-        setAddress(project.address ?? '');
-        setPoint(project.locationPoint ?? null);
-      });
-    return () => { cancelled = true; };
-  }, [project.id, project.address, project.locationPoint, tool.id]);
-
-  if (saved === undefined) {
-    return <p style={{ fontSize: 14, color: t.inkDim }}>Loading…</p>;
-  }
-
-  const image = pending?.url ?? (cleared ? null : saved?.image ?? null);
-  const complete = Boolean(image) && address.trim().length > 0 && Boolean(point);
-
-  const save = async (e) => {
-    e.preventDefault();
-    if (!complete || busy) return;
-    setBusy(true);
-    onError(null);
-    const previousPath = saved?.imagePath ?? null;
-    try {
-      const imagePath = pending ? await uploadSceneImage(project.id, pending.file) : previousPath;
-      await saveProjectToolConfig(project.id, tool.id, { address: address.trim(), point, imagePath });
-      if (previousPath && previousPath !== imagePath) {
-        removeProjectImageFile(previousPath).catch((err) => console.error('Could not remove the old base image:', err));
-      }
-      onDone();
-    } catch (err) {
-      console.error('Could not set up Idea Visualizer:', err);
-      onError(err?.message ?? 'Could not set up Idea Visualizer.');
-      setBusy(false);
-    }
-  };
-
-  return (
-    <form onSubmit={save}>
-      <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '0 0 20px' }}>
-        People imagining for this project place their ideas on a photo you choose, of a place you choose,
-        instead of finding a spot in Street View.
-      </p>
-
-      <Field t={t} label="Location *" htmlFor="scene-address"
-        hint={'Where the photo is of. Pick it from the suggestions, so the ideas are pinned there on the map.'}>
-        <AddressInput id="scene-address" value={address}
-          placeholder="e.g. Folkets Park, Malmö" style={inputStyle(t)}
-          onChange={(next) => { setAddress(next); setPoint(null); }}
-          onPick={(picked) => { setAddress(picked.address); setPoint(picked.point); }} />
-        {address.trim() && !point && (
-          <div style={{ fontSize: 13, color: t.inkFaint, marginTop: 8 }}>
-            Not pinned yet: pick the address from the suggestions.
-          </div>
-        )}
-      </Field>
-
-      <Field t={t} label="Base image *"
-        hint="The photo people add to. A wide, landscape photo of the place works best. It is resized, and saved without its location data.">
-        {image && (
-          <img src={image} alt="The base image" style={{ display: 'block', width: '100%', aspectRatio: '10 / 7',
-            objectFit: 'cover', borderRadius: 12, border: `1px solid ${t.line}`, marginBottom: 14 }} />
-        )}
-        <ImagePicker t={t} hasImage={!!image} uploadLabel="Add a base image" replaceLabel="Choose another"
-          onUpload={async (file) => {
-            checkPickedImage(file, 'A base image'); // Throws the same sentence the upload would.
-            setPending({ file, url: URL.createObjectURL(file) });
-            setCleared(false);
-          }}
-          onRemove={async () => { setPending(null); setCleared(true); }} disabled={busy} />
-      </Field>
-
-      <Actions t={t} busy={busy} disabled={!complete} label="Save and go live" onCancel={onCancel} />
-    </form>
   );
 }
 
@@ -309,7 +204,7 @@ function RoomForm({ t, project, tool, room = null, busy, setBusy, onDone, onErro
   const [lifetime, setLifetime] = useState(() => (room && roomLifetime(room)) || DEFAULT_PROJECT_LIFETIME);
   const [starts, setStarts] = useState(() => (room?.opensAt
     ? { mode: 'date', date: localDay(room.opensAt) } : { mode: 'now', date: '' }));
-  const staged = setupSteps(tool).length > 1;
+  const staged = Boolean(tool.setup?.steps?.length);
   // When it starts is asked for alongside how long it stays open: always for a room
   // being changed, since it was scheduled, and otherwise for a tool set up in stages.
   const scheduling = staged || Boolean(room);
@@ -354,7 +249,7 @@ function RoomForm({ t, project, tool, room = null, busy, setBusy, onDone, onErro
 
   const toolSteps = setupSteps(tool).map(({ title, Form, problems }) => ({
     title,
-    content: <Form t={t} tool={tool} setup={setup} onChange={setSetup} />,
+    content: <Form t={t} tool={tool} project={project} setup={setup} onChange={setSetup} />,
     problems: problems(setup),
   }));
   // A tool set up on one screen keeps how long it stays open on that screen too; one
@@ -425,11 +320,10 @@ function Actions({ t, busy, disabled = false, label, onCancel }) {
   );
 }
 
-const FORMS = { scene: SceneForm, site: SiteForm, room: RoomForm, none: NothingForm };
+const FORMS = { site: SiteForm, room: RoomForm, none: NothingForm };
 
 // What configuring each kind of tool involves, for the introduction.
 const WHAT_YOU_SET_UP = {
-  scene: 'You will pick the place, and add the photo of it that people put their ideas on.',
   site: 'You will name the site, find it on the map, and frame the view of it that everybody taking part maps it in.',
   room: 'You will set it up for this project and choose how long it stays open on the project\u2019s page.',
   none: 'There is nothing to fill in: going live adds it to the project\u2019s page, for people to try.',
@@ -437,6 +331,7 @@ const WHAT_YOU_SET_UP = {
 
 /** The tool introduced, as its Toolkit cover does, before anything is filled in. */
 function Intro({ t, tool, kind, onStart, onCancel }) {
+  const note = tool.setupNote !== undefined ? tool.setupNote : WHAT_YOU_SET_UP[kind];
   return (
     <div>
       <div style={{ height: 120, borderRadius: 12, background: tool.tint, marginBottom: 20,
@@ -467,10 +362,12 @@ function Intro({ t, tool, kind, onStart, onCancel }) {
       {tool.credit && (
         <p className="placer-caption" style={{ color: t.inkFaint, margin: '-8px 0 16px' }}>{tool.credit}</p>
       )}
-      <p style={{ fontSize: 14, color: t.ink, lineHeight: 1.6, margin: '0 0 20px', padding: '12px 14px',
-        borderRadius: 12, background: t.chrome }}>
-        {WHAT_YOU_SET_UP[kind]}
-      </p>
+      {note && (
+        <p style={{ fontSize: 14, color: t.ink, lineHeight: 1.6, margin: '0 0 20px', padding: '12px 14px',
+          borderRadius: 12, background: t.chrome }}>
+          {note}
+        </p>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
         <Btn t={t} variant="outline" size="sm" type="button" onClick={onCancel}>Cancel</Btn>
