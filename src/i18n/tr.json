@@ -72,7 +72,15 @@
     "emptyRoom": "Henüz kimse oy vermedi. Sen seçtiğin anda oyun burada görünecek.",
     "result": "Sonuç",
     "emptySolo": "Burada görmek için bir yanıt seç.",
-    "howItWorks": "Bir oda aç ve PIN'ini ya da QR kodunu paylaş; katılan herkes sorduğun soruya oy verir — yukarıdaki sayım, herkes seçtikçe canlı olarak güncellenir. Bir projeden açılan oda 90 güne kadar açık kalabilir, böylece QR kodu bir afişe konabilir. Odayı kapatmak ya da sürenin dolması, içindeki tüm oyları siler."
+    "howItWorks": "Bir oda aç ve PIN'ini ya da QR kodunu paylaş; katılan herkes sorduğun soruya oy verir — yukarıdaki sayım, herkes seçtikçe canlı olarak güncellenir. Bir projeden açılan oda 90 güne kadar açık kalabilir, böylece QR kodu bir afişe konabilir. Odayı kapatmak ya da sürenin dolması, içindeki tüm oyları siler.",
+    "preview": {
+      "label": "Oylar geldikçe sayımı değişen örnek bir anket",
+      "question": "Meydana daha fazla bank konulmalı mı?",
+      "votes": {
+        "one": "{count} oy",
+        "other": "{count} oy"
+      }
+    }
   },
   "budgetBallot": {
     "units": {
@@ -471,8 +479,8 @@
     },
     "open-vote": {
       "name": "Anket",
-      "tagline": "Bir şey sor, yanıtları sen seç.",
-      "blurb": "Odaya sormak istediğin her şeyi yaz, insanların seçebileceği yanıtları belirle ve oy vermelerine izin ver. Ayarlanacak bir ölçek yok — yalnızca bir soru, senin yanıtların ve insanlar seçtikçe canlı bir sayım."
+      "tagline": "Bir şey sor, yanıtları al.",
+      "blurb": "Bir gruba bir soru sor ve oy vermelerine izin ver. Yalnızca bir soru, yanıtlar ve insanlar seçtikçe canlı bir sayım."
     },
     "budget-ballot": {
       "name": "Ortak Bütçe",
