@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { THEME } from '../../theme';
@@ -48,6 +48,9 @@ describe('a room set up by its project', () => {
     // The file's first test pays for its first render too: a busy run can need longer
     // than findByRole's one second.
     const more = await screen.findByRole('button', { name: 'One more: Water fountain' }, { timeout: 3000 });
+    // The setup's arrival resets the ballot in an effect, which can still be pending when
+    // the button appears; a click before it runs is wiped by it.
+    await act(async () => {});
     for (let i = 0; i < 4; i += 1) fireEvent.click(more);
     // €4,500 each, so €20,000 buys four.
     expect(more).toBeDisabled();
