@@ -20,11 +20,15 @@
  * the timer is sent as `timer` on the facilitator's own contribution, which is how it
  * reaches everybody else (roomTimer in lib/wordCloud.js).
  *
- * Cloud, WordCounts and WordEntry are those parts on their own, which the project
- * page's version (WordCloudOnPage) uses too. The counting is in src/lib/wordCloud.js.
+ * The cloud can be shown over the whole screen (FullScreenCloud), to put up on a
+ * projector while people answer; it carries on filling in there.
+ *
+ * Cloud, WordCounts, WordEntry and FullScreenCloud are those parts on their own, which
+ * the project page's version (WordCloudOnPage) uses too. The counting is in src/lib/wordCloud.js.
  */
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Panel } from '../ToolLayout';
 import { useText } from '../../i18n';
 import { Btn } from '../UI';
@@ -186,6 +190,78 @@ export function Countdown({ t, left, paused = false }) {
   );
 }
 
+/**
+ * A Full screen button, and the cloud over the whole screen once it is pressed: the
+ * prompt above it, and how many have answered and the timer below. It draws whatever
+ * `result` is now, so it stays live. The browser's own full screen is asked for too;
+ * leaving that, or pressing Escape or the close button, goes back to the page.
+ */
+export function FullScreenCloud({ t, prompt, result, people = null, left = null, paused = false, emptyText = null }) {
+  const { text } = useText();
+  const [open, setOpen] = useState(false);
+  const overlayRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const overlay = overlayRef.current;
+    overlay?.focus();
+    // Refused by some browsers (an iPhone's, for one), which leaves the overlay alone
+    // filling the window — as good, short of the browser's bars.
+    Promise.resolve(overlay?.requestFullscreen?.()).catch(() => {});
+    const onFullscreen = () => { if (!document.fullscreenElement) setOpen(false); };
+    const onKey = (event) => { if (event.key === 'Escape') setOpen(false); };
+    document.addEventListener('fullscreenchange', onFullscreen);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFullscreen);
+      window.removeEventListener('keydown', onKey);
+      if (document.fullscreenElement) Promise.resolve(document.exitFullscreen?.()).catch(() => {});
+    };
+  }, [open]);
+
+  const empty = !result || result.total === 0;
+  return (
+    <>
+      <Btn t={t} variant="outline" size="sm" icon="expand" onClick={() => setOpen(true)}>
+        {text('wordCloud.fullScreen')}
+      </Btn>
+      {open && createPortal(
+        <div ref={overlayRef} role="dialog" aria-modal="true" aria-label={text('wordCloud.fullScreenLabel')}
+          tabIndex={-1}
+          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: t.surface, outline: 'none',
+            display: 'flex', flexDirection: 'column', gap: 16, padding: 'clamp(16px, 4vw, 48px)', overflow: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+            <p style={{ flex: 1, margin: 0, fontSize: 'clamp(22px, 3.2vw, 40px)', fontWeight: 700, color: t.ink,
+              lineHeight: 1.25, letterSpacing: '-0.02em', overflowWrap: 'anywhere' }}>
+              {prompt}
+            </p>
+            <Btn t={t} variant="outline" size="sm" icon="close" onClick={() => setOpen(false)}>
+              {text('wordCloud.exitFullScreen')}
+            </Btn>
+          </div>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+            {empty ? (
+              <p style={{ fontSize: 18, color: t.inkDim, textAlign: 'center' }}>{emptyText}</p>
+            ) : (
+              <Cloud result={result} minHeight={0} scale={2.2} />
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minHeight: 28 }}>
+            {people !== null && (
+              <span className="placer-mono" style={{ fontSize: 14, color: t.inkFaint }}>
+                {text('common.people', { count: people })}
+              </span>
+            )}
+            <div style={{ flex: 1 }} />
+            <Countdown t={t} left={left} paused={paused} />
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
+
 export function WordCloud({ t, room }) {
   const { text } = useText();
   const [prompt, setPrompt] = useState('');
@@ -280,6 +356,8 @@ export function WordCloud({ t, room }) {
             </span>
           )}
           <div style={{ flex: 1 }} />
+          <FullScreenCloud t={t} prompt={shownPrompt} result={result} people={inRoom ? roomResult?.people ?? 0 : null}
+            left={left} paused={paused} emptyText={text(inRoom ? 'wordCloud.emptyRoom' : 'wordCloud.emptySolo')} />
           <Countdown t={t} left={left} paused={paused} />
           {canStart && (
             <Btn t={t} variant="primary" size="sm" icon="clock" onClick={() => setTimer(startTimer(seconds))}>

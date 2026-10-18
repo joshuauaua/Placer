@@ -15,6 +15,7 @@ import { getSupabase, isSupabaseConfigured } from './supabase';
 import { mediaUrl, preparePhoto, removeMedia, uploadMedia } from './media';
 import { CURRENCY_CODES } from '../lib/currency';
 import { track } from '../analytics';
+import { readProjectOpenRooms } from './rooms';
 
 export const PROJECTS_TABLE = 'projects';
 export const COLLABORATORS_TABLE = 'project_collaborators';
@@ -413,6 +414,8 @@ export async function deleteProject(id) {
     .from(PROJECT_TOOLS_TABLE)
     .select('config')
     .eq('project_id', id);
+  // Idea Visualizer's Street View photo is kept in its room's setup (lib/ideaVisualizer.js).
+  const roomRows = (await supabase.rpc('project_rooms', { p_project_id: id }))?.data;
 
   const { error } = await supabase.from(PROJECTS_TABLE).delete().eq('id', id);
   if (error) throw new Error(`Could not remove that project: ${error.message}`);
@@ -421,6 +424,7 @@ export async function deleteProject(id) {
   // The media function lets anyone clear the files of a project that no longer exists.
   await removeProjectImageFile(existing?.image_path);
   for (const row of toolRows ?? []) await removeProjectImageFile(row.config?.imagePath);
+  for (const row of roomRows ?? []) await removeProjectImageFile(row.config?.imagePath);
   track('project_deleted', { project_id: id });
   return { success: true };
 }
@@ -663,25 +667,6 @@ export async function readProjectToolConfig(projectId, tool) {
 }
 
 /**
- * Set a chosen tool up for a project. The tool has to be saved to the project first
- * (saveProjectTools), since this changes its row. Owner or collaborator only.
- */
-export async function saveProjectToolConfig(projectId, tool, { address = '', point = null, imagePath = null }) {
-  const supabase = await client();
-  const config = { address, lat: point?.lat ?? null, lng: point?.lng ?? null, imagePath };
-  const { data, error } = await supabase
-    .from(PROJECT_TOOLS_TABLE)
-    .update({ config })
-    .eq('project_id', projectId)
-    .eq('tool', tool)
-    .select('tool');
-
-  if (error) throw new Error(`Could not save how that tool is set up: ${error.message}`);
-  if (!data?.length) throw new Error('Could not save how that tool is set up: it is not one of the project\'s tools.');
-  track('tool_configured', { project_id: projectId, tool, setup: 'scene', has_image: Boolean(imagePath) });
-}
-
-/**
  * Which of a project's tools have been configured for it: their ids, in a Set. A
  * tool's row holds a config once it has been (project_tools.config); see isToolLive in
  * toolkit/tools.js for what that means for each kind of tool. Readable by anybody
@@ -735,19 +720,22 @@ export async function uploadSceneImage(projectId, file) {
 }
 
 /**
- * Whether a project's Idea Visualizer is set up, and if so its scene, ready to
- * draw on: { address, position, screenshot }, with the image as a data: URL. Inlined
- * rather than linked because the canvas is exported as the imagination's preview, and
- * a picture from another origin would stop that (see src/lib/staticMaps.js) — the
- * bucket has to allow this GET (supabase/README.md, the R2 section). Null when it is
- * not set up, or there is no Supabase project to have set it up in.
+ * Whether a project has an Idea Visualizer room open, and if so its scene, ready to
+ * draw on: { address, position, screenshot }, with the Street View photo its organiser
+ * took (lib/ideaVisualizer.js) as a data: URL. Inlined rather than linked because the
+ * canvas is exported as the imagination's preview, and a picture from another origin
+ * would stop that (see src/lib/staticMaps.js) — the bucket has to allow this GET
+ * (supabase/README.md, the R2 section). Null when none is open, or there is no
+ * Supabase project to have opened one in.
  */
 export async function readReimagineScene(projectId) {
   if (!isSupabaseConfigured()) return null;
-  const config = await readProjectToolConfig(projectId, 'reimagine-a-space');
-  if (!config?.image) return null;
+  const rooms = await readProjectOpenRooms(projectId);
+  const config = rooms.find((room) => room.tool === 'reimagine-a-space')?.config;
+  const image = mediaUrl(config?.imagePath);
+  if (!image) return null;
 
-  const response = await fetch(config.image);
+  const response = await fetch(image);
   if (!response.ok) throw new Error(`Could not load the project's base image (${response.status}).`);
   const blob = await response.blob();
   const screenshot = await new Promise((resolve, reject) => {
@@ -756,7 +744,7 @@ export async function readReimagineScene(projectId) {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(blob);
   });
-  return { address: config.address, position: config.point, screenshot };
+  return { address: config.address ?? '', position: config.point ?? null, screenshot };
 }
 
 /**

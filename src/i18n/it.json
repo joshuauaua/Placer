@@ -52,7 +52,10 @@
     "removeToChange": "Rimuovi una parola se cambi idea.",
     "answers": "Risposte",
     "answersEmpty": "Qui compare ogni risposta, con quante volte è stata data.",
-    "howItWorks": "Apri una stanza e condividi il suo PIN o codice QR: chi si unisce aggiunge qualche parola sua — la nuvola qui sopra cresce in diretta, e una parola diventa più grande ogni volta che un'altra persona la dice. Aperta da un progetto, una stanza può restare aperta fino a 90 giorni, così il suo codice QR può finire su un manifesto. Chiudere la stanza, o lo scadere del suo tempo, cancella tutte le parole che contiene."
+    "howItWorks": "Apri una stanza e condividi il suo PIN o codice QR: chi si unisce aggiunge qualche parola sua — la nuvola qui sopra cresce in diretta, e una parola diventa più grande ogni volta che un'altra persona la dice. Aperta da un progetto, una stanza può restare aperta fino a 90 giorni, così il suo codice QR può finire su un manifesto. Chiudere la stanza, o lo scadere del suo tempo, cancella tutte le parole che contiene.",
+    "fullScreen": "Schermo intero",
+    "exitFullScreen": "Esci dallo schermo intero",
+    "fullScreenLabel": "Nuvola di parole a schermo intero"
   },
   "openVote": {
     "options": {
@@ -75,7 +78,15 @@
     "emptyRoom": "Nessuno ha ancora votato. Il tuo voto comparirà qui appena scegli.",
     "result": "Risultato",
     "emptySolo": "Scegli una risposta per vederla qui.",
-    "howItWorks": "Apri una stanza e condividi il suo PIN o codice QR: chi si unisce vota su ciò che hai chiesto — il conteggio qui sopra si aggiorna in diretta a ogni scelta. Aperta da un progetto, una stanza può restare aperta fino a 90 giorni, così il suo codice QR può finire su un manifesto. Chiudere la stanza, o lo scadere del suo tempo, cancella tutti i voti che contiene."
+    "howItWorks": "Apri una stanza e condividi il suo PIN o codice QR: chi si unisce vota su ciò che hai chiesto — il conteggio qui sopra si aggiorna in diretta a ogni scelta. Aperta da un progetto, una stanza può restare aperta fino a 90 giorni, così il suo codice QR può finire su un manifesto. Chiudere la stanza, o lo scadere del suo tempo, cancella tutti i voti che contiene.",
+    "preview": {
+      "label": "Un sondaggio di esempio, con il conteggio che cambia man mano che arrivano i voti",
+      "question": "La piazza dovrebbe avere più panchine?",
+      "votes": {
+        "one": "{count} voto",
+        "other": "{count} voti"
+      }
+    }
   },
   "budgetBallot": {
     "units": {
@@ -469,13 +480,13 @@
   "tools": {
     "word-cloud": {
       "name": "Nuvola di parole",
-      "tagline": "Chiedi qualsiasi cosa e guarda le risposte raccogliersi.",
-      "blurb": "Scrivi ciò che vuoi chiedere a una stanza e lascia che ognuno risponda con qualche parola sua. Ogni parola entra nella nuvola appena aggiunta e cresce ogni volta che un'altra persona la dice — così ciò su cui la stanza è d'accordo è la prima cosa che leggi."
+      "tagline": "Chiedi qualsiasi cosa e guarda le risposte in diretta.",
+      "blurb": "Fai una domanda a un gruppo di persone e lascia che ognuno risponda con qualche parola sua. Ogni parola entra nella nuvola appena aggiunta e cresce ogni volta che un'altra persona la dice."
     },
     "open-vote": {
       "name": "Sondaggio",
-      "tagline": "Chiedi qualsiasi cosa, con le risposte che scegli tu.",
-      "blurb": "Scrivi ciò che vuoi chiedere a una stanza, scrivi le risposte tra cui scegliere e lascia votare. Nessuna scala da calibrare — solo una domanda, le tue risposte e un conteggio in diretta mentre le persone scelgono."
+      "tagline": "Chiedi qualsiasi cosa, ricevi risposte.",
+      "blurb": "Fai una domanda a un gruppo di persone e lasciale votare. Solo una domanda, le risposte e un conteggio in diretta mentre le persone scelgono."
     },
     "budget-ballot": {
       "name": "Bilancio condiviso",

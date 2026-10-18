@@ -155,13 +155,29 @@ const ImaginationCanvas = ({
   // Optional: parent-owned ref, so a caller can export the composite via
   // stage.toDataURL(). A plain prop rather than forwardRef, because this component
   // is consumed through lazy() + Suspense.
-  stageRef: externalStageRef = null
+  stageRef: externalStageRef = null,
+  // Fit the width it is given rather than fill a full-screen step: the stage is drawn
+  // smaller, its assets still placed in its own width × height, and the library goes
+  // under it when there is no room beside it. For a project's page (IdeaVisualizerOnPage).
+  fit = false
 }) => {
   const t = THEME;
   const [selectedAssetId, setSelectedAssetId] = useState(null);
   const internalStageRef = useRef();
   const stageRef = externalStageRef || internalStageRef;
   const assetCounter = useRef(0);
+  const areaRef = useRef(null);
+  const [shownWidth, setShownWidth] = useState(width);
+
+  useEffect(() => {
+    if (!fit || !areaRef.current || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(([entry]) => {
+      setShownWidth(Math.max(1, Math.min(width, Math.floor(entry.contentRect.width))));
+    });
+    observer.observe(areaRef.current);
+    return () => observer.disconnect();
+  }, [fit, width]);
+  const ratio = fit ? shownWidth / width : 1;
 
   const handleAddAsset = (libraryAsset) => {
     assetCounter.current += 1;
@@ -214,9 +230,9 @@ const ImaginationCanvas = ({
   }, [selectedAssetId, handleDeleteSelected]);
 
   return (
-    <div style={{ display: 'flex', height: '100%', background: t.page }}>
+    <div style={{ display: 'flex', height: fit ? 'auto' : '100%', background: t.page, flexWrap: fit ? 'wrap' : 'nowrap' }}>
       {/* Canvas Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 16 }}>
+      <div style={{ flex: fit ? '999 1 520px' : 1, minWidth: 0, display: 'flex', flexDirection: 'column', padding: 16 }}>
         <div style={{ background: t.surface, borderRadius: 12, padding: 16, marginBottom: 16,
           border: `1px solid ${t.line}`, boxShadow: t.shadow, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -251,12 +267,14 @@ const ImaginationCanvas = ({
           </div>
         </div>
 
-        <div style={{ flex: 1, background: t.surface, borderRadius: 12, overflow: 'hidden',
+        <div ref={areaRef} style={{ flex: 1, background: t.surface, borderRadius: 12, overflow: 'hidden',
           display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
           <Stage
             ref={stageRef}
-            width={width}
-            height={height}
+            width={width * ratio}
+            height={height * ratio}
+            scaleX={ratio}
+            scaleY={ratio}
             style={{
               background: backgroundImage ? '#000' : '#F6F3EC',
             }}
@@ -289,8 +307,9 @@ const ImaginationCanvas = ({
       </div>
 
       {/* Asset Library Panel - RIGHT SIDE */}
-      <div style={{ width: 340, background: t.chrome, borderLeft: `1px solid ${t.line}`,
-        display: 'flex', flexDirection: 'column', height: '100%', padding: 16 }}>
+      <div style={{ width: fit ? 'auto' : 340, flex: fit ? '1 1 260px' : undefined, background: t.chrome,
+        borderLeft: `1px solid ${t.line}`, display: 'flex', flexDirection: 'column',
+        height: fit ? 'auto' : '100%', maxHeight: fit ? 560 : undefined, padding: 16 }}>
         <h3 style={{ fontSize: 18, fontWeight: 700, color: t.ink, marginBottom: 16 }}>Asset Library</h3>
 
         <div style={{ flex: 1, overflowY: 'auto' }} className="placer-scroll">

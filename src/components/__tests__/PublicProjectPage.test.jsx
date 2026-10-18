@@ -250,6 +250,8 @@ describe('PublicProjectPage', () => {
 describe('PublicProjectPage, taking part', () => {
   const POLL = { id: 'room-1', tool: 'open-vote', expiresAt: '2026-11-05T12:00:00Z',
     config: { question: 'Should the square be car-free?' } };
+  const IDEA = { id: 'room-idea', tool: 'reimagine-a-space', expiresAt: '2026-11-05T12:00:00Z',
+    config: { address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 }, imagePath: 'scenes/proj-1/scene-1.webp', view: null } };
 
   beforeEach(() => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
@@ -271,7 +273,7 @@ describe('PublicProjectPage, taking part', () => {
 
   it('has no Tools section, only a section per tool, headed for the visitor', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'reimagine-a-space']);
-    vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL]);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL, IDEA]);
 
     setup();
 
@@ -767,25 +769,38 @@ describe('PublicProjectPage, taking part', () => {
     expect(await screen.findByText('Nothing to take part in yet. Check back soon.')).toBeInTheDocument();
   });
 
-  it('puts the imaginations under Idea Visualizer, which opens the tool for the project', async () => {
+  it('puts Idea Visualizer on the page, on its Street View photo, with Visualize', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['reimagine-a-space']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([IDEA]);
+
+    setup();
+
+    const section = within(await screen.findByRole('region', { name: 'Share your idea for this place' }));
+    expect(section.getByRole('button', { name: 'Visualize' })).toBeInTheDocument();
+    expect(section.getByText('Folkets Park, Malmö')).toBeInTheDocument();
+    expect(section.getByRole('button', { name: 'See other visualizations' })).toBeInTheDocument();
+  });
+
+  it('shows what was posted to the map for the project under it', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['reimagine-a-space']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([IDEA]);
     vi.mocked(readImaginationsByProject).mockResolvedValue([
       { id: 'img-1', title: 'Pocket park', cat: 'green', upvotes: 4 },
     ]);
-    const { onOpenToolkit } = setup();
+
+    setup();
 
     const section = within(await screen.findByRole('region', { name: 'Share your idea for this place' }));
+    expect(section.getByRole('heading', { name: 'Posted to the map' })).toBeInTheDocument();
     expect(section.getByText('Pocket park')).toBeInTheDocument();
-    fireEvent.click(section.getByRole('button', { name: /Idea Visualizer/ }));
-    expect(onOpenToolkit).toHaveBeenCalledWith('proj-1', 'reimagine-a-space');
   });
 
-  it('says so when nothing has been imagined yet', async () => {
+  it('does not show Idea Visualizer until its room is open', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['reimagine-a-space']);
 
     setup();
 
-    expect(await screen.findByText('Nothing imagined for this project yet.')).toBeInTheDocument();
+    expect(await screen.findByText('Nothing to take part in yet. Check back soon.')).toBeInTheDocument();
   });
 
   it('shows no imaginations when the project has not added Idea Visualizer', async () => {
@@ -801,7 +816,7 @@ describe('PublicProjectPage, taking part', () => {
 
   it('shows its tools under the Project tab, in the order they were added', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['reimagine-a-space', 'open-vote']);
-    vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL]);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL, IDEA]);
 
     setup();
 
@@ -813,6 +828,7 @@ describe('PublicProjectPage, taking part', () => {
 
   it('skips a tool the Toolkit no longer has', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['gone-tool', 'reimagine-a-space']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([IDEA]);
 
     setup();
 

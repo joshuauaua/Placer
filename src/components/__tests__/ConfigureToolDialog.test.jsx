@@ -1,19 +1,26 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vite-plus/test';
 import { screen, fireEvent, waitFor, within, act } from '@testing-library/react';
-import {
-  markProjectToolConfigured, readProjectToolConfig, removeProjectImageFile, saveProjectToolConfig, uploadSceneImage,
-} from '../../services/projects';
+import { markProjectToolConfigured, uploadSceneImage } from '../../services/projects';
 import { lastMap } from '../../test/maplibreStub';
 import { createRoom } from '../../services/rooms';
 import { PROJECT, configureTool as setup, next, save } from '../../test/configureTool';
 import { findTool } from '../../toolkit/tools';
+import { captureStreetView } from '../../lib/streetViewCapture';
+
+// Whether this copy of PLACER has Google's key, for Street View; none unless a test gives one.
+const google = vi.hoisted(() => ({ apiKey: '' }));
+vi.mock('../../lib/googleMaps', () => ({
+  googleMapsApiKey: () => google.apiKey,
+  loadGoogleMaps: () => Promise.resolve(),
+}));
+vi.mock('../../lib/streetViewCapture', async (importOriginal) => ({
+  ...(await importOriginal()),
+  captureStreetView: vi.fn(),
+}));
 
 vi.mock('../../services/projects', () => ({
-  readProjectToolConfig: vi.fn(() => Promise.resolve(null)),
-  saveProjectToolConfig: vi.fn(() => Promise.resolve()),
   markProjectToolConfigured: vi.fn(() => Promise.resolve()),
   uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),
-  removeProjectImageFile: vi.fn(() => Promise.resolve()),
 }));
 
 // Stubbed to the field plus a stand-in for choosing a suggestion.
@@ -48,11 +55,6 @@ vi.mock('../AddressInput', () => ({
     </>
   ),
 }));
-
-const PHOTO = new File(['photo'], 'park.jpg', { type: 'image/jpeg' });
-
-const addPhoto = () => fireEvent.change(screen.getByLabelText(/Add a base image|Choose another/),
-  { target: { files: [PHOTO] } });
 
 beforeEach(() => {
   globalThis.URL.createObjectURL = vi.fn(() => 'blob:scene');
@@ -92,74 +94,87 @@ describe('ConfigureToolDialog, its introduction', () => {
 });
 
 describe('ConfigureToolDialog, Idea Visualizer', () => {
-  it('starts a new scene at the project\'s own place, and needs a base image to go live', async () => {
-    setup('reimagine-a-space');
+  // A stand-in for Google's Street View: one panorama, found wherever it is asked for.
+  class Panorama {
+    constructor() { this.visible = false; this.listeners = []; }
+    addListener(name, fn) { if (name === 'visible_changed') this.listeners.push(fn); }
+    getVisible() { return this.visible; }
+    setVisible(visible) { this.visible = visible; this.listeners.forEach((fn) => fn()); }
+    setPano() {}
+    setPov() {}
+    setZoom() {}
+    getPosition() { return { lat: () => 55.5901, lng: () => 13.0102 }; }
+    getPov() { return { heading: 90, pitch: 5 }; }
+    getZoom() { return 1; }
+  }
 
-    expect(await screen.findByLabelText('Location *')).toHaveValue('Folkets Park, Malmö');
-    expect(screen.getByRole('button', { name: /Save and go live/ })).toBeDisabled();
-    addPhoto();
-    await waitFor(() => expect(screen.getByRole('button', { name: /Save and go live/ })).toBeEnabled());
+  beforeEach(() => {
+    google.apiKey = '';
+    captureStreetView.mockResolvedValue('data:image/jpeg;base64,/9j/4AAQ');
+  });
+  afterEach(() => { delete window.google; });
+
+  it('says nothing past its blurb about what configuring it involves', () => {
+    setup('reimagine-a-space', {}, { intro: true });
+
+    expect(screen.getByText(findTool('reimagine-a-space').blurb)).toBeInTheDocument();
+    expect(screen.queryByText(/You will pick the place/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/You will set it up for this project/)).not.toBeInTheDocument();
   });
 
-  it('uploads the base image and saves the scene on the tool', async () => {
+  it('asks for the address and a view of it first, and will not move on without both', () => {
+    setup('reimagine-a-space');
+
+    expect(screen.getByText('Step 1 of 2')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Address and view' })).toBeInTheDocument();
+    expect(screen.queryByText(/base image/i)).not.toBeInTheDocument();
+    next();
+    expect(screen.getByRole('alert')).toHaveTextContent('Pick the address from the suggestions.');
+    expect(screen.getByRole('alert')).toHaveTextContent('Open Street View, frame the view, and take its photo.');
+  });
+
+  it('shows the area around the address, takes a Street View photo of it, and opens the room on it', async () => {
+    google.apiKey = 'key';
+    window.google = { maps: {
+      StreetViewPanorama: Panorama,
+      StreetViewService: class { getPanorama(_, callback) { callback({ location: { pano: 'pano-1' } }, 'OK'); } },
+    } };
     const { onConfigured } = setup('reimagine-a-space');
-    await screen.findByLabelText('Location *');
-    addPhoto();
-    await waitFor(() => expect(screen.getByRole('button', { name: /Save and go live/ })).toBeEnabled());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
+    expect(screen.getByRole('application', { name: /Map of the area around the address/ })).toBeInTheDocument();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Street View' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Take the photo' }));
+
+    expect(await screen.findByRole('img', { name: 'The view everybody imagines on' })).toBeInTheDocument();
+    await waitFor(() => expect(uploadSceneImage).toHaveBeenCalledWith('proj-1', expect.any(File)));
+    expect(captureStreetView).toHaveBeenCalledWith('key', expect.objectContaining({ heading: 90, pitch: 5 }));
+    await screen.findByText(/Saved\. Continue/);
+    next();
+
+    expect(screen.getByText('Step 2 of 2')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Starts' })).toBeInTheDocument();
     save();
 
     await waitFor(() => expect(onConfigured).toHaveBeenCalled());
-    expect(uploadSceneImage).toHaveBeenCalledWith('proj-1', PHOTO);
-    expect(saveProjectToolConfig).toHaveBeenCalledWith('proj-1', 'reimagine-a-space', {
-      address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 }, imagePath: 'scenes/proj-1/scene-1.webp',
-    });
+    expect(createRoom).toHaveBeenCalledWith('reimagine-a-space', 'proj-1', '30d', {
+      address: PICKED.address,
+      point: PICKED.point,
+      imagePath: 'scenes/proj-1/scene-1.webp',
+      view: { position: { lat: 55.5901, lng: 13.0102 }, heading: 90, pitch: 5, zoom: 1, fov: 90 },
+    }, null);
   });
 
-  describe('already configured', () => {
-    const SAVED = {
-      address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 },
-      imagePath: 'scenes/proj-1/scene-0.webp', image: 'https://media.test/scenes/proj-1/scene-0.webp',
-    };
+  it('takes the photo only from Street View, and says so where there is none', async () => {
+    setup('reimagine-a-space');
+    fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
 
-    beforeEach(() => {
-      readProjectToolConfig.mockResolvedValueOnce(SAVED);
-    });
-
-    it('starts filled in, and keeps its image when only the location changes', async () => {
-      const { onConfigured } = setup('reimagine-a-space');
-
-      expect(await screen.findByRole('img', { name: 'The base image' })).toHaveAttribute('src', SAVED.image);
-      fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
-      save();
-
-      await waitFor(() => expect(onConfigured).toHaveBeenCalled());
-      expect(saveProjectToolConfig).toHaveBeenCalledWith('proj-1', 'reimagine-a-space', {
-        address: PICKED.address, point: PICKED.point, imagePath: SAVED.imagePath,
-      });
-      expect(uploadSceneImage).not.toHaveBeenCalled();
-      expect(removeProjectImageFile).not.toHaveBeenCalled();
-    });
-
-    it('deletes the base image it replaces', async () => {
-      const { onConfigured } = setup('reimagine-a-space');
-      await screen.findByRole('img', { name: 'The base image' });
-
-      addPhoto();
-      await waitFor(() => expect(screen.getByRole('img', { name: 'The base image' })).toHaveAttribute('src', 'blob:scene'));
-      save();
-
-      await waitFor(() => expect(onConfigured).toHaveBeenCalled());
-      expect(removeProjectImageFile).toHaveBeenCalledWith(SAVED.imagePath);
-    });
-
-    it('will not save with the base image removed', async () => {
-      setup('reimagine-a-space');
-      await screen.findByRole('img', { name: 'The base image' });
-
-      fireEvent.click(screen.getByRole('button', { name: /Remove/ }));
-
-      await waitFor(() => expect(screen.getByRole('button', { name: /Save and go live/ })).toBeDisabled());
-    });
+    expect(screen.getByText(/needs a Google Maps key/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Upload a photo/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open Street View' })).not.toBeInTheDocument();
+    next();
+    expect(screen.getByRole('alert')).toHaveTextContent('Open Street View, frame the view, and take its photo.');
   });
 });
 

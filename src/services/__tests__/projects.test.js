@@ -642,30 +642,6 @@ describe("a tool's setup for a project", () => {
     await expect(projects.readProjectToolConfig('proj-1', 'reimagine-a-space')).resolves.toBeNull();
   });
 
-  it('saves the setup on the tool\'s own row', async () => {
-    await load();
-    fromChains.project_tools = makeChain({ data: [{ tool: 'reimagine-a-space' }], error: null });
-
-    await projects.saveProjectToolConfig('proj-1', 'reimagine-a-space', {
-      address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 }, imagePath: 'scenes/proj-1/scene-1.webp',
-    });
-
-    const { calls } = fromChains.project_tools;
-    expect(calls).toContainEqual(['update', [{ config: {
-      address: 'Folkets Park, Malmö', lat: 55.59, lng: 13.01, imagePath: 'scenes/proj-1/scene-1.webp',
-    } }]]);
-    expect(calls).toContainEqual(['eq', ['project_id', 'proj-1']]);
-    expect(calls).toContainEqual(['eq', ['tool', 'reimagine-a-space']]);
-  });
-
-  it('says so when the tool is not one of the project\'s, rather than saving nothing quietly', async () => {
-    await load();
-    fromChains.project_tools = makeChain({ data: [], error: null });
-
-    await expect(projects.saveProjectToolConfig('proj-1', 'reimagine-a-space', {}))
-      .rejects.toThrow(/not one of the project's tools/);
-  });
-
   it('uploads a base image into the project\'s scenes folder', async () => {
     await load();
     const file = { type: 'image/jpeg', size: 1000 };
@@ -685,6 +661,35 @@ describe("a tool's setup for a project", () => {
     await projects.deleteProject('proj-1');
 
     expect(remove).toHaveBeenCalledWith(expect.anything(), 'scenes/proj-1/scene-1.webp');
+  });
+
+  it('removes the Street View photo of an Idea Visualizer room along with the project', async () => {
+    await load();
+    fromChains.projects = makeChain({ data: { image_path: null }, error: null });
+    fromChains.project_tools = makeChain({ data: [], error: null });
+    rpc.mockImplementation((name) => Promise.resolve(name === 'project_rooms'
+      ? { data: [{ room_id: 'room-1', tool: 'reimagine-a-space', config: { imagePath: 'scenes/proj-1/scene-2.webp' } }], error: null }
+      : { data: null, error: null }));
+
+    await projects.deleteProject('proj-1');
+
+    expect(remove).toHaveBeenCalledWith(expect.anything(), 'scenes/proj-1/scene-2.webp');
+  });
+
+  it('reads the scene from the project\'s open Idea Visualizer room', async () => {
+    await load();
+    rpc.mockImplementation((name) => Promise.resolve(name === 'project_open_rooms'
+      ? { data: [{ room_id: 'room-1', tool: 'reimagine-a-space', expires_at: null,
+        config: { address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 }, imagePath: 'scenes/proj-1/scene-2.webp' } }],
+      error: null }
+      : { data: null, error: null }));
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(new Blob(['photo'], { type: 'image/jpeg' })));
+
+    await expect(projects.readReimagineScene('proj-1')).resolves.toEqual({
+      address: 'Folkets Park, Malmö', position: { lat: 55.59, lng: 13.01 }, screenshot: expect.stringMatching(/^data:/),
+    });
+    expect(fetchMock).toHaveBeenCalledWith('https://media.example/scenes/proj-1/scene-2.webp');
+    fetchMock.mockRestore();
   });
 
   it('has no scene to read with no Supabase project', async () => {

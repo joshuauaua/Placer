@@ -1,4 +1,4 @@
-import { OpenVote } from '../../components/toolkit/OpenVote';
+import { OpenVote, OpenVotePreview } from '../../components/toolkit/OpenVote';
 import { OpenVoteOnPage } from '../../components/toolkit/OpenVoteOnPage';
 import { AnswersStep, OpenVoteSetup, QuestionStep } from '../../components/toolkit/OpenVoteSetup';
 import { PALETTE } from '../../theme';
@@ -12,12 +12,13 @@ export default {
   added: '2026-09-22',
   category: 'plan',
   name: 'Poll',
-  tagline: 'Ask anything, with the answers you choose.',
-  blurb: 'Type whatever you want to put to a room, write the answers people can pick from, then let them vote. There is no scale to calibrate — just a question, your answers, and a live tally as people pick.',
+  tagline: 'Ask anything, get answers.',
+  blurb: 'Ask a question to a group of people and let them vote. Just a question, answers, and a live tally as people pick.',
   ...tone(PALETTE.blue),
   icon: 'flag',
   createdBy: 'PLACER',
   component: OpenVote,
+  Preview: OpenVotePreview,
   setup: {
     defaults: defaultVoteSetup,
     problems: voteSetupProblems,

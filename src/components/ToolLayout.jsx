@@ -126,7 +126,8 @@ export function Meter({ t, label, value, color, caption, signed }) {
         {signed && <span style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: t.line }} />}
         <span style={{ position: 'absolute', top: 0, bottom: 0, borderRadius: 999, background: color,
           left: signed ? (value < 0 ? `${50 - magnitude * 50}%` : '50%') : 0,
-          width: signed ? `${magnitude * 50}%` : `${magnitude * 100}%` }} />
+          width: signed ? `${magnitude * 50}%` : `${magnitude * 100}%`,
+          transition: 'width 0.4s ease, left 0.4s ease' }} />
       </div>
     </div>
   );

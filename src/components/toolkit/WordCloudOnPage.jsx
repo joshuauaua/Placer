@@ -10,6 +10,9 @@
  * is only shown the cloud. What it sent is remembered in this browser (toolkit/rooms'
  * rememberAnswer) so coming back shows the cloud too.
  *
+ * Once the cloud is showing, a Full screen button puts it over the whole screen
+ * (FullScreenCloud), still filling in as people answer.
+ *
  * A room set up with a timer shows its countdown once the facilitator has started it,
  * and the cloud in place of the field once it has run out.
  *
@@ -18,7 +21,7 @@
 
 import { useEffect, useState } from 'react';
 import { Btn } from '../UI';
-import { Cloud, Countdown, WordCounts, WordEntry, useCountdown } from './WordCloud';
+import { Cloud, Countdown, FullScreenCloud, WordCounts, WordEntry, useCountdown } from './WordCloud';
 import { addWord, cloudTimer, countWords, isPaused, roomTimer, wordLimit } from '../../lib/wordCloud';
 import { formatRoomDate, participantToken, rememberAnswer, rememberedAnswer } from '../../toolkit/rooms';
 import * as roomService from '../../services/rooms';
@@ -99,6 +102,10 @@ export function WordCloudOnPage({ t, room, service = roomService }) {
         <div role="status" aria-live="polite">
           {result ? (
             <>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+                <FullScreenCloud t={t} prompt={room.config?.prompt} result={result} people={result.people}
+                  left={left} paused={isPaused(timer)} />
+              </div>
               <Cloud result={result} />
               <div style={{ marginTop: 12 }}>
                 <WordCounts t={t} result={result} />
