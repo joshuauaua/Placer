@@ -53,9 +53,11 @@ export function frame(map, scope) {
  * The site's scope being chosen. `scope` is what was saved or framed so far, or null;
  * every pan, zoom and pick reports a new one through `onChange`. `address` and
  * `onAddress` are the search field's text, and `onPlace` hears of each place picked.
+ * `searchLabel`, `frameLabel` and `frameHint` word it for the tool; a null
+ * `frameLabel` leaves the hint to say what to do on its own.
  */
 export function SiteScopePicker({ t, scope, onChange, address, onAddress, onPlace, startAt = null, color, fieldStyle,
-  between = null, aspect = SITE_ASPECT,
+  between = null, aspect = SITE_ASPECT, searchLabel = 'Search for the place', frameLabel = 'Frame the site',
   frameHint = 'Drag and zoom until the map shows the whole site. Everybody taking part sees it from exactly this view, and places their markers on it.' }) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
@@ -117,15 +119,17 @@ export function SiteScopePicker({ t, scope, onChange, address, onAddress, onPlac
     <div>
       <label htmlFor="site-scope-search"
         style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
-        Search for the place *
+        {searchLabel} *
       </label>
       <PlaceSearch id="site-scope-search" value={address} onChange={onAddress} onPick={pick}
         near={pin} placeholder="Square, park, address…" style={fieldStyle} />
 
       {between}
 
-      <div style={{ fontSize: 14, fontWeight: 700, color: t.ink, margin: '20px 0 6px' }}>Frame the site *</div>
-      <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 10, lineHeight: 1.5 }}>
+      {frameLabel && (
+        <div style={{ fontSize: 14, fontWeight: 700, color: t.ink, margin: '20px 0 6px' }}>{frameLabel} *</div>
+      )}
+      <div style={{ fontSize: 13, color: t.inkDim, margin: frameLabel ? '0 0 10px' : '20px 0 10px', lineHeight: 1.5 }}>
         {frameHint}
       </div>
       {failed ? (

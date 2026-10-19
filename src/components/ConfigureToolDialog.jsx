@@ -4,8 +4,6 @@
  * project fills it in for itself here before it goes live on the project's public
  * page. What there is to fill in depends on the tool (projectSetupKind):
  *
- *   site  — Site-Specific Spatial Mapping: the site's name, then the place and the view
- *           of it on the map that everybody maps it in (SiteScope.jsx)
  *   room  — a tool that runs in a room: its own setup form, if it has one, and how long
  *           the project's room stays open. Saving opens that room, which is what puts
  *           the tool live; its row on the dashboard then opens out to the room.
@@ -19,9 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Btn } from './UI';
 import { Icon } from './Icon';
 import { DatePicker } from './DatePicker';
-import {
-  markProjectToolConfigured, readProjectSite, saveProjectSite,
-} from '../services/projects';
+import { markProjectToolConfigured } from '../services/projects';
 import { createRoom, rescheduleRoom } from '../services/rooms';
 import { suggestCurrency } from '../lib/currency';
 import {
@@ -29,7 +25,6 @@ import {
 } from '../toolkit/rooms';
 import { findCategory, projectSetupKind, setupSteps } from '../toolkit/tools';
 import { SetupSteps } from './toolkit/SetupSteps';
-import { SiteScopePicker } from './toolkit/SiteScope';
 
 // A project's room is usually left up for people to find, not run as a workshop.
 const DEFAULT_PROJECT_LIFETIME = '30d';
@@ -57,81 +52,6 @@ function Field({ t, label, htmlFor, hint, children }) {
       {hint && <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 10, lineHeight: 1.5 }}>{hint}</div>}
       {children}
     </div>
-  );
-}
-
-/**
- * Site-Specific Spatial Mapping's site, in two steps: what it is called, then where it
- * is — searched for, and framed on the map. That frame is the view everybody taking
- * part for the project sees the site in, and maps it on.
- */
-function SiteForm({ t, project, tool, busy, setBusy, onDone, onError, onCancel }) {
-  const [saved, setSaved] = useState(undefined); // undefined while loading
-  const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
-  const [scope, setScope] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    readProjectSite(project.id, tool.id)
-      .then((site) => {
-        if (cancelled) return;
-        setSaved(site);
-        setName(site?.name ?? '');
-        setAddress(site?.address ?? '');
-        setScope(site ? { point: site.point, zoom: site.zoom, bounds: site.bounds } : null);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        console.error(`Could not load how ${tool.name} is set up:`, err);
-        setSaved(null);
-      });
-    return () => { cancelled = true; };
-  }, [project.id, tool.id, tool.name]);
-
-  if (saved === undefined) {
-    return <p style={{ fontSize: 14, color: t.inkDim }}>Loading…</p>;
-  }
-
-  const save = async () => {
-    if (busy) return;
-    setBusy(true);
-    onError(null);
-    try {
-      await saveProjectSite(project.id, tool.id, { name: name.trim(), address: address.trim(), ...scope });
-      onDone();
-    } catch (err) {
-      console.error(`Could not set up ${tool.name}:`, err);
-      onError(err?.message ?? `Could not set up ${tool.name}.`);
-      setBusy(false);
-    }
-  };
-
-  const steps = [
-    {
-      title: 'Site name',
-      content: (
-        <Field t={t} label="Site name *" htmlFor="site-name"
-          hint="What people taking part will call the place, at the top of the map and in what they export.">
-          <input id="site-name" type="text" value={name} maxLength={80} disabled={busy}
-            placeholder="e.g. Lindenplatz" onChange={(e) => setName(e.target.value)} style={inputStyle(t)} />
-        </Field>
-      ),
-      problems: name.trim() ? [] : ['Give the site a name.'],
-    },
-    {
-      title: 'Place and map',
-      content: (
-        <SiteScopePicker t={t} scope={scope} onChange={setScope} address={address} onAddress={setAddress}
-          startAt={project.locationPoint ?? null} color={tool.color} fieldStyle={inputStyle(t)} />
-      ),
-      problems: scope ? [] : ['Search for the place, then frame the site on the map.'],
-    },
-  ];
-
-  return (
-    <SetupSteps t={t} steps={steps} busy={busy} onCancel={onCancel} onFinish={save}
-      finishLabel="Save and go live" busyLabel="Saving…" />
   );
 }
 
@@ -320,11 +240,10 @@ function Actions({ t, busy, disabled = false, label, onCancel }) {
   );
 }
 
-const FORMS = { site: SiteForm, room: RoomForm, none: NothingForm };
+const FORMS = { room: RoomForm, none: NothingForm };
 
 // What configuring each kind of tool involves, for the introduction.
 const WHAT_YOU_SET_UP = {
-  site: 'You will name the site, find it on the map, and frame the view of it that everybody taking part maps it in.',
   room: 'You will set it up for this project and choose how long it stays open on the project\u2019s page.',
   none: 'There is nothing to fill in: going live adds it to the project\u2019s page, for people to try.',
 };

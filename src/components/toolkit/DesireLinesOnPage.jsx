@@ -10,6 +10,9 @@
  * Everybody else's walks are readable here as they are for the Word Cloud, and shown
  * only if the visitor asks (DesireLinesBoard) — drawing from memory first.
  *
+ * The organisers' note on why they are interested is not repeated here: the project's page
+ * shows it under the section's heading (`why` in toolkit/tools/desire-lines.js).
+ *
  * The service arrives as a prop, as in WordCloudOnPage, so a test can hand this a fake.
  */
 
@@ -116,7 +119,6 @@ export function DesireLinesOnPage({ t, tool, room, service = roomService }) {
         onChange={(next) => { setState(next); if (status !== 'sending') setStatus('idle'); }}
         othersOn={othersOn}
         palette={palette}
-        about={room.config?.note || null}
         disabled={status === 'closed'}
       />
 

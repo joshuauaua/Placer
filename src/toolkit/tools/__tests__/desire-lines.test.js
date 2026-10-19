@@ -39,3 +39,28 @@ describe("Desire Lines' room", () => {
     }
   });
 });
+
+describe("Desire Lines on a project's page", () => {
+  const { onProjectPage } = findTool('desire-lines');
+
+  it('says what the tool is, and wants the width of the page', () => {
+    expect(onProjectPage.intro).toMatch(/desire line is the path people actually take/i);
+    expect(onProjectPage.wide).toBe(true);
+  });
+
+  it("gives the organisers' note as the reason, trimmed", () => {
+    expect(onProjectPage.why({ note: '  Shoppers cut across the grass.  ', sites: [site] })).toBe('Shoppers cut across the grass.');
+  });
+
+  it('names the sites when there is no note, in a list that reads naturally', () => {
+    const park = { ...site, id: 's2', name: 'River park' };
+    const bridge = { ...site, id: 's3', name: 'The bridge' };
+    expect(onProjectPage.why({ sites: [site] })).toContain('through Market square,');
+    expect(onProjectPage.why({ sites: [site, park] })).toContain('through Market square and River park,');
+    expect(onProjectPage.why({ sites: [site, park, bridge] })).toContain('through Market square, River park and The bridge,');
+  });
+
+  it('has no reason to give for a room with no note and no site', () => {
+    for (const config of [null, {}, { note: ' ', sites: [] }]) expect(onProjectPage.why(config)).toBeNull();
+  });
+});

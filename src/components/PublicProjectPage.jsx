@@ -144,6 +144,23 @@ function ImaginationCard({ t, imagination }) {
   );
 }
 
+/**
+ * What a tool is and why this project is using it, in a paragraph under its heading: the
+ * tool's own (`onProjectPage.intro`) and, when it has one, the organisers' reason
+ * (`onProjectPage.why`, from the room's setup). Nothing for a tool with neither.
+ */
+function ToolIntro({ t, tool, room }) {
+  const { intro, why } = tool.onProjectPage ?? {};
+  const reason = room ? why?.(room.config) : null;
+  if (!intro && !reason) return null;
+  return (
+    <p className="placer-tool-intro" style={{ fontSize: 16, lineHeight: 1.65, color: t.inkDim, margin: '-8px 0 24px',
+      maxWidth: 720, overflowWrap: 'anywhere', whiteSpace: 'pre-line' }}>
+      {[intro, reason].filter(Boolean).join(' ')}
+    </p>
+  );
+}
+
 function LinkRow({ t, link }) {
   return (
     <a href={link.url} target="_blank" rel="noreferrer"
@@ -510,6 +527,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const sections = arrangeSections(
     projectSections({ project, tools, openRooms, configured: configuredTools }), project.pageLayout);
   const hasTools = sections.some((section) => section.kind === 'tool');
+  // A tool in a room that asks for the page's full width (onProjectPage.wide) widens it.
+  const isWide = (section) => Boolean(section.room && section.tool?.onProjectPage?.wide);
 
   const owner = summary?.owner ?? { id: project.ownerId, name: project.ownerName, photo: null };
   const collaborators = summary?.collaborators ?? [];
@@ -651,16 +670,17 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
       </div>
 
       <div id={`project-panel-${tab}`} role="tabpanel" aria-labelledby={`project-tab-${tab}`}
-        className="placer-project-panel">
+        className={`placer-project-panel${tab === 'project' && sections.some(isWide) ? ' placer-project-panel--wide' : ''}`}>
         {tab === 'project' && (
           <>
             {sections.map((section) => (
-              <section key={section.key} id={section.domId} className="placer-project-section"
-                aria-labelledby={`${section.domId}-heading`}>
+              <section key={section.key} id={section.domId} aria-labelledby={`${section.domId}-heading`}
+                className={`placer-project-section${isWide(section) ? ' placer-project-section--wide' : ''}`}>
                 <h2 id={`${section.domId}-heading`} className="placer-h2"
                   style={{ color: t.ink, marginBottom: section.kind === 'about' || section.kind === 'goals' ? 12 : 20 }}>
                   {section.title}
                 </h2>
+                {section.kind === 'tool' && <ToolIntro t={t} tool={section.tool} room={section.room} />}
 
                 {section.kind === 'about' && (
                   <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{intro}</p>
@@ -703,8 +723,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
                     )}
                   </>
                 ) : (
-                  <ProjectToolCard t={t} tool={section.tool} room={section.room} projectId={project.id}
-                    displayName={accountName} />
+                  <ProjectToolCard t={t} tool={section.tool} room={section.room} displayName={accountName} />
                 ))}
               </section>
             ))}
