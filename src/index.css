@@ -2215,6 +2215,13 @@ a {
   pointer-events: none;
 }
 
+.placer-gallery-caption {
+  margin: 10px 2px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 1.5em;
+}
+
 .placer-gallery-thumbs {
   list-style: none;
   padding: 4px 2px;

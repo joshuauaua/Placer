@@ -70,9 +70,24 @@ describe('the register', () => {
     expect(shownTools(tools).map((tool) => tool.id)).toEqual(['a', 'c']);
   });
 
+  it('leaves a tool hidden from production out only on the production site', () => {
+    const tools = [{ id: 'a' }, { id: 'b', hidden: 'production' }, { id: 'c', hidden: true }];
+    expect(shownTools(tools, { production: false }).map((tool) => tool.id)).toEqual(['a', 'b']);
+    expect(shownTools(tools, { production: true }).map((tool) => tool.id)).toEqual(['a']);
+  });
+
+  it('hides 15-Minute Reach, the Social Space Survey and Street Section Mixer from production only', () => {
+    const production = shownTools(REGISTERED_TOOLS, { production: true }).map((tool) => tool.id);
+    const elsewhere = shownTools(REGISTERED_TOOLS, { production: false }).map((tool) => tool.id);
+    for (const id of ['fifteen-minute', 'social-space-survey', 'street-mixer']) {
+      expect(production, id).not.toContain(id);
+      expect(elsewhere, id).toContain(id);
+    }
+  });
+
   it('shows every tool in the register that is not hidden, and finds none that is', () => {
     expect(TOOLS).toEqual(shownTools(REGISTERED_TOOLS));
-    for (const tool of REGISTERED_TOOLS.filter((entry) => entry.hidden)) {
+    for (const tool of REGISTERED_TOOLS.filter((entry) => entry.hidden === true)) {
       expect(findTool(tool.id), tool.id).toBeNull();
     }
   });

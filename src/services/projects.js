@@ -100,8 +100,14 @@ export const PROJECT_TYPE_NAMES = {
 };
 
 const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, summary, description, start_date, end_date, '
-  + 'locations, location_shapes, address, location_lat, location_lng, image_path, gallery_paths, page_layout, project_type, '
+  + 'locations, location_shapes, address, location_lat, location_lng, image_path, gallery_paths, gallery_captions, page_layout, project_type, '
   + 'organisation_id, visibility, created_at, updated_at';
+
+/** A project's photo captions, path to text, keeping only the ones that are text. */
+function captionsOf(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).filter(([, caption]) => typeof caption === 'string'));
+}
 
 function fromRow(row) {
   return {
@@ -131,7 +137,12 @@ function fromRow(row) {
     image: mediaUrl(row.image_path),
     // More photos for its page, in the order they are shown — see supabase/project-gallery.sql.
     galleryPaths: row.gallery_paths ?? [],
-    gallery: (row.gallery_paths ?? []).map((path) => ({ path, url: mediaUrl(path) })).filter(({ url }) => url),
+    // Each one's caption by its path, so it stays with the photo when they are
+    // reordered — see supabase/project-gallery-captions.sql.
+    galleryCaptions: captionsOf(row.gallery_captions),
+    gallery: (row.gallery_paths ?? [])
+      .map((path) => ({ path, url: mediaUrl(path), caption: captionsOf(row.gallery_captions)[path] ?? '' }))
+      .filter(({ url }) => url),
     // The order and titles of its page's sections — see supabase/project-page-layout.sql
     // and lib/projectSections.js. Empty is the page as it comes.
     pageLayout: Array.isArray(row.page_layout) ? row.page_layout : [],
@@ -358,7 +369,7 @@ export async function updateProject(id, patch) {
   const columns = {
     ownerName: 'owner_name', name: 'name', summary: 'summary', description: 'description',
     startDate: 'start_date', endDate: 'end_date', locations: 'locations',
-    locationShapes: 'location_shapes', imagePath: 'image_path', galleryPaths: 'gallery_paths', pageLayout: 'page_layout',
+    locationShapes: 'location_shapes', imagePath: 'image_path', galleryPaths: 'gallery_paths', galleryCaptions: 'gallery_captions', pageLayout: 'page_layout',
     projectType: 'project_type',
     organisationId: 'organisation_id', visibility: 'visibility',
   };

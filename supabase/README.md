@@ -644,9 +644,14 @@ supabase functions deploy media
 
 Run the SQL before the app goes out: the app reads the column with every project.
 
+Each photo can have a caption, shown under it in the page's gallery.
+`project-gallery-captions.sql` (also a migration) adds `projects.gallery_captions`, an
+object from a photo's path to its caption, so a caption stays with its photo when they
+are reordered. Run it before the app goes out too.
+
 ### The order and titles of a project page's sections
 
-Edit project's **Page** field lets organisers put the sections of the project's page
+Edit project's **Page Layout** field lets organisers put the sections of the project's page
 (About, Goals, Photos and each tool) in their own order and retitle them — a Poll
 need not be "We want your opinion". `project-page-layout.sql` (also a migration) adds
 `projects.page_layout`, the list they saved; `src/lib/projectSections.js` says what it

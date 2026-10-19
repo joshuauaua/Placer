@@ -11,6 +11,9 @@
  * the keyboard — focus a photo, Space to pick it up, the arrow keys to move it, Space
  * to put it down. The earlier and later buttons under each do the same one step at a
  * time, for anyone who would rather not drag.
+ *
+ * Each photo has a caption box under it. `captions` is the text by photo path and
+ * `onCaption(path, text)` is called as it is typed; saving it is the caller's too.
  */
 
 import { useState } from 'react';
@@ -24,6 +27,9 @@ import { CSS } from '@dnd-kit/utilities';
 import { Icon } from './Icon';
 import { IMAGE_ACCEPT } from './ImagePicker';
 
+// How long a photo's caption can be.
+export const CAPTION_MAX_LENGTH = 200;
+
 function SmallButton({ t, label, icon, onClick, disabled }) {
   return (
     <button type="button" aria-label={label} title={label} onClick={onClick} disabled={disabled}
@@ -36,7 +42,7 @@ function SmallButton({ t, label, icon, onClick, disabled }) {
 }
 
 /** One photo: the picture itself is what is dragged; the buttons are under it. */
-function Photo({ t, photo, index, count, busy, onMove, onRemove }) {
+function Photo({ t, photo, index, count, busy, caption, onCaption, onMove, onRemove }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: photo.path, disabled: busy,
   });
@@ -59,11 +65,21 @@ function Photo({ t, photo, index, count, busy, onMove, onRemove }) {
         <SmallButton t={t} label={`Remove photo ${index + 1}`} icon="trash" disabled={busy}
           onClick={() => onRemove(index)} />
       </div>
+      {onCaption && (
+        <input type="text" value={caption} maxLength={CAPTION_MAX_LENGTH} disabled={busy}
+          onChange={(e) => onCaption(photo.path, e.target.value)}
+          aria-label={`Caption for photo ${index + 1}`} placeholder="Add a caption"
+          style={{ width: '100%', boxSizing: 'border-box', height: 36, padding: '0 10px', borderRadius: 8,
+            border: `1px solid ${t.line}`, background: t.surface, color: t.ink, fontSize: 13.5,
+            fontFamily: 'inherit' }} />
+      )}
     </li>
   );
 }
 
-export function GalleryPicker({ t, photos, max, onAdd, onMove, onRemove, disabled = false }) {
+export function GalleryPicker({
+  t, photos, max, captions = {}, onCaption, onAdd, onMove, onRemove, disabled = false,
+}) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'uploading' | 'working'
   const [error, setError] = useState(null);
   // A drag starts only once the pointer has moved a little, so a plain click on a
@@ -122,7 +138,7 @@ export function GalleryPicker({ t, photos, max, onAdd, onMove, onRemove, disable
               gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
               {photos.map((photo, index) => (
                 <Photo key={photo.path} t={t} photo={photo} index={index} count={photos.length} busy={busy}
-                  onMove={move} onRemove={remove} />
+                  caption={captions[photo.path] ?? ''} onCaption={onCaption} onMove={move} onRemove={remove} />
               ))}
             </ul>
           </SortableContext>

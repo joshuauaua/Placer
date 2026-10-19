@@ -73,6 +73,12 @@ function siteOriginPlugin() {
   }
 }
 
+// Whether this is a build for a live site: any Vercel build, so plcr.org, beta.plcr.org
+// and branch previews alike, and not a local one. Some tools are tried locally but not
+// put out yet (`hidden: 'production'` in src/toolkit/tools.js). Set
+// VITE_PRODUCTION_SITE yourself to try a build either way.
+process.env.VITE_PRODUCTION_SITE ??= String(Boolean(process.env.VERCEL))
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), opencvAssetBuildPlugin(), opencvAssetServePlugin(), siteOriginPlugin()],

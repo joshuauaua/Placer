@@ -6,8 +6,11 @@
  * gallery has focus, and on a touchscreen a swipe does. The photo shown opens full
  * size in a tab of its own. A single photo is just the photo.
  *
- * `photos` are the project's, each { path, url } (services/projects.js), in the order
- * its organisers put them.
+ * A photo's caption, if it has one, is under it. When any of them has one the line is
+ * kept for all, so the thumbnails do not jump as the gallery moves through them.
+ *
+ * `photos` are the project's, each { path, url, caption } (services/projects.js), in
+ * the order its organisers put them.
  */
 
 import { useRef, useState } from 'react';
@@ -24,6 +27,8 @@ export function ProjectGallery({ t, photos }) {
   const current = Math.min(index, count - 1);
   const photo = photos[current];
   if (!photo) return null;
+
+  const anyCaption = photos.some(({ caption }) => caption);
 
   const go = (by) => setIndex((current + by + count) % count);
 
@@ -52,7 +57,7 @@ export function ProjectGallery({ t, photos }) {
       <div className="placer-gallery-stage" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
         style={{ background: t.surfaceAlt, border: `1px solid ${t.line}` }}>
         <a href={photo.url} target="_blank" rel="noreferrer"
-          aria-label={`Photo ${current + 1} of ${count}, full size`}>
+          aria-label={`Photo ${current + 1} of ${count}${photo.caption ? `: ${photo.caption}` : ''}, full size`}>
           <img key={photo.path} src={photo.url} alt="" />
         </a>
         {count > 1 && (
@@ -71,6 +76,12 @@ export function ProjectGallery({ t, photos }) {
           </>
         )}
       </div>
+
+      {anyCaption && (
+        <p className="placer-gallery-caption" style={{ color: t.inkDim }}>
+          {photo.caption || '\u00a0'}
+        </p>
+      )}
 
       {count > 1 && (
         <ul className="placer-gallery-thumbs" aria-label="All photos">

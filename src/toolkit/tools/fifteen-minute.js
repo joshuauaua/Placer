@@ -13,4 +13,6 @@ export default {
   icon: 'walk',
   createdBy: 'PLACER',
   component: FifteenMinute,
+  // Not on plcr.org or beta.plcr.org yet; only locally.
+  hidden: 'production',
 };

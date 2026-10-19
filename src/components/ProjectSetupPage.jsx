@@ -311,6 +311,9 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
   const [pageSources, setPageSources] = useState({ tools: [], openRooms: [], configured: new Set() });
   const [pageReady, setPageReady] = useState(false);
   const [pageLayout, setPageLayout] = useState(project?.pageLayout ?? []);
+  // The photos' captions by path, as being typed. Saved with Save changes, unlike the
+  // photos themselves.
+  const [galleryCaptions, setGalleryCaptions] = useState(project?.galleryCaptions ?? {});
 
   // Only for a project opened to edit. One started here already holds its choice, and
   // reloading would throw it away if the tools failed to save the first time.
@@ -427,6 +430,12 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
       }
       if (offerRunBy) patch.organisationId = chosenOrganisationId;
       if (editing && pageReady) patch.pageLayout = layoutFor(pageSections);
+      // Only the photos still there, and only the ones with something written.
+      if (editing) {
+        patch.galleryCaptions = Object.fromEntries((project.galleryPaths ?? [])
+          .map((path) => [path, (galleryCaptions[path] ?? '').trim()])
+          .filter(([, caption]) => caption));
+      }
 
       let saved = editing
         ? await updateProject(project.id, patch)
@@ -570,8 +579,9 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
   // Only once the project exists, since its id names the photos' folder.
   const gallery = editing && (
     <Field t={t} label="More photos"
-      hint={`Shown in a Photos section on the project's page, in this order. Up to ${GALLERY_MAX}. Each is resized, and saved without its location data. Optional.`}>
-      <GalleryPicker t={t} photos={project.gallery ?? []} max={GALLERY_MAX}
+      hint={`Shown in a Photos section on the project's page, in this order. Up to ${GALLERY_MAX}. Each is resized, and saved without its location data. A caption is shown under its photo, and saved with Save changes. Optional.`}>
+      <GalleryPicker t={t} photos={project.gallery ?? []} max={GALLERY_MAX} captions={galleryCaptions}
+        onCaption={(path, caption) => setGalleryCaptions((current) => ({ ...current, [path]: caption }))}
         onAdd={addPhotos} onMove={movePhoto} onRemove={removePhoto} disabled={status === 'saving'} />
     </Field>
   );
