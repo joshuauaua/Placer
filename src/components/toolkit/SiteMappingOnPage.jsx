@@ -11,9 +11,9 @@
  * Everybody else's answers are read as they are for the Desire Lines, and shown once
  * the visitor has recorded their own: a tally card, and See other answers.
  *
- * On the page it is a cover: the site's map, with the section's heading on it and a
- * Start the survey button, which opens the tool in a dialog over the page. The
- * answers are kept here, not in the dialog, so closing it part-way and opening it
+ * On the page it is a cover: a panel in the tool's colour, with the section's heading
+ * on it and a Start the survey button, which opens the tool in a dialog over the page.
+ * The answers are kept here, not in the dialog, so closing it part-way and opening it
  * again carries on. `heading` is the section's { id, title } (the page draws no
  * heading of its own for this tool: onProjectPage.cover).
  *
@@ -23,7 +23,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SiteMapping } from './SiteMapping';
-import { SiteView } from './SiteScope';
 import { Btn } from '../UI';
 import { Icon } from '../Icon';
 import {
@@ -124,12 +123,15 @@ export function SiteMappingOnPage({ t, tool, room, heading = null, service = roo
   const closes = formatRoomDate(room.expiresAt);
   const site = siteFromConfig(room.config);
   const title = heading?.title ?? tool.onProjectPage?.heading ?? tool.name;
+  // The tool's own colour, the 700 of its palette colour (blue), under white.
+  const colour = tool.color;
 
   return (
     <>
-      <div className="placer-site-cover" style={{ background: t.surfaceAlt, border: `1px solid ${t.line}` }}>
-        {site && <SiteView scope={site.scope} label={`Map of ${site.name}`} />}
-        <div className="placer-site-cover-shade" />
+      <div className="placer-site-cover" style={{ background: colour }}>
+        <span className="placer-site-cover-mark" aria-hidden="true">
+          <Icon name={tool.icon} size={240} stroke={1.1} />
+        </span>
         <div className="placer-site-cover-body">
           <h2 id={heading?.id} className="placer-h2" style={{ color: '#fff', margin: 0 }}>{title}</h2>
           {site && <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 15, margin: 0 }}>{site.name}</p>}
