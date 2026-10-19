@@ -130,6 +130,37 @@ describe('PublicProjectPage', () => {
       .toHaveAttribute('href', 'https://media.test/gallery/proj-1/photo-2.webp');
   });
 
+  it('shows a photo chosen to be on its own by itself, with its caption and no title, out of the gallery', async () => {
+    const photo = (n, more = {}) => ({ path: `gallery/proj-1/photo-${n}.webp`,
+      url: `https://media.test/gallery/proj-1/photo-${n}.webp`, ...more });
+    vi.mocked(readProject).mockResolvedValue({ ...PROJECT, gallery: [
+      photo(1), photo(2, { standalone: true, caption: 'The underpass, 2019' }), photo(3),
+    ] });
+
+    setup();
+
+    const gallery = within(await screen.findByRole('region', { name: 'Photos' }));
+    expect(gallery.getByText('1 / 2')).toBeInTheDocument();
+
+    const alone = screen.getByRole('region', { name: 'Photo' });
+    expect(within(alone).getByRole('heading', { name: 'Photo' })).toHaveClass('placer-visually-hidden');
+    expect(within(alone).getByText('The underpass, 2019')).toBeInTheDocument();
+    expect(within(alone).getByRole('link', { name: 'The underpass, 2019, full size' }))
+      .toHaveAttribute('href', photo(2).url);
+  });
+
+  it('leaves off the titles the layout hides, and shows a photo\'s it shows', async () => {
+    vi.mocked(readProject).mockResolvedValue({ ...PROJECT, summary: 'A park.',
+      gallery: [{ path: 'g/1.webp', url: 'https://media.test/g/1.webp', standalone: true }],
+      pageLayout: [{ key: 'about', hideTitle: true }, { key: 'photo:g/1.webp', title: 'Then', hideTitle: false }] });
+
+    setup();
+
+    expect(await screen.findByRole('heading', { name: 'About the project' })).toHaveClass('placer-visually-hidden');
+    expect(screen.getByRole('heading', { name: 'Then' })).not.toHaveClass('placer-visually-hidden');
+    expect(screen.getByRole('heading', { name: 'Goals' })).not.toHaveClass('placer-visually-hidden');
+  });
+
   it('has no Photos section without any', async () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
 

@@ -14,7 +14,7 @@
  * On the page it is a cover: a panel in the tool's colour, with the section's heading
  * on it and a Start the survey button, which opens the tool in a dialog over the page.
  * The answers are kept here, not in the dialog, so closing it part-way and opening it
- * again carries on. `heading` is the section's { id, title } (the page draws no
+ * again carries on. `heading` is the section's { id, title, hidden } (the page draws no
  * heading of its own for this tool: onProjectPage.cover).
  *
  * The service arrives as a prop, as in DesireLinesOnPage, so a test can hand this a fake.
@@ -133,7 +133,10 @@ export function SiteMappingOnPage({ t, tool, room, heading = null, service = roo
           <Icon name={tool.icon} size={240} stroke={1.1} />
         </span>
         <div className="placer-site-cover-body">
-          <h2 id={heading?.id} className="placer-h2" style={{ color: '#fff', margin: 0 }}>{title}</h2>
+          <h2 id={heading?.id} className={`placer-h2${heading?.hidden ? ' placer-visually-hidden' : ''}`}
+            style={{ color: '#fff', margin: 0 }}>
+            {title}
+          </h2>
           {site && <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 15, margin: 0 }}>{site.name}</p>}
           <Btn t={t} variant="outline" size="lg" icon="arrowRight" onClick={() => setOpen(true)}
             style={{ marginTop: 8, borderColor: '#fff' }}>

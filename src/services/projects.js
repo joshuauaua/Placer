@@ -100,7 +100,7 @@ export const PROJECT_TYPE_NAMES = {
 };
 
 const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, subtitle, summary, description, start_date, end_date, '
-  + 'locations, location_shapes, address, location_lat, location_lng, image_path, gallery_paths, gallery_captions, page_layout, project_type, '
+  + 'locations, location_shapes, address, location_lat, location_lng, image_path, gallery_paths, gallery_captions, gallery_standalone, page_layout, project_type, '
   + 'organisation_id, visibility, created_at, updated_at';
 
 /** A project's photo captions, path to text, keeping only the ones that are text. */
@@ -142,8 +142,14 @@ function fromRow(row) {
     // Each one's caption by its path, so it stays with the photo when they are
     // reordered — see supabase/project-gallery-captions.sql.
     galleryCaptions: captionsOf(row.gallery_captions),
+    // The ones shown on their own rather than in the gallery — see
+    // supabase/project-gallery-standalone.sql.
+    galleryStandalone: row.gallery_standalone ?? [],
     gallery: (row.gallery_paths ?? [])
-      .map((path) => ({ path, url: mediaUrl(path), caption: captionsOf(row.gallery_captions)[path] ?? '' }))
+      .map((path) => ({
+        path, url: mediaUrl(path), caption: captionsOf(row.gallery_captions)[path] ?? '',
+        standalone: (row.gallery_standalone ?? []).includes(path),
+      }))
       .filter(({ url }) => url),
     // The order and titles of its page's sections — see supabase/project-page-layout.sql
     // and lib/projectSections.js. Empty is the page as it comes.
@@ -372,7 +378,7 @@ export async function updateProject(id, patch) {
   const columns = {
     ownerName: 'owner_name', name: 'name', subtitle: 'subtitle', summary: 'summary', description: 'description',
     startDate: 'start_date', endDate: 'end_date', locations: 'locations',
-    locationShapes: 'location_shapes', imagePath: 'image_path', galleryPaths: 'gallery_paths', galleryCaptions: 'gallery_captions', pageLayout: 'page_layout',
+    locationShapes: 'location_shapes', imagePath: 'image_path', galleryPaths: 'gallery_paths', galleryCaptions: 'gallery_captions', galleryStandalone: 'gallery_standalone', pageLayout: 'page_layout',
     projectType: 'project_type',
     organisationId: 'organisation_id', visibility: 'visibility',
   };
