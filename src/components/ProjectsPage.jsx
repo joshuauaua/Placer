@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Btn } from './UI';
+import { Btn, PageLoader } from './UI';
 import { Icon } from './Icon';
 import { PageHeader } from './PageHeader';
 import { ProjectCard } from './ProjectCard';
@@ -176,9 +176,7 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
           </p>
         )}
 
-        {projectsAvailable() && status === 'loading' && (
-          <div style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>Loading projects…</div>
-        )}
+        {projectsAvailable() && status === 'loading' && <PageLoader label="Loading projects…" />}
 
         {projectsAvailable() && status === 'error' && (
           <div role="alert" style={{ padding: 16, borderRadius: 12, background: '#F5F5F5',
