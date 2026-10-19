@@ -85,35 +85,31 @@ const placeNames = (address, town) => {
   return name ? [name] : [];
 };
 
-/** Public or private (services/projects.js's VISIBILITIES). */
+/**
+ * Public or private (services/projects.js's VISIBILITIES), as a switch: on is public.
+ * Says underneath what the one it is on means.
+ */
 function VisibilityChoice({ t, value, onChange }) {
+  const isPublic = value !== 'private';
+  const option = VISIBILITIES.find(({ key }) => key === (isPublic ? 'public' : 'private'));
   return (
-    <fieldset style={{ border: 0, padding: 0, margin: '0 0 26px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <legend style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 10, padding: 0 }}>
-        Who is it for?
-      </legend>
-      {VISIBILITIES.map((option) => {
-        const checked = value === option.key;
-        return (
-          <label key={option.key}
-            style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: 16, cursor: 'pointer',
-              borderRadius: 12, background: checked ? t.surfaceAlt : t.surface,
-              border: `1.5px solid ${checked ? t.ink : t.line}` }}>
-            <input type="radio" name="project-visibility" value={option.key} checked={checked}
-              onChange={() => onChange(option.key)}
-              style={{ marginTop: 3, accentColor: t.ink, flex: '0 0 auto' }} />
-            <span>
-              <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: 4 }}>
-                {option.title}
-              </span>
-              <span style={{ display: 'block', fontSize: 14, color: t.inkDim, lineHeight: 1.55 }}>
-                {option.description}
-              </span>
-            </span>
-          </label>
-        );
-      })}
-    </fieldset>
+    <Field t={t} label="Visibility" htmlFor="project-visibility">
+      <button id="project-visibility" type="button" role="switch" aria-checked={isPublic}
+        onClick={() => onChange(isPublic ? 'private' : 'public')}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 12, padding: 0, border: 0,
+          background: 'none', cursor: 'pointer', font: 'inherit' }}>
+        <span aria-hidden="true" style={{ position: 'relative', width: 44, height: 26, borderRadius: 13,
+          flex: '0 0 auto', background: isPublic ? t.ink : t.line, transition: 'background 0.15s' }}>
+          <span style={{ position: 'absolute', top: 3, left: isPublic ? 21 : 3, width: 20, height: 20,
+            borderRadius: '50%', background: '#fff', transition: 'left 0.15s',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.25)' }} />
+        </span>
+        <span style={{ fontSize: 16, fontWeight: 700, color: t.ink }}>{option.title}</span>
+      </button>
+      <div style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.55, marginTop: 8 }}>
+        {option.description}
+      </div>
+    </Field>
   );
 }
 
@@ -564,7 +560,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
     ? arrangeSections(projectSections({ project, ...pageSources }), pageLayout)
     : [];
   const pageField = editing && pageReady && (
-    <Field t={t} label="Page"
+    <Field t={t} label="Page Layout"
       hint="The order of the sections on the project's page, and what each is called. Drag a section, or use its arrows, to move it; type over a title to change it, or empty it to go back to the usual one. A tool or room added later goes at the end. Saved with Save changes.">
       <PageLayoutEditor t={t} sections={pageSections} disabled={status === 'saving'}
         onChange={(next) => setPageLayout(next.map(({ key, customTitle }) => ({ key, title: customTitle })))} />
@@ -634,7 +630,6 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
           </p>
         </div>
 
-        <ProjectTypeChoice t={t} value={projectType} onChange={setProjectType} />
         {basics}
         {image}
         {gallery}
