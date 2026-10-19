@@ -307,6 +307,21 @@ describe('PublicProjectPage, taking part', () => {
     expect(screen.queryByRole('heading', { level: 2, name: 'Tools' })).not.toBeInTheDocument();
   });
 
+  it('puts the sections in the order its organisers chose, under the titles they gave them', async () => {
+    vi.mocked(readProject).mockResolvedValue({ ...PROJECT, pageLayout: [
+      { key: 'room:room-1', title: 'Should the square be car-free?' }, { key: 'about' },
+    ] });
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL]);
+
+    setup();
+
+    await screen.findByRole('heading', { level: 2, name: 'Should the square be car-free?' });
+    const titles = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
+    expect(titles.slice(0, 2)).toEqual(['Should the square be car-free?', 'About the project']);
+    expect(screen.queryByRole('heading', { level: 2, name: 'We want your opinion' })).not.toBeInTheDocument();
+  });
+
   it('puts the organiser\'s poll on the page, under its question', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
     vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL]);

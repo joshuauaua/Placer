@@ -644,6 +644,15 @@ supabase functions deploy media
 
 Run the SQL before the app goes out: the app reads the column with every project.
 
+### The order and titles of a project page's sections
+
+Edit project's **Page** field lets organisers put the sections of the project's page
+(About, Goals, Photos and each tool) in their own order and retitle them — a Poll
+need not be "We want your opinion". `project-page-layout.sql` (also a migration) adds
+`projects.page_layout`, the list they saved; `src/lib/projectSections.js` says what it
+holds. Empty, which every project's is to begin with, is the page as it always was.
+Like the photos, run it before the app goes out.
+
 ### Room limits big enough for a map
 
 Run `room-size-limits.sql` after `rooms.sql` and `rooms-config.sql` (or `supabase db push`).

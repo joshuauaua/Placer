@@ -100,7 +100,7 @@ export const PROJECT_TYPE_NAMES = {
 };
 
 const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, summary, description, start_date, end_date, '
-  + 'locations, location_shapes, address, location_lat, location_lng, image_path, gallery_paths, project_type, '
+  + 'locations, location_shapes, address, location_lat, location_lng, image_path, gallery_paths, page_layout, project_type, '
   + 'organisation_id, visibility, created_at, updated_at';
 
 function fromRow(row) {
@@ -132,6 +132,9 @@ function fromRow(row) {
     // More photos for its page, in the order they are shown — see supabase/project-gallery.sql.
     galleryPaths: row.gallery_paths ?? [],
     gallery: (row.gallery_paths ?? []).map((path) => ({ path, url: mediaUrl(path) })).filter(({ url }) => url),
+    // The order and titles of its page's sections — see supabase/project-page-layout.sql
+    // and lib/projectSections.js. Empty is the page as it comes.
+    pageLayout: Array.isArray(row.page_layout) ? row.page_layout : [],
     // One of PROJECT_TYPES' keys, or null for a project started before there was a choice.
     projectType: row.project_type ?? null,
     // The organisation it is run in the name of, or null for one run by its owner
@@ -355,7 +358,7 @@ export async function updateProject(id, patch) {
   const columns = {
     ownerName: 'owner_name', name: 'name', summary: 'summary', description: 'description',
     startDate: 'start_date', endDate: 'end_date', locations: 'locations',
-    locationShapes: 'location_shapes', imagePath: 'image_path', galleryPaths: 'gallery_paths',
+    locationShapes: 'location_shapes', imagePath: 'image_path', galleryPaths: 'gallery_paths', pageLayout: 'page_layout',
     projectType: 'project_type',
     organisationId: 'organisation_id', visibility: 'visibility',
   };

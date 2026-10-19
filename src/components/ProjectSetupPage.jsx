@@ -21,15 +21,18 @@ import { useEffect, useState } from 'react';
 import { Btn } from './UI';
 import { ImagePicker } from './ImagePicker';
 import { GalleryPicker } from './GalleryPicker';
+import { PageLayoutEditor } from './PageLayoutEditor';
 import { AddressInput } from './AddressInput';
 import {
-  BUDGET_CURRENCIES, PROJECT_TYPES, VISIBILITIES, createProject, readProjectBudget, readProjectToolConfig,
-  readProjectTools, removeProjectImageFile, saveProjectBudget, saveProjectTools, updateProject, uploadProjectImage,
+  BUDGET_CURRENCIES, PROJECT_TYPES, VISIBILITIES, createProject, readConfiguredProjectTools, readProjectBudget,
+  readProjectToolConfig, readProjectTools, removeProjectImageFile, saveProjectBudget, saveProjectTools, updateProject, uploadProjectImage,
   uploadProjectGalleryImage, GALLERY_MAX,
 } from '../services/projects';
 import { checkPickedImage } from '../services/media';
 import { suggestCurrency } from '../lib/currency';
-import { TOOLS } from '../toolkit/tools';
+import { readProjectOpenRooms } from '../services/rooms';
+import { TOOLS, findTool } from '../toolkit/tools';
+import { arrangeSections, layoutFor, projectSections } from '../lib/projectSections';
 import { ToolsByCategory } from './toolkit/ToolsByCategory';
 
 // Matches DescribePage's form styling.
@@ -309,6 +312,13 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
   // A new project has no id to name the image's folder until it is created, so the
   // picked file waits here, shown from a local preview, and is uploaded right after.
   const [pending, setPending] = useState(null); // { file, url } | null
+  // The page's sections, to arrange (lib/projectSections.js): what is live on it as it
+  // stands — the tools as saved, not as being chosen — loaded first when editing.
+  // `pageReady` stays false until they are, so a failed load never saves over the
+  // order with a shorter one.
+  const [pageSources, setPageSources] = useState({ tools: [], openRooms: [], configured: new Set() });
+  const [pageReady, setPageReady] = useState(false);
+  const [pageLayout, setPageLayout] = useState(project?.pageLayout ?? []);
 
   // Only for a project opened to edit. One started here already holds its choice, and
   // reloading would throw it away if the tools failed to save the first time.
@@ -334,6 +344,14 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
         setBudgetReady(true);
       })
       .catch((err) => console.error('Could not load the project\'s budget:', err));
+    Promise.all([readProjectTools(initialProject.id), readProjectOpenRooms(initialProject.id),
+      readConfiguredProjectTools(initialProject.id)])
+      .then(([toolIds, openRooms, configured]) => {
+        if (cancelled) return;
+        setPageSources({ tools: toolIds.map(findTool).filter(Boolean), openRooms, configured });
+        setPageReady(true);
+      })
+      .catch((err) => console.error('Could not load the project\'s page to arrange:', err));
     return () => { cancelled = true; };
   }, [initialProject]);
 
@@ -424,6 +442,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
         patch.locations = placeNames(address, town);
       }
       if (offerRunBy) patch.organisationId = chosenOrganisationId;
+      if (editing && pageReady) patch.pageLayout = layoutFor(pageSections);
 
       let saved = editing
         ? await updateProject(project.id, patch)
@@ -557,6 +576,18 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
     </Field>
   );
 
+  // The page's sections in the order and under the titles being given them.
+  const pageSections = editing
+    ? arrangeSections(projectSections({ project, ...pageSources }), pageLayout)
+    : [];
+  const pageField = editing && pageReady && (
+    <Field t={t} label="Page"
+      hint="The order of the sections on the project's page, and what each is called. Drag a section, or use its arrows, to move it; type over a title to change it, or empty it to go back to the usual one. A tool or room added later goes at the end. Saved with Save changes.">
+      <PageLayoutEditor t={t} sections={pageSections} disabled={status === 'saving'}
+        onChange={(next) => setPageLayout(next.map(({ key, customTitle }) => ({ key, title: customTitle })))} />
+    </Field>
+  );
+
   // Only once the project exists, since its id names the photos' folder.
   const gallery = editing && (
     <Field t={t} label="More photos"
@@ -639,6 +670,8 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
         <p style={{ fontSize: 13.5, color: t.inkFaint, marginTop: -10, marginBottom: 26, lineHeight: 1.5 }}>
           Adding or removing collaborators, and attaching links, are on the project's dashboard.
         </p>
+
+        {pageField}
 
         {errorBox}
 
