@@ -647,7 +647,8 @@ describe('PublicProjectPage, taking part', () => {
       const cover = within(await screen.findByRole('region', { name: 'Map the site with us' }));
 
       expect(cover.getByRole('heading', { level: 2, name: 'Map the site with us' })).toBeInTheDocument();
-      expect(cover.getByRole('img', { name: 'Map of Folkets Park' })).toBeInTheDocument();
+      expect(cover.queryByRole('img', { name: 'Map of Folkets Park' })).not.toBeInTheDocument();
+      expect(cover.getByText('Folkets Park')).toBeInTheDocument();
       expect(cover.queryByText(/Where are you\?/)).not.toBeInTheDocument();
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 

@@ -2146,7 +2146,8 @@ a {
  * 16:9 and whole rather than cropped, with round arrows either side, a count in the
  * corner, and thumbnails underneath. */
 /* Site-Specific Spatial Mapping's cover on a project page (toolkit/SiteMappingOnPage):
- * the site's map, darkened at the bottom so the heading and button on it read. */
+ * a panel in the tool's colour, with the tool's icon large and faint across
+ * its corner, and the heading and button on it in white. */
 .placer-site-cover {
   position: relative;
   overflow: hidden;
@@ -2155,10 +2156,12 @@ a {
   min-height: 260px;
 }
 
-.placer-site-cover-shade {
+.placer-site-cover-mark {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.15) 70%, rgba(0, 0, 0, 0));
+  right: -24px;
+  top: -24px;
+  color: #fff;
+  opacity: 0.14;
   pointer-events: none;
 }
 
