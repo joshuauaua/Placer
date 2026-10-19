@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vite-plus/test';
 import { screen, fireEvent, waitFor, within, act } from '@testing-library/react';
-import {
-  markProjectToolConfigured, readProjectSite, saveProjectSite, uploadSceneImage,
-} from '../../services/projects';
+import { markProjectToolConfigured, uploadSceneImage } from '../../services/projects';
 import { lastMap } from '../../test/maplibreStub';
 import { createRoom } from '../../services/rooms';
 import { PROJECT, configureTool as setup, next, save } from '../../test/configureTool';
@@ -21,8 +19,6 @@ vi.mock('../../lib/streetViewCapture', async (importOriginal) => ({
 }));
 
 vi.mock('../../services/projects', () => ({
-  readProjectSite: vi.fn(() => Promise.resolve(null)),
-  saveProjectSite: vi.fn(() => Promise.resolve()),
   markProjectToolConfigured: vi.fn(() => Promise.resolve()),
   uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),
 }));
@@ -357,55 +353,55 @@ describe('ConfigureToolDialog, a tool with nothing to set up', () => {
 });
 
 describe('ConfigureToolDialog, Site-Specific Spatial Mapping', () => {
-  it('asks for the site name first, and will not move on without one', async () => {
+  it('asks for the site name first, and will not move on without one', () => {
     setup('site-spatial-mapping');
 
-    expect(await screen.findByText('Step 1 of 2')).toBeInTheDocument();
-    expect(screen.getByLabelText('Site name *')).toBeInTheDocument();
+    expect(screen.getByText('Step 1 of 3')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Site name' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Site name *')).toHaveAccessibleDescription('How do people using this tool name the site.');
     next();
     expect(screen.getByRole('alert')).toHaveTextContent('Give the site a name.');
   });
 
-  it('then the place and the map, and saves the view framed as the site', async () => {
-    const { onConfigured } = setup('site-spatial-mapping');
-    fireEvent.change(await screen.findByLabelText('Site name *'), { target: { value: 'Lindenplatz' } });
+  it('then the specific location, framed on the map', async () => {
+    setup('site-spatial-mapping');
+    fireEvent.change(screen.getByLabelText('Site name *'), { target: { value: 'Lindenplatz' } });
     next();
 
-    expect(screen.getByText('Step 2 of 2')).toBeInTheDocument();
-    save();
-    expect(screen.getByRole('alert')).toHaveTextContent('Search for the place, then frame the site on the map.');
+    expect(screen.getByText('Step 2 of 3')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Specific location' })).toBeInTheDocument();
+    expect(screen.getByText('Search for the address *')).toBeInTheDocument();
+    expect(screen.queryByText(/Frame the site/)).not.toBeInTheDocument();
+    expect(screen.getByText('Drag and zoom until the map encompasses the whole site. Everybody using the tool will see it from exactly this view.'))
+      .toBeInTheDocument();
+    next();
+    expect(screen.getByRole('alert')).toHaveTextContent('Search for the address, then frame the site on the map.');
+  });
+
+  it('then when it starts and how long it stays open, and opens the project\'s room on the site', async () => {
+    const { onConfigured } = setup('site-spatial-mapping');
+    fireEvent.change(screen.getByLabelText('Site name *'), { target: { value: 'Lindenplatz' } });
+    next();
 
     fireEvent.click(screen.getByRole('button', { name: 'Pick the place' }));
     // The organiser drags the map to frame the site.
     const map = lastMap();
     await act(async () => { await map.ready; });
     act(() => { map.jumpTo({ center: [13.42, 52.53], zoom: 18 }); map.fire('moveend'); });
+    next();
+
+    expect(screen.getByText('Step 3 of 3')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Starts' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Open for'), { target: { value: '90d' } });
     save();
 
     await waitFor(() => expect(onConfigured).toHaveBeenCalled());
-    expect(saveProjectSite).toHaveBeenCalledWith('proj-1', 'site-spatial-mapping', {
+    expect(createRoom).toHaveBeenCalledWith('site-spatial-mapping', 'proj-1', '90d', {
       name: 'Lindenplatz',
       address: 'Lindenplatz, Berlin',
       point: { lat: 52.53, lng: 13.42 },
       zoom: 18,
       bounds: [13.41, 52.523, 13.43, 52.537],
-    });
-  });
-
-  it('starts from the site already saved', async () => {
-    readProjectSite.mockResolvedValueOnce({
-      name: 'Market Square', address: 'Market Square, Berlin', point: { lat: 52.51, lng: 13.39 }, zoom: 17,
-      bounds: [13.38, 52.5, 13.4, 52.52],
-    });
-    const { onConfigured } = setup('site-spatial-mapping');
-
-    expect(await screen.findByLabelText('Site name *')).toHaveValue('Market Square');
-    next();
-    save();
-
-    await waitFor(() => expect(onConfigured).toHaveBeenCalled());
-    expect(saveProjectSite).toHaveBeenCalledWith('proj-1', 'site-spatial-mapping', expect.objectContaining({
-      name: 'Market Square', bounds: [13.38, 52.5, 13.4, 52.52],
-    }));
+    }, null);
   });
 });

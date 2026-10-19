@@ -741,7 +741,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
                     )}
                   </>
                 ) : (
-                  <ProjectToolCard t={t} tool={tool} room={room} projectId={project.id} displayName={accountName} />
+                  <ProjectToolCard t={t} tool={tool} room={room} displayName={accountName} />
                 )}
               </section>
             ))}

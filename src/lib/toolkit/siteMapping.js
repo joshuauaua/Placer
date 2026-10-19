@@ -298,3 +298,130 @@ export function buildSummary(site, state) {
   lines.push('', 'Recorded in the PLACER Toolkit — nothing is saved unless you download or share it.');
   return lines.join('\n');
 }
+
+/*
+ * Run for a project, the tool is played in the project's room (toolkit/tools.js): the
+ * organiser's setup is the site — its name, the address searched for, and the view of
+ * it they framed (SiteScope.jsx) — and each person's recorded answers are their
+ * contribution to the room, which everybody else taking part can see.
+ */
+
+export const MAX_SITE_NAME = 80;
+export const MAX_NOTE = 1000;
+const MAX_MARKERS = 200;
+
+/** The setup a new room starts from: no site yet. */
+export function defaultSiteSetup() {
+  return { name: '', address: '', point: null, zoom: null, bounds: null };
+}
+
+const isPoint = (point) => Number.isFinite(point?.lat) && Number.isFinite(point?.lng);
+
+/** What is wrong with the site's name, as sentences. */
+export function siteNameProblems(setup) {
+  const name = typeof setup?.name === 'string' ? setup.name.trim() : '';
+  if (!name) return ['Give the site a name.'];
+  if (name.length > MAX_SITE_NAME) return [`Keep the site's name to ${MAX_SITE_NAME} characters.`];
+  return [];
+}
+
+/** What is wrong with where the site is, as sentences. */
+export function siteLocationProblems(setup) {
+  return isPoint(setup?.point) ? [] : ['Search for the address, then frame the site on the map.'];
+}
+
+export function siteSetupProblems(setup) {
+  return [...siteNameProblems(setup), ...siteLocationProblems(setup)];
+}
+
+/** A room's setup as the site the tool is used on, or null when it has none. */
+export function siteFromConfig(config) {
+  if (!config || !isPoint(config.point)) return null;
+  const bounds = Array.isArray(config.bounds) && config.bounds.length === 4 && config.bounds.every(Number.isFinite)
+    ? config.bounds : null;
+  const name = typeof config.name === 'string' && config.name.trim() ? config.name.trim() : 'Project site';
+  return {
+    name,
+    lat: config.point.lat,
+    lng: config.point.lng,
+    scope: { point: config.point, zoom: Number.isFinite(config.zoom) ? config.zoom : null, bounds },
+  };
+}
+
+const share = (value) => (Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : null);
+const MOOD_VALUES = new Set(REFLECTION_MOODS.map((mood) => mood.value));
+const AGE_VALUES = new Set(AGE_RANGES.map((range) => range.value));
+const GENDER_VALUES = new Set(GENDER_OPTIONS.map((option) => option.value).filter((value) => value !== 'self-describe'));
+
+/**
+ * What of a person's answers is recorded, from their state or from a room (which may
+ * hold anything): the eighteen answers, their pin, their markers, how the site felt
+ * and what they wrote about it, and their age range and gender if they gave them.
+ * Never their contact details, and never a gender described in their own words — it
+ * is all readable by everybody taking part.
+ */
+export function recordedAnswers(state) {
+  const answers = Object.fromEntries(SURVEY_QUESTIONS.map((q) => {
+    const value = state?.answers?.[q.key];
+    return [q.key, value === true || value === false ? value : null];
+  }));
+  const here = state?.here && share(state.here.x) !== null && share(state.here.y) !== null
+    ? { x: share(state.here.x), y: share(state.here.y) } : null;
+  const markers = (Array.isArray(state?.markers) ? state.markers : [])
+    .filter((m) => MAP_MARKERS.some((kind) => kind.key === m?.type) && share(m.x) !== null && share(m.y) !== null)
+    .slice(0, MAX_MARKERS)
+    .map((m) => ({ type: m.type, x: share(m.x), y: share(m.y) }));
+  const notes = {};
+  for (const field of REFLECTION_PROMPTS) {
+    const value = state?.notes?.[field.key];
+    if (typeof value === 'string' && value.trim()) notes[field.key] = value.trim().slice(0, MAX_NOTE);
+  }
+  const ageRange = AGE_VALUES.has(state?.profile?.ageRange) ? state.profile.ageRange : null;
+  const gender = GENDER_VALUES.has(state?.profile?.gender) ? state.profile.gender : null;
+  return {
+    answers,
+    here,
+    markers,
+    mood: MOOD_VALUES.has(state?.mood) ? state.mood : null,
+    notes,
+    profile: { ageRange, gender },
+  };
+}
+
+/** The state a person starts from in a room: nothing recorded yet. */
+export function emptyRecorded() {
+  return {};
+}
+
+/**
+ * Everybody's recorded answers, put together: how many people recorded, and for each
+ * question how many said yes out of how many answered it; how the site felt to them;
+ * every marker and pin they placed; and what they wrote, by prompt.
+ */
+export function combineSiteAnswers(states) {
+  const yes = Object.fromEntries(SURVEY_QUESTIONS.map((q) => [q.key, 0]));
+  const answered = Object.fromEntries(SURVEY_QUESTIONS.map((q) => [q.key, 0]));
+  const moods = Object.fromEntries(REFLECTION_MOODS.map((mood) => [mood.value, 0]));
+  const markers = [];
+  const here = [];
+  const notes = Object.fromEntries(REFLECTION_PROMPTS.map((field) => [field.key, []]));
+  let people = 0;
+
+  for (const raw of states ?? []) {
+    if (!raw || typeof raw !== 'object' || !raw.answers) continue;
+    const state = recordedAnswers(raw);
+    if (answeredCount(state.answers) === 0) continue;
+    people += 1;
+    for (const q of SURVEY_QUESTIONS) {
+      if (state.answers[q.key] === null) continue;
+      answered[q.key] += 1;
+      if (state.answers[q.key]) yes[q.key] += 1;
+    }
+    if (state.mood !== null) moods[state.mood] += 1;
+    markers.push(...state.markers);
+    if (state.here) here.push(state.here);
+    for (const [key, value] of Object.entries(state.notes)) notes[key].push(value);
+  }
+
+  return { people, yes, answered, moods, markers, here, markerCounts: markerCounts(markers), notes };
+}
