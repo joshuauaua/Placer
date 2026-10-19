@@ -129,25 +129,30 @@ describe('ProjectDashboardPage', () => {
     vi.clearAllMocks();
   });
 
-  it('has Project Insights, My Toolkit and Project Settings tabs, starting on Project Insights', async () => {
+  it('has Project Settings, My Toolkit and Project Insights tabs, opening on Project Settings', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
-    setup();
+    // As App opens it, with no tab asked for.
+    render(<ProjectDashboardPage t={THEME} accountId="user-1" projectId={PROJECT.id}
+      onOpenToolkit={vi.fn()} onOpenRoom={vi.fn()} onNavigateToPublic={vi.fn()} />);
 
     const tabs = await screen.findAllByRole('tab');
-    expect(tabs.map((each) => each.textContent)).toEqual(['Project Insights', 'My Toolkit', 'Project Settings']);
-    expect(screen.getByRole('tab', { name: 'Project Insights' })).toHaveAttribute('aria-selected', 'true');
+    expect(tabs.map((each) => each.textContent)).toEqual(['Project Settings', 'My Toolkit', 'Project Insights']);
+    expect(screen.getByRole('tab', { name: 'Project Settings' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('heading', { name: 'Collaborators' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Project Insights' }));
     expect(screen.getByRole('table')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Documentation' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Reference Material' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'My Toolkit' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Collaborators' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', { name: 'My Toolkit' }));
     expect(screen.getByRole('heading', { name: 'My Toolkit' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Documentation' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Reference Material' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Project Settings' }));
     const settings = within(screen.getByRole('tabpanel', { name: 'Project Settings' }));
-    for (const heading of ['Project setup', 'Collaborators', 'Documentation']) {
+    for (const heading of ['Project setup', 'Collaborators', 'Reference Material']) {
       expect(settings.getByRole('heading', { name: heading })).toBeInTheDocument();
     }
     expect(settings.getByRole('button', { name: /Delete project/ })).toBeInTheDocument();
@@ -164,12 +169,13 @@ describe('ProjectDashboardPage', () => {
   });
 
   it('moves between tabs with the arrow keys', async () => {
+    tab = 'settings';
     setup();
 
-    fireEvent.keyDown(await screen.findByRole('tab', { name: 'Project Insights' }), { key: 'ArrowRight' });
+    fireEvent.keyDown(await screen.findByRole('tab', { name: 'Project Settings' }), { key: 'ArrowRight' });
     expect(screen.getByRole('tab', { name: 'My Toolkit' })).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(screen.getByRole('tab', { name: 'My Toolkit' }), { key: 'ArrowRight' });
-    expect(screen.getByRole('tab', { name: 'Project Settings' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Project Insights' })).toHaveAttribute('aria-selected', 'true');
   });
 
   // The value beside a row of the insights table, found by its label (its note aside).
@@ -244,13 +250,24 @@ describe('ProjectDashboardPage', () => {
     consoleError.mockRestore();
   });
 
-  it('offers Edit setup to the owner', async () => {
+  it('offers Edit setup to the owner, once, on Project Settings', async () => {
+    tab = 'settings';
     setup({ accountId: 'user-1' });
 
-    expect(await screen.findByRole('button', { name: /Edit setup/ })).toBeInTheDocument();
+    expect(await screen.findAllByRole('button', { name: /Edit setup/ })).toHaveLength(1);
+    expect(within(screen.getByRole('tabpanel', { name: 'Project Settings' }))
+      .getByRole('button', { name: /Edit setup/ })).toBeInTheDocument();
+  });
+
+  it('has no Edit setup on the other tabs', async () => {
+    setup({ accountId: 'user-1' });
+    await screen.findByText('Riverside Greenway');
+
+    expect(screen.queryByRole('button', { name: /Edit setup/ })).not.toBeInTheDocument();
   });
 
   it('has no Edit setup for a collaborator', async () => {
+    tab = 'settings';
     setup({ accountId: 'user-2' });
     await screen.findByText('Riverside Greenway');
 
@@ -258,6 +275,7 @@ describe('ProjectDashboardPage', () => {
   });
 
   it('edits setup in place and returns to the dashboard with the saved project', async () => {
+    tab = 'settings';
     vi.mocked(updateProject).mockResolvedValue({ ...PROJECT, name: 'New name' });
     setup({ accountId: 'user-1' });
 
@@ -271,6 +289,7 @@ describe('ProjectDashboardPage', () => {
   });
 
   it('cancels out of editing back to the dashboard, unchanged', async () => {
+    tab = 'settings';
     setup({ accountId: 'user-1' });
 
     fireEvent.click(await screen.findByRole('button', { name: /Edit setup/ }));
@@ -473,7 +492,7 @@ describe('ProjectDashboardPage', () => {
     expect(screen.queryByText('Devon Park')).not.toBeInTheDocument();
   });
 
-  it('adds a documentation link', async () => {
+  it('adds a link to the reference material', async () => {
     vi.mocked(addLink).mockResolvedValue({
       id: 'link-1', title: 'Council report', url: 'https://example.com/report', addedBy: 'user-1',
     });
@@ -497,7 +516,7 @@ describe('ProjectDashboardPage', () => {
     ]);
     setup();
     fireEvent.click(await screen.findByRole('tab', { name: 'Project Settings' }));
-    const documentation = within(screen.getByRole('heading', { name: 'Documentation' }).closest('section'));
+    const documentation = within(screen.getByRole('heading', { name: 'Reference Material' }).closest('section'));
 
     fireEvent.click(await documentation.findByRole('button', { name: 'Remove' }));
 
@@ -806,6 +825,17 @@ describe('ProjectDashboardPage, deleting the project', () => {
   const deleteButton = () =>
     within(screen.getByRole('dialog')).getByRole('button', { name: /Delete project/ });
   const nameField = () => screen.getByLabelText(/to confirm/);
+
+  it('sits in a Danger zone card at the foot of Project Settings', async () => {
+    tab = 'settings';
+    setup();
+
+    const zone = await screen.findByRole('region', { name: 'Danger zone' });
+    expect(within(zone).getByRole('button', { name: /Delete project/ })).toBeInTheDocument();
+    const panel = screen.getByRole('tabpanel', { name: 'Project Settings' });
+    const cards = panel.querySelectorAll('section');
+    expect(cards[cards.length - 1]).toBe(zone);
+  });
 
   it('is offered to the owner only', async () => {
     setup({ accountId: 'user-2' });
