@@ -50,6 +50,13 @@ const inputStyle = (t) => ({
   outline: 'none',
 });
 
+// Edit project's tabs, in order. A new project is set up in steps instead.
+const EDIT_TABS = [
+  { id: 'general', label: 'General settings' },
+  { id: 'media', label: 'Images and Media' },
+  { id: 'layout', label: 'Page Layout' },
+];
+
 function Field({ t, label, htmlFor, hint, children }) {
   return (
     <div style={{ marginBottom: 26 }}>
@@ -314,6 +321,8 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
   // The photos' captions by path, as being typed. Saved with Save changes, unlike the
   // photos themselves.
   const [galleryCaptions, setGalleryCaptions] = useState(project?.galleryCaptions ?? {});
+  // Which of Edit project's tabs is open. All three save together, with Save changes.
+  const [editTab, setEditTab] = useState('general');
 
   // Only for a project opened to edit. One started here already holds its choice, and
   // reloading would throw it away if the tools failed to save the first time.
@@ -404,6 +413,16 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
 
   const budgetValid = !hasBudget || !Number.isNaN(parseBudgetAmount(budgetAmount));
   const complete = name.trim().length > 0 && budgetValid;
+
+  const onEditTabKey = (event) => {
+    const by = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    if (!by) return;
+    event.preventDefault();
+    const index = EDIT_TABS.findIndex(({ id }) => id === editTab);
+    const next = EDIT_TABS[(index + by + EDIT_TABS.length) % EDIT_TABS.length].id;
+    setEditTab(next);
+    document.getElementById(`edit-tab-${next}`)?.focus();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -640,17 +659,45 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
           </p>
         </div>
 
-        {basics}
-        {image}
-        {gallery}
-        {place}
+        <div role="tablist" aria-label="Edit project sections" onKeyDown={onEditTabKey}
+          style={{ display: 'flex', gap: 4, overflowX: 'auto', borderBottom: `1px solid ${t.line}`, marginBottom: 32 }}>
+          {EDIT_TABS.map(({ id, label }) => {
+            const current = id === editTab;
+            return (
+              <button key={id} id={`edit-tab-${id}`} type="button" role="tab" aria-selected={current}
+                aria-controls={`edit-panel-${id}`} tabIndex={current ? 0 : -1} onClick={() => setEditTab(id)}
+                className="placer-project-tab"
+                style={{ color: current ? t.ink : t.inkDim, fontWeight: current ? 700 : 500,
+                  boxShadow: current ? `inset 0 -3px 0 ${t.ink}` : 'none' }}>
+                {label}
+              </button>
+            );
+          })}
+        </div>
 
-        <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: 26, lineHeight: 1.5 }}>
-          Tools are added, set up and removed on the dashboard&rsquo;s My Toolkit tab; collaborators and links
-          are on the dashboard too.
-        </p>
+        <div id={`edit-panel-${editTab}`} role="tabpanel" aria-labelledby={`edit-tab-${editTab}`}>
+          {editTab === 'general' && (
+            <>
+              {basics}
+              {place}
+              <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: 26, lineHeight: 1.5 }}>
+                Tools are added, set up and removed on the dashboard&rsquo;s My Toolkit tab; collaborators and links
+                are on the dashboard too.
+              </p>
+            </>
+          )}
 
-        {pageField}
+          {editTab === 'media' && (
+            <>
+              {image}
+              {gallery}
+            </>
+          )}
+
+          {editTab === 'layout' && (pageField || (
+            <p style={{ fontSize: 14, color: t.inkDim, marginBottom: 26 }}>Loading the page&rsquo;s sections…</p>
+          ))}
+        </div>
 
         {errorBox}
 

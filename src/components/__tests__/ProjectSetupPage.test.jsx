@@ -390,6 +390,28 @@ describe('ProjectSetupPage, editing a project', () => {
     expect(saveProjectTools).not.toHaveBeenCalled();
   });
 
+  it('splits into General settings, Images and Media, and Page Layout, saved together', async () => {
+    updateProject.mockResolvedValue(PROJECT);
+    setup({ project: { ...PROJECT, gallery: [], galleryPaths: [] } });
+
+    const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent);
+    expect(tabs).toEqual(['General settings', 'Images and Media', 'Page Layout']);
+    expect(screen.getByRole('tab', { name: 'General settings' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByText('More photos')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'New name' } });
+    fireEvent.click(screen.getByRole('tab', { name: 'Images and Media' }));
+    expect(screen.getByText('More photos')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Name *')).not.toBeInTheDocument();
+
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Images and Media' }), { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: 'Page Layout' })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+    await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1',
+      expect.objectContaining({ name: 'New name' })));
+  });
+
   it('does not show or change the kind of project', () => {
     setup({ project: PROJECT });
 
@@ -686,6 +708,7 @@ describe('ProjectSetupPage, photos beside the header image', () => {
       .mockResolvedValueOnce('gallery/proj-1/photo-3.webp');
     updateProject.mockResolvedValueOnce(withPhotos(1, 2, 3));
     setup({ project: withPhotos(1) });
+    fireEvent.click(screen.getByRole('tab', { name: 'Images and Media' }));
 
     const input = screen.getByText('Add photos').querySelector('input[type="file"]');
     fireEvent.change(input, { target: { files: [file('a.jpg'), file('b.jpg')] } });
@@ -698,6 +721,7 @@ describe('ProjectSetupPage, photos beside the header image', () => {
 
   it('can be dragged into order, from the keyboard as well as with a pointer', () => {
     setup({ project: withPhotos(1, 2) });
+    fireEvent.click(screen.getByRole('tab', { name: 'Images and Media' }));
 
     const handle = screen.getByRole('button', { name: 'Photo 1 of 2, drag to reorder' });
     expect(handle).toHaveAttribute('aria-roledescription', 'sortable');
@@ -708,6 +732,7 @@ describe('ProjectSetupPage, photos beside the header image', () => {
   it('moves one later', async () => {
     updateProject.mockResolvedValueOnce(withPhotos(2, 1));
     setup({ project: withPhotos(1, 2) });
+    fireEvent.click(screen.getByRole('tab', { name: 'Images and Media' }));
 
     expect(screen.getByRole('button', { name: 'Move photo 1 earlier' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Move photo 1 later' }));
@@ -719,6 +744,7 @@ describe('ProjectSetupPage, photos beside the header image', () => {
   it('removes one, and deletes its file once nothing points at it', async () => {
     updateProject.mockResolvedValueOnce(withPhotos(2));
     setup({ project: withPhotos(1, 2) });
+    fireEvent.click(screen.getByRole('tab', { name: 'Images and Media' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove photo 1' }));
 
@@ -731,6 +757,7 @@ describe('ProjectSetupPage, photos beside the header image', () => {
     uploadProjectGalleryImage.mockResolvedValueOnce('gallery/proj-1/photo-12.webp');
     updateProject.mockResolvedValueOnce(withPhotos(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
     setup({ project: eleven });
+    fireEvent.click(screen.getByRole('tab', { name: 'Images and Media' }));
 
     const input = screen.getByText('Add photos').querySelector('input[type="file"]');
     fireEvent.change(input, { target: { files: [file('a.jpg'), file('b.jpg')] } });
@@ -745,6 +772,7 @@ describe('ProjectSetupPage, photos beside the header image', () => {
     setup({ project: { ...withPhotos(1, 2), galleryCaptions: {
       'gallery/proj-1/photo-1.webp': 'Before', 'gallery/proj-1/photo-gone.webp': 'Taken out',
     } } });
+    fireEvent.click(screen.getByRole('tab', { name: 'Images and Media' }));
 
     expect(screen.getByRole('textbox', { name: 'Caption for photo 1' })).toHaveValue('Before');
     fireEvent.change(screen.getByRole('textbox', { name: 'Caption for photo 1' }), { target: { value: '  ' } });
@@ -782,6 +810,7 @@ describe('ProjectSetupPage, arranging the project\'s page', () => {
 
   it('lists the sections the page has, in its order, each under its title', async () => {
     setup({ project: { ...PROJECT, pageLayout: [{ key: 'room:room-1', title: 'Car-free square?' }] } });
+    fireEvent.click(screen.getByRole('tab', { name: 'Page Layout' }));
 
     await screen.findByRole('list', { name: 'Page sections' });
     expect(sectionNames()).toEqual(['Car-free square?', 'About the project', 'Goals']);
@@ -789,6 +818,7 @@ describe('ProjectSetupPage, arranging the project\'s page', () => {
 
   it('saves a new order and a new title with the rest of the changes', async () => {
     setup({ project: PROJECT });
+    fireEvent.click(screen.getByRole('tab', { name: 'Page Layout' }));
     await screen.findByRole('list', { name: 'Page sections' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Move We want your opinion up' }));
@@ -803,6 +833,7 @@ describe('ProjectSetupPage, arranging the project\'s page', () => {
 
   it('goes back to the usual title when one is emptied', async () => {
     setup({ project: { ...PROJECT, pageLayout: [{ key: 'goals', title: 'What we want' }] } });
+    fireEvent.click(screen.getByRole('tab', { name: 'Page Layout' }));
     await screen.findByRole('list', { name: 'Page sections' });
 
     fireEvent.change(screen.getByDisplayValue('What we want'), { target: { value: '' } });
@@ -816,6 +847,7 @@ describe('ProjectSetupPage, arranging the project\'s page', () => {
   it('never saves over the order when the page could not be loaded', async () => {
     readProjectOpenRooms.mockRejectedValue(new Error('offline'));
     setup({ project: PROJECT });
+    fireEvent.click(screen.getByRole('tab', { name: 'Page Layout' }));
 
     await waitFor(() => expect(readProjectOpenRooms).toHaveBeenCalled());
     expect(screen.queryByRole('list', { name: 'Page sections' })).not.toBeInTheDocument();
@@ -827,6 +859,7 @@ describe('ProjectSetupPage, arranging the project\'s page', () => {
 
   it('can be dragged, from the keyboard as well as with a pointer', async () => {
     setup({ project: PROJECT });
+    fireEvent.click(screen.getByRole('tab', { name: 'Page Layout' }));
 
     const handle = await screen.findByRole('button', { name: 'Drag About the project to reorder' });
     expect(handle).toHaveAttribute('aria-roledescription', 'sortable');
