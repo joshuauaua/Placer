@@ -2133,6 +2133,38 @@ a {
   gap: 16px;
 }
 
+.placer-project-gallery {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.placer-project-gallery a {
+  display: block;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.placer-project-gallery img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+  transition: transform 0.2s ease;
+}
+
+.placer-project-gallery a:hover img {
+  transform: scale(1.03);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-project-gallery img { transition: none; }
+}
+
 .placer-project-related {
   border-top: 1px solid var(--placer-grey-200);
   padding-top: 48px;

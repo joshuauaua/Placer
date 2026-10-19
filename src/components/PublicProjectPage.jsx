@@ -5,7 +5,8 @@
  * it, level with its top — the time it has left, its views and its followers, each a
  * big number over its words, and a Follow button. Then a bar of tabs that sticks to
  * the top of the window — Project, Updates, Comments and Relevant links — each a view
- * of its own, the Project tab opening with the project's description and goals. Under
+ * of its own, the Project tab opening with the project's description and goals, and any
+ * photos its organisers added beside the header image (supabase/project-gallery.sql). Under
  * whichever is showing, always: the Organizer (the organisation it is run for, or the
  * account that started it) beside its Collaborators, then three related projects.
  *
@@ -701,6 +702,26 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
               <section className="placer-project-section" aria-labelledby="project-goals-heading">
                 <h2 id="project-goals-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 12 }}>Goals</h2>
                 <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{goals}</p>
+              </section>
+            )}
+
+            {project.gallery?.length > 0 && (
+              <section className="placer-project-section" aria-labelledby="project-photos-heading">
+                <h2 id="project-photos-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 20 }}>
+                  Photos
+                </h2>
+                <ul className="placer-project-gallery">
+                  {project.gallery.map((photo, index) => (
+                    <li key={photo.path}>
+                      {/* The full picture in a tab of its own; the grid crops it. */}
+                      <a href={photo.url} target="_blank" rel="noreferrer"
+                        aria-label={`Photo ${index + 1} of ${project.gallery.length}, full size`}>
+                        <img src={photo.url} alt="" loading="lazy"
+                          style={{ border: `1px solid ${t.line}` }} />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </section>
             )}
 

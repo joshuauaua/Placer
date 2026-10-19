@@ -20,10 +20,12 @@ import { DateRangePicker } from './DatePicker';
 import { useEffect, useState } from 'react';
 import { Btn } from './UI';
 import { ImagePicker } from './ImagePicker';
+import { GalleryPicker } from './GalleryPicker';
 import { AddressInput } from './AddressInput';
 import {
   BUDGET_CURRENCIES, PROJECT_TYPES, VISIBILITIES, createProject, readProjectBudget, readProjectToolConfig,
   readProjectTools, removeProjectImageFile, saveProjectBudget, saveProjectTools, updateProject, uploadProjectImage,
+  uploadProjectGalleryImage, GALLERY_MAX,
 } from '../services/projects';
 import { checkPickedImage } from '../services/media';
 import { suggestCurrency } from '../lib/currency';
@@ -347,6 +349,32 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
     if (previous && previous !== nextPath) await removeProjectImageFile(previous);
   };
 
+  // The photos beside it save straight away too: each upload is added to the end of the
+  // list, and a photo taken out is deleted once the project no longer points at it.
+  const galleryPaths = project?.galleryPaths ?? [];
+  const addPhotos = async (files) => {
+    const added = [];
+    try {
+      for (const file of files) added.push(await uploadProjectGalleryImage(project.id, file));
+    } finally {
+      // Whatever did upload is kept, even when a later file fails.
+      if (added.length > 0) {
+        setProject(await updateProject(project.id, { galleryPaths: [...galleryPaths, ...added] }));
+      }
+    }
+  };
+  const movePhoto = async (from, to) => {
+    const next = [...galleryPaths];
+    next.splice(to, 0, ...next.splice(from, 1));
+    setProject(await updateProject(project.id, { galleryPaths: next }));
+  };
+  const removePhoto = async (index) => {
+    const removed = galleryPaths[index];
+    setProject(await updateProject(project.id,
+      { galleryPaths: galleryPaths.filter((_, i) => i !== index) }));
+    await removeProjectImageFile(removed);
+  };
+
   const pickPendingImage = async (file) => {
     checkPickedImage(file, 'A project image'); // Throws the same sentence the upload would.
     setPending({ file, url: URL.createObjectURL(file) });
@@ -529,6 +557,15 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
     </Field>
   );
 
+  // Only once the project exists, since its id names the photos' folder.
+  const gallery = editing && (
+    <Field t={t} label="More photos"
+      hint={`Shown in a Photos section on the project's page, in this order. Up to ${GALLERY_MAX}. Each is resized, and saved without its location data. Optional.`}>
+      <GalleryPicker t={t} photos={project.gallery ?? []} max={GALLERY_MAX}
+        onAdd={addPhotos} onMove={movePhoto} onRemove={removePhoto} disabled={status === 'saving'} />
+    </Field>
+  );
+
   const place = (
     <Field t={t} label="Address" htmlFor="project-address"
       hint={'The place this project is about. Pick it from the suggestions and the project is pinned there on the map.'}>
@@ -590,6 +627,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
         <ProjectTypeChoice t={t} value={projectType} onChange={setProjectType} />
         {basics}
         {image}
+        {gallery}
         {place}
 
         <h2 style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>Tools</h2>

@@ -48,6 +48,11 @@ export const PROJECT_IMAGES_FOLDER = 'projects';
 // Idea Visualizer's base images, one folder per project like the covers, but not
 // swept down to one by the media function: the page removes the one it replaces.
 export const SCENE_IMAGES_FOLDER = 'scenes';
+// The photos on a project's page beside its header image (supabase/project-gallery.sql).
+// Not swept either: the page removes the one it takes out.
+export const GALLERY_IMAGES_FOLDER = 'gallery';
+// How many photos a project's page can have, which the database checks too.
+export const GALLERY_MAX = 12;
 
 export { isSupabaseConfigured };
 
@@ -95,7 +100,7 @@ export const PROJECT_TYPE_NAMES = {
 };
 
 const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, summary, description, start_date, end_date, '
-  + 'locations, location_shapes, address, location_lat, location_lng, image_path, project_type, '
+  + 'locations, location_shapes, address, location_lat, location_lng, image_path, gallery_paths, project_type, '
   + 'organisation_id, visibility, created_at, updated_at';
 
 function fromRow(row) {
@@ -124,6 +129,9 @@ function fromRow(row) {
     // An uploaded picture, shown instead of the map of the area when there is one.
     imagePath: row.image_path ?? null,
     image: mediaUrl(row.image_path),
+    // More photos for its page, in the order they are shown — see supabase/project-gallery.sql.
+    galleryPaths: row.gallery_paths ?? [],
+    gallery: (row.gallery_paths ?? []).map((path) => ({ path, url: mediaUrl(path) })).filter(({ url }) => url),
     // One of PROJECT_TYPES' keys, or null for a project started before there was a choice.
     projectType: row.project_type ?? null,
     // The organisation it is run in the name of, or null for one run by its owner
@@ -347,7 +355,8 @@ export async function updateProject(id, patch) {
   const columns = {
     ownerName: 'owner_name', name: 'name', summary: 'summary', description: 'description',
     startDate: 'start_date', endDate: 'end_date', locations: 'locations',
-    locationShapes: 'location_shapes', imagePath: 'image_path', projectType: 'project_type',
+    locationShapes: 'location_shapes', imagePath: 'image_path', galleryPaths: 'gallery_paths',
+    projectType: 'project_type',
     organisationId: 'organisation_id', visibility: 'visibility',
   };
   const row = {};
@@ -389,6 +398,21 @@ export async function uploadProjectImage(projectId, file) {
   }
 }
 
+/**
+ * Upload a photo for a project's page, beside its header image, and return the path to
+ * add to its galleryPaths with updateProject. Sized like the header image.
+ */
+export async function uploadProjectGalleryImage(projectId, file) {
+  const { blob, ext } = await preparePhoto(file, 'project', 'A photo');
+  const supabase = await client();
+  const path = `${GALLERY_IMAGES_FOLDER}/${projectId}/photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  try {
+    return await uploadMedia(supabase, path, blob);
+  } catch (error) {
+    throw new Error(`Could not upload the photo: ${error.message}`);
+  }
+}
+
 /** Delete a project image no longer in use. Best effort, like removeProfileImageFile. */
 export async function removeProjectImageFile(path) {
   if (!path) return;
@@ -407,7 +431,7 @@ export async function deleteProject(id) {
   // Read the paths before the rows that hold them are gone.
   const { data: existing } = await supabase
     .from(PROJECTS_TABLE)
-    .select('image_path')
+    .select('image_path, gallery_paths')
     .eq('id', id)
     .maybeSingle();
   const { data: toolRows } = await supabase
@@ -423,6 +447,7 @@ export async function deleteProject(id) {
   // After the row, not before: a refused delete must not cost the project its image.
   // The media function lets anyone clear the files of a project that no longer exists.
   await removeProjectImageFile(existing?.image_path);
+  for (const path of existing?.gallery_paths ?? []) await removeProjectImageFile(path);
   for (const row of toolRows ?? []) await removeProjectImageFile(row.config?.imagePath);
   for (const row of roomRows ?? []) await removeProjectImageFile(row.config?.imagePath);
   track('project_deleted', { project_id: id });
