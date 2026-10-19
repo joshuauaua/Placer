@@ -92,6 +92,9 @@
  *              not the reading width the rest of the page keeps
  *   Embed    — the tool itself, set into the page: { t, tool, room }, where `room` is
  *              { id, expiresAt, config }. Without one, the page links to the room.
+ *   cover    — true for an Embed that draws the section's heading itself, as a title
+ *              on a picture: the page then draws none, and passes it
+ *              `heading` = { id, title } to give its own (Site-Specific Spatial Mapping)
  */
 
 import { PALETTE } from '../theme';

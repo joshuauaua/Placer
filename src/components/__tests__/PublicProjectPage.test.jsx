@@ -626,6 +626,13 @@ describe('PublicProjectPage, taking part', () => {
       here: null,
     };
 
+    /** The section's cover, then the survey it opens, in its dialog. */
+    const openSurvey = async (button = 'Start the survey') => {
+      const cover = within(await screen.findByRole('region', { name: 'Map the site with us' }));
+      fireEvent.click(cover.getByRole('button', { name: button }));
+      return within(screen.getByRole('dialog', { name: 'Map the site with us' }));
+    };
+
     const throughTheSurvey = async (section) => {
       fireEvent.click(await section.findByRole('group', { name: /Tap where you are to drop your pin/ }));
       fireEvent.click(section.getByRole('button', { name: 'Start the survey' }));
@@ -633,21 +640,33 @@ describe('PublicProjectPage, taking part', () => {
       for (let i = 0; i < 18; i += 1) fireEvent.click(section.getByRole('button', { name: 'Yes' }));
     };
 
-    it('is used on the room\'s site, set into the page', async () => {
+    it('is a map of the room\'s site with its heading on it, opening the survey over the page', async () => {
       vi.mocked(readProjectTools).mockResolvedValue(['site-spatial-mapping']);
       vi.mocked(readProjectOpenRooms).mockResolvedValue([SITE_ROOM]);
       setup();
-      const section = within(await screen.findByRole('region', { name: 'Map the site with us' }));
+      const cover = within(await screen.findByRole('region', { name: 'Map the site with us' }));
 
-      expect(await section.findByText('Where are you? · Folkets Park')).toBeInTheDocument();
-      expect(section.queryByLabelText('Site name')).not.toBeInTheDocument();
+      expect(cover.getByRole('heading', { level: 2, name: 'Map the site with us' })).toBeInTheDocument();
+      expect(cover.getByRole('img', { name: 'Map of Folkets Park' })).toBeInTheDocument();
+      expect(cover.queryByText(/Where are you\?/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+      const survey = await openSurvey();
+      expect(await survey.findByText('Where are you? · Folkets Park')).toBeInTheDocument();
+      expect(survey.queryByLabelText('Site name')).not.toBeInTheDocument();
+
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await openSurvey();
+      fireEvent.click(screen.getByRole('button', { name: 'Close the survey' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
     it('records the answers, without contact details, in place of staying involved', async () => {
       vi.mocked(readProjectTools).mockResolvedValue(['site-spatial-mapping']);
       vi.mocked(readProjectOpenRooms).mockResolvedValue([SITE_ROOM]);
       setup();
-      const section = within(await screen.findByRole('region', { name: 'Map the site with us' }));
+      const section = await openSurvey();
       await throughTheSurvey(section);
 
       expect(section.queryByText(/Want to stay involved/)).not.toBeInTheDocument();
@@ -670,7 +689,7 @@ describe('PublicProjectPage, taking part', () => {
       vi.mocked(readProjectTools).mockResolvedValue(['site-spatial-mapping']);
       vi.mocked(readProjectOpenRooms).mockResolvedValue([SITE_ROOM]);
       setup();
-      const section = within(await screen.findByRole('region', { name: 'Map the site with us' }));
+      const section = await openSurvey();
       await throughTheSurvey(section);
       vi.mocked(readContributions).mockResolvedValue([{ state: EARLIER }, { state: { answers: { seating: true } } }]);
       fireEvent.click(section.getByRole('button', { name: 'Record my answers' }));
@@ -699,7 +718,7 @@ describe('PublicProjectPage, taking part', () => {
         'grade', 'exclusion'].map((key) => [key, true]));
       rememberAnswer('room-site', { ...EARLIER, answers: every });
       setup();
-      const section = within(await screen.findByRole('region', { name: 'Map the site with us' }));
+      const section = await openSurvey('See your answers');
 
       expect(await section.findByText('Section 1 complete')).toBeInTheDocument();
       expect(section.getByRole('button', { name: 'Answers recorded' })).toBeDisabled();
@@ -1050,7 +1069,8 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     ]);
     vi.mocked(readProjectTools).mockResolvedValue([]);
     vi.mocked(isFollowing).mockResolvedValue(false);
-    vi.mocked(readProject).mockResolvedValue({ ...PROJECT, summary: 'A park along the old railway.' });
+    vi.mocked(readProject).mockResolvedValue({ ...PROJECT, summary: 'A park along the old railway.',
+      subtitle: 'A park for the whole neighbourhood' });
     vi.mocked(readProjectSummary).mockResolvedValue(SUMMARY);
     vi.mocked(readUpdates).mockResolvedValue([UPDATE]);
     vi.mocked(readComments).mockResolvedValue([COMMENT]);
@@ -1112,17 +1132,26 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     expect(screen.queryByRole('button', { name: /Edit project/ })).not.toBeInTheDocument();
   });
 
-  it('heads the page with the title and the summary as its subtitle, and the byline under the image', async () => {
+  it('heads the page with the title and its own subtitle, and the byline under the image', async () => {
     setup();
 
     const title = await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' });
-    expect(title.parentElement.nextElementSibling).toHaveTextContent('A park along the old railway.');
+    expect(title.parentElement.nextElementSibling).toHaveTextContent('A park for the whole neighbourhood');
+    expect(title.parentElement.nextElementSibling).not.toHaveTextContent('A park along the old railway.');
     const byline = screen.getByText('1 Jan 2026 – 31 Dec 2026').closest('div');
     expect(byline).toHaveTextContent('By Mara Quinn');
     expect(byline).toHaveTextContent('Malmö, Folkets Park');
     // After the image in the page, not between it and the title.
     expect(title.compareDocumentPosition(byline) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(byline.previousElementSibling.tagName).not.toBe('H1');
+  });
+
+  it('has no subtitle when the project has none, rather than repeating its description', async () => {
+    vi.mocked(readProject).mockResolvedValue({ ...PROJECT, summary: 'A park along the old railway.' });
+    setup();
+
+    await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' });
+    expect(document.querySelector('.placer-project-subtitle')).not.toBeInTheDocument();
   });
 
   it('has four tabs, and keeps the people and related projects under every one', async () => {

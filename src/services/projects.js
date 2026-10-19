@@ -99,7 +99,7 @@ export const PROJECT_TYPE_NAMES = {
   steward: 'Have a say over a place', advocate: 'Pushing for change', other: 'Something else',
 };
 
-const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, summary, description, start_date, end_date, '
+const PROJECT_COLUMNS = 'id, owner_id, owner_name, name, subtitle, summary, description, start_date, end_date, '
   + 'locations, location_shapes, address, location_lat, location_lng, image_path, gallery_paths, gallery_captions, page_layout, project_type, '
   + 'organisation_id, visibility, created_at, updated_at';
 
@@ -115,6 +115,8 @@ function fromRow(row) {
     ownerId: row.owner_id,
     ownerName: row.owner_name,
     name: row.name,
+    // The line under its name at the top of its page — see supabase/project-subtitle.sql.
+    subtitle: row.subtitle ?? '',
     // What the project is, in a line or two — see supabase/project-summary.sql.
     summary: row.summary ?? '',
     // Its goals, despite the column's name: what it is trying to find out or bring about.
@@ -163,7 +165,7 @@ function fromRow(row) {
  * insert policy, the same shape postImagination uses for userId — a missing one is a
  * refused write here rather than a policy violation there.
  */
-export async function createProject({ ownerId, ownerName, name, summary = '', description = '',
+export async function createProject({ ownerId, ownerName, name, subtitle = '', summary = '', description = '',
   startDate = null, endDate = null, locations = [], locationShapes = [], address = '',
   locationPoint = null, projectType = null, organisationId = null, visibility = 'public' }) {
   if (!ownerId) throw new Error('Starting a project needs an account.');
@@ -175,6 +177,7 @@ export async function createProject({ ownerId, ownerName, name, summary = '', de
       owner_id: ownerId,
       owner_name: ownerName,
       name,
+      subtitle,
       summary,
       description,
       start_date: startDate,
@@ -367,7 +370,7 @@ export async function updateProject(id, patch) {
   const supabase = await client();
 
   const columns = {
-    ownerName: 'owner_name', name: 'name', summary: 'summary', description: 'description',
+    ownerName: 'owner_name', name: 'name', subtitle: 'subtitle', summary: 'summary', description: 'description',
     startDate: 'start_date', endDate: 'end_date', locations: 'locations',
     locationShapes: 'location_shapes', imagePath: 'image_path', galleryPaths: 'gallery_paths', galleryCaptions: 'gallery_captions', pageLayout: 'page_layout',
     projectType: 'project_type',

@@ -649,6 +649,14 @@ Each photo can have a caption, shown under it in the page's gallery.
 object from a photo's path to its caption, so a caption stays with its photo when they
 are reordered. Run it before the app goes out too.
 
+### A project's subtitle
+
+The line under a project's name at the top of its page used to be its description,
+which the page also shows under About the project. `project-subtitle.sql` (also a
+migration) adds `projects.subtitle`, set in the project's setup as a field of its own.
+Empty, which every project's is to begin with, shows no line. Run it before the app
+goes out: the app reads the column with every project.
+
 ### Replies to a project's updates and comments
 
 Anybody signed in who can see a project can reply to its updates and comments, one

@@ -535,6 +535,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const hasTools = sections.some((section) => section.kind === 'tool');
   // A tool in a room that asks for the page's full width (onProjectPage.wide) widens it.
   const isWide = (section) => Boolean(section.room && section.tool?.onProjectPage?.wide);
+  const isCover = (section) => Boolean(section.room && section.tool?.onProjectPage?.cover
+    && section.tool.onProjectPage.Embed);
 
   const owner = summary?.owner ?? { id: project.ownerId, name: project.ownerName, photo: null };
   const collaborators = summary?.collaborators ?? [];
@@ -617,9 +619,9 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
             </Btn>
           )}
         </div>
-        {project.summary && (
+        {project.subtitle && (
           <p className="placer-body-lg placer-project-subtitle" style={{ color: t.inkDim, whiteSpace: 'pre-line' }}>
-            {project.summary}
+            {project.subtitle}
           </p>
         )}
 
@@ -713,11 +715,16 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
             {sections.map((section) => (
               <section key={section.key} id={section.domId} aria-labelledby={`${section.domId}-heading`}
                 className={`placer-project-section${isWide(section) ? ' placer-project-section--wide' : ''}`}>
-                <h2 id={`${section.domId}-heading`} className="placer-h2"
-                  style={{ color: t.ink, marginBottom: section.kind === 'about' || section.kind === 'goals' ? 12 : 20 }}>
-                  {section.title}
-                </h2>
-                {section.kind === 'tool' && <ToolIntro t={t} tool={section.tool} room={section.room} />}
+                {/* A tool drawn as a cover puts the heading on it instead (onProjectPage.cover). */}
+                {!isCover(section) && (
+                  <h2 id={`${section.domId}-heading`} className="placer-h2"
+                    style={{ color: t.ink, marginBottom: section.kind === 'about' || section.kind === 'goals' ? 12 : 20 }}>
+                    {section.title}
+                  </h2>
+                )}
+                {section.kind === 'tool' && !isCover(section) && (
+                  <ToolIntro t={t} tool={section.tool} room={section.room} />
+                )}
 
                 {section.kind === 'about' && (
                   <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{intro}</p>
@@ -731,7 +738,9 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
 
                 {section.kind === 'tool' && (section.room && section.tool.onProjectPage?.Embed ? (
                   <>
-                    <section.tool.onProjectPage.Embed t={t} tool={section.tool} room={section.room} />
+                    <section.tool.onProjectPage.Embed t={t} tool={section.tool} room={section.room}
+                      heading={isCover(section) ? { id: `${section.domId}-heading`, title: section.title } : undefined} />
+                    {isCover(section) && <ToolIntro t={t} tool={section.tool} room={section.room} />}
                     {/* Ideas posted to the map for the project, from the Toolkit's own flow. */}
                     {section.tool.id === REIMAGINE_TOOL && imaginations.length > 0 && (
                       <div style={{ marginTop: 24 }}>
