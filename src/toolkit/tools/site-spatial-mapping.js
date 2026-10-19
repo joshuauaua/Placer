@@ -30,6 +30,8 @@ export default {
   },
   onProjectPage: {
     heading: 'Map the site with us',
+    // The heading goes on the site's map, which opens the tool in a dialog.
+    cover: true,
     Embed: SiteMappingOnPage,
   },
   room: {

@@ -80,6 +80,7 @@ const LAST_STEP = STEPS.length - 1;
 // The database's own limits (projects_name_shape, projects_summary_size), held here
 // too so a long name is cut off as it is typed rather than refused on save.
 const NAME_MAX_LENGTH = 120;
+const SUBTITLE_MAX_LENGTH = 200;
 const SUMMARY_MAX_LENGTH = 1000;
 
 /**
@@ -280,6 +281,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
   const editing = !!project;
 
   const [name, setName] = useState(project?.name ?? '');
+  const [subtitle, setSubtitle] = useState(project?.subtitle ?? '');
   const [summary, setSummary] = useState(project?.summary ?? '');
   const [description, setDescription] = useState(project?.description ?? '');
   const [startDate, setStartDate] = useState(project?.startDate ?? '');
@@ -433,6 +435,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
     try {
       const patch = {
         name: name.trim(),
+        subtitle: subtitle.trim(),
         summary: summary.trim(),
         description: description.trim(),
         startDate: startDate || null,
@@ -532,8 +535,15 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
           placeholder="e.g., Riverside Greenway" style={inputStyle(t)} />
       </Field>
 
+      <Field t={t} label="Subtitle" htmlFor="project-subtitle"
+        hint="A line under the project's name at the top of its page. Optional.">
+        <input id="project-subtitle" type="text" value={subtitle} maxLength={SUBTITLE_MAX_LENGTH}
+          onChange={(e) => setSubtitle(e.target.value)}
+          placeholder="e.g., A park for the whole neighbourhood" style={inputStyle(t)} />
+      </Field>
+
       <Field t={t} label="Description" htmlFor="project-summary"
-        hint="What the project is, in a sentence or two. Shown on its card and its public page.">
+        hint="What the project is, in a sentence or two. Shown on its card and under About the project on its page.">
         <textarea id="project-summary" value={summary} rows={3} maxLength={SUMMARY_MAX_LENGTH}
           onChange={(e) => setSummary(e.target.value)}
           placeholder="e.g., Turning the disused rail line along the river into a park."

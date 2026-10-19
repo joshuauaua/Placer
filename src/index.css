@@ -2145,6 +2145,40 @@ a {
 /* PLACER — a project's photos as a gallery (see ProjectGallery.jsx): one at a time,
  * 16:9 and whole rather than cropped, with round arrows either side, a count in the
  * corner, and thumbnails underneath. */
+/* Site-Specific Spatial Mapping's cover on a project page (toolkit/SiteMappingOnPage):
+ * the site's map, darkened at the bottom so the heading and button on it read. */
+.placer-site-cover {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  aspect-ratio: 16 / 7;
+  min-height: 260px;
+}
+
+.placer-site-cover-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.15) 70%, rgba(0, 0, 0, 0));
+  pointer-events: none;
+}
+
+.placer-site-cover-body {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+@media (max-width: 640px) {
+  .placer-site-cover { aspect-ratio: 4 / 5; }
+  .placer-site-cover-body { padding: 20px; }
+}
+
 .placer-gallery {
   border-radius: 16px;
 }

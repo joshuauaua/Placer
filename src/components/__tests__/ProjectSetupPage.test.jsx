@@ -161,6 +161,7 @@ describe('ProjectSetupPage, starting a project', () => {
 
     toBasics();
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
+    fireEvent.change(screen.getByLabelText('Subtitle'), { target: { value: ' A park for the whole neighbourhood ' } });
     fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'A park along the old rail line.' } });
     fireEvent.change(screen.getByLabelText('Goals'), { target: { value: 'Turn the old rail corridor into a park.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
@@ -176,6 +177,7 @@ describe('ProjectSetupPage, starting a project', () => {
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith({ id: 'proj-1', name: 'Riverside Greenway' }));
     expect(createProject).toHaveBeenCalledWith({
       ownerId: 'user-1', ownerName: 'Mara Quinn', name: 'Riverside Greenway',
+      subtitle: 'A park for the whole neighbourhood',
       summary: 'A park along the old rail line.',
       description: 'Turn the old rail corridor into a park.',
       startDate: null, endDate: null,
