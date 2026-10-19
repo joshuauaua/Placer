@@ -490,9 +490,10 @@ function ChosenToolRow({ t, tool, live, scheduled = null, rooms = [], onConfigur
 }
 
 /**
- * One room: its QR code, how it is going, and the things a project runs it with —
- * open it as the facilitator, save its code to print, close it, or delete it and
- * everything contributed to it. The point of
+ * One room: how it is going, and the things a project runs it with — open it as the
+ * facilitator, save its QR code to print, close it, or delete it and everything
+ * contributed to it. The code itself is not shown, only drawn out of sight for Download
+ * QR to save. The point of
  * having these here rather than only on the room itself is that a poll left running for
  * a month outlives the browser tab, and often the device, it was opened on.
  */
@@ -514,9 +515,9 @@ function RoomRow({ t, room, named = true, onOpen, onEdit, onClose, onDelete }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0',
       borderTop: `1px solid ${t.line}`, flexWrap: 'wrap' }}>
-      <div ref={qrRef} style={{ background: '#fff', padding: 6, borderRadius: 12,
-        border: `1px solid ${t.line}`, flex: '0 0 auto', display: 'flex' }}>
-        <QRCode value={url} size={64} bgColor="#ffffff" fgColor="#000000" title={`Join ${name}`} />
+      {/* Hidden: there only for Download QR to save as a file. */}
+      <div ref={qrRef} hidden>
+        <QRCode value={url} size={256} bgColor="#ffffff" fgColor="#000000" title={`Join ${name}`} />
       </div>
 
       <div style={{ flex: '1 1 200px', minWidth: 0 }}>

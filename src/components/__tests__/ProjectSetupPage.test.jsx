@@ -356,7 +356,6 @@ describe('ProjectSetupPage, editing a project', () => {
     expect(screen.getByLabelText('Name *')).toHaveValue('Riverside Greenway');
     expect(screen.getByLabelText('Dates')).toHaveTextContent(/Jan.*Dec.*2026/);
     expect(screen.getByLabelText('Address')).toHaveValue('Folkets Park, Amiralsgatan 35, Malmö');
-    expect(screen.getByRole('radio', { name: /I want to push for change/ })).toBeChecked();
     expect(screen.getByRole('button', { name: /Save changes/ })).toBeInTheDocument();
   });
 
@@ -391,15 +390,11 @@ describe('ProjectSetupPage, editing a project', () => {
     expect(saveProjectTools).not.toHaveBeenCalled();
   });
 
-  it('can change the kind of project', async () => {
-    updateProject.mockResolvedValue(PROJECT);
+  it('does not show or change the kind of project', () => {
     setup({ project: PROJECT });
 
-    fireEvent.click(screen.getByRole('radio', { name: /Something else/ }));
-    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
-
-    await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1',
-      expect.objectContaining({ projectType: 'other' })));
+    expect(screen.queryByText(/What kind of project/)).not.toBeInTheDocument();
+    expect(screen.queryByText('I want to push for change in a place')).not.toBeInTheDocument();
   });
 
   it('leaves the organisation alone when editing a project run by one this account does not run', async () => {
@@ -609,9 +604,12 @@ describe('ProjectSetupPage, public or private', () => {
     const { onSaved } = setup();
 
     toBasics();
-    expect(screen.getByRole('radio', { name: /^Public/ })).toBeChecked();
+    const visibility = screen.getByRole('switch', { name: 'Visibility' });
+    expect(visibility).toBeChecked();
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
-    fireEvent.click(screen.getByRole('radio', { name: /^Private/ }));
+    fireEvent.click(visibility);
+    expect(visibility).not.toBeChecked();
+    expect(screen.getByText(/Only you, your collaborators/)).toBeInTheDocument();
     next();
     next();
     fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
@@ -624,8 +622,9 @@ describe('ProjectSetupPage, public or private', () => {
     updateProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
     setup({ project: { id: 'proj-1', name: 'Riverside Greenway', locations: [], visibility: 'private' } });
 
-    expect(screen.getByRole('radio', { name: /^Private/ })).toBeChecked();
-    fireEvent.click(screen.getByRole('radio', { name: /^Public/ }));
+    const visibility = screen.getByRole('switch', { name: 'Visibility' });
+    expect(visibility).not.toBeChecked();
+    fireEvent.click(visibility);
     fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
 
     await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1', expect.objectContaining({ visibility: 'public' })));

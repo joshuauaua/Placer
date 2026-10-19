@@ -25,6 +25,7 @@ import { closeRoom, createRoom, deleteRoom, rescheduleRoom, setRoomCloses } from
 import { decideAccess, readAccessRequests, removeAccess } from '../../services/projects';
 import { readPreferences, readProjectResponses, saveProjectResponses } from '../../services/notifications';
 import { hostedRoom } from '../../toolkit/rooms';
+import { downloadQrSvg } from '../../lib/qrDownload';
 import { THEME } from '../../theme';
 
 // ProjectSetupPage is rendered in place for "Edit setup" (see the test below) and
@@ -83,6 +84,8 @@ vi.mock('../../services/notifications', async (importOriginal) => ({
   readProjectResponses: vi.fn(() => Promise.resolve(null)),
   saveProjectResponses: vi.fn(() => Promise.resolve()),
 }));
+
+vi.mock('../../lib/qrDownload', () => ({ downloadQrSvg: vi.fn(() => true) }));
 
 vi.mock('../../services/rooms', () => ({
   createRoom: vi.fn(() => Promise.resolve({ id: 'room-9', pin: '123456', facilitatorToken: 'facilitator-9' })),
@@ -567,6 +570,13 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
     for (const name of [/^open$/i, /download qr/i, /^close$/i, /^delete$/i]) {
       expect(room.getByRole('button', { name })).toBeInTheDocument();
     }
+    // The code is not shown, only kept to download.
+    expect(room.queryByRole('img', { name: /Join/ })).not.toBeInTheDocument();
+    fireEvent.click(room.getByRole('button', { name: /download qr/i }));
+    const [container, filename] = vi.mocked(downloadQrSvg).mock.calls[0];
+    expect(container).not.toBeVisible();
+    expect(container.querySelector('svg')).not.toBeNull();
+    expect(filename).toBe('placer-open-vote-qr.svg');
 
     fireEvent.click(row);
     expect(screen.queryByRole('region', { name: 'Poll rooms' })).not.toBeInTheDocument();
