@@ -138,6 +138,23 @@ function ImaginationCard({ t, imagination }) {
   );
 }
 
+/**
+ * What a tool is and why this project is using it, in a paragraph under its heading: the
+ * tool's own (`onProjectPage.intro`) and, when it has one, the organisers' reason
+ * (`onProjectPage.why`, from the room's setup). Nothing for a tool with neither.
+ */
+function ToolIntro({ t, tool, room }) {
+  const { intro, why } = tool.onProjectPage ?? {};
+  const reason = room ? why?.(room.config) : null;
+  if (!intro && !reason) return null;
+  return (
+    <p className="placer-tool-intro" style={{ fontSize: 16, lineHeight: 1.65, color: t.inkDim, margin: '-8px 0 24px',
+      maxWidth: 720, overflowWrap: 'anywhere', whiteSpace: 'pre-line' }}>
+      {[intro, reason].filter(Boolean).join(' ')}
+    </p>
+  );
+}
+
 function LinkRow({ t, link }) {
   return (
     <a href={link.url} target="_blank" rel="noreferrer"
@@ -668,7 +685,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
       </div>
 
       <div id={`project-panel-${tab}`} role="tabpanel" aria-labelledby={`project-tab-${tab}`}
-        className="placer-project-panel">
+        className={`placer-project-panel${tab === 'project' && presented.some(({ tool, room }) => room && tool.onProjectPage?.wide) ? ' placer-project-panel--wide' : ''}`}>
         {tab === 'project' && (
           <>
             {intro && (
@@ -699,10 +716,12 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
             )}
 
             {presented.map(({ id, heading, tool, room }) => (
-              <section key={id} id={id} className="placer-project-section" aria-labelledby={`${id}-heading`}>
+              <section key={id} id={id} aria-labelledby={`${id}-heading`}
+                className={`placer-project-section${room && tool.onProjectPage?.wide ? ' placer-project-section--wide' : ''}`}>
                 <h2 id={`${id}-heading`} className="placer-h2" style={{ color: t.ink, marginBottom: 20 }}>
                   {heading}
                 </h2>
+                <ToolIntro t={t} tool={tool} room={room} />
 
                 {room && tool.onProjectPage?.Embed ? (
                   <>

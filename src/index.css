@@ -2096,6 +2096,16 @@ a {
   margin-bottom: 64px;
 }
 
+/* A tool that needs the page's whole width — a map to draw on — takes it; the sections
+   around it keep the reading width. */
+.placer-project-panel--wide {
+  max-width: none;
+}
+
+.placer-project-panel--wide > :not(.placer-project-section--wide) {
+  max-width: 920px;
+}
+
 .placer-project-section {
   /* Clear of the sticky tab bar when a section is scrolled into view. */
   scroll-margin-top: 72px;
@@ -2996,4 +3006,33 @@ a {
 
 @media (prefers-reduced-motion: reduce) {
   .placer-tour-spotlight { animation: none; }
+}
+
+
+/* Desire Lines (components/toolkit/DesireLinesBoard.jsx): the map beside its panels on a
+   laptop, and the panels under the map where there is no room for both. The map is taller
+   on a phone, where a wide one would leave little to draw on. */
+.placer-desire {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.placer-desire-map {
+  width: 100%;
+  aspect-ratio: 10 / 7;
+}
+
+@media (max-width: 1023px) {
+  .placer-desire {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 639px) {
+  .placer-desire-map {
+    aspect-ratio: 1 / 1;
+    max-height: 70vh;
+  }
 }

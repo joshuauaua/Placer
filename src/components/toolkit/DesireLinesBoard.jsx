@@ -153,7 +153,7 @@ export function DesireLinesBoard({
   const label = `${site.name}. ${hint}`;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(280px, 1fr)', gap: 20, alignItems: 'start' }}>
+    <div className="placer-desire">
       <Panel t={t} title={site.name} aside={
         <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>
           {mine.length} {mine.length === 1 ? 'walk' : 'walks'} drawn

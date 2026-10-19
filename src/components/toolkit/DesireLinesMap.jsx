@@ -214,9 +214,9 @@ export function DesireLinesMap({
   };
 
   return (
-    <div ref={mapEl} role="application" aria-label={label}
+    <div ref={mapEl} role="application" aria-label={label} className="placer-desire-map"
       onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { stroke.current = null; }}
-      style={{ width: '100%', aspectRatio: '10 / 7', borderRadius: 12, overflow: 'hidden',
+      style={{ borderRadius: 12, overflow: 'hidden',
         border: `1.5px solid ${t.line}`, background: t.surfaceAlt, touchAction: mode === 'move' ? 'auto' : 'none' }} />
   );
 }

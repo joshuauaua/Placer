@@ -297,6 +297,67 @@ describe('PublicProjectPage, taking part', () => {
     expect(section.getByText(/Open until 5 November 2026/)).toBeInTheDocument();
   });
 
+  it('gives Desire Lines the whole width of the page, and a poll the reading width', async () => {
+    const site = { id: 's1', name: 'Market square', point: { lat: 52.52, lng: 13.4 }, zoom: 17, bounds: null };
+    vi.mocked(readProjectTools).mockResolvedValue(['desire-lines']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([
+      { ...POLL, id: 'room-dl', tool: 'desire-lines', config: { sites: [site] } },
+    ]);
+    setup();
+    const section = await screen.findByRole('region', { name: 'Draw the way you walk' });
+
+    expect(section).toHaveClass('placer-project-section--wide');
+    expect(section.parentElement).toHaveClass('placer-project-panel--wide');
+    expect(within(section).getByRole('application')).toHaveClass('placer-desire-map');
+  });
+
+  it('explains Desire Lines under its heading, with the reason the organisers gave', async () => {
+    const site = { id: 's1', name: 'Market square', point: { lat: 52.52, lng: 13.4 }, zoom: 17, bounds: null };
+    vi.mocked(readProjectTools).mockResolvedValue(['desire-lines']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([
+      { ...POLL, id: 'room-dl', tool: 'desire-lines', config: { note: 'Shoppers cut across the grass.', sites: [site] } },
+    ]);
+    setup();
+    const section = within(await screen.findByRole('region', { name: 'Draw the way you walk' }));
+
+    expect(section.getByText(/A desire line is the path people actually take/)).toBeInTheDocument();
+    expect(section.getByText(/Shoppers cut across the grass\./)).toBeInTheDocument();
+    // Said once, here, rather than again in a box beside the map.
+    expect(section.queryByText('About this site')).not.toBeInTheDocument();
+  });
+
+  it('says why in its own words when the organisers gave no reason', async () => {
+    const sites = [
+      { id: 's1', name: 'Market square', point: { lat: 52.52, lng: 13.4 }, zoom: 17, bounds: null },
+      { id: 's2', name: 'River park', point: { lat: 52.53, lng: 13.41 }, zoom: 17, bounds: null },
+    ];
+    vi.mocked(readProjectTools).mockResolvedValue(['desire-lines']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([
+      { ...POLL, id: 'room-dl', tool: 'desire-lines', config: { sites } },
+    ]);
+    setup();
+
+    expect(await screen.findByText(/how people really move through Market square and River park/)).toBeInTheDocument();
+  });
+
+  it('gives a tool with nothing to say no paragraph', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL]);
+    setup();
+    const section = await screen.findByRole('region', { name: 'We want your opinion' });
+
+    expect(section.querySelector('.placer-tool-intro')).toBeNull();
+  });
+
+  it('keeps the reading width when nothing on the page needs more', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL]);
+    setup();
+    const section = await screen.findByRole('region', { name: 'We want your opinion' });
+
+    expect(section.parentElement).not.toHaveClass('placer-project-panel--wide');
+  });
+
   it('puts each of several polls on the page, under its own question, and votes in each apart', async () => {
     const BENCHES = { ...POLL, id: 'room-2', config: { question: 'Do we need more benches?' } };
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
