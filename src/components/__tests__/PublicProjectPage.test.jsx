@@ -109,7 +109,7 @@ describe('PublicProjectPage', () => {
     expect(screen.getByText(/Turn the old rail corridor/)).toBeInTheDocument();
   });
 
-  it('shows the photos added beside the header image, in their order, each opening full size', async () => {
+  it('shows the photos added beside the header image as a gallery, in their order', async () => {
     vi.mocked(readProject).mockResolvedValue({ ...PROJECT, gallery: [
       { path: 'gallery/proj-1/photo-1.webp', url: 'https://media.test/gallery/proj-1/photo-1.webp' },
       { path: 'gallery/proj-1/photo-2.webp', url: 'https://media.test/gallery/proj-1/photo-2.webp' },
@@ -117,11 +117,12 @@ describe('PublicProjectPage', () => {
 
     setup();
 
-    const photos = within(await screen.findByRole('region', { name: 'Photos' })).getAllByRole('link');
-    expect(photos.map((link) => link.getAttribute('href'))).toEqual([
-      'https://media.test/gallery/proj-1/photo-1.webp', 'https://media.test/gallery/proj-1/photo-2.webp',
-    ]);
-    expect(photos[0]).toHaveAccessibleName('Photo 1 of 2, full size');
+    const section = within(await screen.findByRole('region', { name: 'Photos' }));
+    expect(section.getByRole('link', { name: 'Photo 1 of 2, full size' }))
+      .toHaveAttribute('href', 'https://media.test/gallery/proj-1/photo-1.webp');
+    fireEvent.click(section.getByRole('button', { name: 'Next photo' }));
+    expect(section.getByRole('link', { name: 'Photo 2 of 2, full size' }))
+      .toHaveAttribute('href', 'https://media.test/gallery/proj-1/photo-2.webp');
   });
 
   it('has no Photos section without any', async () => {
