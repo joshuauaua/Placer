@@ -397,11 +397,11 @@ describe('ProjectSetupPage, editing a project', () => {
     const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent);
     expect(tabs).toEqual(['General settings', 'Images and Media', 'Page Layout']);
     expect(screen.getByRole('tab', { name: 'General settings' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.queryByText('More photos')).not.toBeInTheDocument();
+    expect(screen.queryByText('Gallery Images')).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'New name' } });
     fireEvent.click(screen.getByRole('tab', { name: 'Images and Media' }));
-    expect(screen.getByText('More photos')).toBeInTheDocument();
+    expect(screen.getByText('Gallery Images')).toBeInTheDocument();
     expect(screen.queryByLabelText('Name *')).not.toBeInTheDocument();
 
     fireEvent.keyDown(screen.getByRole('tab', { name: 'Images and Media' }), { key: 'ArrowRight' });
@@ -700,7 +700,7 @@ describe('ProjectSetupPage, photos beside the header image', () => {
     setup();
     toBasics();
 
-    expect(screen.queryByText('More photos')).not.toBeInTheDocument();
+    expect(screen.queryByText('Gallery Images')).not.toBeInTheDocument();
   });
 
   it('adds several at once, after the ones already there', async () => {
