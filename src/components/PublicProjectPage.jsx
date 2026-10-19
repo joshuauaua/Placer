@@ -596,45 +596,45 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         )}
 
         <div className="placer-project-header">
-          <div style={{ minWidth: 0 }}>
+          <div className="placer-project-hero">
             <ProjectImage t={t} project={project} size={HERO_SIZE} frame={HERO_FRAME} />
-            <div className="placer-label" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center',
-              gap: '8px 20px', color: t.inkDim, marginTop: 16 }}>
-              {date && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Icon name="calendar" size={16} stroke={2} />{date}
-                </span>
-              )}
-              {organisation ? (
-                <span>
-                  By{' '}
-                  <a href={`/organisations/${organisation.id}`}
-                    onClick={(e) => { e.preventDefault(); onOpenOrganisation?.(organisation.id); }}
-                    style={{ color: t.ink, fontWeight: 700, textDecoration: 'underline' }}>
-                    {organisation.name}
-                  </a>
-                </span>
-              ) : project.ownerName && (
-                <span>
-                  By{' '}
-                  <a href={`/people/${project.ownerId}`}
-                    onClick={(e) => { e.preventDefault(); onOpenProfile?.(project.ownerId); }}
-                    style={{ color: t.ink, fontWeight: 700, textDecoration: 'underline' }}>
-                    {project.ownerName}
-                  </a>
-                </span>
-              )}
-              {place && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Icon name="pin" size={16} stroke={2} />{place}
-                </span>
-              )}
-              {project.visibility === 'private' && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Icon name="lock" size={16} stroke={2} />Private project
-                </span>
-              )}
-            </div>
+          </div>
+          <div className="placer-label placer-project-meta" style={{ display: 'flex', flexWrap: 'wrap',
+            alignItems: 'center', gap: '8px 20px', color: t.inkDim }}>
+            {date && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="calendar" size={16} stroke={2} />{date}
+              </span>
+            )}
+            {organisation ? (
+              <span>
+                By{' '}
+                <a href={`/organisations/${organisation.id}`}
+                  onClick={(e) => { e.preventDefault(); onOpenOrganisation?.(organisation.id); }}
+                  style={{ color: t.ink, fontWeight: 700, textDecoration: 'underline' }}>
+                  {organisation.name}
+                </a>
+              </span>
+            ) : project.ownerName && (
+              <span>
+                By{' '}
+                <a href={`/people/${project.ownerId}`}
+                  onClick={(e) => { e.preventDefault(); onOpenProfile?.(project.ownerId); }}
+                  style={{ color: t.ink, fontWeight: 700, textDecoration: 'underline' }}>
+                  {project.ownerName}
+                </a>
+              </span>
+            )}
+            {place && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="pin" size={16} stroke={2} />{place}
+              </span>
+            )}
+            {project.visibility === 'private' && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="lock" size={16} stroke={2} />Private project
+              </span>
+            )}
           </div>
 
           <aside aria-label="Project at a glance" className="placer-project-glance">

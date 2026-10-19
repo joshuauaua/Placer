@@ -2042,12 +2042,21 @@ a {
   margin-top: 28px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 40px;
+  grid-template-areas:
+    'hero glance'
+    'meta .';
+  gap: 16px 40px;
   align-items: start;
 }
 
-/* Level with the image's top, with no card: a line above each number. */
+.placer-project-hero { grid-area: hero; min-width: 0; }
+.placer-project-meta { grid-area: meta; min-width: 0; }
+
+/* Beside the image, ending level with its bottom (Follow this project on the image's
+ * bottom edge), with no card: a line above each number. */
 .placer-project-glance {
+  grid-area: glance;
+  align-self: end;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -2288,6 +2297,12 @@ a {
   .placer-project-people {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .placer-project-header {
+    grid-template-areas: 'hero' 'meta' 'glance';
+  }
+
+  .placer-project-glance { margin-top: 24px; }
 
   .placer-project-related-grid {
     grid-template-columns: minmax(0, 1fr);
