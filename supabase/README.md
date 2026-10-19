@@ -649,6 +649,14 @@ Each photo can have a caption, shown under it in the page's gallery.
 object from a photo's path to its caption, so a caption stays with its photo when they
 are reordered. Run it before the app goes out too.
 
+### Replies to a project's updates and comments
+
+Anybody signed in who can see a project can reply to its updates and comments, one
+level deep. `project-replies.sql` (also a migration) adds `project_replies`: each names
+its post by `update_id` or `comment_id`, takes its project from that post, and goes
+when the post does. Its author can remove it, as can the project's team and
+organisers. Run it before the app goes out: the page reads replies with its posts.
+
 ### The order and titles of a project page's sections
 
 Edit project's **Page Layout** field lets organisers put the sections of the project's page

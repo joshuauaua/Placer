@@ -25,6 +25,7 @@ import { PageHeader } from './PageHeader';
 import { PALETTE, THEME } from '../theme';
 import { geocodePlace } from '../lib/geocode';
 import { addPin, createMap, onBackgroundClick, showAreas, stylePin, toLngLat } from '../lib/map';
+import { spreadPins } from '../lib/pinSpread';
 import { isSupabaseConfigured, readMapProjects } from '../services/projects';
 import { readMapOrganisations } from '../services/organisations';
 
@@ -385,10 +386,13 @@ export function ExplorePage({ homeCenter = null, accountId = null, onSignIn,
     const removeAreas = showAreas(map, 'explore-areas', areas,
       { fillOpacity: 0.35, onClick: (area) => pick(area.place) });
 
-    const pins = visible.map((place) => {
+    // A project and an organisation at one address are drawn side by side, not on top
+    // of each other.
+    const offsets = spreadPins(visible.map((place) => place.position));
+    const pins = visible.map((place, i) => {
       const { colour } = LAYERS.find(({ kind }) => kind === place.kind);
       const marker = addPin(map, place.position, {
-        ...pinStyle(colour, false), title: place.title, onClick: () => pick(place),
+        ...pinStyle(colour, false), title: place.title, onClick: () => pick(place), offset: offsets[i],
       });
       markers.set(`${place.kind}-${place.id}`, marker.getElement());
       return marker;

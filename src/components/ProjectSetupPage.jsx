@@ -564,7 +564,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
   );
 
   const image = (
-    <Field t={t} label="Image"
+    <Field t={t} label="Header Image"
       hint="Shown at the top of the project's page and on its card, instead of the map of its area. A landscape photo works best. It is resized, and saved without its location data. Optional.">
       {shownImage && (
         <img src={shownImage} alt="" style={{ display: 'block', width: '100%', aspectRatio: '16 / 9',
@@ -597,7 +597,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
 
   // Only once the project exists, since its id names the photos' folder.
   const gallery = editing && (
-    <Field t={t} label="More photos"
+    <Field t={t} label="Gallery Images"
       hint={`Shown in a Photos section on the project's page, in this order. Up to ${GALLERY_MAX}. Each is resized, and saved without its location data. A caption is shown under its photo, and saved with Save changes. Optional.`}>
       <GalleryPicker t={t} photos={project.gallery ?? []} max={GALLERY_MAX} captions={galleryCaptions}
         onCaption={(path, caption) => setGalleryCaptions((current) => ({ ...current, [path]: caption }))}

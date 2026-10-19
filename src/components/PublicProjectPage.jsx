@@ -50,8 +50,8 @@ import {
   requestProjectAccess, readRelatedProjects, recordProjectView,
 } from '../services/projects';
 import {
-  COMMENT_MAX, UPDATE_MAX, postComment, postUpdate, readComments, readProjectSummary, readUpdates, removeComment,
-  removeUpdate,
+  COMMENT_MAX, REPLY_MAX, UPDATE_MAX, postComment, postReply, postUpdate, readComments, readProjectSummary,
+  readReplies, readUpdates, removeComment, removeReply, removeUpdate,
 } from '../services/projectPage';
 import { follow, isFollowing, unfollow } from '../services/follows';
 import { readOrganisation } from '../services/organisations';
@@ -307,6 +307,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const [configuredTools, setConfiguredTools] = useState(new Set());
   const [imaginations, setImaginations] = useState([]);
   const [links, setLinks] = useState([]);
+  // Every reply on the project's updates and comments (supabase/project-replies.sql).
+  const [replies, setReplies] = useState([]);
   const [related, setRelated] = useState([]);
   // The organisation it is run in the name of, if any — credited in place of the owner.
   const [organisation, setOrganisation] = useState(null);
@@ -335,6 +337,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
     setSummary(null);
     setUpdates({ status: 'loading', posts: [] });
     setComments({ status: 'loading', posts: [] });
+    setReplies([]);
     setTab('project');
 
     Promise.all([
@@ -414,6 +417,11 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
             console.error("Could not load this project's comments:", err);
             if (!cancelled) setComments({ status: 'error', posts: [] });
           });
+
+        // Without them each post still shows; only its replies are missing.
+        readReplies(proj.id)
+          .then((found) => { if (!cancelled) setReplies(found); })
+          .catch((err) => console.error("Could not load the replies on this project's posts:", err));
 
         readRelatedProjects(proj)
           .then((others) => { if (!cancelled) setRelated(others ?? []); })
@@ -571,6 +579,26 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
 
   const addPost = (setList, post) => setList((current) => ({ ...current, posts: [post, ...current.posts] }));
   const dropPost = (setList, id) => setList((current) => ({ ...current, posts: current.posts.filter((p) => p.id !== id) }));
+
+  // Replies, the same for updates and comments: anybody signed in may reply, and its
+  // author, the project's team or its organisers may remove one
+  // (supabase/project-replies.sql). Signed out, Reply asks them to sign in.
+  const replyProps = (kind) => ({
+    replies,
+    canReply: Boolean(accountId),
+    replyMax: REPLY_MAX,
+    onReplySignIn: onSignIn ?? null,
+    onReply: async (post, body, asOrganisation) => {
+      const reply = await postReply(kind === 'update' ? { updateId: post.id } : { commentId: post.id }, body,
+        asOrganisation);
+      setReplies((current) => [...current, reply]);
+    },
+    canRemoveReply: (reply) => isTeam || isOrganiser || (Boolean(accountId) && reply.authorId === accountId),
+    onRemoveReply: async (reply) => {
+      await removeReply(reply.id);
+      setReplies((current) => current.filter((each) => each.id !== reply.id));
+    },
+  });
 
   return (
     <div ref={topRef} className="placer-project" style={{ background: t.page }}>
@@ -743,7 +771,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
             postAs={postAs} organisation={postsOrganisation}
             onPost={async (body, asOrganisation) => addPost(setUpdates, await postUpdate(project.id, body, asOrganisation))}
             canRemove={() => isOrganiser}
-            onRemove={async (post) => { await removeUpdate(post.id); dropPost(setUpdates, post.id); }} />
+            onRemove={async (post) => { await removeUpdate(post.id); dropPost(setUpdates, post.id); }}
+            {...replyProps('update')} />
         )}
 
         {tab === 'comments' && (
@@ -753,7 +782,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
             postAs={postAs} organisation={postsOrganisation}
             onPost={async (body, asOrganisation) => addPost(setComments, await postComment(project.id, body, asOrganisation))}
             canRemove={(post) => isTeam || (Boolean(accountId) && post.authorId === accountId)}
-            onRemove={async (post) => { await removeComment(post.id); dropPost(setComments, post.id); }} />
+            onRemove={async (post) => { await removeComment(post.id); dropPost(setComments, post.id); }}
+            {...replyProps('comment')} />
         )}
 
         {tab === 'links' && (links.length === 0 ? (

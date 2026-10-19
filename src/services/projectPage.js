@@ -1,7 +1,8 @@
 /* PLACER — what a project's public page shows beyond the project itself.
  *
  * Its numbers, its owner and its collaborators (project_public_summary), and its
- * updates and comments — all from supabase/project-public-page.sql. Like the rest of
+ * updates and comments — all from supabase/project-public-page.sql — and the replies
+ * to them (supabase/project-replies.sql). Like the rest of
  * services/projects.js, there is nothing here without a Supabase project.
  *
  * Who wrote an update or a comment is set by the database from the signed-in
@@ -18,8 +19,11 @@ export const UPDATES_TABLE = 'project_updates';
 export const COMMENTS_TABLE = 'project_comments';
 export const UPDATE_MAX = 4000;
 export const COMMENT_MAX = 2000;
+export const REPLIES_TABLE = 'project_replies';
+export const REPLY_MAX = 2000;
 
 const POST_COLUMNS = 'id, project_id, author_id, author_name, organisation_id, body, created_at';
+const REPLY_COLUMNS = `${POST_COLUMNS}, update_id, comment_id`;
 
 async function client() {
   const supabase = await getSupabase();
@@ -151,3 +155,49 @@ export const postComment = (projectId, body, organisationId = null) =>
   addPost(COMMENTS_TABLE, projectId, body, 'comment', organisationId);
 /** Remove a comment. Its author, or the project's owner or a collaborator. */
 export const removeComment = (id) => removePost(COMMENTS_TABLE, id, 'comment');
+
+function replyFrom(row) {
+  return { ...postFrom(row), updateId: row.update_id ?? null, commentId: row.comment_id ?? null };
+}
+
+/**
+ * Every reply to a project's updates and comments, oldest first, each with the
+ * `updateId` or the `commentId` of the post it answers.
+ */
+export async function readReplies(projectId) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(REPLIES_TABLE)
+    .select(REPLY_COLUMNS)
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(`Could not load the replies on this project: ${error.message}`);
+  return withAuthorPhotos(supabase, (data ?? []).map(replyFrom));
+}
+
+/**
+ * Reply to an update or a comment: `to` is { updateId } or { commentId }. Anybody
+ * signed in who can see the project; an organiser may pass the project's
+ * `organisationId` to reply as the organisation.
+ */
+export async function postReply(to, body, organisationId = null) {
+  const supabase = await client();
+  const row = to.updateId ? { update_id: to.updateId } : { comment_id: to.commentId };
+  row.body = body.trim();
+  if (organisationId) row.organisation_id = organisationId;
+  const { data, error } = await supabase
+    .from(REPLIES_TABLE)
+    .insert(row)
+    .select(REPLY_COLUMNS)
+    .single();
+
+  if (error) throw new Error(`Could not post that reply: ${error.message}`);
+  track('project_reply_posted', {
+    project_id: data.project_id, to: to.updateId ? 'update' : 'comment', as_organisation: Boolean(organisationId),
+  });
+  return (await withAuthorPhotos(supabase, [replyFrom(data)]))[0];
+}
+
+/** Remove a reply. Its author, the project's owner or a collaborator, or an organiser. */
+export const removeReply = (id) => removePost(REPLIES_TABLE, id, 'reply');

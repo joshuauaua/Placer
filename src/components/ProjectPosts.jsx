@@ -9,6 +9,10 @@
  * An organiser of a project run for an organisation chooses, above the box, whether
  * to post as the organisation or as themselves (`postAs`); a post made as the
  * organisation shows its name and picture and links to it.
+ *
+ * Under each post are the replies to it, oldest first (supabase/project-replies.sql),
+ * and for anybody who may reply (`canReply`) a Reply button that opens a box of its
+ * own. One level only: a reply is to the post, not to another reply.
  */
 
 import { useState } from 'react';
@@ -53,7 +57,10 @@ function PostAs({ t, id, postAs, asOrganisation, onChange }) {
   );
 }
 
-function Composer({ t, id, label, placeholder, submitLabel, max, onPost, postAs, organisationFirst }) {
+function Composer({
+  t, id, label, placeholder, submitLabel, max, onPost, postAs, organisationFirst, rows = 3, onCancel = null,
+  autoFocus = false, style = { marginBottom: 24 },
+}) {
   const [body, setBody] = useState('');
   const [asOrganisation, setAsOrganisation] = useState(organisationFirst);
   const [sending, setSending] = useState(false);
@@ -76,18 +83,21 @@ function Composer({ t, id, label, placeholder, submitLabel, max, onPost, postAs,
   };
 
   return (
-    <form onSubmit={send} style={{ marginBottom: 24 }}>
+    <form onSubmit={send} style={style}>
       {postAs && <PostAs t={t} id={id} postAs={postAs} asOrganisation={asOrganisation} onChange={setAsOrganisation} />}
       <label htmlFor={id} className="placer-label" style={{ display: 'block', color: t.ink, marginBottom: 8 }}>
         {label}
       </label>
-      <textarea id={id} value={body} onChange={(e) => setBody(e.target.value)} maxLength={max} rows={3}
-        placeholder={placeholder}
+      <textarea id={id} value={body} onChange={(e) => setBody(e.target.value)} maxLength={max} rows={rows}
+        placeholder={placeholder} autoFocus={autoFocus}
         style={{ width: '100%', boxSizing: 'border-box', padding: 12, borderRadius: 12, resize: 'vertical',
           border: `1px solid ${t.lineStrong}`, fontFamily: 'var(--placer-font)', fontSize: 15, lineHeight: 1.5,
           color: t.ink, background: t.surface }} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
         {error && <p role="alert" style={{ fontSize: 14, color: t.ink, marginRight: 'auto' }}>{error}</p>}
+        {onCancel && (
+          <Btn t={t} type="button" size="sm" variant="ghost" onClick={onCancel} disabled={sending}>Cancel</Btn>
+        )}
         <Btn t={t} type="submit" size="sm" icon="send" disabled={sending || !body.trim()}>
           {sending ? 'Posting…' : submitLabel}
         </Btn>
@@ -97,25 +107,91 @@ function Composer({ t, id, label, placeholder, submitLabel, max, onPost, postAs,
 }
 
 /**
+ * One post or reply: who wrote it, when, a Remove for whoever may, and what it says.
+ * A reply is drawn smaller. `children` go under the text — a post's replies.
+ */
+function Entry({ t, post, small = false, what, canRemove, removing, onRemove, onOpenProfile, onOpenOrganisation,
+  organisation, children }) {
+  const asOrganisation = Boolean(post.organisationId);
+  const nameStyle = { fontSize: small ? 14 : 15, fontWeight: 700, color: t.ink, textDecoration: 'none' };
+  return (
+    <div style={{ display: 'flex', gap: small ? 10 : 14 }}>
+      <Avatar name={post.authorName} size={small ? 30 : 40}
+        photo={asOrganisation
+          ? (organisation?.id === post.organisationId ? organisation.photo : null)
+          : post.authorPhoto} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+          {asOrganisation ? (
+            onOpenOrganisation ? (
+              <a href={`/organisations/${post.organisationId}`}
+                onClick={(e) => { e.preventDefault(); onOpenOrganisation(post.organisationId); }} style={nameStyle}>
+                {post.authorName}
+              </a>
+            ) : <span style={nameStyle}>{post.authorName}</span>
+          ) : post.authorId && onOpenProfile ? (
+            <a href={`/people/${post.authorId}`}
+              onClick={(e) => { e.preventDefault(); onOpenProfile(post.authorId); }} style={nameStyle}>
+              {post.authorName}
+            </a>
+          ) : <span style={nameStyle}>{post.authorName}</span>}
+          <span className="placer-caption" style={{ color: t.inkDim }}>{postedOn(post.createdAt)}</span>
+          {canRemove && (
+            <button type="button" onClick={() => onRemove(post)} disabled={removing}
+              aria-label={`Remove ${what} by ${post.authorName}`}
+              style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', padding: 0,
+                fontFamily: 'var(--placer-font)', fontSize: 13, color: t.inkDim, textDecoration: 'underline' }}>
+              Remove
+            </button>
+          )}
+        </div>
+        <p style={{ fontSize: small ? 14.5 : 15.5, lineHeight: 1.6, color: t.ink, whiteSpace: 'pre-line',
+          overflowWrap: 'anywhere' }}>
+          {post.body}
+        </p>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const linkButton = (t) => ({
+  border: 'none', background: 'none', cursor: 'pointer', padding: 0, fontFamily: 'var(--placer-font)',
+  fontSize: 13.5, fontWeight: 700, color: t.inkDim,
+});
+
+/**
  * `kind` is 'update' or 'comment', for the words. `posts` are from services/projectPage.js.
  * Without `canPost` there is no box, and `prompt` (a way to sign in, say) is shown
  * in its place.
+ *
+ * `replies` are every reply on the project (services/projectPage.js's readReplies);
+ * each post shows the ones to it. Without `canReply` there is no Reply button, unless
+ * `onReplySignIn` is given, which a Reply button then calls instead (to sign in).
  */
 export function ProjectPosts({ t, kind, posts, status, canPost, prompt = null, max, onPost, canRemove, onRemove,
-  onOpenProfile, onOpenOrganisation, postAs = null, organisation = null }) {
+  onOpenProfile, onOpenOrganisation, postAs = null, organisation = null, replies = [], canReply = false,
+  replyMax = max, onReply, onReplySignIn = null, canRemoveReply = () => false, onRemoveReply }) {
   const update = kind === 'update';
   const [removing, setRemoving] = useState(null);
+  // The post whose reply box is open, by id; one at a time.
+  const [replyingTo, setReplyingTo] = useState(null);
 
-  const remove = async (post) => {
+  const run = (action) => async (post) => {
     setRemoving(post.id);
     try {
-      await onRemove(post);
+      await action(post);
     } catch (err) {
       console.error(err);
     } finally {
       setRemoving(null);
     }
   };
+  const remove = run(onRemove);
+  const removeReply = run((reply) => onRemoveReply(reply));
+
+  const repliesTo = (post) => replies.filter((reply) =>
+    (update ? reply.updateId : reply.commentId) === post.id);
 
   return (
     <div>
@@ -143,45 +219,46 @@ export function ProjectPosts({ t, kind, posts, status, canPost, prompt = null, m
       {status === 'ready' && posts.length > 0 && (
         <ul aria-label={update ? 'Updates' : 'Comments'} style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {posts.map((post) => {
-            const asOrganisation = Boolean(post.organisationId);
+            const answers = repliesTo(post);
+            const open = replyingTo === post.id;
             return (
-              <li key={post.id} style={{ display: 'flex', gap: 14, padding: '18px 0', borderTop: `1px solid ${t.line}` }}>
-                <Avatar name={post.authorName} size={40}
-                  photo={asOrganisation
-                    ? (organisation?.id === post.organisationId ? organisation.photo : null)
-                    : post.authorPhoto} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
-                    {asOrganisation ? (
-                      onOpenOrganisation ? (
-                        <a href={`/organisations/${post.organisationId}`}
-                          onClick={(e) => { e.preventDefault(); onOpenOrganisation(post.organisationId); }}
-                          style={{ fontSize: 15, fontWeight: 700, color: t.ink, textDecoration: 'none' }}>
-                          {post.authorName}
-                        </a>
-                      ) : <span style={{ fontSize: 15, fontWeight: 700, color: t.ink }}>{post.authorName}</span>
-                    ) : post.authorId && onOpenProfile ? (
-                      <a href={`/people/${post.authorId}`}
-                        onClick={(e) => { e.preventDefault(); onOpenProfile(post.authorId); }}
-                        style={{ fontSize: 15, fontWeight: 700, color: t.ink, textDecoration: 'none' }}>
-                        {post.authorName}
-                      </a>
-                    ) : <span style={{ fontSize: 15, fontWeight: 700, color: t.ink }}>{post.authorName}</span>}
-                    <span className="placer-caption" style={{ color: t.inkDim }}>{postedOn(post.createdAt)}</span>
-                    {canRemove(post) && (
-                      <button type="button" onClick={() => remove(post)} disabled={removing === post.id}
-                        aria-label={`Remove ${update ? 'update' : 'comment'} by ${post.authorName}`}
-                        style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', padding: 0,
-                          fontFamily: 'var(--placer-font)', fontSize: 13, color: t.inkDim, textDecoration: 'underline' }}>
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                  <p style={{ fontSize: 15.5, lineHeight: 1.6, color: t.ink, whiteSpace: 'pre-line',
-                    overflowWrap: 'anywhere' }}>
-                    {post.body}
-                  </p>
-                </div>
+              <li key={post.id} style={{ padding: '18px 0', borderTop: `1px solid ${t.line}` }}>
+                <Entry t={t} post={post} what={update ? 'update' : 'comment'} canRemove={canRemove(post)}
+                  removing={removing === post.id} onRemove={remove} onOpenProfile={onOpenProfile}
+                  onOpenOrganisation={onOpenOrganisation} organisation={organisation}>
+                  {(canReply || onReplySignIn) && !open && (
+                    <button type="button" style={{ ...linkButton(t), marginTop: 8 }}
+                      aria-label={`Reply to ${update ? 'update' : 'comment'} by ${post.authorName}`}
+                      onClick={() => (canReply ? setReplyingTo(post.id) : onReplySignIn())}>
+                      Reply
+                    </button>
+                  )}
+
+                  {answers.length > 0 && (
+                    <ul aria-label={`Replies to ${post.authorName}`}
+                      style={{ listStyle: 'none', margin: '12px 0 0', padding: '0 0 0 14px',
+                        borderLeft: `2px solid ${t.line}`, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      {answers.map((reply) => (
+                        <li key={reply.id}>
+                          <Entry t={t} post={reply} small what="reply" canRemove={canRemoveReply(reply)}
+                            removing={removing === reply.id} onRemove={removeReply} onOpenProfile={onOpenProfile}
+                            onOpenOrganisation={onOpenOrganisation} organisation={organisation} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {open && (
+                    <Composer t={t} id={`project-${kind}-${post.id}-reply`} max={replyMax} postAs={postAs}
+                      organisationFirst={false} rows={2} autoFocus style={{ marginTop: 12 }}
+                      label={`Reply to ${post.authorName}`} placeholder="Write a reply" submitLabel="Reply"
+                      onCancel={() => setReplyingTo(null)}
+                      onPost={async (body, organisationId) => {
+                        await onReply(post, body, organisationId);
+                        setReplyingTo(null);
+                      }} />
+                  )}
+                </Entry>
               </li>
             );
           })}

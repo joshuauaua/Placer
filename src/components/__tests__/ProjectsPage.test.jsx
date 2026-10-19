@@ -35,6 +35,15 @@ describe('ProjectsPage', () => {
     localStorage.clear();
   });
 
+  it('shows the spinning loader while the projects load', () => {
+    readVisibleProjects.mockReturnValue(new Promise(() => {}));
+    const { container } = render(<ProjectsPage t={THEME} accountId="acct-1" onNewProject={vi.fn()}
+      onOpenProjectDashboard={vi.fn()} onOpenProjectPage={vi.fn()} />);
+
+    expect(container.querySelector('.placer-page-loader')).toBeInTheDocument();
+    expect(screen.getByText('Loading projects…')).toBeInTheDocument();
+  });
+
   it('lists everyone\'s projects, opening yours on its dashboard and others\' on their page', async () => {
     readVisibleProjects.mockResolvedValue([
       { id: 'p1', name: 'Harbour steps', description: 'Seating by the water', role: 'owner' },

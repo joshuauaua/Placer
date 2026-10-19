@@ -90,10 +90,11 @@ export function stylePin(element, { fill, ring, size = 22, ringWidth = 2, zIndex
 
 /**
  * A pin on `map` at `position`, styled as stylePin says, calling `onClick` when it is
- * clicked. `title` is its tooltip and its accessible name. Returns the MapLibre Marker;
+ * clicked. `title` is its tooltip and its accessible name. `offset`, [x, y] in pixels,
+ * draws it that far from its position (lib/pinSpread.js). Returns the MapLibre Marker;
  * `marker.remove()` takes it off.
  */
-export function addPin(map, position, { title, onClick, ...style }) {
+export function addPin(map, position, { title, onClick, offset, ...style }) {
   const element = pinElement(style);
   if (title) {
     element.title = title;
@@ -111,7 +112,7 @@ export function addPin(map, position, { title, onClick, ...style }) {
       }
     });
   }
-  return new maplibregl.Marker({ element }).setLngLat(toLngLat(position)).addTo(map);
+  return new maplibregl.Marker({ element, offset }).setLngLat(toLngLat(position)).addTo(map);
 }
 
 /** MapLibre's own teardrop marker, for "this is the spot you chose". */
