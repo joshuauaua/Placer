@@ -47,7 +47,7 @@ import { arrangeSections, projectIntro, projectSections } from '../lib/projectSe
 import { readImaginationsByProject } from '../services/imaginations';
 import {
   readConfiguredProjectTools, readLinks, readOrganisationProjects, readProject, readProjectAccess, readProjectTools,
-  requestProjectAccess, readPublicToolkitActivity, readRelatedProjects, recordProjectView,
+  requestProjectAccess, readRelatedProjects, recordProjectView,
 } from '../services/projects';
 import {
   COMMENT_MAX, UPDATE_MAX, postComment, postUpdate, readComments, readProjectSummary, readUpdates, removeComment,
@@ -307,7 +307,6 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const [configuredTools, setConfiguredTools] = useState(new Set());
   const [imaginations, setImaginations] = useState([]);
   const [links, setLinks] = useState([]);
-  const [toolkitActivity, setToolkitActivity] = useState(0);
   const [related, setRelated] = useState([]);
   // The organisation it is run in the name of, if any — credited in place of the owner.
   const [organisation, setOrganisation] = useState(null);
@@ -342,7 +341,6 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
       readProject(projectId),
       readImaginationsByProject(projectId),
       readLinks(projectId),
-      readPublicToolkitActivity(projectId),
       // Before project-setup.sql has run there is no table to read, and a project page
       // with no tools listed is better than no project page.
       readProjectTools(projectId).catch((err) => {
@@ -360,7 +358,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         return new Set();
       }),
     ])
-      .then(([proj, imgs, docs, activity, toolIds, rooms, configured]) => {
+      .then(([proj, imgs, docs, toolIds, rooms, configured]) => {
         if (cancelled) return;
         if (!proj) {
           // A private project reads as no project at all to somebody who cannot see
@@ -384,7 +382,6 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         setConfiguredTools(configured);
         setImaginations(imgs);
         setLinks(docs);
-        setToolkitActivity(activity);
         setStatus('ready');
         // Only once the project is known to exist, so a broken link is not a view.
         recordProjectView(proj.id);
@@ -599,45 +596,45 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         )}
 
         <div className="placer-project-header">
-          <div style={{ minWidth: 0 }}>
+          <div className="placer-project-hero">
             <ProjectImage t={t} project={project} size={HERO_SIZE} frame={HERO_FRAME} />
-            <div className="placer-label" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center',
-              gap: '8px 20px', color: t.inkDim, marginTop: 16 }}>
-              {date && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Icon name="calendar" size={16} stroke={2} />{date}
-                </span>
-              )}
-              {organisation ? (
-                <span>
-                  By{' '}
-                  <a href={`/organisations/${organisation.id}`}
-                    onClick={(e) => { e.preventDefault(); onOpenOrganisation?.(organisation.id); }}
-                    style={{ color: t.ink, fontWeight: 700, textDecoration: 'underline' }}>
-                    {organisation.name}
-                  </a>
-                </span>
-              ) : project.ownerName && (
-                <span>
-                  By{' '}
-                  <a href={`/people/${project.ownerId}`}
-                    onClick={(e) => { e.preventDefault(); onOpenProfile?.(project.ownerId); }}
-                    style={{ color: t.ink, fontWeight: 700, textDecoration: 'underline' }}>
-                    {project.ownerName}
-                  </a>
-                </span>
-              )}
-              {place && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Icon name="pin" size={16} stroke={2} />{place}
-                </span>
-              )}
-              {project.visibility === 'private' && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Icon name="lock" size={16} stroke={2} />Private project
-                </span>
-              )}
-            </div>
+          </div>
+          <div className="placer-label placer-project-meta" style={{ display: 'flex', flexWrap: 'wrap',
+            alignItems: 'center', gap: '8px 20px', color: t.inkDim }}>
+            {date && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="calendar" size={16} stroke={2} />{date}
+              </span>
+            )}
+            {organisation ? (
+              <span>
+                By{' '}
+                <a href={`/organisations/${organisation.id}`}
+                  onClick={(e) => { e.preventDefault(); onOpenOrganisation?.(organisation.id); }}
+                  style={{ color: t.ink, fontWeight: 700, textDecoration: 'underline' }}>
+                  {organisation.name}
+                </a>
+              </span>
+            ) : project.ownerName && (
+              <span>
+                By{' '}
+                <a href={`/people/${project.ownerId}`}
+                  onClick={(e) => { e.preventDefault(); onOpenProfile?.(project.ownerId); }}
+                  style={{ color: t.ink, fontWeight: 700, textDecoration: 'underline' }}>
+                  {project.ownerName}
+                </a>
+              </span>
+            )}
+            {place && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="pin" size={16} stroke={2} />{place}
+              </span>
+            )}
+            {project.visibility === 'private' && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="lock" size={16} stroke={2} />Private project
+              </span>
+            )}
           </div>
 
           <aside aria-label="Project at a glance" className="placer-project-glance">
@@ -736,12 +733,6 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
                   <p style={{ fontSize: 16, color: t.inkDim }}>Nothing to take part in yet. Check back soon.</p>
                 </div>
               </section>
-            )}
-
-            {toolkitActivity > 0 && (
-              <p className="placer-caption" style={{ color: t.inkFaint, marginTop: -8, marginBottom: 32 }}>
-                {toolkitActivity} Toolkit {toolkitActivity === 1 ? 'session' : 'sessions'} run for this project so far.
-              </p>
             )}
           </>
         )}

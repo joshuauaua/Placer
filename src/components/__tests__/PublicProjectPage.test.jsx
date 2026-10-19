@@ -949,12 +949,14 @@ describe('PublicProjectPage, taking part', () => {
     expect(screen.getByText('Nothing to take part in yet. Check back soon.')).toBeInTheDocument();
   });
 
-  it('shows how many Toolkit sessions have run, once there are any', async () => {
+  it('does not say how many Toolkit sessions have run', async () => {
     vi.mocked(readPublicToolkitActivity).mockResolvedValue(2);
 
     setup();
 
-    expect(await screen.findByText(/2 Toolkit sessions run for this project/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' })).toBeInTheDocument();
+    expect(screen.queryByText(/Toolkit sessions? run/)).not.toBeInTheDocument();
+    expect(readPublicToolkitActivity).not.toHaveBeenCalled();
   });
 });
 
