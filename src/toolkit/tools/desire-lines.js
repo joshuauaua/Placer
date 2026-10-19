@@ -2,8 +2,11 @@ import { DesireLines } from '../../components/toolkit/DesireLines';
 import { DesireLinesOnPage } from '../../components/toolkit/DesireLinesOnPage';
 import { DesireLinesSetup } from '../../components/toolkit/DesireLinesSetup';
 import { PALETTE } from '../../theme';
-import { combineDesire, defaultSetup, emptyDesire, setupProblems } from '../../lib/desireLines';
+import { combineDesire, defaultSetup, emptyDesire, setupProblems, sitesOf } from '../../lib/desireLines';
 import { roomText, tone } from '../toolParts';
+
+// "A", "A and B", "A, B and C".
+const naturalList = (names) => (names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`);
 
 export default {
   id: 'desire-lines',
@@ -23,6 +26,12 @@ export default {
   },
   onProjectPage: {
     heading: 'Draw the way you walk',
+    wide: true,
+    intro: 'A desire line is the path people actually take, not the one that was paved. Draw the walks you really make across the site, and mark the entrances and obstacles you meet on the way.',
+    why: (config) => roomText(config?.note)
+      ?? (sitesOf(config).length > 0
+        ? `The project team wants to see how people really move through ${naturalList(sitesOf(config).map((site) => site.name))}, to plan around it.`
+        : null),
     Embed: DesireLinesOnPage,
   },
   room: {

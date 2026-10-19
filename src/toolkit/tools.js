@@ -82,6 +82,12 @@
  *
  *   heading  — the section's title, said to the visitor ("We want your opinion"),
  *              rather than the tool's name; the name is the fallback
+ *   intro    — a sentence or two, under the heading, on what the tool is and what the visitor
+ *              does with it
+ *   why      — (config) => a sentence on why this project is using it, from the room's
+ *              setup, or null when there is nothing to say
+ *   wide     — true for a tool that needs the page's whole width (a map to draw on),
+ *              not the reading width the rest of the page keeps
  *   Embed    — the tool itself, set into the page: { t, tool, room }, where `room` is
  *              { id, expiresAt, config }. Without one, the page links to the room.
  */
