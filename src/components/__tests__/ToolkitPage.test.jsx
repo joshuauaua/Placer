@@ -31,7 +31,7 @@ function renderPageAt(path) {
 /** The category a tool is in. */
 const findCategoryOf = (tool) => CATEGORIES.find((category) => category.id === tool.category);
 
-/** A tool's tile or row, by its name, and not the heart beside it that names it too. */
+/** A tool's tile or row, by its name, and not the save icon beside it that names it too. */
 const tile = (pattern) => (name) => pattern.test(name) && !name.endsWith('favourites');
 
 /** Past a tool's cover page, to the tool itself. */

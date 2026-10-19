@@ -228,7 +228,7 @@ export function OrganisationsPage({ t, organisations = [], onNewOrganisation, on
           <div style={{ textAlign: 'center', padding: '64px 20px', color: t.inkDim }}>
             <p style={{ fontSize: 16, marginBottom: 16 }}>
               {favouritesOnly && favourites.length === 0
-                ? 'No favourites yet. Tap the heart on an organisation to keep it here.'
+                ? 'No favourites yet. Tap the save icon on an organisation to keep it here.'
                 : filters.show === 'yours' && organisations.length === 0
                   ? 'You are not an admin of any organisation.'
                   : 'No organisations match those filters.'}

@@ -198,7 +198,7 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
           <div style={{ textAlign: 'center', padding: '64px 20px', color: t.inkDim }}>
             <p style={{ fontSize: 16, marginBottom: 16 }}>
               {favouritesOnly && favourites.length === 0
-                ? 'No favourites yet. Tap the heart on a project to keep it here.'
+                ? 'No favourites yet. Tap the save icon on a project to keep it here.'
                 : 'No projects match those filters.'}
             </p>
             <Btn t={t} variant="outline" onClick={clearFilters}>Clear filters</Btn>

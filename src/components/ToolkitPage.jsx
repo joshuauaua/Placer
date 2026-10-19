@@ -105,7 +105,7 @@ function Tile({ t, tool, onOpen }) {
         </span>
       </span>
 
-      {/* Room on the right for the heart, which sits over the card (see the grid). */}
+      {/* Room on the right for the save icon, which sits over the card (see the grid). */}
       <span className="placer-caption" style={{ color: t.inkDim, paddingRight: 44 }}>
         {publishedOn(tool.added)}{tool.createdBy && ` · By ${tool.createdBy}`}
       </span>
@@ -340,7 +340,7 @@ export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
                 <Icon name="search" size={40} stroke={1.6} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
                 <p style={{ fontSize: 16, marginBottom: 16 }}>
                   {favouritesOnly && favourites.length === 0
-                    ? 'No favourites yet. Tap the heart on a tool to keep it here.'
+                    ? 'No favourites yet. Tap the save icon on a tool to keep it here.'
                     : 'No tools match those filters.'}
                 </p>
                 <Btn t={t} variant="outline" onClick={clearFilters}>Clear filters</Btn>
