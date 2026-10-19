@@ -145,4 +145,45 @@ describe('projectPage', () => {
     expect(from).toHaveBeenCalledWith('project_comments');
     expect(eqDelete).toHaveBeenCalledWith('id', 'c1');
   });
+
+  it('reads every reply on a project oldest first, with the post each answers', async () => {
+    await load();
+    order.mockResolvedValueOnce({ data: [
+      { ...ROW, id: 'r1', update_id: 'u1', comment_id: null },
+      { ...ROW, id: 'r2', update_id: null, comment_id: 'c1' },
+    ], error: null });
+
+    const replies = await page.readReplies('proj-1');
+
+    expect(from).toHaveBeenCalledWith('project_replies');
+    expect(eqSelect).toHaveBeenCalledWith('project_id', 'proj-1');
+    expect(order).toHaveBeenCalledWith('created_at', { ascending: true });
+    expect(replies.map(({ id, updateId, commentId }) => ({ id, updateId, commentId }))).toEqual([
+      { id: 'r1', updateId: 'u1', commentId: null },
+      { id: 'r2', updateId: null, commentId: 'c1' },
+    ]);
+  });
+
+  it('replies to an update or a comment with only the post and the body, trimmed', async () => {
+    await load();
+    single.mockResolvedValue({ data: { ...ROW, id: 'r1', update_id: 'u1', comment_id: null, body: 'Thanks' },
+      error: null });
+
+    const reply = await page.postReply({ updateId: 'u1' }, '  Thanks  ');
+    await page.postReply({ commentId: 'c1' }, 'Agreed', 'org-1');
+
+    expect(from).toHaveBeenCalledWith('project_replies');
+    expect(insert).toHaveBeenNthCalledWith(1, { update_id: 'u1', body: 'Thanks' });
+    expect(insert).toHaveBeenNthCalledWith(2, { comment_id: 'c1', body: 'Agreed', organisation_id: 'org-1' });
+    expect(reply).toMatchObject({ id: 'r1', updateId: 'u1', body: 'Thanks' });
+  });
+
+  it('says so when a reply is refused, and removes one by its id', async () => {
+    await load();
+    single.mockResolvedValueOnce({ data: null, error: { message: 'new row violates row-level security policy' } });
+
+    await expect(page.postReply({ commentId: 'c1' }, 'Hi')).rejects.toThrow(/Could not post that reply/);
+    await page.removeReply('r1');
+    expect(eqDelete).toHaveBeenCalledWith('id', 'r1');
+  });
 });

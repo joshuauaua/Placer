@@ -8,7 +8,8 @@ import {
 } from '../../services/projects';
 import { follow, isFollowing, unfollow } from '../../services/follows';
 import {
-  postComment, postUpdate, readComments, readProjectSummary, readUpdates, removeComment,
+  postComment, postReply, postUpdate, readComments, readProjectSummary, readReplies, readUpdates, removeComment,
+  removeReply,
 } from '../../services/projectPage';
 import { readOrganisation } from '../../services/organisations';
 import { readContributions, readProjectOpenRooms, saveContribution } from '../../services/rooms';
@@ -39,7 +40,11 @@ vi.mock('../../services/projects', () => ({
 vi.mock('../../services/projectPage', () => ({
   UPDATE_MAX: 4000,
   COMMENT_MAX: 2000,
+  REPLY_MAX: 2000,
   readProjectSummary: vi.fn(() => Promise.resolve(null)),
+  readReplies: vi.fn(() => Promise.resolve([])),
+  postReply: vi.fn(),
+  removeReply: vi.fn(() => Promise.resolve()),
   readUpdates: vi.fn(() => Promise.resolve([])),
   readComments: vi.fn(() => Promise.resolve([])),
   postUpdate: vi.fn(),
@@ -1036,6 +1041,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     createdAt: '2026-05-03T10:00:00Z' };
 
   beforeEach(() => {
+    vi.mocked(readReplies).mockResolvedValue([]);
     vi.mocked(readImaginationsByProject).mockResolvedValue([]);
     vi.mocked(readLinks).mockResolvedValue([]);
     vi.mocked(readPublicToolkitActivity).mockResolvedValue(0);
@@ -1275,6 +1281,59 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Remove comment by Lee' })[1]);
     await waitFor(() => expect(removeComment).toHaveBeenCalledWith('c2'));
     await waitFor(() => expect(screen.queryByText('Count me in.')).not.toBeInTheDocument());
+  });
+
+  it('shows the replies under each post, and lets a signed-in visitor reply to a comment', async () => {
+    vi.mocked(readReplies).mockResolvedValue([
+      { id: 'r1', updateId: null, commentId: 'c1', authorId: 'user-1', authorName: 'Mara Quinn',
+        body: 'Thank you!', createdAt: '2026-05-04T10:00:00Z' },
+    ]);
+    vi.mocked(postReply).mockResolvedValue({ id: 'r2', updateId: null, commentId: 'c1', authorId: 'user-2',
+      authorName: 'Lee', body: 'Me too.', createdAt: '2026-05-05T10:00:00Z' });
+    setup({ accountId: 'user-2' });
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Comments/ }));
+    const thread = within(await screen.findByRole('list', { name: 'Replies to Oskar' }));
+    expect(thread.getByText('Thank you!')).toBeInTheDocument();
+    expect(thread.queryByRole('button', { name: /Remove reply/ })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reply to comment by Oskar' }));
+    fireEvent.change(screen.getByLabelText('Reply to Oskar'), { target: { value: 'Me too.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Reply' }));
+
+    await waitFor(() => expect(postReply).toHaveBeenCalledWith({ commentId: 'c1' }, 'Me too.', null));
+    expect(await screen.findByText('Me too.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Reply to Oskar')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove reply by Lee' }));
+    await waitFor(() => expect(removeReply).toHaveBeenCalledWith('r2'));
+    await waitFor(() => expect(screen.queryByText('Me too.')).not.toBeInTheDocument());
+  });
+
+  it('lets a visitor reply to an update, and the team remove any reply', async () => {
+    vi.mocked(readReplies).mockResolvedValue([
+      { id: 'r1', updateId: 'u1', commentId: null, authorId: 'user-9', authorName: 'Oskar',
+        body: 'See you there.', createdAt: '2026-05-04T10:00:00Z' },
+    ]);
+    setup({ accountId: 'user-1' });
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Updates/ }));
+    expect(await screen.findByText('See you there.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Remove reply by Oskar' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Reply to update by Mara Quinn' }));
+    expect(screen.getByLabelText('Reply to Mara Quinn')).toHaveFocus();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByLabelText('Reply to Mara Quinn')).not.toBeInTheDocument();
+  });
+
+  it('asks a signed-out visitor to sign in to reply', async () => {
+    const props = setup({ onSignIn: vi.fn() });
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Comments/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reply to comment by Oskar' }));
+
+    expect(props.onSignIn).toHaveBeenCalled();
+    expect(screen.queryByLabelText('Reply to Oskar')).not.toBeInTheDocument();
   });
 
   it("lets the project's people remove anybody's comment", async () => {
