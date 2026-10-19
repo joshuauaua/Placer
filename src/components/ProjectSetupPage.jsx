@@ -13,8 +13,10 @@
  * It replaced an outline drawn on a map; a project that already has one keeps it, and
  * the maps still draw it.
  *
- * Tools are only chosen here. Each is a template, configured for the project from its
- * dashboard afterwards (ConfigureToolDialog), and live on its public page from then. */
+ * Tools are only chosen here when starting a project. Each is a template, configured for
+ * the project from its dashboard afterwards (ConfigureToolDialog), and live on its public
+ * page from then. Editing has no tools: they are added, set up and removed on the
+ * dashboard's My Toolkit tab. */
 
 import { DateRangePicker } from './DatePicker';
 import { useEffect, useState } from 'react';
@@ -25,7 +27,7 @@ import { PageLayoutEditor } from './PageLayoutEditor';
 import { AddressInput } from './AddressInput';
 import {
   BUDGET_CURRENCIES, PROJECT_TYPES, VISIBILITIES, createProject, readConfiguredProjectTools, readProjectBudget,
-  readProjectToolConfig, readProjectTools, removeProjectImageFile, saveProjectBudget, saveProjectTools, updateProject, uploadProjectImage,
+  readProjectTools, removeProjectImageFile, saveProjectBudget, saveProjectTools, updateProject, uploadProjectImage,
   uploadProjectGalleryImage, GALLERY_MAX,
 } from '../services/projects';
 import { checkPickedImage } from '../services/media';
@@ -67,8 +69,6 @@ function Field({ t, label, htmlFor, hint, children }) {
 const STEPS = ['What is a project', 'Project type', 'The basics', 'Tools', 'Visuals'];
 const LAST_STEP = STEPS.length - 1;
 
-// The tool whose scene has a base image to delete when it is dropped (toolkit/tools.js).
-const REIMAGINE_TOOL = 'reimagine-a-space';
 
 // The database's own limits (projects_name_shape, projects_summary_size), held here
 // too so a long name is cut off as it is typed rather than refused on save.
@@ -286,13 +286,9 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
   // dropped once it is edited by hand, since the text no longer says where it was.
   const [point, setPoint] = useState(project?.locationPoint ?? null);
   const [town, setTown] = useState('');
-  // The tools chosen for it. Editing, they are loaded first, and `toolsReady` stays
-  // false until they are, so a failed load can never save over them with nothing.
+  // The tools chosen for a project started here. A project opened to edit has its tools
+  // on the dashboard's My Toolkit tab instead, and they are neither shown nor saved here.
   const [tools, setTools] = useState([]);
-  const [toolsReady, setToolsReady] = useState(!initialProject);
-  // The base image of Idea Visualizer's scene, if it has been configured, so that
-  // dropping the tool here can delete it once nothing points at it.
-  const [sceneImagePath, setSceneImagePath] = useState(null);
   // The budget question: null until answered. Loaded first when editing, with the same
   // guard as the tools, so a failed read never saves over it.
   const [hasBudget, setHasBudget] = useState(null);
@@ -325,14 +321,6 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
   useEffect(() => {
     if (!initialProject) return undefined;
     let cancelled = false;
-    Promise.all([readProjectTools(initialProject.id), readProjectToolConfig(initialProject.id, REIMAGINE_TOOL)])
-      .then(([saved, scene]) => {
-        if (cancelled) return;
-        setTools(saved);
-        setSceneImagePath(scene?.imagePath ?? null);
-        setToolsReady(true);
-      })
-      .catch((err) => console.error('Could not load the project\'s tools:', err));
     readProjectBudget(initialProject.id)
       .then((budget) => {
         if (cancelled) return;
@@ -463,7 +451,9 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
         }
       }
 
-      if (toolsReady && (editing || tools.length > 0)) {
+      // Only for a project started here — saving again retries them if they failed the
+      // first time, when the form has turned into an edit of the project.
+      if (!initialProject && (editing || tools.length > 0)) {
         try {
           await saveProjectTools(saved.id, tools, accountId);
         } catch (toolsError) {
@@ -475,13 +465,6 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
           setStatus('idle');
           return;
         }
-      }
-
-      // Dropping Idea Visualizer drops its scene with its row; its base image is
-      // deleted here, since nothing points at it any more.
-      if (toolsReady && sceneImagePath && !tools.includes(REIMAGINE_TOOL)) {
-        removeProjectImageFile(sceneImagePath).catch((err) => console.error('Could not remove the base image:', err));
-        setSceneImagePath(null);
       }
 
       if (budgetReady && hasBudget !== null) {
@@ -618,11 +601,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
     </Field>
   );
 
-  const toolsField = toolsReady ? (
-    <ToolPicker t={t} value={tools} onChange={setTools} />
-  ) : (
-    <p style={{ fontSize: 14, color: t.inkDim, marginBottom: 26 }}>Loading the project&rsquo;s tools…</p>
-  );
+  const toolsField = <ToolPicker t={t} value={tools} onChange={setTools} />;
 
   const errorBox = error && (
     <div role="alert" style={{ marginBottom: 24, padding: 14, borderRadius: 12,
@@ -661,14 +640,9 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
         {gallery}
         {place}
 
-        <h2 style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>Tools</h2>
-        <p style={{ fontSize: 13, color: t.inkDim, marginBottom: 14, lineHeight: 1.5 }}>
-          The tools this project will use. Each is configured for it from its dashboard.
-        </p>
-        {toolsField}
-
-        <p style={{ fontSize: 13.5, color: t.inkFaint, marginTop: -10, marginBottom: 26, lineHeight: 1.5 }}>
-          Adding or removing collaborators, and attaching links, are on the project's dashboard.
+        <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: 26, lineHeight: 1.5 }}>
+          Tools are added, set up and removed on the dashboard&rsquo;s My Toolkit tab; collaborators and links
+          are on the dashboard too.
         </p>
 
         {pageField}
