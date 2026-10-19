@@ -3,8 +3,10 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { ProjectSetupPage, parseBudgetAmount } from '../ProjectSetupPage';
 import {
   createProject, readProjectBudget, readProjectToolConfig, readProjectTools, removeProjectImageFile,
-  saveProjectBudget, saveProjectToolConfig, saveProjectTools, updateProject, uploadProjectGalleryImage,
+  readConfiguredProjectTools, saveProjectBudget, saveProjectToolConfig, saveProjectTools, updateProject,
+  uploadProjectGalleryImage,
 } from '../../services/projects';
+import { readProjectOpenRooms } from '../../services/rooms';
 import { THEME } from '../../theme';
 import { CATEGORIES, TOOLS } from '../../toolkit/tools';
 
@@ -25,6 +27,11 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   removeProjectImageFile: vi.fn(() => Promise.resolve()),
   uploadProjectGalleryImage: vi.fn(),
   GALLERY_MAX: 12,
+  readConfiguredProjectTools: vi.fn(() => Promise.resolve(new Set())),
+}));
+
+vi.mock('../../services/rooms', () => ({
+  readProjectOpenRooms: vi.fn(() => Promise.resolve([])),
 }));
 
 // Where this machine is says nothing about the project: the suggestion goes only on
@@ -760,5 +767,79 @@ describe('ProjectSetupPage, photos beside the header image', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('only one more was added');
     expect(uploadProjectGalleryImage).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('Add photos')).not.toBeInTheDocument();
+  });
+});
+
+describe('ProjectSetupPage, arranging the project\'s page', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const POLL = { id: 'room-1', tool: 'open-vote', config: { question: 'Car-free?' } };
+  const PROJECT = {
+    id: 'proj-1', ownerId: 'user-1', ownerName: 'Mara Quinn', name: 'Riverside Greenway',
+    summary: 'A park on the old rail line.', description: 'Ask who uses it.', locations: [], address: '',
+    gallery: [], galleryPaths: [], pageLayout: [],
+  };
+  const sectionNames = () => within(screen.getByRole('list', { name: 'Page sections' }))
+    .getAllByRole('textbox').map((field) => field.value || field.placeholder);
+
+  beforeEach(() => {
+    readProjectTools.mockResolvedValue(['open-vote']);
+    readProjectOpenRooms.mockResolvedValue([POLL]);
+    readConfiguredProjectTools.mockResolvedValue(new Set());
+    updateProject.mockImplementation((id, patch) => Promise.resolve({ ...PROJECT, ...patch }));
+  });
+
+  it('lists the sections the page has, in its order, each under its title', async () => {
+    setup({ project: { ...PROJECT, pageLayout: [{ key: 'room:room-1', title: 'Car-free square?' }] } });
+
+    await screen.findByRole('list', { name: 'Page sections' });
+    expect(sectionNames()).toEqual(['Car-free square?', 'About the project', 'Goals']);
+  });
+
+  it('saves a new order and a new title with the rest of the changes', async () => {
+    setup({ project: PROJECT });
+    await screen.findByRole('list', { name: 'Page sections' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Move We want your opinion up' }));
+    fireEvent.change(screen.getByPlaceholderText('We want your opinion'), { target: { value: 'Car-free square?' } });
+    expect(sectionNames()).toEqual(['About the project', 'Car-free square?', 'Goals']);
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1', expect.objectContaining({
+      pageLayout: [{ key: 'about' }, { key: 'room:room-1', title: 'Car-free square?' }, { key: 'goals' }],
+    })));
+  });
+
+  it('goes back to the usual title when one is emptied', async () => {
+    setup({ project: { ...PROJECT, pageLayout: [{ key: 'goals', title: 'What we want' }] } });
+    await screen.findByRole('list', { name: 'Page sections' });
+
+    fireEvent.change(screen.getByDisplayValue('What we want'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1', expect.objectContaining({
+      pageLayout: [{ key: 'goals' }, { key: 'about' }, { key: 'room:room-1' }],
+    })));
+  });
+
+  it('never saves over the order when the page could not be loaded', async () => {
+    readProjectOpenRooms.mockRejectedValue(new Error('offline'));
+    setup({ project: PROJECT });
+
+    await waitFor(() => expect(readProjectOpenRooms).toHaveBeenCalled());
+    expect(screen.queryByRole('list', { name: 'Page sections' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalled());
+    expect(updateProject.mock.calls[0][1]).not.toHaveProperty('pageLayout');
+  });
+
+  it('can be dragged, from the keyboard as well as with a pointer', async () => {
+    setup({ project: PROJECT });
+
+    const handle = await screen.findByRole('button', { name: 'Drag About the project to reorder' });
+    expect(handle).toHaveAttribute('aria-roledescription', 'sortable');
   });
 });

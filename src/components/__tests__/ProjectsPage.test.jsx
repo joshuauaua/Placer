@@ -15,7 +15,7 @@ vi.mock('../../services/projects', () => ({
   ],
 }));
 
-/** A project's card or row, by its name, and not the heart beside it that names it too. */
+/** A project's card or row, by its name, and not the save icon beside it that names it too. */
 const card = (pattern) => (name) => pattern.test(name) && !name.endsWith('favourites');
 
 function setup(props = {}) {

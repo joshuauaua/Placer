@@ -2,7 +2,7 @@
  * to the page header with it: a filter menu on the left, the sort order in the
  * middle, and favourites and the grid and list views on the right.
  *
- * Also here, because both galleries need them the same way: the heart that
+ * Also here, because both galleries need them the same way: the save icon that
  * favourites one item, and the per-browser memory of the view and the favourites.
  * Styling is in index.css (.placer-gallery-*, .placer-reveal-btn).
  */
@@ -24,7 +24,7 @@ export function GalleryToolbar({ t, menu, sorts, sort, onSort, favouritesOnly, o
       <FilterMenu t={t} menu={menu} />
       <SortTabs t={t} sorts={sorts} sort={sort} onChange={onSort} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifySelf: 'end' }}>
-        <RevealButton t={t} icon="heart" label="Favourites" pressed={favouritesOnly}
+        <RevealButton t={t} icon="bookmark" label="Favourites" pressed={favouritesOnly}
           iconFill={favouritesOnly ? 'currentColor' : 'none'}
           onClick={() => onFavouritesOnly(!favouritesOnly)} />
         <div role="group" aria-label="View" style={{ display: 'flex', gap: 4 }}>
@@ -137,13 +137,13 @@ function SortTabs({ t, sorts, sort, onChange }) {
   );
 }
 
-/** The heart on a tile or a row: favourites the item in this browser, or stops. */
+/** The save icon on a tile or a row: favourites the item in this browser, or stops. */
 export function FavouriteButton({ t, name, favourite, onToggle, style }) {
   const label = favourite ? `Remove ${name} from favourites` : `Add ${name} to favourites`;
   return (
     <button type="button" onClick={onToggle} aria-pressed={favourite} aria-label={label} title={label}
       className="placer-gallery-favourite" style={{ color: t.ink, ...style }}>
-      <Icon name="heart" size={20} stroke={2} fill={favourite ? 'currentColor' : 'none'} />
+      <Icon name="bookmark" size={20} stroke={2} fill={favourite ? 'currentColor' : 'none'} />
     </button>
   );
 }

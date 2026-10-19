@@ -18,6 +18,10 @@
  * come from supabase/project-public-page.sql (services/projectPage.js). Each is extra:
  * if it cannot be read, the page stands without it.
  *
+ * The Project tab's sections come in the order its organisers put them in, under the
+ * titles they gave them, from Edit project (lib/projectSections.js,
+ * supabase/project-page-layout.sql); a project nobody arranged keeps the order below.
+ *
  * The tools are only the ones its organisers chose for it (project_tools, see
  * supabase/project-setup.sql) and have set up, not the whole Toolkit, and each is
  * presented in its own section under a heading said to the visitor rather than a
@@ -38,7 +42,8 @@ import { Icon } from './Icon';
 import { Btn, CatTag, PageLoader, Vote } from './UI';
 import { ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
 import { ProjectToolCard } from './toolkit/ProjectToolCard';
-import { findTool, isToolLive, projectSetupKind } from '../toolkit/tools';
+import { findTool } from '../toolkit/tools';
+import { arrangeSections, projectIntro, projectSections } from '../lib/projectSections';
 import { readImaginationsByProject } from '../services/imaginations';
 import {
   readConfiguredProjectTools, readLinks, readOrganisationProjects, readProject, readProjectAccess, readProjectTools,
@@ -440,30 +445,6 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
     return () => { cancelled = true; };
   }, [accountId, projectId, status]);
 
-  // How the tools it added are put to the visitor: each in a section of its own, under
-  // a heading said to them (onProjectPage in toolkit/tools.js). Only the live ones: a
-  // tool added but not yet configured for the project is not shown (isToolLive).
-  // A tool that runs in a room gets a section per open room, newest first, since a
-  // project can run several at once — two Polls asking different questions. Their
-  // headings say which is which (`room.label`), or number them when they cannot.
-  const presented = tools.flatMap((tool) => {
-    const heading = tool.onProjectPage?.heading ?? `Try ${tool.name}`;
-    if (projectSetupKind(tool) !== 'room') {
-      if (!isToolLive(tool, { configured: configuredTools.has(tool.id) })) return [];
-      return [{ id: `project-tool-${tool.id}`, heading, tool, room: null }];
-    }
-    const rooms = openRooms.filter((candidate) => candidate.tool === tool.id);
-    return rooms.map((room, index) => {
-      const label = rooms.length > 1 ? tool.room?.label?.(room.config) ?? `${index + 1}` : null;
-      return {
-        id: index === 0 ? `project-tool-${tool.id}` : `project-tool-${tool.id}-${room.id}`,
-        heading: label ? `${heading}: ${label}` : heading,
-        tool,
-        room,
-      };
-    });
-  });
-
   const pickTab = (id) => {
     setTab(id);
     // Back to the top of the tabs if the reader had scrolled past them, so the new
@@ -540,11 +521,14 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const left = timeLeft(projectProgress(project));
   // Where it is, under the image: its place names, or else the address it was set up with.
   const place = project.locations.length > 0 ? project.locations.join(', ') : project.address;
-  // The description, first under the Project tab (the summary is also the header's
-  // subtitle); a project set up before it had one has only its goals, and shows those
-  // there instead.
-  const intro = project.summary || project.description;
-  const goals = project.summary ? project.description : '';
+  // The Project tab's sections — About, Goals, Photos and one per live tool — in the
+  // order its organisers put them, under their titles (lib/projectSections.js).
+  const { intro, goals } = projectIntro(project);
+  const sections = arrangeSections(
+    projectSections({ project, tools, openRooms, configured: configuredTools }), project.pageLayout);
+  const hasTools = sections.some((section) => section.kind === 'tool');
+  // A tool in a room that asks for the page's full width (onProjectPage.wide) widens it.
+  const isWide = (section) => Boolean(section.room && section.tool?.onProjectPage?.wide);
 
   const owner = summary?.owner ?? { id: project.ownerId, name: project.ownerName, photo: null };
   const collaborators = summary?.collaborators ?? [];
@@ -686,69 +670,46 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
       </div>
 
       <div id={`project-panel-${tab}`} role="tabpanel" aria-labelledby={`project-tab-${tab}`}
-        className={`placer-project-panel${tab === 'project' && presented.some(({ tool, room }) => room && tool.onProjectPage?.wide) ? ' placer-project-panel--wide' : ''}`}>
+        className={`placer-project-panel${tab === 'project' && sections.some(isWide) ? ' placer-project-panel--wide' : ''}`}>
         {tab === 'project' && (
           <>
-            {intro && (
-              <section className="placer-project-section" aria-labelledby="project-about-heading">
-                <h2 id="project-about-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 12 }}>
-                  About the project
+            {sections.map((section) => (
+              <section key={section.key} id={section.domId} aria-labelledby={`${section.domId}-heading`}
+                className={`placer-project-section${isWide(section) ? ' placer-project-section--wide' : ''}`}>
+                <h2 id={`${section.domId}-heading`} className="placer-h2"
+                  style={{ color: t.ink, marginBottom: section.kind === 'about' || section.kind === 'goals' ? 12 : 20 }}>
+                  {section.title}
                 </h2>
-                <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{intro}</p>
-              </section>
-            )}
+                {section.kind === 'tool' && <ToolIntro t={t} tool={section.tool} room={section.room} />}
 
-            {goals && (
-              <section className="placer-project-section" aria-labelledby="project-goals-heading">
-                <h2 id="project-goals-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 12 }}>Goals</h2>
-                <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{goals}</p>
-              </section>
-            )}
+                {section.kind === 'about' && (
+                  <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{intro}</p>
+                )}
 
-            {project.gallery?.length > 0 && (
-              <section className="placer-project-section" aria-labelledby="project-photos-heading">
-                <h2 id="project-photos-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 20 }}>
-                  Photos
-                </h2>
-                <ul className="placer-project-gallery">
-                  {project.gallery.map((photo, index) => (
-                    <li key={photo.path}>
-                      {/* The full picture in a tab of its own; the grid crops it. */}
-                      <a href={photo.url} target="_blank" rel="noreferrer"
-                        aria-label={`Photo ${index + 1} of ${project.gallery.length}, full size`}>
-                        <img src={photo.url} alt="" loading="lazy"
-                          style={{ border: `1px solid ${t.line}` }} />
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+                {section.kind === 'goals' && (
+                  <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{goals}</p>
+                )}
 
-            {presented.length === 0 && (
-              <section id="project-take-part" className="placer-project-section" aria-labelledby="project-take-part-heading">
-                <h2 id="project-take-part-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 12 }}>
-                  Take part
-                </h2>
-                <div className="placer-card" style={{ textAlign: 'center' }}>
-                  <p style={{ fontSize: 16, color: t.inkDim }}>Nothing to take part in yet. Check back soon.</p>
-                </div>
-              </section>
-            )}
+                {section.kind === 'photos' && (
+                  <ul className="placer-project-gallery">
+                    {project.gallery.map((photo, index) => (
+                      <li key={photo.path}>
+                        {/* The full picture in a tab of its own; the grid crops it. */}
+                        <a href={photo.url} target="_blank" rel="noreferrer"
+                          aria-label={`Photo ${index + 1} of ${project.gallery.length}, full size`}>
+                          <img src={photo.url} alt="" loading="lazy"
+                            style={{ border: `1px solid ${t.line}` }} />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
-            {presented.map(({ id, heading, tool, room }) => (
-              <section key={id} id={id} aria-labelledby={`${id}-heading`}
-                className={`placer-project-section${room && tool.onProjectPage?.wide ? ' placer-project-section--wide' : ''}`}>
-                <h2 id={`${id}-heading`} className="placer-h2" style={{ color: t.ink, marginBottom: 20 }}>
-                  {heading}
-                </h2>
-                <ToolIntro t={t} tool={tool} room={room} />
-
-                {room && tool.onProjectPage?.Embed ? (
+                {section.kind === 'tool' && (section.room && section.tool.onProjectPage?.Embed ? (
                   <>
-                    <tool.onProjectPage.Embed t={t} tool={tool} room={room} />
+                    <section.tool.onProjectPage.Embed t={t} tool={section.tool} room={section.room} />
                     {/* Ideas posted to the map for the project, from the Toolkit's own flow. */}
-                    {tool.id === REIMAGINE_TOOL && imaginations.length > 0 && (
+                    {section.tool.id === REIMAGINE_TOOL && imaginations.length > 0 && (
                       <div style={{ marginTop: 24 }}>
                         <h3 style={{ fontSize: 16, fontWeight: 700, color: t.ink, margin: '0 0 12px' }}>
                           Posted to the map
@@ -762,10 +723,21 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
                     )}
                   </>
                 ) : (
-                  <ProjectToolCard t={t} tool={tool} room={room} displayName={accountName} />
-                )}
+                  <ProjectToolCard t={t} tool={section.tool} room={section.room} displayName={accountName} />
+                ))}
               </section>
             ))}
+
+            {!hasTools && (
+              <section id="project-take-part" className="placer-project-section" aria-labelledby="project-take-part-heading">
+                <h2 id="project-take-part-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 12 }}>
+                  Take part
+                </h2>
+                <div className="placer-card" style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: 16, color: t.inkDim }}>Nothing to take part in yet. Check back soon.</p>
+                </div>
+              </section>
+            )}
 
             {toolkitActivity > 0 && (
               <p className="placer-caption" style={{ color: t.inkFaint, marginTop: -8, marginBottom: 32 }}>

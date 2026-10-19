@@ -88,6 +88,7 @@ vi.mock('../../services/rooms', () => ({
   setRoomCloses: vi.fn(() => Promise.resolve('2026-11-21T00:00:00Z')),
   closeRoom: vi.fn(() => Promise.resolve(true)),
   deleteRoom: vi.fn(() => Promise.resolve(true)),
+  readProjectOpenRooms: vi.fn(() => Promise.resolve([])),
 }));
 
 const PROJECT = {

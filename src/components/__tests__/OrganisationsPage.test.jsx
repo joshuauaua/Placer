@@ -16,7 +16,7 @@ const STPLN = { id: 'org-2', name: 'STPLN', location: 'Malmö, Sweden', descript
 const ARKITEKTUR = { id: 'org-4', name: 'Arkitekturgalleriet', location: 'Copenhagen, Denmark', description: '',
   cover: null, createdAt: '2026-09-05' };
 
-// The cards, in the order they are shown. The favourite hearts beside them are
+// The cards, in the order they are shown. The save icons beside them are
 // buttons too, named with an aria-label; the cards are named by what they say.
 const cards = () => screen.getAllByRole('button')
   .filter((button) => !button.hasAttribute('aria-label')
