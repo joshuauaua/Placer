@@ -265,7 +265,6 @@ describe('ProjectSetupPage, starting a project', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('its tools could not be: network down');
     expect(onSaved).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: /Co-Budget/ })).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
@@ -351,14 +350,12 @@ describe('ProjectSetupPage, editing a project', () => {
     address: 'Folkets Park, Amiralsgatan 35, Malmö', locationPoint: { lat: 55.59, lng: 13.01 },
   };
 
-  it('starts filled in with the project already there, its tools included', async () => {
-    readProjectTools.mockResolvedValueOnce(['open-vote']);
+  it('starts filled in with the project already there', () => {
     setup({ project: PROJECT });
 
     expect(screen.getByLabelText('Name *')).toHaveValue('Riverside Greenway');
     expect(screen.getByLabelText('Dates')).toHaveTextContent(/Jan.*Dec.*2026/);
     expect(screen.getByLabelText('Address')).toHaveValue('Folkets Park, Amiralsgatan 35, Malmö');
-    expect(await screen.findByRole('button', { name: /Poll/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('radio', { name: /I want to push for change/ })).toBeChecked();
     expect(screen.getByRole('button', { name: /Save changes/ })).toBeInTheDocument();
   });
@@ -382,22 +379,12 @@ describe('ProjectSetupPage, editing a project', () => {
     expect(updateProject.mock.calls[0][1]).not.toHaveProperty('locationShapes');
   });
 
-  it('saves a change to the tools', async () => {
+  it('has no tools to choose, since My Toolkit looks after them, and never saves them', async () => {
     updateProject.mockResolvedValue(PROJECT);
-    readProjectTools.mockResolvedValueOnce(['open-vote']);
-    setup({ project: PROJECT });
-
-    fireEvent.click(await screen.findByRole('button', { name: /Co-Budget/ }));
-    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
-
-    await waitFor(() => expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['open-vote', 'budget-ballot'], 'user-1'));
-  });
-
-  it('never saves over the tools when they could not be loaded', async () => {
-    updateProject.mockResolvedValue(PROJECT);
-    readProjectTools.mockRejectedValueOnce(new Error('offline'));
     const { onSaved } = setup({ project: PROJECT });
 
+    expect(screen.queryByRole('button', { name: /Co-Budget/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/My Toolkit tab/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
@@ -672,21 +659,6 @@ describe('ProjectSetupPage, Idea Visualizer', () => {
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['reimagine-a-space'], 'user-1');
     expect(saveProjectToolConfig).not.toHaveBeenCalled();
-  });
-
-  it('deletes the base image of its scene when the tool is dropped', async () => {
-    const PROJECT = { id: 'proj-1', ownerId: 'user-1', name: 'Riverside Greenway', address: '', locations: [] };
-    updateProject.mockResolvedValue(PROJECT);
-    readProjectTools.mockResolvedValueOnce(['reimagine-a-space']);
-    readProjectToolConfig.mockResolvedValueOnce({ imagePath: 'scenes/proj-1/scene-0.webp' });
-    const { onSaved } = setup({ project: PROJECT });
-
-    fireEvent.click(await screen.findByRole('button', { name: /Idea Visualizer/ }));
-    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
-
-    await waitFor(() => expect(onSaved).toHaveBeenCalled());
-    expect(saveProjectTools).toHaveBeenCalledWith('proj-1', [], 'user-1');
-    expect(removeProjectImageFile).toHaveBeenCalledWith('scenes/proj-1/scene-0.webp');
   });
 });
 

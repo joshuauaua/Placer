@@ -9,6 +9,9 @@
  * `onPick`; the field's text becomes its label. Typing reports only the text, through
  * `onChange`. If the geocoder cannot be reached it is simply a text field.
  *
+ * It only suggests once somebody types in it: a field that opens already filled in — a
+ * project's address being edited — or is filled in from outside shows no list.
+ *
  * `regions` keeps to towns, cities and regions. `placement="above"` opens the list
  * upwards, for a field at the bottom of the screen.
  */
@@ -30,6 +33,8 @@ export function PlaceSearch({ id, value, onChange, onPick, placeholder, style, i
   const [active, setActive] = useState(-1);
   // Set when a pick fills the field, so that text is not searched for all over again.
   const pickedRef = useRef(false);
+  // Set by typing in the field; until then its value is not searched for at all.
+  const typedRef = useRef(false);
   const nearRef = useRef(near);
   nearRef.current = near;
 
@@ -39,7 +44,7 @@ export function PlaceSearch({ id, value, onChange, onPick, placeholder, style, i
       return undefined;
     }
     const text = (value ?? '').trim();
-    if (text.length < MIN_LENGTH) {
+    if (!typedRef.current || text.length < MIN_LENGTH) {
       setResults([]);
       setOpen(false);
       return undefined;
@@ -64,6 +69,7 @@ export function PlaceSearch({ id, value, onChange, onPick, placeholder, style, i
 
   const pick = (result) => {
     pickedRef.current = true;
+    typedRef.current = false;
     setOpen(false);
     setResults([]);
     onChange?.(result.label);
@@ -99,7 +105,7 @@ export function PlaceSearch({ id, value, onChange, onPick, placeholder, style, i
         aria-activedescendant={open && active >= 0 ? `${listId}-${active}` : undefined}
         aria-label={ariaLabel}
         autoComplete="off" placeholder={placeholder}
-        onChange={(event) => onChange?.(event.target.value)}
+        onChange={(event) => { typedRef.current = true; onChange?.(event.target.value); }}
         onKeyDown={handleKeyDown}
         onFocus={() => { if (results.length > 0) setOpen(true); }}
         // Late enough that a click on a suggestion lands first.

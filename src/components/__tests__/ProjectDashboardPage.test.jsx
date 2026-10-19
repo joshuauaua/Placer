@@ -16,6 +16,8 @@ import {
   readStats,
   removeCollaborator,
   removeLink,
+  removeProjectImageFile,
+  readProjectToolConfig,
   saveProjectTools,
   updateProject,
 } from '../../services/projects';
@@ -326,6 +328,37 @@ describe('ProjectDashboardPage', () => {
     expect(screen.getByRole('button', { name: 'Configure Street Section Mixer' })).toBeInTheDocument();
     expect(screen.getAllByText('Not configured')).toHaveLength(2);
     expect(readProjectTools).toHaveBeenCalledWith('proj-1');
+  });
+
+  it('removes a tool, once asked again, and Cancel keeps it', async () => {
+    tab = 'toolkit';
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'street-mixer']);
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove Poll' }));
+    expect(screen.getByText('Remove Poll and its setup?')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(saveProjectTools).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Poll' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, remove Poll' }));
+
+    await waitFor(() => expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['street-mixer'], 'user-1'));
+    expect(screen.queryByRole('button', { name: 'Configure Poll' })).not.toBeInTheDocument();
+    expect(removeProjectImageFile).not.toHaveBeenCalled();
+  });
+
+  it('deletes Idea Visualizer\'s base image when it is removed', async () => {
+    tab = 'toolkit';
+    vi.mocked(readProjectTools).mockResolvedValue(['reimagine-a-space']);
+    vi.mocked(readProjectToolConfig).mockResolvedValue({ imagePath: 'scenes/proj-1/scene-0.webp' });
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove Idea Visualizer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, remove Idea Visualizer' }));
+
+    await waitFor(() => expect(removeProjectImageFile).toHaveBeenCalledWith('scenes/proj-1/scene-0.webp'));
+    expect(saveProjectTools).toHaveBeenCalledWith('proj-1', [], 'user-1');
   });
 
   it('shows a configured tool, and a room tool with its room open, as live', async () => {

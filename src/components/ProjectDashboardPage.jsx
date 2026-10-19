@@ -40,12 +40,14 @@ import {
   readLinks,
   readProject,
   readProjectRooms,
+  readProjectToolConfig,
   readConfiguredProjectTools,
   readProjectTools,
   readStats,
   readProjectViews,
   removeCollaborator,
   removeLink,
+  removeProjectImageFile,
   saveProjectTools,
 } from '../services/projects';
 import { closeRoom, deleteRoom, setRoomCloses } from '../services/rooms';
@@ -390,8 +392,10 @@ function AddToolDialog({ t, tools, onChoose, onClose }) {
 const isCurrentRoom = (room) => room.status === 'open' || room.status === 'scheduled';
 
 function ChosenToolRow({ t, tool, live, scheduled = null, rooms = [], onConfigure, onOpenRoom,
-  onEditRoom, onCloseRoom, onDeleteRoom }) {
+  onEditRoom, onCloseRoom, onDeleteRoom, onRemove }) {
   const [expanded, setExpanded] = useState(false);
+  // Removing asks once more, in the row, since it takes the tool's setup with it.
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
   const panelId = useId();
   const expandable = rooms.length > 0;
   const liveRooms = rooms.filter((room) => room.status === 'open').length;
@@ -438,20 +442,39 @@ function ChosenToolRow({ t, tool, live, scheduled = null, rooms = [], onConfigur
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>{summary}</div>
         )}
-        {roomTool && rooms.length > 0 ? (
-          <Btn t={t} variant="secondary" size="sm" icon="pencil" ariaLabel={`Edit ${tool.name}`}
-            onClick={() => (rooms.length === 1 ? onEditRoom(rooms[0]) : setExpanded(true))}>
-            Edit
-          </Btn>
-        ) : live || scheduled ? (
-          <Btn t={t} variant="secondary" size="sm" icon="pencil" onClick={onConfigure} ariaLabel={`Edit ${tool.name}`}>
-            Edit
-          </Btn>
-        ) : (
-          <Btn t={t} variant="primary" size="sm" onClick={onConfigure} ariaLabel={`Configure ${tool.name}`}>
-            Configure
-          </Btn>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '0 0 auto' }}>
+          {confirmingRemove ? (
+            <>
+              <span style={{ fontSize: 13, color: t.inkDim }}>Remove {tool.name} and its setup?</span>
+              <Btn t={t} variant="secondary" size="sm" icon="trash" ariaLabel={`Yes, remove ${tool.name}`}
+                onClick={() => { setConfirmingRemove(false); onRemove(); }} style={{ color: DANGER }}>
+                Remove
+              </Btn>
+              <Btn t={t} variant="ghost" size="sm" onClick={() => setConfirmingRemove(false)}>Cancel</Btn>
+            </>
+          ) : (
+            <>
+              {roomTool && rooms.length > 0 ? (
+                <Btn t={t} variant="secondary" size="sm" icon="pencil" ariaLabel={`Edit ${tool.name}`}
+                  onClick={() => (rooms.length === 1 ? onEditRoom(rooms[0]) : setExpanded(true))}>
+                  Edit
+                </Btn>
+              ) : live || scheduled ? (
+                <Btn t={t} variant="secondary" size="sm" icon="pencil" onClick={onConfigure} ariaLabel={`Edit ${tool.name}`}>
+                  Edit
+                </Btn>
+              ) : (
+                <Btn t={t} variant="primary" size="sm" onClick={onConfigure} ariaLabel={`Configure ${tool.name}`}>
+                  Configure
+                </Btn>
+              )}
+              {onRemove && (
+                <Btn t={t} variant="ghost" size="sm" icon="trash" ariaLabel={`Remove ${tool.name}`}
+                  title={`Remove ${tool.name}`} onClick={() => setConfirmingRemove(true)} />
+              )}
+            </>
+          )}
+        </div>
       </div>
       {expandable && expanded && (
         <div id={panelId} role="region" aria-label={`${tool.name} rooms`} style={{ padding: '0 0 8px 48px' }}>
@@ -912,6 +935,26 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
     }
   };
 
+  // Taking a tool off the project takes its setup with it (its project_tools row). Its
+  // rooms stay as they are: closing or deleting them is each room's own. Idea
+  // Visualizer's base image is deleted too, since nothing points at it any more.
+  const handleRemoveTool = async (toolId) => {
+    const remaining = tools.filter((id) => id !== toolId);
+    const scene = toolId === 'reimagine-a-space'
+      ? await readProjectToolConfig(project.id, toolId).catch(() => null)
+      : null;
+    setTools(remaining);
+    try {
+      await saveProjectTools(project.id, remaining, accountId);
+      if (scene?.imagePath) {
+        removeProjectImageFile(scene.imagePath).catch((err) => console.error('Could not remove the base image:', err));
+      }
+    } catch (err) {
+      console.error('Could not remove that tool from the project:', err);
+      loadTools(project.id);
+    }
+  };
+
   const handleConfigured = () => {
     setConfiguring(null);
     loadTools(project.id);
@@ -1097,7 +1140,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                         rooms={(rooms ?? []).filter((room) => room.tool === tool.id && isCurrentRoom(room))}
                         onConfigure={() => setConfiguring(tool.id)}
                         onOpenRoom={handleOpenRoom} onEditRoom={setEditingRoom} onCloseRoom={handleCloseRoom}
-                        onDeleteRoom={handleDeleteRoom} />
+                        onDeleteRoom={handleDeleteRoom} onRemove={() => handleRemoveTool(tool.id)} />
                     );
                   })}
                 </div>
