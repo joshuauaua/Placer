@@ -13,4 +13,6 @@ export default {
   icon: 'section',
   createdBy: 'PLACER',
   component: StreetMixer,
+  // Not on plcr.org or beta.plcr.org yet; only locally.
+  hidden: 'production',
 };

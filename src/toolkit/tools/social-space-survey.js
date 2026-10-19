@@ -14,4 +14,6 @@ export default {
   createdBy: 'Gehl Institute',
   credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
   component: SocialSpaceSurvey,
+  // Not on plcr.org or beta.plcr.org yet; only locally.
+  hidden: 'production',
 };

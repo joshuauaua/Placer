@@ -72,4 +72,20 @@ describe('ProjectGallery', () => {
     expect(screen.queryByRole('button', { name: 'Next photo' })).not.toBeInTheDocument();
     expect(screen.queryByRole('list', { name: 'All photos' })).not.toBeInTheDocument();
   });
+
+  it('shows the photo\'s caption under it, and keeps the line for one without', () => {
+    render(<ProjectGallery t={THEME} photos={[{ ...photo(1), caption: 'The underpass, 2019' }, photo(2)]} />);
+
+    expect(screen.getByText('The underpass, 2019')).toBeInTheDocument();
+    expect(shown()).toHaveAccessibleName('Photo 1 of 2: The underpass, 2019, full size');
+    fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
+    expect(screen.queryByText('The underpass, 2019')).not.toBeInTheDocument();
+    expect(document.querySelector('.placer-gallery-caption')).toBeInTheDocument();
+  });
+
+  it('has no caption line when none of them has a caption', () => {
+    render(<ProjectGallery t={THEME} photos={PHOTOS} />);
+
+    expect(document.querySelector('.placer-gallery-caption')).not.toBeInTheDocument();
+  });
 });

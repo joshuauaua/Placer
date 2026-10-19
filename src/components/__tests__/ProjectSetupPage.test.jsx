@@ -739,6 +739,24 @@ describe('ProjectSetupPage, photos beside the header image', () => {
     expect(uploadProjectGalleryImage).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('Add photos')).not.toBeInTheDocument();
   });
+
+  it('saves a caption for each photo with Save changes, keyed by the photo', async () => {
+    updateProject.mockResolvedValue(withPhotos(1, 2));
+    setup({ project: { ...withPhotos(1, 2), galleryCaptions: {
+      'gallery/proj-1/photo-1.webp': 'Before', 'gallery/proj-1/photo-gone.webp': 'Taken out',
+    } } });
+
+    expect(screen.getByRole('textbox', { name: 'Caption for photo 1' })).toHaveValue('Before');
+    fireEvent.change(screen.getByRole('textbox', { name: 'Caption for photo 1' }), { target: { value: '  ' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Caption for photo 2' }),
+      { target: { value: ' The underpass, 2019 ' } });
+    expect(updateProject).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1', expect.objectContaining({
+      galleryCaptions: { 'gallery/proj-1/photo-2.webp': 'The underpass, 2019' },
+    })));
+  });
 });
 
 describe('ProjectSetupPage, arranging the project\'s page', () => {

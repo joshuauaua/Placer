@@ -60,7 +60,9 @@
  * are read: the Toolkit's gallery and its page (a 404), what a project can add, and,
  * for a project that already has it, its dashboard and its public page. Nothing is
  * deleted: a project keeps its row in project_tools, and its rooms, and taking the
- * line out again brings it all back.
+ * line out again brings it all back. `hidden: 'production'` does the same only on the
+ * live sites — plcr.org, beta.plcr.org and branch previews, every Vercel build — so the
+ * tool is still there locally, to try before it goes out.
  *
  * `credit` is optional: a sentence acknowledging where the method comes from, shown
  * under who made it wherever the tool describes itself (ToolCover, ToolLayout,
@@ -133,9 +135,15 @@ export const REGISTERED_TOOLS = Object.entries(import.meta.glob('./tools/*.js', 
   })
   .sort((a, b) => a.added.localeCompare(b.added) || a.id.localeCompare(b.id));
 
-/** The tools that are not switched off with `hidden`, in the order they were given. */
-export function shownTools(tools) {
-  return tools.filter((tool) => !tool.hidden);
+// Whether this build is for a live site (vite.config.js says how it knows).
+const PRODUCTION_SITE = import.meta.env?.VITE_PRODUCTION_SITE === 'true';
+
+/**
+ * The tools that are not switched off with `hidden`, in the order they were given.
+ * One hidden from production is kept unless `production` is true.
+ */
+export function shownTools(tools, { production = PRODUCTION_SITE } = {}) {
+  return tools.filter((tool) => !(tool.hidden === true || (tool.hidden === 'production' && production)));
 }
 
 /**
