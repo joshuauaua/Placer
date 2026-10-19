@@ -1,10 +1,10 @@
-/* PLACER — a project's dashboard, in three tabs under its name.
+/* PLACER — a project's dashboard, in three tabs under its name, opening on the first.
  *
+ *   Project Settings  its setup, collaborators, reference material, notifications, who
+ *                     may see a private project, and deleting it
+ *   My Toolkit        the tools it uses, and the rooms open for them
  *   Project Insights  a table of its insights — who has seen it, who has taken part and
  *                     how, and where it stands
- *   My Toolkit        the tools it uses, and the rooms open for them
- *   Project Settings  its setup, collaborators, documentation links, notifications, who
- *                     may see a private project, and deleting it
  *
  * The dialogs a tab opens (configuring a tool, changing a room) are drawn outside the
  * tabs, so switching tab never loses one half-way.
@@ -75,18 +75,19 @@ const inputStyle = (t) => ({
 const NUMBER = new Intl.NumberFormat('en-GB');
 
 const DASHBOARD_TABS = [
-  { id: 'general', label: 'Project Insights' },
-  { id: 'toolkit', label: 'My Toolkit' },
   { id: 'settings', label: 'Project Settings' },
+  { id: 'toolkit', label: 'My Toolkit' },
+  { id: 'general', label: 'Project Insights' },
 ];
 
-function Card({ t, title, action, children }) {
+/** A card on the dashboard. `danger` rules it, and heads it, in the alert red. */
+function Card({ t, title, action, danger = false, children }) {
   return (
-    <section style={{ padding: 24, marginBottom: 24, background: t.surface, borderRadius: 12,
-      border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
+    <section aria-label={title} style={{ padding: 24, marginBottom: 24, background: t.surface, borderRadius: 12,
+      border: `1px solid ${danger ? DANGER : t.line}`, boxShadow: t.shadow }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         flexWrap: 'wrap', marginBottom: 16 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: t.ink, margin: 0 }}>{title}</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: danger ? DANGER : t.ink, margin: 0 }}>{title}</h2>
         {action}
       </div>
       {children}
@@ -753,7 +754,7 @@ function DeleteProjectDialog({ t, project, onDeleted, onClose }) {
  * needs — everything else is read here. `isOwner` gates the roster and delete
  * controls; a plain collaborator sees everything else.
  */
-export function ProjectDashboardPage({ t, accountId, projectId, organisations = [], initialTab = 'general',
+export function ProjectDashboardPage({ t, accountId, projectId, organisations = [], initialTab = 'settings',
   onOpenRoom, onNavigateToPublic, onDeleted }) {
   const [project, setProject] = useState(null);
   const [status, setStatus] = useState('loading');
@@ -1087,11 +1088,6 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
               View the public page
             </span>
           </div>
-          {isOwner && (
-            <Btn t={t} variant="outline" size="sm" icon="pencil" onClick={() => setEditing(true)}>
-              Edit setup
-            </Btn>
-          )}
         </div>
 
         <div role="tablist" aria-label="Dashboard sections" onKeyDown={onTabKey}
@@ -1211,7 +1207,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                 )}
               </Card>
 
-              <Card t={t} title="Documentation">
+              <Card t={t} title="Reference Material">
                 <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
                   News, articles and resources — links only, shown on the public page.
                 </p>
@@ -1239,7 +1235,18 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
 
               {project.visibility === 'private' && <ProjectAccess t={t} projectId={project.id} />}
 
-              {isOwner && <DeleteProject t={t} project={project} onDeleted={onDeleted} />}
+              {/* Last, and apart from the rest: what cannot be undone. */}
+              {isOwner && (
+                <Card t={t} title="Danger zone" danger>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+                    flexWrap: 'wrap' }}>
+                    <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0, flex: '1 1 260px' }}>
+                      Delete this project, its page and everything set up for it. This cannot be undone.
+                    </p>
+                    <DeleteProject t={t} project={project} onDeleted={onDeleted} />
+                  </div>
+                </Card>
+              )}
             </>
           )}
         </div>

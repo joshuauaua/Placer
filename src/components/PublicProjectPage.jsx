@@ -4,7 +4,7 @@
  * its image, with its dates, who it is by and where underneath, and a column beside
  * it, level with its top — the time it has left, its views and its followers, each a
  * big number over its words, and a Follow button. Then a bar of tabs that sticks to
- * the top of the window — Project, Updates, Comments and Relevant links — each a view
+ * the top of the window — Project, Updates, Comments and Reference Material — each a view
  * of its own, the Project tab opening with the project's description and goals, and any
  * photos its organisers added beside the header image (supabase/project-gallery.sql). Under
  * whichever is showing, always: the Organizer (the organisation it is run for, or the
@@ -284,7 +284,7 @@ const TABS = [
   { id: 'project', label: 'Project' },
   { id: 'updates', label: 'Updates' },
   { id: 'comments', label: 'Comments' },
-  { id: 'links', label: 'Relevant links' },
+  { id: 'links', label: 'Reference Material' },
 ];
 
 const NUMBER = new Intl.NumberFormat('en-GB');
@@ -295,7 +295,7 @@ const NUMBER = new Intl.NumberFormat('en-GB');
  * cold with nothing but the id in the URL.
  */
 export function PublicProjectPage({ t, projectId, accountId, accountName = null, accountPhoto = null, onSignIn,
-  onBack, onOpenProject, onOpenOrganisation, onOpenProfile }) {
+  onBack, onOpenProject, onOpenOrganisation, onOpenProfile, onEdit }) {
   const [project, setProject] = useState(null);
   // The tools its organisers added, as registry entries. A tool no longer in the
   // registry is skipped rather than shown broken.
@@ -579,7 +579,18 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
       {backButton}
 
       <header>
-        <h1 style={{ color: t.ink, overflowWrap: 'anywhere' }}>{project.name}</h1>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+          <h1 style={{ color: t.ink, overflowWrap: 'anywhere', minWidth: 0 }}>{project.name}</h1>
+          {/* For the people who can change it — its owner and collaborators, the ones the
+              database lets edit a project (supabase/projects.sql) — the way to its
+              dashboard. */}
+          {isTeam && onEdit && (
+            <Btn t={t} variant="outline" icon="pencil" onClick={() => onEdit(project.id)}
+              style={{ flex: '0 0 auto', marginTop: 4 }}>
+              Edit project
+            </Btn>
+          )}
+        </div>
         {project.summary && (
           <p className="placer-body-lg placer-project-subtitle" style={{ color: t.inkDim, whiteSpace: 'pre-line' }}>
             {project.summary}

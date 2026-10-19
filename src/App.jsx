@@ -867,7 +867,8 @@ function MainApp({ initialView = 'welcome' }) {
                   onBack={() => show('projects')}
                   onOpenProject={showProjectPublic}
                   onOpenOrganisation={showOrganisationPublic}
-                  onOpenProfile={showPublicProfile} />
+                  onOpenProfile={showPublicProfile}
+                  onEdit={(id) => { showProjectDashboard(id); scrollPageToTop(); }} />
               </Suspense>
             )}
           </div>

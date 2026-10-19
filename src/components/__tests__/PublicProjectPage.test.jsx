@@ -159,7 +159,7 @@ describe('PublicProjectPage', () => {
 
     setup();
 
-    fireEvent.click(await screen.findByRole('tab', { name: /Relevant links/ }));
+    fireEvent.click(await screen.findByRole('tab', { name: /Reference Material/ }));
     expect(screen.getByRole('link', { name: /Council report/ })).toHaveAttribute('href', 'https://example.com/report');
   });
 
@@ -1081,11 +1081,33 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     expect(screen.queryByRole('heading', { name: 'About the project' })).not.toBeInTheDocument();
   });
 
+  it('offers its owner and collaborators Edit project, which opens its dashboard', async () => {
+    const { onEdit } = setup({ accountId: 'user-3', onEdit: vi.fn() });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Edit project/ }));
+    expect(onEdit).toHaveBeenCalledWith('proj-1');
+  });
+
+  it('has no Edit project for anybody else, signed in or not', async () => {
+    setup({ accountId: 'user-9', onEdit: vi.fn() });
+    await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' });
+    await waitFor(() => expect(readProjectSummary).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: /Edit project/ })).not.toBeInTheDocument();
+  });
+
+  it('has no Edit project for an admin of its organisation who is not on the project', async () => {
+    vi.mocked(readProjectSummary).mockResolvedValue({ ...SUMMARY, canPostUpdate: true });
+    setup({ accountId: 'user-9', onEdit: vi.fn() });
+    await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' });
+    await waitFor(() => expect(readProjectSummary).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: /Edit project/ })).not.toBeInTheDocument();
+  });
+
   it('heads the page with the title and the summary as its subtitle, and the byline under the image', async () => {
     setup();
 
     const title = await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' });
-    expect(title.nextElementSibling).toHaveTextContent('A park along the old railway.');
+    expect(title.parentElement.nextElementSibling).toHaveTextContent('A park along the old railway.');
     const byline = screen.getByText('1 Jan 2026 – 31 Dec 2026').closest('div');
     expect(byline).toHaveTextContent('By Mara Quinn');
     expect(byline).toHaveTextContent('Malmö, Folkets Park');
@@ -1098,10 +1120,10 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     setup();
 
     const tabs = await screen.findAllByRole('tab');
-    expect(tabs.map((tab) => tab.textContent.replace(/\d+$/, ''))).toEqual(['Project', 'Updates', 'Comments', 'Relevant links']);
+    expect(tabs.map((tab) => tab.textContent.replace(/\d+$/, ''))).toEqual(['Project', 'Updates', 'Comments', 'Reference Material']);
     expect(screen.getByRole('tab', { name: 'Project' })).toHaveAttribute('aria-selected', 'true');
 
-    for (const name of [/Updates/, /Comments/, /Relevant links/]) {
+    for (const name of [/Updates/, /Comments/, /Reference Material/]) {
       fireEvent.click(screen.getByRole('tab', { name }));
       expect(screen.getByRole('tab', { name })).toHaveAttribute('aria-selected', 'true');
       expect(screen.getByRole('heading', { name: 'Organizer' })).toBeInTheDocument();
@@ -1118,7 +1140,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     expect(screen.getByRole('tab', { name: /Updates/ })).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(screen.getByRole('tab', { name: /Updates/ }), { key: 'ArrowLeft' });
     fireEvent.keyDown(project, { key: 'ArrowLeft' });
-    expect(screen.getByRole('tab', { name: /Relevant links/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Reference Material/ })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('introduces the organiser, with what it has made and when it joined', async () => {
@@ -1266,13 +1288,13 @@ describe('PublicProjectPage, its header, tabs and people', () => {
 
     expect(await screen.findByRole('tab', { name: 'Updates (1)' })).toBeInTheDocument();
     expect(await screen.findByRole('tab', { name: 'Comments (1)' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Relevant links (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Reference Material (1)' })).toBeInTheDocument();
   });
 
   it('says when there are no links yet', async () => {
     setup();
 
-    fireEvent.click(await screen.findByRole('tab', { name: /Relevant links/ }));
+    fireEvent.click(await screen.findByRole('tab', { name: /Reference Material/ }));
 
     expect(screen.getByText('No links shared yet.')).toBeInTheDocument();
   });
