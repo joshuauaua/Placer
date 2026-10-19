@@ -64,6 +64,10 @@ const FOLDERS: Record<string, Folder> = {
   // Its own folder, since `projects` is swept down to the cover. No `current`: the key
   // is inside project_tools.config, and the page deletes the one it replaces.
   scenes: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'project' },
+  // The photos on a project's page beside its header image
+  // (supabase/project-gallery.sql). Its own folder for the same reason as `scenes`;
+  // the keys are in projects.gallery_paths, and the page deletes the one it removes.
+  gallery: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'project' },
   organisations: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'organisation',
     current: { table: 'organisations', column: 'cover_path' } },
   // An organisation's profile picture (supabase/organisation-avatars.sql). Its own

@@ -630,6 +630,20 @@ own — for Desire Lines the site, its marks, the note on why it matters and the
 — to start a project's tool from later. Private to the account: its row-level security lets
 only the owner read, add or delete them.
 
+### Photos on a project's page
+
+Besides its header image, a project can have up to 12 photos, added from its settings
+and shown in a Photos section on its public page. `project-gallery.sql` (also a
+migration) adds `projects.gallery_paths`, the keys in the order they are shown. The
+files go in the bucket under `gallery/<project id>/`, so deploy the `media` function
+again (step 14) so it accepts the new folder:
+
+```sh
+supabase functions deploy media
+```
+
+Run the SQL before the app goes out: the app reads the column with every project.
+
 ### Room limits big enough for a map
 
 Run `room-size-limits.sql` after `rooms.sql` and `rooms-config.sql` (or `supabase db push`).

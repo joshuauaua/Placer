@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { ProjectSetupPage, parseBudgetAmount } from '../ProjectSetupPage';
 import {
   createProject, readProjectBudget, readProjectToolConfig, readProjectTools, removeProjectImageFile,
-  saveProjectBudget, saveProjectToolConfig, saveProjectTools, updateProject,
+  saveProjectBudget, saveProjectToolConfig, saveProjectTools, updateProject, uploadProjectGalleryImage,
 } from '../../services/projects';
 import { THEME } from '../../theme';
 import { CATEGORIES, TOOLS } from '../../toolkit/tools';
@@ -23,6 +23,8 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),
   saveProjectTools: vi.fn((projectId, tools) => Promise.resolve(tools)),
   removeProjectImageFile: vi.fn(() => Promise.resolve()),
+  uploadProjectGalleryImage: vi.fn(),
+  GALLERY_MAX: 12,
 }));
 
 // Where this machine is says nothing about the project: the suggestion goes only on
@@ -678,5 +680,85 @@ describe('ProjectSetupPage, Idea Visualizer', () => {
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(saveProjectTools).toHaveBeenCalledWith('proj-1', [], 'user-1');
     expect(removeProjectImageFile).toHaveBeenCalledWith('scenes/proj-1/scene-0.webp');
+  });
+});
+
+describe('ProjectSetupPage, photos beside the header image', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const photo = (n) => ({ path: `gallery/proj-1/photo-${n}.webp`, url: `https://media.test/gallery/proj-1/photo-${n}.webp` });
+  const withPhotos = (...ns) => ({
+    id: 'proj-1', ownerId: 'user-1', ownerName: 'Mara Quinn', name: 'Riverside Greenway',
+    description: '', locations: [], address: '',
+    galleryPaths: ns.map((n) => photo(n).path), gallery: ns.map(photo),
+  });
+  const file = (name) => new File(['x'], name, { type: 'image/jpeg' });
+
+  it('are not offered until the project is started, since its id names their folder', () => {
+    setup();
+    toBasics();
+
+    expect(screen.queryByText('More photos')).not.toBeInTheDocument();
+  });
+
+  it('adds several at once, after the ones already there', async () => {
+    uploadProjectGalleryImage.mockResolvedValueOnce('gallery/proj-1/photo-2.webp')
+      .mockResolvedValueOnce('gallery/proj-1/photo-3.webp');
+    updateProject.mockResolvedValueOnce(withPhotos(1, 2, 3));
+    setup({ project: withPhotos(1) });
+
+    const input = screen.getByText('Add photos').querySelector('input[type="file"]');
+    fireEvent.change(input, { target: { files: [file('a.jpg'), file('b.jpg')] } });
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1', { galleryPaths: [
+      'gallery/proj-1/photo-1.webp', 'gallery/proj-1/photo-2.webp', 'gallery/proj-1/photo-3.webp',
+    ] }));
+    expect(await screen.findByText(/^3 of 12/)).toBeInTheDocument();
+  });
+
+  it('can be dragged into order, from the keyboard as well as with a pointer', () => {
+    setup({ project: withPhotos(1, 2) });
+
+    const handle = screen.getByRole('button', { name: 'Photo 1 of 2, drag to reorder' });
+    expect(handle).toHaveAttribute('aria-roledescription', 'sortable');
+    expect(handle).toHaveAttribute('tabindex', '0');
+    expect(screen.getByText(/drag to reorder/)).toBeInTheDocument();
+  });
+
+  it('moves one later', async () => {
+    updateProject.mockResolvedValueOnce(withPhotos(2, 1));
+    setup({ project: withPhotos(1, 2) });
+
+    expect(screen.getByRole('button', { name: 'Move photo 1 earlier' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Move photo 1 later' }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1',
+      { galleryPaths: ['gallery/proj-1/photo-2.webp', 'gallery/proj-1/photo-1.webp'] }));
+  });
+
+  it('removes one, and deletes its file once nothing points at it', async () => {
+    updateProject.mockResolvedValueOnce(withPhotos(2));
+    setup({ project: withPhotos(1, 2) });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove photo 1' }));
+
+    await waitFor(() => expect(removeProjectImageFile).toHaveBeenCalledWith('gallery/proj-1/photo-1.webp'));
+    expect(updateProject).toHaveBeenCalledWith('proj-1', { galleryPaths: ['gallery/proj-1/photo-2.webp'] });
+  });
+
+  it('adds only as many as there is room for, and says so', async () => {
+    const eleven = withPhotos(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+    uploadProjectGalleryImage.mockResolvedValueOnce('gallery/proj-1/photo-12.webp');
+    updateProject.mockResolvedValueOnce(withPhotos(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
+    setup({ project: eleven });
+
+    const input = screen.getByText('Add photos').querySelector('input[type="file"]');
+    fireEvent.change(input, { target: { files: [file('a.jpg'), file('b.jpg')] } });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('only one more was added');
+    expect(uploadProjectGalleryImage).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Add photos')).not.toBeInTheDocument();
   });
 });

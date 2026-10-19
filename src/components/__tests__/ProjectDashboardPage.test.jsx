@@ -61,6 +61,8 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   readConfiguredProjectTools: vi.fn(() => Promise.resolve(new Set())),
   markProjectToolConfigured: vi.fn(() => Promise.resolve()),
   removeProjectImageFile: vi.fn(() => Promise.resolve()),
+  uploadProjectGalleryImage: vi.fn(),
+  GALLERY_MAX: 12,
   readProjectToolConfig: vi.fn(() => Promise.resolve(null)),
   saveProjectToolConfig: vi.fn(() => Promise.resolve()),
   uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),

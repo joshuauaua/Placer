@@ -110,6 +110,30 @@ describe('PublicProjectPage', () => {
     expect(screen.getByText(/Turn the old rail corridor/)).toBeInTheDocument();
   });
 
+  it('shows the photos added beside the header image, in their order, each opening full size', async () => {
+    vi.mocked(readProject).mockResolvedValue({ ...PROJECT, gallery: [
+      { path: 'gallery/proj-1/photo-1.webp', url: 'https://media.test/gallery/proj-1/photo-1.webp' },
+      { path: 'gallery/proj-1/photo-2.webp', url: 'https://media.test/gallery/proj-1/photo-2.webp' },
+    ] });
+
+    setup();
+
+    const photos = within(await screen.findByRole('region', { name: 'Photos' })).getAllByRole('link');
+    expect(photos.map((link) => link.getAttribute('href'))).toEqual([
+      'https://media.test/gallery/proj-1/photo-1.webp', 'https://media.test/gallery/proj-1/photo-2.webp',
+    ]);
+    expect(photos[0]).toHaveAccessibleName('Photo 1 of 2, full size');
+  });
+
+  it('has no Photos section without any', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+
+    setup();
+
+    await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' });
+    expect(screen.queryByRole('heading', { name: 'Photos' })).not.toBeInTheDocument();
+  });
+
   it('says so when the project cannot be found', async () => {
     vi.mocked(readProject).mockResolvedValue(null);
 
