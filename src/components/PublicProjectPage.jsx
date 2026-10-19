@@ -59,6 +59,7 @@ import { readProjectOpenRooms } from '../services/rooms';
 import { projectProgress } from '../lib/projectTimeline';
 import { ProjectPeople } from './ProjectPeople';
 import { ProjectPosts } from './ProjectPosts';
+import { ProjectGallery } from './ProjectGallery';
 import { PALETTE } from '../theme';
 
 // The tool whose results are the project's imaginations (toolkit/tools.js).
@@ -701,20 +702,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
                   <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{goals}</p>
                 )}
 
-                {section.kind === 'photos' && (
-                  <ul className="placer-project-gallery">
-                    {project.gallery.map((photo, index) => (
-                      <li key={photo.path}>
-                        {/* The full picture in a tab of its own; the grid crops it. */}
-                        <a href={photo.url} target="_blank" rel="noreferrer"
-                          aria-label={`Photo ${index + 1} of ${project.gallery.length}, full size`}>
-                          <img src={photo.url} alt="" loading="lazy"
-                            style={{ border: `1px solid ${t.line}` }} />
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                {section.kind === 'photos' && <ProjectGallery t={t} photos={project.gallery} />}
 
                 {section.kind === 'tool' && (section.room && section.tool.onProjectPage?.Embed ? (
                   <>
