@@ -113,7 +113,7 @@ export function OpenVoteOnPage({ t, room, service = roomService }) {
 
       {closes && status !== 'closed' && (
         <p className="placer-caption" style={{ color: t.inkFaint, marginTop: 16 }}>
-          Open until {closes}. One vote per person.
+          Open until {closes}.
         </p>
       )}
     </div>
