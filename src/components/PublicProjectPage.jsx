@@ -717,7 +717,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
                 className={`placer-project-section${isWide(section) ? ' placer-project-section--wide' : ''}`}>
                 {/* A tool drawn as a cover puts the heading on it instead (onProjectPage.cover). */}
                 {!isCover(section) && (
-                  <h2 id={`${section.domId}-heading`} className="placer-h2"
+                  <h2 id={`${section.domId}-heading`}
+                    className={`placer-h2${section.hideTitle ? ' placer-visually-hidden' : ''}`}
                     style={{ color: t.ink, marginBottom: section.kind === 'about' || section.kind === 'goals' ? 12 : 20 }}>
                     {section.title}
                   </h2>
@@ -734,12 +735,27 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
                   <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{goals}</p>
                 )}
 
-                {section.kind === 'photos' && <ProjectGallery t={t} photos={project.gallery} />}
+                {section.kind === 'photos' && <ProjectGallery t={t} photos={section.photos} />}
+
+                {section.kind === 'photo' && (
+                  <figure className="placer-project-photo">
+                    <a href={section.photo.url} target="_blank" rel="noreferrer"
+                      aria-label={`${section.photo.caption || 'Photo'}, full size`}>
+                      <img src={section.photo.url} alt="" loading="lazy"
+                        style={{ border: `1px solid ${t.line}` }} />
+                    </a>
+                    {section.photo.caption && (
+                      <figcaption style={{ color: t.inkDim }}>{section.photo.caption}</figcaption>
+                    )}
+                  </figure>
+                )}
 
                 {section.kind === 'tool' && (section.room && section.tool.onProjectPage?.Embed ? (
                   <>
                     <section.tool.onProjectPage.Embed t={t} tool={section.tool} room={section.room}
-                      heading={isCover(section) ? { id: `${section.domId}-heading`, title: section.title } : undefined} />
+                      heading={isCover(section)
+                        ? { id: `${section.domId}-heading`, title: section.title, hidden: section.hideTitle }
+                        : undefined} />
                     {isCover(section) && <ToolIntro t={t} tool={section.tool} room={section.room} />}
                     {/* Ideas posted to the map for the project, from the Toolkit's own flow. */}
                     {section.tool.id === REIMAGINE_TOOL && imaginations.length > 0 && (

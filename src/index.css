@@ -2145,6 +2145,22 @@ a {
 /* PLACER — a project's photos as a gallery (see ProjectGallery.jsx): one at a time,
  * 16:9 and whole rather than cropped, with round arrows either side, a count in the
  * corner, and thumbnails underneath. */
+/* A photo shown on its own on a project page, the column's width, its caption under it. */
+.placer-project-photo { margin: 0; }
+
+.placer-project-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+}
+
+.placer-project-photo figcaption {
+  margin: 10px 2px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 /* Site-Specific Spatial Mapping's cover on a project page (toolkit/SiteMappingOnPage):
  * a panel in the tool's colour, with the tool's icon large and faint across
  * its corner, and the heading and button on it in white. */

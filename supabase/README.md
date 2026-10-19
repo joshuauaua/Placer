@@ -649,6 +649,15 @@ Each photo can have a caption, shown under it in the page's gallery.
 object from a photo's path to its caption, so a caption stays with its photo when they
 are reordered. Run it before the app goes out too.
 
+### Photos shown on their own
+
+A project's photos can each be shown by itself, as a section of the page, rather than
+in the gallery with the rest. `project-gallery-standalone.sql` (also a migration) adds
+`projects.gallery_standalone`, the paths of the ones that are; Page Layout orders them
+under the key `photo:<path>`. Any section's title can also be hidden from Page Layout,
+which needs no SQL: it is `hideTitle` on the section's entry in `page_layout`. Run the
+SQL before the app goes out: the app reads the column with every project.
+
 ### A project's subtitle
 
 The line under a project's name at the top of its page used to be its description,

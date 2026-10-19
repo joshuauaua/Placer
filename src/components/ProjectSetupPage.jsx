@@ -368,6 +368,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
   // The photos beside it save straight away too: each upload is added to the end of the
   // list, and a photo taken out is deleted once the project no longer points at it.
   const galleryPaths = project?.galleryPaths ?? [];
+  const galleryStandalone = project?.galleryStandalone ?? [];
   const addPhotos = async (files) => {
     const added = [];
     try {
@@ -386,9 +387,16 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
   };
   const removePhoto = async (index) => {
     const removed = galleryPaths[index];
-    setProject(await updateProject(project.id,
-      { galleryPaths: galleryPaths.filter((_, i) => i !== index) }));
+    const patch = { galleryPaths: galleryPaths.filter((_, i) => i !== index) };
+    if (galleryStandalone.includes(removed)) patch.galleryStandalone = galleryStandalone.filter((path) => path !== removed);
+    setProject(await updateProject(project.id, patch));
     await removeProjectImageFile(removed);
+  };
+  // Shown on its own, as a section of the page by itself, or in the gallery with the rest.
+  const setPhotoStandalone = async (path, standalone) => {
+    const next = galleryStandalone.filter((each) => each !== path);
+    if (standalone) next.push(path);
+    setProject(await updateProject(project.id, { galleryStandalone: next }));
   };
 
   const pickPendingImage = async (file) => {
@@ -599,18 +607,21 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
     : [];
   const pageField = editing && pageReady && (
     <Field t={t} label="Page Layout"
-      hint="The order of the sections on the project's page, and what each is called. Drag a section, or use its arrows, to move it; type over a title to change it, or empty it to go back to the usual one. A tool or room added later goes at the end. Saved with Save changes.">
+      hint="The order of the sections on the project's page, and what each is called. Drag a section, or use its arrows, to move it; type over a title to change it, or empty it to go back to the usual one, and tick Hide title to leave it off the page. A tool or room added later goes at the end. Saved with Save changes.">
       <PageLayoutEditor t={t} sections={pageSections} disabled={status === 'saving'}
-        onChange={(next) => setPageLayout(next.map(({ key, customTitle }) => ({ key, title: customTitle })))} />
+        onChange={(next) => setPageLayout(next.map(({ key, customTitle, hideTitle }) => ({
+          key, title: customTitle, hideTitle,
+        })))} />
     </Field>
   );
 
   // Only once the project exists, since its id names the photos' folder.
   const gallery = editing && (
     <Field t={t} label="Gallery Images"
-      hint={`Shown in a Photos section on the project's page, in this order. Up to ${GALLERY_MAX}. Each is resized, and saved without its location data. A caption is shown under its photo, and saved with Save changes. Optional.`}>
+      hint={`Shown in a Photos section on the project's page, in this order. Up to ${GALLERY_MAX}. Each is resized, and saved without its location data. A caption is shown under its photo, and saved with Save changes. Tick On its own to show a photo by itself rather than in the gallery; Page Layout puts it where it goes. Optional.`}>
       <GalleryPicker t={t} photos={project.gallery ?? []} max={GALLERY_MAX} captions={galleryCaptions}
         onCaption={(path, caption) => setGalleryCaptions((current) => ({ ...current, [path]: caption }))}
+        onStandalone={setPhotoStandalone}
         onAdd={addPhotos} onMove={movePhoto} onRemove={removePhoto} disabled={status === 'saving'} />
     </Field>
   );

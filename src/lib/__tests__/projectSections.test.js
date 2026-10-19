@@ -27,6 +27,22 @@ describe('projectSections', () => {
       .toEqual(['About the project', 'Goals', 'Photos', 'We want your opinion']);
   });
 
+  it('gives each photo shown on its own a section of its own, after the gallery of the rest', () => {
+    const photo = (n, standalone = false) => ({ path: `gallery/p/${n}.webp`, url: `u${n}`, standalone });
+    const sections = projectSections({ project: { ...PROJECT, gallery: [photo(1), photo(2, true), photo(3), photo(4, true)] } });
+
+    expect(sections.map(({ key }) => key))
+      .toEqual(['about', 'goals', 'photos', 'photo:gallery/p/2.webp', 'photo:gallery/p/4.webp']);
+    expect(sections[2].photos.map(({ path }) => path)).toEqual(['gallery/p/1.webp', 'gallery/p/3.webp']);
+    expect(sections[3]).toMatchObject({ kind: 'photo', defaultTitle: 'Photo', domId: 'project-photo-1',
+      defaultHidden: true, photo: { path: 'gallery/p/2.webp' } });
+  });
+
+  it('has no gallery when every photo is shown on its own', () => {
+    const sections = projectSections({ project: { ...PROJECT, gallery: [{ path: 'g/1.webp', url: 'u', standalone: true }] } });
+    expect(sections.map(({ key }) => key)).toEqual(['about', 'goals', 'photo:g/1.webp']);
+  });
+
   it('leaves out what is not there: no goals, no photos, a tool with no open room', () => {
     const sections = projectSections({ project: { description: 'Only goals.' }, tools: [findTool('open-vote')] });
     expect(sections.map(({ key }) => key)).toEqual(['about']);
@@ -69,6 +85,15 @@ describe('arrangeSections', () => {
     expect(arranged.map(({ key }) => key)).toEqual(['goals', 'about', 'room:room-1']);
   });
 
+  it('hides a title the layout says to, and a standalone photo\'s unless it says to show it', () => {
+    const withPhoto = projectSections({ project: { ...PROJECT, gallery: [{ path: 'g/1.webp', url: 'u', standalone: true }] } });
+    const hidden = (layout) => arrangeSections(withPhoto, layout).map(({ key, hideTitle }) => [key, hideTitle]);
+
+    expect(hidden([])).toEqual([['about', false], ['goals', false], ['photo:g/1.webp', true]]);
+    expect(hidden([{ key: 'goals', hideTitle: true }, { key: 'photo:g/1.webp', hideTitle: false }]))
+      .toEqual([['goals', true], ['photo:g/1.webp', false], ['about', false]]);
+  });
+
   it('shrugs off a layout that is not a list of entries', () => {
     expect(arrangeSections(sections, null).map(({ key }) => key)).toEqual(['about', 'goals', 'room:room-1']);
     expect(arrangeSections(sections, [null, 7, { key: 3 }]).map(({ key }) => key))
@@ -83,5 +108,15 @@ describe('layoutFor', () => {
       [{ key: 'room:room-1', title: ' Car-free? ' }, { key: 'goals', title: 'Goals' }],
     );
     expect(layoutFor(arranged)).toEqual([{ key: 'room:room-1', title: 'Car-free?' }, { key: 'goals' }, { key: 'about' }]);
+  });
+
+  it('saves whether a title is hidden only where that is not the section\'s default', () => {
+    const withPhoto = projectSections({ project: { ...PROJECT, gallery: [{ path: 'g/1.webp', url: 'u', standalone: true }] } });
+    const arranged = arrangeSections(withPhoto, [])
+      .map((section) => (section.key === 'about' ? { ...section, hideTitle: true } : section));
+    expect(layoutFor(arranged)).toEqual([{ key: 'about', hideTitle: true }, { key: 'goals' }, { key: 'photo:g/1.webp' }]);
+
+    const shown = arrangeSections(withPhoto, [{ key: 'photo:g/1.webp', hideTitle: false }]);
+    expect(layoutFor(shown)).toEqual([{ key: 'photo:g/1.webp', hideTitle: false }, { key: 'about' }, { key: 'goals' }]);
   });
 });

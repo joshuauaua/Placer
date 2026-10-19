@@ -754,6 +754,21 @@ describe('ProjectSetupPage, photos beside the header image', () => {
     expect(updateProject).toHaveBeenCalledWith('proj-1', { galleryPaths: ['gallery/proj-1/photo-2.webp'] });
   });
 
+  it('shows a photo on its own straight away, and takes it out of that when it is removed', async () => {
+    const standalone = { ...withPhotos(1, 2), galleryStandalone: ['gallery/proj-1/photo-2.webp'] };
+    updateProject.mockResolvedValueOnce(standalone).mockResolvedValueOnce(withPhotos(1));
+    setup({ project: withPhotos(1, 2) });
+    fireEvent.click(screen.getByRole('tab', { name: 'Images and Media' }));
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Show photo 2 on its own' }));
+    await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1',
+      { galleryStandalone: ['gallery/proj-1/photo-2.webp'] }));
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove photo 2' }));
+    await waitFor(() => expect(updateProject).toHaveBeenLastCalledWith('proj-1',
+      { galleryPaths: ['gallery/proj-1/photo-1.webp'], galleryStandalone: [] }));
+  });
+
   it('adds only as many as there is room for, and says so', async () => {
     const eleven = withPhotos(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
     uploadProjectGalleryImage.mockResolvedValueOnce('gallery/proj-1/photo-12.webp');
@@ -830,6 +845,24 @@ describe('ProjectSetupPage, arranging the project\'s page', () => {
 
     await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1', expect.objectContaining({
       pageLayout: [{ key: 'about' }, { key: 'room:room-1', title: 'Car-free square?' }, { key: 'goals' }],
+    })));
+  });
+
+  it('hides a title, and lists a photo on its own with its title hidden to begin with', async () => {
+    const photo = { path: 'gallery/proj-1/photo-1.webp', url: 'https://media.test/photo-1.webp', standalone: true };
+    setup({ project: { ...PROJECT, gallery: [photo], galleryPaths: [photo.path], galleryStandalone: [photo.path] } });
+    fireEvent.click(screen.getByRole('tab', { name: 'Page Layout' }));
+    const list = within(await screen.findByRole('list', { name: 'Page sections' }));
+
+    expect(list.getByText(/A photo on its own/)).toBeInTheDocument();
+    const boxes = list.getAllByRole('checkbox', { name: 'Hide title' });
+    expect(boxes.map((box) => box.checked)).toEqual([false, false, true, false]);
+    fireEvent.click(boxes[1]);
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1', expect.objectContaining({
+      pageLayout: [{ key: 'about' }, { key: 'goals', hideTitle: true }, { key: `photo:${photo.path}` },
+        { key: 'room:room-1' }],
     })));
   });
 

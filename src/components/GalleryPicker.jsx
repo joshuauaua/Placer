@@ -14,6 +14,8 @@
  *
  * Each photo has a caption box under it. `captions` is the text by photo path and
  * `onCaption(path, text)` is called as it is typed; saving it is the caller's too.
+ * With `onStandalone(path, standalone)`, async like the rest, each also has an On its
+ * own box, for a photo shown by itself rather than in the gallery (photo.standalone).
  */
 
 import { useState } from 'react';
@@ -42,7 +44,7 @@ function SmallButton({ t, label, icon, onClick, disabled }) {
 }
 
 /** One photo: the picture itself is what is dragged; the buttons are under it. */
-function Photo({ t, photo, index, count, busy, caption, onCaption, onMove, onRemove }) {
+function Photo({ t, photo, index, count, busy, caption, onCaption, onStandalone, onMove, onRemove }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: photo.path, disabled: busy,
   });
@@ -65,6 +67,15 @@ function Photo({ t, photo, index, count, busy, caption, onCaption, onMove, onRem
         <SmallButton t={t} label={`Remove photo ${index + 1}`} icon="trash" disabled={busy}
           onClick={() => onRemove(index)} />
       </div>
+      {onStandalone && (
+        <label className="placer-caption" style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
+          color: t.inkDim, cursor: busy ? 'default' : 'pointer' }}>
+          <input type="checkbox" checked={Boolean(photo.standalone)} disabled={busy}
+            onChange={(e) => onStandalone(photo.path, e.target.checked)} style={{ accentColor: t.ink, margin: 0 }}
+            aria-label={`Show photo ${index + 1} on its own`} />
+          On its own
+        </label>
+      )}
       {onCaption && (
         <input type="text" value={caption} maxLength={CAPTION_MAX_LENGTH} disabled={busy}
           onChange={(e) => onCaption(photo.path, e.target.value)}
@@ -78,7 +89,7 @@ function Photo({ t, photo, index, count, busy, caption, onCaption, onMove, onRem
 }
 
 export function GalleryPicker({
-  t, photos, max, captions = {}, onCaption, onAdd, onMove, onRemove, disabled = false,
+  t, photos, max, captions = {}, onCaption, onStandalone, onAdd, onMove, onRemove, disabled = false,
 }) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'uploading' | 'working'
   const [error, setError] = useState(null);
@@ -119,6 +130,7 @@ export function GalleryPicker({
   const busy = disabled || status !== 'idle';
   const move = run('working', onMove, 'Could not move it. Try again.');
   const remove = run('working', onRemove, 'Could not remove it. Try again.');
+  const standalone = onStandalone && run('working', onStandalone, 'Could not change that. Try again.');
 
   const handleDragEnd = ({ active, over }) => {
     if (!over || active.id === over.id) return;
@@ -138,7 +150,8 @@ export function GalleryPicker({
               gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
               {photos.map((photo, index) => (
                 <Photo key={photo.path} t={t} photo={photo} index={index} count={photos.length} busy={busy}
-                  caption={captions[photo.path] ?? ''} onCaption={onCaption} onMove={move} onRemove={remove} />
+                  caption={captions[photo.path] ?? ''} onCaption={onCaption} onStandalone={standalone}
+                  onMove={move} onRemove={remove} />
               ))}
             </ul>
           </SortableContext>
