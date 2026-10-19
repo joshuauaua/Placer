@@ -28,6 +28,9 @@ function renderPageAt(path) {
   return { ...result, location };
 }
 
+/** The category a tool is in. */
+const findCategoryOf = (tool) => CATEGORIES.find((category) => category.id === tool.category);
+
 /** A tool's tile or row, by its name, and not the heart beside it that names it too. */
 const tile = (pattern) => (name) => pattern.test(name) && !name.endsWith('favourites');
 
@@ -87,25 +90,34 @@ describe('the gallery', () => {
     }
   });
 
-  it('shows every tool as one set of cards, each labelled with its category', async () => {
+  it.each(['List', 'Grid'])('sorts the tools into a section per category, in its colour, in the %s view', async (name) => {
     renderPageAt('/toolkit');
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
+    fireEvent.click(within(screen.getByRole('group', { name: 'View' })).getByRole('button', { name }));
 
-    expect(screen.queryAllByRole('heading', { level: 2 })).toHaveLength(0);
-    for (const tool of TOOLS) {
-      const category = CATEGORIES.find((entry) => entry.id === tool.category);
-      expect(screen.getByRole('button', { name: tile(new RegExp(tool.name, 'i')) })).toHaveTextContent(category.name);
+    const shown = CATEGORIES.filter((category) => TOOLS.some((tool) => tool.category === category.id));
+    expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent))
+      .toEqual(shown.map((category) => category.name));
+    for (const category of shown) {
+      const heading = screen.getByRole('heading', { level: 2, name: category.name });
+      expect(heading).toHaveStyle({ color: category.colour.c700 });
+      const section = screen.getByRole('region', { name: category.name });
+      for (const tool of TOOLS.filter((entry) => entry.category === category.id)) {
+        expect(within(section).getByRole('button', { name: tile(new RegExp(tool.name, 'i')) }))
+          .toHaveTextContent(category.name);
+      }
     }
+    localStorage.clear();
   });
 
-  it('switches between grid and list, and remembers the choice', async () => {
+  it('opens on the list, switches to the grid, and remembers the choice', async () => {
     const { unmount } = renderPageAt('/toolkit');
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
     const view = () => within(screen.getByRole('group', { name: 'View' }));
 
-    expect(view().getByRole('button', { name: 'Grid' })).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(view().getByRole('button', { name: 'List' }));
     expect(view().getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(view().getByRole('button', { name: 'Grid' }));
+    expect(view().getByRole('button', { name: 'Grid' })).toHaveAttribute('aria-pressed', 'true');
     // Still every tool, and still openable.
     for (const tool of TOOLS) {
       expect(screen.getByRole('button', { name: tile(new RegExp(tool.name, 'i')) })).toBeInTheDocument();
@@ -114,15 +126,15 @@ describe('the gallery', () => {
     unmount();
     renderPageAt('/toolkit');
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
-    expect(view().getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
+    expect(view().getByRole('button', { name: 'Grid' })).toHaveAttribute('aria-pressed', 'true');
     localStorage.clear();
   });
 
-  it('opens a tool from the list view too', async () => {
+  it('opens a tool from the grid view too', async () => {
     const { location } = renderPageAt('/toolkit');
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
 
-    fireEvent.click(within(screen.getByRole('group', { name: 'View' })).getByRole('button', { name: 'List' }));
+    fireEvent.click(within(screen.getByRole('group', { name: 'View' })).getByRole('button', { name: 'Grid' }));
     fireEvent.click(screen.getByRole('button', { name: tile(/Poll/i) }));
 
     expect(location.history.at(-1)).toBe('/toolkit/open-vote');
@@ -183,29 +195,37 @@ describe('the gallery', () => {
     expect(screen.getByRole('button', { name: tile(/Poll/i) })).toBeInTheDocument();
   });
 
-  it('sorts by Recent, A-Z or Organisation, and turns the current order round', async () => {
+  it('sorts each category by Recent, A-Z or Organisation, and turns the current order round', async () => {
     renderPageAt('/toolkit');
     await screen.findByRole('heading', { level: 1, name: 'Toolkit' });
     const sorts = within(screen.getByRole('group', { name: 'Sort' }));
-    const names = () => screen.getAllByRole('button', { name: tile(/./) })
+    const shown = CATEGORIES.filter((category) => TOOLS.some((tool) => tool.category === category.id));
+    const inCategory = (category) => TOOLS.filter((tool) => tool.category === category.id);
+    const names = (category) => within(screen.getByRole('region', { name: category.name }))
+      .getAllByRole('button', { name: tile(/./) })
       .map((button) => TOOLS.find((tool) => button.textContent.includes(tool.name))?.name)
       .filter(Boolean);
 
-    // Newest first to begin with: whichever tools were added last, however many joined that day.
-    const latest = TOOLS.map((tool) => tool.added).sort().at(-1);
-    const newest = TOOLS.filter((tool) => tool.added === latest).map((tool) => tool.name);
+    // Newest first to begin with: within each category, whichever were added last.
     expect(sorts.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
-    expect(names().slice(0, newest.length).sort()).toEqual([...newest].sort());
-    expect(TOOLS.find((tool) => tool.name === names().at(-1)).added).toBe(TOOLS.map((tool) => tool.added).sort()[0]);
+    for (const category of shown) {
+      const added = names(category).map((name) => TOOLS.find((tool) => tool.name === name).added);
+      expect(added).toEqual([...added].sort().reverse());
+    }
 
     fireEvent.click(sorts.getByRole('button', { name: 'A-Z' }));
-    const alphabetical = TOOLS.map((tool) => tool.name).sort((a, b) => a.localeCompare(b));
-    expect(names()).toEqual(alphabetical);
+    for (const category of shown) {
+      expect(names(category)).toEqual(inCategory(category).map((tool) => tool.name).sort((a, b) => a.localeCompare(b)));
+    }
     fireEvent.click(sorts.getByRole('button', { name: 'A-Z' }));
-    expect(names()).toEqual([...alphabetical].reverse());
+    for (const category of shown) {
+      expect(names(category)).toEqual(inCategory(category).map((tool) => tool.name)
+        .sort((a, b) => a.localeCompare(b)).reverse());
+    }
 
     fireEvent.click(sorts.getByRole('button', { name: 'Organisation' }));
-    expect(names()[0]).toBe('The Social Space Survey');
+    const survey = TOOLS.find((tool) => tool.name === 'The Social Space Survey');
+    expect(names(findCategoryOf(survey))[0]).toBe('The Social Space Survey');
   });
 
   it('keeps favourites in this browser, and shows only them on request', async () => {

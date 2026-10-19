@@ -168,13 +168,17 @@ function write(key, value) {
   }
 }
 
-/** Grid or list, remembered under `key` as the bare word (not JSON), as it always was. */
-export function useGalleryView(key) {
+/**
+ * Grid or list, remembered under `key` as the bare word (not JSON), as it always was.
+ * `fallback` is the view before anything is remembered.
+ */
+export function useGalleryView(key, fallback = 'grid') {
   const [view, setView] = useState(() => {
     try {
-      return localStorage.getItem(key) === 'list' ? 'list' : 'grid';
+      const stored = localStorage.getItem(key);
+      return stored === 'list' || stored === 'grid' ? stored : fallback;
     } catch {
-      return 'grid';
+      return fallback;
     }
   });
   const change = (next) => {

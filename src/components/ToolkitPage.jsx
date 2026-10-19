@@ -1,9 +1,9 @@
 /* PLACER — Toolkit: the participatory methods PLACER hosts, as tools to use.
  *
  * Each tool is a method made by an organisation, in one of three categories —
- * Understand, Imagine or Plan. The gallery shows them as one set, under a header
- * whose toolbar picks a category, an order (Recent, A-Z, Organisation), favourites
- * and grid or list. Each is self-contained: no sign-in, nothing saved, and something moving within a
+ * Understand, Imagine or Plan. The gallery shows them in a section per category, under
+ * a header whose toolbar picks a category, an order within each (Recent, A-Z,
+ * Organisation), favourites and list (the default) or grid. Each is self-contained: no sign-in, nothing saved, and something moving within a
  * second of arriving. The register of tools is src/toolkit/tools.js.
  *
  * The page is a place to try the tools and see what each one does. They are used for
@@ -113,13 +113,44 @@ function Tile({ t, tool, onOpen }) {
   );
 }
 
-/** The tool's category, small and in capitals, so it reads without the grouping. */
+/** The tool's category, small and in capitals, in its colour, as the tile's tag is. */
 function CategoryLabel({ t, tool }) {
+  const category = findCategory(tool.category);
   return (
     <span className="placer-caption" style={{ textTransform: 'uppercase', fontWeight: 700,
-      letterSpacing: '0.06em', color: t.ink }}>
-      {findCategory(tool.category)?.name}
+      letterSpacing: '0.06em', color: category?.colour?.c700 ?? t.ink }}>
+      {category?.name}
     </span>
+  );
+}
+
+/**
+ * The gallery's tools in a section per category, Understand, Imagine and Plan in that
+ * order (CATEGORIES), each under its name in its colour — the colour its tiles, tags
+ * and list icons are drawn in — and its description. A category with nothing to show
+ * is left out. `children(tools)` draws a section's tools, as a grid or a list.
+ */
+function CategorySections({ t, tools, children }) {
+  const sections = CATEGORIES
+    .map((category) => ({ category, tools: tools.filter((tool) => tool.category === category.id) }))
+    .filter((section) => section.tools.length > 0);
+  return (
+    <div onKeyDown={moveWithArrows} style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+      {sections.map(({ category, tools: inCategory }) => {
+        const headingId = `toolkit-category-${category.id}`;
+        return (
+          <section key={category.id} aria-labelledby={headingId}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+              <h2 id={headingId} className="placer-h3" style={{ margin: 0, color: category.colour.c700 }}>
+                {category.name}
+              </h2>
+              <p style={{ margin: 0, fontSize: 14, color: t.inkDim }}>{category.description}</p>
+            </div>
+            {children(inCategory)}
+          </section>
+        );
+      })}
+    </div>
   );
 }
 
@@ -222,7 +253,7 @@ export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
   const matching = sortTools(
     filterTools(TOOLS, filters).filter((entry) => !favouritesOnly || favourites.includes(entry.id)),
     sort.id, sort.direction);
-  const [view, changeView] = useGalleryView('placer_toolkit_view');
+  const [view, changeView] = useGalleryView('placer_toolkit_view', 'list');
   const clearFilters = () => { setFilters(NO_FILTERS); setFavouritesOnly(false); };
 
   const Tool = tool?.component;
@@ -316,31 +347,32 @@ export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
               </div>
             )}
 
-            {matching.length > 0 && view === 'grid' && (
-              <div onKeyDown={moveWithArrows}
-                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
-                {matching.map((entry) => (
-                  <div key={entry.id} style={{ position: 'relative', display: 'flex', alignSelf: 'start' }}>
-                    <Tile t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
-                    <FavouriteButton t={t} name={entry.name} favourite={favourites.includes(entry.id)}
-                      onToggle={() => toggleFavourite(entry.id)}
-                      style={{ position: 'absolute', right: 0, bottom: -7 }} />
+            {matching.length > 0 && (
+              <CategorySections t={t} tools={matching}>
+                {(inCategory) => (view === 'grid' ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+                    {inCategory.map((entry) => (
+                      <div key={entry.id} style={{ position: 'relative', display: 'flex', alignSelf: 'start' }}>
+                        <Tile t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
+                        <FavouriteButton t={t} name={entry.name} favourite={favourites.includes(entry.id)}
+                          onToggle={() => toggleFavourite(entry.id)}
+                          style={{ position: 'absolute', right: 0, bottom: -7 }} />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ borderTop: `1px solid ${t.line}` }}>
+                    {inCategory.map((entry) => (
+                      <div key={entry.id} style={{ display: 'flex', alignItems: 'center',
+                        borderBottom: `1px solid ${t.line}` }}>
+                        <Row t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
+                        <FavouriteButton t={t} name={entry.name} favourite={favourites.includes(entry.id)}
+                          onToggle={() => toggleFavourite(entry.id)} style={{ margin: '0 12px' }} />
+                      </div>
+                    ))}
                   </div>
                 ))}
-              </div>
-            )}
-
-            {matching.length > 0 && view === 'list' && (
-              <div onKeyDown={moveWithArrows} style={{ borderTop: `1px solid ${t.line}` }}>
-                {matching.map((entry) => (
-                  <div key={entry.id} style={{ display: 'flex', alignItems: 'center',
-                    borderBottom: `1px solid ${t.line}` }}>
-                    <Row t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
-                    <FavouriteButton t={t} name={entry.name} favourite={favourites.includes(entry.id)}
-                      onToggle={() => toggleFavourite(entry.id)} style={{ margin: '0 12px' }} />
-                  </div>
-                ))}
-              </div>
+              </CategorySections>
             )}
 
             {contributing && (
