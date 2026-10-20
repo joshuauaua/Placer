@@ -58,6 +58,19 @@ describe('SideNav', () => {
     expect(screen.getByRole('navigation', { name: 'App' })).toHaveClass('is-collapsed');
   });
 
+  it('is held expanded for the welcome tour without forgetting it was collapsed', () => {
+    localStorage.setItem('placer_side_nav_collapsed', 'true');
+    const handlers = { onNavigate: vi.fn(), onExplore: vi.fn(), onNewProject: vi.fn() };
+    const { rerender } = render(<SideNav t={THEME} view="dashboard" {...handlers} expanded />);
+    const nav = screen.getByRole('navigation', { name: 'App' });
+
+    expect(nav).not.toHaveClass('is-collapsed');
+    expect(localStorage.getItem('placer_side_nav_collapsed')).toBe('true');
+
+    rerender(<SideNav t={THEME} view="dashboard" {...handlers} />);
+    expect(nav).toHaveClass('is-collapsed');
+  });
+
   it('wires each item to its own handler', () => {
     const { onNavigate, onExplore, onNewProject } = setup();
 

@@ -238,6 +238,9 @@ function MainApp({ initialView = 'welcome' }) {
   // creating one, leaving one, closing one, claiming one.
   const [organisations, setOrganisations] = useState([]);
   const [organisationsVersion, setOrganisationsVersion] = useState(0);
+  // While the welcome tour is open the side nav is held expanded, so the places its
+  // steps point at show their names.
+  const [tourOpen, setTourOpen] = useState(false);
   const refreshOrganisations = () => setOrganisationsVersion((v) => v + 1);
 
   useEffect(() => {
@@ -612,7 +615,8 @@ function MainApp({ initialView = 'welcome' }) {
             <SideNav t={t} view={view}
               onNavigate={(next) => { show(next); scrollPageToTop(); }}
               onExplore={() => { handleExplore(); scrollPageToTop(); }}
-              onNewProject={() => { showNewProject(); scrollPageToTop(); }} showOrganisations={isSupabaseConfigured()} />
+              onNewProject={() => { showNewProject(); scrollPageToTop(); }} showOrganisations={isSupabaseConfigured()}
+              expanded={tourOpen} />
           )}
 
           {/* The welcome tour, over whichever page it has led to: its steps go to the
@@ -625,7 +629,8 @@ function MainApp({ initialView = 'welcome' }) {
               onExplore={() => { handleExplore(); scrollPageToTop(); }}
               onOpenToolkit={() => { show('toolkit'); scrollPageToTop(); }}
               onNewProject={() => { showNewProject(); scrollPageToTop(); }}
-              onEditProfile={() => { show('settings'); scrollPageToTop(); }} />
+              onEditProfile={() => { show('settings'); scrollPageToTop(); }}
+              onOpenChange={setTourOpen} />
           )}
 
           <div className="placer-app-page">
