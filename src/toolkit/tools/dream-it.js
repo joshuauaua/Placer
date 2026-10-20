@@ -13,4 +13,6 @@ export default {
   icon: 'sparkle',
   createdBy: 'PLACER',
   component: DreamIt,
+  // Not on plcr.org or beta.plcr.org for now; only locally.
+  hidden: 'production',
 };

@@ -225,7 +225,9 @@ describe('the gallery', () => {
 
     fireEvent.click(sorts.getByRole('button', { name: 'Organisation' }));
     const survey = TOOLS.find((tool) => tool.name === 'The Social Space Survey');
-    expect(names(findCategoryOf(survey))[0]).toBe('The Social Space Survey');
+    // Gehl Institute's two come first, by name.
+    expect(names(findCategoryOf(survey)).slice(0, 2))
+      .toEqual(['Site-Specific Spatial Mapping Tool', 'The Social Space Survey']);
   });
 
   it('keeps favourites in this browser, and shows only them on request', async () => {
