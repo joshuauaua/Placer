@@ -102,20 +102,37 @@ describe('opening a room', () => {
     });
   });
 
-  it('schedules a project\'s room for a day, in this browser\'s time zone', async () => {
+  it('schedules a project\'s room for a time on a day, in this browser\'s time zone', async () => {
+    rpc.mockReturnValue(result({
+      data: { room_id: 'room-1', pin: '839201', facilitator_token: 'facilitator-1', join_code: 'c'.repeat(32),
+        expires_at: '2026-12-01T18:30:00Z', opens_at: '2026-11-01T18:30:00Z' },
+      error: null,
+    }));
+
+    const room = await rooms.createRoom('open-vote', 'proj-1', '30d', { question: 'Q?' },
+      { on: '2026-11-01', at: '18:30' });
+
+    expect(rpc).toHaveBeenCalledWith('toolkit_room_create', {
+      p_tool: 'open-vote', p_project_id: 'proj-1', p_lifetime: '30d', p_config: { question: 'Q?' },
+      p_opens_on: '2026-11-01', p_time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      p_opens_time: '18:30',
+    });
+    expect(room.opensAt).toBe('2026-11-01T18:30:00Z');
+  });
+
+  it('leaves the time off a room scheduled for the start of a day', async () => {
     rpc.mockReturnValue(result({
       data: { room_id: 'room-1', pin: '839201', facilitator_token: 'facilitator-1', join_code: 'c'.repeat(32),
         expires_at: '2026-12-01T00:00:00Z', opens_at: '2026-11-01T00:00:00Z' },
       error: null,
     }));
 
-    const room = await rooms.createRoom('open-vote', 'proj-1', '30d', { question: 'Q?' }, '2026-11-01');
+    await rooms.createRoom('open-vote', 'proj-1', '30d', { question: 'Q?' }, { on: '2026-11-01' });
 
     expect(rpc).toHaveBeenCalledWith('toolkit_room_create', {
       p_tool: 'open-vote', p_project_id: 'proj-1', p_lifetime: '30d', p_config: { question: 'Q?' },
       p_opens_on: '2026-11-01', p_time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
-    expect(room.opensAt).toBe('2026-11-01T00:00:00Z');
   });
 
   it('attaches a project when one is given, so its dashboard can see the room', async () => {

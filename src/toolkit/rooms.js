@@ -126,6 +126,23 @@ export function formatRoomDate(value) {
   return date.toLocaleDateString(formatLocale(), { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+/** When a scheduled room starts: its day and its time of day, in this browser's time zone. */
+export function formatRoomStart(value) {
+  const date = new Date(value ?? NaN);
+  if (!Number.isFinite(date.getTime())) return null;
+  return date.toLocaleString(formatLocale(), {
+    day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+/** The time of day a moment falls at in this browser's time zone, as 'HH:MM', or null. */
+export function localTime(value) {
+  const date = new Date(value ?? NaN);
+  if (!Number.isFinite(date.getTime())) return null;
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 /** Today in this browser's calendar, as 'YYYY-MM-DD'. */
 export function localToday(now = new Date()) {
   const pad = (n) => String(n).padStart(2, '0');

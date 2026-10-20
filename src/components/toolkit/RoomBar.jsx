@@ -22,7 +22,7 @@ import QRCode from 'react-qr-code';
 import { Icon } from '../Icon';
 import { Panel } from '../ToolLayout';
 import { Btn, CopyButton } from '../UI';
-import { codeJoinUrl, formatPin, formatRoomDate, joinUrl, timeRemaining } from '../../toolkit/rooms';
+import { codeJoinUrl, formatPin, formatRoomDate, formatRoomStart, joinUrl, timeRemaining } from '../../toolkit/rooms';
 import { downloadQrSvg } from '../../lib/qrDownload';
 import { useEffect, useRef, useState } from 'react';
 import { useText } from '../../i18n';
@@ -104,7 +104,7 @@ export function RoomBar({ t, tool, room }) {
   }
 
   if (room.status === 'scheduled') {
-    const opens = formatRoomDate(room.opensAt);
+    const opens = formatRoomStart(room.opensAt);
     return (
       <Panel t={t} style={{ marginBottom: 20 }}>
         <p role="status" style={{ fontSize: 14, color: t.ink, lineHeight: 1.6 }}>

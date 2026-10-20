@@ -21,13 +21,15 @@ import { markProjectToolConfigured } from '../services/projects';
 import { createRoom, rescheduleRoom } from '../services/rooms';
 import { suggestCurrency } from '../lib/currency';
 import {
-  ROOM_LIFETIMES, formatRoomDate, localDay, rememberHostedRoom, roomLifetime, scheduleRange,
+  ROOM_LIFETIMES, formatRoomDate, localDay, localTime, localToday, rememberHostedRoom, roomLifetime, scheduleRange,
 } from '../toolkit/rooms';
 import { findCategory, projectSetupKind, setupSteps } from '../toolkit/tools';
 import { SetupSteps } from './toolkit/SetupSteps';
 
 // A project's room is usually left up for people to find, not run as a workshop.
 const DEFAULT_PROJECT_LIFETIME = '30d';
+// When a room scheduled for later starts on its day, until another time is chosen.
+const DEFAULT_START_TIME = '09:00';
 
 const inputStyle = (t) => ({
   width: '100%',
@@ -56,8 +58,9 @@ function Field({ t, label, htmlFor, hint, children }) {
 }
 
 /**
- * When a room set up in stages starts: now, or on a day within the project's dates
- * (scheduleRange). A project without dates, or past them, can only start now.
+ * When a room set up in stages starts: now, or at a time on a day within the project's
+ * dates (scheduleRange), in this browser's time zone. A project without dates, or past
+ * them, can only start now.
  */
 function StartsField({ t, project, starts, onChange, busy }) {
   const range = scheduleRange(project);
@@ -74,16 +77,20 @@ function StartsField({ t, project, starts, onChange, busy }) {
       <legend style={{ fontSize: 14, fontWeight: 700, color: t.ink, padding: 0, marginBottom: 8 }}>Starts</legend>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {radio('now', 'Now')}
-        {radio('date', 'On a date', !range)}
+        {radio('date', 'On a date and time', !range)}
         {starts.mode === 'date' && range && (
-          <div style={{ marginLeft: 26, maxWidth: 280 }}>
-            <label htmlFor="configure-start-date"
-              style={{ display: 'block', fontSize: 13, fontWeight: 600, color: t.inkDim, marginBottom: 6 }}>
-              Start date
-            </label>
-            <DatePicker t={t} id="configure-start-date" value={starts.date} min={range.min} max={range.max}
-              label="Choose the start date" placeholder="Pick a day" clearable={false} disabled={busy}
-              onChange={(date) => onChange({ ...starts, date })} style={inputStyle(t)} />
+          <div style={{ marginLeft: 26, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 200px', maxWidth: 280 }}>
+              <label htmlFor="configure-start-date" style={smallLabel(t)}>Start date</label>
+              <DatePicker t={t} id="configure-start-date" value={starts.date} min={range.min} max={range.max}
+                label="Choose the start date" placeholder="Pick a day" clearable={false} disabled={busy}
+                onChange={(date) => onChange({ ...starts, date })} style={inputStyle(t)} />
+            </div>
+            <div style={{ flex: '0 1 140px' }}>
+              <label htmlFor="configure-start-time" style={smallLabel(t)}>Start time</label>
+              <input id="configure-start-time" type="time" value={starts.time} disabled={busy} required
+                onChange={(e) => onChange({ ...starts, time: e.target.value })} style={inputStyle(t)} />
+            </div>
           </div>
         )}
       </div>
@@ -96,13 +103,19 @@ function StartsField({ t, project, starts, onChange, busy }) {
   );
 }
 
+const smallLabel = (t) => ({ display: 'block', fontSize: 13, fontWeight: 600, color: t.inkDim, marginBottom: 6 });
+
 /** What is wrong with when a room starts, as sentences. */
-function startsProblems(project, starts) {
+function startsProblems(project, starts, now = new Date()) {
   if (starts.mode !== 'date') return [];
   const range = scheduleRange(project);
   if (!starts.date) return ['Choose the day it starts.'];
   if (!range || starts.date < range.min || starts.date > range.max) {
     return ['Choose a day within the project\u2019s dates, from today on.'];
+  }
+  if (!starts.time) return ['Choose the time it starts.'];
+  if (starts.date === localToday(now) && starts.time <= localTime(now)) {
+    return ['Choose a time later than now.'];
   }
   return [];
 }
@@ -123,7 +136,8 @@ function RoomForm({ t, project, tool, room = null, busy, setBusy, onDone, onErro
   });
   const [lifetime, setLifetime] = useState(() => (room && roomLifetime(room)) || DEFAULT_PROJECT_LIFETIME);
   const [starts, setStarts] = useState(() => (room?.opensAt
-    ? { mode: 'date', date: localDay(room.opensAt) } : { mode: 'now', date: '' }));
+    ? { mode: 'date', date: localDay(room.opensAt), time: localTime(room.opensAt) }
+    : { mode: 'now', date: '', time: DEFAULT_START_TIME }));
   const staged = Boolean(tool.setup?.steps?.length);
   // When it starts is asked for alongside how long it stays open: always for a room
   // being changed, since it was scheduled, and otherwise for a tool set up in stages.
@@ -134,11 +148,11 @@ function RoomForm({ t, project, tool, room = null, busy, setBusy, onDone, onErro
     setBusy(true);
     onError(null);
     try {
-      const opensOn = scheduling && starts.mode === 'date' ? starts.date : null;
+      const opens = scheduling && starts.mode === 'date' ? { on: starts.date, at: starts.time } : null;
       if (room) {
-        await rescheduleRoom(room.id, { lifetime, config: setup, opensOn });
+        await rescheduleRoom(room.id, { lifetime, config: setup, opens });
       } else {
-        const opened = await createRoom(tool.id, project.id, lifetime, setup, opensOn);
+        const opened = await createRoom(tool.id, project.id, lifetime, setup, opens);
         // This browser can run the room as its facilitator straight away.
         rememberHostedRoom(opened.id, { pin: opened.pin, token: opened.facilitatorToken, code: opened.joinCode ?? null });
       }
