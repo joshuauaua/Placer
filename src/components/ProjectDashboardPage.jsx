@@ -23,6 +23,7 @@ import {
   codeJoinUrl,
   formatPin,
   formatRoomDate,
+  formatRoomStart,
   isLongRoom,
   joinUrl,
   rememberHostedRoom,
@@ -401,7 +402,7 @@ function ChosenToolRow({ t, tool, live, scheduled = null, rooms = [], onConfigur
   const expandable = rooms.length > 0;
   const liveRooms = rooms.filter((room) => room.status === 'open').length;
   const badge = live ? (liveRooms > 1 ? `${liveRooms} live` : 'Live')
-    : scheduled ? `Starts ${formatRoomDate(scheduled.opensAt)}` : 'Not configured';
+    : scheduled ? `Starts ${formatRoomStart(scheduled.opensAt)}` : 'Not configured';
   const roomTool = projectSetupKind(tool) === 'room';
 
   const summary = (
@@ -530,7 +531,7 @@ function RoomRow({ t, room, named = true, onOpen, onEdit, onClose, onDelete }) {
         )}
         <div style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.5 }}>
           {scheduled
-            ? `Starts ${formatRoomDate(room.opensAt)}`
+            ? `Starts ${formatRoomStart(room.opensAt)}`
             : `${room.contributions} ${room.contributions === 1 ? 'response' : 'responses'}`}
           {left ? ` · ${left} left` : ''}
           {long ? ` · open until ${formatRoomDate(room.expiresAt)}` : ` · PIN ${formatPin(room.pin)}`}

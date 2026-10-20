@@ -19,7 +19,7 @@ import { useLocation, useSearch } from 'wouter';
 import posthog from 'posthog-js';
 import { Btn, Logo } from './UI';
 import { findTool } from '../toolkit/tools';
-import { PIN_LENGTH, formatPin, formatRoomDate, parseJoinCode, parsePin, roomPath } from '../toolkit/rooms';
+import { PIN_LENGTH, formatPin, formatRoomDate, formatRoomStart, parseJoinCode, parsePin, roomPath } from '../toolkit/rooms';
 import { isSupabaseConfigured, joinRoom, joinRoomByCode } from '../services/rooms';
 // plainText inside the callbacks: they are effect dependencies, and the hook's text is
 // a new function every render.
@@ -90,7 +90,7 @@ export function JoinPage({ t }) {
           return;
         }
         if (room.status === 'scheduled') {
-          setOpensOn(formatRoomDate(room.opensAt));
+          setOpensOn(formatRoomStart(room.opensAt));
           setStatus('scheduled');
           return;
         }

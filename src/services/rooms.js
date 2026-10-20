@@ -29,6 +29,14 @@ async function client() {
   return supabase;
 }
 
+/** The parameters for when a room starts, `opens` being { on, at } or null for now. */
+function opensParams(opens) {
+  if (!opens?.on) return {};
+  const params = { p_opens_on: opens.on, p_time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone };
+  if (opens.at) params.p_opens_time = opens.at;
+  return params;
+}
+
 /**
  * Open a room on a tool.
  *
@@ -57,20 +65,18 @@ async function client() {
  * fixed for the room's whole life — see supabase/rooms-config.sql. Left off the
  * request when there is none, for the same reason as the lifetime.
  *
- * `opensOn` is a day ('YYYY-MM-DD') for a project's room to start on rather than now,
- * within the project's dates — see supabase/rooms-schedule.sql. It opens at the start
- * of that day in this browser's time zone, which goes with it; until then the room is
+ * `opens` is when a project's room starts rather than now: { on, at }, a day
+ * ('YYYY-MM-DD') within the project's dates (supabase/rooms-schedule.sql) and the time
+ * on it ('HH:MM'), or its start without one (supabase/rooms-start-time.sql). Both are
+ * in this browser's time zone, which goes with them; until then the room is
  * 'scheduled', and its lifetime counts from then.
  */
-export async function createRoom(toolId, projectId = null, lifetime = '2h', config = null, opensOn = null) {
+export async function createRoom(toolId, projectId = null, lifetime = '2h', config = null, opens = null) {
   const supabase = await client();
   const params = { p_tool: toolId, p_project_id: projectId };
   if (lifetime && lifetime !== '2h') params.p_lifetime = lifetime;
   if (config) params.p_config = config;
-  if (opensOn) {
-    params.p_opens_on = opensOn;
-    params.p_time_zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  }
+  Object.assign(params, opensParams(opens));
 
   const { data, error } = await supabase.rpc('toolkit_room_create', params).single();
 
@@ -83,7 +89,7 @@ export async function createRoom(toolId, projectId = null, lifetime = '2h', conf
   }
 
   track('room_opened', {
-    tool: toolId, project_id: projectId, lifetime, scheduled: Boolean(opensOn), has_setup: Boolean(config),
+    tool: toolId, project_id: projectId, lifetime, scheduled: Boolean(opens?.on), has_setup: Boolean(config),
   });
 
   return {
@@ -182,20 +188,16 @@ export async function readProjectOpenRooms(projectId) {
 
 /**
  * Change a project's room that has not started yet: its setup, the day it starts (null
- * for now) and how long it stays open — everything opening it chose. Owner or
+ * for now) and the time on it, and how long it stays open — everything opening it chose. Owner or
  * collaborator only; see toolkit_room_reschedule in supabase/rooms-edit.sql.
  */
-export async function rescheduleRoom(roomId, { lifetime, config, opensOn = null }) {
+export async function rescheduleRoom(roomId, { lifetime, config, opens = null }) {
   const supabase = await client();
-  const params = { p_room_id: roomId, p_lifetime: lifetime, p_config: config ?? {} };
-  if (opensOn) {
-    params.p_opens_on = opensOn;
-    params.p_time_zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  }
+  const params = { p_room_id: roomId, p_lifetime: lifetime, p_config: config ?? {}, ...opensParams(opens) };
   const { data, error } = await supabase.rpc('toolkit_room_reschedule', params).single();
 
   if (error) throw new Error(`Could not change the room: ${error.message}`);
-  track('room_rescheduled', { lifetime, scheduled: Boolean(opensOn) });
+  track('room_rescheduled', { lifetime, scheduled: Boolean(opens?.on) });
   return { opensAt: data.opens_at, expiresAt: data.expires_at };
 }
 

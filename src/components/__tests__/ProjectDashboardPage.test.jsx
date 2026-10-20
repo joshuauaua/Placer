@@ -667,7 +667,7 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
     afterEach(() => vi.useRealTimers());
 
     it('edits all of a room that has not started yet: its setup, when it starts and for how long', async () => {
-      const opens = new Date(2026, 10, 1);
+      const opens = new Date(2026, 10, 1, 18, 30);
       vi.mocked(readProject).mockResolvedValue({ ...PROJECT, startDate: '2026-11-01', endDate: '2026-12-31' });
       vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
       vi.mocked(readProjectRooms).mockResolvedValue([{
@@ -685,13 +685,15 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
       fireEvent.change(dialog.getByLabelText('The question'), { target: { value: 'Even more benches?' } });
       fireEvent.click(dialog.getByRole('button', { name: 'Next' }));
       fireEvent.click(dialog.getByRole('button', { name: 'Next' }));
-      expect(dialog.getByLabelText('On a date')).toBeChecked();
+      expect(dialog.getByLabelText('On a date and time')).toBeChecked();
+      expect(dialog.getByLabelText('Start time')).toHaveValue('18:30');
       expect(dialog.getByLabelText('Open for')).toHaveValue('30d');
       fireEvent.change(dialog.getByLabelText('Open for'), { target: { value: '1w' } });
       fireEvent.click(dialog.getByRole('button', { name: 'Save changes' }));
 
       await waitFor(() => expect(rescheduleRoom).toHaveBeenCalledWith('room-5', {
-        lifetime: '1w', config: { question: 'Even more benches?', answers: ['Yes', 'No'] }, opensOn: '2026-11-01',
+        lifetime: '1w', config: { question: 'Even more benches?', answers: ['Yes', 'No'] },
+        opens: { on: '2026-11-01', at: '18:30' },
       }));
       expect(createRoom).not.toHaveBeenCalled();
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());

@@ -224,28 +224,50 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
     });
     afterEach(() => vi.useRealTimers());
 
-    it('schedules it for a day within the project\'s dates', async () => {
+    it('schedules it for a time on a day within the project\'s dates', async () => {
       const { onConfigured } = setup('open-vote', { project: DATED });
       toLastStep();
 
-      fireEvent.click(screen.getByLabelText('On a date'));
+      fireEvent.click(screen.getByLabelText('On a date and time'));
       fireEvent.click(screen.getByLabelText('Start date'));
       const calendar = within(screen.getByRole('dialog', { name: 'Choose the start date' }));
       fireEvent.click(calendar.getByRole('button', { name: '15 November 2026' }));
 
       expect(screen.queryByRole('dialog', { name: 'Choose the start date' })).not.toBeInTheDocument();
       expect(screen.getByLabelText('Start date')).toHaveTextContent('2026');
+      expect(screen.getByLabelText('Start time')).toHaveValue('09:00');
+      fireEvent.change(screen.getByLabelText('Start time'), { target: { value: '18:30' } });
       save();
 
       await waitFor(() => expect(onConfigured).toHaveBeenCalled());
-      expect(createRoom).toHaveBeenCalledWith('open-vote', 'proj-1', '30d', expect.any(Object), '2026-11-15');
+      expect(createRoom).toHaveBeenCalledWith('open-vote', 'proj-1', '30d', expect.any(Object),
+        { on: '2026-11-15', at: '18:30' });
+    });
+
+    it('asks for a time, and one later than now on today', async () => {
+      setup('open-vote', { project: { ...DATED, startDate: '2026-10-01' } });
+      toLastStep();
+
+      fireEvent.click(screen.getByLabelText('On a date and time'));
+      fireEvent.click(screen.getByLabelText('Start date'));
+      const calendar = within(screen.getByRole('dialog', { name: 'Choose the start date' }));
+      fireEvent.click(calendar.getByRole('button', { name: '10 October 2026' }));
+
+      fireEvent.change(screen.getByLabelText('Start time'), { target: { value: '' } });
+      save();
+      expect(await screen.findByRole('alert')).toHaveTextContent('Choose the time it starts.');
+
+      fireEvent.change(screen.getByLabelText('Start time'), { target: { value: '11:00' } });
+      save();
+      expect(await screen.findByRole('alert')).toHaveTextContent('Choose a time later than now.');
+      expect(createRoom).not.toHaveBeenCalled();
     });
 
     it('offers only days within the project\'s dates, and asks for one', async () => {
       setup('open-vote', { project: DATED });
       toLastStep();
 
-      fireEvent.click(screen.getByLabelText('On a date'));
+      fireEvent.click(screen.getByLabelText('On a date and time'));
       save();
       expect(await screen.findByRole('alert')).toHaveTextContent('Choose the day it starts.');
 
@@ -262,7 +284,7 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
       setup('open-vote');
       toLastStep();
 
-      expect(screen.getByLabelText('On a date')).toBeDisabled();
+      expect(screen.getByLabelText('On a date and time')).toBeDisabled();
       expect(screen.getByText(/Give the project start and end dates/)).toBeInTheDocument();
     });
   });

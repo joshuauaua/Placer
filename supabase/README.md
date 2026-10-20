@@ -568,6 +568,21 @@ select pg_get_function_identity_arguments('public.toolkit_room_set_closes'::regp
 -- p_room_id uuid, p_closes_on date, p_time_zone text
 ```
 
+### A room that starts at a time of day
+
+Run `rooms-start-time.sql` in the SQL editor after `rooms-edit.sql` (or
+`supabase db push`). It is re-runnable.
+
+A scheduled room can start at a time on its day, not only at the start of it:
+`toolkit_room_create` and `toolkit_room_reschedule` take `p_opens_time`, in the
+organiser's time zone. Left out, the room opens at the start of the day as before. A
+time already gone by is refused.
+
+```sql
+select pg_get_function_identity_arguments('public.toolkit_room_create'::regproc);
+-- ..., p_opens_on date, p_time_zone text, p_opens_time time without time zone
+```
+
 ### A project's public page: updates, comments and its numbers
 
 Run `project-public-page.sql` in the SQL editor after `project-privacy.sql` and

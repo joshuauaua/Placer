@@ -49,7 +49,7 @@ describe('joining in another language', () => {
     renderAt(`code=${'a'.repeat(32)}`);
 
     expect(screen.getByRole('heading', { name: 'Entra in una stanza' })).toBeInTheDocument();
-    expect(await screen.findByRole('status')).toHaveTextContent('Questa stanza apre il 1 novembre 2026.');
+    expect(await screen.findByRole('status')).toHaveTextContent(/Questa stanza apre il 1 novembre 2026,? alle ore \d{2}:\d{2}\./);
   });
 });
 
