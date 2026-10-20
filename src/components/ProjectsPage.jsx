@@ -204,8 +204,9 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
         )}
 
         {projectsAvailable() && status === 'ready' && matching.length > 0 && view === 'grid' && (
+          // Every row as tall as the tallest, so the cards are all one height.
           <div onKeyDown={moveWithArrows} style={{ display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gridAutoRows: '1fr', gap: 20 }}>
             {matching.map((project) => (
               <div key={project.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
                 <ProjectCard t={t} project={project} label={labelOf(project)} onOpen={() => open(project)} />
