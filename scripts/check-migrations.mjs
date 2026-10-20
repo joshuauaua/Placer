@@ -119,6 +119,7 @@ const PLAN = [
   { name: '20261019160001_project_subtitle.sql', src: 'project-subtitle.sql' },
   { name: '20261019170001_project_gallery_standalone.sql', src: 'project-gallery-standalone.sql' },
   { name: '20261020110001_toolkit_rooms_start_time.sql', src: 'rooms-start-time.sql' },
+  { name: '20261020120001_project_workshop_room.sql', src: 'project-workshop-room.sql' },
 ]
 
 const ROOM_TOOLS = 'room-tools'

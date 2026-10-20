@@ -27,7 +27,7 @@ import { PageLayoutEditor } from './PageLayoutEditor';
 import { AddressInput } from './AddressInput';
 import {
   BUDGET_CURRENCIES, PROJECT_TYPES, VISIBILITIES, createProject, readConfiguredProjectTools, readProjectBudget,
-  readProjectTools, removeProjectImageFile, saveProjectBudget, saveProjectTools, updateProject, uploadProjectImage,
+  readProjectTools, readWorkshopTools, removeProjectImageFile, saveProjectBudget, saveProjectTools, updateProject, uploadProjectImage,
   uploadProjectGalleryImage, GALLERY_MAX,
 } from '../services/projects';
 import { checkPickedImage } from '../services/media';
@@ -319,6 +319,8 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
   // order with a shorter one.
   const [pageSources, setPageSources] = useState({ tools: [], openRooms: [], configured: new Set() });
   const [pageReady, setPageReady] = useState(false);
+  // The layout keys of the Workshop Room's tools, whose titles are kept as they were.
+  const [workshopKeys, setWorkshopKeys] = useState(new Set());
   const [pageLayout, setPageLayout] = useState(project?.pageLayout ?? []);
   // The photos' captions by path, as being typed. Saved with Save changes, unlike the
   // photos themselves.
@@ -343,10 +345,16 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
       })
       .catch((err) => console.error('Could not load the project\'s budget:', err));
     Promise.all([readProjectTools(initialProject.id), readProjectOpenRooms(initialProject.id),
-      readConfiguredProjectTools(initialProject.id)])
-      .then(([toolIds, openRooms, configured]) => {
+      readConfiguredProjectTools(initialProject.id),
+      readWorkshopTools(initialProject.id).catch(() => new Set())])
+      .then(([toolIds, openRooms, configured, workshop]) => {
         if (cancelled) return;
-        setPageSources({ tools: toolIds.map(findTool).filter(Boolean), openRooms, configured });
+        // The Workshop Room's tools are not on the page, so are not arranged here.
+        const tools = toolIds.map(findTool).filter(Boolean);
+        setPageSources({ tools: tools.filter((tool) => !workshop.has(tool.id)), openRooms, configured });
+        setWorkshopKeys(new Set(projectSections({ project: initialProject, openRooms, configured,
+          tools: tools.filter((tool) => workshop.has(tool.id)) })
+          .filter((section) => section.kind === 'tool').map((section) => section.key)));
         setPageReady(true);
       })
       .catch((err) => console.error('Could not load the project\'s page to arrange:', err));
@@ -459,7 +467,10 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
         patch.locations = placeNames(address, town);
       }
       if (offerRunBy) patch.organisationId = chosenOrganisationId;
-      if (editing && pageReady) patch.pageLayout = layoutFor(pageSections);
+      if (editing && pageReady) {
+        patch.pageLayout = [...layoutFor(pageSections),
+          ...(project.pageLayout ?? []).filter((entry) => workshopKeys.has(entry?.key))];
+      }
       // Only the photos still there, and only the ones with something written.
       if (editing) {
         patch.galleryCaptions = Object.fromEntries((project.galleryPaths ?? [])

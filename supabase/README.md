@@ -583,6 +583,20 @@ select pg_get_function_identity_arguments('public.toolkit_room_create'::regproc)
 -- ..., p_opens_on date, p_time_zone text, p_opens_time time without time zone
 ```
 
+### A project's Workshop Room
+
+Run `project-workshop-room.sql` in the SQL editor after `project-tool-config.sql` (or
+`supabase db push`). It is re-runnable.
+
+`project_tools.placement` says where a project's tool is shown on its public page:
+`'page'`, the Project tab, as every tool was before, or `'workshop'`, the Workshop
+Room tab. It is chosen per tool, so all of a tool's rooms follow it, and the project's
+owner and collaborators set and change it.
+
+```sql
+select tool, placement from public.project_tools limit 5;
+```
+
 ### A project's public page: updates, comments and its numbers
 
 Run `project-public-page.sql` in the SQL editor after `project-privacy.sql` and

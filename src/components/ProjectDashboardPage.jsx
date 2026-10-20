@@ -44,12 +44,14 @@ import {
   readProjectToolConfig,
   readConfiguredProjectTools,
   readProjectTools,
+  readWorkshopTools,
   readStats,
   readProjectViews,
   removeCollaborator,
   removeLink,
   removeProjectImageFile,
   saveProjectTools,
+  setProjectToolPlacement,
 } from '../services/projects';
 import { closeRoom, deleteRoom, setRoomCloses } from '../services/rooms';
 import { readComments, readProjectSummary, readUpdates } from '../services/projectPage';
@@ -340,14 +342,26 @@ function AddToolkitTool({ t, chosen = [], onChoose }) {
       </button>
       {open && (
         <AddToolDialog t={t} tools={available} onClose={() => setOpen(false)}
-          onChoose={(id) => { setOpen(false); onChoose(id); }} />
+          onChoose={(id, placement) => { setOpen(false); onChoose(id, placement); }} />
       )}
     </>
   );
 }
 
+// Where a project's tool is shown on its public page (project_tools.placement).
+const PLACEMENTS = [
+  { id: 'page', label: 'Project page' },
+  { id: 'workshop', label: 'Workshop Room' },
+];
+
+/**
+ * The Toolkit to pick a tool from, and where on the project's page it goes: the
+ * Project tab or the Workshop Room. One more room of a tool already on the list goes
+ * where that tool is.
+ */
 function AddToolDialog({ t, tools, onChoose, onClose }) {
   const panelRef = useRef(null);
+  const [placement, setPlacement] = useState('page');
 
   useEffect(() => {
     panelRef.current?.focus();
@@ -372,7 +386,19 @@ function AddToolDialog({ t, tools, onChoose, onClose }) {
             <Icon name="close" size={18} stroke={2.2} />
           </button>
         </div>
-        <ToolsByCategory t={t} tools={tools} onPick={onChoose} idPrefix="add-tool" />
+        <fieldset style={{ border: 0, padding: 0, margin: '0 0 16px' }}>
+          <legend style={{ fontSize: 13, fontWeight: 600, color: t.inkDim, padding: 0, marginBottom: 8 }}>Add it to</legend>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            {PLACEMENTS.map(({ id, label }) => (
+              <label key={id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: t.ink }}>
+                <input type="radio" name="add-tool-placement" value={id} checked={placement === id}
+                  onChange={() => setPlacement(id)} />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <ToolsByCategory t={t} tools={tools} onPick={(id) => onChoose(id, placement)} idPrefix="add-tool" />
       </div>
     </div>
   );
@@ -386,6 +412,8 @@ function AddToolDialog({ t, tools, onChoose, onClose }) {
  * It can have several at once, each set up on its own — two Polls asking different
  * questions — and one more is added from the Add a tool dialog, not from here.
  *
+ * Where it is shown — the project's page or its Workshop Room — is chosen beside it.
+ *
  * Its one button is Configure until it is set up, and Edit after: for a tool that runs
  * in a room, Edit changes its room, or opens the row out to its rooms when it has
  * several, each with its own Edit; any other tool is configured again.
@@ -393,8 +421,8 @@ function AddToolDialog({ t, tools, onChoose, onClose }) {
 // A room still to come counts as well as one running: its QR code can go up early.
 const isCurrentRoom = (room) => room.status === 'open' || room.status === 'scheduled';
 
-function ChosenToolRow({ t, tool, live, scheduled = null, rooms = [], onConfigure, onOpenRoom,
-  onEditRoom, onCloseRoom, onDeleteRoom, onRemove }) {
+function ChosenToolRow({ t, tool, live, scheduled = null, rooms = [], placement = 'page', onPlace, onConfigure,
+  onOpenRoom, onEditRoom, onCloseRoom, onDeleteRoom, onRemove }) {
   const [expanded, setExpanded] = useState(false);
   // Removing asks once more, in the row, since it takes the tool's setup with it.
   const [confirmingRemove, setConfirmingRemove] = useState(false);
@@ -456,6 +484,14 @@ function ChosenToolRow({ t, tool, live, scheduled = null, rooms = [], onConfigur
             </>
           ) : (
             <>
+              {onPlace && (
+                <select value={placement} onChange={(e) => onPlace(e.target.value)}
+                  aria-label={`Where ${tool.name} is shown`}
+                  style={{ padding: '6px 10px', fontSize: 13, borderRadius: 8, border: `1px solid ${t.line}`,
+                    background: t.surface, color: t.ink, fontFamily: 'var(--placer-font)' }}>
+                  {PLACEMENTS.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
+                </select>
+              )}
               {roomTool && rooms.length > 0 ? (
                 <Btn t={t} variant="secondary" size="sm" icon="pencil" ariaLabel={`Edit ${tool.name}`}
                   onClick={() => (rooms.length === 1 ? onEditRoom(rooms[0]) : setExpanded(true))}>
@@ -786,6 +822,8 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   const [tools, setTools] = useState([]);
   // Which of them have been configured, and the one being configured now.
   const [configured, setConfigured] = useState(new Set());
+  // Those of them in the Workshop Room rather than on the page.
+  const [workshop, setWorkshop] = useState(new Set());
   const [configuring, setConfiguring] = useState(null);
   // A room being changed: a scheduled one in the configure dialog, an open one's
   // closing day in its own.
@@ -793,9 +831,14 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
 
   const loadTools = useCallback(async (id) => {
     try {
-      const [chosen, done] = await Promise.all([readProjectTools(id), readConfiguredProjectTools(id)]);
+      const [chosen, done, inWorkshop] = await Promise.all([readProjectTools(id), readConfiguredProjectTools(id),
+        readWorkshopTools(id).catch((err) => {
+          console.error("Could not load this project's Workshop Room:", err);
+          return new Set();
+        })]);
       setTools(chosen);
       setConfigured(done);
+      setWorkshop(inWorkshop);
     } catch (err) {
       console.error("Could not load this project's tools:", err);
       setTools([]);
@@ -922,18 +965,33 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
 
   // Adding a tool only puts it on the list, waiting to be configured: its row's
   // Configure is how it goes live.
-  const handleAddTool = async (toolId) => {
+  const handleAddTool = async (toolId, placement = 'page') => {
     // Already on the list: only a tool that runs in a room is offered again, and
-    // choosing it sets up one more room of it.
+    // choosing it sets up one more room of it, where the tool already is.
     if (tools.includes(toolId)) {
       if (projectSetupKind(findTool(toolId)) === 'room') setConfiguring(toolId);
       return;
     }
     setTools((current) => [...current, toolId]);
+    if (placement === 'workshop') setWorkshop((current) => new Set([...current, toolId]));
     try {
-      await saveProjectTools(project.id, [...tools, toolId], accountId);
+      await saveProjectTools(project.id, [...tools, toolId], accountId, placement === 'workshop' ? [toolId] : []);
     } catch (err) {
       console.error('Could not add that tool to the project:', err);
+      loadTools(project.id);
+    }
+  };
+
+  const handlePlaceTool = async (toolId, placement) => {
+    setWorkshop((current) => {
+      const next = new Set(current);
+      if (placement === 'workshop') next.add(toolId); else next.delete(toolId);
+      return next;
+    });
+    try {
+      await setProjectToolPlacement(project.id, toolId, placement);
+    } catch (err) {
+      console.error('Could not move that tool:', err);
       loadTools(project.id);
     }
   };
@@ -1118,7 +1176,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
               action={<AddToolkitTool t={t} chosen={tools} onChoose={handleAddTool} />}>
               <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
                 The tools this project uses. Each is a template: configure it for this project
-                and it goes live on the public page.
+                and it goes live on the public page, on its Project tab or in its Workshop Room.
               </p>
 
               {chosenTools.length === 0 ? (
@@ -1135,6 +1193,8 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                       <ChosenToolRow key={tool.id} t={t} tool={tool}
                         live={isToolLive(tool, { configured: configured.has(tool.id), openRoom })}
                         scheduled={scheduled}
+                        placement={workshop.has(tool.id) ? 'workshop' : 'page'}
+                        onPlace={(placement) => handlePlaceTool(tool.id, placement)}
                         rooms={(rooms ?? []).filter((room) => room.tool === tool.id && isCurrentRoom(room))}
                         onConfigure={() => setConfiguring(tool.id)}
                         onOpenRoom={handleOpenRoom} onEditRoom={setEditingRoom} onCloseRoom={handleCloseRoom}

@@ -33,6 +33,10 @@
  * imagined is not a section of its own either: imagining is the Idea Visualizer, so what
  * was posted to the map for the project shows in that tool's section, under the tool.
  *
+ * A tool its organisers put in the Workshop Room (project_tools.placement, see
+ * supabase/project-workshop-room.sql) is shown the same way, in the Workshop Room tab
+ * instead of the Project tab. That tab is only there when one of them is live.
+ *
  * The layout lives in index.css (.placer-project-*), since the tab bar's stickiness and
  * the single column on a phone need a media query.
  */
@@ -47,7 +51,7 @@ import { arrangeSections, projectIntro, projectSections } from '../lib/projectSe
 import { readImaginationsByProject } from '../services/imaginations';
 import {
   readConfiguredProjectTools, readLinks, readOrganisationProjects, readProject, readProjectAccess, readProjectTools,
-  requestProjectAccess, readRelatedProjects, recordProjectView,
+  readWorkshopTools, requestProjectAccess, readRelatedProjects, recordProjectView,
 } from '../services/projects';
 import {
   COMMENT_MAX, REPLY_MAX, UPDATE_MAX, postComment, postReply, postUpdate, readComments, readProjectSummary,
@@ -281,8 +285,10 @@ function timeLeft(progress) {
   return { value: 'Open', label: 'no end date set' };
 }
 
+// The Workshop Room is there only for a project with a live tool in it.
 const TABS = [
   { id: 'project', label: 'Project' },
+  { id: 'workshop', label: 'Workshop Room' },
   { id: 'updates', label: 'Updates' },
   { id: 'comments', label: 'Comments' },
   { id: 'links', label: 'Reference Material' },
@@ -305,6 +311,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   // runs in a room.
   const [openRooms, setOpenRooms] = useState([]);
   const [configuredTools, setConfiguredTools] = useState(new Set());
+  // Those of its tools kept for its Workshop Room tab rather than its Project tab.
+  const [workshopTools, setWorkshopTools] = useState(new Set());
   const [imaginations, setImaginations] = useState([]);
   const [links, setLinks] = useState([]);
   // Every reply on the project's updates and comments (supabase/project-replies.sql).
@@ -360,8 +368,13 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         console.error("Could not load how this project's tools are set up:", err);
         return new Set();
       }),
+      // Before project-workshop-room.sql every tool is on the page.
+      readWorkshopTools(projectId).catch((err) => {
+        console.error("Could not load this project's Workshop Room:", err);
+        return new Set();
+      }),
     ])
-      .then(([proj, imgs, docs, toolIds, rooms, configured]) => {
+      .then(([proj, imgs, docs, toolIds, rooms, configured, workshop]) => {
         if (cancelled) return;
         if (!proj) {
           // A private project reads as no project at all to somebody who cannot see
@@ -383,6 +396,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         setTools(toolIds.map(findTool).filter(Boolean));
         setOpenRooms(rooms);
         setConfiguredTools(configured);
+        setWorkshopTools(workshop);
         setImaginations(imgs);
         setLinks(docs);
         setStatus('ready');
@@ -459,16 +473,6 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
     if (bar && bar.getBoundingClientRect().top <= 1) bar.scrollIntoView?.({ block: 'start' });
   };
 
-  const onTabKey = (event) => {
-    const index = TABS.findIndex(({ id }) => id === tab);
-    const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
-    if (!step) return;
-    event.preventDefault();
-    const next = TABS[(index + step + TABS.length) % TABS.length].id;
-    pickTab(next);
-    document.getElementById(`project-tab-${next}`)?.focus();
-  };
-
   const toggleFollow = async () => {
     const next = !following;
     followTouchedRef.current = true;
@@ -527,12 +531,29 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const left = timeLeft(projectProgress(project));
   // Where it is, under the image: its place names, or else the address it was set up with.
   const place = project.locations.length > 0 ? project.locations.join(', ') : project.address;
-  // The Project tab's sections — About, Goals, Photos and one per live tool — in the
-  // order its organisers put them, under their titles (lib/projectSections.js).
+  // The Project tab's sections — About, Goals, Photos and one per live tool on the page —
+  // in the order its organisers put them, under their titles (lib/projectSections.js).
+  // The Workshop Room's are its live tools, put the same way.
   const { intro, goals } = projectIntro(project);
-  const sections = arrangeSections(
-    projectSections({ project, tools, openRooms, configured: configuredTools }), project.pageLayout);
+  const sections = arrangeSections(projectSections({
+    project, tools: tools.filter((tool) => !workshopTools.has(tool.id)), openRooms, configured: configuredTools,
+  }), project.pageLayout);
+  const workshopSections = arrangeSections(projectSections({
+    project, tools: tools.filter((tool) => workshopTools.has(tool.id)), openRooms, configured: configuredTools,
+  }).filter((section) => section.kind === 'tool'), project.pageLayout);
   const hasTools = sections.some((section) => section.kind === 'tool');
+  const tabs = TABS.filter(({ id }) => id !== 'workshop' || workshopSections.length > 0);
+  const shownSections = tab === 'workshop' ? workshopSections : sections;
+
+  const onTabKey = (event) => {
+    const index = tabs.findIndex(({ id }) => id === tab);
+    const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    if (!step) return;
+    event.preventDefault();
+    const next = tabs[(index + step + tabs.length) % tabs.length].id;
+    pickTab(next);
+    document.getElementById(`project-tab-${next}`)?.focus();
+  };
   // A tool in a room that asks for the page's full width (onProjectPage.wide) widens it.
   const isWide = (section) => Boolean(section.room && section.tool?.onProjectPage?.wide);
   const isCover = (section) => Boolean(section.room && section.tool?.onProjectPage?.cover
@@ -688,7 +709,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
       <div ref={tabsRef} className="placer-project-tabs" style={{ background: t.page, borderBottom: `1px solid ${t.line}` }}>
         <div role="tablist" aria-label="Project sections" onKeyDown={onTabKey}
           style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
-          {TABS.map(({ id, label }) => {
+          {tabs.map(({ id, label }) => {
             const current = id === tab;
             const count = counts[id];
             return (
@@ -712,10 +733,10 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
       </div>
 
       <div id={`project-panel-${tab}`} role="tabpanel" aria-labelledby={`project-tab-${tab}`}
-        className={`placer-project-panel${tab === 'project' && sections.some(isWide) ? ' placer-project-panel--wide' : ''}`}>
-        {tab === 'project' && (
+        className={`placer-project-panel${(tab === 'project' || tab === 'workshop') && shownSections.some(isWide) ? ' placer-project-panel--wide' : ''}`}>
+        {(tab === 'project' || tab === 'workshop') && (
           <>
-            {sections.map((section) => (
+            {shownSections.map((section) => (
               <section key={section.key} id={section.domId} aria-labelledby={`${section.domId}-heading`}
                 className={`placer-project-section${isWide(section) ? ' placer-project-section--wide' : ''}`}>
                 {/* A tool drawn as a cover puts the heading on it instead (onProjectPage.cover). */}
@@ -780,7 +801,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
               </section>
             ))}
 
-            {!hasTools && (
+            {tab === 'project' && !hasTools && workshopSections.length === 0 && (
               <section id="project-take-part" className="placer-project-section" aria-labelledby="project-take-part-heading">
                 <h2 id="project-take-part-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 12 }}>
                   Take part
