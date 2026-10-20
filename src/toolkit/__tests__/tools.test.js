@@ -103,7 +103,7 @@ describe('filterTools', () => {
 
   it('searches names, taglines, descriptions and organisations, ignoring case', () => {
     expect(ids({ query: 'BUDGET' })).toEqual(['budget-ballot']);
-    expect(ids({ query: 'gehl' })).toEqual(['social-space-survey']);
+    expect(ids({ query: 'gehl' })).toEqual(['site-spatial-mapping', 'social-space-survey']);
     expect(ids({ query: 'cycle track' })).toContain('street-mixer');
   });
 
@@ -125,7 +125,7 @@ describe('filterTools', () => {
   });
 
   it('filters by the organisation that made the tool', () => {
-    expect(ids({ organisation: 'Gehl Institute' })).toEqual(['social-space-survey']);
+    expect(ids({ organisation: 'Gehl Institute' })).toEqual(['site-spatial-mapping', 'social-space-survey']);
   });
 
   it('keeps only the tools that can run in a room when asked', () => {

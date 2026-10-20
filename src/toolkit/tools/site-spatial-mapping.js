@@ -16,7 +16,7 @@ export default {
   blurb: 'Pick a specific site on a map. Work through the eighteen-question survey. Then reflect.',
   ...tone(PALETTE.blue),
   icon: 'pin',
-  createdBy: 'PLACER',
+  createdBy: 'Gehl Institute',
   credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
   component: SiteMapping,
   setup: {
