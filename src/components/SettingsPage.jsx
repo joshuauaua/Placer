@@ -3,9 +3,12 @@
  * A header that stays put while the page scrolls, then the settings grouped into
  * categories. Nothing is edited on that first screen: each category is a list of
  * options, and an option opens its group of settings in place of the list, with a
- * way back. Which option is open is local state, not a route. */
+ * way back. Which option is open is local state, not a route, though an address with
+ * `?open=<key>` (the welcome tour's Edit my profile goes to /settings?open=profile)
+ * starts with that option open. */
 
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useSearch } from 'wouter';
 import { Avatar, Btn, LoadingMark } from './UI';
 import { Icon } from './Icon';
 import { PageHeader } from './PageHeader';
@@ -110,7 +113,7 @@ function DisplayName({ t, profile, onSaveProfile }) {
   return (
     <Card t={t} title="Display name">
       <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
-        The name shown on the imaginations you post from now on. Changing it does not rename
+        The name shown on what you post from now on. Changing it does not rename
         what you have already posted.
       </p>
       <label htmlFor="settings-display-name"
@@ -633,7 +636,12 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
   organisations = [], onNewOrganisation, onOpenOrganisationDashboard, onReplayTour }) {
   const { text } = useText();
   // The open option's key, or null for the list of them.
-  const [open, setOpen] = useState(null);
+  const requested = new URLSearchParams(useSearch()).get('open');
+  const [open, setOpen] = useState(requested);
+  // Asked for again while already here, as when the tour is run from Settings.
+  useEffect(() => {
+    if (requested) setOpen(requested);
+  }, [requested]);
   const topRef = useRef(null);
 
   // Opening an option, or going back, starts at the top rather than wherever the
@@ -649,9 +657,10 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
   const options = {
     profile: {
       category: 'Profile Settings', icon: 'user', title: 'Edit your profile', show: true,
-      description: 'Your name, bio, location, contact email and website',
+      description: 'Your photo, name, bio, location, contact email and website',
       cards: (
         <>
+          {email && <ProfilePhotoPicker {...profileArgs} />}
           <DisplayName {...profileArgs} />
           <ProfileField {...profileArgs} fieldKey="bio"
             title="Bio" label="Bio" id="settings-bio" multiline
@@ -668,11 +677,6 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
             placeholder="e.g. example.com" />
         </>
       ),
-    },
-    photo: {
-      category: 'Profile Settings', icon: 'image', title: 'Profile photo', show: Boolean(email),
-      description: 'The photo in your avatar circle, in place of your initials',
-      cards: <ProfilePhotoPicker {...profileArgs} />,
     },
     password: {
       category: 'Account', icon: 'lock', title: 'Change your password', show: Boolean(email),
@@ -719,7 +723,7 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
     },
   };
 
-  const current = open ? options[open] : null;
+  const current = open && options[open]?.show && options[open].cards ? options[open] : null;
   const categories = ['Profile Settings', 'Account', 'Notifications', 'Preferences', 'Data and Privacy'];
 
   return (
