@@ -19,6 +19,7 @@ import {
   removeProjectImageFile,
   readProjectToolConfig,
   saveProjectTools,
+  setProjectToolPlacement,
   updateProject,
 } from '../../services/projects';
 import { closeRoom, createRoom, deleteRoom, rescheduleRoom, setRoomCloses } from '../../services/rooms';
@@ -61,6 +62,8 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   createProject: vi.fn(),
   updateProject: vi.fn(),
   readProjectTools: vi.fn(() => Promise.resolve([])),
+  readWorkshopTools: vi.fn(() => Promise.resolve(new Set())),
+  setProjectToolPlacement: vi.fn(() => Promise.resolve()),
   readConfiguredProjectTools: vi.fn(() => Promise.resolve(new Set())),
   markProjectToolConfigured: vi.fn(() => Promise.resolve()),
   removeProjectImageFile: vi.fn(() => Promise.resolve()),
@@ -320,10 +323,32 @@ describe('ProjectDashboardPage', () => {
       .toBeInTheDocument();
     fireEvent.click(dialog.getByRole('button', { name: /^Co-Budget/ }));
 
-    expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['open-vote', 'budget-ballot'], 'user-1');
+    expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['open-vote', 'budget-ballot'], 'user-1', []);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Configure Co-Budget' })).toBeInTheDocument();
     expect(screen.getAllByText('Not configured')).toHaveLength(2);
+    expect(screen.getByLabelText('Where Co-Budget is shown')).toHaveValue('page');
+  });
+
+  it('adds a tool to the Workshop Room instead, and moves one between the two', async () => {
+    tab = 'toolkit';
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    setup();
+    await screen.findByRole('button', { name: 'Configure Poll' });
+    expect(screen.getByLabelText('Where Poll is shown')).toHaveValue('page');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add a tool' }));
+    const dialog = within(screen.getByRole('dialog', { name: 'Add a tool' }));
+    expect(dialog.getByLabelText('Project page')).toBeChecked();
+    fireEvent.click(dialog.getByLabelText('Workshop Room'));
+    fireEvent.click(dialog.getByRole('button', { name: /^Co-Budget/ }));
+
+    expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['open-vote', 'budget-ballot'], 'user-1', ['budget-ballot']);
+    expect(await screen.findByLabelText('Where Co-Budget is shown')).toHaveValue('workshop');
+
+    fireEvent.change(screen.getByLabelText('Where Poll is shown'), { target: { value: 'workshop' } });
+    await waitFor(() => expect(setProjectToolPlacement).toHaveBeenCalledWith('proj-1', 'open-vote', 'workshop'));
+    expect(screen.getByLabelText('Where Poll is shown')).toHaveValue('workshop');
   });
 
   it('closes the dialog of tools without adding one', async () => {

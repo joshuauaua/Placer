@@ -20,6 +20,7 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   createProject: vi.fn(),
   updateProject: vi.fn(),
   readProjectTools: vi.fn(() => Promise.resolve([])),
+  readWorkshopTools: vi.fn(() => Promise.resolve(new Set())),
   readProjectToolConfig: vi.fn(() => Promise.resolve(null)),
   saveProjectToolConfig: vi.fn(() => Promise.resolve()),
   uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),

@@ -4,7 +4,7 @@ import { PublicProjectPage } from '../PublicProjectPage';
 import { readImaginationsByProject } from '../../services/imaginations';
 import {
   readConfiguredProjectTools, readLinks, readProject, readProjectAccess, readProjectTools, readPublicToolkitActivity, readRelatedProjects,
-  requestProjectAccess,
+  readWorkshopTools, requestProjectAccess,
 } from '../../services/projects';
 import { follow, isFollowing, unfollow } from '../../services/follows';
 import {
@@ -27,6 +27,7 @@ vi.mock('../../services/projects', () => ({
   readPublicToolkitActivity: vi.fn(() => Promise.resolve(0)),
   readRelatedProjects: vi.fn(() => Promise.resolve([])),
   readProjectTools: vi.fn(() => Promise.resolve([])),
+  readWorkshopTools: vi.fn(() => Promise.resolve(new Set())),
   // Every tool configured unless a test says otherwise, so a tool added is a tool shown.
   readConfiguredProjectTools: vi.fn(async () => new Set((await import('../../toolkit/tools')).TOOLS.map((tool) => tool.id))),
   readProjectToolConfig: vi.fn(() => Promise.resolve(null)),
@@ -341,6 +342,31 @@ describe('PublicProjectPage, taking part', () => {
     expect(await screen.findByRole('heading', { level: 2, name: 'We want your opinion' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Share your idea for this place' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2, name: 'Tools' })).not.toBeInTheDocument();
+  });
+
+  it('puts a tool kept for the Workshop Room in a tab of its own, shown the same way', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'reimagine-a-space']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL, IDEA]);
+    vi.mocked(readWorkshopTools).mockResolvedValueOnce(new Set(['open-vote']));
+
+    setup();
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Share your idea for this place' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: 'We want your opinion' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Workshop Room' }));
+    expect(screen.getByRole('heading', { level: 2, name: 'We want your opinion' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: 'Share your idea for this place' })).not.toBeInTheDocument();
+  });
+
+  it('has no Workshop Room tab when nothing is in it', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL]);
+
+    setup();
+
+    await screen.findByRole('heading', { level: 2, name: 'We want your opinion' });
+    expect(screen.queryByRole('tab', { name: 'Workshop Room' })).not.toBeInTheDocument();
   });
 
   it('puts the sections in the order its organisers chose, under the titles they gave them', async () => {

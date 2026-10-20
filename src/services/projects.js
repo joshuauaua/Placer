@@ -657,10 +657,11 @@ export async function readProjectTools(projectId) {
 /**
  * Make a project's tools exactly `toolIds`: the new ones added, the ones no longer
  * chosen removed, and the rest left alone so they keep when they were added.
- * `addedBy` is checked against auth.uid() by the insert policy. Owner or collaborator
- * only. Returns the tools as saved.
+ * `addedBy` is checked against auth.uid() by the insert policy. `workshop` lists those
+ * of the new ones to go in the Workshop Room rather than on the page (see
+ * setProjectToolPlacement). Owner or collaborator only. Returns the tools as saved.
  */
-export async function saveProjectTools(projectId, toolIds, addedBy) {
+export async function saveProjectTools(projectId, toolIds, addedBy, workshop = []) {
   const current = await readProjectTools(projectId);
   const wanted = [...new Set(toolIds)];
   const adding = wanted.filter((tool) => !current.includes(tool));
@@ -670,7 +671,12 @@ export async function saveProjectTools(projectId, toolIds, addedBy) {
   if (adding.length > 0) {
     const { error } = await supabase
       .from(PROJECT_TOOLS_TABLE)
-      .insert(adding.map((tool) => ({ project_id: projectId, tool, added_by: addedBy })));
+      // placement only when it is not the default, so a database without
+      // project-workshop-room.sql still takes a tool for the page.
+      .insert(adding.map((tool) => ({
+        project_id: projectId, tool, added_by: addedBy,
+        ...(workshop.includes(tool) ? { placement: 'workshop' } : {}),
+      })));
     if (error) throw new Error(`Could not add those tools: ${error.message}`);
   }
   if (removing.length > 0) {
@@ -690,6 +696,41 @@ export async function saveProjectTools(projectId, toolIds, addedBy) {
   }
 
   return [...current.filter((tool) => !removing.includes(tool)), ...adding];
+}
+
+/**
+ * The project's tools in its Workshop Room rather than on its page, as a Set of
+ * registry ids (project_tools.placement, supabase/project-workshop-room.sql). Public,
+ * like the tools themselves.
+ */
+export async function readWorkshopTools(projectId) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECT_TOOLS_TABLE)
+    .select('tool')
+    .eq('project_id', projectId)
+    .eq('placement', 'workshop');
+
+  if (error) throw new Error(`Could not load the project's Workshop Room: ${error.message}`);
+  return new Set((data ?? []).map((row) => row.tool));
+}
+
+/**
+ * Put one of a project's tools on its page ('page') or in its Workshop Room
+ * ('workshop'), with all of its rooms. Owner or collaborator only.
+ */
+export async function setProjectToolPlacement(projectId, tool, placement) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECT_TOOLS_TABLE)
+    .update({ placement })
+    .eq('project_id', projectId)
+    .eq('tool', tool)
+    .select('tool');
+
+  if (error) throw new Error(`Could not move that tool: ${error.message}`);
+  if (!data?.length) throw new Error('Could not move that tool: it is not one of the project\'s tools.');
+  track('project_tool_placed', { project_id: projectId, tool, placement });
 }
 
 /**
