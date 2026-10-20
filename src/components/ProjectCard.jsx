@@ -6,16 +6,19 @@ import { ARROW_ITEM } from '../lib/arrowKeys';
 
 export function ProjectCard({ t, project, onOpen, label = null }) {
   return (
+    // A column from the top, and as tall as whatever holds it allows: a grid can then give
+    // every card one height, and a button would otherwise centre what it holds.
     <button onClick={() => onOpen(project.id)} {...ARROW_ITEM} style={{ textAlign: 'left', padding: 20,
       background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, boxShadow: t.shadow,
-      cursor: 'pointer', fontFamily: 'var(--placer-font)', overflow: 'hidden' }}>
+      cursor: 'pointer', fontFamily: 'var(--placer-font)', overflow: 'hidden', flex: 1,
+      display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
       {/* Edge to edge across the top, so the negative margins undo the card's padding. */}
       {project.image && (
         <img src={project.image} alt="" style={{ display: 'block', width: 'calc(100% + 40px)',
-          margin: '-20px -20px 16px', aspectRatio: '16 / 9', objectFit: 'cover' }} />
+          margin: '-20px -20px 16px', flexShrink: 0, aspectRatio: '16 / 9', objectFit: 'cover' }} />
       )}
       {label && (
-        <span style={{ display: 'inline-block', marginBottom: 8, padding: '2px 8px', borderRadius: 999,
+        <span style={{ alignSelf: 'flex-start', marginBottom: 8, padding: '2px 8px', borderRadius: 999,
           background: t.surfaceAlt, color: t.ink, fontSize: 12, fontWeight: 600 }}>
           {label}
         </span>
