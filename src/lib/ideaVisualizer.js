@@ -3,8 +3,9 @@
 // A project runs the tool in a room (toolkit/tools.js). Its setup is the scene: the
 // address, and the Street View photo of it the organiser took (ConfigureToolDialog),
 // uploaded and kept by its path. Everybody taking part places assets on that same
-// photo, and what they record — the assets, and what the idea is — is their
-// contribution to the room, which the others can see drawn on the photo again.
+// photo, and what they record — the assets, and what the idea is — goes into their
+// contribution to the room, which the others can see drawn on the photo again. One
+// person can record several, so their contribution holds a list of them.
 //
 // An asset is kept by its type and where it sits on the 1000 × 700 stage
 // (ImaginationCanvas), not by its picture: the artwork is looked up from ASSET_LIB
@@ -60,14 +61,31 @@ export function emptyVisual() {
   return {};
 }
 
+// How many visuals one person can record in a room. The room keeps one contribution
+// per person, so they all share its 64 KB (room-size-limits.sql); a visual is a
+// kilobyte or two.
+export const MAX_VISUALS = 10;
+
 /**
- * Everybody's recorded visuals, newest last: those with at least one asset placed, as
- * recordedVisual has them. `knownTypes` as there.
+ * One person's recorded visuals, oldest first: their state is { visuals: [...] }, or a
+ * single visual as an earlier version recorded it. Only those with something placed,
+ * as recordedVisual has them. `knownTypes` as there.
+ */
+export function personVisuals(state, knownTypes) {
+  if (!state || typeof state !== 'object') return [];
+  return (Array.isArray(state.visuals) ? state.visuals : [state])
+    .filter((visual) => visual && typeof visual === 'object')
+    .map((visual) => recordedVisual(visual, knownTypes))
+    .filter((visual) => visual.assets.length > 0)
+    .slice(0, MAX_VISUALS);
+}
+
+/**
+ * Everybody's recorded visuals, newest person last: how many people recorded one, and
+ * every visual they recorded. `knownTypes` as recordedVisual has it.
  */
 export function combineVisuals(states, knownTypes) {
-  const visuals = (states ?? [])
-    .filter((state) => state && typeof state === 'object')
-    .map((state) => recordedVisual(state, knownTypes))
-    .filter((visual) => visual.assets.length > 0);
-  return { people: visuals.length, visuals };
+  const byPerson = (states ?? []).map((state) => personVisuals(state, knownTypes))
+    .filter((visuals) => visuals.length > 0);
+  return { people: byPerson.length, visuals: byPerson.flat() };
 }

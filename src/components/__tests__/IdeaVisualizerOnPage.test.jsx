@@ -3,7 +3,7 @@ import { act, render, screen, fireEvent, waitFor, within } from '@testing-librar
 import { IdeaVisualizerOnPage } from '../toolkit/IdeaVisualizerOnPage';
 import { THEME } from '../../theme';
 import { rememberAnswer } from '../../toolkit/rooms';
-import { combineVisuals, recordedVisual, sceneProblems } from '../../lib/ideaVisualizer';
+import { MAX_VISUALS, combineVisuals, personVisuals, recordedVisual, sceneProblems } from '../../lib/ideaVisualizer';
 
 // Stands in for the Konva canvas: one button places a bench where the real one would.
 vi.mock('../ImaginationCanvas', () => ({
@@ -64,9 +64,59 @@ describe('Idea Visualizer on a project page', () => {
     expect(service.saveContribution).toHaveBeenCalledWith(expect.objectContaining({
       roomId: 'room-idea',
       displayName: null,
-      state: { assets: [{ type: 'bench', x: 500, y: 350, scale: 1, rotation: 0 }], title: 'Somewhere to sit', description: '' },
+      state: { visuals: [
+        { assets: [{ type: 'bench', x: 500, y: 350, scale: 1, rotation: 0 }], title: 'Somewhere to sit', description: '' },
+      ] },
     }));
     expect(await screen.findByText('Recorded to the project. Thank you.')).toBeInTheDocument();
+  });
+
+  it('shows a grid of the results once recorded, its own first, then Create another', async () => {
+    const service = fakeService([
+      { state: { assets: [{ type: 'tree', x: 100, y: 100, scale: 1, rotation: 0 }], title: 'More trees' } },
+    ]);
+    render(<IdeaVisualizerOnPage t={THEME} room={ROOM} service={service} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Visualize' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Place a bench' }));
+    fireEvent.change(screen.getByLabelText('Name your idea'), { target: { value: 'Somewhere to sit' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Record my visualization' }));
+
+    const grid = within(await screen.findByRole('list', { name: 'Visualizations' }));
+    const items = grid.getAllByRole('listitem');
+    expect(items).toHaveLength(2);
+    expect(within(items[0]).getByText('Yours')).toBeInTheDocument();
+    expect(within(items[0]).getByText('Somewhere to sit')).toBeInTheDocument();
+    expect(within(items[1]).getByText('More trees')).toBeInTheDocument();
+    expect(screen.queryByTestId('imagination-canvas')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create another' }));
+    expect(await screen.findByText('0 placed')).toBeInTheDocument();
+    expect(screen.getByLabelText('Name your idea')).toHaveValue('');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Place a bench' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Record my visualization' }));
+
+    await waitFor(() => expect(service.saveContribution).toHaveBeenCalledTimes(2));
+    expect(service.saveContribution.mock.lastCall[0].state.visuals).toHaveLength(2);
+    expect(within(await screen.findByRole('list', { name: 'Visualizations' })).getAllByText('Yours')).toHaveLength(2);
+  });
+
+  it('goes back to the results from Create another without recording', async () => {
+    rememberAnswer('room-idea', { visuals: [{ assets: [{ type: 'bench', x: 1, y: 2, scale: 1, rotation: 0 }], title: 'Mine' }] });
+    render(<IdeaVisualizerOnPage t={THEME} room={ROOM} service={fakeService()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create another' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+
+    expect(screen.getByRole('list', { name: 'Visualizations' })).toBeInTheDocument();
+  });
+
+  it('stops offering another once somebody has recorded the most they can', () => {
+    const one = { assets: [{ type: 'bench', x: 1, y: 2, scale: 1, rotation: 0 }] };
+    rememberAnswer('room-idea', { visuals: Array.from({ length: MAX_VISUALS }, () => one) });
+    render(<IdeaVisualizerOnPage t={THEME} room={ROOM} service={fakeService()} />);
+
+    expect(screen.getByRole('button', { name: 'Create another' })).toBeDisabled();
   });
 
   it('shows everybody else\'s ideas on the same photo, live', async () => {
@@ -99,14 +149,15 @@ describe('Idea Visualizer on a project page', () => {
     expect(await screen.findByText('Nobody has recorded a visualization yet. Be the first.')).toBeInTheDocument();
   });
 
-  it('opens again on what this browser recorded before', () => {
+  it('opens again on the results for what this browser recorded before, even one visual from before', () => {
     rememberAnswer('room-idea', { assets: [{ type: 'bench', x: 1, y: 2, scale: 1, rotation: 0 }], title: 'Mine' });
 
     render(<IdeaVisualizerOnPage t={THEME} room={ROOM} service={fakeService()} />);
 
-    expect(screen.getByText('1 placed')).toBeInTheDocument();
-    expect(screen.getByLabelText('Name your idea')).toHaveValue('Mine');
-    expect(screen.getByRole('button', { name: 'Update my visualization' })).toBeDisabled();
+    const grid = within(screen.getByRole('list', { name: 'Visualizations' }));
+    expect(grid.getByText('Mine')).toBeInTheDocument();
+    expect(grid.getByText('Yours')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create another' })).toBeEnabled();
   });
 });
 
@@ -139,5 +190,14 @@ describe('Idea Visualizer for a project, the logic', () => {
 
     expect(combined.people).toBe(1);
     expect(combined.visuals[0].assets[0].type).toBe('tree');
+  });
+
+  it('reads several visuals from one person, and counts them as one person', () => {
+    const tree = { assets: [{ type: 'tree', x: 1, y: 1 }] };
+    const combined = combineVisuals([{ visuals: [tree, { assets: [] }, tree] }, tree], KNOWN);
+
+    expect(combined.people).toBe(2);
+    expect(combined.visuals).toHaveLength(3);
+    expect(personVisuals({ visuals: Array.from({ length: MAX_VISUALS + 5 }, () => tree) }, KNOWN)).toHaveLength(MAX_VISUALS);
   });
 });

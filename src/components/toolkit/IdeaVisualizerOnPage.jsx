@@ -4,13 +4,19 @@
  * behind a link: the Street View photo they took when setting it up, and Visualize,
  * which opens the whole tool right there — the photo, and the library of benches,
  * trees, lighting and the rest to place on it — with a name and a few words for the
- * idea under it. Recording saves the idea against the room with this browser's
- * participant token, so recording again replaces the first, and remembers it in this
- * browser (toolkit/rooms' rememberAnswer) so coming back opens it again.
+ * idea under it.
  *
- * See other visualizations draws everybody's recorded ideas on the same photo
- * (VisualThumb), kept live while the page is open. The room is the project's
- * (services/rooms' readProjectOpenRooms); the logic is in lib/ideaVisualizer.js.
+ * Recording one shows the results: a grid of every visualization recorded so far,
+ * this browser's own first and marked Yours, and Create another, which opens the tool
+ * again on a clean photo. Somebody can record up to MAX_VISUALS. They are all saved
+ * as one contribution against the room with this browser's participant token, and
+ * remembered in this browser (toolkit/rooms' rememberAnswer), so coming back opens on
+ * the results again.
+ *
+ * Until then, See other visualizations draws everybody's recorded ideas on the same
+ * photo (VisualThumb). Either way they are kept live while the page is open. The room
+ * is the project's (services/rooms' readProjectOpenRooms); the logic is in
+ * lib/ideaVisualizer.js.
  *
  * The service arrives as a prop, as in DesireLinesOnPage, so a test can hand this a fake.
  */
@@ -20,7 +26,7 @@ import { Btn } from '../UI';
 import { ASSET_LIB } from '../../data';
 import { CAT } from '../../theme';
 import {
-  MAX_DESCRIPTION, MAX_TITLE, STAGE, combineVisuals, recordedVisual,
+  MAX_DESCRIPTION, MAX_TITLE, MAX_VISUALS, STAGE, combineVisuals, personVisuals, recordedVisual,
 } from '../../lib/ideaVisualizer';
 import { formatRoomDate, participantToken, rememberAnswer, rememberedAnswer } from '../../toolkit/rooms';
 import { mediaUrl } from '../../services/media';
@@ -31,32 +37,40 @@ const ImaginationCanvas = lazy(() => import('../ImaginationCanvas'));
 const BY_TYPE = new Map(ASSET_LIB.map((asset) => [asset.type, asset]));
 const KNOWN_TYPES = new Set(BY_TYPE.keys());
 
-/** A recorded asset as the canvas works with it, its artwork looked up again. */
-function canvasAsset(asset, index) {
-  const lib = BY_TYPE.get(asset.type);
-  return { id: `recorded-${index}`, type: asset.type, label: lib.label, cat: lib.cat, icon: lib.icon,
-    x: asset.x, y: asset.y, scale: asset.scale, rotation: asset.rotation };
+// What this browser remembers may have been written by an earlier version of this
+// page, which kept a single visual rather than a list.
+function remembered(roomId) {
+  return personVisuals(rememberedAnswer(roomId), KNOWN_TYPES);
 }
 
-// What this browser remembers may have been written by an earlier version of this page.
-function remembered(roomId) {
-  const saved = rememberedAnswer(roomId);
-  if (!saved || typeof saved !== 'object') return null;
-  const visual = recordedVisual(saved, KNOWN_TYPES);
-  return visual.assets.length > 0 ? visual : null;
+/** The visuals in `all` that are not `mine`, each of mine taken out once. */
+function othersThan(all, mine) {
+  const left = mine.map((visual) => JSON.stringify(visual));
+  return all.filter((visual) => {
+    const at = left.indexOf(JSON.stringify(visual));
+    if (at === -1) return true;
+    left.splice(at, 1);
+    return false;
+  });
 }
 
 /**
  * A recorded idea drawn again on the photo it was made on: each asset where it was
  * placed on the stage, as large and as turned, the same way ImaginationCanvas draws it.
  */
-export function VisualThumb({ t, photo, visual, label }) {
+export function VisualThumb({ t, photo, visual, label, tag = null }) {
   return (
     <figure style={{ margin: 0 }}>
       <div role="img" aria-label={label} style={{ position: 'relative', width: '100%', aspectRatio: `${STAGE.width} / ${STAGE.height}`,
         overflow: 'hidden', borderRadius: 12, background: '#000', border: `1px solid ${t.line}` }}>
         {photo && (
           <img src={photo} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+        )}
+        {tag && (
+          <span style={{ position: 'absolute', top: 8, left: 8, zIndex: 1, padding: '2px 8px', borderRadius: 999,
+            background: t.surface, color: t.ink, fontSize: 12, fontWeight: 600 }}>
+            {tag}
+          </span>
         )}
         {visual.assets.map((asset, index) => {
           const lib = BY_TYPE.get(asset.type);
@@ -92,12 +106,13 @@ export function VisualThumb({ t, photo, visual, label }) {
 export function IdeaVisualizerOnPage({ t, room, service = roomService }) {
   const id = useId();
   const photo = mediaUrl(room.config?.imagePath);
-  const [sent, setSent] = useState(() => remembered(room.id));
-  const [open, setOpen] = useState(() => Boolean(sent));
-  const [assets, setAssets] = useState(() => (sent ? sent.assets.map(canvasAsset) : []));
-  const [title, setTitle] = useState(sent?.title ?? '');
-  const [description, setDescription] = useState(sent?.description ?? '');
-  const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'closed' | 'error'
+  // What this browser has recorded here, oldest first.
+  const [mine, setMine] = useState(() => remembered(room.id));
+  const [mode, setMode] = useState(() => (mine.length > 0 ? 'results' : 'photo')); // 'photo' | 'editing' | 'results'
+  const [assets, setAssets] = useState([]);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'recorded' | 'closed' | 'error'
   const [combined, setCombined] = useState(null);
   const [showingOthers, setShowingOthers] = useState(false);
 
@@ -119,37 +134,51 @@ export function IdeaVisualizerOnPage({ t, room, service = roomService }) {
 
   const visual = useMemo(() => recordedVisual({ assets, title, description }, KNOWN_TYPES),
     [assets, title, description]);
-  const changed = JSON.stringify(visual) !== JSON.stringify(sent);
+  // Everybody else's: the room's, less this browser's own, which the results show first.
+  const others = useMemo(() => othersThan(combined?.visuals ?? [], mine), [combined, mine]);
+  const full = mine.length >= MAX_VISUALS;
 
   const record = async () => {
     setStatus('sending');
+    const next = [...mine, visual];
     try {
       const saved = await service.saveContribution({
-        roomId: room.id, participantToken: participantToken(), displayName: null, state: visual,
+        roomId: room.id, participantToken: participantToken(), displayName: null, state: { visuals: next },
       });
       if (!saved) {
         setStatus('closed');
         return;
       }
-      rememberAnswer(room.id, visual);
-      setSent(visual);
-      setStatus('idle');
+      rememberAnswer(room.id, { visuals: next });
+      setMine(next);
+      setStatus('recorded');
+      setMode('results');
     } catch (err) {
       console.error('Could not record the visualization:', err);
       setStatus('error');
     }
   };
 
+  const createAnother = () => {
+    setAssets([]);
+    setTitle('');
+    setDescription('');
+    setStatus('idle');
+    setMode('editing');
+  };
+
   const closes = formatRoomDate(room.expiresAt);
-  const count = combined?.people ?? 0;
+  const count = combined?.visuals.length ?? 0;
   const field = {
     width: '100%', padding: '10px 14px', borderRadius: 12, border: `1px solid ${t.lineStrong}`, background: t.surface,
     color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 15, boxSizing: 'border-box',
   };
+  const thumbLabel = (each, index) => (each.title
+    ? `${each.title}, drawn on the photo` : `Visualization ${index + 1}, drawn on the photo`);
 
   return (
     <div className="placer-card" style={{ padding: 24 }}>
-      {!open ? (
+      {mode === 'photo' && (
         <>
           {photo && (
             <img src={photo} alt="The Street View photo to imagine on" style={{ display: 'block', width: '100%',
@@ -160,10 +189,12 @@ export function IdeaVisualizerOnPage({ t, room, service = roomService }) {
             <p className="placer-caption" style={{ color: t.inkFaint, margin: '8px 0 0' }}>{room.config.address}</p>
           )}
           <div style={{ marginTop: 16 }}>
-            <Btn t={t} variant="primary" icon="sparkle" onClick={() => setOpen(true)}>Visualize</Btn>
+            <Btn t={t} variant="primary" icon="sparkle" onClick={() => setMode('editing')}>Visualize</Btn>
           </div>
         </>
-      ) : (
+      )}
+
+      {mode === 'editing' && (
         <>
           <div style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${t.line}` }}>
             <Suspense fallback={<p style={{ padding: 24, fontSize: 14, color: t.inkDim }}>Loading the tool…</p>}>
@@ -189,15 +220,17 @@ export function IdeaVisualizerOnPage({ t, room, service = roomService }) {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 16 }}>
             <Btn t={t} variant="primary" icon="send"
-              disabled={status === 'sending' || status === 'closed' || visual.assets.length === 0 || !changed}
+              disabled={status === 'sending' || status === 'closed' || visual.assets.length === 0}
               onClick={record}>
-              {status === 'sending' ? 'Recording…' : sent ? 'Update my visualization' : 'Record my visualization'}
+              {status === 'sending' ? 'Recording…' : 'Record my visualization'}
             </Btn>
+            {mine.length > 0 && (
+              <Btn t={t} variant="ghost" onClick={() => setMode('results')}>Cancel</Btn>
+            )}
             <span role="status" aria-live="polite" style={{ fontSize: 14, color: t.inkDim }}>
               {status === 'closed' ? 'This has closed, so no more visualizations are being recorded.'
-                : sent && !changed ? 'Recorded to the project. Thank you.'
-                  : visual.assets.length === 0 ? 'Place something on the photo to record it.'
-                    : sent ? 'You have changed it since recording it.' : 'Recorded without your name.'}
+                : visual.assets.length === 0 ? 'Place something on the photo to record it.'
+                  : 'Recorded without your name.'}
             </span>
           </div>
           {status === 'error' && (
@@ -208,29 +241,57 @@ export function IdeaVisualizerOnPage({ t, room, service = roomService }) {
         </>
       )}
 
-      <div style={{ borderTop: `1px solid ${t.line}`, marginTop: 24, paddingTop: 16 }}>
-        <Btn t={t} variant="outline" icon={showingOthers ? 'chevUp' : 'image'}
-          onClick={() => setShowingOthers((was) => !was)}>
-          {showingOthers ? 'Hide other visualizations' : `See other visualizations${count ? ` (${count})` : ''}`}
-        </Btn>
-        {showingOthers && (
-          count === 0 ? (
-            <p style={{ fontSize: 14, color: t.inkDim, marginTop: 12 }}>
-              Nobody has recorded a visualization yet. Be the first.
-            </p>
-          ) : (
-            <div role="list" aria-label="Other visualizations" style={{ display: 'grid', gap: 16, marginTop: 16,
-              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
-              {combined.visuals.map((other, index) => (
+      {mode === 'results' && (
+        <>
+          <p role="status" aria-live="polite" style={{ fontSize: 14, color: t.inkDim, margin: '0 0 16px' }}>
+            {status === 'recorded' ? 'Recorded to the project. Thank you.' : `You have recorded ${mine.length === 1
+              ? 'a visualization' : `${mine.length} visualizations`} here.`}
+          </p>
+          <div role="list" aria-label="Visualizations" style={{ display: 'grid', gap: 16,
+            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
+            {[...mine.map((each) => ({ each, yours: true })), ...others.map((each) => ({ each, yours: false }))]
+              .map(({ each, yours }, index) => (
                 <div role="listitem" key={index}>
-                  <VisualThumb t={t} photo={photo} visual={other}
-                    label={other.title ? `${other.title}, drawn on the photo` : `Visualization ${index + 1}, drawn on the photo`} />
+                  <VisualThumb t={t} photo={photo} visual={each} label={thumbLabel(each, index)}
+                    tag={yours ? 'Yours' : null} />
                 </div>
               ))}
-            </div>
-          )
-        )}
-      </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 20 }}>
+            <Btn t={t} variant="primary" icon="plus" disabled={full} onClick={createAnother}>Create another</Btn>
+            {full && (
+              <span style={{ fontSize: 14, color: t.inkDim }}>
+                {`That is the most one person can record here: ${MAX_VISUALS}.`}
+              </span>
+            )}
+          </div>
+        </>
+      )}
+
+      {mode !== 'results' && (
+        <div style={{ borderTop: `1px solid ${t.line}`, marginTop: 24, paddingTop: 16 }}>
+          <Btn t={t} variant="outline" icon={showingOthers ? 'chevUp' : 'image'}
+            onClick={() => setShowingOthers((was) => !was)}>
+            {showingOthers ? 'Hide other visualizations' : `See other visualizations${count ? ` (${count})` : ''}`}
+          </Btn>
+          {showingOthers && (
+            count === 0 ? (
+              <p style={{ fontSize: 14, color: t.inkDim, marginTop: 12 }}>
+                Nobody has recorded a visualization yet. Be the first.
+              </p>
+            ) : (
+              <div role="list" aria-label="Other visualizations" style={{ display: 'grid', gap: 16, marginTop: 16,
+                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
+                {combined.visuals.map((other, index) => (
+                  <div role="listitem" key={index}>
+                    <VisualThumb t={t} photo={photo} visual={other} label={thumbLabel(other, index)} />
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+        </div>
+      )}
 
       {closes && status !== 'closed' && (
         <p className="placer-caption" style={{ color: t.inkFaint, marginTop: 16 }}>Open until {closes}.</p>
