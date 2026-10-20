@@ -174,6 +174,7 @@ const HAND_WRITTEN = [
   '20261010090001_toolkit_tool_names.sql',
   '20261013090001_project_budgets_currencies.sql',
   '20261014130001_project_updates_organisers.sql',
+  '20261020100001_project_updates_collaborators.sql',
 ]
 
 export function render({ src, slice, note }, read = (f) => readFileSync(`${DIR}/${f}`, 'utf8')) {

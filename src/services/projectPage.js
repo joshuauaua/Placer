@@ -50,9 +50,10 @@ function postFrom(row) {
 
 /**
  * The public page's header numbers and people:
- * { views, followers, interactions, owner, collaborators, canPostUpdate }.
- * `canPostUpdate` is whether the signed-in account organises the project: its owner
- * or an admin of the organisation it is run for. `owner` is
+ * { views, followers, interactions, owner, collaborators, canPostUpdate, canPostAsOrganisation }.
+ * `canPostUpdate` is whether the signed-in account organises the project — its owner
+ * or an admin of the organisation it is run for — or collaborates on it, and
+ * `canPostAsOrganisation` whether it organises it, so may post under the organisation's name. `owner` is
  * { id, name, bio, location, photo, joinedAt, projects } or null; each collaborator
  * is { id, name, photo }. Null when the project cannot be seen.
  */
@@ -80,6 +81,7 @@ export async function readProjectSummary(projectId) {
     owner,
     collaborators: (data.collaborators ?? []).map((c) => ({ id: c.id, name: c.name, photo: mediaUrl(c.avatar_path) })),
     canPostUpdate: data.can_post_update === true,
+    canPostAsOrganisation: data.can_post_as_organisation === true,
   };
 }
 

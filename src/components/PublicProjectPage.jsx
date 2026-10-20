@@ -541,12 +541,15 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const owner = summary?.owner ?? { id: project.ownerId, name: project.ownerName, photo: null };
   const collaborators = summary?.collaborators ?? [];
   // May remove any comment: the owner and the collaborators. May post and remove
-  // updates: the organisers only — the owner, and the admins of the organisation it is
-  // run for, which only the database can tell. It checks both again
-  // (supabase/project-public-page.sql); this only decides what to offer.
+  // updates: those two and the admins of the organisation it is run for, which only the
+  // database can tell. May post as the organisation: its organisers only — the owner
+  // and those admins. It checks all of it again (supabase/project-public-page.sql);
+  // this only decides what to offer.
   const isTeam = Boolean(accountId)
     && (accountId === project.ownerId || collaborators.some((person) => person.id === accountId));
-  const isOrganiser = Boolean(accountId) && (summary ? summary.canPostUpdate : accountId === project.ownerId);
+  const canPostUpdate = Boolean(accountId) && (summary ? summary.canPostUpdate : isTeam);
+  const isOrganiser = Boolean(accountId)
+    && (summary ? summary.canPostAsOrganisation : accountId === project.ownerId);
 
   const organiser = organisation ? {
     kind: 'organisation', id: organisation.id, name: organisation.name, photo: organisation.avatar,
@@ -595,7 +598,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         asOrganisation);
       setReplies((current) => [...current, reply]);
     },
-    canRemoveReply: (reply) => isTeam || isOrganiser || (Boolean(accountId) && reply.authorId === accountId),
+    canRemoveReply: (reply) => isTeam || canPostUpdate || (Boolean(accountId) && reply.authorId === accountId),
     onRemoveReply: async (reply) => {
       await removeReply(reply.id);
       setReplies((current) => current.filter((each) => each.id !== reply.id));
@@ -791,11 +794,11 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         )}
 
         {tab === 'updates' && (
-          <ProjectPosts t={t} kind="update" posts={updates.posts} status={updates.status} canPost={isOrganiser}
+          <ProjectPosts t={t} kind="update" posts={updates.posts} status={updates.status} canPost={canPostUpdate}
             max={UPDATE_MAX} onOpenProfile={onOpenProfile} onOpenOrganisation={onOpenOrganisation}
             postAs={postAs} organisation={postsOrganisation}
             onPost={async (body, asOrganisation) => addPost(setUpdates, await postUpdate(project.id, body, asOrganisation))}
-            canRemove={() => isOrganiser}
+            canRemove={() => canPostUpdate}
             onRemove={async (post) => { await removeUpdate(post.id); dropPost(setUpdates, post.id); }}
             {...replyProps('update')} />
         )}

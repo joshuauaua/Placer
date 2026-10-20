@@ -753,7 +753,7 @@ function DeleteProjectDialog({ t, project, onDeleted, onClose }) {
 /**
  * Reached cold from a link the way PublicProjectPage is, so `projectId` is all this
  * needs — everything else is read here. `isOwner` gates the roster and delete
- * controls; a plain collaborator sees everything else.
+ * controls; a collaborator edits everything else the way the owner does.
  */
 export function ProjectDashboardPage({ t, accountId, projectId, organisations = [], initialTab = 'settings',
   onOpenRoom, onNavigateToPublic, onDeleted }) {
@@ -1162,17 +1162,15 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
 
           {tab === 'settings' && (
             <>
-              {isOwner && (
-                <Card t={t} title="Project setup" action={(
-                  <Btn t={t} variant="outline" size="sm" icon="pencil" onClick={() => setEditing(true)}>
-                    Edit setup
-                  </Btn>
-                )}>
-                  <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
-                    Its name, description, goals, dates, place, picture and who can see it.
-                  </p>
-                </Card>
-              )}
+              <Card t={t} title="Project setup" action={(
+                <Btn t={t} variant="outline" size="sm" icon="pencil" onClick={() => setEditing(true)}>
+                  Edit setup
+                </Btn>
+              )}>
+                <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
+                  Its name, description, goals, dates, place, picture and who can see it.
+                </p>
+              </Card>
               <Card t={t} title="Collaborators">
                 {collaborators.length === 0 ? (
                   <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: isOwner ? 16 : 0 }}>
