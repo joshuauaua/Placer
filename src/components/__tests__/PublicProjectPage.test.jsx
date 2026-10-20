@@ -1429,7 +1429,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     beforeEach(() => {
       vi.mocked(readProject).mockResolvedValue({ ...PROJECT, organisationId: 'org-1' });
       vi.mocked(readOrganisation).mockResolvedValue(ORG);
-      vi.mocked(readProjectSummary).mockResolvedValue({ ...SUMMARY, canPostUpdate: true });
+      vi.mocked(readProjectSummary).mockResolvedValue({ ...SUMMARY, canPostUpdate: true, canPostAsOrganisation: true });
       vi.mocked(postUpdate).mockImplementation(async (projectId, body, organisationId) => ({
         id: 'u9', authorId: 'user-1', authorName: organisationId ? 'STPLN' : 'Mara Quinn', organisationId,
         body, createdAt: '2026-05-04T10:00:00Z' }));
@@ -1481,6 +1481,18 @@ describe('PublicProjectPage, its header, tabs and people', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
 
       await waitFor(() => expect(postComment).toHaveBeenCalledWith('proj-1', 'Thanks all!', 'org-1'));
+    });
+
+    it('lets a collaborator post an update, but only as themselves', async () => {
+      vi.mocked(readProjectSummary).mockResolvedValue({ ...SUMMARY, canPostUpdate: true, canPostAsOrganisation: false });
+      setup({ accountId: 'user-2', accountName: 'Ines Berg' });
+      await openTab(/Updates/);
+
+      expect(screen.queryByRole('group', { name: 'Post as' })).not.toBeInTheDocument();
+      fireEvent.change(screen.getByLabelText('Post an update'), { target: { value: 'Workshop on Friday.' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Post update' }));
+
+      await waitFor(() => expect(postUpdate).toHaveBeenCalledWith('proj-1', 'Workshop on Friday.', null));
     });
 
     it('gives anybody else no choice', async () => {

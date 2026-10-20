@@ -7,7 +7,7 @@
 -- or comments to read. So:
 --
 --   1. project_updates: news posted by a project's organisers — its owner, and the
---      admins of the organisation it is run for — not by its collaborators.
+--      admins of the organisation it is run for — and by its collaborators.
 --   2. project_comments: anybody signed in who can see the project may comment;
 --      the author, the owner or a collaborator may remove one.
 --   3. project_public_summary(): one call returning the page's numbers, its owner's
@@ -91,9 +91,10 @@ create trigger project_comments_set_author
   for each row execute function public.project_post_set_author();
 
 
--- Who organises a project, and so may post and remove its updates: its owner, and the
--- admins of the organisation it is run for. Collaborators help run its tools, but its
--- news is the organisers' to give.
+-- Who organises a project: its owner, and the admins of the organisation it is run
+-- for. They, and its collaborators (project_can_edit), may post and remove its
+-- updates; only they may post one as the organisation
+-- (project-posts-as-organisation.sql).
 create or replace function public.project_is_organiser(p_project_id uuid)
 returns boolean
 language sql
@@ -123,15 +124,17 @@ create policy "anyone who can see the project can read its updates"
 
 drop policy if exists "the project's people can post an update" on public.project_updates;
 drop policy if exists "the project's organisers can post an update" on public.project_updates;
-create policy "the project's organisers can post an update"
+drop policy if exists "the project's organisers and collaborators can post an update" on public.project_updates;
+create policy "the project's organisers and collaborators can post an update"
   on public.project_updates for insert to authenticated
-  with check (public.project_is_organiser(project_id));
+  with check (public.project_can_edit(project_id) or public.project_is_organiser(project_id));
 
 drop policy if exists "the project's people can remove an update" on public.project_updates;
 drop policy if exists "the project's organisers can remove an update" on public.project_updates;
-create policy "the project's organisers can remove an update"
+drop policy if exists "the project's organisers and collaborators can remove an update" on public.project_updates;
+create policy "the project's organisers and collaborators can remove an update"
   on public.project_updates for delete to authenticated
-  using (public.project_is_organiser(project_id));
+  using (public.project_can_edit(project_id) or public.project_is_organiser(project_id));
 
 drop policy if exists "anyone who can see the project can read its comments" on public.project_comments;
 create policy "anyone who can see the project can read its comments"
@@ -165,7 +168,9 @@ grant delete on public.project_comments to authenticated;
 -- The owner's details are what profile_public() already publishes, plus the day the
 -- account was made and how many public projects it runs; collaborators are name and
 -- photo only — never the email they were invited by. `can_post_update` is whether the
--- caller organises the project, so the page knows whether to offer to post one.
+-- caller organises the project or collaborates on it, so the page knows whether to
+-- offer to post one, and `can_post_as_organisation` whether they organise it, so may
+-- post one under the organisation's name.
 create or replace function public.project_public_summary(p_project_id uuid)
 returns jsonb
 language plpgsql
@@ -213,7 +218,8 @@ begin
         from public.project_collaborators c
         left join public.profiles pr on pr.id = c.user_id
        where c.project_id = p_project_id), '[]'::jsonb),
-    'can_post_update', public.project_is_organiser(p_project_id)
+    'can_post_update', public.project_can_edit(p_project_id) or public.project_is_organiser(p_project_id),
+    'can_post_as_organisation', public.project_is_organiser(p_project_id)
   );
 end;
 $$;

@@ -269,12 +269,12 @@ describe('ProjectDashboardPage', () => {
     expect(screen.queryByRole('button', { name: /Edit setup/ })).not.toBeInTheDocument();
   });
 
-  it('has no Edit setup for a collaborator', async () => {
+  it('offers Edit setup to a collaborator too', async () => {
     tab = 'settings';
     setup({ accountId: 'user-2' });
     await screen.findByText('Riverside Greenway');
 
-    expect(screen.queryByRole('button', { name: /Edit setup/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Edit setup/ })).toBeInTheDocument();
   });
 
   it('edits setup in place and returns to the dashboard with the saved project', async () => {
