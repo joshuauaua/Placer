@@ -2,13 +2,14 @@
  *
  * A cover saying what PLACER is, with one button, Get started. Then five steps:
  * projects — the heart of it — the Toolkit, Explore, starting a project and the
- * profile, each with a button that goes there. The cover is not counted as a step and
+ * profile, each going there. The cover is not counted as a step and
  * has no dot. Going there
  * does not end the tour: the page changes underneath and the tour moves on to its next
  * step, over the new page (WelcomeTour keeps it open across pages). Only the last
  * step's button ends it. Next
  * and Back (or the arrow keys) move between steps; the close button or Escape end the
- * tour from any step, as does Done on the last one. Every way out calls
+ * tour from any step. The last step has no Done: its own button, Edit my profile, takes
+ * Next's place. Every way out calls
  * `onClose`, which is where WelcomeTour records that the tour has been seen
  * (services/onboarding.js), so it opens once per account however it was left.
  *
@@ -17,7 +18,8 @@
  *
  * A step with a `spotlight` points at the real thing instead of offering a button: the
  * screen darkens around the side nav's item for it (SideNav marks each with data-tour),
- * a ring pulses round it, and clicking it there does what the item does. Where that item is not on screen the step falls back to its `action` button.
+ * a ring pulses round it, and clicking it there does what the item does. The ring says
+ * it all, so there is no line of text telling them to click it. Where that item is not on screen the step falls back to its `action` button.
  */
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -39,7 +41,7 @@ export const ONBOARDING_STEPS = [
     image: '/favicon.svg',
     colour: PALETTE.purple,
     title: (name) => (name ? `Welcome to PLACER, ${name}` : 'Welcome to PLACER'),
-    body: 'PLACER is an open toolkit for shaping public places together with the people '
+    body: 'PLACER is an open toolkit for shaping shared places together with the people '
       + 'who use them. Here is a quick look around, in five steps.',
   },
   {
@@ -50,8 +52,7 @@ export const ONBOARDING_STEPS = [
     body: 'A project is how people say what they want to change about a place, and bring '
       + 'others in to shape it. Everything in PLACER gathers around one: its people, its '
       + 'tools, its updates and its decisions. Have a look at what others have started.',
-    spotlight: { target: 'projects', label: 'Projects', call: 'onOpenProjects',
-      hint: 'Click Projects in the menu, highlighted, to see them.' },
+    spotlight: { target: 'projects', label: 'Projects', call: 'onOpenProjects' },
     action: { label: 'See the projects', icon: 'grid', call: 'onOpenProjects' },
   },
   {
@@ -65,8 +66,7 @@ export const ONBOARDING_STEPS = [
       + 'own and some in a group, and they come in all sizes and shapes. We recommend mixing '
       + 'and matching them to fit what your project needs.',
     categories: true,
-    spotlight: { target: 'toolkit', label: 'Toolkit', call: 'onOpenToolkit',
-      hint: 'Click Toolkit in the menu, highlighted, to see the tools.' },
+    spotlight: { target: 'toolkit', label: 'Toolkit', call: 'onOpenToolkit' },
     action: { label: 'Browse the Toolkit', icon: 'layers', call: 'onOpenToolkit' },
   },
   {
@@ -76,8 +76,7 @@ export const ONBOARDING_STEPS = [
     title: () => 'Explore what is happening',
     body: 'The Explore map shows projects and organisations near you. Follow the ones you '
       + 'care about, and their news lands in Your Activity on the dashboard.',
-    spotlight: { target: 'map', label: 'Explore', call: 'onExplore',
-      hint: 'Click Explore in the menu, highlighted, to open the map.' },
+    spotlight: { target: 'map', label: 'Explore', call: 'onExplore' },
     action: { label: 'Open the map', icon: 'pin', call: 'onExplore' },
   },
   {
@@ -87,6 +86,7 @@ export const ONBOARDING_STEPS = [
     title: () => 'Start a project',
     body: 'A project gathers people around one place. Give it a location and dates, choose '
       + 'its tools, and share a public page where anyone can take part.',
+    spotlight: { target: 'newProject', label: 'New project', call: 'onNewProject' },
     action: { label: 'Create a project', icon: 'plus', call: 'onNewProject' },
   },
   {
@@ -242,15 +242,7 @@ export function OnboardingDialog({ t, name = '', onClose, onOpenProjects, onExpl
               ))}
             </ul>
           )}
-          {spotlit && (
-            <p role="note" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 18, marginBottom: 0,
-              padding: '10px 12px', borderRadius: 12, background: step.colour.c50, color: step.colour.c900,
-              fontSize: 14.5, fontWeight: 500, lineHeight: 1.45 }}>
-              <Icon name={step.icon} size={16} stroke={2.2} style={{ flex: '0 0 auto' }} />
-              {spotlight.hint}
-            </p>
-          )}
-          {action && (
+          {action && !last && (
             <div style={{ marginTop: 18 }}>
               <Btn t={t} variant="outline" size="sm" icon={action.icon} onClick={() => go(action.call)}>{action.label}</Btn>
             </div>
@@ -281,9 +273,10 @@ export function OnboardingDialog({ t, name = '', onClose, onOpenProjects, onExpl
             </ol>
             <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
               <Btn t={t} variant="ghost" icon="chevLeft" onClick={() => setIndex(index - 1)}>Back</Btn>
-              {last
-                ? <Btn t={t} onClick={onClose}>Done</Btn>
-                : <Btn t={t} onClick={() => setIndex(index + 1)}>Next</Btn>}
+              {!last && <Btn t={t} onClick={() => setIndex(index + 1)}>Next</Btn>}
+              {last && (action
+                ? <Btn t={t} icon={action.icon} onClick={() => go(action.call)}>{action.label}</Btn>
+                : <Btn t={t} onClick={onClose}>Done</Btn>)}
             </div>
           </div>
         )}

@@ -7,7 +7,8 @@
  * It opens by itself the first time an account reaches its dashboard (`autoOpen`, see
  * services/onboarding.js), and whenever the address carries `?tour` — Settings' "Take
  * the welcome tour again" links to /dashboard?tour — which it then drops, so a reload
- * does not bring it back. However it is closed, it is recorded as seen.
+ * does not bring it back. However it is closed, it is recorded as seen. `onOpenChange`
+ * hears it open and close, so App can hold the side nav expanded meanwhile.
  */
 
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
@@ -19,7 +20,7 @@ import { markOnboarded, needsOnboarding } from '../services/onboarding';
 const OnboardingDialog = lazy(() => import('./OnboardingDialog'));
 
 export function WelcomeTour({ t, accountId = null, name = '', autoOpen = false,
-  onOpenProjects, onExplore, onOpenToolkit, onNewProject, onEditProfile }) {
+  onOpenProjects, onExplore, onOpenToolkit, onNewProject, onEditProfile, onOpenChange }) {
   const [location, navigate] = useLocation();
   const requested = new URLSearchParams(useSearch()).has('tour');
   const [open, setOpen] = useState(false);
@@ -42,6 +43,10 @@ export function WelcomeTour({ t, accountId = null, name = '', autoOpen = false,
       .catch((err) => console.error('Could not check for the welcome tour:', err));
     return () => { cancelled = true; };
   }, [accountId, autoOpen]);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   if (!open) return null;
 

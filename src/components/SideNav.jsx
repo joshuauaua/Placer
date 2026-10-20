@@ -54,14 +54,17 @@ function NavLabel({ label, short }) {
   );
 }
 
-export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganisations = false }) {
-  const [collapsed, setCollapsed] = useState(readCollapsed);
+/**
+ * `expanded` holds it open whatever was chosen, without forgetting the choice: the
+ * welcome tour sets it, so the places it points at are there with their names.
+ */
+export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganisations = false, expanded = false }) {
+  const [chosenCollapsed, setCollapsed] = useState(readCollapsed);
+  const collapsed = chosenCollapsed && !expanded;
 
   const toggle = () => {
-    setCollapsed((was) => {
-      writeCollapsed(!was);
-      return !was;
-    });
+    writeCollapsed(!collapsed);
+    setCollapsed(!collapsed);
   };
 
   const items = [
@@ -95,6 +98,7 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganis
         aria-label="New project"
         aria-keyshortcuts="N"
         aria-current={view === 'projectNew' ? 'page' : undefined}
+        data-tour="newProject"
         title="New project (N)"
         className="placer-side-nav-link placer-side-nav-primary"
       >

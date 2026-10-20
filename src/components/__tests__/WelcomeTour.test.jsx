@@ -14,7 +14,7 @@ vi.mock('../../services/onboarding', () => ({
 
 // A stand-in for App: a page that changes when the tour sends somebody somewhere, with
 // the tour beside it rather than inside it.
-function Harness({ path = '/dashboard', accountId = 'user-1' }) {
+function Harness({ path = '/dashboard', accountId = 'user-1', onOpenChange }) {
   const [page, setPage] = useState('dashboard');
   // One location for the life of the harness, not a fresh one each time the page changes.
   const [{ hook, searchHook, history }] = useState(() => memoryLocation({ path, record: true }));
@@ -24,7 +24,8 @@ function Harness({ path = '/dashboard', accountId = 'user-1' }) {
       <h1>{`Page: ${page}`}</h1>
       <WelcomeTour t={THEME} accountId={accountId} name="Mara Quinn" autoOpen={page === 'dashboard'}
         onOpenProjects={() => setPage('projects')} onExplore={() => setPage('map')} onOpenToolkit={() => setPage('toolkit')}
-        onNewProject={() => setPage('new project')} onEditProfile={() => setPage('settings')} />
+        onNewProject={() => setPage('new project')} onEditProfile={() => setPage('settings')}
+        onOpenChange={onOpenChange} />
     </Router>
   );
 }
@@ -45,6 +46,18 @@ describe('WelcomeTour', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(markOnboarded).toHaveBeenCalledWith('user-1');
+  });
+
+  it('says when it opens and closes, so the side nav can stay expanded meanwhile', async () => {
+    vi.mocked(needsOnboarding).mockResolvedValueOnce(true);
+    const onOpenChange = vi.fn();
+    render(<Harness onOpenChange={onOpenChange} />);
+
+    const tour = await screen.findByRole('dialog');
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+
+    fireEvent.click(within(tour).getByRole('button', { name: 'Close the welcome tour' }));
+    await waitFor(() => expect(onOpenChange).toHaveBeenLastCalledWith(false));
   });
 
   it('carries on over each page its steps lead to', async () => {

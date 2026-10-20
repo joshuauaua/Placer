@@ -50,8 +50,8 @@ describe('OnboardingDialog', () => {
     expect(screen.getByRole('button', { name: 'Get started' })).toBeInTheDocument();
   });
 
-  it('goes through all five steps and back, and Done ends it', () => {
-    const { onClose } = setup();
+  it('goes through all five steps and back, ending on Edit my profile rather than Done', () => {
+    setup();
 
     const titles = ['Projects are where change starts', 'Check out the Toolkit', 'Explore what is happening',
       'Start a project', 'Make your profile yours'];
@@ -66,8 +66,9 @@ describe('OnboardingDialog', () => {
     expect(screen.getByRole('heading', { name: 'Start a project' })).toBeInTheDocument();
 
     next();
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Edit my profile' })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
   });
 
   it('jumps to a step from its dot', () => {
@@ -158,7 +159,7 @@ describe('OnboardingDialog', () => {
       next();
       next();
 
-      expect(screen.getByRole('note')).toHaveTextContent('Click Explore in the menu');
+      expect(screen.queryByRole('note')).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Open the map' })).not.toBeInTheDocument();
 
       const spot = screen.getByRole('button', { name: 'Explore' });
@@ -175,7 +176,7 @@ describe('OnboardingDialog', () => {
       const { onOpenProjects } = setup();
       next();
 
-      expect(screen.getByRole('note')).toHaveTextContent('Click Projects in the menu');
+      expect(screen.queryByText(/Click Projects in the menu/)).not.toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Projects' }));
       expect(onOpenProjects).toHaveBeenCalled();
       expect(screen.getByText('Step 2 of 5')).toBeInTheDocument();
@@ -187,10 +188,24 @@ describe('OnboardingDialog', () => {
       next();
       next();
 
-      expect(screen.getByRole('note')).toHaveTextContent('Click Toolkit in the menu');
+      expect(screen.queryByText(/Click Toolkit in the menu/)).not.toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Toolkit' }));
       expect(onOpenToolkit).toHaveBeenCalled();
       expect(screen.getByText('Step 3 of 5')).toBeInTheDocument();
+    });
+
+    it('points at New project in the menu on the start-a-project step', () => {
+      withNavItem('newProject');
+      const { onNewProject } = setup();
+      next();
+      next();
+      next();
+      next();
+
+      expect(screen.queryByRole('button', { name: 'Create a project' })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'New project' }));
+      expect(onNewProject).toHaveBeenCalled();
+      expect(screen.getByText('Step 5 of 5')).toBeInTheDocument();
     });
 
     it('keeps the button when the menu is not there to point at', () => {
