@@ -36,7 +36,6 @@ const setup = (overrides = {}) => {
 };
 
 const PROFILE = 'Edit your profile';
-const PICTURES = 'Profile photo';
 const PASSWORD = 'Change your password';
 const ORGANISATIONS = 'Manage your organisations';
 const ANALYTICS = 'Analytics';
@@ -48,6 +47,15 @@ describe('SettingsPage', () => {
   afterEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
+  });
+
+  it('opens the option the address asks for, as the welcome tour does', () => {
+    window.history.pushState({}, '', '/settings?open=profile');
+    setup();
+    window.history.pushState({}, '', '/');
+
+    expect(screen.getByRole('heading', { level: 2, name: PROFILE })).toBeInTheDocument();
+    expect(nameField()).toHaveValue('Mara Quinn');
   });
 
   it('shows the current display name', () => {
@@ -210,21 +218,21 @@ describe('SettingsPage, bio and location', () => {
   });
 
   it('offers no cover image at all, only the profile photo', () => {
-    setup({ option: PICTURES, email: 'mara@example.com' });
+    setup({ option: PROFILE, email: 'mara@example.com' });
 
     expect(screen.queryByText('Cover image')).not.toBeInTheDocument();
     expect(screen.queryByText('Upload a cover')).not.toBeInTheDocument();
   });
 
   it('offers no profile photo for a local-only profile', () => {
-    setup();
+    setup({ option: PROFILE });
 
     expect(screen.queryByText('Profile photo')).not.toBeInTheDocument();
   });
 
   it('uploads a profile photo, points the profile at it, and deletes the old one', async () => {
     const onSaveProfile = vi.fn(() => Promise.resolve());
-    setup({ option: PICTURES, email: 'mara@example.com', onSaveProfile,
+    setup({ option: PROFILE, email: 'mara@example.com', onSaveProfile,
       profile: { name: 'Mara Quinn', bio: '', photoPath: 'avatars/user-1/avatar-1.jpg', photo: 'https://cdn/a.jpg' } });
 
     const file = new File(['x'], 'me.jpg', { type: 'image/jpeg' });
@@ -237,7 +245,7 @@ describe('SettingsPage, bio and location', () => {
 
   it('removes the profile photo, falling back to the initials', async () => {
     const onSaveProfile = vi.fn(() => Promise.resolve());
-    setup({ option: PICTURES, email: 'mara@example.com', onSaveProfile,
+    setup({ option: PROFILE, email: 'mara@example.com', onSaveProfile,
       profile: { name: 'Mara Quinn', bio: '', photoPath: 'avatars/user-1/avatar-1.jpg', photo: 'https://cdn/a.jpg' } });
 
     fireEvent.click(screen.getByRole('button', { name: /Remove/ }));
@@ -316,7 +324,7 @@ describe('SettingsPage, avatar', () => {
   });
 
   it('offers no avatar icons to pick from, only the profile photo', () => {
-    setup({ option: PICTURES, email: 'mara@example.com' });
+    setup({ option: PROFILE, email: 'mara@example.com' });
 
     expect(screen.queryByRole('radiogroup', { name: 'Avatar icon' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Save avatar/ })).not.toBeInTheDocument();
@@ -324,7 +332,7 @@ describe('SettingsPage, avatar', () => {
   });
 
   it('shows the initials in the photo circle until a photo is added', () => {
-    setup({ option: PICTURES, email: 'mara@example.com' });
+    setup({ option: PROFILE, email: 'mara@example.com' });
 
     expect(screen.getByText('MQ')).toBeInTheDocument();
   });

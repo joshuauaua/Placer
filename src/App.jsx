@@ -629,7 +629,7 @@ function MainApp({ initialView = 'welcome' }) {
               onExplore={() => { handleExplore(); scrollPageToTop(); }}
               onOpenToolkit={() => { show('toolkit'); scrollPageToTop(); }}
               onNewProject={() => { showNewProject(); scrollPageToTop(); }}
-              onEditProfile={() => { show('settings'); scrollPageToTop(); }}
+              onEditProfile={() => { navigate('/settings?open=profile'); scrollPageToTop(); }}
               onOpenChange={setTourOpen} />
           )}
 

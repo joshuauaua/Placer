@@ -26,10 +26,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn } from './UI';
 import { PALETTE } from '../theme';
-import { CATEGORIES } from '../toolkit/tools';
 
 /**
  * The steps, in order. Each shows an `icon` from the set, or an `image` in its place.
+ * `points` adds a numbered list under the body, and `more` a paragraph after it.
  * `action` names the prop its button calls, and is left out when there is none.
  */
 export const ONBOARDING_STEPS = [
@@ -50,8 +50,8 @@ export const ONBOARDING_STEPS = [
     colour: PALETTE.orange,
     title: () => 'Projects are where change starts',
     body: 'A project is how people say what they want to change about a place, and bring '
-      + 'others in to shape it. Everything in PLACER gathers around one: its people, its '
-      + 'tools, its updates and its decisions. Have a look at what others have started.',
+      + 'others in to shape it. Everything in PLACER gathers around a project page: people, '
+      + 'ideas, updates and its decisions. Have a look at what others have started.',
     spotlight: { target: 'projects', label: 'Projects', call: 'onOpenProjects' },
     action: { label: 'See the projects', icon: 'grid', call: 'onOpenProjects' },
   },
@@ -60,12 +60,14 @@ export const ONBOARDING_STEPS = [
     icon: 'layers',
     colour: PALETTE.blue,
     title: () => 'Check out the Toolkit',
-    body: 'In the Toolkit you can explore the tools. They come from expert organisations, and '
-      + 'each one is for understanding a place and collecting data about it, imagining and '
-      + 'visualising ideas for it, or planning to drive change in it. Some are done on your '
-      + 'own and some in a group, and they come in all sizes and shapes. We recommend mixing '
-      + 'and matching them to fit what your project needs.',
-    categories: true,
+    body: 'In the Toolkit you can explore tools from expert organisations. Each one is for:',
+    points: [
+      'Understanding a place and collecting data about it',
+      'Imagining and visualising ideas for it',
+      'Planning to drive change in it',
+    ],
+    more: 'Some are done solo and others in a group, and they come in all shapes and sizes. '
+      + 'We recommend mixing and matching them to fit what your project needs.',
     spotlight: { target: 'toolkit', label: 'Toolkit', call: 'onOpenToolkit' },
     action: { label: 'Browse the Toolkit', icon: 'layers', call: 'onOpenToolkit' },
   },
@@ -83,9 +85,9 @@ export const ONBOARDING_STEPS = [
     id: 'project',
     icon: 'grid',
     colour: PALETTE.purple,
-    title: () => 'Start a project',
-    body: 'A project gathers people around one place. Give it a location and dates, choose '
-      + 'its tools, and share a public page where anyone can take part.',
+    title: () => 'Start your own project',
+    body: 'When you are ready, start your own project. Give it a location and a timeframe, '
+      + 'choose its tools, and share a public page where anyone can take part.',
     spotlight: { target: 'newProject', label: 'New project', call: 'onNewProject' },
     action: { label: 'Create a project', icon: 'plus', call: 'onNewProject' },
   },
@@ -230,17 +232,23 @@ export function OnboardingDialog({ t, name = '', onClose, onOpenProjects, onExpl
           <p id="onboarding-body" style={{ fontSize: 15.5, lineHeight: 1.6, color: t.inkDim, margin: 0 }}>
             {step.body}
           </p>
-          {step.categories && (
-            <ul aria-label="Toolkit categories" style={{ listStyle: 'none', padding: 0, margin: '14px 0 0',
-              display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {CATEGORIES.map((category) => (
-                <li key={category.id} className="placer-mono" style={{ fontSize: 11.5, fontWeight: 700,
-                  letterSpacing: '0.06em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: 999,
-                  background: category.colour.c100, color: category.colour.c900 }}>
-                  {category.name}
+          {step.points && (
+            <ol style={{ listStyle: 'none', padding: 0, margin: '12px 0 0', display: 'grid', gap: 8 }}>
+              {step.points.map((point, i) => (
+                <li key={point} style={{ display: 'flex', alignItems: 'baseline', gap: 10,
+                  fontSize: 15.5, lineHeight: 1.5, color: t.ink }}>
+                  <span className="placer-mono" aria-hidden="true" style={{ flexShrink: 0, width: 22, height: 22,
+                    borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 12, fontWeight: 700, background: step.colour.c100, color: step.colour.c900 }}>
+                    {i + 1}
+                  </span>
+                  {point}
                 </li>
               ))}
-            </ul>
+            </ol>
+          )}
+          {step.more && (
+            <p style={{ fontSize: 15.5, lineHeight: 1.6, color: t.inkDim, margin: '12px 0 0' }}>{step.more}</p>
           )}
           {action && !last && (
             <div style={{ marginTop: 18 }}>
@@ -250,7 +258,7 @@ export function OnboardingDialog({ t, name = '', onClose, onOpenProjects, onExpl
         </div>
 
         {step.cover ? (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '24px 28px 24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 28px 24px' }}>
             <Btn t={t} icon="arrowRight" onClick={() => setIndex(index + 1)}>Get started</Btn>
           </div>
         ) : (
