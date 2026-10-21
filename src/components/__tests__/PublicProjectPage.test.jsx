@@ -356,7 +356,7 @@ describe('PublicProjectPage, taking part', () => {
     expect(screen.queryByRole('heading', { level: 2, name: 'We want your opinion' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Workshop Room' }));
-    expect(screen.getByRole('heading', { level: 2, name: 'We want your opinion' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Current workshop: Poll for “Riverside Greenway”' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2, name: 'Share your idea for this place' })).not.toBeInTheDocument();
   });
 
@@ -373,10 +373,10 @@ describe('PublicProjectPage, taking part', () => {
     setup();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Workshop Room' }));
-    expect(screen.getByText('Current Workshop:')).toBeInTheDocument();
-    expect(screen.getByText('Poll for “Riverside Greenway”')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: 'We want your opinion' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { level: 2, name: 'Share your idea for this place' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Current workshop: Poll for “Riverside Greenway”' })).toBeInTheDocument();
+    // The tool's own section title gives way to it.
+    expect(screen.queryByRole('heading', { level: 2, name: 'We want your opinion' })).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Current workshop: Poll for “Riverside Greenway”' })).toBeInTheDocument();
 
     const schedule = screen.getByRole('complementary', { name: 'Schedule' });
     // The room still to come is listed, but cannot be opened yet.
@@ -384,9 +384,9 @@ describe('PublicProjectPage, taking part', () => {
     expect(within(schedule).getAllByRole('button')).toHaveLength(2);
 
     fireEvent.click(within(schedule).getByRole('button', { name: /Idea Visualizer/ }));
-    expect(screen.getByText('Idea Visualizer for “Riverside Greenway”')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: 'Share your idea for this place' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { level: 2, name: 'We want your opinion' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Current workshop: Idea Visualizer for “Riverside Greenway”' }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: 'Share your idea for this place' })).not.toBeInTheDocument();
   });
 
   it('has no Workshop Room tab when nothing is in it', async () => {
