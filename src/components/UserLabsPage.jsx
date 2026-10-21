@@ -13,6 +13,8 @@
 import { useState } from 'react';
 
 import userLabsPhoto from '../assets/user-labs.webp';
+import userLabsPhotoSmall from '../assets/user-labs-800.webp';
+import { bundledImage } from '../lib/responsiveImage';
 import { saveSurveyResponse } from '../services/api';
 import { PhotoSplit, PhotoSplitHeading } from './PhotoSplit';
 
@@ -234,6 +236,7 @@ export function UserLabsPage({ t }) {
     <PhotoSplit
       t={t}
       src={userLabsPhoto}
+      srcSet={bundledImage(userLabsPhotoSmall, userLabsPhoto).srcSet}
       alt="A User Labs session outside an orange-red brick building: people pin notes to a map and sketch on wooden boards by a picnic table, beside a banner reading Designing Participatory Spaces."
     >
       {step === 'pitch' && (

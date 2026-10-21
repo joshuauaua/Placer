@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Icon } from './Icon';
 import { Btn, CatTag } from './UI';
 import { postsAreShared, readImaginations, removeImagination } from '../services/imaginations';
+import { responsiveImage } from '../lib/responsiveImage';
 
 // ISO slice rather than toLocaleDateString, so the output does not shift with the
 // machine's locale.
@@ -31,7 +32,7 @@ function Row({ t, imagination, confirming, busy, onAskDelete, onCancelDelete, on
       boxShadow: t.shadow, opacity: busy ? 0.5 : 1 }}>
       {preview ? (
         <img
-          src={preview}
+          {...responsiveImage(preview, '132px')}
           alt={`Preview of ${name}`}
           style={{ width: 132, height: 92, objectFit: 'cover', borderRadius: 12,
             border: `1px solid ${t.line}`, flex: '0 0 auto' }}

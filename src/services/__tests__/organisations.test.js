@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
+import { photoUploads } from '../../lib/responsiveImage';
 
 /*
  * The Supabase SDK faked whole, with the same small thenable query builder
@@ -39,6 +40,11 @@ const remove = vi.fn(() => Promise.resolve());
 vi.mock('../media', async (importOriginal) => ({
   ...(await importOriginal()),
   uploadMedia: (...a) => upload(...a),
+  uploadPhoto: async (supabase, base, photo) => {
+    let path = null;
+    for (const each of photoUploads(base, photo)) path = await upload(supabase, each.path, each.blob);
+    return path;
+  },
   removeMedia: (...a) => remove(...a),
   mediaUrl: (path) => (path ? `https://media.example/${path}` : null),
 }));

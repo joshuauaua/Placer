@@ -22,7 +22,7 @@
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
-import { mediaUrl, removeMedia, uploadMedia } from './media';
+import { mediaUrl, removeMedia, uploadPhoto } from './media';
 import { encodeImage, IMAGE_PRESETS } from '../lib/imageEncode';
 import {
   addComment as addCommentLocal,
@@ -211,18 +211,17 @@ export async function postImagination(imagination) {
   let previewPath = null;
   const kind = previewKind(preview);
   if (kind) {
-    let blob = dataUrlToBlob(preview, kind.contentType);
-    let { ext } = kind;
-    // Re-encoded as WebP to save space, keeping any transparency. The stage export has
-    // no metadata to strip, so if the browser cannot do this the original goes as it is.
+    let photo = { blob: dataUrlToBlob(preview, kind.contentType), ext: kind.ext };
+    // Re-encoded as WebP to save space, keeping any transparency, with smaller copies
+    // for the cards. The stage export has no metadata to strip, so if the browser
+    // cannot do this the original goes as it is.
     try {
-      ({ blob, ext } = await encodeImage(blob, IMAGE_PRESETS.preview));
+      photo = await encodeImage(photo.blob, IMAGE_PRESETS.preview);
     } catch (encodeError) {
       console.warn('Uploading the preview as exported; it could not be re-encoded:', encodeError);
     }
-    previewPath = `${PREVIEWS_FOLDER}/${userId}/${id}.${ext}`;
     try {
-      await uploadMedia(supabase, previewPath, blob);
+      previewPath = await uploadPhoto(supabase, `${PREVIEWS_FOLDER}/${userId}/${id}`, photo);
     } catch (error) {
       throw new Error(`Could not upload the preview: ${error.message}`);
     }

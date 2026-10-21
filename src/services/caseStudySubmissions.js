@@ -14,7 +14,7 @@
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
-import { isMediaConfigured, preparePhoto, uploadMedia } from './media';
+import { isMediaConfigured, preparePhoto, uploadPhoto } from './media';
 import { isValidEmail } from './toolSubmissions';
 import { OPERATOR } from '../legal';
 import { track } from '../analytics';
@@ -98,10 +98,9 @@ export function validateCaseStudy(fields) {
 }
 
 async function uploadPicture(supabase, userId, file, name, what) {
-  const { blob, ext } = await preparePhoto(file, 'project', what);
-  const path = `case-studies/${userId}/${name}-${Date.now()}.${ext}`;
+  const photo = await preparePhoto(file, 'submission', what);
   try {
-    return await uploadMedia(supabase, path, blob);
+    return await uploadPhoto(supabase, `case-studies/${userId}/${name}-${Date.now()}`, photo);
   } catch (error) {
     throw new Error(`Could not upload the ${what.toLowerCase().replace(/^an? /, '')}: ${error.message}`);
   }

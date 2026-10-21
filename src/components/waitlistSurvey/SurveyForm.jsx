@@ -7,7 +7,7 @@
  */
 
 import markIntro from '../../assets/street-bench.png';
-import markSuccess from '../../assets/street-planter-cube.png';
+import markSuccess from '../../assets/street-planter-cube.webp';
 import { Btn } from '../UI';
 import { SurveyQuestion } from './SurveyQuestion';
 import { useSurveyForm } from './useSurveyForm';

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
+import { photoUploads } from '../../lib/responsiveImage';
 
 /*
  * The Supabase SDK is faked whole, so no client is built and no request is made. Rather
@@ -47,6 +48,11 @@ const remove = vi.fn(() => Promise.resolve());
 vi.mock('../media', async (importOriginal) => ({
   ...(await importOriginal()),
   uploadMedia: (...a) => upload(...a),
+  uploadPhoto: async (supabase, base, photo) => {
+    let path = null;
+    for (const each of photoUploads(base, photo)) path = await upload(supabase, each.path, each.blob);
+    return path;
+  },
   removeMedia: (...a) => remove(...a),
   mediaUrl: (path) => (path ? `https://media.example/${path}` : null),
 }));
@@ -360,13 +366,13 @@ describe('project images', () => {
     expect(upload).toHaveBeenCalledWith(expect.anything(), path, expect.objectContaining({ type: 'image/webp' }));
   });
 
-  it('refuses anything that is not a photo, and anything over 30 MB, before uploading', async () => {
+  it('refuses anything that is not a photo, and anything over 20 MB, before uploading', async () => {
     await load();
 
     await expect(projects.uploadProjectImage('proj-1', { type: 'text/html', size: 10 }))
       .rejects.toThrow(/has to be a photo/);
-    await expect(projects.uploadProjectImage('proj-1', { type: 'image/png', size: 31 * 1024 * 1024 }))
-      .rejects.toThrow(/30 MB/);
+    await expect(projects.uploadProjectImage('proj-1', { type: 'image/png', size: 21 * 1024 * 1024 }))
+      .rejects.toThrow(/20 MB/);
     expect(upload).not.toHaveBeenCalled();
   });
 });

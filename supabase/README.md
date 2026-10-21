@@ -769,8 +769,13 @@ files themselves live in an R2 bucket. The R2 keys never reach the browser.
   checked with `project_can_edit()`), or under an organisation they are an admin of
   (`organisations/<organisation id>/…`, see step 18). It reads each upload's bytes: only a real JPEG,
   PNG or WebP is stored, with the type the function found rather than the one the
-  browser claimed, and within a size limit per folder (1 MB avatars, 3 MB covers and
+  browser claimed, and within a size limit per folder (0.5 MB avatars, 1.5 MB covers and
   project images, 5 MB previews).
+- **Smaller copies.** A cover, project image, gallery photo or preview is uploaded with
+  copies 640 and 1080 pixels wide beside it, named by width
+  (`image-…-w1600.webp`, `image-…-w640.webp`; see `src/lib/responsiveImage.js`), so a
+  phone is sent one its own size. The function keeps and deletes a picture's copies with
+  it.
 - **50 MB per account.** An upload is refused if it would take the account past 50 MB
   in all — its own folders plus the images of the projects it owns. A project image
   counts against the project's owner, whoever uploads it.
@@ -964,8 +969,8 @@ the `media` function (`supabase functions deploy media`) — both are needed. It
 `organisations.cover_path`, pointing into `organisations/<organisation id>/` in the R2
 bucket, where any of the organisation's admins may write (the function asks
 `organisation_is_admin()`). The limits are the same as a profile cover's: the browser
-takes a file of up to 30 MB and re-encodes it to at most 1920px across, and the function
-refuses anything still over 3 MB. The folder keeps at most two, and closing the
+takes a file of up to 20 MB and re-encodes it to at most 1920px across, and the function
+refuses anything still over 1.5 MB. The folder keeps at most two, and closing the
 organisation deletes its cover. The uploading admin needs room under their own 50 MB
 for it, but it is not counted against anyone afterwards; the folder's own limit bounds it.
 
@@ -975,7 +980,7 @@ pointing into `organisation-avatars/<organisation id>/`: a folder of its own, si
 function sweeps a folder down to the one picture its column names, and sharing the
 cover's would delete each whenever the other was replaced. Admins write it the same way
 as the cover; the browser re-encodes it to a 512px square, and the function refuses
-anything over 1 MB. Closing the organisation deletes it with the cover. Until the
+anything over 0.5 MB. Closing the organisation deletes it with the cover. Until the
 function is redeployed it refuses the folder, so uploading a picture fails while
 everything else works.
 

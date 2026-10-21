@@ -8,6 +8,7 @@ import {
   postComment, postsAreShared, readComments, readMyVote, removeImagination, voteImagination,
 } from '../services/imaginations';
 import { DEFAULT_NAME } from '../services/profile';
+import { responsiveImage } from '../lib/responsiveImage';
 
 // ISO slice rather than toLocaleDateString, so a comment's date does not shift with
 // the machine's locale — the same choice AdminImaginations makes for createdAt.
@@ -243,7 +244,7 @@ export function ImaginationPreview({ t, imagination, onClose, accountId = null,
         <div style={{ position: 'relative' }}>
           {preview && (
             <img
-              src={preview}
+              {...responsiveImage(preview, '(max-width: 720px) 100vw, 720px', { eager: true })}
               alt={`Preview of ${title || 'this imagination'}`}
               style={{ width: '100%', display: 'block', borderRadius: '12px 12px 0 0' }}
             />

@@ -12,7 +12,7 @@
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
-import { mediaUrl, preparePhoto, removeMedia, uploadMedia } from './media';
+import { mediaUrl, preparePhoto, removeMedia, uploadPhoto } from './media';
 import { CURRENCY_CODES } from '../lib/currency';
 import { track } from '../analytics';
 import { readProjectOpenRooms } from './rooms';
@@ -411,11 +411,10 @@ export async function updateProject(id, patch) {
  */
 export async function uploadProjectImage(projectId, file) {
   // Resized and stripped of its metadata (location included) before anything is sent.
-  const { blob, ext } = await preparePhoto(file, 'project', 'A project image');
+  const photo = await preparePhoto(file, 'project', 'A project image');
   const supabase = await client();
-  const path = `${PROJECT_IMAGES_FOLDER}/${projectId}/image-${Date.now()}.${ext}`;
   try {
-    return await uploadMedia(supabase, path, blob);
+    return await uploadPhoto(supabase, `${PROJECT_IMAGES_FOLDER}/${projectId}/image-${Date.now()}`, photo);
   } catch (error) {
     throw new Error(`Could not upload the project image: ${error.message}`);
   }
@@ -426,11 +425,11 @@ export async function uploadProjectImage(projectId, file) {
  * add to its galleryPaths with updateProject. Sized like the header image.
  */
 export async function uploadProjectGalleryImage(projectId, file) {
-  const { blob, ext } = await preparePhoto(file, 'project', 'A photo');
+  const photo = await preparePhoto(file, 'project', 'A photo');
   const supabase = await client();
-  const path = `${GALLERY_IMAGES_FOLDER}/${projectId}/photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const base = `${GALLERY_IMAGES_FOLDER}/${projectId}/photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   try {
-    return await uploadMedia(supabase, path, blob);
+    return await uploadPhoto(supabase, base, photo);
   } catch (error) {
     throw new Error(`Could not upload the photo: ${error.message}`);
   }
@@ -798,11 +797,10 @@ export async function markProjectToolConfigured(projectId, tool) {
  * to exist, and the caller has to be its owner or a collaborator.
  */
 export async function uploadSceneImage(projectId, file) {
-  const { blob, ext } = await preparePhoto(file, 'project', 'A base image');
+  const photo = await preparePhoto(file, 'scene', 'A base image');
   const supabase = await client();
-  const path = `${SCENE_IMAGES_FOLDER}/${projectId}/scene-${Date.now()}.${ext}`;
   try {
-    return await uploadMedia(supabase, path, blob);
+    return await uploadPhoto(supabase, `${SCENE_IMAGES_FOLDER}/${projectId}/scene-${Date.now()}`, photo);
   } catch (error) {
     throw new Error(`Could not upload the base image: ${error.message}`);
   }

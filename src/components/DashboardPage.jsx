@@ -15,6 +15,7 @@ import { listNotifications } from '../services/notifications';
 import { byUrgency, nextSteps, projectProgress } from '../lib/projectTimeline';
 import { PALETTE } from '../theme';
 import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
+import { responsiveImage } from '../lib/responsiveImage';
 
 // How many of each the dashboard shows before View All.
 const PROJECTS_SHOWN = 3;
@@ -105,7 +106,8 @@ function DashboardProjectCard({ t, project, onOpen }) {
         aspectRatio: '3 / 4', minHeight: 0, overflow: 'hidden', flexShrink: 0,
         background: tint.c50, color: tint.c700 }}>
         {project.image
-          ? <img src={project.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
+          ? <img {...responsiveImage(project.image, '(max-width: 640px) 100vw, 320px')} alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
           : <Icon name="grid" size={30} stroke={1.8} />}
       </span>
       <span style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 20, width: '100%', boxSizing: 'border-box' }}>

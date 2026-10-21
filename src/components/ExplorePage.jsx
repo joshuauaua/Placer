@@ -28,6 +28,7 @@ import { addPin, createMap, onBackgroundClick, showAreas, stylePin, toLngLat } f
 import { spreadPins } from '../lib/pinSpread';
 import { isSupabaseConfigured, readMapProjects } from '../services/projects';
 import { readMapOrganisations } from '../services/organisations';
+import { responsiveImage } from '../lib/responsiveImage';
 
 // Each layer in its own theme colour: projects blue, the same as their outline
 // everywhere else; case studies orange; organisations purple.
@@ -153,7 +154,8 @@ function PreviewCard({ t, place, accountId, onSignIn, onOpen }) {
       <div style={{ aspectRatio: '16 / 9', background: layer.colour.c50, display: 'flex',
         alignItems: 'center', justifyContent: 'center', color: layer.colour.c700 }}>
         {place.image
-          ? <img src={place.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          ? <img {...responsiveImage(place.image, '(max-width: 640px) 100vw, 400px')} alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           : <Icon name={place.kind === 'organisation' ? 'building' : 'pin'} size={32} stroke={1.8} />}
       </div>
       <div style={{ padding: 20 }}>

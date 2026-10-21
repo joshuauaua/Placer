@@ -19,6 +19,7 @@ import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from '
 import {
   PROJECT_TYPES, PROJECT_TYPE_NAMES, isSupabaseConfigured as projectsAvailable, readVisibleProjects,
 } from '../services/projects';
+import { responsiveImage } from '../lib/responsiveImage';
 
 // The menu's two questions: whose project it is, and what kind (PROJECT_TYPES' keys,
 // named shortly enough for a menu).
@@ -68,7 +69,7 @@ function ProjectRow({ t, project, onOpen, label = null }) {
       <span style={{ width: 44, height: 44, borderRadius: 12, flex: '0 0 auto', overflow: 'hidden',
         background: t.surfaceAlt, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {project.image
-          ? <img src={project.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ? <img {...responsiveImage(project.image, '44px')} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           : <Icon name="grid" size={20} stroke={2} />}
       </span>
       <span style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>

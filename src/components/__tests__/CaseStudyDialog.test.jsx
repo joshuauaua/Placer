@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { THEME } from '../../theme';
+import { photoUploads } from '../../lib/responsiveImage';
 
 const insert = vi.fn();
 const from = vi.fn(() => ({ insert }));
@@ -14,6 +15,11 @@ vi.mock('../../services/media', async (importOriginal) => ({
   ...(await importOriginal()),
   preparePhoto: vi.fn(async () => ({ blob: new Blob(['x']), ext: 'webp' })),
   uploadMedia: (...args) => uploadMedia(...args),
+  uploadPhoto: async (supabase, base, photo) => {
+    let path = null;
+    for (const each of photoUploads(base, photo)) path = await uploadMedia(supabase, each.path, each.blob);
+    return path;
+  },
 }));
 
 import { CaseStudyDialog } from '../CaseStudyDialog';

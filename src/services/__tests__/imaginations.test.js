@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
+import { photoUploads } from '../../lib/responsiveImage';
 
 /*
  * Two fakes, because this module has two stores to choose between.
@@ -39,6 +40,11 @@ const mediaUrl = vi.fn((path) => (path ? `https://media.example/${path}` : null)
 
 vi.mock('../media', () => ({
   uploadMedia: (...a) => upload(...a),
+  uploadPhoto: async (supabase, base, photo) => {
+    let path = null;
+    for (const each of photoUploads(base, photo)) path = await upload(supabase, each.path, each.blob);
+    return path;
+  },
   removeMedia: (...a) => remove(...a),
   mediaUrl: (...a) => mediaUrl(...a),
 }));

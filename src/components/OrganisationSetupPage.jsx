@@ -171,7 +171,7 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
         </Field>
 
         <Field t={t} label="Profile picture"
-          hint="The round picture beside the organisation's name — a logo works well. It is cropped to a square, resized to 512 pixels and saved without its location data; the file you pick can be up to 30 MB. Without one, its initials are shown. Optional.">
+          hint="The round picture beside the organisation's name — a logo works well. It is cropped to a square, resized to 512 pixels and saved without its location data; the file you pick can be up to 20 MB. Without one, its initials are shown. Optional.">
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <Avatar name={name.trim() || 'Organisation'} size={72} photo={shownAvatar} />
             {editing ? (
@@ -234,7 +234,7 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
         </Field>
 
         <Field t={t} label="Cover image"
-          hint="The wide picture across the top of the public page. A landscape photo works best. It is resized to at most 1920 pixels across and saved without its location data; the file you pick can be up to 30 MB, and the resized picture has to come to 3 MB or less. Optional.">
+          hint="The wide picture across the top of the public page. A landscape photo works best. It is resized to at most 1920 pixels across and saved without its location data; the file you pick can be up to 20 MB, and the resized picture has to come to 1.5 MB or less. Optional.">
           <div style={{ height: 160, borderRadius: 12, marginBottom: 14, border: `1px solid ${t.line}`,
             background: shownCover ? `center / cover no-repeat url("${shownCover}")` : t.surfaceAlt,
             display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

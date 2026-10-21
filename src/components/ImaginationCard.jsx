@@ -4,6 +4,7 @@
 
 import { Icon } from './Icon';
 import { CatTag, Vote } from './UI';
+import { responsiveImage } from '../lib/responsiveImage';
 
 export function ImaginationCard({ t, imagination, onOpen }) {
   const { title, cat, blurb, loc, preview, upvotes = 0, comments = [] } = imagination;
@@ -27,7 +28,7 @@ export function ImaginationCard({ t, imagination, onOpen }) {
         e.currentTarget.style.boxShadow = t.shadow;
       }}>
       {preview && (
-        <img src={preview} alt={`Preview of ${title || 'this imagination'}`}
+        <img {...responsiveImage(preview, '(max-width: 640px) 100vw, 360px')} alt={`Preview of ${title || 'this imagination'}`}
           style={{ width: '100%', height: 170, objectFit: 'cover', display: 'block' }} />
       )}
       <div style={{ padding: 20, display: 'flex', gap: 14 }}>

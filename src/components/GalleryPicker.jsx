@@ -28,6 +28,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Icon } from './Icon';
 import { IMAGE_ACCEPT } from './ImagePicker';
+import { responsiveImage } from '../lib/responsiveImage';
 
 // How long a photo's caption can be.
 export const CAPTION_MAX_LENGTH = 200;
@@ -55,7 +56,7 @@ function Photo({ t, photo, index, count, busy, caption, onCaption, onStandalone,
       <div {...attributes} {...listeners} aria-label={`Photo ${index + 1} of ${count}, drag to reorder`}
         style={{ borderRadius: 10, cursor: busy ? 'default' : (isDragging ? 'grabbing' : 'grab'),
           touchAction: 'none', boxShadow: isDragging ? '0 8px 24px rgba(0, 0, 0, 0.18)' : 'none' }}>
-        <img src={photo.url} alt={`Photo ${index + 1}`} draggable={false} style={{ display: 'block', width: '100%',
+        <img {...responsiveImage(photo.url, '(max-width: 640px) 50vw, 200px')} alt={`Photo ${index + 1}`} draggable={false} style={{ display: 'block', width: '100%',
           aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: 10, border: `1px solid ${t.line}` }} />
       </div>
       <div style={{ display: 'flex', gap: 6 }}>

@@ -11,7 +11,7 @@
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
 import { normaliseWebsite } from './auth';
-import { mediaUrl, preparePhoto, removeMedia, uploadMedia } from './media';
+import { mediaUrl, preparePhoto, removeMedia, uploadPhoto } from './media';
 import { track } from '../analytics';
 
 export const ORGANISATIONS_TABLE = 'organisations';
@@ -203,14 +203,13 @@ export async function updateOrganisation(id, patch) {
  * updateOrganisation({ coverPath }). The organisation has to exist already, since its
  * id names the folder, and the caller has to be one of its admins. Re-encoded first
  * like a profile cover — at most 1920px across, without its metadata — and the media
- * function refuses anything still over 3 MB.
+ * function refuses anything still over 1.5 MB.
  */
 export async function uploadOrganisationCover(organisationId, file) {
-  const { blob, ext } = await preparePhoto(file, 'cover', 'A cover image');
+  const photo = await preparePhoto(file, 'cover', 'A cover image');
   const supabase = await client();
-  const path = `${ORGANISATION_COVERS_FOLDER}/${organisationId}/cover-${Date.now()}.${ext}`;
   try {
-    return await uploadMedia(supabase, path, blob);
+    return await uploadPhoto(supabase, `${ORGANISATION_COVERS_FOLDER}/${organisationId}/cover-${Date.now()}`, photo);
   } catch (error) {
     throw new Error(`Could not upload the cover image: ${error.message}`);
   }
@@ -232,14 +231,13 @@ export async function removeOrganisationCoverFile(path) {
  * updateOrganisation({ avatarPath }). Like the cover, the organisation has to exist
  * and the caller has to be one of its admins. Re-encoded like a person's profile
  * photo — a 512px square, without its metadata — and the media function refuses
- * anything still over 1 MB (supabase/organisation-avatars.sql).
+ * anything still over 0.5 MB (supabase/organisation-avatars.sql).
  */
 export async function uploadOrganisationAvatar(organisationId, file) {
-  const { blob, ext } = await preparePhoto(file, 'avatar', 'A profile picture');
+  const photo = await preparePhoto(file, 'avatar', 'A profile picture');
   const supabase = await client();
-  const path = `${ORGANISATION_AVATARS_FOLDER}/${organisationId}/avatar-${Date.now()}.${ext}`;
   try {
-    return await uploadMedia(supabase, path, blob);
+    return await uploadPhoto(supabase, `${ORGANISATION_AVATARS_FOLDER}/${organisationId}/avatar-${Date.now()}`, photo);
   } catch (error) {
     throw new Error(`Could not upload the profile picture: ${error.message}`);
   }

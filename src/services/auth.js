@@ -19,7 +19,7 @@
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
-import { mediaUrl, preparePhoto, removeMedia, uploadMedia } from './media';
+import { mediaUrl, preparePhoto, removeMedia, uploadPhoto } from './media';
 import { track } from '../analytics';
 
 export const PROFILES_TABLE = 'profiles';
@@ -311,16 +311,15 @@ export async function saveOwnProfile({ name, bio, location, locationPoint, accou
 // One upload for both of a profile's pictures, which differ only in folder and name.
 async function uploadProfileImage(file, { folder, prefix, preset, what, noun }) {
   // Resized and stripped of its metadata (location included) before anything is sent.
-  const { blob, ext } = await preparePhoto(file, preset, what);
+  const photo = await preparePhoto(file, preset, what);
 
   const supabase = await client();
   const { data: session } = await supabase.auth.getSession();
   const userId = session?.session?.user?.id;
   if (!userId) throw new Error(`Sign in to upload a ${noun}.`);
 
-  const path = `${folder}/${userId}/${prefix}-${Date.now()}.${ext}`;
   try {
-    return await uploadMedia(supabase, path, blob);
+    return await uploadPhoto(supabase, `${folder}/${userId}/${prefix}-${Date.now()}`, photo);
   } catch (error) {
     throw new Error(`Could not upload your ${noun}: ${error.message}`);
   }

@@ -11,18 +11,35 @@
  *   below a picture is typically 40–300 KB, which is what keeps the R2 bucket inside
  *   its free tier (supabase/README.md section 14).
  *
+ * A preset with `responsive` set is also encoded at the narrower widths in
+ * lib/responsiveImage.js, so a phone can be sent a copy its own size.
+ *
  * This is not a security control — anything here can be skipped by someone calling the
  * media function directly. The function's own byte check and size limits are what
  * enforce; this is what makes honest uploads small and clean.
  */
 
-/** How each kind of picture is sized. `square` centre-crops, for the avatar circle. */
+import { copyWidths } from './responsiveImage';
+
+/**
+ * How each kind of picture is sized. `square` centre-crops, for the avatar circle;
+ * `responsive` adds the smaller copies (lib/responsiveImage.js). A scene is only ever
+ * drawn whole, on the Idea Visualizer's stage, and a case study submission's picture
+ * is never shown on a page at all, so neither has them.
+ */
 export const IMAGE_PRESETS = {
   avatar: { maxSide: 512, square: true, quality: 0.85 },
-  cover: { maxSide: 1920, quality: 0.82 },
-  project: { maxSide: 1600, quality: 0.82 },
-  preview: { maxSide: 1920, quality: 0.85 },
+  cover: { maxSide: 1920, quality: 0.82, responsive: true },
+  project: { maxSide: 1600, quality: 0.82, responsive: true },
+  scene: { maxSide: 1600, quality: 0.82 },
+  submission: { maxSide: 1600, quality: 0.82 },
+  preview: { maxSide: 1920, quality: 0.85, responsive: true },
 };
+
+// Past this many pixels a picture is refused before it is drawn: decoding a 100 MP
+// panorama takes more memory than a phone browser will give a tab. Any camera photo
+// is under it, a 48 MP phone sensor's included.
+export const MAX_PIXELS = 50_000_000;
 
 const EXTENSIONS = { 'image/webp': 'webp', 'image/jpeg': 'jpg' };
 
@@ -58,7 +75,9 @@ export function fitTo(width, height, { maxSide, square = false }) {
 
 /**
  * Re-encode `source` (a File or Blob) for `preset`, one of IMAGE_PRESETS. Resolves to
- * `{ blob, type, ext }`: WebP where the browser can write it, else JPEG.
+ * `{ blob, type, ext, width, copies }`: WebP where the browser can write it, else JPEG,
+ * `width` wide, and `copies` its smaller copies as [{ width, blob }] — none for a
+ * preset that is not `responsive`.
  */
 export async function encodeImage(source, preset) {
   let bitmap;
@@ -69,17 +88,22 @@ export async function encodeImage(source, preset) {
   } catch {
     throw new Error('That file could not be read as a picture. Try a JPEG, PNG or WebP.');
   }
+  if (bitmap.width * bitmap.height > MAX_PIXELS) {
+    bitmap.close?.();
+    throw new Error('That picture is too large to use. Try one under 50 megapixels.');
+  }
 
   const box = fitTo(bitmap.width, bitmap.height, preset);
-  const draw = (background) => {
-    const canvas = makeCanvas(box.width, box.height);
+  const draw = (background, width = box.width) => {
+    const height = Math.max(1, Math.round(box.height * (width / box.width)));
+    const canvas = makeCanvas(width, height);
     const ctx = canvas.getContext('2d');
     if (background) {
       ctx.fillStyle = background;
-      ctx.fillRect(0, 0, box.width, box.height);
+      ctx.fillRect(0, 0, width, height);
     }
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(bitmap, box.sx, box.sy, box.sw, box.sh, 0, 0, box.width, box.height);
+    ctx.drawImage(bitmap, box.sx, box.sy, box.sw, box.sh, 0, 0, width, height);
     return canvas;
   };
 
@@ -87,9 +111,18 @@ export async function encodeImage(source, preset) {
     let blob = await canvasToBlob(draw(null), 'image/webp', preset.quality);
     // A browser that cannot write WebP hands back PNG instead, without saying so.
     // JPEG then — on white, since JPEG has no transparency and would turn it black.
-    if (blob.type !== 'image/webp') blob = await canvasToBlob(draw('#FFFFFF'), 'image/jpeg', preset.quality);
+    const background = blob.type === 'image/webp' ? null : '#FFFFFF';
+    if (background) blob = await canvasToBlob(draw(background), 'image/jpeg', preset.quality);
     if (!EXTENSIONS[blob.type]) throw new Error('This browser could not prepare the picture for upload.');
-    return { blob, type: blob.type, ext: EXTENSIONS[blob.type] };
+
+    // Each copy in the picture's own format, so their names differ only in width.
+    const copies = [];
+    for (const width of preset.responsive ? copyWidths(box.width) : []) {
+      const copy = await canvasToBlob(draw(background, width), blob.type, preset.quality);
+      if (copy.type !== blob.type) throw new Error('This browser could not prepare the picture for upload.');
+      copies.push({ width, blob: copy });
+    }
+    return { blob, type: blob.type, ext: EXTENSIONS[blob.type], width: box.width, copies };
   } finally {
     bitmap.close?.();
   }
