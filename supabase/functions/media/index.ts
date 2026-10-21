@@ -12,6 +12,12 @@
 //       Each account may keep 50 MB in all (see usage). Replacing a cover, a profile
 //       photo or a project image also clears out the older ones (see sweep).
 //   POST, JSON { action: 'delete', path }              ->  { ok: true }
+//       Deletes the picture's smaller copies with it.
+//
+// A picture may come with smaller copies for smaller screens, uploaded beside it
+// first: 'image-1729500000000-w1600.webp' has its copies at '-w1080' and '-w640'
+// (src/lib/responsiveImage.js). Each is an upload like any other here, checked and
+// counted the same; they are only ever kept and deleted together (see family).
 //
 // This is what the storage.objects policies used to do. A key is always
 // '<folder>/<owner id>/<file>'. For previews, covers and profile photos the owner is
@@ -43,7 +49,8 @@ const QUOTA_BYTES = 50 * MB;
 // current picture — which column says which picture that is, so sweep can keep it.
 //
 // The limits are for pictures already re-encoded in the browser (src/lib/imageEncode.js):
-// a 512px avatar is ~40 KB, a 1920px cover a few hundred. They are ceilings for anyone
+// a 512px avatar is ~40 KB, a 1920px cover a few hundred — up to a megabyte or so as
+// the JPEG a browser that cannot write WebP falls back to. They are ceilings for anyone
 // who skips that step, not sizes anyone honest comes near. Previews may still arrive as
 // the PNG the stage exported, when a browser cannot write WebP, so they get the most.
 type Folder = {
@@ -54,30 +61,30 @@ type Folder = {
 };
 const FOLDERS: Record<string, Folder> = {
   previews: { types: PHOTO_TYPES, maxBytes: 5 * MB, owner: 'account' },
-  covers: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'account',
+  covers: { types: PHOTO_TYPES, maxBytes: 1.5 * MB, owner: 'account',
     current: { table: 'profiles', column: 'cover_path' } },
-  avatars: { types: PHOTO_TYPES, maxBytes: 1 * MB, owner: 'account',
+  avatars: { types: PHOTO_TYPES, maxBytes: 0.5 * MB, owner: 'account',
     current: { table: 'profiles', column: 'avatar_path' } },
-  projects: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'project',
+  projects: { types: PHOTO_TYPES, maxBytes: 1.5 * MB, owner: 'project',
     current: { table: 'projects', column: 'image_path' } },
   // Idea Visualizer's base image for a project (supabase/project-tool-config.sql).
   // Its own folder, since `projects` is swept down to the cover. No `current`: the key
   // is inside project_tools.config, and the page deletes the one it replaces.
-  scenes: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'project' },
+  scenes: { types: PHOTO_TYPES, maxBytes: 1.5 * MB, owner: 'project' },
   // The photos on a project's page beside its header image
   // (supabase/project-gallery.sql). Its own folder for the same reason as `scenes`;
   // the keys are in projects.gallery_paths, and the page deletes the one it removes.
-  gallery: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'project' },
-  organisations: { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'organisation',
+  gallery: { types: PHOTO_TYPES, maxBytes: 1.5 * MB, owner: 'project' },
+  organisations: { types: PHOTO_TYPES, maxBytes: 1.5 * MB, owner: 'organisation',
     current: { table: 'organisations', column: 'cover_path' } },
   // An organisation's profile picture (supabase/organisation-avatars.sql). Its own
   // folder, since `organisations` is swept down to the cover.
-  'organisation-avatars': { types: PHOTO_TYPES, maxBytes: 1 * MB, owner: 'organisation',
+  'organisation-avatars': { types: PHOTO_TYPES, maxBytes: 0.5 * MB, owner: 'organisation',
     current: { table: 'organisations', column: 'avatar_path' } },
   // A logo or picture sent with a case study submission
   // (supabase/case-study-submissions.sql). The submission row is never readable from
   // the browser, so there is no `current` to keep; each counts against the account.
-  'case-studies': { types: PHOTO_TYPES, maxBytes: 3 * MB, owner: 'account' },
+  'case-studies': { types: PHOTO_TYPES, maxBytes: 1.5 * MB, owner: 'account' },
 };
 const ACCOUNT_FOLDERS = Object.keys(FOLDERS).filter((name) => FOLDERS[name].owner === 'account');
 const PROJECT_FOLDERS = Object.keys(FOLDERS).filter((name) => FOLDERS[name].owner === 'project');
@@ -114,6 +121,16 @@ function parseKey(path: unknown) {
 }
 
 type Key = NonNullable<ReturnType<typeof parseKey>>;
+
+const SIZED = /-w\d+\.(jpg|png|webp)$/;
+
+/**
+ * The picture a key belongs to: for a picture with copies, its key without the width
+ * and extension, which it and every copy of it share; for any other, the key itself.
+ */
+function family(path: string) {
+  return SIZED.test(path) ? path.replace(SIZED, '') : path;
+}
 type Caller = { id: string; supabase: SupabaseClient };
 
 /**
@@ -201,8 +218,8 @@ async function listObjects({ r2, bucketUrl }: Store, prefix: string) {
  * for a project's — so a collaborator adding a project image uses the owner's room,
  * the same as the owner adding it. An organisation has no single owner, so the admin
  * uploading its cover needs the room for it; the cover itself is not counted towards
- * anyone afterwards, and the folder is bounded instead — one 3 MB picture, two for
- * the moment one replaces the other (sweep).
+ * anyone afterwards, and the folder is bounded instead — one 1.5 MB picture and its
+ * copies, two for the moment one replaces the other (sweep).
  */
 async function chargedAccount(key: Key, caller: Caller) {
   if (key.folder.owner === 'account') return key.ownerId;
@@ -230,14 +247,17 @@ async function usage(store: Store, caller: Caller, accountId: string, replacing:
 
 /**
  * Delete every picture in this folder except the one just uploaded and the one its
- * row points at right now. The row is only switched to the new picture after this
- * returns, so keeping the current one means a failed save never leaves it pointing
- * at nothing — and whatever that failure leaves behind is swept up by the next
- * upload. So a profile or project holds at most two of each, and usually one.
+ * row points at right now, each with its copies. The row is only switched to the new
+ * picture after this returns, so keeping the current one means a failed save never
+ * leaves it pointing at nothing — and whatever that failure leaves behind is swept up
+ * by the next upload. So a profile or project holds at most two of each, and usually
+ * one. Keeping by family also keeps the copies of a picture whose own upload comes
+ * after them.
  */
 async function sweep(store: Store, key: Key, keep: Set<string>) {
+  const families = new Set([...keep].map(family));
   for (const { key: other } of await listObjects(store, `${key.name}/${key.ownerId}/`)) {
-    if (keep.has(other) || !parseKey(other)) continue;
+    if (families.has(family(other)) || !parseKey(other)) continue;
     await store.r2.fetch(`${store.bucketUrl}/${other}`, { method: 'DELETE' });
   }
 }
@@ -332,9 +352,18 @@ Deno.serve(async (req) => {
   }
 
   if (action === 'delete') {
-    const res = await store.r2.fetch(`${store.bucketUrl}/${path}`, { method: 'DELETE' });
-    // 404 is fine: the file being gone already is what was asked for.
-    if (!res.ok && res.status !== 404) return reply(502, { error: `R2 refused the delete (${res.status}).` });
+    // The picture and its copies, which share its family and its folder.
+    const doomed = new Set([path as string]);
+    if (SIZED.test(path)) {
+      for (const { key: other } of await listObjects(store, `${family(path)}-w`)) {
+        if (family(other) === family(path) && parseKey(other)) doomed.add(other);
+      }
+    }
+    for (const each of doomed) {
+      const res = await store.r2.fetch(`${store.bucketUrl}/${each}`, { method: 'DELETE' });
+      // 404 is fine: the file being gone already is what was asked for.
+      if (!res.ok && res.status !== 404) return reply(502, { error: `R2 refused the delete (${res.status}).` });
+    }
     return reply(200, { ok: true });
   }
 

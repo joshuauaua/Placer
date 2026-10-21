@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
+import { photoUploads } from '../../lib/responsiveImage';
 
 /*
  * The Supabase SDK is faked whole, so no client is ever constructed and no request is
@@ -49,6 +50,11 @@ vi.mock('../../lib/imageEncode', async (importOriginal) => ({
 vi.mock('../media', async (importOriginal) => ({
   ...(await importOriginal()),
   uploadMedia: (...a) => upload(...a),
+  uploadPhoto: async (supabase, base, photo) => {
+    let path = null;
+    for (const each of photoUploads(base, photo)) path = await upload(supabase, each.path, each.blob);
+    return path;
+  },
   removeMedia: (...a) => remove(...a),
   mediaUrl: (...a) => mediaUrl(...a),
 }));
@@ -261,7 +267,7 @@ describe('cover images', () => {
     upload.mockImplementation((supabase, path) => Promise.resolve(path));
 
     await expect(auth.uploadCover(file('image/jpeg', 12 * 1024 * 1024))).resolves.toMatch(/^covers\//);
-    await expect(auth.uploadCover(file('image/jpeg', 31 * 1024 * 1024))).rejects.toThrow(/30 MB/);
+    await expect(auth.uploadCover(file('image/jpeg', 21 * 1024 * 1024))).rejects.toThrow(/20 MB/);
   });
 });
 

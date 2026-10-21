@@ -3,6 +3,7 @@
  * the name — the Projects page's "Your project". */
 
 import { ARROW_ITEM } from '../lib/arrowKeys';
+import { responsiveImage } from '../lib/responsiveImage';
 
 export function ProjectCard({ t, project, onOpen, label = null }) {
   return (
@@ -14,7 +15,7 @@ export function ProjectCard({ t, project, onOpen, label = null }) {
       display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
       {/* Edge to edge across the top, so the negative margins undo the card's padding. */}
       {project.image && (
-        <img src={project.image} alt="" style={{ display: 'block', width: 'calc(100% + 40px)',
+        <img {...responsiveImage(project.image, '(max-width: 640px) 100vw, 360px')} alt="" style={{ display: 'block', width: 'calc(100% + 40px)',
           margin: '-20px -20px 16px', flexShrink: 0, aspectRatio: '16 / 9', objectFit: 'cover' }} />
       )}
       {label && (

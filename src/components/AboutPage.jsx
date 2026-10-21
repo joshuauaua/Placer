@@ -7,16 +7,21 @@
  * override an inline style.
  */
 
-import malmoPhoto from '../assets/about-malmo.jpg';
-import teamPhoto from '../assets/about-team.jpg';
-import logoAks from '../assets/logo-aks.png';
-import logoStpln from '../assets/logo-stpln.png';
-import logoSwedishInstitute from '../assets/logo-swedish-institute.png';
+import malmoPhoto from '../assets/about-malmo.webp';
+import malmoPhotoSmall from '../assets/about-malmo-800.webp';
+import teamPhoto from '../assets/about-team.webp';
+import teamPhotoSmall from '../assets/about-team-800.webp';
+import logoAks from '../assets/logo-aks.webp';
+import logoStpln from '../assets/logo-stpln.webp';
+import logoSwedishInstitute from '../assets/logo-swedish-institute.webp';
 import placemakingTrendsPhoto from '../assets/placemaking-trends-cover.webp';
+import placemakingTrendsPhotoSmall from '../assets/placemaking-trends-cover-800.webp';
 import streetBench from '../assets/street-bench.png';
-import streetBicycle from '../assets/street-bicycle.png';
-import streetPlanter from '../assets/street-planter-trough.png';
+import streetBicycle from '../assets/street-bicycle.webp';
+import streetPlanter from '../assets/street-planter-trough.webp';
 import userLabsPhoto from '../assets/user-labs.webp';
+import userLabsPhotoSmall from '../assets/user-labs-800.webp';
+import { bundledImage } from '../lib/responsiveImage';
 import { PhotoSplit, PhotoSplitHeading } from './PhotoSplit';
 
 const PILLARS = [
@@ -39,7 +44,7 @@ const PILLARS = [
 
 const FEATURES = [
   {
-    image: placemakingTrendsPhoto,
+    image: bundledImage(placemakingTrendsPhotoSmall, placemakingTrendsPhoto, '(max-width: 1023px) 100vw, 50vw'),
     alt: 'A deck of cards clipped to a plywood board beside a street map dotted with pins, from a workshop.',
     kicker: 'User Labs',
     title: 'Built with the people who will use it',
@@ -49,7 +54,7 @@ const FEATURES = [
     ],
   },
   {
-    image: malmoPhoto,
+    image: bundledImage(malmoPhotoSmall, malmoPhoto, '(max-width: 1023px) 100vw, 50vw'),
     alt: 'A small group talking on a sunny street in Malmö, beside red-brick buildings and a large tree.',
     kicker: 'Research',
     title: 'Grounded in how cities work today',
@@ -90,6 +95,7 @@ export function AboutPage({ t }) {
       <PhotoSplit
         t={t}
         src={userLabsPhoto}
+        srcSet={bundledImage(userLabsPhotoSmall, userLabsPhoto).srcSet}
         alt="People at a User Labs session pinning notes to a map and sketching on wooden boards outdoors."
       >
         <PhotoSplitHeading
@@ -129,7 +135,7 @@ export function AboutPage({ t }) {
           style={{ borderTop: `1px solid ${t.line}` }}
         >
           <div className="placer-about-feature-media">
-            <img src={image} alt={alt} />
+            <img {...image} loading="lazy" alt={alt} />
           </div>
           <div>
             <Kicker t={t}>{kicker}</Kicker>
@@ -146,7 +152,8 @@ export function AboutPage({ t }) {
       <section className="placer-about-section placer-about-team" style={{ borderTop: `1px solid ${t.line}` }}>
         <img
           className="placer-about-team-photo"
-          src={teamPhoto}
+          {...bundledImage(teamPhotoSmall, teamPhoto, '30vw')}
+          loading="lazy"
           alt="A Polaroid-style photo of the people behind PLACER gathered around a table at a restaurant, smiling towards the camera."
         />
         <Kicker t={t}>Who is behind it</Kicker>

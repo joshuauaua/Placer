@@ -101,6 +101,26 @@ describe('uploading', () => {
     await expect(media.uploadMedia(supabase, 'covers/user-1/c.png', blob)).rejects.toThrow(/VITE_MEDIA_URL/);
     expect(invoke).not.toHaveBeenCalled();
   });
+
+  it("uploads a picture's smaller copies first and resolves to the picture's own key", async () => {
+    await load();
+    const small = new Blob(['640']);
+
+    await expect(media.uploadPhoto(supabase, 'projects/p-1/image-1',
+      { blob, ext: 'webp', width: 1600, copies: [{ width: 640, blob: small }] }))
+      .resolves.toBe('projects/p-1/image-1-w1600.webp');
+    expect(invoke.mock.calls.map(([, options]) => options.headers['x-media-path']))
+      .toEqual(['projects/p-1/image-1-w640.webp', 'projects/p-1/image-1-w1600.webp']);
+  });
+
+  it('does not upload the picture when one of its copies is refused', async () => {
+    await load();
+    invoke.mockResolvedValueOnce({ data: null, error: { message: 'Edge Function returned a non-2xx status code' } });
+
+    await expect(media.uploadPhoto(supabase, 'projects/p-1/image-1',
+      { blob, ext: 'webp', width: 1600, copies: [{ width: 640, blob: new Blob(['640']) }] })).rejects.toThrow();
+    expect(invoke).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('removing', () => {

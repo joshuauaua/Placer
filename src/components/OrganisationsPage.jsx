@@ -19,6 +19,7 @@ import { PageHeader } from './PageHeader';
 import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from './GalleryToolbar';
 import { isSupabaseConfigured, readAllOrganisations } from '../services/organisations';
 import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
+import { responsiveImage } from '../lib/responsiveImage';
 
 const SHOW = [
   { id: null, name: 'All organisations' },
@@ -75,7 +76,7 @@ function OrganisationCard({ t, organisation, yours, onOpen }) {
       boxShadow: t.shadow, cursor: 'pointer', fontFamily: 'var(--placer-font)', overflow: 'hidden' }}>
       {/* The negative margins undo the card's padding. */}
       {organisation.cover && (
-        <img src={organisation.cover} alt="" style={{ display: 'block', width: 'calc(100% + 40px)',
+        <img {...responsiveImage(organisation.cover, '(max-width: 640px) 100vw, 360px')} alt="" style={{ display: 'block', width: 'calc(100% + 40px)',
           margin: '-20px -20px 16px', aspectRatio: '16 / 9', objectFit: 'cover' }} />
       )}
       {yours && <span style={{ display: 'block', marginBottom: 12 }}><YoursLabel t={t} /></span>}
@@ -119,7 +120,7 @@ function OrganisationRow({ t, organisation, yours, onOpen }) {
       <span style={{ width: 44, height: 44, borderRadius: 12, flex: '0 0 auto', overflow: 'hidden',
         background: t.surfaceAlt, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {organisation.avatar || organisation.cover
-          ? <img src={organisation.avatar || organisation.cover} alt=""
+          ? <img {...responsiveImage(organisation.avatar || organisation.cover, '44px')} alt=""
             style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           : <Icon name="building" size={20} stroke={2} />}
       </span>

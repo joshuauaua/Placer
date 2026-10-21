@@ -18,11 +18,13 @@
  */
 
 import { encodeImage, IMAGE_PRESETS } from '../lib/imageEncode';
+import { photoUploads } from '../lib/responsiveImage';
 
-// How big a picked photo may be *before* it is re-encoded. Generous on purpose — it is
-// a phone photo straight off the camera — since what gets uploaded is the far smaller
-// re-encoded copy (lib/imageEncode.js), and the media function's limits apply to that.
-export const PICKED_MAX_BYTES = 30 * 1024 * 1024;
+// How big a picked photo may be *before* it is re-encoded: room for a phone photo
+// straight off the camera, a 48 MP one included, since what gets uploaded is the far
+// smaller re-encoded copy (lib/imageEncode.js), and the media function's limits apply
+// to that.
+export const PICKED_MAX_BYTES = 20 * 1024 * 1024;
 
 /**
  * Throw a readable sentence if `file` is not a picture this app will take. `what`
@@ -34,18 +36,19 @@ export function checkPickedImage(file, what) {
   if (!type.startsWith('image/') || type === 'image/svg+xml') {
     throw new Error(`${what} has to be a photo — a JPEG, PNG or WebP, for example.`);
   }
-  if (file.size > PICKED_MAX_BYTES) throw new Error(`${what} can be at most 30 MB.`);
+  if (file.size === 0) throw new Error(`${what} is an empty file.`);
+  if (file.size > PICKED_MAX_BYTES) throw new Error(`${what} can be at most 20 MB.`);
 }
 
 /**
  * Check a picked photo, then re-encode it for `preset` (a key of IMAGE_PRESETS):
- * scaled, stripped of its metadata, WebP where the browser can. Resolves to
- * `{ blob, ext }`, ready for uploadMedia.
+ * scaled, stripped of its metadata, WebP where the browser can, with its smaller
+ * copies if the preset has them. Resolves to encodeImage's `{ blob, ext, width,
+ * copies }`, ready for uploadPhoto.
  */
 export async function preparePhoto(file, preset, what) {
   checkPickedImage(file, what);
-  const { blob, ext } = await encodeImage(file, IMAGE_PRESETS[preset]);
-  return { blob, ext };
+  return encodeImage(file, IMAGE_PRESETS[preset]);
 }
 
 /** Whether pictures have somewhere to be shown from. */
@@ -96,7 +99,21 @@ export async function uploadMedia(supabase, path, blob) {
   return path;
 }
 
-/** Delete the file at `path`. Throws on failure; callers decide whether that matters. */
+/**
+ * Upload a picture from preparePhoto (or encodeImage) under `base` — its key without
+ * the extension, 'projects/<id>/image-1729500000000' — with its smaller copies first
+ * (photoUploads, lib/responsiveImage.js), and resolve to the picture's key.
+ */
+export async function uploadPhoto(supabase, base, photo) {
+  let path = null;
+  for (const each of photoUploads(base, photo)) path = await uploadMedia(supabase, each.path, each.blob);
+  return path;
+}
+
+/**
+ * Delete the file at `path`, and its smaller copies with it (the media function knows
+ * them by name). Throws on failure; callers decide whether that matters.
+ */
 export async function removeMedia(supabase, path) {
   if (!path) return;
   await callMedia(supabase, { body: { action: 'delete', path } });

@@ -68,6 +68,7 @@ import { ProjectPeople } from './ProjectPeople';
 import { ProjectPosts } from './ProjectPosts';
 import { ProjectGallery } from './ProjectGallery';
 import { PALETTE } from '../theme';
+import { responsiveImage } from '../lib/responsiveImage';
 
 // The tool whose results are the project's imaginations (toolkit/tools.js).
 const REIMAGINE_TOOL = 'reimagine-a-space';
@@ -109,10 +110,10 @@ function ImagePlaceholder({ t, frame }) {
  * The project's uploaded image, else its area on the map, else the placeholder — in
  * the same frame every way, so the page keeps its shape whichever it has.
  */
-function ProjectImage({ t, project, size, frame }) {
+function ProjectImage({ t, project, size, frame, sizes, eager = false }) {
   if (project.image) {
     return (
-      <img src={project.image} alt="" style={{ display: 'block', borderRadius: 16,
+      <img {...responsiveImage(project.image, sizes, { eager })} alt="" style={{ display: 'block', borderRadius: 16,
         border: `1px solid ${t.line}`, objectFit: 'cover', ...frame }} />
     );
   }
@@ -129,7 +130,7 @@ function ImaginationCard({ t, imagination }) {
   return (
     <article className="placer-card" style={{ padding: 0, overflow: 'hidden' }}>
       {preview && (
-        <img src={preview} alt={`Preview of ${title || 'this imagination'}`}
+        <img {...responsiveImage(preview, '(max-width: 640px) 100vw, 360px')} alt={`Preview of ${title || 'this imagination'}`}
           style={{ width: '100%', height: 150, objectFit: 'cover', display: 'block' }} />
       )}
       <div style={{ padding: 16, display: 'flex', gap: 12 }}>
@@ -187,7 +188,7 @@ function RelatedCard({ t, project, onOpen }) {
     <button onClick={onOpen} className="placer-card"
       style={{ textAlign: 'left', cursor: 'pointer', padding: 0, overflow: 'hidden', display: 'flex',
         flexDirection: 'column', fontFamily: 'var(--placer-font)', color: t.ink }}>
-      <ProjectImage t={t} project={project} size={THUMB_SIZE} frame={THUMB_FRAME} />
+      <ProjectImage t={t} project={project} size={THUMB_SIZE} frame={THUMB_FRAME} sizes={'(max-width: 640px) 100vw, 360px'} />
       <span style={{ display: 'block', padding: 16 }}>
         <span className="placer-caption" style={{ display: 'block', color: t.inkDim, marginBottom: 4 }}>
           {dateLabel(project)}
@@ -593,7 +594,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         <figure className="placer-project-photo">
           <a href={section.photo.url} target="_blank" rel="noreferrer"
             aria-label={`${section.photo.caption || 'Photo'}, full size`}>
-            <img src={section.photo.url} alt="" loading="lazy"
+            <img {...responsiveImage(section.photo.url, '(max-width: 920px) 100vw, 920px')} alt=""
               style={{ border: `1px solid ${t.line}` }} />
           </a>
           {section.photo.caption && (
@@ -735,7 +736,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
 
         <div className="placer-project-header">
           <div className="placer-project-hero">
-            <ProjectImage t={t} project={project} size={HERO_SIZE} frame={HERO_FRAME} />
+            <ProjectImage t={t} project={project} size={HERO_SIZE} frame={HERO_FRAME} sizes={'(max-width: 920px) 100vw, 920px'} eager />
           </div>
           <div className="placer-label placer-project-meta" style={{ display: 'flex', flexWrap: 'wrap',
             alignItems: 'center', gap: '8px 20px', color: t.inkDim }}>

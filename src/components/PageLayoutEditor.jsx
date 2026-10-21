@@ -21,6 +21,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Icon } from './Icon';
 import { SECTION_TITLE_MAX } from '../lib/projectSections';
+import { responsiveImage } from '../lib/responsiveImage';
 
 /** What kind of section a row is, said under its title field. */
 function describe(section) {
@@ -60,7 +61,7 @@ function Row({ t, section, index, count, onMove, onTitle, onHide, disabled }) {
         <Icon name="move" size={18} stroke={2} />
       </button>
       {section.kind === 'photo' && (
-        <img src={section.photo.url} alt="" style={{ width: 52, height: 40, objectFit: 'cover', borderRadius: 6,
+        <img {...responsiveImage(section.photo.url, '52px')} alt="" style={{ width: 52, height: 40, objectFit: 'cover', borderRadius: 6,
           border: `1px solid ${t.line}`, flex: '0 0 auto' }} />
       )}
       <div style={{ flex: 1, minWidth: 0 }}>

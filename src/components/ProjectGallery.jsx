@@ -15,6 +15,7 @@
 
 import { useRef, useState } from 'react';
 import { Icon } from './Icon';
+import { responsiveImage } from '../lib/responsiveImage';
 
 // How far a finger has to travel sideways for a swipe, rather than a tap or a scroll.
 const SWIPE_PX = 40;
@@ -58,7 +59,7 @@ export function ProjectGallery({ t, photos }) {
         style={{ background: t.surfaceAlt, border: `1px solid ${t.line}` }}>
         <a href={photo.url} target="_blank" rel="noreferrer"
           aria-label={`Photo ${current + 1} of ${count}${photo.caption ? `: ${photo.caption}` : ''}, full size`}>
-          <img key={photo.path} src={photo.url} alt="" />
+          <img key={photo.path} {...responsiveImage(photo.url, '(max-width: 920px) 100vw, 920px')} alt="" />
         </a>
         {count > 1 && (
           <>
@@ -90,7 +91,7 @@ export function ProjectGallery({ t, photos }) {
               <button type="button" onClick={() => setIndex(i)} aria-label={`Show photo ${i + 1}`}
                 aria-current={i === current ? 'true' : undefined}
                 style={{ outline: i === current ? `2px solid ${t.ink}` : 'none' }}>
-                <img src={each.url} alt="" loading="lazy" />
+                <img {...responsiveImage(each.url, '88px')} alt="" />
               </button>
             </li>
           ))}

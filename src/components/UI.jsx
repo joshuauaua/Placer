@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Icon } from './Icon';
 import { copyText } from '../lib/clipboard';
 import { CAT, PALETTE_LIST } from '../theme';
+import { responsiveImage } from '../lib/responsiveImage';
 
 /* The loading state: the PLACER letters from the brand file LOADING WB.svg, P L
  * over C R, each turning in place one after the next, clockwise, then a beat
@@ -123,7 +124,7 @@ export function Avatar({ name = '', size = 40, ring, photo }) {
         : `inset 0 0 0 2px ${colour.c700}${ring ? `, 0 0 0 2px ${ring}` : ''}` }}>
       {photo
         // Decorative: the name is always beside it, or in the button's label.
-        ? <img src={photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%',
+        ? <img {...responsiveImage(photo, `${size}px`)} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%',
           objectFit: 'cover', display: 'block' }} />
         : initials}
     </div>

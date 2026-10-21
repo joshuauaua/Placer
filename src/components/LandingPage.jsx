@@ -12,10 +12,14 @@ import { Link } from 'wouter';
 
 import cityDrawing from '../assets/landing-city.svg';
 import cityDrawingMobile from '../assets/landing-city-mobile.svg';
-import logoSwedishInstitute from '../assets/logo-swedish-institute.png';
-import photoWaitlist from '../assets/about-malmo.jpg';
+import logoSwedishInstitute from '../assets/logo-swedish-institute.webp';
+import photoWaitlist from '../assets/about-malmo.webp';
+import photoWaitlistSmall from '../assets/about-malmo-800.webp';
 import photoUserLabs from '../assets/user-labs.webp';
+import photoUserLabsSmall from '../assets/user-labs-800.webp';
 import photoSurvey from '../assets/placemaking-trends-cover.webp';
+import photoSurveySmall from '../assets/placemaking-trends-cover-800.webp';
+import { bundledImage } from '../lib/responsiveImage';
 import { HaveYourSay } from './HaveYourSay';
 
 // Trimmed to its artwork and stored at 160px tall, so a height here is enough
@@ -29,22 +33,25 @@ const ROTATE_MS = 6000;
 /* The three things a visitor can do, one slide each: a photo filling the slide,
  * with the title and the button set over its foot. Each action is a render
  * function so the card can hand it the theme. */
+// Each slide fills the width of the page.
+const OPTION_SIZES = '100vw';
+
 const OPTIONS = [
   {
     key: 'waitlist',
-    photo: photoWaitlist,
+    photo: bundledImage(photoWaitlistSmall, photoWaitlist, OPTION_SIZES),
     title: 'Be the first to use PLACER',
     action: (t) => <HaveYourSay t={t} className="placer-landing-option-link" />,
   },
   {
     key: 'userLabs',
-    photo: photoUserLabs,
+    photo: bundledImage(photoUserLabsSmall, photoUserLabs, OPTION_SIZES),
     title: 'Help shape what we build',
     action: () => <Link href="/user-labs" className="placer-landing-option-link">Apply to User Labs</Link>,
   },
   {
     key: 'survey',
-    photo: photoSurvey,
+    photo: bundledImage(photoSurveySmall, photoSurvey, OPTION_SIZES),
     title: 'Tell us about placemaking in your city',
     action: () => (
       <Link href="/survey" className="placer-landing-option-link">Take the Placemaking Trends survey</Link>
@@ -131,7 +138,7 @@ function LandingCarousel({ t }) {
             aria-label={`${i + 1} of ${OPTIONS.length}: ${option.title}`}
             aria-hidden={i !== active}
             inert={i !== active}>
-            <img className="placer-landing-option-photo" src={option.photo} alt="" />
+            <img className="placer-landing-option-photo" {...option.photo} alt="" />
             <div className="placer-landing-option-body">
               <h2 className="placer-landing-option-title">{option.title}</h2>
               {option.action(t)}

@@ -7,11 +7,15 @@
  * cannot override an inline style.
  */
 
-export function PhotoSplit({ t, src, alt, children }) {
+// Half the page beside the copy, all of it above the copy on a phone.
+const SPLIT_SIZES = '(max-width: 1023px) 100vw, 50vw';
+
+/** `srcSet`, when given, is the photo at more than one width (bundledImage). */
+export function PhotoSplit({ t, src, srcSet, alt, children }) {
   return (
     <div className="placer-split" style={{ background: t.page }}>
       <div className="placer-split-photo">
-        <img src={src} alt={alt} />
+        <img src={src} srcSet={srcSet} sizes={srcSet ? SPLIT_SIZES : undefined} alt={alt} />
       </div>
       <div className="placer-split-copy">{children}</div>
     </div>
