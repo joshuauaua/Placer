@@ -98,10 +98,14 @@ function DashboardProjectCard({ t, project, onOpen }) {
       style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', padding: 0, overflow: 'hidden',
         background: t.surface, border: `1px solid ${t.line}`, borderRadius: 16, cursor: 'pointer',
         fontFamily: 'var(--placer-font)', color: t.ink }}>
+      {/* One portrait frame for every card. Without minHeight and overflow, a tall picture
+          stretches its frame past the ratio and the cards come out uneven; a wide one is
+          cropped to fit. */}
       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
-        aspectRatio: '16 / 9', background: tint.c50, color: tint.c700 }}>
+        aspectRatio: '3 / 4', minHeight: 0, overflow: 'hidden', flexShrink: 0,
+        background: tint.c50, color: tint.c700 }}>
         {project.image
-          ? <img src={project.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          ? <img src={project.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
           : <Icon name="grid" size={30} stroke={1.8} />}
       </span>
       <span style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 20, width: '100%', boxSizing: 'border-box' }}>
