@@ -187,6 +187,27 @@ export async function readProjectOpenRooms(projectId) {
 }
 
 /**
+ * Every room of a project, earliest first, with when it opens and closes and its
+ * status: 'scheduled' | 'open' | 'closed' | 'expired'. Anybody who can see the
+ * project; a room not yet started comes without its setup. See
+ * supabase/project-room-schedule.sql.
+ */
+export async function readProjectRoomSchedule(projectId) {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('project_room_schedule', { p_project_id: projectId });
+
+  if (error) throw new Error(`Could not read the project's room schedule: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    id: row.room_id,
+    tool: row.tool,
+    status: row.status,
+    opensAt: row.opens_at,
+    closesAt: row.closes_at,
+    config: row.config ?? null,
+  }));
+}
+
+/**
  * Change a project's room that has not started yet: its setup, the day it starts (null
  * for now) and the time on it, and how long it stays open — everything opening it chose. Owner or
  * collaborator only; see toolkit_room_reschedule in supabase/rooms-edit.sql.

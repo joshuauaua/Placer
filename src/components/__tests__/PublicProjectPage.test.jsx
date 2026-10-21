@@ -12,7 +12,7 @@ import {
   removeReply,
 } from '../../services/projectPage';
 import { readOrganisation } from '../../services/organisations';
-import { readContributions, readProjectOpenRooms, saveContribution } from '../../services/rooms';
+import { readContributions, readProjectOpenRooms, readProjectRoomSchedule, saveContribution } from '../../services/rooms';
 import { THEME } from '../../theme';
 import { rememberAnswer } from '../../toolkit/rooms';
 
@@ -60,6 +60,7 @@ vi.mock('../../services/organisations', () => ({
 
 vi.mock('../../services/rooms', () => ({
   readProjectOpenRooms: vi.fn(() => Promise.resolve([])),
+  readProjectRoomSchedule: vi.fn(() => Promise.resolve([])),
   readContributions: vi.fn(() => Promise.resolve([])),
   saveContribution: vi.fn(() => Promise.resolve(true)),
   subscribeToRoom: vi.fn(() => () => {}),
@@ -357,6 +358,35 @@ describe('PublicProjectPage, taking part', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Workshop Room' }));
     expect(screen.getByRole('heading', { level: 2, name: 'We want your opinion' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2, name: 'Share your idea for this place' })).not.toBeInTheDocument();
+  });
+
+  it('runs one workshop at a time, named at the top, with the schedule beside it to switch', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote', 'reimagine-a-space']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL, IDEA]);
+    vi.mocked(readWorkshopTools).mockResolvedValueOnce(new Set(['open-vote', 'reimagine-a-space']));
+    vi.mocked(readProjectRoomSchedule).mockResolvedValueOnce([
+      { id: 'room-1', tool: 'open-vote', status: 'open', opensAt: '2026-11-05T10:00:00Z', closesAt: POLL.expiresAt, config: null },
+      { id: 'room-idea', tool: 'reimagine-a-space', status: 'open', opensAt: '2026-11-05T10:00:00Z', closesAt: IDEA.expiresAt, config: null },
+      { id: 'room-later', tool: 'open-vote', status: 'scheduled', opensAt: '2026-11-06T09:00:00Z', closesAt: '2026-11-06T11:00:00Z', config: null },
+    ]);
+
+    setup();
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Workshop Room' }));
+    expect(screen.getByText('Current Workshop:')).toBeInTheDocument();
+    expect(screen.getByText('Poll for “Riverside Greenway”')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'We want your opinion' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: 'Share your idea for this place' })).not.toBeInTheDocument();
+
+    const schedule = screen.getByRole('complementary', { name: 'Schedule' });
+    // The room still to come is listed, but cannot be opened yet.
+    expect(within(schedule).getByText('Up next')).toBeInTheDocument();
+    expect(within(schedule).getAllByRole('button')).toHaveLength(2);
+
+    fireEvent.click(within(schedule).getByRole('button', { name: /Idea Visualizer/ }));
+    expect(screen.getByText('Idea Visualizer for “Riverside Greenway”')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Share your idea for this place' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: 'We want your opinion' })).not.toBeInTheDocument();
   });
 
   it('has no Workshop Room tab when nothing is in it', async () => {

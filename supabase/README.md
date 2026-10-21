@@ -597,6 +597,20 @@ owner and collaborators set and change it.
 select tool, placement from public.project_tools limit 5;
 ```
 
+### A project's room schedule
+
+Run `project-room-schedule.sql` in the SQL editor after `rooms-schedule.sql` (or
+`supabase db push`). It is re-runnable.
+
+`project_room_schedule` lists every room of a project, earliest first, with when it
+opens and closes and whether it is `scheduled`, `open`, `closed` or `expired` — the
+Workshop Room's schedule. Anybody who can see the project can call it, so a room that
+has not started is listed by its times alone: no PIN, no join code and no setup.
+
+```sql
+select * from public.project_room_schedule((select id from public.projects limit 1));
+```
+
 ### A project's public page: updates, comments and its numbers
 
 Run `project-public-page.sql` in the SQL editor after `project-privacy.sql` and
