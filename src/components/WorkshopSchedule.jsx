@@ -5,8 +5,12 @@
  * now can be picked: picking it makes it the current workshop, the one tool the room
  * shows. A tool that does not run in a room is on whenever the Workshop Room is, so it
  * is listed as on now, with no times.
+ *
+ * Below it, the Archived list: the workshops that finished on an earlier day, newest
+ * first (workshopArchive). Only the latest few are shown until asked for the rest.
  */
 
+import { useState } from 'react';
 import { formatLocale } from '../i18n';
 import { findTool } from '../toolkit/tools';
 
@@ -68,9 +72,65 @@ export function workshopSchedule({ sections, tools, schedule, now = new Date() }
   ];
 }
 
+/**
+ * The workshops that finished on an earlier day than `now`, newest first, as
+ * { key, tool, opensAt, closesAt }: the rooms of the Workshop Room's `tools` in
+ * `schedule` (readProjectRoomSchedule), or none when it could not be read.
+ */
+export function workshopArchive({ tools, schedule, now = new Date() }) {
+  return (schedule ?? [])
+    .filter((room) => tools.has(room.tool) && (room.status === 'closed' || room.status === 'expired'))
+    .filter((room) => {
+      const closed = new Date(room.closesAt ?? NaN);
+      return Number.isFinite(closed.getTime()) && !sameDay(closed, now) && closed < now;
+    })
+    .map((room) => ({ key: `room:${room.id}`, tool: findTool(room.tool), opensAt: room.opensAt, closesAt: room.closesAt }))
+    .sort((a, b) => new Date(b.closesAt) - new Date(a.closesAt));
+}
+
+/** '14 Oct, 10:00 – 12:00', or both days in full when it ran past midnight. */
+function archiveTime({ opensAt, closesAt }) {
+  const opened = scheduleTime(opensAt);
+  const closed = scheduleTime(closesAt, new Date(opensAt ?? NaN));
+  return [opened, closed].filter(Boolean).join(' – ');
+}
+
+// How many of the archive are shown before "Show all".
+const ARCHIVE_SHOWN = 5;
+
 const STATE_LABEL = { done: 'Finished', now: 'Now', next: 'Up next' };
 
-export function WorkshopSchedule({ t, items, currentKey, onPick }) {
+function Archive({ t, items }) {
+  const [all, setAll] = useState(false);
+  const shown = all ? items : items.slice(0, ARCHIVE_SHOWN);
+  return (
+    <section aria-labelledby="workshop-archive-heading" style={{ marginTop: 20, paddingTop: 16,
+      borderTop: `1px solid ${t.line}` }}>
+      <h3 id="workshop-archive-heading" style={{ fontSize: 15, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+        Archived
+      </h3>
+      <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {shown.map((item) => (
+          <li key={item.key} style={{ padding: '6px 12px' }}>
+            <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.inkDim }}>
+              {item.tool?.name ?? 'Workshop'}
+            </span>
+            <span style={{ display: 'block', fontSize: 13, color: t.inkDim }}>{archiveTime(item)}</span>
+          </li>
+        ))}
+      </ol>
+      {items.length > ARCHIVE_SHOWN && (
+        <button type="button" aria-expanded={all} onClick={() => setAll((was) => !was)}
+          style={{ marginTop: 8, padding: '6px 12px', border: 'none', background: 'none', cursor: 'pointer',
+            fontFamily: 'var(--placer-font)', fontSize: 13, fontWeight: 700, color: t.ink, textDecoration: 'underline' }}>
+          {all ? 'Show fewer' : `Show all ${items.length}`}
+        </button>
+      )}
+    </section>
+  );
+}
+
+export function WorkshopSchedule({ t, items, archive = [], currentKey, onPick }) {
   return (
     <aside aria-labelledby="workshop-schedule-heading" className="placer-workshop-schedule"
       style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 16, padding: 20 }}>
@@ -125,6 +185,7 @@ export function WorkshopSchedule({ t, items, currentKey, onPick }) {
           })}
         </ol>
       )}
+      {archive.length > 0 && <Archive t={t} items={archive} />}
     </aside>
   );
 }

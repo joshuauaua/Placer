@@ -389,6 +389,29 @@ describe('PublicProjectPage, taking part', () => {
     expect(screen.queryByRole('heading', { level: 2, name: 'We want your opinion' })).not.toBeInTheDocument();
   });
 
+  it('lists the workshops of earlier days under Archived, the latest five until asked for all', async () => {
+    vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
+    vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL]);
+    vi.mocked(readWorkshopTools).mockResolvedValueOnce(new Set(['open-vote']));
+    const old = [1, 2, 3, 4, 5, 6].map((day) => ({ id: `room-old-${day}`, tool: 'open-vote', status: 'expired',
+      opensAt: `2025-03-0${day}T10:00:00Z`, closesAt: `2025-03-0${day}T12:00:00Z`, config: null }));
+    vi.mocked(readProjectRoomSchedule).mockResolvedValueOnce([
+      ...old,
+      { id: 'room-1', tool: 'open-vote', status: 'open', opensAt: '2026-11-05T10:00:00Z', closesAt: POLL.expiresAt, config: null },
+    ]);
+
+    setup();
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Workshop Room' }));
+    const archive = await screen.findByRole('region', { name: 'Archived' });
+    expect(within(archive).getAllByRole('listitem')).toHaveLength(5);
+    // Old workshops are history: nothing in the archive opens one.
+    expect(within(archive).getAllByRole('button')).toHaveLength(1);
+
+    fireEvent.click(within(archive).getByRole('button', { name: 'Show all 6' }));
+    expect(within(archive).getAllByRole('listitem')).toHaveLength(6);
+  });
+
   it('has no Workshop Room tab when nothing is in it', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['open-vote']);
     vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL]);
