@@ -563,12 +563,13 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const currentWorkshop = workshopSections.find((section) => section.key === workshopPick) ?? workshopSections[0];
   const shownSections = tab === 'workshop' ? [currentWorkshop].filter(Boolean) : sections;
 
-  // One section of the Project tab or the Workshop Room.
-  const renderSection = (section) => (
+  // One section of the Project tab or the Workshop Room. The Workshop Room titles its
+  // section itself, above it and under the section's heading id, so `titled` is false there.
+  const renderSection = (section, { titled = true } = {}) => (
     <section key={section.key} id={section.domId} aria-labelledby={`${section.domId}-heading`}
       className={`placer-project-section${isWide(section) ? ' placer-project-section--wide' : ''}`}>
       {/* A tool drawn as a cover puts the heading on it instead (onProjectPage.cover). */}
-      {!isCover(section) && (
+      {titled && !isCover(section) && (
         <h2 id={`${section.domId}-heading`}
           className={`placer-h2${section.hideTitle ? ' placer-visually-hidden' : ''}`}
           style={{ color: t.ink, marginBottom: section.kind === 'about' || section.kind === 'goals' ? 12 : 20 }}>
@@ -605,7 +606,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
       {section.kind === 'tool' && (section.room && section.tool.onProjectPage?.Embed ? (
         <>
           <section.tool.onProjectPage.Embed t={t} tool={section.tool} room={section.room}
-            heading={isCover(section)
+            heading={titled && isCover(section)
               ? { id: `${section.domId}-heading`, title: section.title, hidden: section.hideTitle }
               : undefined} />
           {isCover(section) && <ToolIntro t={t} tool={section.tool} room={section.room} />}
@@ -825,14 +826,12 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
 
             {tab === 'workshop' && currentWorkshop && (
               <>
-                <p className="placer-workshop-current" style={{ color: t.ink }}>
-                  <span style={{ display: 'block', fontSize: 15, fontWeight: 700, color: t.inkDim }}>Current Workshop:</span>
-                  <span style={{ display: 'block', fontSize: 28, fontWeight: 700, lineHeight: 1.2 }}>
-                    {currentWorkshop.tool.name} for “{project.name}”
-                  </span>
-                </p>
+                <h2 id={`${currentWorkshop.domId}-heading`} className="placer-h2 placer-workshop-current"
+                  style={{ color: t.ink }}>
+                  Current workshop: {currentWorkshop.tool.name} for “{project.name}”
+                </h2>
                 <div className="placer-workshop-layout">
-                  <div style={{ minWidth: 0 }}>{renderSection(currentWorkshop)}</div>
+                  <div style={{ minWidth: 0 }}>{renderSection(currentWorkshop, { titled: false })}</div>
                   <WorkshopSchedule t={t} currentKey={currentWorkshop.key} onPick={setWorkshopPick}
                     items={workshopSchedule({ sections: workshopSections, tools: workshopTools, schedule: roomSchedule })} />
                 </div>
