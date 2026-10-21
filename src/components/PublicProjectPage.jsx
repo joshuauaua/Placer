@@ -35,7 +35,9 @@
  *
  * A tool its organisers put in the Workshop Room (project_tools.placement, see
  * supabase/project-workshop-room.sql) is shown the same way, in the Workshop Room tab
- * instead of the Project tab. That tab is only there when one of them is live.
+ * instead of the Project tab. That tab is only there when one of them is live. It runs
+ * one of them at a time, named at its top as the current workshop, with the day's
+ * schedule beside it (WorkshopSchedule) to switch between those on now.
  *
  * The layout lives in index.css (.placer-project-*), since the tab bar's stickiness and
  * the single column on a phone need a media query.
@@ -59,7 +61,8 @@ import {
 } from '../services/projectPage';
 import { follow, isFollowing, unfollow } from '../services/follows';
 import { readOrganisation } from '../services/organisations';
-import { readProjectOpenRooms } from '../services/rooms';
+import { readProjectOpenRooms, readProjectRoomSchedule } from '../services/rooms';
+import { WorkshopSchedule, workshopSchedule } from './WorkshopSchedule';
 import { projectProgress } from '../lib/projectTimeline';
 import { ProjectPeople } from './ProjectPeople';
 import { ProjectPosts } from './ProjectPosts';
@@ -313,6 +316,11 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const [configuredTools, setConfiguredTools] = useState(new Set());
   // Those of its tools kept for its Workshop Room tab rather than its Project tab.
   const [workshopTools, setWorkshopTools] = useState(new Set());
+  // When each of the project's rooms runs, for the Workshop Room's schedule; null until
+  // read, or when it cannot be (before project-room-schedule.sql).
+  const [roomSchedule, setRoomSchedule] = useState(null);
+  // The Workshop Room section picked from the schedule; the first one until then.
+  const [workshopPick, setWorkshopPick] = useState(null);
   const [imaginations, setImaginations] = useState([]);
   const [links, setLinks] = useState([]);
   // Every reply on the project's updates and comments (supabase/project-replies.sql).
@@ -417,6 +425,13 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         readProjectSummary(proj.id)
           .then((found) => { if (!cancelled) setSummary(found); })
           .catch((err) => console.error("Could not load this project's numbers:", err));
+
+        // Without it the schedule lists only what is on now.
+        if (workshop.size > 0) {
+          readProjectRoomSchedule(proj.id)
+            .then((found) => { if (!cancelled) setRoomSchedule(found); })
+            .catch((err) => console.error("Could not load this project's room schedule:", err));
+        }
 
         readUpdates(proj.id)
           .then((posts) => { if (!cancelled) setUpdates({ status: 'ready', posts }); })
@@ -543,7 +558,76 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   }).filter((section) => section.kind === 'tool'), project.pageLayout);
   const hasTools = sections.some((section) => section.kind === 'tool');
   const tabs = TABS.filter(({ id }) => id !== 'workshop' || workshopSections.length > 0);
-  const shownSections = tab === 'workshop' ? workshopSections : sections;
+  // The Workshop Room runs one of its sections at a time: the one picked from its
+  // schedule, or the first.
+  const currentWorkshop = workshopSections.find((section) => section.key === workshopPick) ?? workshopSections[0];
+  const shownSections = tab === 'workshop' ? [currentWorkshop].filter(Boolean) : sections;
+
+  // One section of the Project tab or the Workshop Room.
+  const renderSection = (section) => (
+    <section key={section.key} id={section.domId} aria-labelledby={`${section.domId}-heading`}
+      className={`placer-project-section${isWide(section) ? ' placer-project-section--wide' : ''}`}>
+      {/* A tool drawn as a cover puts the heading on it instead (onProjectPage.cover). */}
+      {!isCover(section) && (
+        <h2 id={`${section.domId}-heading`}
+          className={`placer-h2${section.hideTitle ? ' placer-visually-hidden' : ''}`}
+          style={{ color: t.ink, marginBottom: section.kind === 'about' || section.kind === 'goals' ? 12 : 20 }}>
+          {section.title}
+        </h2>
+      )}
+      {section.kind === 'tool' && !isCover(section) && (
+        <ToolIntro t={t} tool={section.tool} room={section.room} />
+      )}
+
+      {section.kind === 'about' && (
+        <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{intro}</p>
+      )}
+
+      {section.kind === 'goals' && (
+        <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{goals}</p>
+      )}
+
+      {section.kind === 'photos' && <ProjectGallery t={t} photos={section.photos} />}
+
+      {section.kind === 'photo' && (
+        <figure className="placer-project-photo">
+          <a href={section.photo.url} target="_blank" rel="noreferrer"
+            aria-label={`${section.photo.caption || 'Photo'}, full size`}>
+            <img src={section.photo.url} alt="" loading="lazy"
+              style={{ border: `1px solid ${t.line}` }} />
+          </a>
+          {section.photo.caption && (
+            <figcaption style={{ color: t.inkDim }}>{section.photo.caption}</figcaption>
+          )}
+        </figure>
+      )}
+
+      {section.kind === 'tool' && (section.room && section.tool.onProjectPage?.Embed ? (
+        <>
+          <section.tool.onProjectPage.Embed t={t} tool={section.tool} room={section.room}
+            heading={isCover(section)
+              ? { id: `${section.domId}-heading`, title: section.title, hidden: section.hideTitle }
+              : undefined} />
+          {isCover(section) && <ToolIntro t={t} tool={section.tool} room={section.room} />}
+          {/* Ideas posted to the map for the project, from the Toolkit's own flow. */}
+          {section.tool.id === REIMAGINE_TOOL && imaginations.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: t.ink, margin: '0 0 12px' }}>
+                Posted to the map
+              </h3>
+              <div className="placer-project-grid">
+                {imaginations.map((imagination) => (
+                  <ImaginationCard key={imagination.id} t={t} imagination={imagination} />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <ProjectToolCard t={t} tool={section.tool} room={section.room} displayName={accountName} />
+      ))}
+    </section>
+  );
 
   const onTabKey = (event) => {
     const index = tabs.findIndex(({ id }) => id === tab);
@@ -733,73 +817,27 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
       </div>
 
       <div id={`project-panel-${tab}`} role="tabpanel" aria-labelledby={`project-tab-${tab}`}
-        className={`placer-project-panel${(tab === 'project' || tab === 'workshop') && shownSections.some(isWide) ? ' placer-project-panel--wide' : ''}`}>
+        className={`placer-project-panel${tab === 'workshop' ? ' placer-project-panel--workshop'
+          : tab === 'project' && shownSections.some(isWide) ? ' placer-project-panel--wide' : ''}`}>
         {(tab === 'project' || tab === 'workshop') && (
           <>
-            {shownSections.map((section) => (
-              <section key={section.key} id={section.domId} aria-labelledby={`${section.domId}-heading`}
-                className={`placer-project-section${isWide(section) ? ' placer-project-section--wide' : ''}`}>
-                {/* A tool drawn as a cover puts the heading on it instead (onProjectPage.cover). */}
-                {!isCover(section) && (
-                  <h2 id={`${section.domId}-heading`}
-                    className={`placer-h2${section.hideTitle ? ' placer-visually-hidden' : ''}`}
-                    style={{ color: t.ink, marginBottom: section.kind === 'about' || section.kind === 'goals' ? 12 : 20 }}>
-                    {section.title}
-                  </h2>
-                )}
-                {section.kind === 'tool' && !isCover(section) && (
-                  <ToolIntro t={t} tool={section.tool} room={section.room} />
-                )}
+            {tab === 'project' && sections.map(renderSection)}
 
-                {section.kind === 'about' && (
-                  <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{intro}</p>
-                )}
-
-                {section.kind === 'goals' && (
-                  <p className="placer-body-lg" style={{ color: t.ink, whiteSpace: 'pre-line' }}>{goals}</p>
-                )}
-
-                {section.kind === 'photos' && <ProjectGallery t={t} photos={section.photos} />}
-
-                {section.kind === 'photo' && (
-                  <figure className="placer-project-photo">
-                    <a href={section.photo.url} target="_blank" rel="noreferrer"
-                      aria-label={`${section.photo.caption || 'Photo'}, full size`}>
-                      <img src={section.photo.url} alt="" loading="lazy"
-                        style={{ border: `1px solid ${t.line}` }} />
-                    </a>
-                    {section.photo.caption && (
-                      <figcaption style={{ color: t.inkDim }}>{section.photo.caption}</figcaption>
-                    )}
-                  </figure>
-                )}
-
-                {section.kind === 'tool' && (section.room && section.tool.onProjectPage?.Embed ? (
-                  <>
-                    <section.tool.onProjectPage.Embed t={t} tool={section.tool} room={section.room}
-                      heading={isCover(section)
-                        ? { id: `${section.domId}-heading`, title: section.title, hidden: section.hideTitle }
-                        : undefined} />
-                    {isCover(section) && <ToolIntro t={t} tool={section.tool} room={section.room} />}
-                    {/* Ideas posted to the map for the project, from the Toolkit's own flow. */}
-                    {section.tool.id === REIMAGINE_TOOL && imaginations.length > 0 && (
-                      <div style={{ marginTop: 24 }}>
-                        <h3 style={{ fontSize: 16, fontWeight: 700, color: t.ink, margin: '0 0 12px' }}>
-                          Posted to the map
-                        </h3>
-                        <div className="placer-project-grid">
-                          {imaginations.map((imagination) => (
-                            <ImaginationCard key={imagination.id} t={t} imagination={imagination} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <ProjectToolCard t={t} tool={section.tool} room={section.room} displayName={accountName} />
-                ))}
-              </section>
-            ))}
+            {tab === 'workshop' && currentWorkshop && (
+              <>
+                <p className="placer-workshop-current" style={{ color: t.ink }}>
+                  <span style={{ display: 'block', fontSize: 15, fontWeight: 700, color: t.inkDim }}>Current Workshop:</span>
+                  <span style={{ display: 'block', fontSize: 28, fontWeight: 700, lineHeight: 1.2 }}>
+                    {currentWorkshop.tool.name} for “{project.name}”
+                  </span>
+                </p>
+                <div className="placer-workshop-layout">
+                  <div style={{ minWidth: 0 }}>{renderSection(currentWorkshop)}</div>
+                  <WorkshopSchedule t={t} currentKey={currentWorkshop.key} onPick={setWorkshopPick}
+                    items={workshopSchedule({ sections: workshopSections, tools: workshopTools, schedule: roomSchedule })} />
+                </div>
+              </>
+            )}
 
             {tab === 'project' && !hasTools && workshopSections.length === 0 && (
               <section id="project-take-part" className="placer-project-section" aria-labelledby="project-take-part-heading">

@@ -2115,6 +2115,38 @@ a {
   max-width: 920px;
 }
 
+/* The Workshop Room: the current workshop, with its schedule beside it — under it on a
+   phone. */
+.placer-project-panel--workshop {
+  max-width: none;
+}
+
+.placer-workshop-current {
+  margin-bottom: 24px;
+}
+
+.placer-workshop-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 32px;
+  align-items: start;
+}
+
+.placer-workshop-schedule {
+  position: sticky;
+  top: 72px;
+}
+
+@media (max-width: 899px) {
+  .placer-workshop-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .placer-workshop-schedule {
+    position: static;
+  }
+}
+
 .placer-project-section {
   /* Clear of the sticky tab bar when a section is scrolled into view. */
   scroll-margin-top: 72px;
