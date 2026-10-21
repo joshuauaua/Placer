@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { workshopSchedule } from '../WorkshopSchedule';
+import { workshopArchive, workshopSchedule } from '../WorkshopSchedule';
 import { findTool } from '../../toolkit/tools';
 
 const POLL = findTool('open-vote');
@@ -34,5 +34,28 @@ describe('workshopSchedule', () => {
 
     expect(items).toEqual([{ key: 'room:r-now', tool: POLL, state: 'now', opensAt: null, closesAt: at(5, 14),
       sectionKey: 'room:r-now' }]);
+  });
+});
+
+describe('workshopArchive', () => {
+  it("lists the workshops that finished on an earlier day, newest first, and nothing of today's or other tools'", () => {
+    const archive = workshopArchive({
+      now: NOW,
+      tools: new Set(['open-vote']),
+      schedule: [
+        { id: 'r-old', tool: 'open-vote', status: 'expired', opensAt: at(1, 10), closesAt: at(1, 12) },
+        { id: 'r-yesterday', tool: 'open-vote', status: 'closed', opensAt: at(4, 10), closesAt: at(4, 11) },
+        { id: 'r-morning', tool: 'open-vote', status: 'closed', opensAt: at(5, 9), closesAt: at(5, 10) },
+        { id: 'r-now', tool: 'open-vote', status: 'open', opensAt: at(5, 11), closesAt: at(5, 14) },
+        { id: 'r-page', tool: 'dream-it', status: 'expired', opensAt: at(3, 9), closesAt: at(3, 10) },
+      ],
+    });
+
+    expect(archive.map(({ key }) => key)).toEqual(['room:r-yesterday', 'room:r-old']);
+    expect(archive[0].tool).toBe(POLL);
+  });
+
+  it('is empty when the schedule could not be read', () => {
+    expect(workshopArchive({ now: NOW, tools: new Set(['open-vote']), schedule: null })).toEqual([]);
   });
 });

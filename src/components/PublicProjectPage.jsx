@@ -62,7 +62,7 @@ import {
 import { follow, isFollowing, unfollow } from '../services/follows';
 import { readOrganisation } from '../services/organisations';
 import { readProjectOpenRooms, readProjectRoomSchedule } from '../services/rooms';
-import { WorkshopSchedule, workshopSchedule } from './WorkshopSchedule';
+import { WorkshopSchedule, workshopArchive, workshopSchedule } from './WorkshopSchedule';
 import { projectProgress } from '../lib/projectTimeline';
 import { ProjectPeople } from './ProjectPeople';
 import { ProjectPosts } from './ProjectPosts';
@@ -834,7 +834,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
                 <div className="placer-workshop-layout">
                   <div style={{ minWidth: 0 }}>{renderSection(currentWorkshop, { titled: false })}</div>
                   <WorkshopSchedule t={t} currentKey={currentWorkshop.key} onPick={setWorkshopPick}
-                    items={workshopSchedule({ sections: workshopSections, tools: workshopTools, schedule: roomSchedule })} />
+                    items={workshopSchedule({ sections: workshopSections, tools: workshopTools, schedule: roomSchedule })}
+                    archive={workshopArchive({ tools: workshopTools, schedule: roomSchedule })} />
                 </div>
               </>
             )}
