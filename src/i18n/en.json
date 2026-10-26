@@ -450,14 +450,11 @@
     "tool": "Tool",
     "by": "By {name}",
     "getStarted": "Get started",
-    "linkLabel": "Link to this tool",
     "categories": {
       "understand": "Understand",
       "imagine": "Imagine",
       "plan": "Plan"
-    },
-    "copyLink": "Copy link",
-    "linkCopied": "Link copied"
+    }
   },
   "join": {
     "unknownTool": "That room is for a tool this version of PLACER does not have.",
