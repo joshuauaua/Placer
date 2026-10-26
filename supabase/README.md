@@ -1051,6 +1051,31 @@ supabase functions deploy survey-to-slack
 
 **Everyone in the channel sees the contact's name and email.**
 
+## 20. Following up on survey responses
+
+`survey-followup.sql` (also a migration) makes `survey_responses` workable from the
+dashboard, with no page of our own to build or secure. It adds a `contacted` checkbox,
+a `contacted_at` that stamps itself when the box is ticked, and a free-text `notes`
+column, plus these views:
+
+| View | What it shows |
+| --- | --- |
+| `survey_followups` | The to-do list: one row per request ("Book a 1-on-1 demo", "Confirm the User Labs place", …) with the name and email |
+| `survey_form_responses` | Community, landing and trends surveys: contact details, `wants_report` / `wants_beta` / `wants_demo`, and each module's answers |
+| `survey_user_labs` | User Labs applications, one column per field |
+| `survey_newsletter` | Everyone who asked for the newsletter |
+| `survey_response_counts` | Responses and how many were contacted, per form per week |
+
+**Day to day:** Dashboard -> Table Editor -> `survey_followups`, filtered on `contacted`
+is false, is the list of who to get back to. Views are read-only there, so to tick
+somebody off open `survey_responses`, filter on their `id` or `email`, and tick
+`contacted` (and add a note). The views show the change straight away.
+
+**A chart:** in the SQL editor, run `select * from survey_response_counts order by week`
+and switch the result to **Chart**.
+
+Like the table, none of the views can be read with the browser's key.
+
 ## Still to decide
 
 - **Projects have one role beyond the owner, not several.** A collaborator can edit
