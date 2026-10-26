@@ -39,9 +39,12 @@ export function ToolLayout({ t, tool, onBack, actions, breadcrumb = null, childr
               {toolText(tool, 'name', language)}
             </h1>
           </div>
-          <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6, maxWidth: 660 }}>{toolText(tool, 'blurb', language)}</p>
+          {/* A tool whose cover says it all (blurbOnCover) keeps only its credits here. */}
+          {!tool.blurbOnCover && (
+            <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6, maxWidth: 660 }}>{toolText(tool, 'blurb', language)}</p>
+          )}
           {tool.createdBy && (
-            <p className="placer-mono" style={{ marginTop: 12, fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: t.inkFaint }}>
+            <p className="placer-mono" style={{ marginTop: tool.blurbOnCover ? 0 : 12, fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: t.inkFaint }}>
               {text('tool.by', { name: tool.createdBy })}
             </p>
           )}

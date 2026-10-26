@@ -2,7 +2,9 @@
  *
  * A map-based field observation tool, after Gehl's Public Life Data Protocol. After
  * the cover come its instructions: the field sheet's directions and its key, each
- * posture's symbol and the activities. "Get started" then opens the map (OpenStreetMap), the dominant visual element; the
+ * posture's symbol and the activities. "Get started" moves on to setting up the
+ * session (StationaryActivitySetup.jsx): the area outlined on a map, and the sheet's
+ * header. Start mapping then opens the map (OpenStreetMap), the dominant visual element; the
  * recording card floats over its left half and the tally sits below it. The user
  * first clicks the map to pick a location, then selects posture and activities,
  * then records. Every posture is drawn as its symbol (PostureSymbol.jsx).
@@ -14,6 +16,7 @@ import { Icon } from '../Icon';
 import { Panel, Readout } from '../ToolLayout';
 import { Btn, Chip, CopyButton } from '../UI';
 import { PostureSymbol, symbolElement } from './PostureSymbol';
+import { StationaryActivitySetup } from './StationaryActivitySetup';
 import {
   ACTIVITIES,
   ACTIVITIES_BY_POSTURE,
@@ -22,13 +25,16 @@ import {
   ACTIVITY_BY_KEY,
   POSTURES,
   POSTURE_LIST,
+  emptySession,
+  insideArea,
+  sessionLines,
   normaliseObservation,
   emptyTallies,
   tally,
   peopleWord,
   summaryText,
 } from '../../lib/toolkit/stationaryActivity';
-import { addPin, createMap, onBackgroundClick, openPopup } from '../../lib/map';
+import { addPin, createMap, fitPoints, onBackgroundClick, openPopup, showAreas } from '../../lib/map';
 
 const MAP_CENTER = { lat: 55.6054, lng: 12.9854 };
 const MAP_ZOOM = 15;
@@ -92,16 +98,19 @@ export function StationaryActivityMap({ t, tool }) {
   const [activities, setActivities] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [last, setLast] = useState(null);
-  const [started, setStarted] = useState(false);
+  // Which step after the cover: the instructions, setting up the session, or the map.
+  const [step, setStep] = useState('instructions');
+  const [session, setSession] = useState(() => emptySession());
   const nextId = useRef(1);
 
   const counts = useMemo(() => tally(observations), [observations]);
   const activityList = posture ? ACTIVITIES_BY_POSTURE[posture] : [];
-  const recordDisabled = !posture || activities.length === 0 || !selectedLocation;
+  const outside = selectedLocation && !insideArea(selectedLocation, session.area);
+  const recordDisabled = !posture || activities.length === 0 || !selectedLocation || outside;
 
   /* --- Initialise map; a click on it picks the spot to record --- */
   useEffect(() => {
-    if (!mapRef.current) return undefined;
+    if (step !== 'map' || !mapRef.current) return undefined;
     let osmMap;
     try {
       osmMap = createMap(mapRef.current, { center: MAP_CENTER, zoom: MAP_ZOOM });
@@ -110,10 +119,20 @@ export function StationaryActivityMap({ t, tool }) {
       setMapFailed(true);
       return undefined;
     }
+    fitPoints(osmMap, session.area, { padding: 60 });
     onBackgroundClick(osmMap, (point) => setSelectedLocation(point));
     setMap(osmMap);
     return () => osmMap.remove();
-  }, [started]);
+    // Made afresh each time the map step opens; the area is fixed by then.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  /* --- The survey area outlined in step 3 --- */
+  useEffect(() => {
+    if (!map) return undefined;
+    return showAreas(map, 'survey-area', [{ path: session.area, fill: tool.color, stroke: tool.color }],
+      { fillOpacity: 0.12 });
+  }, [map, session.area, tool.color]);
 
   /* --- One point per observation, where it was recorded --- */
   useEffect(() => {
@@ -198,8 +217,16 @@ export function StationaryActivityMap({ t, tool }) {
     ? `${selectedLocation.lat.toFixed(4)}, ${selectedLocation.lng.toFixed(4)}`
     : '';
 
-  // Step 2, after the cover: the field sheet's directions and its key. Step 3 is the map.
-  if (!started) {
+  // Step 3: outlining the area and filling in the sheet's header.
+  if (step === 'configure') {
+    return (
+      <StationaryActivitySetup t={t} tool={tool} session={session} onChange={setSession}
+        onBack={() => setStep('instructions')} onStart={() => setStep('map')} />
+    );
+  }
+
+  // Step 2, after the cover: the field sheet's directions and its key.
+  if (step === 'instructions') {
     return (
     <div style={{ fontFamily: 'var(--placer-font)' }}>
       {/* The field sheet's directions, and its key to the symbols and activities. */}
@@ -240,7 +267,7 @@ export function StationaryActivityMap({ t, tool }) {
           </div>
         </div>
         <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
-          <Btn t={t} onClick={() => setStarted(true)}>Get started</Btn>
+          <Btn t={t} onClick={() => setStep('configure')}>Get started</Btn>
         </div>
       </Panel>
 
@@ -251,8 +278,13 @@ export function StationaryActivityMap({ t, tool }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: 'var(--placer-font)' }}>
       <div>
-        <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={() => setStarted(false)}>Instructions</Btn>
+        <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={() => setStep('configure')}>Session</Btn>
       </div>
+
+      {/* The sheet's header, as set up in step 3. */}
+      <p aria-label="Session" className="placer-mono" style={{ margin: 0, fontSize: 12, color: t.inkDim, lineHeight: 1.6 }}>
+        {sessionLines(session).join(' · ')}
+      </p>
 
       {/* 1 · Map card — dominant background */}
       <Panel t={t} title="Observation Map" aside={
@@ -287,6 +319,12 @@ export function StationaryActivityMap({ t, tool }) {
                 <div style={{ fontSize: 11, color: t.inkDim, marginBottom: 12 }}>
                   Location: {locationStr}
                 </div>
+              )}
+
+              {outside && (
+                <p style={{ fontSize: 12, color: '#B3261E', margin: '0 0 12px' }}>
+                  That spot is outside the survey area. Pick a spot inside the outline.
+                </p>
               )}
 
               <div role="group" aria-label="Posture — pick one" style={{ marginBottom: 12 }}>
@@ -465,7 +503,7 @@ export function StationaryActivityMap({ t, tool }) {
 
         <div style={{ marginTop: 14 }}>
           <CopyButton
-            t={t} value={summaryText(counts)} variant="primary" size="sm" icon="send"
+            t={t} value={summaryText(counts, session)} variant="primary" size="sm" icon="send"
             label="Copy tally" copiedLabel="Copied" fieldLabel="Your tally as text"
             multiline disabled={observations.length === 0}
             style={{ alignItems: 'flex-start' }} />

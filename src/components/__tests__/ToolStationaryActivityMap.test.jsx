@@ -9,10 +9,26 @@ function open() {
   return render(<StationaryActivityMap t={THEME} tool={findTool('stationary-activity-mapping')} />);
 }
 
-// Past the instructions, onto the map.
-function mount() {
+// A square around the map's centre, in Malmö.
+const AREA = [
+  { lat: 55.6, lng: 12.98 }, { lat: 55.6, lng: 13.0 }, { lat: 55.61, lng: 13.0 }, { lat: 55.61, lng: 12.98 },
+];
+
+// Past the instructions to setting up the session: the area outlined and the header filled in.
+function configure({ area = AREA } = {}) {
   const view = open();
   fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+  area.forEach((corner) => act(() => clickMap(lastMap(), corner)));
+  fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Ada' } });
+  fireEvent.change(screen.getByLabelText('Location'), { target: { value: 'Stortorget' } });
+  fireEvent.change(screen.getByLabelText('Weather'), { target: { value: 'Sunny' } });
+  return view;
+}
+
+// All the way onto the map.
+function mount() {
+  const view = configure();
+  fireEvent.click(screen.getByRole('button', { name: 'Start mapping' }));
   return view;
 }
 
@@ -35,12 +51,54 @@ describe('Stationary Activity Mapping', () => {
     expect(screen.getByRole('list', { name: 'Activities' })).toHaveTextContent('Conversing');
   });
 
-  it('goes from the instructions to the map, and back', () => {
+  it('goes from the instructions to setting up, to the map, and back', () => {
     mount();
-    expect(screen.queryByText('Instructions', { selector: 'h2, h3' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Instructions' }));
+    expect(screen.getByText('Record Observation')).toBeInTheDocument();
+    expect(screen.getByLabelText('Session')).toHaveTextContent('Observer: Ada');
+    expect(screen.getByLabelText('Session')).toHaveTextContent('Location: Stortorget');
+    expect(screen.getByLabelText('Session')).toHaveTextContent('Weather: Sunny');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Session' }));
     expect(screen.queryByText('Record Observation')).not.toBeInTheDocument();
+    // What was filled in is still there.
+    expect(screen.getByLabelText('Name')).toHaveValue('Ada');
+    expect(screen.getByText(/4 corners/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Instructions' }));
     expect(screen.getByRole('button', { name: 'Get started' })).toBeInTheDocument();
+  });
+
+  it('will not start mapping until the area is outlined and the header filled in', () => {
+    open();
+    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+    // Today's date and the time now are filled in already.
+    expect(screen.getByLabelText('Date').value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(screen.getByLabelText('Time').value).toMatch(/^\d{2}:\d{2}$/);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start mapping' }));
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('Outline the area on the map');
+    expect(alert).toHaveTextContent('Add your name.');
+    expect(alert).toHaveTextContent('Pick the weather.');
+    expect(screen.queryByText('Record Observation')).not.toBeInTheDocument();
+  });
+
+  it('outlines the area a corner per click, and can take one back', () => {
+    configure({ area: AREA.slice(0, 3) });
+    expect(screen.getByText(/3 corners/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Undo corner' }));
+    expect(screen.getByText(/2 corners/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Start mapping' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('at least three corners');
+  });
+
+  it('will not record a spot outside the survey area', () => {
+    mount();
+    act(() => clickMap(lastMap(), { lat: 55.7, lng: 12.99 }));
+    fireEvent.click(screen.getByRole('button', { name: 'Standing' }));
+    fireEvent.click(screen.getByLabelText('Waiting for transportation'));
+    expect(screen.getByText(/outside the survey area/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Record' })).toBeDisabled();
   });
 
   it('requires a map location before recording is enabled', () => {
@@ -66,7 +124,7 @@ describe('Stationary Activity Mapping', () => {
 
   it('plots each observation where it was recorded on the map', () => {
     mount();
-    act(() => clickMap(lastMap(), { lat: 55.601, lng: 12.99 }));
+    act(() => clickMap(lastMap(), { lat: 55.605, lng: 12.99 }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Standing' }));
     fireEvent.click(screen.getByLabelText('Waiting for transportation'));
@@ -74,7 +132,7 @@ describe('Stationary Activity Mapping', () => {
 
     const recorded = screen.getByRole('button', { name: 'Standing: Waiting for transportation' });
     const marker = lastMap().markers.find((item) => item.getElement() === recorded);
-    expect(marker.getLngLat()).toEqual({ lat: 55.601, lng: 12.99 });
+    expect(marker.getLngLat()).toEqual({ lat: 55.605, lng: 12.99 });
     // Drawn as the posture's symbol: standing is a filled circle.
     expect(recorded.querySelector('svg circle')).toHaveAttribute('fill', 'currentColor');
 

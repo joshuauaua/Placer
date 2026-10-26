@@ -52,6 +52,66 @@ export const DIRECTIONS = [
 /** What the sheet asks for before it is handed in. */
 export const HANDING_IN = 'Add your name, date, & day of the week to the sheet. Sum totals before handing in.';
 
+/* --- The session: what the sheet's header asks for, and the area being mapped --- */
+
+/** The weather, as the observer would note it. */
+export const WEATHER = ['Sunny', 'Partly cloudy', 'Overcast', 'Rain', 'Snow', 'Windy'];
+
+const pad = (number) => String(number).padStart(2, '0');
+
+/** A session not filled in yet: today's date and the time now, everything else blank. */
+export function emptySession(now = new Date()) {
+  return {
+    name: '',
+    date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+    time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+    weather: '',
+    location: '',
+    area: [],
+  };
+}
+
+/** What is still missing before mapping can start, in the order the form asks. */
+export function sessionProblems(session) {
+  const problems = [];
+  if ((session.area?.length ?? 0) < 3) problems.push('Outline the area on the map: at least three corners.');
+  if (!session.name.trim()) problems.push('Add your name.');
+  if (!session.date) problems.push('Add the date.');
+  if (!session.time) problems.push('Add the time.');
+  if (!session.weather) problems.push('Pick the weather.');
+  if (!session.location.trim()) problems.push('Name the location.');
+  return problems;
+}
+
+/** Whether `point` ({ lat, lng }) is inside the outline `path` — ray casting, flat. */
+export function insideArea(point, path) {
+  if (!point || (path?.length ?? 0) < 3) return false;
+  let inside = false;
+  for (let i = 0, j = path.length - 1; i < path.length; j = i, i += 1) {
+    const a = path[i];
+    const b = path[j];
+    if ((a.lat > point.lat) !== (b.lat > point.lat)
+      && point.lng < ((b.lng - a.lng) * (point.lat - a.lat)) / (b.lat - a.lat) + a.lng) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+/** The session as the sheet's header: a line each for who, when, where and the weather. */
+export function sessionLines(session) {
+  if (!session) return [];
+  const day = session.date
+    ? new Date(`${session.date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'long' })
+    : '';
+  return [
+    `Observer: ${session.name}`,
+    `Date: ${session.date}${day ? ` (${day})` : ''}, ${session.time}`,
+    `Location: ${session.location}`,
+    `Weather: ${session.weather}`,
+  ];
+}
+
 export const ACTIVITY_BY_KEY = Object.fromEntries(ACTIVITIES.map((activity) => [activity.key, activity]));
 
 /** All the activities that can pair with one posture, in catalogue order. */
@@ -141,9 +201,10 @@ export function peopleWord(count) {
   return count === 1 ? 'person' : 'people';
 }
 
-export function summaryText(counts) {
+export function summaryText(counts, session = null) {
   const lines = [
     'Stationary Activity Mapping — PLACER Toolkit',
+    ...sessionLines(session),
     `${counts.total} ${peopleWord(counts.total)} recorded`,
     '',
   ];

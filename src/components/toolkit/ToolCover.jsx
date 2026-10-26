@@ -3,7 +3,8 @@
  * The layout of the landingpage branch's User Labs page (PhotoSplit there): a
  * block of the tool's colour tint fills the left half where User Labs has
  * its photo, and the copy sits centred on the right, ending in the one button
- * that starts the tool, with the language picker beside it. The way back (All tools,
+ * that starts the tool, with the language picker beside it. Who made the tool sits
+ * right under its name. The way back (All tools,
  * or the project's breadcrumb) sits on the colour block, top left. On a phone they
  * stack, colour first. Everything on it is
  * read from the registry entry, so the tile, the cover and the header above the
@@ -45,7 +46,12 @@ export function ToolCover({ t, tool, onStart, onBack, breadcrumb = null }) {
         <h1 style={{ color: t.ink }}>
           {toolText(tool, 'name', language)}
         </h1>
-        {tagline && (
+        {tool.createdBy && (
+          <p className="placer-caption" style={{ marginTop: 8, color: t.inkDim }}>
+            {text('tool.by', { name: tool.createdBy })}
+          </p>
+        )}
+        {tagline && tool.taglineOnCover !== false && (
           <p className="placer-h3" style={{ marginTop: 16, color: t.ink }}>
             {tagline}
           </p>
@@ -53,10 +59,9 @@ export function ToolCover({ t, tool, onStart, onBack, breadcrumb = null }) {
         <p className="placer-body-lg" style={{ marginTop: 16, color: t.inkDim }}>
           {toolText(tool, 'blurb', language)}
         </p>
-        {(tool.duration || tool.createdBy) && (
+        {tool.duration && (
           <p className="placer-caption" style={{ marginTop: 16, color: t.inkFaint }}>
-            {[toolText(tool, 'duration', language), tool.createdBy && text('tool.by', { name: tool.createdBy })]
-              .filter(Boolean).join(' · ')}
+            {toolText(tool, 'duration', language)}
           </p>
         )}
         {tool.credit && (

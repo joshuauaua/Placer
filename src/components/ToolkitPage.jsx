@@ -236,6 +236,9 @@ export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
   // opening a different tool lands on that one's cover rather than skipping it,
   // and opening a room (which only changes the query string) does not bring it back.
   const [startedId, setStartedId] = useState(null);
+  // Back in the gallery, nothing is started: opening the same tool again starts on
+  // its cover too. Reset while rendering, so the tool never shows for a frame first.
+  if (!tool && startedId !== null) setStartedId(null);
 
   // The Contribute button's pop-up form, for offering a tool to the PLACER Toolkit.
   const [contributing, setContributing] = useState(false);

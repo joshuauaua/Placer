@@ -12,6 +12,10 @@ export default {
   ...tone(PALETTE.orange),
   icon: 'grid',
   createdBy: 'Gehl Institute',
+  // The tagline is for the Toolkit's tile only; the cover goes from the name and its
+  // credit straight to the description, and the instructions page shows only the credits.
+  taglineOnCover: false,
+  blurbOnCover: true,
   credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
   component: StationaryActivityMap,
 };
