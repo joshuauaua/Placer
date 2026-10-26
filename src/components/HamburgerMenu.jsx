@@ -87,7 +87,7 @@ export function HamburgerMenu({ t, view, onNavigate }) {
               <div key={index} className="placer-menu-column">
                 {sections.map(({ heading, links }) => (
                   <section key={heading} className="placer-menu-section">
-                    <div className="placer-menu-heading" style={{ color: 'var(--placer-accent)' }}>{heading}</div>
+                    <div className="placer-menu-heading" style={{ color: t.ink }}>{heading}</div>
                     {links.map(({ label, view: target, href }) => target ? (
                       <button
                         key={label}
