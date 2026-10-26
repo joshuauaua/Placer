@@ -1,7 +1,7 @@
 /* PLACER — shared UI primitives, styled to the brand kit (design.md) */
 
 import { Icon } from './Icon';
-import { CAT, CHARACTER_LIST, NEUTRAL } from '../theme';
+import { CAT, CHARACTER_LIST } from '../theme';
 
 /**
  * The wordmark: Helvetica Bold, uppercase, +8% tracking, in ink or white only.
@@ -9,40 +9,34 @@ import { CAT, CHARACTER_LIST, NEUTRAL } from '../theme';
  * Left unset it follows the kit — 20px caps on desktop, 16px on mobile (see
  * .placer-wordmark in index.css).
  */
-/* The PLACER logo, from the brand files LOGO WB.svg and LOGO BB.svg.
+/* The PLACER logo, from the brand files LOGO WB.svg and LOGO BB.svg — the same
+ * lettering in black and in white, both on a transparent background.
  *
  * Drawn inline rather than loaded as an image: the files set PLACER as live text
- * in Helvetica LT Pro, which an <img> cannot fetch, so it fell back to a serif. In
- * the page it takes the site's own Helvetica stack (--placer-font) instead, at the
- * files' size, weight and spacing.
- *
- *   plain  black lettering and nothing else (WB), cropped to the lettering so its
- *          height is the capitals' height. For a light background; it takes the
- *          surrounding text colour.
- *   badge  white lettering on a black box (BB), the whole artboard. For the footer;
- *          the box is the footer's own ink rather than the file's #000, so the two
- *          read as one surface.
+ * in Helvetica, which an <img> cannot fetch, so it fell back to a serif. In the page
+ * it takes the site's own Helvetica stack (--placer-font) instead, at the files'
+ * size, weight and spacing, cropped to the lettering so its height is the capitals'
+ * height. It takes the surrounding text colour: black (WB) on a light background,
+ * white (BB) on the footer's dark one.
  *
  * Decorative by default, for a control that names itself (the nav bar's
  * "PLACER home"); pass `label` where the logo stands alone.
  */
-const LOGO_VIEWBOX = { plain: '91 99 416 73', badge: '0 0 589.29 262' };
+const LOGO_VIEWBOX = '91 99 416 73';
 
-export function BrandLogo({ variant = 'plain', height, label }) {
-  const badge = variant === 'badge';
-  const [, , width, tall] = LOGO_VIEWBOX[variant].split(' ').map(Number);
+export function BrandLogo({ height, label }) {
+  const [, , width, tall] = LOGO_VIEWBOX.split(' ').map(Number);
   return (
     <svg
-      viewBox={LOGO_VIEWBOX[variant]}
+      viewBox={LOGO_VIEWBOX}
       height={height}
       width={(height * width) / tall}
       style={{ display: 'block' }}
       {...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true, focusable: 'false' })}
     >
-      {badge && <rect x="-4.6" y="-5.02" width="600.92" height="267" fill={NEUTRAL.ink} />}
       <text
         transform="translate(91.05 171.78)"
-        fill={badge ? '#fff' : 'currentColor'}
+        fill="currentColor"
         style={{ fontFamily: 'var(--placer-font)', fontSize: 102, fontWeight: 700 }}
       >
         <tspan x="0" y="0">PL</tspan>

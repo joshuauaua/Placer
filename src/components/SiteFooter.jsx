@@ -33,9 +33,9 @@ export const FOOTER_COLUMNS = [
   },
 ];
 
-// How the footer lays FOOTER_COLUMNS out between its brand column on the left and its
-// newsletter column on the right: one inner array per column, its sections stacked
-// top to bottom. A section left out here is not shown, so a new one has to be placed.
+// How the footer lays FOOTER_COLUMNS out beside its brand column on the left: one
+// inner array per column, its sections stacked top to bottom. A section left out here
+// is not shown, so a new one has to be placed.
 const FOOTER_LAYOUT = [
   ['Project News'],
   ['About Us'],
@@ -57,7 +57,9 @@ const FOOTER_COLORS = {
   line: NEUTRAL.grey700,
 };
 
-// Only Instagram and email are live so far.
+// Only Instagram and email are live so far. Listed under About Us, after its links,
+// in the footer only: the menu has no use for them.
+const SOCIALS_UNDER = 'About Us';
 const SOCIALS = [
   { label: 'Instagram', href: 'https://www.instagram.com/placertool' },
   { label: 'Email', href: `mailto:${CONTACT_EMAIL}` },
@@ -91,12 +93,13 @@ function NewsletterSignup({ t }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ maxWidth: 360 }}>
-      <label htmlFor="placer-footer-newsletter" className="placer-footer-heading" style={{ display: 'block', fontSize: 14, lineHeight: '20px',
-        fontWeight: 700, marginBottom: 8 }}>
-        Follow our newsletter
-      </label>
+    <form onSubmit={handleSubmit}>
+      {/* The heading, the field and the button on one line. */}
       <div className="placer-footer-newsletter">
+        <label htmlFor="placer-footer-newsletter" className="placer-footer-heading"
+          style={{ fontSize: 14, lineHeight: '20px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+          Follow our newsletter
+        </label>
         <input id="placer-footer-newsletter" type="email" required autoComplete="email"
           placeholder="you@example.com" value={email}
           onChange={(e) => setEmail(e.target.value)} />
@@ -142,9 +145,9 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
       <div className="placer-footer" style={{ maxWidth: 1440, margin: '0 auto' }}>
         <div className="placer-footer-grid">
           <div>
-            {/* The logo's black badge, its lettering at the footer's 16px cap height. */}
-            <div onClick={() => onNavigate('welcome')} style={{ cursor: 'pointer', display: 'inline-block' }}>
-              <BrandLogo variant="badge" height={56} label="PLACER" />
+            {/* The logo in white (LOGO BB), at the footer's 16px cap height. */}
+            <div onClick={() => onNavigate('welcome')} style={{ cursor: 'pointer', display: 'inline-block', color: t.ink }}>
+              <BrandLogo height={16} label="PLACER" />
             </div>
             <p className="placer-footer-blurb" style={{ marginTop: 16, maxWidth: 360, fontSize: 14, lineHeight: '20px', color: t.inkDim }}>
               Reimagine your city. A toolkit for shaping shared spaces together.
@@ -173,27 +176,27 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
                           )}
                         </li>
                       ))}
+                      {heading === SOCIALS_UNDER && SOCIALS.map(({ label, href }) => (
+                        <li key={label}>
+                          <a href={href} target="_blank" rel="noopener noreferrer" className="placer-footer-link">
+                            {label} ↗
+                          </a>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 ))}
             </div>
           ))}
 
-          {/* The newsletter and the socials, in the far-right column. */}
-          <div>
-            <NewsletterSignup t={t} />
-            <div className="placer-footer-socials" style={{ display: 'flex', gap: 24, marginTop: 16, fontSize: 14, lineHeight: '20px' }}>
-              {SOCIALS.map(({ label, href }) => (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer"
-                  className="placer-footer-link">
-                  {label} ↗
-                </a>
-              ))}
-            </div>
-          </div>
         </div>
 
-        <div className="placer-footer-bottom" style={{ marginTop: 40, paddingTop: 24, borderTop: `1px solid ${t.line}`,
+        {/* The newsletter, on its own line just above the rule. */}
+        <div style={{ marginTop: 40 }}>
+          <NewsletterSignup t={t} />
+        </div>
+
+        <div className="placer-footer-bottom" style={{ marginTop: 24, paddingTop: 24, borderTop: `1px solid ${t.line}`,
           fontSize: 12, lineHeight: '16px', letterSpacing: '0.01em' }}>
           {/* The AGPL asks that people using the site can get its source, so the
               repository is linked beside the licence. */}
