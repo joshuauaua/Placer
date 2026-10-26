@@ -325,6 +325,32 @@ describe('the gallery', () => {
     expect(screen.queryByRole('button', { name: 'Get started' })).not.toBeInTheDocument();
   });
 
+  it('credits Stationary Activity Mapping under its name, and keeps its tagline for the tile', async () => {
+    renderPageAt('/toolkit/stationary-activity-mapping');
+
+    const title = await screen.findByRole('heading', { level: 1, name: 'Stationary Activity Mapping' });
+    expect(title.nextElementSibling).toHaveTextContent('By Gehl Institute');
+    expect(screen.queryByText(/one person at a time/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Mapping people spending time/)).toBeInTheDocument();
+    expect(screen.getByText(/Public Life Data Protocol/)).toBeInTheDocument();
+    start();
+
+    // The instructions page: the credits, without the description again.
+    expect(screen.getByText('By Gehl Institute')).toBeInTheDocument();
+    expect(screen.getByText(/Public Life Data Protocol/)).toBeInTheDocument();
+    expect(screen.queryByText(/Mapping people spending time/)).not.toBeInTheDocument();
+  });
+
+  it('opens the same tool on its cover again, after going back to the gallery', async () => {
+    renderPageAt('/toolkit/street-mixer');
+    start();
+
+    fireEvent.click(screen.getByRole('button', { name: /all tools/i }));
+    fireEvent.click(await screen.findByRole('button', { name: tile(/Street Section Mixer/i) }));
+
+    expect(await screen.findByRole('button', { name: 'Get started' })).toBeInTheDocument();
+  });
+
   it('opens the next tool on its own cover, rather than skipping it', async () => {
     renderPageAt('/toolkit/street-mixer');
     start();

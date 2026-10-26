@@ -14,6 +14,9 @@ import {
   peopleWord,
   summaryText,
   tally,
+  emptySession,
+  insideArea,
+  sessionProblems,
 } from '../stationaryActivity';
 
 describe('the field sheet', () => {
@@ -177,8 +180,39 @@ describe('summaryText', () => {
     expect(text).toContain('- Waiting for transportation: 1');
   });
 
+  it("opens with the session's header when there is one", () => {
+    const session = { ...emptySession(), name: 'Ada', date: '2026-10-26', time: '14:00',
+      weather: 'Overcast', location: 'Stortorget' };
+    const text = summaryText(tally([]), session);
+    expect(text).toContain('Observer: Ada');
+    expect(text).toContain('Date: 2026-10-26 (Monday), 14:00');
+    expect(text).toContain('Location: Stortorget');
+    expect(text).toContain('Weather: Overcast');
+  });
+
   it('says people when it has to', () => {
     expect(peopleWord(1)).toBe('person');
     expect(peopleWord(2)).toBe('people');
+  });
+});
+
+describe('the session', () => {
+  const square = [{ lat: 0, lng: 0 }, { lat: 0, lng: 2 }, { lat: 2, lng: 2 }, { lat: 2, lng: 0 }];
+
+  it('starts on the date and time given, with the rest blank', () => {
+    const session = emptySession(new Date(2026, 9, 26, 9, 5));
+    expect(session).toEqual({ name: '', date: '2026-10-26', time: '09:05', weather: '', location: '', area: [] });
+  });
+
+  it('lists what is missing, and nothing once it is all there', () => {
+    expect(sessionProblems(emptySession())).toHaveLength(4);
+    expect(sessionProblems({ name: 'Ada', date: '2026-10-26', time: '09:00', weather: 'Sunny',
+      location: 'Stortorget', area: square })).toEqual([]);
+  });
+
+  it('knows whether a spot is inside the outline', () => {
+    expect(insideArea({ lat: 1, lng: 1 }, square)).toBe(true);
+    expect(insideArea({ lat: 3, lng: 1 }, square)).toBe(false);
+    expect(insideArea({ lat: 1, lng: 1 }, square.slice(0, 2))).toBe(false);
   });
 });
