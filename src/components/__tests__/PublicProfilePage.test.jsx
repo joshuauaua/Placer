@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { PublicProfilePage } from '../PublicProfilePage';
 import { isSupabaseConfigured, readPublicProfile } from '../../services/auth';
-import { readImaginationsByUser } from '../../services/imaginations';
 import { readProfileActivity, readProfileComments } from '../../services/profileActivity';
 import { THEME } from '../../theme';
 
@@ -33,10 +32,6 @@ vi.mock('../../services/inquiries', () => ({
   readInquiries: vi.fn(() => Promise.resolve([{ id: 'i1', tool: 'desire-lines', title: 'Market square', note: 'Worn bare.',
     createdAt: '2026-10-15T09:00:00Z', config: {} }])),
   deleteInquiry: vi.fn(),
-}));
-
-vi.mock('../../services/imaginations', () => ({
-  readImaginationsByUser: vi.fn(() => Promise.resolve([])),
 }));
 
 const MARA = { id: 'user-1', name: 'Mara Quinn', bio: 'Cyclist and tree enthusiast',
@@ -122,12 +117,11 @@ describe('PublicProfilePage', () => {
     expect(heading.closest('header').style.backgroundImage).not.toContain('cover-1.jpg');
   });
 
-  it('has no Imaginations section, and does not fetch what they posted', async () => {
+  it('has no Imaginations section', async () => {
     setup();
     await screen.findByRole('heading', { level: 1, name: 'Mara Quinn' });
 
     expect(screen.queryByRole('heading', { name: 'Imaginations' })).not.toBeInTheDocument();
-    expect(readImaginationsByUser).not.toHaveBeenCalled();
   });
 
   it('looks the same on your own profile, with only the empty bio speaking to you', async () => {

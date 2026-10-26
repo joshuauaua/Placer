@@ -20,6 +20,10 @@ export const SURVEY_TABLE = 'survey_responses';
 // profile module down with it. services/__tests__/api.test.js holds the two sides
 // together.
 const STORAGE_KEYS = {
+  // Imaginations, their votes and their comments as this browser kept them before
+  // there were accounts. Nothing writes them any more (an idea is kept on the profile
+  // now, services/inquiries.js), but a browser may still hold some, and they stay
+  // listed so the export and erasure requests still reach them.
   IMAGINATIONS: 'placemaking_imaginations',
   ASSETS_LIBRARY: 'placemaking_assets',
   UPVOTES: 'placemaking_upvotes',
@@ -43,7 +47,7 @@ const STORAGE_KEYS = {
   // Signing in with Google, or confirming a new account by email, navigates the whole
   // page away and takes the half-finished imagination in React state with it — so it
   // is written down first and picked up again on the way back. Cleared as soon as it is
-  // restored or posted, so in the ordinary case nothing is stored here at all.
+  // restored or saved, so in the ordinary case nothing is stored here at all.
   PENDING_IMAGINATION: 'placemaking_pending_imagination'
 };
 
@@ -120,156 +124,6 @@ export const fetchAssets = async () => {
   await simulateDelay();
   const assets = localStorage.getItem(STORAGE_KEYS.ASSETS_LIBRARY);
   return assets ? JSON.parse(assets) : [];
-};
-
-/**
- * Fetch all saved imaginations
- */
-export const fetchImaginations = async () => {
-  await simulateDelay();
-  const imaginations = localStorage.getItem(STORAGE_KEYS.IMAGINATIONS);
-  return imaginations ? JSON.parse(imaginations) : [];
-};
-
-/**
- * Fetch a single imagination by ID
- */
-export const fetchImaginationById = async (id) => {
-  await simulateDelay();
-  const imaginations = await fetchImaginations();
-  return imaginations.find(img => img.id === id) || null;
-};
-
-/**
- * Save a new imagination or update existing
- */
-export const saveImagination = async (imaginationData) => {
-  await simulateDelay();
-
-  const imaginations = await fetchImaginations();
-  const timestamp = new Date().toISOString();
-
-  if (imaginationData.id) {
-    // Update existing
-    const index = imaginations.findIndex(img => img.id === imaginationData.id);
-    if (index !== -1) {
-      imaginations[index] = {
-        ...imaginationData,
-        updatedAt: timestamp
-      };
-    }
-  } else {
-    // Create new
-    const newImagination = {
-      ...imaginationData,
-      id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      upvotes: 0,
-      comments: []
-    };
-    imaginations.push(newImagination);
-  }
-
-  localStorage.setItem(STORAGE_KEYS.IMAGINATIONS, JSON.stringify(imaginations));
-  return imaginationData.id ? imaginations.find(img => img.id === imaginationData.id) : imaginations[imaginations.length - 1];
-};
-
-/**
- * Delete an imagination
- */
-export const deleteImagination = async (id) => {
-  await simulateDelay();
-  const imaginations = await fetchImaginations();
-  const filtered = imaginations.filter(img => img.id !== id);
-  localStorage.setItem(STORAGE_KEYS.IMAGINATIONS, JSON.stringify(filtered));
-  return { success: true };
-};
-
-// A vote's weight, for turning a browser's standing 'up'/'down'/null into the delta
-// it contributes to an imagination's score.
-const VOTE_WEIGHT = { up: 1, down: -1 };
-const weightOf = (direction) => VOTE_WEIGHT[direction] || 0;
-
-/**
- * Cast, change, or withdraw this browser's vote on an imagination.
- *
- * `direction` is the button that was pressed — 'up' or 'down'. Pressing the one that
- * is already standing withdraws it rather than doubling it, which is why the caller
- * does not have to track what the previous vote was; this reads it back out of
- * STORAGE_KEYS.UPVOTES itself. There is no per-account tracking to dodge here the
- * way the Supabase path needs it — this browser only ever has the one vote to cast,
- * so its own record of what that vote currently is is the whole of the bookkeeping.
- *
- * Returns { upvotes, myVote }, or null for an imagination that is no longer there.
- */
-export const voteImagination = async (id, direction) => {
-  await simulateDelay();
-
-  const imaginations = await fetchImaginations();
-  const index = imaginations.findIndex(img => img.id === id);
-  if (index === -1) return null;
-
-  const votes = JSON.parse(localStorage.getItem(STORAGE_KEYS.UPVOTES) || '{}');
-  const before = votes[id] || null;
-  const after = before === direction ? null : direction;
-
-  imaginations[index].upvotes = (imaginations[index].upvotes || 0) - weightOf(before) + weightOf(after);
-
-  if (after) votes[id] = after;
-  else delete votes[id];
-
-  localStorage.setItem(STORAGE_KEYS.UPVOTES, JSON.stringify(votes));
-  localStorage.setItem(STORAGE_KEYS.IMAGINATIONS, JSON.stringify(imaginations));
-
-  return { upvotes: imaginations[index].upvotes, myVote: after };
-};
-
-/**
- * This browser's standing vote on an imagination — 'up', 'down', or null.
- */
-export const readMyVote = async (id) => {
-  await simulateDelay();
-  const votes = JSON.parse(localStorage.getItem(STORAGE_KEYS.UPVOTES) || '{}');
-  return votes[id] || null;
-};
-
-/**
- * Add a comment to an imagination
- */
-export const addComment = async (imaginationId, commentData) => {
-  await simulateDelay();
-
-  const imaginations = await fetchImaginations();
-  const index = imaginations.findIndex(img => img.id === imaginationId);
-
-  if (index !== -1) {
-    const newComment = {
-      id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      text: commentData.text,
-      author: commentData.author || 'Anonymous',
-      createdAt: new Date().toISOString()
-    };
-
-    if (!imaginations[index].comments) {
-      imaginations[index].comments = [];
-    }
-
-    imaginations[index].comments.push(newComment);
-    localStorage.setItem(STORAGE_KEYS.IMAGINATIONS, JSON.stringify(imaginations));
-    return newComment;
-  }
-
-  return null;
-};
-
-/**
- * Every comment on an imagination, in the order they were added.
- */
-export const readComments = async (imaginationId) => {
-  await simulateDelay();
-  const imagination = await fetchImaginationById(imaginationId);
-  return imagination?.comments || [];
 };
 
 /**
@@ -431,18 +285,4 @@ export const eraseAllData = async () => {
   keys.forEach(key => localStorage.removeItem(key));
 
   return { success: true, keysCleared: keys.length };
-};
-
-/**
- * Export imagination data as JSON (for sharing)
- */
-export const exportImagination = async (id) => {
-  await simulateDelay();
-  const imagination = await fetchImaginationById(id);
-  if (imagination) {
-    const dataStr = JSON.stringify(imagination, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-    return dataUri;
-  }
-  return null;
 };

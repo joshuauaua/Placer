@@ -2,8 +2,7 @@
  * Shared by the dashboard's Your Activity card and the full feed at /activity.
  *
  * A notification that links to a project or an organisation opens its public page.
- * One that links to an imagination has nowhere of its own to go yet, so it is a
- * plain row.
+ * One that links to nothing is a plain row.
  */
 
 import { Icon } from './Icon';

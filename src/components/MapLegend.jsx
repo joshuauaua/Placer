@@ -20,19 +20,10 @@ function SearchSwatch() {
   );
 }
 
-export function MapLegend({ t, pin, area }) {
+export function MapLegend({ t, area }) {
   const [open, setOpen] = useState(true);
 
   const rows = [
-    {
-      key: 'imagination',
-      label: 'An imagination',
-      hint: 'Click one to open it',
-      swatch: (
-        <span style={{ width: 16, height: 16, borderRadius: '50%', background: pin.fill,
-          border: `2px solid ${pin.ring}`, boxSizing: 'border-box' }} />
-      ),
-    },
     {
       key: 'project',
       label: 'A project area',

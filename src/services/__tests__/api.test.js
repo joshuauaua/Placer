@@ -1,15 +1,10 @@
 import { describe, it, expect, afterEach } from 'vite-plus/test';
 import {
-  addComment,
   clearPendingImagination,
   eraseAllData,
   exportAllData,
-  readComments,
-  readMyVote,
   readPendingImagination,
-  saveImagination,
   savePendingImagination,
-  voteImagination,
 } from '../api';
 import { saveProfile } from '../profile';
 import { participantToken, rememberAnswer, rememberHostedRoom } from '../../toolkit/rooms';
@@ -103,15 +98,15 @@ describe('the GDPR data rights cover what this browser follows', () => {
   });
 
   it('includes follows in a data export', async () => {
-    await follow('imagination', 'img-1', 'Pocket park on Lot 7');
+    await follow('project', 'proj-1', 'Pocket park on Lot 7');
 
     const { data } = await exportAllData();
 
-    expect(data[FOLLOWS_KEY]).toMatchObject([{ type: 'imagination', targetId: 'img-1' }]);
+    expect(data[FOLLOWS_KEY]).toMatchObject([{ type: 'project', targetId: 'proj-1' }]);
   });
 
   it('erases follows along with everything else', async () => {
-    await follow('imagination', 'img-1', 'Pocket park on Lot 7');
+    await follow('project', 'proj-1', 'Pocket park on Lot 7');
     expect(localStorage.getItem(FOLLOWS_KEY)).not.toBeNull();
 
     await eraseAllData();
@@ -120,94 +115,30 @@ describe('the GDPR data rights cover what this browser follows', () => {
   });
 });
 
-const UPVOTES_KEY = 'placemaking_upvotes';
+/*
+ * Nothing writes imaginations, their votes or their comments to this browser any more,
+ * but one used before there were accounts may still hold them. They are personal data
+ * all the same, so the export still carries them and the erasure still clears them.
+ */
+describe('the GDPR data rights still cover imaginations left in this browser', () => {
+  const LEFT_BEHIND = {
+    placemaking_imaginations: [{ id: 'old', title: 'Bench by the canal' }],
+    placemaking_upvotes: { old: 'up' },
+    placemaking_comments: { old: [{ text: 'Yes' }] },
+  };
 
-describe('voting on an imagination', () => {
   afterEach(() => {
     localStorage.clear();
   });
 
-  it('adds an upvote and records the standing vote', async () => {
-    const { id } = await saveImagination({ title: 'Pocket park' });
-
-    const result = await voteImagination(id, 'up');
-
-    expect(result).toEqual({ upvotes: 1, myVote: 'up' });
-    await expect(readMyVote(id)).resolves.toBe('up');
-  });
-
-  it('withdraws a vote when the same direction is pressed again', async () => {
-    const { id } = await saveImagination({ title: 'Pocket park' });
-    await voteImagination(id, 'up');
-
-    const result = await voteImagination(id, 'up');
-
-    expect(result).toEqual({ upvotes: 0, myVote: null });
-    await expect(readMyVote(id)).resolves.toBeNull();
-  });
-
-  it('switches from up to down in one move, a swing of two', async () => {
-    const { id } = await saveImagination({ title: 'Pocket park' });
-    await voteImagination(id, 'up');
-
-    const result = await voteImagination(id, 'down');
-
-    expect(result).toEqual({ upvotes: -1, myVote: 'down' });
-  });
-
-  it('is null for an imagination that is not there', async () => {
-    await expect(voteImagination('missing', 'up')).resolves.toBeNull();
-  });
-
-  it('has no standing vote before one is cast', async () => {
-    const { id } = await saveImagination({ title: 'Pocket park' });
-
-    await expect(readMyVote(id)).resolves.toBeNull();
-  });
-
-  it('is included in a data export, and erased along with everything else', async () => {
-    const { id } = await saveImagination({ title: 'Pocket park' });
-    await voteImagination(id, 'up');
+  it('exports them, and erases them along with everything else', async () => {
+    for (const [key, value] of Object.entries(LEFT_BEHIND)) localStorage.setItem(key, JSON.stringify(value));
 
     const { data } = await exportAllData();
-    expect(data[UPVOTES_KEY]).toEqual({ [id]: 'up' });
+    for (const [key, value] of Object.entries(LEFT_BEHIND)) expect(data[key]).toEqual(value);
 
     await eraseAllData();
-    expect(localStorage.getItem(UPVOTES_KEY)).toBeNull();
-  });
-});
-
-describe('commenting on an imagination', () => {
-  afterEach(() => {
-    localStorage.clear();
-  });
-
-  it('adds a comment and reads it back', async () => {
-    const { id } = await saveImagination({ title: 'Pocket park' });
-
-    const saved = await addComment(id, { text: 'Nice idea', author: 'Mara Quinn' });
-    const all = await readComments(id);
-
-    expect(saved).toMatchObject({ text: 'Nice idea', author: 'Mara Quinn' });
-    expect(all).toEqual([saved]);
-  });
-
-  it('credits an unnamed comment to Anonymous', async () => {
-    const { id } = await saveImagination({ title: 'Pocket park' });
-
-    const saved = await addComment(id, { text: 'Nice idea' });
-
-    expect(saved.author).toBe('Anonymous');
-  });
-
-  it('is nothing for an imagination with no comments yet', async () => {
-    const { id } = await saveImagination({ title: 'Pocket park' });
-
-    await expect(readComments(id)).resolves.toEqual([]);
-  });
-
-  it('is nothing for an imagination that is not there', async () => {
-    await expect(readComments('missing')).resolves.toEqual([]);
+    for (const key of Object.keys(LEFT_BEHIND)) expect(localStorage.getItem(key)).toBeNull();
   });
 });
 

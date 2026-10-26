@@ -310,7 +310,7 @@ Deno.serve(async (req) => {
       const whose = account === caller.id ? 'your' : "this project's owner's";
       return reply(413, {
         error: `That would take ${whose} pictures past ${QUOTA_BYTES / MB} MB. `
-          + 'Delete some imaginations or pictures to make room.',
+          + 'Delete some saved inquiries or pictures to make room.',
       });
     }
 

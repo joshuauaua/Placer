@@ -104,7 +104,7 @@ const PROJECT = {
   description: '', startDate: null, endDate: null, locations: [],
 };
 
-const STATS = { imaginationsCount: 4, imaginationsUpvotes: 19, toolkitRoomsCount: 2 };
+const STATS = { toolkitRoomsCount: 2 };
 
 // The tab the dashboard opens on: each group of tests below sets the one its part of
 // the dashboard is under, and a test can set it for itself.
@@ -195,6 +195,7 @@ describe('ProjectDashboardPage', () => {
 
     const table = await screen.findByRole('table');
     await waitFor(() => expect(insight('Followers')).toBe('6'));
+    expect(within(table).queryByText('Imaginations')).not.toBeInTheDocument();
     expect(within(table).getAllByRole('columnheader').map((th) => th.textContent))
       .toEqual(['Audience', 'Participation', 'Project']);
     expect(insight('Page views')).toBe('158');
@@ -203,8 +204,6 @@ describe('ProjectDashboardPage', () => {
     expect(insight('Page views, last 7 days')).toBe('35');
     expect(insight('Interactions')).toBe('31');
     expect(insight('Toolkit sessions')).toBe('2');
-    expect(insight('Imaginations')).toBe('4');
-    expect(insight('Votes on imaginations')).toBe('19');
     expect(insight('Comments')).toBe('3');
     expect(insight('Updates posted')).toBe('2');
     expect(insight('People involved')).toBe('1');
@@ -241,7 +240,7 @@ describe('ProjectDashboardPage', () => {
     await waitFor(() => expect(insight('Followers')).toBe('6'));
     expect(insight('Page views')).toBe('–');
     expect(insight('Page views, last 7 days')).toBe('–');
-    expect(insight('Imaginations')).toBe('4');
+    expect(insight('Toolkit sessions')).toBe('2');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     consoleError.mockRestore();
   });
@@ -832,7 +831,7 @@ describe('ProjectDashboardPage, a project\'s open rooms', () => {
 
     setup();
 
-    expect(await screen.findByText('4')).toBeInTheDocument();
+    expect(await screen.findByRole('table')).toHaveTextContent('Toolkit sessions');
     fireEvent.click(screen.getByRole('tab', { name: 'My Toolkit' }));
     expect(screen.getByRole('heading', { name: 'My Toolkit' })).toBeInTheDocument();
     expect(screen.queryByText('Open rooms')).not.toBeInTheDocument();

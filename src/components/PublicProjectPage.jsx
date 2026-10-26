@@ -29,9 +29,7 @@
  * (onProjectPage in toolkit/tools.js). Every other tool is taken part in right there
  * too, in a card that opens out with the tool inside (ProjectToolCard). Only live tools are shown: configured for the
  * project from its dashboard, or for one that runs in a room, with a room open for it
- * (isToolLive in toolkit/tools.js, supabase/project-open-rooms.sql). What people have
- * imagined is not a section of its own either: imagining is the Idea Visualizer, so what
- * was posted to the map for the project shows in that tool's section, under the tool.
+ * (isToolLive in toolkit/tools.js, supabase/project-open-rooms.sql).
  *
  * A tool its organisers put in the Workshop Room (project_tools.placement, see
  * supabase/project-workshop-room.sql) is shown the same way, in the Workshop Room tab
@@ -45,12 +43,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
-import { Btn, CatTag, PageLoader, Vote } from './UI';
+import { Btn, PageLoader } from './UI';
 import { ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
 import { ProjectToolCard } from './toolkit/ProjectToolCard';
 import { findTool } from '../toolkit/tools';
 import { arrangeSections, projectIntro, projectSections } from '../lib/projectSections';
-import { readImaginationsByProject } from '../services/imaginations';
 import {
   readConfiguredProjectTools, readLinks, readOrganisationProjects, readProject, readProjectAccess, readProjectTools,
   readWorkshopTools, requestProjectAccess, readRelatedProjects, recordProjectView,
@@ -69,9 +66,6 @@ import { ProjectPosts } from './ProjectPosts';
 import { ProjectGallery } from './ProjectGallery';
 import { PALETTE } from '../theme';
 import { responsiveImage } from '../lib/responsiveImage';
-
-// The tool whose results are the project's imaginations (toolkit/tools.js).
-const REIMAGINE_TOOL = 'reimagine-a-space';
 
 // A fixed locale and UTC, so the label does not shift with the machine it renders on.
 const DATE_FORMAT = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -124,34 +118,6 @@ function ProjectImage({ t, project, size, frame, sizes, eager = false }) {
 
 const HERO_FRAME = { width: '100%', height: 'auto', aspectRatio: '16 / 9' };
 const THUMB_FRAME = { width: '100%', height: 160, borderRadius: 0, border: 'none' };
-
-function ImaginationCard({ t, imagination }) {
-  const { title, cat, blurb, loc, preview, upvotes = 0 } = imagination;
-  return (
-    <article className="placer-card" style={{ padding: 0, overflow: 'hidden' }}>
-      {preview && (
-        <img {...responsiveImage(preview, '(max-width: 640px) 100vw, 360px')} alt={`Preview of ${title || 'this imagination'}`}
-          style={{ width: '100%', height: 150, objectFit: 'cover', display: 'block' }} />
-      )}
-      <div style={{ padding: 16, display: 'flex', gap: 12 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {cat && <div style={{ marginBottom: 8 }}><CatTag cat={cat} t={t} size="sm" /></div>}
-          <h3 style={{ fontSize: 16, lineHeight: '24px', color: t.ink, marginBottom: 4 }}>
-            {title || 'Untitled imagination'}
-          </h3>
-          {blurb && (
-            <p style={{ fontSize: 14, color: t.inkDim, lineHeight: '20px', marginBottom: 6,
-              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {blurb}
-            </p>
-          )}
-          {loc && <span className="placer-caption" style={{ color: t.inkFaint }}>{loc}</span>}
-        </div>
-        <Vote t={t} count={upvotes} size="sm" />
-      </div>
-    </article>
-  );
-}
 
 /**
  * What a tool is and why this project is using it, in a paragraph under its heading: the
@@ -322,7 +288,6 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const [roomSchedule, setRoomSchedule] = useState(null);
   // The Workshop Room section picked from the schedule; the first one until then.
   const [workshopPick, setWorkshopPick] = useState(null);
-  const [imaginations, setImaginations] = useState([]);
   const [links, setLinks] = useState([]);
   // Every reply on the project's updates and comments (supabase/project-replies.sql).
   const [replies, setReplies] = useState([]);
@@ -359,7 +324,6 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
 
     Promise.all([
       readProject(projectId),
-      readImaginationsByProject(projectId),
       readLinks(projectId),
       // Before project-setup.sql has run there is no table to read, and a project page
       // with no tools listed is better than no project page.
@@ -383,7 +347,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         return new Set();
       }),
     ])
-      .then(([proj, imgs, docs, toolIds, rooms, configured, workshop]) => {
+      .then(([proj, docs, toolIds, rooms, configured, workshop]) => {
         if (cancelled) return;
         if (!proj) {
           // A private project reads as no project at all to somebody who cannot see
@@ -406,7 +370,6 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         setOpenRooms(rooms);
         setConfiguredTools(configured);
         setWorkshopTools(workshop);
-        setImaginations(imgs);
         setLinks(docs);
         setStatus('ready');
         // Only once the project is known to exist, so a broken link is not a view.
@@ -611,19 +574,6 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
               ? { id: `${section.domId}-heading`, title: section.title, hidden: section.hideTitle }
               : undefined} />
           {isCover(section) && <ToolIntro t={t} tool={section.tool} room={section.room} />}
-          {/* Ideas posted to the map for the project, from the Toolkit's own flow. */}
-          {section.tool.id === REIMAGINE_TOOL && imaginations.length > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: t.ink, margin: '0 0 12px' }}>
-                Posted to the map
-              </h3>
-              <div className="placer-project-grid">
-                {imaginations.map((imagination) => (
-                  <ImaginationCard key={imagination.id} t={t} imagination={imagination} />
-                ))}
-              </div>
-            </div>
-          )}
         </>
       ) : (
         <ProjectToolCard t={t} tool={section.tool} room={section.room} displayName={accountName} />

@@ -3,11 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn } from './UI';
-import { ImaginationCard } from './ImaginationCard';
-import { ImaginationPreview } from './ImaginationPreview';
 import { LayeredCircles } from './LayeredCircles';
 import { NotificationItem } from './NotificationItem';
-import { postsAreShared, readLocalImaginations } from '../services/imaginations';
 import {
   PROJECT_TYPE_NAMES, isSupabaseConfigured as projectsAvailable, readMyProjects,
 } from '../services/projects';
@@ -151,17 +148,8 @@ function PanelCard({ t, id, title, action, children }) {
 }
 
 export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewProject,
-  onSignIn, onSignOut, onExplore, onOpenPublicProfile, onOpenProject, onOpenProjectPage,
+  onSignOut, onExplore, onOpenPublicProfile, onOpenProject, onOpenProjectPage,
   onOpenOrganisationPage }) {
-  // The imagination open in the modal, if any — set from any card on this page.
-  const [selected, setSelected] = useState(null);
-  // Imaginations still only in this browser, made before there were accounts: nobody
-  // else can see them. Only a separate store where a project is configured — without
-  // one, the local store is the only store and there is nothing to set apart.
-  const [onlyHere, setOnlyHere] = useState([]);
-
-  const shared = postsAreShared();
-
   // The account's projects, for the Projects row and Next Steps. Projects need a
   // Supabase project, so without one there are simply none.
   const [projects, setProjects] = useState([]);
@@ -213,34 +201,6 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
     return () => { cancelled = true; };
   }, [accountId]);
 
-  useEffect(() => {
-    if (!shared) return undefined;
-
-    let cancelled = false;
-
-    readLocalImaginations()
-      .then((local) => {
-        if (!cancelled) setOnlyHere(local);
-      })
-      .catch((err) => {
-        if (!cancelled) console.error('Could not load imaginations saved on this device:', err);
-      });
-
-    return () => { cancelled = true; };
-  }, [shared]);
-
-  // Escape closes the modal, matching the map's own Escape behaviour.
-  useEffect(() => {
-    if (!selected) return;
-
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setSelected(null);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selected]);
-
   const name = profile?.name ?? '';
   const shownProjects = byUrgency(projects).slice(0, PROJECTS_SHOWN);
   const steps = projectsStatus === 'ready' ? nextSteps(projects, profile).slice(0, STEPS_SHOWN) : [];
@@ -256,14 +216,6 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
   return (
     <div onKeyDown={moveWithArrows} style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '96px 40px 48px' }} className="placer-scroll">
-      {selected && (
-        <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)}
-          accountId={accountId} authorName={name} onSignIn={onSignIn}
-          onDeleted={(id) => {
-            setOnlyHere((current) => current.filter((item) => item.id !== id));
-            setSelected(null);
-          }} />
-      )}
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           gap: 16, flexWrap: 'wrap', marginBottom: 64 }}>
@@ -412,29 +364,6 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
             )}
           </PanelCard>
         </div>
-
-        {/* Anything made before there were accounts. Left where it is rather than uploaded:
-            it was made under a privacy policy that said it would never leave the device,
-            and publishing it to a shared map without being asked would break that. */}
-        {shared && onlyHere.length > 0 && (
-          <>
-            <h2 className="placer-disp" style={{ fontSize: 28, fontWeight: 700, color: t.ink,
-              letterSpacing: '-0.02em', marginBottom: 8 }}>
-              Saved on this device
-            </h2>
-            <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
-              Made before you had an account, so they live in this browser and nobody else
-              can see them. They stay here until you clear your browsing data — they are not
-              on the community map, and nothing has been uploaded.
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-              gap: 24, paddingBottom: 40 }}>
-              {onlyHere.map((imagination) => (
-                <ImaginationCard key={imagination.id} t={t} imagination={imagination} onOpen={setSelected} />
-              ))}
-            </div>
-          </>
-        )}
 
       </div>
     </div>

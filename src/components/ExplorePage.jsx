@@ -13,8 +13,8 @@
  * address or town — see lib/geocode.js. The map is OpenStreetMap's, through lib/map.js. Case studies have nowhere to come from yet
  * and wait as a filter that cannot be turned on.
  *
- * Imaginations are not here: they have their own map, MapContainer, which is also where
- * a new one is started from.
+ * Ideas made with the Idea Visualizer are not here: they are kept on their makers'
+ * profiles (services/inquiries.js) until publishing one to the map exists.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';

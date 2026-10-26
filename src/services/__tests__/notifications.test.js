@@ -47,8 +47,8 @@ const ROW = {
   category: 'engagement',
   title: 'New comment',
   body: 'Mara Quinn commented on "Pocket park on Lot 7"',
-  link_type: 'imagination',
-  link_id: 'img-1',
+  link_type: 'project',
+  link_id: 'proj-1',
   read_at: null,
   created_at: '2026-09-23T10:00:00.000Z',
 };
@@ -85,7 +85,7 @@ describe('notifications, with a Supabase project', () => {
     expect(list).toEqual([{
       id: 'note-1', category: 'engagement', title: 'New comment',
       body: 'Mara Quinn commented on "Pocket park on Lot 7"',
-      linkType: 'imagination', linkId: 'img-1', readAt: null,
+      linkType: 'project', linkId: 'proj-1', readAt: null,
       createdAt: '2026-09-23T10:00:00.000Z',
     }]);
   });
