@@ -6,12 +6,12 @@ import App from '../../App';
 import { useIdentity } from '../useIdentity';
 
 /*
- * The other half of requiring an account to post.
+ * The other half of requiring an account to save an idea.
  *
  * Signing in with Google, or confirming a new account by email, reloads the page — and
  * everything somebody has made up to that point lives in MainApp's React state. So it is
  * written to localStorage on the way out and picked up here on the way back. Without
- * this, gating the Post step would mean losing a drawing to sign in, which would be a
+ * this, gating the Save step would mean losing a drawing to sign in, which would be a
  * worse app than the one that had no accounts.
  *
  * useIdentity is mocked because what is under test is what App does with the answer, not
@@ -74,12 +74,12 @@ describe('an imagination parked while signing in', () => {
     localStorage.clear();
   });
 
-  it('puts somebody back on the Post step with their imagination on it', async () => {
+  it('puts somebody back on the Save step with their idea on it', async () => {
     park();
 
     renderApp();
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Ready to post' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Ready to save' })).toBeInTheDocument();
     expect(screen.getByText('Pocket park')).toBeInTheDocument();
     expect(screen.getByText('Swap the asphalt for trees.')).toBeInTheDocument();
   });
@@ -89,20 +89,21 @@ describe('an imagination parked while signing in', () => {
 
     renderApp();
 
-    await screen.findByRole('heading', { level: 1, name: 'Ready to post' });
+    await screen.findByRole('heading', { level: 1, name: 'Ready to save' });
     // The composited preview is the drawing; the counts prove the editable arrays came
     // back with it, so going back a step would still have something to edit.
-    expect(screen.getByAltText('Your imagination'))
+    expect(screen.getByAltText('Your idea'))
       .toHaveAttribute('src', 'data:image/jpeg;base64,mockPreview');
     expect(screen.getByText(/assets placed/)).toHaveTextContent('2 assets placed');
   });
 
-  it('offers the Post button, now that there is an account behind it', async () => {
+  it('offers the Save button rather than a sign-in, now that there is an account behind it', async () => {
     park();
 
     renderApp();
 
-    expect(await screen.findByRole('button', { name: /Post to community/ })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: 'Save to my profile' })).toBeInTheDocument();
+    expect(screen.queryByText('Sign in below to save')).not.toBeInTheDocument();
   });
 
   it('forgets the parked copy once it has been restored', async () => {
@@ -110,7 +111,7 @@ describe('an imagination parked while signing in', () => {
 
     renderApp();
 
-    await screen.findByRole('heading', { level: 1, name: 'Ready to post' });
+    await screen.findByRole('heading', { level: 1, name: 'Ready to save' });
     expect(localStorage.getItem(PENDING_KEY)).toBeNull();
   });
 

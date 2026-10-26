@@ -5,7 +5,7 @@ import { PALETTE } from '../../theme';
 import {
   ballotSetupProblems, budgetProblems, combineBallots, defaultBallotSetup, emptyBallot, postProblems,
 } from '../../lib/budgetBallot';
-import { roomText, tone } from '../toolParts';
+import { counted, roomText, tone } from '../toolParts';
 
 export default {
   id: 'budget-ballot',
@@ -18,6 +18,12 @@ export default {
   icon: 'coins',
   createdBy: 'PLACER',
   component: BudgetBallot,
+  inquiry: {
+    summary: (config) => {
+      const posts = Object.entries(config ?? {}).filter(([key, value]) => key !== 'budget' && Number(value) > 0).length;
+      return posts > 0 ? counted(posts, 'post funded', 'posts funded') : '';
+    },
+  },
   onProjectPage: {
     heading: 'How would you spend the budget?',
     Embed: BudgetBallotOnPage,

@@ -3,7 +3,7 @@ import { DesireLinesOnPage } from '../../components/toolkit/DesireLinesOnPage';
 import { DesireLinesSetup } from '../../components/toolkit/DesireLinesSetup';
 import { PALETTE } from '../../theme';
 import { combineDesire, defaultSetup, emptyDesire, setupProblems, sitesOf } from '../../lib/desireLines';
-import { roomText, tone } from '../toolParts';
+import { counted, roomText, tone } from '../toolParts';
 
 // "A", "A and B", "A, B and C".
 const naturalList = (names) => (names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`);
@@ -23,6 +23,12 @@ export default {
     defaults: defaultSetup,
     problems: setupProblems,
     Form: DesireLinesSetup,
+  },
+  inquiry: {
+    summary: (config) => [
+      config?.walks?.length > 0 && counted(config.walks.length, 'walk', 'walks'),
+      config?.site?.elements?.length > 0 && counted(config.site.elements.length, 'mark', 'marks'),
+    ].filter(Boolean).join(' · '),
   },
   onProjectPage: {
     heading: 'Draw the way you walk',

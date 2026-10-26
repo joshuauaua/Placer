@@ -1,12 +1,22 @@
-/* PLACER — Step 3: review and post the imagination */
+/* PLACER — Step 3: review the idea and keep it on your profile.
+ *
+ * Made with the Idea Visualizer on its own, an idea is saved as an inquiry on the
+ * signed-in account's profile (services/inquiries.js), private to them, like any other
+ * tool used on its own. Publishing it to the community map is for later.
+ */
 
 import { useState } from 'react';
+import { useLocation } from 'wouter';
 import { Btn, CatTag } from './UI';
 import { FlowScreen } from './FlowLayout';
 import { AuthForm } from './AuthPage';
-import { postImagination, postsAreShared } from '../services/imaginations';
-import { DEFAULT_NAME } from '../services/profile';
+import { saveInquiry } from '../services/inquiries';
+import { isSupabaseConfigured } from '../services/supabase';
+import { ideaInquiryConfig } from '../lib/ideaVisualizer';
 import posthog from 'posthog-js';
+
+// The Toolkit tool this flow is (toolkit/tools/reimagine-a-space.js).
+const TOOL_ID = 'reimagine-a-space';
 
 // Human-readable stand-in until reverse geocoding exists; the raw coordinates are
 // kept on the record separately.
@@ -39,7 +49,7 @@ function Row({ t, label, children }) {
  * link is opened from a mail client. onLeaving is what parks the imagination before
  * either of those happens, so it is still here on the way back.
  */
-function SignInToPost({ t, mode, onModeChange, onLeaving }) {
+function SignInToSave({ t, mode, onModeChange, onLeaving }) {
   const [awaiting, setAwaiting] = useState(null);
 
   return (
@@ -47,12 +57,12 @@ function SignInToPost({ t, mode, onModeChange, onLeaving }) {
       border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
       <h2 className="placer-disp" style={{ fontSize: 20, fontWeight: 700, color: t.ink,
         letterSpacing: '-0.02em', marginBottom: 8 }}>
-        {awaiting ? 'Check your inbox' : 'Sign in to post this'}
+        {awaiting ? 'Check your inbox' : 'Sign in to save this'}
       </h2>
       <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 22 }}>
         {awaiting
-          ? 'Your imagination is saved on this device and will be waiting when you come back.'
-          : 'A posted imagination belongs to an account, so it is yours wherever you sign in next. '
+          ? 'Your idea is kept on this device and will be waiting when you come back.'
+          : 'A saved idea is kept on your profile, so it is yours wherever you sign in next. '
             + 'Nothing you have made is lost by signing in here.'}
       </p>
       <AuthForm
@@ -62,7 +72,7 @@ function SignInToPost({ t, mode, onModeChange, onLeaving }) {
         onLeaving={onLeaving}
         onAwaitingConfirmation={setAwaiting}
         // Nothing to do on success: the account arrives through useIdentity, this panel
-        // goes away, and the Post button takes its place.
+        // goes away, and the Save button takes its place.
         onSignedIn={() => {}}
       />
     </section>
@@ -70,56 +80,38 @@ function SignInToPost({ t, mode, onModeChange, onLeaving }) {
 }
 
 export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
-  onBack, onPosted, authorName = DEFAULT_NAME, accountId = null,
+  onBack, onPosted, accountId = null,
   needsAccount = false, checkingAccount = false, onStashDraft, projectId = null }) {
-  const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'error'
+  const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
   const [error, setError] = useState(null);
   const [authMode, setAuthMode] = useState('signin');
+  const [, navigate] = useLocation();
 
   const loc = formatLoc(capturedView?.position);
-  // Whether posting means anything to anybody else. The button has always said "Post to
-  // community"; this is the first version where that is true.
-  const shared = postsAreShared();
+  // With no Supabase project there are no accounts, and so no profile to keep it on.
+  const canSave = isSupabaseConfigured();
 
-  const handlePost = async () => {
+  const handleSave = async () => {
     setStatus('saving');
     setError(null);
     try {
-      await postImagination({
+      await saveInquiry({
+        tool: TOOL_ID,
         title: draft.title,
-        cat: draft.cat,
-        blurb: draft.blurb,
-        loc,
-        author: authorName,
-        userId: accountId,
-        source: capturedView?.source ?? null,
-        position: capturedView?.position ?? null,
-        pov: capturedView?.pov ?? null,
-        fov: capturedView?.fov ?? null,
-        canvasAssets,
+        note: draft.blurb ?? '',
+        config: ideaInquiryConfig({ category: draft.cat, loc, capturedView, canvasAssets, projectId }),
         preview: preview ?? capturedView?.screenshot ?? null,
-        projectId,
       });
-      posthog.capture('imagination_posted', {
+      posthog.capture('idea_saved', {
         category: draft.cat,
         assets_count: canvasAssets.length,
         source: capturedView?.source ?? null,
       });
-      onPosted();
+      setStatus('saved');
     } catch (err) {
-      console.error('Could not post imagination:', err);
-      posthog.capture('imagination_post_failed', {
-        error_name: err?.name ?? 'unknown',
-      });
-      setError(
-        // Only reachable on the localStorage path, where every record carries its own
-        // preview image against a budget of a few megabytes.
-        err?.name === 'QuotaExceededError'
-          ? 'Out of local storage space. Delete an older imagination and try again.'
-          : shared
-            ? 'Could not post your imagination. Check your connection and try again.'
-            : 'Could not save your imagination. See the console for details.'
-      );
+      console.error('Could not save the idea:', err);
+      posthog.capture('idea_save_failed', { error_name: err?.name ?? 'unknown' });
+      setError('Could not save your idea. Check your connection and try again.');
       setStatus('error');
     }
   };
@@ -131,14 +123,16 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
       onBack={onBack}
       backLabel="Back to describe"
       actions={
-        needsAccount ? (
+        status === 'saved' ? (
+          <Btn t={t} variant="primary" size="sm" icon="check" onClick={onPosted}>Done</Btn>
+        ) : needsAccount ? (
           <span style={{ fontSize: 13.5, color: t.inkDim, fontWeight: 500 }}>
-            Sign in below to post
+            Sign in below to save
           </span>
         ) : (
-          <Btn t={t} variant="primary" size="sm" icon="share" onClick={handlePost}
-            disabled={status === 'saving' || checkingAccount}>
-            {status === 'saving' ? 'Posting…' : 'Post to community'}
+          <Btn t={t} variant="primary" size="sm" icon="bookmark" onClick={handleSave}
+            disabled={!canSave || status === 'saving' || checkingAccount}>
+            {status === 'saving' ? 'Saving…' : 'Save to my profile'}
           </Btn>
         )
       }
@@ -149,17 +143,19 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
           <div style={{ marginBottom: 36 }}>
             <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 700, color: t.ink,
               letterSpacing: '-0.03em', marginBottom: 12, lineHeight: 1.1 }}>
-              Ready to post
+              {status === 'saved' ? 'Saved to your profile' : 'Ready to save'}
             </h1>
             <p style={{ fontSize: 17, color: t.inkDim, lineHeight: 1.6 }}>
-              Have a last look. You can go back and change anything before posting.
+              {status === 'saved'
+                ? 'It is with your saved inquiries, where only you can see it.'
+                : 'Have a last look. You can go back and change anything before saving.'}
             </p>
           </div>
 
           {(preview || capturedView?.screenshot) && (
             <img
               src={preview || capturedView.screenshot}
-              alt="Your imagination"
+              alt="Your idea"
               style={{ width: '100%', borderRadius: 12, border: `1px solid ${t.line}`,
                 boxShadow: t.shadow, marginBottom: 32, display: 'block' }}
             />
@@ -186,8 +182,17 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
             </div>
           )}
 
-          {needsAccount ? (
-            <SignInToPost
+          {status === 'saved' ? (
+            accountId && (
+              <p role="status" style={{ marginTop: 32, fontSize: 15, color: t.ink }}>
+                <a href={`/people/${accountId}`} style={{ color: t.ink, fontWeight: 700 }}
+                  onClick={(event) => { event.preventDefault(); onPosted(); navigate(`/people/${accountId}`); }}>
+                  See your saved inquiries
+                </a>
+              </p>
+            )
+          ) : needsAccount ? (
+            <SignInToSave
               t={t}
               mode={authMode}
               onModeChange={setAuthMode}
@@ -196,17 +201,10 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
           ) : (
             <div style={{ marginTop: 32, padding: 14, background: t.surfaceAlt, borderRadius: 12,
               fontSize: 13.5, color: t.inkDim, lineHeight: 1.55 }}>
-              {shared ? (
-                <>
-                  Posting puts this on the community map, where anyone can see it, credited
-                  to {authorName}. You can remove it again from your profile at any time.
-                </>
-              ) : (
-                <>
-                  Posting saves this imagination to your browser. Nothing is uploaded to a
-                  server yet.
-                </>
-              )}
+              {canSave
+                ? 'Saving keeps this on your profile as an inquiry, where only you can see it. '
+                  + 'You can delete it there at any time.'
+                : 'Saving needs accounts, and this copy of PLACER has no Supabase project to keep them in.'}
             </div>
           )}
         </div>

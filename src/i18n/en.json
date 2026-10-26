@@ -508,5 +508,20 @@
       "choose": "Show PLACER in",
       "scope": "Kept for this browser. Joining a room and the Toolkit's live tools are translated so far; the rest of PLACER is still in English while it is being translated."
     }
+  },
+  "keep": {
+    "title": "Keep it",
+    "save": "Save to my profile",
+    "saving": "Saving…",
+    "saved": "Saved to your profile",
+    "seeThem": "See your saved inquiries",
+    "failed": "It did not save. Please try again.",
+    "signIn": "Sign in to keep this on your profile and come back to it later.",
+    "intro": {
+      "budgetBallot": "Save this budget and how you spent it on your profile as an inquiry, to come back to later.",
+      "openVote": "Save this question, its answers and your vote on your profile as an inquiry, to come back to later.",
+      "popQuiz": "Save this quiz on your profile as an inquiry, to come back to later.",
+      "wordCloud": "Save this prompt and your words on your profile as an inquiry, to come back to later."
+    }
   }
 }

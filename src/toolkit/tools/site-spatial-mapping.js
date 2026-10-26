@@ -5,7 +5,7 @@ import { PALETTE } from '../../theme';
 import {
   combineSiteAnswers, defaultSiteSetup, emptyRecorded, siteLocationProblems, siteNameProblems, siteSetupProblems,
 } from '../../lib/toolkit/siteMapping';
-import { PUBLIC_LIFE_PROTOCOL_CREDIT, roomText, tone } from '../toolParts';
+import { PUBLIC_LIFE_PROTOCOL_CREDIT, counted, roomText, tone } from '../toolParts';
 
 export default {
   id: 'site-spatial-mapping',
@@ -27,6 +27,16 @@ export default {
       { title: 'Site name', Form: SiteNameStep, problems: siteNameProblems },
       { title: 'Specific location', Form: SiteLocationStep, problems: siteLocationProblems },
     ],
+  },
+  inquiry: {
+    summary: (config) => {
+      const answered = Object.values(config?.answers ?? {}).filter((value) => value !== null).length;
+      const markers = config?.markers?.length ?? 0;
+      return [
+        answered > 0 && `${answered} of 18 answered`,
+        markers > 0 && counted(markers, 'marker', 'markers'),
+      ].filter(Boolean).join(' · ');
+    },
   },
   onProjectPage: {
     heading: 'Map the site with us',

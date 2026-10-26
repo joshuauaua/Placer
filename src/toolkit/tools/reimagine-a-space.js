@@ -4,7 +4,7 @@ import { SceneStep } from '../../components/toolkit/IdeaVisualizerSetup';
 import { ASSET_LIB } from '../../data';
 import { PALETTE } from '../../theme';
 import { combineVisuals, defaultSceneSetup, emptyVisual, sceneProblems } from '../../lib/ideaVisualizer';
-import { roomText, tone } from '../toolParts';
+import { counted, roomText, tone } from '../toolParts';
 
 const KNOWN_TYPES = new Set(ASSET_LIB.map((asset) => asset.type));
 
@@ -14,7 +14,7 @@ export default {
   category: 'imagine',
   name: 'Idea Visualizer',
   tagline: 'A tool to help anyone quickly create a visualization of an idea they have.',
-  blurb: 'Pick a spot on the map and step into its Street View. Place benches, trees, lighting, and more where they would go, and post it to the map for others to see.',
+  blurb: 'Pick a spot on the map and step into its Street View. Place benches, trees, lighting, and more where they would go, and save it to your profile to come back to.',
   ...tone(PALETTE.orange),
   icon: 'sparkle',
   createdBy: 'PLACER',
@@ -30,6 +30,10 @@ export default {
     steps: [
       { title: 'Address and view', Form: SceneStep, problems: sceneProblems },
     ],
+  },
+  inquiry: {
+    summary: (config) => (config?.canvasAssets?.length > 0 ? counted(config.canvasAssets.length, 'thing placed', 'things placed') : ''),
+    picture: (config) => (typeof config?.preview === 'string' ? config.preview : null),
   },
   onProjectPage: {
     heading: 'Share your idea for this place',

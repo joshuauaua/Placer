@@ -19,13 +19,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation } from 'wouter';
 import { Panel } from '../ToolLayout';
 import { Btn } from '../UI';
 import { SiteScopePicker, isFramed } from './SiteScope';
 import { DesireLinesBoard } from './DesireLinesBoard';
-import { useIdentity } from '../useIdentity';
-import { saveInquiry } from '../../services/inquiries';
+import { KeepOnProfile } from './KeepOnProfile';
 import {
   MAX_NOTE, MAX_SITE_NAME, SOLO_SITE, elementsOthersOn, inquiryConfig, emptyDesire, othersOn as othersOnSite, paletteOf, sitesOf,
 } from '../../lib/desireLines';
@@ -90,71 +88,6 @@ function ChooseSite({ t, tool, onChoose }) {
   );
 }
 
-/** Keeping the site, its marks and the walks drawn so far on the signed-in account's profile. */
-function KeepOnProfile({ t, site, state }) {
-  const { status, accountId } = useIdentity();
-  const [, navigate] = useLocation();
-  const [saving, setSaving] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
-  const snapshot = JSON.stringify(state);
-  const [savedAs, setSavedAs] = useState(null);
-
-  // Drawing more after keeping it makes it something else to keep.
-  useEffect(() => {
-    if (savedAs && savedAs !== snapshot) setSaving('idle');
-  }, [snapshot, savedAs]);
-
-  // No accounts to keep anything on (a checkout with no Supabase project).
-  if (status === 'local' || status === 'loading') return null;
-
-  if (status === 'signedOut') {
-    return (
-      <p style={{ margin: 0, fontSize: 13.5, color: t.inkDim, lineHeight: 1.6 }}>
-        Sign in to keep this on your profile and start a project from it later.
-      </p>
-    );
-  }
-
-  const keep = async () => {
-    setSaving('saving');
-    try {
-      await saveInquiry({
-        tool: 'desire-lines', title: site.name, note: site.note ?? '', config: inquiryConfig({ site, note: site.note, state }),
-      });
-      setSavedAs(snapshot);
-      setSaving('saved');
-    } catch (err) {
-      console.error('Could not keep the inquiry:', err);
-      setSaving('error');
-    }
-  };
-
-  return (
-    <Panel t={t} title="Keep it">
-      <p style={{ margin: '0 0 12px', fontSize: 13.5, color: t.inkDim, lineHeight: 1.6 }}>
-        Save this site, your marks and your walks on your profile as an inquiry, to start or add to
-        a project&rsquo;s Desire Lines later.
-      </p>
-      <Btn t={t} variant="primary" size="sm" icon="bookmark" disabled={saving === 'saving' || saving === 'saved'}
-        onClick={keep}>
-        {saving === 'saving' ? 'Saving…' : saving === 'saved' ? 'Saved to your profile' : 'Save to my profile'}
-      </Btn>
-      {saving === 'saved' && accountId && (
-        <p role="status" style={{ margin: '12px 0 0', fontSize: 13.5, color: t.ink }}>
-          <a href={`/people/${accountId}`} onClick={(event) => { event.preventDefault(); navigate(`/people/${accountId}`); }}
-            style={{ color: t.ink, fontWeight: 700 }}>
-            See your saved inquiries
-          </a>
-        </p>
-      )}
-      {saving === 'error' && (
-        <p role="alert" style={{ margin: '12px 0 0', fontSize: 13.5, color: t.ink }}>
-          It did not save. Please try again.
-        </p>
-      )}
-    </Panel>
-  );
-}
-
 /** The tool on its own: choose a site, then draw on it. */
 function Solo({ t, tool }) {
   const [site, setSite] = useState(null);
@@ -172,7 +105,9 @@ function Solo({ t, tool }) {
       about={site.note || null}
       footer={(
         <>
-          <KeepOnProfile t={t} site={site} state={state} />
+          <KeepOnProfile t={t} tool="desire-lines"
+            inquiry={{ title: site.name, note: site.note ?? '', config: inquiryConfig({ site, note: site.note, state }) }}
+            intro="Save this site, your marks and your walks on your profile as an inquiry, to start or add to a project's Desire Lines later." />
           <Btn t={t} variant="quiet" size="sm" icon="pin" onClick={() => { setSite(null); setState(emptyDesire()); }}>
             Choose another site
           </Btn>

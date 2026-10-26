@@ -5,7 +5,7 @@ import { PALETTE } from '../../theme';
 import {
   answerProblems, combineVotes, defaultVoteSetup, emptyVote, questionProblems, voteSetupProblems,
 } from '../../lib/openVote';
-import { roomText, tone } from '../toolParts';
+import { counted, roomText, tone } from '../toolParts';
 
 export default {
   id: 'open-vote',
@@ -27,6 +27,9 @@ export default {
       { title: 'Question', Form: QuestionStep, problems: questionProblems },
       { title: 'Answers', Form: AnswersStep, problems: answerProblems },
     ],
+  },
+  inquiry: {
+    summary: (config) => (Array.isArray(config?.answers) ? counted(config.answers.length, 'answer', 'answers') : ''),
   },
   onProjectPage: {
     heading: 'We want your opinion',

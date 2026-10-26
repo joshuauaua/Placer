@@ -127,3 +127,28 @@ export async function encodeImage(source, preset) {
     bitmap.close?.();
   }
 }
+
+/**
+ * The mime type and file extension of a preview, or null for anything that is not one.
+ *
+ * StreetScreen exports JPEG when there was a background photo to composite onto and PNG
+ * when there was not — JPEG has no alpha and would flatten a transparent stage to solid
+ * black. So neither the type nor the extension can be assumed; both are read off the
+ * data URL that actually arrived.
+ */
+export function previewKind(dataUrl) {
+  if (typeof dataUrl !== 'string') return null;
+  const match = /^data:(image\/(jpeg|png));base64,/.exec(dataUrl);
+  if (!match) return null;
+  return { contentType: match[1], ext: match[2] === 'jpeg' ? 'jpg' : 'png' };
+}
+
+// Decoded by hand rather than with fetch(dataUrl): a data URL is not something every
+// environment will fetch, and this is a handful of lines with no request in it.
+export function dataUrlToBlob(dataUrl, contentType) {
+  const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: contentType });
+}

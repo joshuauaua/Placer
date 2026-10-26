@@ -56,6 +56,26 @@ export function recordedVisual({ assets, title, description } = {}, knownTypes) 
   return { assets: placed, title: text(title, MAX_TITLE), description: text(description, MAX_DESCRIPTION) };
 }
 
+/**
+ * An idea made with the tool on its own, as it is kept on a profile (services/
+ * inquiries.js): what kind of idea, where it was captured from, and what was placed on
+ * it, which is what it takes to open it on the canvas again. The title and description
+ * are the inquiry's own title and note. The picture is not here: it is uploaded, and its
+ * key added as `preview`.
+ */
+export function ideaInquiryConfig({ category, loc, capturedView, canvasAssets, projectId = null }) {
+  return {
+    category: category || null,
+    loc: loc || null,
+    position: capturedView?.position ?? null,
+    source: capturedView?.source ?? null,
+    pov: capturedView?.pov ?? null,
+    fov: capturedView?.fov ?? null,
+    canvasAssets: Array.isArray(canvasAssets) ? canvasAssets : [],
+    projectId,
+  };
+}
+
 /** The state a person starts from in a room: nothing recorded yet. */
 export function emptyVisual() {
   return {};

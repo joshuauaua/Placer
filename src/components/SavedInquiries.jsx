@@ -1,10 +1,12 @@
 /* PLACER — the inquiries somebody has kept on their profile.
  *
  * Shown only to their owner, as a tab of their own profile (PublicProfilePage). Each is
- * a tool used on its own — a Desire Lines site, say, with the note on why it matters —
- * kept to start or join a project's from later: when setting that tool up for a project,
- * its site is offered from here (components/toolkit/DesireLinesSetup.jsx). They can be
- * deleted. Private to the account (supabase/profile-inquiries.sql).
+ * a tool used on its own — a Desire Lines site, say, with the note on why it matters, or
+ * an Idea Visualizer scene — kept to come back to or start a project's from later. So far
+ * only Desire Lines offers them back: when setting it up for a project, its site is
+ * offered from here (components/toolkit/DesireLinesSetup.jsx). Each tool says how its
+ * own are summed up (`inquiry` in toolkit/tools.js). They can be deleted. Private to the
+ * account (supabase/profile-inquiries.sql).
  *
  * The service arrives as a prop so a test can hand this a fake.
  */
@@ -13,17 +15,9 @@ import { useEffect, useState } from 'react';
 import { Btn } from './UI';
 import { findTool } from '../toolkit/tools';
 import * as inquiryService from '../services/inquiries';
+import { mediaUrl } from '../services/media';
 
 const FORMAT = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-function summary(inquiry) {
-  const walks = inquiry.config?.walks?.length ?? 0;
-  const marks = inquiry.config?.site?.elements?.length ?? 0;
-  return [
-    walks > 0 && `${walks} ${walks === 1 ? 'walk' : 'walks'}`,
-    marks > 0 && `${marks} ${marks === 1 ? 'mark' : 'marks'}`,
-  ].filter(Boolean).join(' · ');
-}
 
 export function SavedInquiries({ t, service = inquiryService }) {
   const [state, setState] = useState({ status: 'loading', list: [] });
@@ -57,7 +51,7 @@ export function SavedInquiries({ t, service = inquiryService }) {
     return (
       <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, maxWidth: 560 }}>
         Nothing kept yet. Use a tool from the Toolkit on its own, such as Desire Lines, and save it to your
-        profile to start a project from it later.
+        profile to come back to it or start a project from it later.
       </p>
     );
   }
@@ -67,18 +61,25 @@ export function SavedInquiries({ t, service = inquiryService }) {
       {state.list.map((inquiry) => {
         const tool = findTool(inquiry.tool);
         const date = new Date(inquiry.createdAt ?? '');
+        const picture = mediaUrl(tool?.inquiry?.picture?.(inquiry.config) ?? null);
         return (
           <li key={inquiry.id} style={{ padding: '18px 0', borderTop: `1px solid ${t.line}` }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
               <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: t.ink }}>{inquiry.title}</h3>
               <span className="placer-caption" style={{ color: t.inkDim }}>
-                {[tool?.name ?? inquiry.tool, Number.isNaN(date.getTime()) ? null : FORMAT.format(date), summary(inquiry)]
+                {[tool?.name ?? inquiry.tool, Number.isNaN(date.getTime()) ? null : FORMAT.format(date),
+                  tool?.inquiry?.summary(inquiry.config)]
                   .filter(Boolean).join(' · ')}
               </span>
               <div style={{ flex: 1 }} />
               <Btn t={t} variant="ghost" size="sm" icon="trash" ariaLabel={`Delete ${inquiry.title}`}
                 onClick={() => remove(inquiry)} />
             </div>
+            {picture && (
+              <img src={picture} alt="" loading="lazy"
+                style={{ display: 'block', width: '100%', maxWidth: 360, marginTop: 10, borderRadius: 12,
+                  border: `1px solid ${t.line}` }} />
+            )}
             {inquiry.note && (
               <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.6, color: t.ink, whiteSpace: 'pre-line',
                 overflowWrap: 'anywhere' }}>
@@ -92,7 +93,7 @@ export function SavedInquiries({ t, service = inquiryService }) {
         );
       })}
       <li style={{ borderTop: `1px solid ${t.line}`, paddingTop: 14, fontSize: 13.5, color: t.inkDim }}>
-        Choose one when you set up Desire Lines for a project, to start from its site.
+        A Desire Lines inquiry can be chosen when you set up Desire Lines for a project, to start from its site.
       </li>
     </ul>
   );
