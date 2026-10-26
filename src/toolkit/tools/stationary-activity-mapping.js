@@ -14,6 +14,4 @@ export default {
   createdBy: 'PLACER',
   credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
   component: StationaryActivityMap,
-  // Not on plcr.org or beta.plcr.org for now; only locally.
-  hidden: 'production',
 };

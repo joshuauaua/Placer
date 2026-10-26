@@ -85,6 +85,14 @@ describe('the register', () => {
     }
   });
 
+  it('shows Stationary Activity Mapping on the live sites, and keeps Site-Specific Spatial Mapping to local', () => {
+    const production = shownTools(REGISTERED_TOOLS, { production: true }).map((tool) => tool.id);
+    const elsewhere = shownTools(REGISTERED_TOOLS, { production: false }).map((tool) => tool.id);
+    expect(production).toContain('stationary-activity-mapping');
+    expect(production).not.toContain('site-spatial-mapping');
+    expect(elsewhere).toContain('site-spatial-mapping');
+  });
+
   it('shows every tool in the register that is not hidden, and finds none that is', () => {
     expect(TOOLS).toEqual(shownTools(REGISTERED_TOOLS));
     for (const tool of REGISTERED_TOOLS.filter((entry) => entry.hidden === true)) {
