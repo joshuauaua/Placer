@@ -5,8 +5,15 @@ import { findTool } from '../../toolkit/tools';
 import { THEME } from '../../theme';
 import { clickMap, lastMap } from '../../test/maplibreStub';
 
-function mount() {
+function open() {
   return render(<StationaryActivityMap t={THEME} tool={findTool('stationary-activity-mapping')} />);
+}
+
+// Past the instructions, onto the map.
+function mount() {
+  const view = open();
+  fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+  return view;
 }
 
 describe('Stationary Activity Mapping', () => {
@@ -18,13 +25,22 @@ describe('Stationary Activity Mapping', () => {
     expect(screen.getByText('Observation Tally')).toBeInTheDocument();
   });
 
-  it('opens on the field sheet\'s directions and its key', () => {
-    mount();
-    const directions = screen.getByText('Directions').closest('section');
+  it('opens on the field sheet\'s directions and its key, without the map', () => {
+    open();
+    expect(screen.queryByText('Record Observation')).not.toBeInTheDocument();
+    const directions = screen.getByText('Instructions').closest('section');
     expect(directions).toHaveTextContent('Define a route through your space and use the same route for each hour.');
     expect(directions).toHaveTextContent(/Add your name, date, & day of the week/);
     expect(screen.getByRole('list', { name: 'Postures' }).querySelectorAll('li svg')).toHaveLength(7);
     expect(screen.getByRole('list', { name: 'Activities' })).toHaveTextContent('Conversing');
+  });
+
+  it('goes from the instructions to the map, and back', () => {
+    mount();
+    expect(screen.queryByText('Instructions', { selector: 'h2, h3' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Instructions' }));
+    expect(screen.queryByText('Record Observation')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Get started' })).toBeInTheDocument();
   });
 
   it('requires a map location before recording is enabled', () => {
