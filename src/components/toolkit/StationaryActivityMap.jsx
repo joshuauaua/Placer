@@ -4,8 +4,8 @@
  * the cover come its instructions: the field sheet's directions and its key, each
  * posture's symbol and the activities. "Get started" moves on to setting up the
  * session (StationaryActivitySetup.jsx): the area outlined on a map, and the sheet's
- * header. Start mapping then opens the map (OpenStreetMap), the dominant visual element; the
- * recording card floats over its left half and the tally sits below it. The user
+ * header. Start mapping then opens the map (OpenStreetMap) and, beside it on the
+ * right, the recording card; See results moves on to the tally. The user
  * first clicks the map to pick a location, then selects posture and activities,
  * then records. Every posture is drawn as its symbol (PostureSymbol.jsx).
  * The site's text face (--placer-font) is used throughout.
@@ -46,6 +46,9 @@ const ACTIVITY_GROUPS = [
 ];
 
 const INK = '#111111';
+
+// A card inside another card: flat, so it reads as part of the one around it.
+const INNER = { boxShadow: 'none', minWidth: 0 };
 
 // A recorded person on the map: their posture's symbol in black on a small white tile,
 // so an open circle still reads against the streets.
@@ -98,7 +101,8 @@ export function StationaryActivityMap({ t, tool }) {
   const [activities, setActivities] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [last, setLast] = useState(null);
-  // Which step after the cover: the instructions, setting up the session, or the map.
+  // Which step after the cover: the instructions, setting up the session, the map,
+  // or the results.
   const [step, setStep] = useState('instructions');
   const [session, setSession] = useState(() => emptySession());
   const nextId = useRef(1);
@@ -122,7 +126,10 @@ export function StationaryActivityMap({ t, tool }) {
     fitPoints(osmMap, session.area, { padding: 60 });
     onBackgroundClick(osmMap, (point) => setSelectedLocation(point));
     setMap(osmMap);
-    return () => osmMap.remove();
+    return () => {
+      osmMap.remove();
+      setMap(null);
+    };
     // Made afresh each time the map step opens; the area is fixed by then.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
@@ -275,10 +282,12 @@ export function StationaryActivityMap({ t, tool }) {
     );
   }
 
-  return (
+  // Step 5: the tally of everything recorded.
+  if (step === 'results') {
+    return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: 'var(--placer-font)' }}>
       <div>
-        <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={() => setStep('configure')}>Session</Btn>
+        <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={() => setStep('map')}>Map</Btn>
       </div>
 
       {/* The sheet's header, as set up in step 3. */}
@@ -286,156 +295,7 @@ export function StationaryActivityMap({ t, tool }) {
         {sessionLines(session).join(' · ')}
       </p>
 
-      {/* 1 · Map card — dominant background */}
-      <Panel t={t} title="Observation Map" aside={
-        <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
-          {counts.total} {peopleWord(counts.total)} recorded · click the map to pick a spot
-        </span>
-      }>
-        <div style={{ position: 'relative' }}>
-          {/* Recording card — overlay on the left half of the map */}
-          <div style={{
-            position: 'absolute', top: 8, left: 8, width: '44%', zIndex: 10,
-            maxHeight: '90%', overflowY: 'auto',
-          }}>
-            <div style={{
-              background: t.surface, border: `2px solid ${t.line}`, borderRadius: 12,
-              padding: 16, boxShadow: t.shadow,
-              opacity: selectedLocation ? 1 : 0.6,
-              pointerEvents: selectedLocation ? 'auto' : 'none',
-            }}>
-              <div className="placer-mono" style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em',
-                textTransform: 'uppercase', color: tool.color, marginBottom: 14 }}>
-                Record Observation
-              </div>
-
-              {!selectedLocation && (
-                <p style={{ fontSize: 12, color: '#B3261E', margin: '0 0 12px' }}>
-                  Click a spot on the map first to set a location.
-                </p>
-              )}
-
-              {selectedLocation && (
-                <div style={{ fontSize: 11, color: t.inkDim, marginBottom: 12 }}>
-                  Location: {locationStr}
-                </div>
-              )}
-
-              {outside && (
-                <p style={{ fontSize: 12, color: '#B3261E', margin: '0 0 12px' }}>
-                  That spot is outside the survey area. Pick a spot inside the outline.
-                </p>
-              )}
-
-              <div role="group" aria-label="Posture — pick one" style={{ marginBottom: 12 }}>
-                <div className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em',
-                  textTransform: 'uppercase', color: t.inkFaint, marginBottom: 6 }}>1 · Posture</div>
-                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                  {POSTURE_LIST.map((item) => (
-                    <Chip
-                      key={item.key} t={t}
-                      active={posture === item.key} ariaPressed={posture === item.key}
-                      onClick={() => pickPosture(item.key)}
-                      style={{ fontSize: 11, height: 30, padding: '0 8px', gap: 6 }}>
-                      <PostureSymbol posture={item.key} size={12} />
-                      {item.label}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
-
-              <div role="group" aria-label="Activity — pick one or more" style={{ marginBottom: 12 }}>
-                <div className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em',
-                  textTransform: 'uppercase', color: t.inkFaint, marginBottom: 6 }}>2 · Activity</div>
-                {posture ? (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    {ACTIVITY_GROUPS.map((group) => (
-                      <div key={group.key} style={{ flex: 1, minWidth: 0 }}>
-                        <div className="placer-mono" style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em',
-                          textTransform: 'uppercase', color: tool.color, marginBottom: 4, opacity: 0.8 }}>
-                          {group.label}
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          {group.activities.map((key) => {
-                            const item = ACTIVITY_BY_KEY[key];
-                            const active = activities.includes(key);
-                            return (
-                              <label key={key} style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 5,
-                                fontSize: 11, cursor: 'pointer', color: active ? t.ink : t.inkDim,
-                                padding: '2px 4px', borderRadius: 4,
-                                background: active ? (tool.color + '18') : 'transparent',
-                              }}>
-                                <input
-                                  type="checkbox"
-                                  checked={active}
-                                  onChange={() => toggleActivity(key)}
-                                  style={{ accentColor: tool.color }}
-                                />
-                                {item?.label ?? key}
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p style={{ fontSize: 12, color: t.inkFaint, margin: 0 }}>Choose a posture first.</p>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                <Btn t={t} variant="primary" size="sm" icon="plus" disabled={recordDisabled} onClick={record}>
-                  Record
-                </Btn>
-                <Btn t={t} variant="ghost" size="sm" icon="undo" disabled={observations.length === 0} onClick={undo}>
-                  Undo
-                </Btn>
-                <div style={{ flex: 1 }} />
-                <div role="status" aria-live="polite" style={{ fontSize: 11, color: t.inkDim }}>
-                  {last ? (
-                    <>Last: {POSTURES[last.posture].label} · {counts.total} recorded</>
-                  ) : counts.total > 0 ? (
-                    `${counts.total} recorded`
-                  ) : 'Nothing yet'}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Map container */}
-          <div
-            ref={mapRef}
-            role="group"
-            aria-label="Observation map — click to select a location, then record"
-            style={{
-              width: '100%', height: 520, borderRadius: 12,
-              border: `1px solid ${t.line}`, overflow: 'hidden',
-              background: t.surfaceAlt, cursor: 'crosshair',
-            }}
-          />
-
-          {mapFailed && (
-            <div style={{ background: '#F5F5F5', borderLeft: `4px solid #111111`, color: '#111111',
-              padding: 10, marginTop: 8, fontSize: 13, borderRadius: 6 }}>
-              <strong>The map could not load.</strong> Try reloading the page.
-            </div>
-          )}
-
-          {/* Legend */}
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
-            {POSTURE_LIST.map((item) => (
-              <span key={item.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: t.inkDim, fontFamily: 'var(--placer-font)' }}>
-                <PostureSymbol posture={item.key} size={12} style={{ color: t.ink }} />
-                {item.label} ({counts.byPosture[item.key]})
-              </span>
-            ))}
-          </div>
-        </div>
-      </Panel>
-
-      {/* 2 · Tally card — below the map */}
+      {/* What was recorded, by posture and activity, to copy out. */}
       <Panel t={t} title="Observation Tally" aside={
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
@@ -507,6 +367,163 @@ export function StationaryActivityMap({ t, tool }) {
             label="Copy tally" copiedLabel="Copied" fieldLabel="Your tally as text"
             multiline disabled={observations.length === 0}
             style={{ alignItems: 'flex-start' }} />
+        </div>
+      </Panel>
+    </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: 'var(--placer-font)' }}>
+      <div>
+        <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={() => setStep('configure')}>Session</Btn>
+      </div>
+
+      {/* The sheet's header, as set up in step 3. */}
+      <p aria-label="Session" className="placer-mono" style={{ margin: 0, fontSize: 12, color: t.inkDim, lineHeight: 1.6 }}>
+        {sessionLines(session).join(' · ')}
+      </p>
+
+      {/* One card holding two: the map on the left, the recording card on the right.
+          On a narrow screen they stack. */}
+      <Panel t={t} title="Observation" aside={
+        <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
+          {counts.total} {peopleWord(counts.total)} recorded
+        </span>
+      }>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
+          <Panel t={t} style={{ ...INNER, flex: '3 1 420px' }} title="Map" aside={
+            <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>click the map to pick a spot</span>
+          }>
+            {/* Map container */}
+            <div
+              ref={mapRef}
+              role="group"
+              aria-label="Observation map — click to select a location, then record"
+              style={{
+                width: '100%', height: 520, borderRadius: 12,
+                border: `1px solid ${t.line}`, overflow: 'hidden',
+                background: t.surfaceAlt, cursor: 'crosshair',
+              }}
+            />
+
+            {mapFailed && (
+              <div style={{ background: '#F5F5F5', borderLeft: `4px solid #111111`, color: '#111111',
+                padding: 10, marginTop: 8, fontSize: 13, borderRadius: 6 }}>
+                <strong>The map could not load.</strong> Try reloading the page.
+              </div>
+            )}
+
+            {/* Legend */}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
+              {POSTURE_LIST.map((item) => (
+                <span key={item.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: t.inkDim, fontFamily: 'var(--placer-font)' }}>
+                  <PostureSymbol posture={item.key} size={12} style={{ color: t.ink }} />
+                  {item.label} ({counts.byPosture[item.key]})
+                </span>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel t={t} style={{ ...INNER, flex: '2 1 300px', opacity: selectedLocation ? 1 : 0.6 }}
+            title="Record Observation">
+            {!selectedLocation && (
+              <p style={{ fontSize: 12, color: '#B3261E', margin: '0 0 12px' }}>
+                Click a spot on the map first to set a location.
+              </p>
+            )}
+
+            {selectedLocation && (
+              <div style={{ fontSize: 11, color: t.inkDim, marginBottom: 12 }}>
+                Location: {locationStr}
+              </div>
+            )}
+
+            {outside && (
+              <p style={{ fontSize: 12, color: '#B3261E', margin: '0 0 12px' }}>
+                That spot is outside the survey area. Pick a spot inside the outline.
+              </p>
+            )}
+
+            <div role="group" aria-label="Posture — pick one" style={{ marginBottom: 12 }}>
+              <div className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em',
+                textTransform: 'uppercase', color: t.inkFaint, marginBottom: 6 }}>1 · Posture</div>
+              <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                {POSTURE_LIST.map((item) => (
+                  <Chip
+                    key={item.key} t={t}
+                    active={posture === item.key} ariaPressed={posture === item.key}
+                    onClick={() => pickPosture(item.key)}
+                    style={{ fontSize: 11, height: 30, padding: '0 8px', gap: 6 }}>
+                    <PostureSymbol posture={item.key} size={12} />
+                    {item.label}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+
+            <div role="group" aria-label="Activity — pick one or more" style={{ marginBottom: 12 }}>
+              <div className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em',
+                textTransform: 'uppercase', color: t.inkFaint, marginBottom: 6 }}>2 · Activity</div>
+              {posture ? (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {ACTIVITY_GROUPS.map((group) => (
+                    <div key={group.key} style={{ flex: 1, minWidth: 0 }}>
+                      <div className="placer-mono" style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em',
+                        textTransform: 'uppercase', color: tool.color, marginBottom: 4, opacity: 0.8 }}>
+                        {group.label}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {group.activities.map((key) => {
+                          const item = ACTIVITY_BY_KEY[key];
+                          const active = activities.includes(key);
+                          return (
+                            <label key={key} style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 5,
+                              fontSize: 11, cursor: 'pointer', color: active ? t.ink : t.inkDim,
+                              padding: '2px 4px', borderRadius: 4,
+                              background: active ? (tool.color + '18') : 'transparent',
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={active}
+                                onChange={() => toggleActivity(key)}
+                                style={{ accentColor: tool.color }}
+                              />
+                              {item?.label ?? key}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: 12, color: t.inkFaint, margin: 0 }}>Choose a posture first.</p>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Btn t={t} variant="primary" size="sm" icon="plus" disabled={recordDisabled} onClick={record}>
+                Record
+              </Btn>
+              <Btn t={t} variant="ghost" size="sm" icon="undo" disabled={observations.length === 0} onClick={undo}>
+                Undo
+              </Btn>
+              <div style={{ flex: 1 }} />
+              <div role="status" aria-live="polite" style={{ fontSize: 11, color: t.inkDim }}>
+                {last ? (
+                  <>Last: {POSTURES[last.posture].label} · {counts.total} recorded</>
+                ) : counts.total > 0 ? (
+                  `${counts.total} recorded`
+                ) : 'Nothing yet'}
+              </div>
+            </div>
+          </Panel>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+          <Btn t={t} onClick={() => setStep('results')}>See results</Btn>
         </div>
       </Panel>
     </div>

@@ -28,6 +28,9 @@ const inputStyle = (t) => ({
   outline: 'none',
 });
 
+// A card inside the setup card: flat, so the two read as parts of the one around them.
+const INNER = { boxShadow: 'none', minWidth: 0 };
+
 function Field({ t, label, htmlFor, children }) {
   return (
     <div>
@@ -96,62 +99,68 @@ export function StationaryActivitySetup({ t, tool, session, onChange, onBack, on
         <Btn t={t} type="button" variant="ghost" size="sm" icon="chevLeft" onClick={onBack}>Instructions</Btn>
       </div>
 
-      <Panel t={t} title="Survey area" aside={
-        <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
-          {area.length} {area.length === 1 ? 'corner' : 'corners'} · click the map to add one
-        </span>
-      }>
-        <p style={{ margin: '0 0 12px', fontSize: 14, color: t.inkDim, lineHeight: 1.5 }}>
-          Outline the area you will map: click its corners on the map, in order around the edge.
-        </p>
-        <div ref={mapRef} role="region" aria-label="Survey area map"
-          style={{ width: '100%', height: 420, borderRadius: 10, overflow: 'hidden', background: t.surfaceAlt }} />
-        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <Btn t={t} type="button" variant="ghost" size="sm" icon="undo" disabled={area.length === 0}
-            onClick={() => onChange({ ...session, area: area.slice(0, -1) })}>
-            Undo corner
-          </Btn>
-          <Btn t={t} type="button" variant="ghost" size="sm" icon="trash" disabled={area.length === 0}
-            onClick={() => onChange({ ...session, area: [] })}>
-            Clear area
-          </Btn>
+      {/* One card holding two: the area on the left, the sheet's header on the right.
+          On a narrow screen they stack. */}
+      <Panel t={t} title="Set up the session">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'stretch' }}>
+          <Panel t={t} style={{ ...INNER, flex: '3 1 420px' }} title="Survey area" aside={
+            <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
+              {area.length} {area.length === 1 ? 'corner' : 'corners'} · click the map to add one
+            </span>
+          }>
+            <p style={{ margin: '0 0 12px', fontSize: 14, color: t.inkDim, lineHeight: 1.5 }}>
+              Outline the area you will map: click its corners on the map, in order around the edge.
+            </p>
+            <div ref={mapRef} role="region" aria-label="Survey area map"
+              style={{ width: '100%', height: 420, borderRadius: 10, overflow: 'hidden', background: t.surfaceAlt }} />
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <Btn t={t} type="button" variant="ghost" size="sm" icon="undo" disabled={area.length === 0}
+                onClick={() => onChange({ ...session, area: area.slice(0, -1) })}>
+                Undo corner
+              </Btn>
+              <Btn t={t} type="button" variant="ghost" size="sm" icon="trash" disabled={area.length === 0}
+                onClick={() => onChange({ ...session, area: [] })}>
+                Clear area
+              </Btn>
+            </div>
+          </Panel>
+
+          <Panel t={t} style={{ ...INNER, flex: '2 1 260px' }} title="Session">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <Field t={t} label="Name" htmlFor="stationary-name">
+                <input id="stationary-name" type="text" maxLength={80} autoComplete="name"
+                  value={session.name} onChange={set('name')} style={inputStyle(t)} />
+              </Field>
+              <Field t={t} label="Location" htmlFor="stationary-location">
+                <input id="stationary-location" type="text" maxLength={120} placeholder="e.g. Stortorget, Malmö"
+                  value={session.location} onChange={set('location')} style={inputStyle(t)} />
+              </Field>
+              <Field t={t} label="Date" htmlFor="stationary-date">
+                <input id="stationary-date" type="date" value={session.date} onChange={set('date')} style={inputStyle(t)} />
+              </Field>
+              <Field t={t} label="Time" htmlFor="stationary-time">
+                <input id="stationary-time" type="time" value={session.time} onChange={set('time')} style={inputStyle(t)} />
+              </Field>
+              <Field t={t} label="Weather" htmlFor="stationary-weather">
+                <select id="stationary-weather" value={session.weather} onChange={set('weather')} style={inputStyle(t)}>
+                  <option value="">Pick the weather</option>
+                  {WEATHER.map((weather) => <option key={weather} value={weather}>{weather}</option>)}
+                </select>
+              </Field>
+            </div>
+          </Panel>
+        </div>
+
+        {tried && problems.length > 0 && (
+          <ul role="alert" style={{ margin: '20px 0 0', paddingLeft: 18, fontSize: 14, color: '#B3261E', lineHeight: 1.6 }}>
+            {problems.map((problem) => <li key={problem}>{problem}</li>)}
+          </ul>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+          <Btn t={t} type="submit">Start mapping</Btn>
         </div>
       </Panel>
-
-      <Panel t={t} title="Session">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
-          <Field t={t} label="Name" htmlFor="stationary-name">
-            <input id="stationary-name" type="text" maxLength={80} autoComplete="name"
-              value={session.name} onChange={set('name')} style={inputStyle(t)} />
-          </Field>
-          <Field t={t} label="Location" htmlFor="stationary-location">
-            <input id="stationary-location" type="text" maxLength={120} placeholder="e.g. Stortorget, Malmö"
-              value={session.location} onChange={set('location')} style={inputStyle(t)} />
-          </Field>
-          <Field t={t} label="Date" htmlFor="stationary-date">
-            <input id="stationary-date" type="date" value={session.date} onChange={set('date')} style={inputStyle(t)} />
-          </Field>
-          <Field t={t} label="Time" htmlFor="stationary-time">
-            <input id="stationary-time" type="time" value={session.time} onChange={set('time')} style={inputStyle(t)} />
-          </Field>
-          <Field t={t} label="Weather" htmlFor="stationary-weather">
-            <select id="stationary-weather" value={session.weather} onChange={set('weather')} style={inputStyle(t)}>
-              <option value="">Pick the weather</option>
-              {WEATHER.map((weather) => <option key={weather} value={weather}>{weather}</option>)}
-            </select>
-          </Field>
-        </div>
-      </Panel>
-
-      {tried && problems.length > 0 && (
-        <ul role="alert" style={{ margin: 0, paddingLeft: 18, fontSize: 14, color: '#B3261E', lineHeight: 1.6 }}>
-          {problems.map((problem) => <li key={problem}>{problem}</li>)}
-        </ul>
-      )}
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <Btn t={t} type="submit">Start mapping</Btn>
-      </div>
     </form>
   );
 }
