@@ -18,6 +18,15 @@ describe('Stationary Activity Mapping', () => {
     expect(screen.getByText('Observation Tally')).toBeInTheDocument();
   });
 
+  it('opens on the field sheet\'s directions and its key', () => {
+    mount();
+    const directions = screen.getByText('Directions').closest('section');
+    expect(directions).toHaveTextContent('Define a route through your space and use the same route for each hour.');
+    expect(directions).toHaveTextContent(/Add your name, date, & day of the week/);
+    expect(screen.getByRole('list', { name: 'Postures' }).querySelectorAll('li svg')).toHaveLength(7);
+    expect(screen.getByRole('list', { name: 'Activities' })).toHaveTextContent('Conversing');
+  });
+
   it('requires a map location before recording is enabled', () => {
     mount();
     expect(screen.getByRole('button', { name: 'Record' })).toBeDisabled();
@@ -28,15 +37,15 @@ describe('Stationary Activity Mapping', () => {
     mount();
     const card = screen.getByText('Record Observation').closest('section');
     expect(card.textContent).toContain('Standing');
-    expect(card.textContent).toContain('Sitting in Public');
+    expect(card.textContent).toContain('Public sitting');
   });
 
   it('shows the tally table with all posture rows', () => {
     mount();
     const tallyCard = screen.getByText('Observation Tally').closest('section');
     expect(tallyCard.textContent).toContain('Standing');
-    expect(tallyCard.textContent).toContain('Lying Down');
-    expect(tallyCard.textContent).toContain('Multiple / Movement');
+    expect(tallyCard.textContent).toContain('Lying down');
+    expect(tallyCard.textContent).toContain('Multiple movement');
   });
 
   it('plots each observation where it was recorded on the map', () => {
@@ -44,12 +53,14 @@ describe('Stationary Activity Mapping', () => {
     act(() => clickMap(lastMap(), { lat: 55.601, lng: 12.99 }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Standing' }));
-    fireEvent.click(screen.getByLabelText('Waiting for Transport'));
+    fireEvent.click(screen.getByLabelText('Waiting for transportation'));
     fireEvent.click(screen.getByRole('button', { name: 'Record' }));
 
-    const recorded = screen.getByRole('button', { name: 'Standing: Waiting for Transport' });
+    const recorded = screen.getByRole('button', { name: 'Standing: Waiting for transportation' });
     const marker = lastMap().markers.find((item) => item.getElement() === recorded);
     expect(marker.getLngLat()).toEqual({ lat: 55.601, lng: 12.99 });
+    // Drawn as the posture's symbol: standing is a filled circle.
+    expect(recorded.querySelector('svg circle')).toHaveAttribute('fill', 'currentColor');
 
     // And says what it was when clicked.
     fireEvent.click(recorded);

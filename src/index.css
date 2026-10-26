@@ -1984,10 +1984,18 @@ a {
 }
 
 .placer-cover-color {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 420px;
+}
+
+/* The way back, on the colour block's top-left corner. */
+.placer-cover-back {
+  position: absolute;
+  top: 24px;
+  left: 24px;
 }
 
 .placer-cover-copy {
@@ -1997,6 +2005,10 @@ a {
 }
 
 .placer-cover-action {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
   margin-top: 32px;
 }
 
@@ -2007,6 +2019,11 @@ a {
 
   .placer-cover-color {
     min-height: 220px;
+  }
+
+  .placer-cover-back {
+    top: 16px;
+    left: 12px;
   }
 
   .placer-cover-copy {
