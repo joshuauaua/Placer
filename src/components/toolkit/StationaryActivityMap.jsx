@@ -1,9 +1,11 @@
 /* PLACER — Toolkit: Stationary Activity Mapping.
  *
- * A map-based field observation tool. The map (OpenStreetMap) is the dominant
- * visual element; the recording card floats over its left half and
- * the tally sits below it. The user first clicks the map to pick a
- * location, then selects posture and activities, then records.
+ * A map-based field observation tool, after Gehl's Public Life Data Protocol. It
+ * opens on the field sheet's directions and its key: each posture's symbol, and the
+ * activities. Then the map (OpenStreetMap), the dominant visual element; the
+ * recording card floats over its left half and the tally sits below it. The user
+ * first clicks the map to pick a location, then selects posture and activities,
+ * then records. Every posture is drawn as its symbol (PostureSymbol.jsx).
  * The site's text face (--placer-font) is used throughout.
  */
 
@@ -11,8 +13,12 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { Icon } from '../Icon';
 import { Panel, Readout } from '../ToolLayout';
 import { Btn, Chip, CopyButton } from '../UI';
+import { PostureSymbol, symbolElement } from './PostureSymbol';
 import {
+  ACTIVITIES,
   ACTIVITIES_BY_POSTURE,
+  DIRECTIONS,
+  HANDING_IN,
   ACTIVITY_BY_KEY,
   POSTURES,
   POSTURE_LIST,
@@ -30,11 +36,22 @@ const MAP_ZOOM = 15;
 const ACTIVITY_GROUPS = [
   { key: 'getting-around', label: 'Getting Around', activities: ['waiting'] },
   { key: 'food-work', label: 'Food & Work', activities: ['consuming', 'commercial'] },
-  { key: 'culture-leisure', label: 'Culture & Leisure', activities: ['cultural', 'recreation', 'leisure'] },
+  { key: 'social-culture', label: 'Social & Culture', activities: ['conversing', 'cultural', 'recreation'] },
 ];
 
-function postureIconColor(postureKey) {
-  return POSTURES[postureKey]?.color ?? '#888';
+const INK = '#111111';
+
+// A recorded person on the map: their posture's symbol in black on a small white tile,
+// so an open circle still reads against the streets.
+function markerTile(posture) {
+  const tile = document.createElement('div');
+  Object.assign(tile.style, {
+    width: '24px', height: '24px', boxSizing: 'border-box', borderRadius: '6px',
+    background: '#FFFFFF', border: `1px solid ${INK}`, color: INK,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  });
+  tile.append(symbolElement(posture, 16));
+  return tile;
 }
 
 function describe(person) {
@@ -50,7 +67,7 @@ function popupContent(person, id) {
   const node = document.createElement('div');
   node.style.cssText = 'font-family:var(--placer-font);padding:2px 4px;min-width:150px;font-size:13px;line-height:1.5';
   const heading = document.createElement('strong');
-  heading.style.color = postureIconColor(person.posture);
+  heading.style.color = INK;
   heading.textContent = posture;
   node.append(heading);
   activities.forEach((label) => {
@@ -105,7 +122,7 @@ export function StationaryActivityMap({ t, tool }) {
       if (!person || !obs.position) return [];
       const { posture: postureLabel, activities: activityLabels } = describe(person);
       return [addPin(map, obs.position, {
-        size: 20, fill: postureIconColor(person.posture), ring: '#FFFFFF',
+        element: markerTile(person.posture),
         title: `${postureLabel}: ${activityLabels.join(', ')}`,
         onClick: () => openPopup(map, obs.position, popupContent(person, obs.id)),
       })];
@@ -182,6 +199,45 @@ export function StationaryActivityMap({ t, tool }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: 'var(--placer-font)' }}>
+      {/* The field sheet's directions, and its key to the symbols and activities. */}
+      <Panel t={t} title="Directions">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 28 }}>
+          <div>
+            <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 8,
+              fontSize: 14, lineHeight: 1.55, color: t.ink }}>
+              {DIRECTIONS.map((direction) => <li key={direction}>{direction}</li>)}
+            </ul>
+            <p style={{ margin: '16px 0 0', fontSize: 13, fontWeight: 700, letterSpacing: '0.02em',
+              textTransform: 'uppercase', color: t.ink, lineHeight: 1.5 }}>
+              {HANDING_IN}
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignContent: 'start' }}>
+            <div>
+              <h3 className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
+                textTransform: 'uppercase', color: t.inkDim, margin: '0 0 10px' }}>Postures</h3>
+              <ul aria-label="Postures" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex',
+                flexDirection: 'column', gap: 8, fontSize: 14, color: t.ink }}>
+                {POSTURE_LIST.map((item) => (
+                  <li key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <PostureSymbol posture={item.key} size={18} />
+                    {item.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
+                textTransform: 'uppercase', color: t.inkDim, margin: '0 0 10px' }}>Activities</h3>
+              <ul aria-label="Activities" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex',
+                flexDirection: 'column', gap: 8, fontSize: 14, color: t.ink, lineHeight: 1.35 }}>
+                {ACTIVITIES.map((activity) => <li key={activity.key}>{activity.label}</li>)}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </Panel>
+
       {/* 1 · Map card — dominant background */}
       <Panel t={t} title="Observation Map" aside={
         <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
@@ -223,9 +279,11 @@ export function StationaryActivityMap({ t, tool }) {
                 <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                   {POSTURE_LIST.map((item) => (
                     <Chip
-                      key={item.key} t={t} color={item.color}
+                      key={item.key} t={t}
                       active={posture === item.key} ariaPressed={posture === item.key}
-                      onClick={() => pickPosture(item.key)} style={{ fontSize: 11, height: 30, padding: '0 8px' }}>
+                      onClick={() => pickPosture(item.key)}
+                      style={{ fontSize: 11, height: 30, padding: '0 8px', gap: 6 }}>
+                      <PostureSymbol posture={item.key} size={12} />
                       {item.label}
                     </Chip>
                   ))}
@@ -315,7 +373,7 @@ export function StationaryActivityMap({ t, tool }) {
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
             {POSTURE_LIST.map((item) => (
               <span key={item.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: t.inkDim, fontFamily: 'var(--placer-font)' }}>
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: item.color }} />
+                <PostureSymbol posture={item.key} size={12} style={{ color: t.ink }} />
                 {item.label} ({counts.byPosture[item.key]})
               </span>
             ))}
@@ -352,12 +410,12 @@ export function StationaryActivityMap({ t, tool }) {
                 <tr key={item.key} style={{ borderBottom: `1px solid ${t.line}` }}>
                   <td style={{ padding: '8px 10px 8px 0' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 13.5, fontWeight: 700, color: t.ink }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: item.color }} />
+                      <PostureSymbol posture={item.key} size={12} />
                       {item.label}
                     </span>
                   </td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>
-                    <span className="placer-disp" style={{ fontSize: 16, fontWeight: 700, color: people > 0 ? item.color : t.inkFaint }}>
+                    <span className="placer-disp" style={{ fontSize: 16, fontWeight: 700, color: people > 0 ? t.ink : t.inkFaint }}>
                       {people}
                     </span>
                   </td>

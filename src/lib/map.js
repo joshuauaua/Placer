@@ -91,11 +91,12 @@ export function stylePin(element, { fill, ring, size = 22, ringWidth = 2, zIndex
 /**
  * A pin on `map` at `position`, styled as stylePin says, calling `onClick` when it is
  * clicked. `title` is its tooltip and its accessible name. `offset`, [x, y] in pixels,
- * draws it that far from its position (lib/pinSpread.js). Returns the MapLibre Marker;
- * `marker.remove()` takes it off.
+ * draws it that far from its position (lib/pinSpread.js). `element`, when given, is
+ * drawn instead of the round pin — a field sheet's symbol, say. Returns the MapLibre
+ * Marker; `marker.remove()` takes it off.
  */
-export function addPin(map, position, { title, onClick, offset, ...style }) {
-  const element = pinElement(style);
+export function addPin(map, position, { title, onClick, offset, element: drawn = null, ...style }) {
+  const element = drawn ?? pinElement(style);
   if (title) {
     element.title = title;
     element.setAttribute('aria-label', title);

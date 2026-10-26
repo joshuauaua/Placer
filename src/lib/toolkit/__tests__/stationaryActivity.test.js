@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vite-plus/test';
 import {
   ACTIVITIES,
   ACTIVITIES_BY_POSTURE,
+  DIRECTIONS,
   GRID,
+  HANDING_IN,
   POSTURE_LIST,
   cellCoords,
   cellIndex,
@@ -15,7 +17,7 @@ import {
 } from '../stationaryActivity';
 
 describe('the field sheet', () => {
-  it('offers seven postures with a colour each', () => {
+  it("offers the field sheet's seven postures, by its names", () => {
     expect(POSTURE_LIST.map((posture) => posture.key)).toEqual([
       'standing',
       'sittingPublic',
@@ -25,9 +27,10 @@ describe('the field sheet', () => {
       'lying',
       'multiple',
     ]);
-    for (const posture of POSTURE_LIST) {
-      expect(posture.color).toMatch(/^#[0-9A-F]{6}$/i);
-    }
+    expect(POSTURE_LIST.map((posture) => posture.label)).toEqual([
+      'Standing', 'Public sitting', 'Private sitting', 'Commercial sitting', 'Informal sitting',
+      'Lying down', 'Multiple movement',
+    ]);
   });
 
   it('offers six activities, each with at least one posture', () => {
@@ -35,9 +38,13 @@ describe('the field sheet', () => {
       'waiting',
       'consuming',
       'commercial',
+      'conversing',
       'cultural',
       'recreation',
-      'leisure',
+    ]);
+    expect(ACTIVITIES.map((activity) => activity.label)).toEqual([
+      'Waiting for transportation', 'Consuming food and beverage', 'Commercial activity', 'Conversing',
+      'Cultural activity', 'Recreation and play/exercise',
     ]);
     for (const activity of ACTIVITIES) {
       expect(activity.label).toBeTruthy();
@@ -48,6 +55,20 @@ describe('the field sheet', () => {
     }
     for (const posture of POSTURE_LIST) {
       expect(ACTIVITIES_BY_POSTURE[posture.key].length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('the directions', () => {
+  it('carry every point of the field sheet, and what to do before handing it in', () => {
+    expect(DIRECTIONS).toHaveLength(8);
+    expect(DIRECTIONS[0]).toBe('Define a route through your space and use the same route for each hour.');
+    expect(HANDING_IN).toMatch(/name, date, & day of the week/);
+  });
+
+  it('let anybody be conversing, whatever their posture', () => {
+    for (const posture of POSTURE_LIST) {
+      expect(ACTIVITIES_BY_POSTURE[posture.key].map((activity) => activity.key)).toContain('conversing');
     }
   });
 });
@@ -66,9 +87,9 @@ describe('normaliseObservation', () => {
   });
 
   it('drops activities that do not belong to the posture', () => {
-    expect(normaliseObservation({ posture: 'lying', activities: ['waiting', 'leisure'] })).toEqual({
+    expect(normaliseObservation({ posture: 'lying', activities: ['waiting', 'consuming'] })).toEqual({
       posture: 'lying',
-      activities: ['leisure'],
+      activities: ['consuming'],
       cell: null,
     });
   });
@@ -96,7 +117,7 @@ describe('tally', () => {
 
   const session = [
     { posture: 'standing', activities: ['waiting', 'cultural'], cell: corner },
-    { posture: 'sittingPublic', activities: ['waiting', 'leisure'], cell: null },
+    { posture: 'sittingPublic', activities: ['waiting', 'conversing'], cell: null },
     { posture: 'multiple', activities: ['recreation', 'commercial'], cell: farCorner },
   ];
 
@@ -112,7 +133,7 @@ describe('tally', () => {
     const counts = tally(session);
     expect(counts.byActivity.waiting).toBe(2);
     expect(counts.byActivity.cultural).toBe(1);
-    expect(counts.byActivity.leisure).toBe(1);
+    expect(counts.byActivity.conversing).toBe(1);
     expect(counts.byActivity.recreation).toBe(1);
     expect(counts.byActivity.commercial).toBe(1);
   });
@@ -153,7 +174,7 @@ describe('summaryText', () => {
     expect(text).toContain('Stationary Activity Mapping — PLACER Toolkit');
     expect(text).toContain('1 person recorded');
     expect(text).toContain('Standing — 1');
-    expect(text).toContain('- Waiting for Transport: 1');
+    expect(text).toContain('- Waiting for transportation: 1');
   });
 
   it('says people when it has to', () => {

@@ -3,7 +3,9 @@
  * The layout of the landingpage branch's User Labs page (PhotoSplit there): a
  * block of the tool's colour tint fills the left half where User Labs has
  * its photo, and the copy sits centred on the right, ending in the one button
- * that starts the tool. On a phone they stack, colour first. Everything on it is
+ * that starts the tool, with the language picker beside it. The way back (All tools,
+ * or the project's breadcrumb) sits on the colour block, top left. On a phone they
+ * stack, colour first. Everything on it is
  * read from the registry entry, so the tile, the cover and the header above the
  * tool never disagree. The geometry lives in index.css (.placer-cover-*).
  */
@@ -23,20 +25,18 @@ export function ToolCover({ t, tool, onStart, onBack, breadcrumb = null }) {
   return (
     <div className="placer-cover" style={{ background: t.page }}>
       <div className="placer-cover-color" style={{ background: tool.tint }}>
+        <div className="placer-cover-back">
+          {breadcrumb ?? (
+            <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack}
+              style={{ padding: '0 12px 0 6px', color: t.ink }}>
+              {text('tool.allTools')}
+            </Btn>
+          )}
+        </div>
         <Icon name={tool.icon} size={120} stroke={1.5} style={{ color: t.ink }} />
       </div>
 
       <div className="placer-cover-copy">
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
-          flexWrap: 'wrap' }}>
-          {breadcrumb ?? (
-            <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack}
-              style={{ padding: '0 12px 0 6px', marginBottom: 24, color: t.inkDim }}>
-              {text('tool.allTools')}
-            </Btn>
-          )}
-          <LanguagePicker t={t} style={{ marginLeft: 'auto', marginBottom: 24 }} />
-        </div>
 
         <div className="placer-caption" style={{ textTransform: 'uppercase', color: tool.color,
           fontWeight: 700, marginBottom: 12 }}>
@@ -67,6 +67,7 @@ export function ToolCover({ t, tool, onStart, onBack, breadcrumb = null }) {
 
         <div className="placer-cover-action">
           <Btn t={t} size="lg" onClick={onStart}>{text('tool.getStarted')}</Btn>
+          <LanguagePicker t={t} />
         </div>
       </div>
     </div>

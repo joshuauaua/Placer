@@ -4,33 +4,53 @@
  * go with it, and where in the square they were. The map builds itself up
  * from that, one person at a time.
  *
- * The taxonomy is a trimmed version of the one used in public-life observation
- * studies, tuned for a tool where the user records posture first and then
- * picks the activities that fit it.
+ * The postures and activities are the Public Life Data Protocol's, as Gehl's
+ * field sheet names them, tuned for a tool where the user records posture first
+ * and then picks the activities that fit it. Each posture is drawn as the sheet's
+ * symbol (PostureSymbol.jsx), not a colour.
  */
 
-/** Postures, each with the colour it gets on the map. */
+/** Postures, in the order the field sheet lists them. */
 export const POSTURES = {
-  standing: { key: 'standing', label: 'Standing', color: '#1D5FA8' },
-  sittingPublic: { key: 'sittingPublic', label: 'Sitting in Public', color: '#9E4600' },
-  sittingPrivate: { key: 'sittingPrivate', label: 'Sitting in Private', color: '#3A2480' },
-  sittingCommercial: { key: 'sittingCommercial', label: 'Sitting in a Commercial Area', color: '#5B3CB8' },
-  sittingInformally: { key: 'sittingInformally', label: 'Sitting Informally', color: '#8DBBEF' },
-  lying: { key: 'lying', label: 'Lying Down', color: '#B39DF2' },
-  multiple: { key: 'multiple', label: 'Multiple / Movement', color: '#FDB27A' },
+  standing: { key: 'standing', label: 'Standing' },
+  sittingPublic: { key: 'sittingPublic', label: 'Public sitting' },
+  sittingPrivate: { key: 'sittingPrivate', label: 'Private sitting' },
+  sittingCommercial: { key: 'sittingCommercial', label: 'Commercial sitting' },
+  sittingInformally: { key: 'sittingInformally', label: 'Informal sitting' },
+  lying: { key: 'lying', label: 'Lying down' },
+  multiple: { key: 'multiple', label: 'Multiple movement' },
 };
 
 export const POSTURE_LIST = Object.values(POSTURES);
 
 /** Activities, each carrying the postures it can pair with. */
 export const ACTIVITIES = [
-  { key: 'waiting', label: 'Waiting for Transport', postures: ['standing', 'sittingPublic', 'sittingInformally', 'sittingCommercial', 'multiple'] },
-  { key: 'consuming', label: 'Consuming Food / Beverages', postures: ['sittingPublic', 'sittingPrivate', 'sittingCommercial', 'sittingInformally', 'lying'] },
-  { key: 'commercial', label: 'Commercial Activity', postures: ['standing', 'sittingCommercial', 'sittingInformally', 'multiple'] },
-  { key: 'cultural', label: 'Cultural Activity', postures: ['standing', 'sittingPublic', 'sittingPrivate', 'sittingCommercial', 'sittingInformally'] },
-  { key: 'recreation', label: 'Recreation / Play / Exercise', postures: ['standing', 'sittingInformally', 'lying', 'multiple'] },
-  { key: 'leisure', label: 'Leisure', postures: ['sittingPublic', 'sittingPrivate', 'sittingCommercial', 'sittingInformally', 'lying'] },
+  { key: 'waiting', label: 'Waiting for transportation', postures: ['standing', 'sittingPublic', 'sittingInformally', 'sittingCommercial', 'multiple'] },
+  { key: 'consuming', label: 'Consuming food and beverage', postures: ['sittingPublic', 'sittingPrivate', 'sittingCommercial', 'sittingInformally', 'lying'] },
+  { key: 'commercial', label: 'Commercial activity', postures: ['standing', 'sittingCommercial', 'sittingInformally', 'multiple'] },
+  // Anybody can be talking, whatever they are doing it in.
+  { key: 'conversing', label: 'Conversing', postures: ['standing', 'sittingPublic', 'sittingPrivate', 'sittingCommercial', 'sittingInformally', 'lying', 'multiple'] },
+  { key: 'cultural', label: 'Cultural activity', postures: ['standing', 'sittingPublic', 'sittingPrivate', 'sittingCommercial', 'sittingInformally'] },
+  { key: 'recreation', label: 'Recreation and play/exercise', postures: ['standing', 'sittingInformally', 'lying', 'multiple'] },
 ];
+
+/**
+ * How to map, from the field sheet: walked once an hour along the same route,
+ * everybody in the area spending time there.
+ */
+export const DIRECTIONS = [
+  'Define a route through your space and use the same route for each hour.',
+  'There are predefined categories and a symbol for each activity — see the key on this page. The symbols will be below your map, so no need to memorize them.',
+  'To record activities, walk through the space outlined on your map and use the symbols to mark what people are doing, where they are doing it, and how many people are doing the same activity within the same area.',
+  'Map everyone inside the outlined area, not only along the line (feel free to map activity outside the marked area, but do not add this to the summary of activities).',
+  'If an area is small you may be able to do the mapping from one location.',
+  'Map everyone spending time in the area. Do not map people moving through unless they are moving within the area (e.g., a skateboarder using an edge to practice tricks).',
+  'If you are mapping more than one location or mapping the same location more than one time, please make sure to use individual maps and summarize all activity on each map individually.',
+  'Please take notes of any observations you make during your mapping and also note if anything out of the ordinary happens or if large groups are doing the same activity.',
+];
+
+/** What the sheet asks for before it is handed in. */
+export const HANDING_IN = 'Add your name, date, & day of the week to the sheet. Sum totals before handing in.';
 
 export const ACTIVITY_BY_KEY = Object.fromEntries(ACTIVITIES.map((activity) => [activity.key, activity]));
 
