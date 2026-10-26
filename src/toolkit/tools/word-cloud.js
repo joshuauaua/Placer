@@ -5,7 +5,7 @@ import { PALETTE } from '../../theme';
 import {
   cloudSetupProblems, combineWords, defaultCloudSetup, emptyWords, promptProblems, wordsProblems,
 } from '../../lib/wordCloud';
-import { roomText, tone } from '../toolParts';
+import { counted, roomText, tone } from '../toolParts';
 
 export default {
   id: 'word-cloud',
@@ -26,6 +26,9 @@ export default {
       { title: 'Prompt', Form: PromptStep, problems: promptProblems },
       { title: 'Words', Form: WordsStep, problems: wordsProblems },
     ],
+  },
+  inquiry: {
+    summary: (config) => (config?.words?.length > 0 ? counted(config.words.length, 'word', 'words') : ''),
   },
   onProjectPage: {
     heading: 'Tell us in a word',

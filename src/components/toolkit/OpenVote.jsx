@@ -20,6 +20,7 @@ import { Btn } from '../UI';
 import { AnswersEditor } from './OpenVoteSetup';
 import { DEFAULT_ANSWERS, OPTIONS, pollOptions, tally } from '../../lib/openVote';
 import { useText } from '../../i18n';
+import { KeepOnProfile, onItsOwn } from './KeepOnProfile';
 
 /**
  * The options with Yes, No and Undecided — the answers a poll starts with — in the
@@ -237,6 +238,13 @@ export function OpenVote({ t, tool, room }) {
             {text('openVote.howItWorks')}
           </p>
         </Panel>
+
+        {onItsOwn(room) && (
+          <KeepOnProfile t={t} tool={tool.id} intro={text('keep.intro.openVote')}
+            inquiry={question.trim() ? {
+              title: question.trim(), note: '', config: { question: question.trim(), answers, choice },
+            } : null} />
+        )}
       </div>
     </div>
   );

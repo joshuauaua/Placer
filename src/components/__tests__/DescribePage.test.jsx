@@ -28,25 +28,25 @@ describe('DescribePage', () => {
     setup();
     expect(screen.getByText('Describe')).toHaveStyle({ fontWeight: 800 });
     expect(screen.getByText('Place assets')).toHaveStyle({ fontWeight: 600 });
-    expect(screen.getByText('Post')).toHaveStyle({ fontWeight: 600 });
+    expect(screen.getByText('Save')).toHaveStyle({ fontWeight: 600 });
   });
 
-  it('disables "Next: Post" until title, category, and description are all set', () => {
+  it('disables "Next: Save" until title, category, and description are all set', () => {
     setup();
-    expect(screen.getByText('Next: Post')).toBeDisabled();
+    expect(screen.getByText('Next: Save')).toBeDisabled();
   });
 
-  it('enables "Next: Post" once the draft is complete', () => {
+  it('enables "Next: Save" once the draft is complete', () => {
     const { onNext } = setup({ draft: FILLED });
 
-    expect(screen.getByText('Next: Post')).not.toBeDisabled();
-    fireEvent.click(screen.getByText('Next: Post'));
+    expect(screen.getByText('Next: Save')).not.toBeDisabled();
+    fireEvent.click(screen.getByText('Next: Save'));
     expect(onNext).toHaveBeenCalledTimes(1);
   });
 
   it('treats whitespace-only text as empty', () => {
     setup({ draft: { title: '   ', cat: 'green', blurb: '   ' } });
-    expect(screen.getByText('Next: Post')).toBeDisabled();
+    expect(screen.getByText('Next: Save')).toBeDisabled();
   });
 
   it('reports a title change as a patch', () => {
@@ -96,14 +96,14 @@ describe('DescribePage, when posting will need an account', () => {
   it('warns a step early rather than at the last moment', () => {
     setup({ draft: FILLED, needsAccount: true });
 
-    expect(screen.getByText(/You will need an account to post this/)).toBeInTheDocument();
+    expect(screen.getByText(/You will need an account to save this/)).toBeInTheDocument();
   });
 
   it('still lets anybody describe what they made', () => {
     setup({ draft: FILLED, needsAccount: true });
 
     // Not a gate. Drawing and describing stay open; only posting is gated.
-    expect(screen.getByRole('button', { name: /Next: Post/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Next: Save/ })).toBeEnabled();
   });
 
   it('says nothing where there are no accounts to need', () => {

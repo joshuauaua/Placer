@@ -5,7 +5,7 @@ import {
   combineQuiz, defaultQuizSetup, emptyQuizState, questionProblems as quizQuestionProblems, quizSetupProblems,
   timeProblems,
 } from '../../lib/popQuiz';
-import { roomText, tone } from '../toolParts';
+import { counted, roomText, tone } from '../toolParts';
 
 export default {
   id: 'pop-quiz',
@@ -26,6 +26,9 @@ export default {
       { title: 'Questions', Form: QuestionsStep, problems: quizQuestionProblems },
       { title: 'Time', Form: TimeStep, problems: timeProblems },
     ],
+  },
+  inquiry: {
+    summary: (config) => (Array.isArray(config?.questions) ? counted(config.questions.length, 'question', 'questions') : ''),
   },
   onProjectPage: {
     heading: 'Take the pop quiz',

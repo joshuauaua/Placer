@@ -77,6 +77,13 @@
  * the imagination flow runs full-bleed, step by step, and keeps its draft in App.
  * Its `component` is only what shows where nothing takes the hand-over.
  *
+ * `inquiry` is optional, for a tool that can be kept on a profile when it is used on its
+ * own (components/toolkit/KeepOnProfile.jsx, services/inquiries.js). It says how one of
+ * its saved inquiries is listed there (SavedInquiries):
+ *
+ *   summary(config)   — what was made, in a few words ("3 walks · 2 marks"), or ''
+ *   picture(config)   — optional: the media key of a picture to show beside it, or null
+ *
  * `onProjectPage` is how a project's public page presents the tool once its organisers
  * have added it and, for a room-capable tool, opened a room for it — which is what
  * setting it up for the project means. A tool added but not yet opened is not shown

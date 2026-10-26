@@ -489,7 +489,7 @@ function MainApp({ initialView = 'welcome' }) {
   }, [view, identityStatus, navigate]);
 
   const handlePosted = () => {
-    // Posted, so there is nothing left to come back to.
+    // Saved, so there is nothing left to come back to.
     clearPendingImagination();
     setMapFocus(capturedView?.position ?? null);
     setCapturedView(null);
@@ -573,9 +573,8 @@ function MainApp({ initialView = 'welcome' }) {
             canvasAssets={canvasAssets}
             onBack={() => show('describe')}
             onPosted={handlePosted}
-            authorName={profile?.name ?? DEFAULT_NAME}
             accountId={accountId}
-            // Posting is the one thing an account is required for. Where there is no
+            // Saving is the one thing an account is required for. Where there is no
             // project configured there are no accounts either, so identityStatus is
             // 'local' and this stays false — the flow works exactly as it always did.
             needsAccount={identityStatus === 'signedOut'}

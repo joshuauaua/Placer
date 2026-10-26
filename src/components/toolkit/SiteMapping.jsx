@@ -25,6 +25,7 @@ import { Meter, Panel, Readout } from '../ToolLayout';
 import { Btn, Chip, CopyButton } from '../UI';
 import { PlaceSearch } from '../PlaceSearch';
 import { SITE_ASPECT, SiteView } from './SiteScope';
+import { KeepOnProfile, onItsOwn } from './KeepOnProfile';
 import { addPlainMarker, createMap, onBackgroundClick, toLngLat } from '../../lib/map';
 import {
   AGE_RANGES,
@@ -999,6 +1000,17 @@ export function SiteMapping({ t, tool, room = null, recording = null }) {
               </Btn>
             </div>
           </Panel>
+        )}
+
+        {/* Used on its own, the site and what was answered about it can be kept on the
+            profile: the same answers a room would be sent, so never contact details. */}
+        {panel === 'export' && !rec && onItsOwn(room) && (
+          <KeepOnProfile t={t} tool={tool.id}
+            intro="Save this site and your answers on your profile as an inquiry, to come back to later. Your contact details are not kept with it."
+            inquiry={{
+              title: site.name, note: '',
+              config: { site: { name: site.name, point: { lat: site.lat, lng: site.lng } }, ...recorded },
+            }} />
         )}
 
         {/* mini progress, always visible once loaded */}

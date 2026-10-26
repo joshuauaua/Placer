@@ -21,6 +21,7 @@ const TRANSLATED = {
   'components/toolkit/BudgetBallot.jsx': [],
   'components/toolkit/BudgetBallotParts.jsx': [],
   'components/toolkit/DreamIt.jsx': [],
+  'components/toolkit/KeepOnProfile.jsx': [],
   'components/toolkit/OpenVote.jsx': [],
   'components/toolkit/PopQuiz.jsx': [],
   'components/toolkit/RoomBar.jsx': [],

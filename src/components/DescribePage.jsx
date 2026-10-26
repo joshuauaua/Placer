@@ -52,7 +52,7 @@ export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview,
       backLabel="Back to canvas"
       actions={
         <Btn t={t} variant="primary" size="sm" icon="arrowRight" onClick={onNext} disabled={!complete}>
-          Next: Post
+          Next: Save
         </Btn>
       }
     >
@@ -129,7 +129,7 @@ export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview,
               not a gate: this step, and the drawing before it, stay open to everybody. */}
           {needsAccount && (
             <div style={{ marginTop: 20, fontSize: 13.5, color: t.inkDim, lineHeight: 1.55 }}>
-              You will need an account to post this. You can sign in on the next step —
+              You will need an account to save this. You can sign in on the next step —
               nothing you have made will be lost.
             </div>
           )}

@@ -25,8 +25,8 @@ const GUIDES = [
   },
   {
     id: 3,
-    title: 'Describing and Posting Your Idea',
-    excerpt: 'Give your imagination a title and a story, then post it to the map for others to see and vote on.',
+    title: 'Describing and Saving Your Idea',
+    excerpt: 'Give your imagination a title and a story, then save it to your profile to come back to.',
     image: { bg: '#FFD9B8', icon: 'pencil' },
     tags: ['Imagine'],
     readTime: '4 min read'

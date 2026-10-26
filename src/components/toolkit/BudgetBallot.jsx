@@ -25,6 +25,7 @@ import { Panel, PresetRow, Readout } from '../ToolLayout';
 import { CopyButton } from '../UI';
 import { COUNCIL_DRAFT, emptyBallot, ownPostProposals, postLabel, summaryText, tally } from '../../lib/budgetBallot';
 import { MoneySummary, PostList, ballotState, useBallot } from './BudgetBallotParts';
+import { KeepOnProfile, onItsOwn } from './KeepOnProfile';
 import { useText } from '../../i18n';
 
 const PRESETS = ['empty', 'draft'];
@@ -198,6 +199,13 @@ export function BudgetBallot({ t, tool, room }) {
             style={{ alignItems: 'flex-start' }}
           />
         </Panel>
+
+        {onItsOwn(room) && (
+          <KeepOnProfile t={t} tool={tool.id} intro={text('keep.intro.budgetBallot')}
+            inquiry={result.items.length === 0 ? null : {
+              title: tool.name, note: summary, config: { budget, ...ballotState({ ballot, own, ownAllowed, quantities }) },
+            }} />
+        )}
       </div>
     </div>
   );

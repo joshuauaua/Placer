@@ -24,6 +24,7 @@ import { Icon } from '../Icon';
 import { QuestionsEditor, TimeField } from './PopQuizSetup';
 import { rememberAnswer, rememberedAnswer } from '../../toolkit/rooms';
 import { useText } from '../../i18n';
+import { KeepOnProfile, onItsOwn } from './KeepOnProfile';
 import {
   LETTERS, MAX_BLANK_LENGTH, MAX_NICKNAME_LENGTH, answerTo, answeredCount, cleanNickname, elapsed,
   emptyQuizState, paceAt, paceShown, pointsFor, quizQuestions, quizSeconds, quizSetupProblems, quizStage,
@@ -383,8 +384,11 @@ function HostGame({ t, room }) {
   );
 }
 
-/** Outside a room: write a quiz, then play it alone to see how it goes. */
-function SoloGame({ t }) {
+/**
+ * Outside a room: write a quiz, then play it alone to see how it goes. Used on its own
+ * (`keep`), the quiz as written can be kept on the profile.
+ */
+function SoloGame({ t, keep = false }) {
   const { text } = useText();
   const [quiz, setQuiz] = useState(sampleQuiz);
   const [tried, setTried] = useState(false);
@@ -423,14 +427,22 @@ function SoloGame({ t }) {
           </div>
         </Panel>
 
-        <Panel t={t} title={text('common.howItWorks')}>
-          <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
-            {text('popQuiz.howItWorks1')}
-          </p>
-          <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '12px 0 0' }}>
-            {text('popQuiz.howItWorks2')}
-          </p>
-        </Panel>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+          <Panel t={t} title={text('common.howItWorks')}>
+            <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
+              {text('popQuiz.howItWorks1')}
+            </p>
+            <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '12px 0 0' }}>
+              {text('popQuiz.howItWorks2')}
+            </p>
+          </Panel>
+          {keep && (
+            <KeepOnProfile t={t} tool="pop-quiz" intro={text('keep.intro.popQuiz')}
+              inquiry={problems.length > 0 ? null : {
+                title: quizQuestions(quiz)[0]?.text?.trim() || 'Pop Quiz', note: '', config: quiz,
+              }} />
+          )}
+        </div>
       </div>
     );
   }
@@ -491,7 +503,7 @@ export function PopQuiz({ t, room }) {
     }
     return room.isHost ? <HostGame t={t} room={room} /> : <PlayerGame t={t} room={room} />;
   }
-  return <SoloGame t={t} />;
+  return <SoloGame t={t} keep={onItsOwn(room)} />;
 }
 
 export default PopQuiz;

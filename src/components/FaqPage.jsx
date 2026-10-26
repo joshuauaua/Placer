@@ -27,7 +27,7 @@ const QUESTIONS = [
   },
   {
     q: 'What is an imagination?',
-    a: 'A picture of how a place could be. You pick a spot on the map, step into the street view, place things like benches, trees and planters, then describe your idea and post it to the map for others to see.',
+    a: 'A picture of how a place could be. You pick a spot on the map, step into the street view, place things like benches, trees and planters, then describe your idea and save it to your profile.',
   },
   {
     q: 'What is the Toolkit?',

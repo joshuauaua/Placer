@@ -125,7 +125,7 @@ describe('StreetScreen', () => {
 
     expect(screen.getByText('Place assets')).toHaveStyle({ fontWeight: 800 });
     expect(screen.getByText('Describe')).toHaveStyle({ fontWeight: 600 });
-    expect(screen.getByText('Post')).toHaveStyle({ fontWeight: 600 });
+    expect(screen.getByText('Save')).toHaveStyle({ fontWeight: 600 });
   });
 
   it('renders the "Save draft" button', () => {

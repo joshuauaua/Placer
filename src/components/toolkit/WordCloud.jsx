@@ -31,6 +31,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Panel } from '../ToolLayout';
 import { useText } from '../../i18n';
+import { KeepOnProfile, onItsOwn } from './KeepOnProfile';
 import { Btn } from '../UI';
 import { TimerSelect } from './WordCloudSetup';
 import { PALETTE_LIST } from '../../theme';
@@ -445,6 +446,14 @@ export function WordCloud({ t, room }) {
               {text('wordCloud.howItWorks')}
             </p>
           </Panel>
+
+          {onItsOwn(room) && (
+            <KeepOnProfile t={t} tool="word-cloud" intro={text('keep.intro.wordCloud')}
+              inquiry={prompt.trim() || words.length > 0 ? {
+                title: prompt.trim() || 'Word Cloud', note: '',
+                config: { prompt: prompt.trim(), seconds: ownSeconds, words },
+              } : null} />
+          )}
         </div>
       </div>
     </div>

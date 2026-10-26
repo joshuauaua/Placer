@@ -3,7 +3,7 @@
 
 import { Icon } from './Icon';
 
-const STEPS = ['Place assets', 'Describe', 'Post'];
+const STEPS = ['Place assets', 'Describe', 'Save'];
 
 export function StepBar({ t, step = 1 }) {
   return (
