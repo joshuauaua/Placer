@@ -13,21 +13,25 @@ import { useId, useState } from 'react';
 import { Icon } from '../Icon';
 import { RoomBar } from './RoomBar';
 import { useRoom } from './useRoom';
+import { useProjectToolSetup } from './useProjectToolSetup';
 
-/** The tool itself, in its room if it has one. */
-function ProjectToolRun({ t, tool, room, displayName }) {
+/** The tool itself, in its room if it has one, and as the project set it up if it did. */
+function ProjectToolRun({ t, tool, room, projectId, displayName }) {
   const roomState = useRoom({ tool, roomId: room?.id ?? null, displayName });
+  const projectSetup = useProjectToolSetup(projectId, tool);
   const Tool = tool.component;
 
   return (
     <>
       <RoomBar t={t} tool={tool} room={roomState} />
-      <Tool t={t} tool={tool} room={roomState} />
+      {projectSetup.ready
+        ? <Tool t={t} tool={tool} room={roomState} setup={projectSetup.setup} />
+        : <p style={{ fontSize: 14, color: t.inkDim, margin: 0 }}>Loading…</p>}
     </>
   );
 }
 
-export function ProjectToolCard({ t, tool, room = null, displayName = null }) {
+export function ProjectToolCard({ t, tool, room = null, projectId = null, displayName = null }) {
   const panelId = useId();
   const [open, setOpen] = useState(false);
 
@@ -51,7 +55,7 @@ export function ProjectToolCard({ t, tool, room = null, displayName = null }) {
 
       {open && (
         <div id={panelId} style={{ padding: 20, borderTop: `1px solid ${t.line}` }}>
-          <ProjectToolRun t={t} tool={tool} room={room} displayName={displayName} />
+          <ProjectToolRun t={t} tool={tool} room={room} projectId={projectId} displayName={displayName} />
         </div>
       )}
     </div>

@@ -7,6 +7,8 @@
  *   room  — a tool that runs in a room: its own setup form, if it has one, and how long
  *           the project's room stays open. Saving opens that room, which is what puts
  *           the tool live; its row on the dashboard then opens out to the room.
+ *   config — its own setup, in its stages, kept on the project's tool rather than a
+ *           room. Saving puts the tool live, and it reaches the tool as `setup`.
  *   none  — nothing to fill in. Saving only puts the tool live.
  *
  * It opens on an introduction to the tool — what it is, and what configuring it
@@ -17,7 +19,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Btn } from './UI';
 import { Icon } from './Icon';
 import { DatePicker } from './DatePicker';
-import { markProjectToolConfigured } from '../services/projects';
+import { markProjectToolConfigured, readProjectToolSetup, saveProjectToolSetup } from '../services/projects';
 import { createRoom, rescheduleRoom } from '../services/rooms';
 import { suggestCurrency } from '../lib/currency';
 import {
@@ -212,6 +214,50 @@ function RoomForm({ t, project, tool, room = null, busy, setBusy, onDone, onErro
   );
 }
 
+/**
+ * A tool set up for a project without a room: its own stages (setupSteps), saved on
+ * the project's tool. Changing it starts from what was saved.
+ */
+function ConfigForm({ t, project, tool, busy, setBusy, onDone, onError, onCancel }) {
+  const [setup, setSetup] = useState(() => tool.setup.defaults());
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    readProjectToolSetup(project.id, tool.id)
+      .then((saved) => { if (!cancelled && saved) setSetup((current) => ({ ...current, ...saved })); })
+      .catch((err) => console.error(`Could not load how ${tool.name} is set up:`, err))
+      .finally(() => { if (!cancelled) setLoaded(true); });
+    return () => { cancelled = true; };
+  }, [project.id, tool.id, tool.name]);
+
+  const save = async () => {
+    if (busy) return;
+    setBusy(true);
+    onError(null);
+    try {
+      await saveProjectToolSetup(project.id, tool.id, tool.setup.toSave ? tool.setup.toSave(setup) : setup);
+      onDone();
+    } catch (err) {
+      console.error(`Could not set ${tool.name} up:`, err);
+      onError(err?.message ?? `Could not set ${tool.name} up.`);
+      setBusy(false);
+    }
+  };
+
+  if (!loaded) return <p style={{ fontSize: 14, color: t.inkDim, margin: 0 }}>Loading…</p>;
+
+  const steps = setupSteps(tool).map(({ title, Form, problems }) => ({
+    title,
+    content: <Form t={t} tool={tool} project={project} setup={setup} onChange={setSetup} />,
+    problems: problems(setup),
+  }));
+  return (
+    <SetupSteps t={t} steps={steps} busy={busy} onCancel={onCancel} onFinish={save}
+      finishLabel="Save and go live" busyLabel="Saving…" />
+  );
+}
+
 /** A tool with nothing to fill in for a project: configuring it only puts it live. */
 function NothingForm({ t, project, tool, busy, setBusy, onDone, onError, onCancel }) {
   const save = async (e) => {
@@ -254,11 +300,12 @@ function Actions({ t, busy, disabled = false, label, onCancel }) {
   );
 }
 
-const FORMS = { room: RoomForm, none: NothingForm };
+const FORMS = { room: RoomForm, config: ConfigForm, none: NothingForm };
 
 // What configuring each kind of tool involves, for the introduction.
 const WHAT_YOU_SET_UP = {
   room: 'You will set it up for this project and choose how long it stays open on the project\u2019s page.',
+  config: 'You will set it up for this project, and saving puts it live on the project\u2019s page.',
   none: 'There is nothing to fill in: going live adds it to the project\u2019s page, for people to try.',
 };
 
@@ -276,7 +323,7 @@ function Intro({ t, tool, kind, onStart, onCancel }) {
         fontWeight: 700, marginBottom: 8 }}>
         {findCategory(tool.category)?.name ?? 'Tool'}
       </div>
-      {tool.tagline && (
+      {tool.tagline && tool.taglineOnCover !== false && (
         <p style={{ fontSize: 17, fontWeight: 700, color: t.ink, lineHeight: 1.4, margin: '0 0 10px' }}>
           {tool.tagline}
         </p>

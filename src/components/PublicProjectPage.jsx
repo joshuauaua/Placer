@@ -576,7 +576,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
           {isCover(section) && <ToolIntro t={t} tool={section.tool} room={section.room} />}
         </>
       ) : (
-        <ProjectToolCard t={t} tool={section.tool} room={section.room} displayName={accountName} />
+        <ProjectToolCard t={t} tool={section.tool} room={section.room} projectId={projectId}
+          displayName={accountName} />
       ))}
     </section>
   );
