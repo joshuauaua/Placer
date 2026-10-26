@@ -453,14 +453,11 @@
     "tool": "Strumento",
     "by": "Di {name}",
     "getStarted": "Inizia",
-    "linkLabel": "Link a questo strumento",
     "categories": {
       "understand": "Capire",
       "imagine": "Immaginare",
       "plan": "Pianificare"
-    },
-    "copyLink": "Copia il link",
-    "linkCopied": "Link copiato"
+    }
   },
   "join": {
     "unknownTool": "Questa stanza è per uno strumento che questa versione di PLACER non ha.",

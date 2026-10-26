@@ -3,22 +3,16 @@
    the same job for the three steps of making an imagination. */
 
 import { Icon } from './Icon';
-import { Btn, Chip, CopyButton } from './UI';
+import { Btn, Chip } from './UI';
 import { text as plainText, toolText, useText } from '../i18n';
-
-/** The permanent link to a tool, for the copy button. */
-export function toolUrl(id) {
-  const origin = typeof window === 'undefined' ? '' : window.location.origin;
-  return `${origin}/toolkit/${id}`;
-}
 
 /**
  * A tool's header and body. The scrolling container is the Toolkit page's,
  * not this one's, so a tool can put a sticky panel inside itself if it wants to.
  *
- * `actions` sits beside the copy-link button, for anything the page wants to offer
- * about this tool rather than inside it — starting a room, so far. Named
- * after the same slot on FlowScreen.
+ * `actions` sits on the right of the header, for anything the page wants to offer
+ * about this tool rather than inside it — starting a room, so far. Named after
+ * the same slot on FlowScreen.
  *
  * `breadcrumb`, when given, replaces All tools, as on ToolCover.
  */
@@ -59,10 +53,6 @@ export function ToolLayout({ t, tool, onBack, actions, breadcrumb = null, childr
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {actions}
-          <CopyButton t={t} value={toolUrl(tool.id)}
-            label={text('tool.copyLink')} copiedLabel={text('tool.linkCopied')}
-            fieldLabel={text('tool.linkLabel')} fieldWidth={260}
-            style={{ alignItems: 'flex-end' }} />
         </div>
       </div>
 

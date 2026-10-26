@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
@@ -317,13 +317,11 @@ describe('the gallery', () => {
     await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' });
     expect(screen.getByText('Twenty metres, and everything wants some.')).toBeInTheDocument();
     expect(screen.getByText(/By PLACER/)).toBeInTheDocument();
-    // The tool, and the header's copy-link button, wait behind the cover.
-    expect(screen.queryByRole('button', { name: /copy link/i })).not.toBeInTheDocument();
-
     start();
 
     expect(screen.getByRole('heading', { level: 1, name: 'Street Section Mixer' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /copy link/i })).toBeInTheDocument();
+    // No button to copy the tool's link: the address bar has it.
+    expect(screen.queryByRole('button', { name: /copy link/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Get started' })).not.toBeInTheDocument();
   });
 
@@ -342,35 +340,6 @@ describe('the gallery', () => {
     for (const tool of TOOLS) {
       expect(screen.getByText(tool.tagline)).toBeInTheDocument();
     }
-  });
-});
-
-describe('the copy link button', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('copies the tool own link', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
-
-    renderPageAt('/toolkit/budget-ballot');
-    start();
-    fireEvent.click(await screen.findByRole('button', { name: /copy link/i }));
-
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/toolkit/budget-ballot')));
-    expect(await screen.findByRole('button', { name: /link copied/i })).toBeInTheDocument();
-  });
-
-  it('shows the link instead when the browser will not copy it', async () => {
-    vi.stubGlobal('navigator', { ...navigator, clipboard: undefined });
-
-    renderPageAt('/toolkit/budget-ballot');
-    start();
-    fireEvent.click(await screen.findByRole('button', { name: /copy link/i }));
-
-    const field = await screen.findByLabelText('Link to this tool');
-    expect(field.value).toContain('/toolkit/budget-ballot');
   });
 });
 

@@ -450,14 +450,11 @@
     "tool": "Araç",
     "by": "Hazırlayan: {name}",
     "getStarted": "Başla",
-    "linkLabel": "Bu aracın bağlantısı",
     "categories": {
       "understand": "Anla",
       "imagine": "Hayal et",
       "plan": "Planla"
-    },
-    "copyLink": "Bağlantıyı kopyala",
-    "linkCopied": "Bağlantı kopyalandı"
+    }
   },
   "join": {
     "unknownTool": "Bu oda, PLACER'ın bu sürümünde olmayan bir araç için.",
