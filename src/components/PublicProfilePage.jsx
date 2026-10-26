@@ -4,7 +4,8 @@
  * how many follow them and how many things they follow (each opening its list), and
  * a Follow button. Then three tabs: About (the bio, and the email, website and
  * organisations they chose to share), Projects (the ones they own or collaborate on)
- * and Comments (what they have said on projects). Needs no session, the same as a
+ * and Activity (what they have said on projects, and, on your own profile only, the
+ * inquiries you have kept from the Toolkit above it). Needs no session, the same as a
  * project's public page — a profile link is something to share.
  *
  * The profile comes from profile_public() (supabase/profiles-public.sql), because the
@@ -27,10 +28,8 @@ import { readProfileActivity, readProfileComments } from '../services/profileAct
 const TABS = [
   { id: 'about', label: 'About' },
   { id: 'projects', label: 'Projects' },
-  { id: 'comments', label: 'Comments' },
+  { id: 'activity', label: 'Activity' },
 ];
-
-const INQUIRIES_TAB = { id: 'inquiries', label: 'Saved inquiries' };
 
 const JOINED_FORMAT = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' });
 const POSTED_FORMAT = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -149,8 +148,6 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
   }
 
   const isYou = accountId && accountId === person.id;
-  // What somebody has kept from the Toolkit is for them alone.
-  const tabs = isYou ? [...TABS, INQUIRIES_TAB] : TABS;
   // The address as people read it, without the https:// or a trailing slash.
   const websiteLabel = person.website.replace(/^https?:\/\//i, '').replace(/\/$/, '');
 
@@ -160,8 +157,8 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
     if (!step) return;
     event.preventDefault();
-    const index = tabs.findIndex(({ id }) => id === tab);
-    const next = tabs[(index + step + tabs.length) % tabs.length].id;
+    const index = TABS.findIndex(({ id }) => id === tab);
+    const next = TABS[(index + step + TABS.length) % TABS.length].id;
     setTab(next);
     document.getElementById(`profile-tab-${next}`)?.focus();
   };
@@ -210,9 +207,10 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
 
         <div role="tablist" aria-label="Profile sections" onKeyDown={onTabKey} className="placer-profile-tabs"
           style={{ borderBottom: `1px solid ${t.line}` }}>
-          {tabs.map(({ id, label }) => {
+          {TABS.map(({ id, label }) => {
             const current = id === tab;
-            const count = id === 'projects' ? activity.projects.length : id === 'comments' ? comments.list.length : 0;
+            // Activity counts comments, the part of it everybody sees.
+            const count = id === 'projects' ? activity.projects.length : id === 'activity' ? comments.list.length : 0;
             return (
               <button key={id} id={`profile-tab-${id}`} type="button" role="tab" aria-selected={current}
                 aria-controls={`profile-panel-${id}`} aria-label={count > 0 ? `${label} (${count})` : undefined}
@@ -292,9 +290,17 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
               )
           )}
 
-          {tab === 'inquiries' && isYou && <SavedInquiries t={t} />}
+          {/* What somebody has kept from the Toolkit is for them alone, so anybody else
+              sees only the comments, without a heading over them. */}
+          {tab === 'activity' && isYou && (
+            <>
+              <h2 style={{ fontSize: 19, fontWeight: 700, color: t.ink, margin: '0 0 12px' }}>Saved inquiries</h2>
+              <SavedInquiries t={t} />
+              <h2 style={{ fontSize: 19, fontWeight: 700, color: t.ink, margin: '40px 0 12px' }}>Comments</h2>
+            </>
+          )}
 
-          {tab === 'comments' && (
+          {tab === 'activity' && (
             comments.status === 'loading' ? loading
               : comments.status === 'error' ? empty('Comments could not be loaded. Try again in a moment.')
               : comments.list.length === 0 ? empty(isYou ? 'You have not commented on any projects yet.'

@@ -41,7 +41,7 @@ const MARA = { id: 'user-1', name: 'Mara Quinn', bio: 'Cyclist and tree enthusia
 const setup = (props = {}) =>
   render(<PublicProfilePage t={THEME} userId="user-1" {...props} />);
 
-describe('the saved inquiries tab', () => {
+describe('saved inquiries, under Activity', () => {
   beforeEach(() => {
     vi.mocked(isSupabaseConfigured).mockReturnValue(true);
     vi.mocked(readPublicProfile).mockResolvedValue(MARA);
@@ -49,23 +49,29 @@ describe('the saved inquiries tab', () => {
     vi.mocked(readProfileComments).mockResolvedValue([]);
   });
 
-  it("is on somebody's own profile, and lists what they kept", async () => {
+  it("are on somebody's own profile, above their comments", async () => {
     setup({ accountId: 'user-1' });
 
-    fireEvent.click(await screen.findByRole('tab', { name: 'Saved inquiries' }));
+    fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
 
-    expect(await screen.findByRole('list', { name: 'Saved inquiries' })).toHaveTextContent('Market square');
+    const panel = within(screen.getByRole('tabpanel', { name: 'Activity' }));
+    expect(await panel.findByRole('list', { name: 'Saved inquiries' })).toHaveTextContent('Market square');
+    const [kept, said] = panel.getAllByRole('heading', { level: 2 });
+    expect(kept).toHaveTextContent('Saved inquiries');
+    expect(said).toHaveTextContent('Comments');
+    expect(panel.getByText('You have not commented on any projects yet.')).toBeInTheDocument();
   });
 
-  it("is not on anybody else's profile, nor for somebody signed out", async () => {
+  it("are not on anybody else's profile, nor for somebody signed out", async () => {
     const { unmount } = setup({ accountId: 'user-2' });
-    await screen.findByRole('tab', { name: 'About' });
-    expect(screen.queryByRole('tab', { name: 'Saved inquiries' })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
+    expect(screen.queryByRole('heading', { name: 'Saved inquiries' })).not.toBeInTheDocument();
+    expect(screen.getByText('Mara Quinn has not commented on any projects yet.')).toBeInTheDocument();
     unmount();
 
     setup();
-    await screen.findByRole('tab', { name: 'About' });
-    expect(screen.queryByRole('tab', { name: 'Saved inquiries' })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
+    expect(screen.queryByRole('heading', { name: 'Saved inquiries' })).not.toBeInTheDocument();
   });
 });
 
@@ -216,11 +222,11 @@ describe('PublicProfilePage', () => {
       .toBeTruthy();
   });
 
-  it('has About, Projects and Comments tabs, starting on About', async () => {
+  it('has About, Projects and Activity tabs, starting on About', async () => {
     setup();
 
     const tabs = await screen.findAllByRole('tab');
-    expect(tabs.map((tab) => tab.textContent.replace(/\d+$/, ''))).toEqual(['About', 'Projects', 'Comments']);
+    expect(tabs.map((tab) => tab.textContent.replace(/\d+$/, ''))).toEqual(['About', 'Projects', 'Activity']);
     expect(screen.getByRole('tab', { name: 'About' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tabpanel', { name: 'About' })).toHaveTextContent('Cyclist and tree enthusiast');
   });
@@ -241,9 +247,9 @@ describe('PublicProfilePage', () => {
     const onOpen = vi.fn();
     setup({ onOpen });
 
-    fireEvent.click(await screen.findByRole('tab', { name: 'Comments (1)' }));
+    fireEvent.click(await screen.findByRole('tab', { name: 'Activity (1)' }));
 
-    const panel = within(screen.getByRole('tabpanel', { name: /Comments/ }));
+    const panel = within(screen.getByRole('tabpanel', { name: /Activity/ }));
     expect(panel.getByText('Count me in.')).toBeInTheDocument();
     fireEvent.click(panel.getByRole('link', { name: 'Market Square' }));
     expect(onOpen).toHaveBeenCalledWith('project', 'proj-3');
@@ -257,7 +263,7 @@ describe('PublicProfilePage', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Projects' }));
     expect(await screen.findByText('Mara Quinn is not involved in any projects yet.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: 'Comments' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
     expect(screen.getByText('Mara Quinn has not commented on any projects yet.')).toBeInTheDocument();
     expect(screen.queryByText(/^Joined/)).not.toBeInTheDocument();
   });
@@ -279,6 +285,6 @@ describe('PublicProfilePage', () => {
 
     fireEvent.keyDown(await screen.findByRole('tab', { name: 'About' }), { key: 'ArrowLeft' });
 
-    expect(screen.getByRole('tab', { name: /Comments/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Activity/ })).toHaveAttribute('aria-selected', 'true');
   });
 });
