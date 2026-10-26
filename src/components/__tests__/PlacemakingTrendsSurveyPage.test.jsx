@@ -99,7 +99,7 @@ describe('PlacemakingTrendsSurveyPage', () => {
       fireEvent.change(field('Full Name'), { target: { value: 'A. Planner' } });
       expect(button(content.steps.submitLabel)).toBeDisabled();
 
-      fireEvent.change(field('Municipality / City & Country'), {
+      fireEvent.change(field('City'), {
         target: { value: 'Rotterdam, Netherlands' },
       });
       fireEvent.change(field('Email Address'), { target: { value: 'not-an-email' } });
@@ -123,28 +123,44 @@ describe('PlacemakingTrendsSurveyPage', () => {
       expect(checklist.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
-    it('drops the details and locks the other opt-ins when anonymous is ticked', () => {
+    it('drops the name and email, but keeps asking city and country, when anonymous is ticked', () => {
       const anonymous = content.optIns.find((entry) => entry.anonymous);
       const others = content.optIns.filter((entry) => !entry.anonymous);
+      const city = 'City';
 
       fireEvent.change(field('Full Name'), { target: { value: 'A. Planner' } });
+      fireEvent.change(field(city), { target: { value: 'Malmö, Sweden' } });
       fireEvent.click(optIn(others[0].label));
       fireEvent.click(optIn(anonymous.label));
 
-      expect(screen.queryByRole('heading', { name: content.contact.title })).not.toBeInTheDocument();
-      content.contact.fields.forEach((entry) => {
-        expect(screen.queryByLabelText(entry.label)).not.toBeInTheDocument();
-      });
+      expect(screen.queryByLabelText('Full Name')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Email Address')).not.toBeInTheDocument();
+      expect(field(city)).toHaveValue('Malmö, Sweden');
+      expect(field(city)).toBeRequired();
       others.forEach((entry) => {
         expect(optIn(entry.label)).not.toBeChecked();
         expect(optIn(entry.label)).toBeDisabled();
       });
       expect(button(content.steps.submitLabel)).not.toBeDisabled();
 
-      // Unticked, the details come back empty rather than with what was typed before.
+      // Unticked, the name comes back empty rather than with what was typed before.
       fireEvent.click(optIn(anonymous.label));
       expect(field('Full Name')).toHaveValue('');
+      expect(field(city)).toHaveValue('Malmö, Sweden');
       others.forEach((entry) => expect(optIn(entry.label)).not.toBeDisabled());
+    });
+
+    it('holds Submit for an anonymous respondent until city and country are filled in', () => {
+      const anonymous = content.optIns.find((entry) => entry.anonymous);
+      fireEvent.click(optIn(anonymous.label));
+
+      expect(button(content.steps.submitLabel)).toBeDisabled();
+
+      fireEvent.change(field('City'), { target: { value: '  ' } });
+      expect(button(content.steps.submitLabel)).toBeDisabled();
+
+      fireEvent.change(field('City'), { target: { value: 'Ankara, Türkiye' } });
+      expect(button(content.steps.submitLabel)).not.toBeDisabled();
     });
 
     it('steps back into the last question of module 4', () => {
@@ -164,7 +180,7 @@ describe('PlacemakingTrendsSurveyPage', () => {
       fireEvent.click(optIn(content.optIns[0].label));
       fireEvent.change(field('Full Name'), { target: { value: 'A. Planner' } });
       fireEvent.change(field('Email Address'), { target: { value: 'planner@city.gov' } });
-      fireEvent.change(field('Municipality / City & Country'), {
+      fireEvent.change(field('City'), {
         target: { value: 'Rotterdam, Netherlands' },
       });
       fireEvent.click(button(content.steps.submitLabel));
@@ -180,7 +196,7 @@ describe('PlacemakingTrendsSurveyPage', () => {
         contact: {
           name: 'A. Planner',
           email: 'planner@city.gov',
-          municipality: 'Rotterdam, Netherlands',
+          city: 'Rotterdam, Netherlands',
         },
         module1: { [firstQuestion.key]: firstQuestion.options[0].value },
       });
@@ -214,19 +230,21 @@ describe('PlacemakingTrendsSurveyPage', () => {
       expect(stored[0].optIns).toEqual([]);
     });
 
-    it('stores an anonymous response with no details', async () => {
+    it('stores an anonymous response with only city and country', async () => {
       render(<PlacemakingTrendsSurveyPage t={THEME} />);
       walkToOptIn();
 
       const anonymous = content.optIns.find((entry) => entry.anonymous);
+      fireEvent.change(field('Full Name'), { target: { value: 'A. Planner' } });
       fireEvent.click(optIn(anonymous.label));
+      fireEvent.change(field('City'), { target: { value: ' Rotterdam, Netherlands ' } });
       fireEvent.click(button(content.steps.submitLabel));
 
       expect(await screen.findByRole('heading', { name: content.success.title })).toBeInTheDocument();
 
       const stored = JSON.parse(localStorage.getItem('placemaking_survey_responses'));
       expect(stored[0].email).toBeNull();
-      expect(stored[0].contact).toBeNull();
+      expect(stored[0].contact).toEqual({ city: 'Rotterdam, Netherlands' });
       expect(stored[0].optIns).toEqual([anonymous.key]);
     });
 

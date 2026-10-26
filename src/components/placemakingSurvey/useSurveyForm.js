@@ -164,10 +164,14 @@ export function useSurveyForm({ content, submit, source }) {
   const trimmedContact = Object.fromEntries(
     Object.entries(contact).map(([key, value]) => [key, value.trim()]),
   );
-  // An anonymous respondent leaves no details and asks for nothing else; the
-  // fields and the other opt-ins are cleared and locked while it is ticked.
+  // An anonymous respondent asks for nothing else and leaves no way to reach them:
+  // the other opt-ins and the fields are cleared and locked while it is ticked —
+  // all but those marked `askedWhenAnonymous` (their city), which stay
+  // and must be filled in.
   const anonymousOptIn = content.optIns.find((entry) => entry.anonymous);
   const isAnonymous = Boolean(anonymousOptIn && optIns[anonymousOptIn.key]);
+  const anonymousFields = content.contact.fields.filter((field) => field.askedWhenAnonymous);
+  const anonymousComplete = anonymousFields.every((field) => filled(trimmedContact[field.key]));
   const wantsContact = !isAnonymous && Object.values(trimmedContact).some(filled);
   const emailField = content.contact.fields.find((field) => field.type === 'email');
   const contactComplete = content.contact.fields.every((field) =>
@@ -175,8 +179,9 @@ export function useSurveyForm({ content, submit, source }) {
       ? EMAIL_PATTERN.test(trimmedContact[field.key])
       : filled(trimmedContact[field.key]),
   );
-  // Details are only required once the respondent has actually started leaving them.
-  const canSubmit = !wantsContact || contactComplete;
+  // Details are only required once the respondent has actually started leaving them,
+  // or, anonymously, the few still asked of them.
+  const canSubmit = isAnonymous ? anonymousComplete : !wantsContact || contactComplete;
 
   /**
    * Records the current question's answer. Single-choice and `scale` questions
@@ -234,7 +239,12 @@ export function useSurveyForm({ content, submit, source }) {
         : { ...current, [key]: false },
     );
     if (turningOn) {
-      setContact((current) => Object.fromEntries(Object.keys(current).map((field) => [field, ''])));
+      const kept = new Set(anonymousFields.map((field) => field.key));
+      setContact((current) =>
+        Object.fromEntries(
+          Object.entries(current).map(([field, value]) => [field, kept.has(field) ? value : '']),
+        ),
+      );
     }
   };
 
@@ -303,7 +313,11 @@ export function useSurveyForm({ content, submit, source }) {
         ...answers,
         otherText: pruneOtherText(content, answers, otherText),
         optIns: chosenOptIns,
-        contact: wantsContact ? trimmedContact : null,
+        contact: isAnonymous
+          ? Object.fromEntries(anonymousFields.map((field) => [field.key, trimmedContact[field.key]]))
+          : wantsContact
+            ? trimmedContact
+            : null,
         email: wantsContact && emailField ? trimmedContact[emailField.key] : null,
         source,
       });

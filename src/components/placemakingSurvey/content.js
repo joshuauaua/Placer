@@ -243,6 +243,12 @@ export function validateSurveyContent(content) {
     if (field.type !== undefined && !CONTACT_FIELD_TYPES.includes(field.type)) {
       fail(`${path}.type`, `must be one of ${CONTACT_FIELD_TYPES.join(', ')}`);
     }
+    // Still asked, and required, of somebody taking part anonymously: where they are,
+    // never who they are or how to reach them.
+    flag(field.askedWhenAnonymous, `${path}.askedWhenAnonymous`);
+    if (field.askedWhenAnonymous && field.type === 'email') {
+      fail(`${path}.askedWhenAnonymous`, 'cannot be set on the email field');
+    }
   });
 
   // The contact step shows unconditionally (see SurveyForm/useSurveyForm) and an
