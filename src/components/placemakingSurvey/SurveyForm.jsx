@@ -158,6 +158,10 @@ function CheckRow({ t, id, checked, label, onChange, disabled = false }) {
 export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) {
   const survey = useSurveyForm({ content, submit, source });
   const { step } = survey;
+  // The closing step's fields: all of them, or only those still asked anonymously.
+  const shownFields = content.contact.fields.filter(
+    (field) => !survey.isAnonymous || field.askedWhenAnonymous,
+  );
 
   if (step === 'cover') {
     // The User Labs layout (see PhotoSplit): a photo from a lab on the left, the
@@ -392,12 +396,12 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
                 </div>
               </div>
 
-              {/* Below the opt-ins, and gone altogether once somebody asks to take part
-                  anonymously — there is then nothing to fill in. Otherwise submit still
-                  stays available with all of it blank; typing anything here is what
-                  makes the fields required to be complete (see wantsContact in
-                  useSurveyForm). */}
-              {!survey.isAnonymous && (
+              {/* Below the opt-ins. Somebody taking part anonymously is only asked the
+                  fields marked `askedWhenAnonymous` (their city), and has
+                  to fill those in. Otherwise submit stays available with all of it
+                  blank; typing anything here is what makes the fields required to be
+                  complete (see wantsContact in useSurveyForm). */}
+              {shownFields.length > 0 && (
                 <div style={{ marginTop: 32 }}>
                   <h3
                     className="placer-disp"
@@ -424,7 +428,7 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
                       gap: 16,
                     }}
                   >
-                    {content.contact.fields.map((field) => {
+                    {shownFields.map((field) => {
                       const fieldId = `${idPrefix}-${field.key}`;
                       return (
                         <div key={field.key}>
@@ -447,6 +451,7 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
                             value={survey.contact[field.key]}
                             placeholder={field.placeholder}
                             onChange={(e) => survey.setContactField(field.key, e.target.value)}
+                            required={survey.isAnonymous}
                             style={inputStyle(t)}
                           />
                         </div>

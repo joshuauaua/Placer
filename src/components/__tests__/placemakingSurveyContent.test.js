@@ -28,6 +28,16 @@ describe('placemaking trends survey content', () => {
     expect(resolveSurveyContent(content).cover.title).toBe('A different survey');
   });
 
+  it('rejects askedWhenAnonymous on the email field, or as anything but a boolean', () => {
+    const onEmail = clone();
+    onEmail.contact.fields.find((field) => field.type === 'email').askedWhenAnonymous = true;
+    expect(() => validateSurveyContent(onEmail)).toThrow(/askedWhenAnonymous.*email/);
+
+    const notBoolean = clone();
+    notBoolean.contact.fields[0].askedWhenAnonymous = 'yes';
+    expect(() => validateSurveyContent(notBoolean)).toThrow(/askedWhenAnonymous.*boolean/);
+  });
+
   it('rejects more than one anonymous opt-in', () => {
     const content = clone();
     content.optIns.forEach((entry) => {
@@ -187,13 +197,13 @@ describe('placemaking trends survey content', () => {
       expect(content.optIns.at(-1).anonymous).toBe(true);
     });
 
-    it('asks for a name, work email and municipality', () => {
+    it('asks for a name, work email and city', () => {
       const content = resolveSurveyContent();
 
       expect(content.contact.fields.map((field) => field.key)).toEqual([
         'name',
         'email',
-        'municipality',
+        'city',
       ]);
     });
 
