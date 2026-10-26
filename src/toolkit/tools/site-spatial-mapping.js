@@ -19,6 +19,8 @@ export default {
   createdBy: 'Gehl Institute',
   credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
   component: SiteMapping,
+  // Not on plcr.org or beta.plcr.org for now; only locally.
+  hidden: 'production',
   setup: {
     defaults: defaultSiteSetup,
     problems: siteSetupProblems,
