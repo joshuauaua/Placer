@@ -35,10 +35,20 @@ function mount() {
 describe('Stationary Activity Mapping', () => {
   afterEach(() => cleanup());
 
-  it('lays out the map, recording card, tally, and legend', () => {
+  it('puts the map and the recording card side by side, and the tally on the step after', () => {
     mount();
-    expect(screen.getByText('Record Observation')).toBeInTheDocument();
+    const card = screen.getByText('Observation', { selector: 'h2' }).closest('section');
+    expect(card).toContainElement(screen.getByText('Record Observation'));
+    expect(card).toContainElement(screen.getByRole('group', { name: /Observation map/ }));
+    expect(screen.queryByText('Observation Tally')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'See results' }));
     expect(screen.getByText('Observation Tally')).toBeInTheDocument();
+    expect(screen.queryByText('Record Observation')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Session')).toHaveTextContent('Observer: Ada');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    expect(screen.getByText('Record Observation')).toBeInTheDocument();
   });
 
   it('opens on the field sheet\'s directions and its key, without the map', () => {
@@ -116,6 +126,7 @@ describe('Stationary Activity Mapping', () => {
 
   it('shows the tally table with all posture rows', () => {
     mount();
+    fireEvent.click(screen.getByRole('button', { name: 'See results' }));
     const tallyCard = screen.getByText('Observation Tally').closest('section');
     expect(tallyCard.textContent).toContain('Standing');
     expect(tallyCard.textContent).toContain('Lying down');
@@ -139,5 +150,19 @@ describe('Stationary Activity Mapping', () => {
     // And says what it was when clicked.
     fireEvent.click(recorded);
     expect(lastMap().popups[0].node.textContent).toContain('Observation #1');
+  });
+
+  it('keeps what was recorded through the results and back on the map', async () => {
+    mount();
+    act(() => clickMap(lastMap(), { lat: 55.605, lng: 12.99 }));
+    fireEvent.click(screen.getByRole('button', { name: 'Standing' }));
+    fireEvent.click(screen.getByLabelText('Waiting for transportation'));
+    fireEvent.click(screen.getByRole('button', { name: 'Record' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'See results' }));
+    expect(screen.getByText('Observation Tally').closest('section')).toHaveTextContent('1 person');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    expect(await screen.findByRole('button', { name: 'Standing: Waiting for transportation' })).toBeInTheDocument();
   });
 });
