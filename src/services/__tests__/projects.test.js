@@ -472,7 +472,7 @@ describe('the dashboard', () => {
     await load();
     rpc.mockReturnValue({
       single: () => Promise.resolve({
-        data: { imaginations_count: 4, imaginations_upvotes: 19, toolkit_rooms_count: 2 },
+        data: { toolkit_rooms_count: 2 },
         error: null,
       }),
     });
@@ -480,7 +480,7 @@ describe('the dashboard', () => {
     const stats = await projects.readStats('proj-1');
 
     expect(rpc).toHaveBeenCalledWith('project_stats', { p_project_id: 'proj-1' });
-    expect(stats).toEqual({ imaginationsCount: 4, imaginationsUpvotes: 19, toolkitRoomsCount: 2 });
+    expect(stats).toEqual({ toolkitRoomsCount: 2 });
   });
 
   it('refuses for anyone but an owner or collaborator, surfaced as a readable error', async () => {

@@ -700,7 +700,7 @@ function LinkRow({ t, link, onRemove }) {
  * The owner's way to remove the project for good: a button that opens a dialog, where
  * typing the project's name unlocks the delete, because a second click on a confirm is
  * too easy to make without reading — and there is no undo. What goes and what stays is
- * spelled out, since the imaginations posted to it are other people's and are kept.
+ * spelled out, since the Toolkit sessions run for it are other people's and are kept.
  */
 function DeleteProject({ t, project, onDeleted }) {
   const [open, setOpen] = useState(false);
@@ -762,8 +762,7 @@ function DeleteProjectDialog({ t, project, onDeleted, onClose }) {
         <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
           Removes the project, its public page, its image, its news and resources, its
           collaborators and its page views, and takes it off everyone's followed list. The
-          imaginations and Toolkit sessions made for it stay, no longer linked to it. This
-          cannot be undone.
+          Toolkit sessions made for it stay, no longer linked to it. This cannot be undone.
         </p>
         <form onSubmit={handleDelete}>
           <label htmlFor="delete-project-name"
@@ -1078,12 +1077,10 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
     ] },
     { title: 'Participation', rows: [
       { label: 'Interactions', value: shown(summary?.interactions),
-        note: 'Toolkit responses, imaginations and comments together.' },
+        note: 'Toolkit responses and comments together.' },
       { label: 'Toolkit responses', value: shown(responses), note: 'Answers given in its tools\' rooms.' },
       { label: 'Toolkit sessions', value: shown(stats?.toolkitRoomsCount), note: 'Rooms opened for its tools.' },
       { label: 'Rooms open now', value: shown(rooms ? rooms.filter((room) => room.status === 'open').length : null) },
-      { label: 'Imaginations', value: shown(stats?.imaginationsCount) },
-      { label: 'Votes on imaginations', value: shown(stats?.imaginationsUpvotes) },
       { label: 'Comments', value: shown(postCounts?.comments) },
     ] },
     { title: 'Project', rows: [

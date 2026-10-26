@@ -32,8 +32,8 @@ async function load({ configured = true } = {}) {
 
 const ROW = {
   id: 'follow-1',
-  followed_type: 'imagination',
-  followed_id: 'img-1',
+  followed_type: 'project',
+  followed_id: 'proj-1',
   followed_label: 'Pocket park on Lot 7',
   created_at: '2026-09-20T10:00:00.000Z',
 };
@@ -48,47 +48,47 @@ describe('follows, with no Supabase project', () => {
   it('starts with nothing followed', async () => {
     await load({ configured: false });
 
-    await expect(follows.readFollows('imagination')).resolves.toEqual([]);
-    await expect(follows.isFollowing('imagination', 'img-1')).resolves.toBe(false);
+    await expect(follows.readFollows('project')).resolves.toEqual([]);
+    await expect(follows.isFollowing('project', 'proj-1')).resolves.toBe(false);
   });
 
   it('follows something and reads it back', async () => {
     await load({ configured: false });
 
-    await follows.follow('imagination', 'img-1', 'Pocket park on Lot 7');
+    await follows.follow('project', 'proj-1', 'Pocket park on Lot 7');
 
-    await expect(follows.isFollowing('imagination', 'img-1')).resolves.toBe(true);
-    const all = await follows.readFollows('imagination');
-    expect(all).toMatchObject([{ type: 'imagination', targetId: 'img-1', label: 'Pocket park on Lot 7' }]);
+    await expect(follows.isFollowing('project', 'proj-1')).resolves.toBe(true);
+    const all = await follows.readFollows('project');
+    expect(all).toMatchObject([{ type: 'project', targetId: 'proj-1', label: 'Pocket park on Lot 7' }]);
   });
 
   it('does not add a second row for a thing already followed', async () => {
     await load({ configured: false });
 
-    await follows.follow('imagination', 'img-1', 'Pocket park on Lot 7');
-    await follows.follow('imagination', 'img-1', 'Pocket park on Lot 7');
+    await follows.follow('project', 'proj-1', 'Pocket park on Lot 7');
+    await follows.follow('project', 'proj-1', 'Pocket park on Lot 7');
 
-    await expect(follows.readFollows('imagination')).resolves.toHaveLength(1);
+    await expect(follows.readFollows('project')).resolves.toHaveLength(1);
   });
 
   it('unfollows, and unfollowing again is a no-op', async () => {
     await load({ configured: false });
-    await follows.follow('imagination', 'img-1', 'Pocket park on Lot 7');
+    await follows.follow('project', 'proj-1', 'Pocket park on Lot 7');
 
-    await follows.unfollow('imagination', 'img-1');
-    await follows.unfollow('imagination', 'img-1');
+    await follows.unfollow('project', 'proj-1');
+    await follows.unfollow('project', 'proj-1');
 
-    await expect(follows.readFollows('imagination')).resolves.toEqual([]);
+    await expect(follows.readFollows('project')).resolves.toEqual([]);
   });
 
   it('keeps types apart: unfollowing a user does not touch an imagination of the same id', async () => {
     await load({ configured: false });
-    await follows.follow('imagination', 'same-id', 'An imagination');
+    await follows.follow('project', 'same-id', 'An imagination');
     await follows.follow('user', 'same-id', 'A person');
 
     await follows.unfollow('user', 'same-id');
 
-    await expect(follows.isFollowing('imagination', 'same-id')).resolves.toBe(true);
+    await expect(follows.isFollowing('project', 'same-id')).resolves.toBe(true);
     await expect(follows.isFollowing('user', 'same-id')).resolves.toBe(false);
   });
 
@@ -107,12 +107,12 @@ describe('follows, with a Supabase project', () => {
     await load();
     order.mockResolvedValue({ data: [ROW], error: null });
 
-    const all = await follows.readFollows('imagination');
+    const all = await follows.readFollows('project');
 
-    expect(eq1).toHaveBeenCalledWith('followed_type', 'imagination');
+    expect(eq1).toHaveBeenCalledWith('followed_type', 'project');
     expect(order).toHaveBeenCalledWith('created_at', { ascending: false });
     expect(all).toEqual([
-      { id: 'follow-1', type: 'imagination', targetId: 'img-1', label: 'Pocket park on Lot 7',
+      { id: 'follow-1', type: 'project', targetId: 'proj-1', label: 'Pocket park on Lot 7',
         createdAt: '2026-09-20T10:00:00.000Z' },
     ]);
   });
@@ -121,32 +121,32 @@ describe('follows, with a Supabase project', () => {
     await load();
     order.mockResolvedValue({ data: null, error: { message: 'network down' } });
 
-    await expect(follows.readFollows('imagination')).rejects.toThrow('network down');
+    await expect(follows.readFollows('project')).rejects.toThrow('network down');
   });
 
   it('checks whether a thing is followed', async () => {
     await load();
     maybeSingle.mockResolvedValue({ data: { id: 'follow-1' }, error: null });
 
-    await expect(follows.isFollowing('imagination', 'img-1')).resolves.toBe(true);
-    expect(eq2).toHaveBeenCalledWith('followed_id', 'img-1');
+    await expect(follows.isFollowing('project', 'proj-1')).resolves.toBe(true);
+    expect(eq2).toHaveBeenCalledWith('followed_id', 'proj-1');
   });
 
   it('reports not following when there is no row', async () => {
     await load();
     maybeSingle.mockResolvedValue({ data: null, error: null });
 
-    await expect(follows.isFollowing('imagination', 'img-1')).resolves.toBe(false);
+    await expect(follows.isFollowing('project', 'proj-1')).resolves.toBe(false);
   });
 
   it('upserts a follow scoped to the signed-in account, keyed so following twice cannot duplicate', async () => {
     await load();
     upsert.mockResolvedValue({ error: null });
 
-    await follows.follow('imagination', 'img-1', 'Pocket park on Lot 7');
+    await follows.follow('project', 'proj-1', 'Pocket park on Lot 7');
 
     expect(upsert).toHaveBeenCalledWith(
-      { follower_id: 'user-1', followed_type: 'imagination', followed_id: 'img-1', followed_label: 'Pocket park on Lot 7' },
+      { follower_id: 'user-1', followed_type: 'project', followed_id: 'proj-1', followed_label: 'Pocket park on Lot 7' },
       // Ignored rather than updated: the table grants no UPDATE, and an upsert that
       // updates on conflict is refused outright for want of it.
       { onConflict: 'follower_id,followed_type,followed_id', ignoreDuplicates: true },
@@ -157,7 +157,7 @@ describe('follows, with a Supabase project', () => {
     await load();
     getUser.mockResolvedValue({ data: { user: null } });
 
-    await expect(follows.follow('imagination', 'img-1', 'x')).rejects.toThrow('needs an account');
+    await expect(follows.follow('project', 'proj-1', 'x')).rejects.toThrow('needs an account');
     expect(upsert).not.toHaveBeenCalled();
   });
 
@@ -165,9 +165,9 @@ describe('follows, with a Supabase project', () => {
     await load();
     eqDelete2.mockResolvedValue({ error: null });
 
-    await follows.unfollow('imagination', 'img-1');
+    await follows.unfollow('project', 'proj-1');
 
-    expect(eqDelete1).toHaveBeenCalledWith('followed_type', 'imagination');
-    expect(eqDelete2).toHaveBeenCalledWith('followed_id', 'img-1');
+    expect(eqDelete1).toHaveBeenCalledWith('followed_type', 'project');
+    expect(eqDelete2).toHaveBeenCalledWith('followed_id', 'proj-1');
   });
 });

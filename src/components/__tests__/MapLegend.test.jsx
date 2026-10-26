@@ -3,28 +3,27 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MapLegend } from '../MapLegend';
 import { PALETTE, THEME } from '../../theme';
 
-const PIN = { fill: PALETTE.orange.c100, ring: PALETTE.orange.c700 };
 const AREA = { fill: PALETTE.blue.c300, stroke: PALETTE.blue.c700 };
 
 describe('MapLegend', () => {
-  it('explains the three marks drawn on the map', () => {
-    render(<MapLegend t={THEME} pin={PIN} area={AREA} />);
+  it('explains the two marks drawn on the map', () => {
+    render(<MapLegend t={THEME} area={AREA} />);
 
     expect(screen.getByRole('region', { name: 'Map legend' })).toBeInTheDocument();
-    expect(screen.getByText('An imagination')).toBeInTheDocument();
     expect(screen.getByText('A project area')).toBeInTheDocument();
     expect(screen.getByText('Your search result')).toBeInTheDocument();
+    expect(screen.queryByText('An imagination')).not.toBeInTheDocument();
   });
 
   it('folds down to its heading, and opens again', () => {
-    render(<MapLegend t={THEME} pin={PIN} area={AREA} />);
+    render(<MapLegend t={THEME} area={AREA} />);
     const toggle = screen.getByRole('button', { name: 'Map key' });
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('An imagination')).not.toBeInTheDocument();
+    expect(screen.queryByText('A project area')).not.toBeInTheDocument();
 
     fireEvent.click(toggle);
-    expect(screen.getByText('An imagination')).toBeInTheDocument();
+    expect(screen.getByText('A project area')).toBeInTheDocument();
   });
 });

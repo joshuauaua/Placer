@@ -2,13 +2,13 @@
  *
  * Needs an account, the same reason services/rooms.js gives: a project is shared
  * between an owner and its collaborators by definition, and one that existed only in
- * one browser would not be a project. So unlike services/imaginations.js and
- * services/profile.js there is no localStorage fallback here at all — every function
- * throws with no project configured, and the UI asks isSupabaseConfigured() before it
- * offers project creation the way ToolkitPage already does for opening a room.
+ * one browser would not be a project. So unlike services/profile.js there is no
+ * localStorage fallback here at all — every function throws with no project
+ * configured, and the UI asks isSupabaseConfigured() before it offers project
+ * creation the way ToolkitPage already does for opening a room.
  *
- * Mirrors the shape of services/imaginations.js: camelCase in, camelCase out, and the
- * table's own column names never leak past this file's fromRow/toRow.
+ * camelCase in, camelCase out: the table's own column names never leak past this
+ * file's fromRow/toRow.
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
@@ -168,7 +168,7 @@ function fromRow(row) {
 
 /**
  * Start a project. `ownerId` is required and checked against auth.uid() by the
- * insert policy, the same shape postImagination uses for userId — a missing one is a
+ * insert policy — a missing one is a
  * refused write here rather than a policy violation there.
  */
 export async function createProject({ ownerId, ownerName, name, subtitle = '', summary = '', description = '',
@@ -878,8 +878,8 @@ export async function saveProjectBudget(projectId, { hasBudget, amount = null, c
 }
 
 /**
- * The dashboard's numbers: how many imaginations and Toolkit rooms are tied to this
- * project, and the imaginations' total votes. Owner-or-collaborator only — the
+ * The dashboard's numbers: how many Toolkit rooms are tied to this project.
+ * Owner-or-collaborator only — the
  * project_stats function refuses anyone else, which is what lets it see past
  * toolkit_rooms having no select grant at all (rooms.sql's header).
  */
@@ -891,8 +891,6 @@ export async function readStats(projectId) {
 
   if (error) throw new Error(`Could not load the project's dashboard: ${error.message}`);
   return {
-    imaginationsCount: data?.imaginations_count ?? 0,
-    imaginationsUpvotes: data?.imaginations_upvotes ?? 0,
     toolkitRoomsCount: data?.toolkit_rooms_count ?? 0,
   };
 }

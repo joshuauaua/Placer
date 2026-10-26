@@ -1,7 +1,7 @@
 /* PLACER — notifications: the feed, and how loud each kind of it is allowed to be.
  *
  * Like services/rooms.js, there is no localStorage fallback. A notification is by
- * definition about something someone else did — a comment on your imagination, a
+ * definition about something someone else did — an answer in your project's room, a
  * follow, a post from someone you follow — and with no Supabase project there is
  * nobody else's action to hear about. So with no project configured these throw,
  * and the UI asks isSupabaseConfigured() before it offers the bell at all.

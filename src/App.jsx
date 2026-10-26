@@ -16,7 +16,6 @@ import { NotFoundPage } from './components/NotFoundPage';
 import { GlassNavbar } from './components/GlassNavbar';
 import { SiteFooter } from './components/SiteFooter';
 import { SideNav } from './components/SideNav';
-import { DEFAULT_NAME } from './services/profile';
 import { clearPendingImagination, readPendingImagination, savePendingImagination } from './services/api';
 import { useIdentity } from './components/useIdentity';
 import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
@@ -41,7 +40,6 @@ const ContactPage = lazy(() => import('./components/ContactPage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const DescribePage = lazy(() => import('./components/DescribePage'));
 const PostPage = lazy(() => import('./components/PostPage'));
-const AdminImaginations = lazy(() => import('./components/AdminImaginations'));
 const ToolkitPage = lazy(() => import('./components/ToolkitPage'));
 const JoinPage = lazy(() => import('./components/JoinPage'));
 const DashboardPage = lazy(() => import('./components/DashboardPage'));
@@ -214,12 +212,12 @@ function MainApp({ initialView = 'welcome' }) {
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   // Composite of the photo plus everything drawn on it, exported when leaving step 1.
   const [preview, setPreview] = useState(null);
-  // Where the map should open. Set when an imagination is posted, so the map comes
-  // back centred on the new pin instead of the default location.
+  // Where the map should open. Set when an idea is saved, so the map comes
+  // back centred on where it was made instead of the default location.
   const [mapFocus, setMapFocus] = useState(null);
   // Set when Idea Visualizer is started for a project (opened from the project's
   // page, so its URL carries ?project=), so the imagination that comes out the other
-  // end of the capture flow is attached to it. Cleared by posting, and by starting a capture any other way (handleExplore) —
+  // end of the capture flow is attached to it. Cleared by saving, and by starting a capture any other way (handleExplore) —
   // otherwise a project visited earlier in the session could tag something unrelated.
   const [activeProjectId, setActiveProjectId] = useState(null);
 
@@ -666,9 +664,6 @@ function MainApp({ initialView = 'welcome' }) {
                   apiKey={GOOGLE_MAPS_API_KEY}
                   initialCenter={mapFocus}
                   homeCenter={profile?.locationPoint ?? null}
-                  accountId={accountId}
-                  authorName={profile?.name ?? DEFAULT_NAME}
-                  onSignIn={handleSignIn}
                   onOpenProject={showProjectPublic}
                 />
               </Suspense>
@@ -753,7 +748,7 @@ function MainApp({ initialView = 'welcome' }) {
               <Suspense fallback={<LoadingFallback />}>
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
                   onNewProject={showNewProject}
-                  onSignIn={handleSignIn} onSignOut={handleSignOut} onExplore={handleExplore}
+                  onSignOut={handleSignOut} onExplore={handleExplore}
                   onOpenPublicProfile={showPublicProfile}
                   onOpenProject={showProjectDashboard} onOpenProjectPage={showProjectPublic}
                   onOpenOrganisationPage={showOrganisationPublic} />
@@ -931,7 +926,6 @@ function App() {
       <ErrorBoundary>
         <Switch>
           <Route path="/survey"><Suspense fallback={<LoadingFallback />}><SurveyPage t={t} /></Suspense></Route>
-          <Route path="/admin/imaginations"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminImaginations t={t} /></AdminGate></Suspense></Route>
           <Route path="/admin"><Suspense fallback={<LoadingFallback />}><AdminGate t={t}><AdminDashboard t={t} /></AdminGate></Suspense></Route>
           {/* An entry point only — a scanned QR code or a typed PIN — so it is its
               own route rather than a view inside MainApp. */}

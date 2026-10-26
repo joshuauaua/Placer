@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import MapContainer from '../MapContainer';
-import { fetchImaginations } from '../../services/api';
 import { isSupabaseConfigured, readProjectLocations } from '../../services/projects';
 import { stitchPanoTiles } from '../../lib/panoStitch';
 import { resetGoogleMapsLoaderForTests } from '../../lib/googleMaps';
@@ -11,10 +10,6 @@ import { photonFeature, stubPhoton } from '../../test/photon';
 
 // What the stand-in map's canvas reads back as: a capture of the map itself.
 const MAP_IMAGE = 'data:image/png;base64,MAP';
-
-vi.mock('../../services/api', () => ({
-  fetchImaginations: vi.fn(() => Promise.resolve([])),
-}));
 
 vi.mock('../../services/projects', () => ({
   isSupabaseConfigured: vi.fn(() => true),
@@ -80,10 +75,9 @@ function mockGoogleMaps({ panorama = mockPanorama(), coverage = 'pano-1' } = {})
   };
 }
 
-// The pins drawn for imaginations: every marker that can be clicked. The spot chosen
-// for Street View is a marker too, but not one to click.
+// Markers that can be clicked. The spot chosen for Street View is a marker too, but not
+// one to click, and nothing else on this map is a marker any more.
 const pins = () => (lastMap()?.markers ?? []).filter((marker) => marker.getElement().getAttribute('role') === 'button');
-const pinElements = () => pins().map((marker) => marker.getElement());
 
 describe('MapContainer', () => {
   afterEach(() => {
@@ -94,7 +88,6 @@ describe('MapContainer', () => {
     // means it outlives a single test too, unless cleared here.
     resetGoogleMapsLoaderForTests();
     vi.restoreAllMocks();
-    vi.mocked(fetchImaginations).mockResolvedValue([]);
     vi.mocked(isSupabaseConfigured).mockReturnValue(true);
     vi.mocked(readProjectLocations).mockResolvedValue([]);
     vi.unstubAllGlobals();
@@ -560,96 +553,6 @@ describe('MapContainer', () => {
     });
   });
 
-  describe('imagination pins', () => {
-    const SAVED = [
-      {
-        id: 'img-1',
-        title: 'Pocket park',
-        cat: 'green',
-        position: { lat: 55.61, lng: 12.99 },
-      },
-      {
-        id: 'img-2',
-        title: 'Shade on 8th',
-        cat: 'seating',
-        position: { lat: 55.62, lng: 13.01 },
-      },
-    ];
-
-    it('drops one marker per saved imagination', async () => {
-      vi.mocked(fetchImaginations).mockResolvedValue(SAVED);
-
-      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-
-      await waitFor(() => expect(pins()).toHaveLength(2));
-    });
-
-    it('draws each pin in the orange pin style and labels it with the title', async () => {
-      vi.mocked(fetchImaginations).mockResolvedValue(SAVED);
-
-      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-
-      await waitFor(() => expect(pins()).toHaveLength(2));
-
-      const [first] = pins();
-      expect(first.getLngLat()).toEqual({ lat: 55.61, lng: 12.99 });
-      expect(screen.getByRole('button', { name: 'Pocket park' })).toBe(first.getElement());
-      for (const element of pinElements()) {
-        expect(element).toHaveStyle({ backgroundColor: PALETTE.orange.c100 });
-        expect(element.style.border).toContain('2px solid');
-      }
-    });
-
-    it('skips imaginations saved without usable coordinates', async () => {
-      vi.mocked(fetchImaginations).mockResolvedValue([
-        ...SAVED,
-        { id: 'img-3', title: 'No position', cat: 'art', position: null },
-        { id: 'img-4', title: 'Partial', cat: 'art', position: { lat: 55.6 } },
-        { id: 'img-5', title: 'Legacy record with no position field', cat: 'art' },
-      ]);
-
-      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-
-      await waitFor(() => expect(pins()).toHaveLength(2));
-    });
-
-    it('draws no pins when nothing has been saved yet', async () => {
-      vi.mocked(fetchImaginations).mockResolvedValue([]);
-
-      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-
-      await waitFor(() => expect(fetchImaginations).toHaveBeenCalled());
-      expect(pins()).toHaveLength(0);
-    });
-
-    it('keeps the map usable when the pins fail to load', async () => {
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.mocked(fetchImaginations).mockRejectedValue(new Error('storage unavailable'));
-
-      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-
-      await waitFor(() => expect(consoleError).toHaveBeenCalled());
-      expect(screen.getByPlaceholderText('Search for an address...')).toBeInTheDocument();
-      expect(pins()).toHaveLength(0);
-      consoleError.mockRestore();
-    });
-
-    it('removes its markers on unmount', async () => {
-      vi.mocked(fetchImaginations).mockResolvedValue(SAVED);
-
-      const { unmount } = render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-      await waitFor(() => expect(pins()).toHaveLength(2));
-
-      const map = lastMap();
-      const elements = pinElements();
-      unmount();
-
-      expect(map.markers).toHaveLength(0);
-      expect(map.removed).toBe(true);
-      elements.forEach((element) => expect(element).not.toBeInTheDocument());
-    });
-  });
-
   describe('project location outlines', () => {
     const TRIANGLE = [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }];
     const PROJECT = { id: 'proj-1', name: 'Riverside Greenway', locationShapes: [{ path: TRIANGLE }] };
@@ -780,121 +683,13 @@ describe('MapContainer', () => {
       expect(options.zoom).toBe(13);
     });
 
-    it('still opens on a just-posted imagination rather than the account location', () => {
+    it('still opens where an idea was just saved rather than the account location', () => {
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key"
         initialCenter={{ lat: 55.61, lng: 12.99 }} homeCenter={{ lat: 59.33, lng: 18.07 }} />);
 
       const options = lastMap().options;
       expect(lastMap().center).toEqual({ lat: 55.61, lng: 12.99 });
       expect(options.zoom).toBe(17);
-    });
-  });
-
-  describe('imagination preview on pin click', () => {
-    const SAVED = [
-      {
-        id: 'img-1',
-        title: 'Pocket park',
-        cat: 'green',
-        blurb: 'Swap the asphalt for trees.',
-        position: { lat: 55.61, lng: 12.99 },
-        canvasAssets: [],
-      },
-      {
-        id: 'img-2',
-        title: 'Shade on 8th',
-        cat: 'seating',
-        blurb: 'Street trees every block.',
-        position: { lat: 55.62, lng: 13.01 },
-        canvasAssets: [],
-      },
-    ];
-
-    const renderWithPins = async (saved = SAVED) => {
-      vi.mocked(fetchImaginations).mockResolvedValue(saved);
-      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-      await waitFor(() => expect(pins()).toHaveLength(saved.length));
-      return pinElements().map((element) => ({ fire: () => fireEvent.click(element) }));
-    };
-
-    it('shows no preview until a pin is clicked', async () => {
-      await renderWithPins();
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
-
-    it('opens the preview for the clicked pin', async () => {
-      const markers = await renderWithPins();
-
-      markers[0].fire();
-
-      expect(await screen.findByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText('Pocket park')).toBeInTheDocument();
-      expect(screen.queryByText('Shade on 8th')).not.toBeInTheDocument();
-    });
-
-    it('pans the map to the clicked pin', async () => {
-      const markers = await renderWithPins();
-
-      markers[1].fire();
-
-      expect(lastMap().center).toEqual({ lat: 55.62, lng: 13.01 });
-    });
-
-    it('swaps the preview when a different pin is clicked', async () => {
-      const markers = await renderWithPins();
-
-      markers[0].fire();
-      expect(await screen.findByText('Pocket park')).toBeInTheDocument();
-
-      markers[1].fire();
-
-      expect(await screen.findByText('Shade on 8th')).toBeInTheDocument();
-      expect(screen.queryByText('Pocket park')).not.toBeInTheDocument();
-    });
-
-    it('closes the preview from its close button', async () => {
-      const markers = await renderWithPins();
-      markers[0].fire();
-      await screen.findByRole('dialog');
-
-      fireEvent.click(screen.getByLabelText('Close preview'));
-
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
-
-    it('closes the preview on Escape', async () => {
-      const markers = await renderWithPins();
-      markers[0].fire();
-      await screen.findByRole('dialog');
-
-      fireEvent.keyDown(window, { key: 'Escape' });
-
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
-
-    it('closes the preview when the map itself is clicked', async () => {
-      const markers = await renderWithPins();
-      markers[0].fire();
-      await screen.findByRole('dialog');
-
-      act(() => clickMap(lastMap(), { lat: 10, lng: 20 }));
-
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
-
-    it('still records the clicked position when the map click closes the preview', async () => {
-      const markers = await renderWithPins();
-      markers[0].fire();
-      await screen.findByRole('dialog');
-
-      // Dismissing the card must not swallow the position update the map click
-      // carries — the capture button depends on it.
-      act(() => clickMap(lastMap(), { lat: 10, lng: 20 }));
-
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-      // The chosen spot moved there.
-      expect(lastMap().markers.some((marker) => !pins().includes(marker)
-        && marker.getLngLat().lat === 10 && marker.getLngLat().lng === 20)).toBe(true);
     });
   });
 });

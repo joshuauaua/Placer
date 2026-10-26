@@ -1,7 +1,7 @@
-/* PLACER — the community map, where an imagination starts.
+/* PLACER — the map an Idea Visualizer idea starts on.
  *
- * The map is OpenStreetMap's (lib/map.js): pins for every imagination posted, and the
- * areas projects have outlined. Clicking it chooses a spot. Street View, which
+ * The map is OpenStreetMap's (lib/map.js), with the areas projects have outlined.
+ * Clicking it chooses a spot. Street View, which
  * OpenStreetMap has nothing like, is Google's: the Street View button opens Google's
  * panorama over the map at the nearest photo to that spot, and capturing while it is
  * open takes the background from the Street View Static API (lib/staticMaps.js).
@@ -12,20 +12,14 @@ import { useState, useEffect, useRef } from 'react';
 import posthog from 'posthog-js';
 import { Icon } from './Icon';
 import { Btn } from './UI';
-import { ImaginationPreview } from './ImaginationPreview';
 import { MapLegend } from './MapLegend';
 import { PALETTE, THEME } from '../theme';
-import { readImaginations } from '../services/imaginations';
 import { isSupabaseConfigured, readProjectLocations } from '../services/projects';
 import { captureStreetView as captureStreetViewImage, readPanoramaView as readView } from '../lib/streetViewCapture';
 import { loadGoogleMaps } from '../lib/googleMaps';
-import { addPin, addPlainMarker, createMap, onBackgroundClick, showAreas, toLngLat } from '../lib/map';
+import { addPlainMarker, createMap, onBackgroundClick, showAreas, toLngLat } from '../lib/map';
 import { PageHeader } from './PageHeader';
 import { PlaceSearch } from './PlaceSearch';
-
-// An imagination's pin, in the brand kit's pin style: a 24px circle in a theme colour's
-// 100 with a 2px ring in its 700. Imaginations are orange.
-const PIN = { fill: PALETTE.orange.c100, ring: PALETTE.orange.c700 };
 
 // A project's drawn area: a map area is a theme colour's 300, outlined in its 700.
 // Projects are set up by the city, so blue — the same LocationMapPicker and
@@ -37,14 +31,11 @@ const hasCoords = (position) =>
 
 /**
  * `initialCenter` opens the map somewhere other than the default — used after
- * posting, so the imagination that was just saved is on screen rather than a
- * continent away. Without one, `homeCenter` — the place chosen as the account's
- * location in Settings — opens it over that town instead, zoomed out to show it.
- *
- * `accountId`, `authorName` and `onSignIn` are passed straight through to the pin
- * preview modal, which needs them to vote on and comment on whatever pin is open.
+ * saving, so the spot the idea was made at is on screen rather than a continent
+ * away. Without one, `homeCenter` — the place chosen as the account's location in
+ * Settings — opens it over that town instead, zoomed out to show it.
  */
-// Close enough for one imagination; far enough out to see a whole town.
+// Close enough for one spot; far enough out to see a whole town.
 const PIN_ZOOM = 17;
 const HOME_ZOOM = 13;
 const DEFAULT_ZOOM = 15;
@@ -53,8 +44,7 @@ const STREET_VIEW_RADIUS = 100;
 // The zoom the map is captured at when a spot turns out to have no Street View.
 const FALLBACK_ZOOM = 18;
 
-const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCenter = null,
-  accountId = null, authorName, onSignIn, onOpenProject }) => {
+const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCenter = null, onOpenProject }) => {
   const t = THEME;
   const mapRef = useRef(null);
   const panoramaElRef = useRef(null);
@@ -77,16 +67,10 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
         lng: 12.9854   // STPLN, Malmöhusvägen 5, Malmö — longitude
       }
   );
-  // Imaginations already saved, drawn as pins so people can see where others have
-  // been. Loaded once per mount, which is enough: returning from the post step
-  // remounts this component, so a just-posted imagination appears without plumbing.
-  const [imaginations, setImaginations] = useState([]);
   // Every project's drawn location outline, so a project's area shows up here too —
-  // not just on its own public page. Loaded once per mount, same as imaginations.
+  // not just on its own public page. Loaded once per mount.
   const [projectLocations, setProjectLocations] = useState([]);
-  // The imagination whose preview card is open, if any.
-  const [selected, setSelected] = useState(null);
-  // Whether Street View is open over the map, where the legend's pins and areas
+  // Whether Street View is open over the map, where the legend's areas
   // are not drawn and it would only be in the way.
   const [streetViewOpen, setStreetViewOpen] = useState(false);
   // Tracks the latest position without making the init effect below re-run on every change —
@@ -113,7 +97,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
     return () => { cancelled = true; };
   }, [apiKey]);
 
-  // The map, made once. A click on it — not on a pin or an area — chooses the spot.
+  // The map, made once. A click on it — not on an area — chooses the spot.
   useEffect(() => {
     if (!mapRef.current) return undefined;
 
@@ -129,8 +113,6 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
     }
 
     onBackgroundClick(osmMap, (point) => {
-      // A click on open ground rather than a pin: put the preview away.
-      setSelected(null);
       setStreetViewMessage('');
       setCurrentPosition(point);
     });
@@ -158,27 +140,10 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
     panoramaRef.current = panorama;
   }, [googleLoaded]);
 
-  // Load the imaginations to pin on the map. With a Supabase project configured this is
-  // everybody's, not just this browser's — the map is the community's.
-  useEffect(() => {
-    let cancelled = false;
-
-    readImaginations()
-      .then((saved) => {
-        if (!cancelled) setImaginations(saved);
-      })
-      .catch((error) => {
-        // A pin layer that fails to load must not take the map down with it.
-        console.error('Could not load saved imaginations:', error);
-      });
-
-    return () => { cancelled = true; };
-  }, []);
-
-  // Load every project's drawn location outline. Unlike readImaginations, there is no
-  // local fallback to fall into with no Supabase project configured — projects need an
-  // account by definition (see services/projects.js's header) — so this is skipped
-  // rather than left to throw and be swallowed.
+  // Load every project's drawn location outline. There is no local fallback to fall
+  // into with no Supabase project configured — projects need an account by definition
+  // (see services/projects.js's header) — so this is skipped rather than left to throw
+  // and be swallowed.
   useEffect(() => {
     if (!isSupabaseConfigured()) return undefined;
     let cancelled = false;
@@ -194,37 +159,6 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
 
     return () => { cancelled = true; };
   }, []);
-
-  // Drop one pin per saved imagination. Imaginations saved without coordinates are
-  // skipped — there is nowhere to put them.
-  useEffect(() => {
-    if (!map) return undefined;
-
-    const markers = imaginations
-      .filter((imagination) => hasCoords(imagination.position))
-      .map((imagination) => addPin(map, imagination.position, {
-        size: 24,
-        fill: PIN.fill,
-        ring: PIN.ring,
-        title: imagination.title || 'Imagination',
-        onClick: () => {
-          posthog.capture('imagination_viewed', {
-            imagination_id: imagination.id,
-            category: imagination.cat,
-            assets_count: imagination.canvasAssets?.length ?? 0,
-          });
-          setSelected(imagination);
-          // Bring the pin into view so it is obvious which one the card describes.
-          map.panTo(toLngLat(imagination.position));
-        },
-      }));
-
-    return () => {
-      markers.forEach((marker) => marker.remove());
-      // The card describes a marker that no longer exists.
-      setSelected(null);
-    };
-  }, [map, imaginations]);
 
   // Draw every shape a project has outlined — the same trace ProjectLocationMap shows
   // on its public page, now on the map everyone shares. Clicking one goes to that
@@ -253,18 +187,6 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
     const marker = addPlainMarker(map, currentPosition, { color: PALETTE.orange.c700 });
     return () => marker.remove();
   }, [map, currentPosition]);
-
-  // Escape closes the preview, matching the canvas's own Escape behaviour.
-  useEffect(() => {
-    if (!selected) return;
-
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setSelected(null);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selected]);
 
   const handlePlacePicked = (place) => {
     setCurrentPosition(place.point);
@@ -416,16 +338,7 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
             </Btn>
           )}
 
-          {selected && (
-            <ImaginationPreview t={t} imagination={selected} onClose={() => setSelected(null)}
-              accountId={accountId} authorName={authorName} onSignIn={onSignIn}
-              onDeleted={(id) => {
-                setImaginations((current) => current.filter((item) => item.id !== id));
-                setSelected(null);
-              }} />
-          )}
-
-          {!streetViewOpen && <MapLegend t={t} pin={PIN} area={PROJECT_AREA} />}
+          {!streetViewOpen && <MapLegend t={t} area={PROJECT_AREA} />}
 
           {streetViewMessage && !streetViewOpen && (
             <div role="status" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)',

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { PublicProjectPage } from '../PublicProjectPage';
-import { readImaginationsByProject } from '../../services/imaginations';
 import {
   readConfiguredProjectTools, readLinks, readProject, readProjectAccess, readProjectTools, readPublicToolkitActivity, readRelatedProjects,
   readWorkshopTools, requestProjectAccess,
@@ -15,10 +14,6 @@ import { readOrganisation } from '../../services/organisations';
 import { readContributions, readProjectOpenRooms, readProjectRoomSchedule, saveContribution } from '../../services/rooms';
 import { THEME } from '../../theme';
 import { rememberAnswer } from '../../toolkit/rooms';
-
-vi.mock('../../services/imaginations', () => ({
-  readImaginationsByProject: vi.fn(() => Promise.resolve([])),
-}));
 
 vi.mock('../../services/projects', () => ({
   readProject: vi.fn(),
@@ -91,7 +86,6 @@ const setup = (overrides = {}) => {
 
 describe('PublicProjectPage', () => {
   beforeEach(() => {
-    vi.mocked(readImaginationsByProject).mockResolvedValue([]);
     vi.mocked(readLinks).mockResolvedValue([]);
     vi.mocked(readPublicToolkitActivity).mockResolvedValue(0);
     vi.mocked(readRelatedProjects).mockResolvedValue([]);
@@ -318,7 +312,6 @@ describe('PublicProjectPage, taking part', () => {
 
   beforeEach(() => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
-    vi.mocked(readImaginationsByProject).mockResolvedValue([]);
     vi.mocked(readLinks).mockResolvedValue([]);
     vi.mocked(readPublicToolkitActivity).mockResolvedValue(0);
     vi.mocked(readRelatedProjects).mockResolvedValue([]);
@@ -1017,37 +1010,12 @@ describe('PublicProjectPage, taking part', () => {
     expect(section.getByRole('button', { name: 'See other visualizations' })).toBeInTheDocument();
   });
 
-  it('shows what was posted to the map for the project under it', async () => {
-    vi.mocked(readProjectTools).mockResolvedValue(['reimagine-a-space']);
-    vi.mocked(readProjectOpenRooms).mockResolvedValue([IDEA]);
-    vi.mocked(readImaginationsByProject).mockResolvedValue([
-      { id: 'img-1', title: 'Pocket park', cat: 'green', upvotes: 4 },
-    ]);
-
-    setup();
-
-    const section = within(await screen.findByRole('region', { name: 'Share your idea for this place' }));
-    expect(section.getByRole('heading', { name: 'Posted to the map' })).toBeInTheDocument();
-    expect(section.getByText('Pocket park')).toBeInTheDocument();
-  });
-
   it('does not show Idea Visualizer until its room is open', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['reimagine-a-space']);
 
     setup();
 
     expect(await screen.findByText('Nothing to take part in yet. Check back soon.')).toBeInTheDocument();
-  });
-
-  it('shows no imaginations when the project has not added Idea Visualizer', async () => {
-    vi.mocked(readImaginationsByProject).mockResolvedValue([
-      { id: 'img-1', title: 'Pocket park', cat: 'green', upvotes: 4 },
-    ]);
-
-    setup();
-
-    await screen.findByText('Nothing to take part in yet. Check back soon.');
-    expect(screen.queryByText('Pocket park')).not.toBeInTheDocument();
   });
 
   it('shows its tools under the Project tab, in the order they were added', async () => {
@@ -1100,7 +1068,6 @@ describe('PublicProjectPage, a private project', () => {
 
   beforeEach(() => {
     vi.mocked(readProject).mockResolvedValue(null);
-    vi.mocked(readImaginationsByProject).mockResolvedValue([]);
     vi.mocked(readLinks).mockResolvedValue([]);
     vi.mocked(readPublicToolkitActivity).mockResolvedValue(0);
     vi.mocked(readRelatedProjects).mockResolvedValue([]);
@@ -1172,7 +1139,6 @@ describe('PublicProjectPage, its header, tabs and people', () => {
 
   beforeEach(() => {
     vi.mocked(readReplies).mockResolvedValue([]);
-    vi.mocked(readImaginationsByProject).mockResolvedValue([]);
     vi.mocked(readLinks).mockResolvedValue([]);
     vi.mocked(readPublicToolkitActivity).mockResolvedValue(0);
     vi.mocked(readRelatedProjects).mockResolvedValue([

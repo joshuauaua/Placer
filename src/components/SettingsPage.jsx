@@ -508,9 +508,9 @@ function LanguageSetting({ t }) {
 // read and write.
 const NOTIFICATION_KINDS = [
   { inapp: 'engagement_inapp', email: 'engagement_email', title: 'Engagement',
-    description: 'When someone comments on or votes for your imaginations.' },
+    description: 'When someone answers a Toolkit tool in a project you run, and when one of its sessions closes.' },
   { inapp: 'activity_inapp', email: 'activity_email', title: 'Activity',
-    description: 'When someone you follow starts a project or posts an imagination, or a project or organisation you follow has news or new Toolkit results.' },
+    description: 'When someone you follow starts a project, or a project or organisation you follow has news or new Toolkit results.' },
   { inapp: 'follower_inapp', email: 'follower_email', title: 'Followers',
     description: 'When someone follows your profile, a project you run, or an organisation you are an admin of.' },
   { inapp: 'system_inapp', email: 'system_email', title: 'System',

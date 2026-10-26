@@ -259,6 +259,10 @@ handles that yet; it needs the SQL editor.
 
 ## 10. The community map
 
+**Retired** by `imaginations-retire.sql` (section 21): the tables this step creates are
+dropped again there, and nothing in the app reads or writes them any more. It stays
+here because the migrations that follow it still expect them to have existed.
+
 Requires step 9 — a posted imagination belongs to an account. Run `imaginations.sql`
 in the SQL editor after `auth.sql`. It is re-runnable, and unlike the other files it
 also creates its own Storage bucket, so there is nothing to press in the dashboard.
@@ -1075,6 +1079,39 @@ somebody off open `survey_responses`, filter on their `id` or `email`, and tick
 and switch the result to **Chart**.
 
 Like the table, none of the views can be read with the browser's key.
+
+## 21. Retiring imaginations
+
+The Idea Visualizer used on its own no longer posts to `public.imaginations`: like every
+other tool used on its own, it saves to its maker's profile as an inquiry
+(`profile_inquiries`, `tool = 'reimagine-a-space'`), private to them. Publishing an
+inquiry to the map is still to come. `imaginations-retire.sql` (also a migration):
+
+1. copies every imagination into its owner's inquiries. The preview stays where it is in
+   R2 and the inquiry keeps its key as `config.preview`; `config.imaginationId` says
+   which imagination it was.
+2. deletes follows of an imagination and notifications about one, and narrows both
+   tables' type checks.
+3. takes imaginations out of `project_public_summary`'s interactions, and out of
+   `project_stats`, which now returns only `toolkit_rooms_count`.
+4. drops `imaginations`, `imagination_votes` and `imagination_comments`, and the
+   functions only they used.
+
+**Order matters.** Push it only once the app that stopped reading those tables is
+deployed, or the map and project pages of the app still running will fail to load
+them. Then deploy the `media` function again, for its wording:
+
+```sh
+supabase db push
+supabase functions deploy media
+```
+
+### Verify
+
+```sql
+select to_regclass('public.imaginations');                                  -- null
+select count(*) from public.profile_inquiries where config ? 'imaginationId'; -- one per imagination
+```
 
 ## Still to decide
 

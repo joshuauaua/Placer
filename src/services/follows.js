@@ -1,6 +1,6 @@
-/* PLACER — following: users, imaginations, projects, organisations and cities.
+/* PLACER — following: users, projects, organisations and cities.
  *
- * One module, two stores, the same shape either way, matching services/imaginations.js.
+ * One module, two stores, the same shape either way.
  * With a Supabase project configured a follow is a row in public.follows, private to the
  * account that made it. With no project it is a record in localStorage, the same way
  * services/profile.js keeps an identity before there are accounts to have.
@@ -25,7 +25,7 @@ import { track } from '../analytics';
 export const FOLLOWS_TABLE = 'follows';
 
 /** The kinds of thing PLACER lets somebody follow. */
-export const FOLLOW_TYPES = ['user', 'imagination', 'project', 'city', 'organisation'];
+export const FOLLOW_TYPES = ['user', 'project', 'city', 'organisation'];
 
 export { isSupabaseConfigured };
 
