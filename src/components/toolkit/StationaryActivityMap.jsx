@@ -1,8 +1,8 @@
 /* PLACER — Toolkit: Stationary Activity Mapping.
  *
- * A map-based field observation tool, after Gehl's Public Life Data Protocol. It
- * opens on the field sheet's directions and its key: each posture's symbol, and the
- * activities. Then the map (OpenStreetMap), the dominant visual element; the
+ * A map-based field observation tool, after Gehl's Public Life Data Protocol. After
+ * the cover come its instructions: the field sheet's directions and its key, each
+ * posture's symbol and the activities. "Get started" then opens the map (OpenStreetMap), the dominant visual element; the
  * recording card floats over its left half and the tally sits below it. The user
  * first clicks the map to pick a location, then selects posture and activities,
  * then records. Every posture is drawn as its symbol (PostureSymbol.jsx).
@@ -92,6 +92,7 @@ export function StationaryActivityMap({ t, tool }) {
   const [activities, setActivities] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [last, setLast] = useState(null);
+  const [started, setStarted] = useState(false);
   const nextId = useRef(1);
 
   const counts = useMemo(() => tally(observations), [observations]);
@@ -112,7 +113,7 @@ export function StationaryActivityMap({ t, tool }) {
     onBackgroundClick(osmMap, (point) => setSelectedLocation(point));
     setMap(osmMap);
     return () => osmMap.remove();
-  }, []);
+  }, [started]);
 
   /* --- One point per observation, where it was recorded --- */
   useEffect(() => {
@@ -197,10 +198,12 @@ export function StationaryActivityMap({ t, tool }) {
     ? `${selectedLocation.lat.toFixed(4)}, ${selectedLocation.lng.toFixed(4)}`
     : '';
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: 'var(--placer-font)' }}>
+  // Step 2, after the cover: the field sheet's directions and its key. Step 3 is the map.
+  if (!started) {
+    return (
+    <div style={{ fontFamily: 'var(--placer-font)' }}>
       {/* The field sheet's directions, and its key to the symbols and activities. */}
-      <Panel t={t} title="Directions">
+      <Panel t={t} title="Instructions">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 28 }}>
           <div>
             <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 8,
@@ -236,7 +239,20 @@ export function StationaryActivityMap({ t, tool }) {
             </div>
           </div>
         </div>
+        <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
+          <Btn t={t} onClick={() => setStarted(true)}>Get started</Btn>
+        </div>
       </Panel>
+
+    </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: 'var(--placer-font)' }}>
+      <div>
+        <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={() => setStarted(false)}>Instructions</Btn>
+      </div>
 
       {/* 1 · Map card — dominant background */}
       <Panel t={t} title="Observation Map" aside={
