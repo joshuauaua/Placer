@@ -36,15 +36,16 @@
  * about. That is a file of its own too, supabase/room-tools/<id>.sql, and its
  * migration (see supabase/room-tools.sql).
  *
- * `setup` is optional too, and only means something next to `room`: it is what the
- * organiser chooses before the room opens, so that a tool run for a project is about
- * that project's place rather than the Toolkit's made-up one. Three parts:
+ * `setup` is optional too: what the organiser chooses for a project, so that a tool
+ * run for it is about that project's place rather than the Toolkit's made-up one.
+ * Next to `room`, it is chosen before the room opens; without one, it is kept on the
+ * project's tool and reaches the tool as `setup` (projectSetupKind 'config'). Three parts:
  *
  *   defaults()        — the setup a new room starts from
  *   problems(setup)   — what is wrong with it, as sentences; empty when it can open
  *   Form              — the component that edits it: { t, tool, setup, onChange }
  *
- * and optionally `steps`, for a setup asked for in stages rather than on one screen:
+ * and optionally `toSave(setup)`, the setup as it is kept (without a room), and `steps`, for a setup asked for in stages rather than on one screen:
  * each a { title, Form, problems } over the same setup, with `problems` covering only
  * its own part (setupSteps, and SetupSteps which walks through them). A tool with
  * steps, even one, has when its room starts and how long it stays open as a stage of
@@ -228,10 +229,14 @@ export function sortTools(tools, sort = 'recent', direction = 'desc') {
  *
  *   'room'   — a tool that runs in a room: its `setup`, if it has one, and how long the
  *              project's room stays open. Opening that room is what puts it live.
+ *   'config' — a tool with a `setup` but no room: the setup is kept on the project's
+ *              tool (project_tools.config) and handed to the tool as `setup`. Saving
+ *              it puts it live.
  *   'none'   — nothing to fill in; configuring it only puts it live
  */
 export function projectSetupKind(tool) {
   if (tool.room) return 'room';
+  if (tool.setup) return 'config';
   return 'none';
 }
 

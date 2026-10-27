@@ -71,16 +71,59 @@ export function emptySession(now = new Date()) {
   };
 }
 
+/** What is wrong with the outline of the area, if anything. */
+export function areaProblems(area) {
+  return (area?.length ?? 0) < 3 ? ['Outline the area on the map: at least three corners.'] : [];
+}
+
 /** What is still missing before mapping can start, in the order the form asks. */
 export function sessionProblems(session) {
-  const problems = [];
-  if ((session.area?.length ?? 0) < 3) problems.push('Outline the area on the map: at least three corners.');
+  const problems = [...areaProblems(session.area)];
   if (!session.name.trim()) problems.push('Add your name.');
   if (!session.date) problems.push('Add the date.');
   if (!session.time) problems.push('Add the time.');
   if (!session.weather) problems.push('Pick the weather.');
   if (!session.location.trim()) problems.push('Name the location.');
   return problems;
+}
+
+/* --- A project's setup: the area and location everybody mapping for it shares --- */
+
+// project_tools.config is kept small (supabase/project-tool-config.sql: 2000
+// characters), so an outline has at most this many corners, each to about 10 cm.
+export const MAX_CORNERS = 30;
+const round = (value) => Math.round(value * 1e6) / 1e6;
+
+/** A project's setup not filled in yet. */
+export function defaultProjectSetup() {
+  return { area: [], location: '' };
+}
+
+/** What a project's setup is missing, as sentences. */
+export function projectSetupProblems(setup) {
+  const problems = [...areaProblems(setup?.area)];
+  if (!setup?.location?.trim()) problems.push('Name the location.');
+  return problems;
+}
+
+/** A project's setup as it is saved: corners rounded, the location trimmed. */
+export function projectSetupToSave(setup) {
+  return {
+    area: (setup.area ?? []).slice(0, MAX_CORNERS).map(({ lat, lng }) => ({ lat: round(lat), lng: round(lng) })),
+    location: setup.location.trim(),
+  };
+}
+
+/** Whether a project's setup fixes the area and location, so observers do not choose them. */
+export function hasProjectSetup(setup) {
+  return projectSetupProblems(setup).length === 0;
+}
+
+/** A session started from a project's setup: its area and location, the rest as emptySession. */
+export function sessionFromSetup(setup, now = new Date()) {
+  const session = emptySession(now);
+  if (!hasProjectSetup(setup)) return session;
+  return { ...session, area: setup.area, location: setup.location };
 }
 
 /** Whether `point` ({ lat, lng }) is inside the outline `path` — ray casting, flat. */

@@ -16,16 +16,14 @@ import { Icon } from '../Icon';
 import { Panel, Readout } from '../ToolLayout';
 import { Btn, Chip, CopyButton } from '../UI';
 import { PostureSymbol, symbolElement } from './PostureSymbol';
-import { StationaryActivitySetup } from './StationaryActivitySetup';
+import { StationaryActivitySetup, StationaryInstructions } from './StationaryActivitySetup';
 import {
-  ACTIVITIES,
   ACTIVITIES_BY_POSTURE,
-  DIRECTIONS,
-  HANDING_IN,
   ACTIVITY_BY_KEY,
   POSTURES,
   POSTURE_LIST,
-  emptySession,
+  hasProjectSetup,
+  sessionFromSetup,
   insideArea,
   sessionLines,
   normaliseObservation,
@@ -91,7 +89,10 @@ function popupContent(person, id) {
   return node;
 }
 
-export function StationaryActivityMap({ t, tool }) {
+// `setup` is a project's (project_tools.config, set in ConfigureToolDialog): the area
+// and location everybody mapping for it shares. Without one, the observer outlines
+// their own.
+export function StationaryActivityMap({ t, tool, setup = null }) {
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
   const [mapFailed, setMapFailed] = useState(false);
@@ -104,7 +105,8 @@ export function StationaryActivityMap({ t, tool }) {
   // Which step after the cover: the instructions, setting up the session, the map,
   // or the results.
   const [step, setStep] = useState('instructions');
-  const [session, setSession] = useState(() => emptySession());
+  const fixed = hasProjectSetup(setup);
+  const [session, setSession] = useState(() => sessionFromSetup(setup));
   const nextId = useRef(1);
 
   const counts = useMemo(() => tally(observations), [observations]);
@@ -227,7 +229,7 @@ export function StationaryActivityMap({ t, tool }) {
   // Step 3: outlining the area and filling in the sheet's header.
   if (step === 'configure') {
     return (
-      <StationaryActivitySetup t={t} tool={tool} session={session} onChange={setSession}
+      <StationaryActivitySetup t={t} tool={tool} session={session} fixed={fixed} onChange={setSession}
         onBack={() => setStep('instructions')} onStart={() => setStep('map')} />
     );
   }
@@ -238,41 +240,7 @@ export function StationaryActivityMap({ t, tool }) {
     <div style={{ fontFamily: 'var(--placer-font)' }}>
       {/* The field sheet's directions, and its key to the symbols and activities. */}
       <Panel t={t} title="Instructions">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 28 }}>
-          <div>
-            <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 8,
-              fontSize: 14, lineHeight: 1.55, color: t.ink }}>
-              {DIRECTIONS.map((direction) => <li key={direction}>{direction}</li>)}
-            </ul>
-            <p style={{ margin: '16px 0 0', fontSize: 13, fontWeight: 700, letterSpacing: '0.02em',
-              textTransform: 'uppercase', color: t.ink, lineHeight: 1.5 }}>
-              {HANDING_IN}
-            </p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignContent: 'start' }}>
-            <div>
-              <h3 className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
-                textTransform: 'uppercase', color: t.inkDim, margin: '0 0 10px' }}>Postures</h3>
-              <ul aria-label="Postures" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex',
-                flexDirection: 'column', gap: 8, fontSize: 14, color: t.ink }}>
-                {POSTURE_LIST.map((item) => (
-                  <li key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <PostureSymbol posture={item.key} size={18} />
-                    {item.label}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="placer-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
-                textTransform: 'uppercase', color: t.inkDim, margin: '0 0 10px' }}>Activities</h3>
-              <ul aria-label="Activities" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex',
-                flexDirection: 'column', gap: 8, fontSize: 14, color: t.ink, lineHeight: 1.35 }}>
-                {ACTIVITIES.map((activity) => <li key={activity.key}>{activity.label}</li>)}
-              </ul>
-            </div>
-          </div>
-        </div>
+        <StationaryInstructions t={t} />
         <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
           <Btn t={t} onClick={() => setStep('configure')}>Get started</Btn>
         </div>

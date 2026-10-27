@@ -103,6 +103,7 @@ describe('Stationary Activity Mapping', () => {
   it('outlines the area a corner per click, and can take one back', () => {
     configure({ area: AREA.slice(0, 3) });
     expect(screen.getByText(/3 corners/)).toBeInTheDocument();
+    expect(screen.getByTitle('Corner 3')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Undo corner' }));
     expect(screen.getByText(/2 corners/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Start mapping' }));
@@ -204,5 +205,26 @@ describe('Stationary Activity Mapping', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Map' }));
     expect(await screen.findByRole('button', { name: 'Standing: Waiting for transportation' })).toBeInTheDocument();
+  });
+
+  it("starts from a project's area and location, which the observer cannot change", () => {
+    render(<StationaryActivityMap t={THEME} tool={findTool('stationary-activity-mapping')}
+      setup={{ area: AREA, location: 'Stortorget' }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+
+    expect(screen.getByText('The area this project maps, outlined for you.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Undo corner' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Location')).toHaveValue('Stortorget');
+    expect(screen.getByLabelText('Location')).toHaveAttribute('readonly');
+    // A click on the map adds nothing.
+    act(() => clickMap(lastMap(), { lat: 55.62, lng: 12.99 }));
+    expect(screen.queryByTitle(/^Corner/)).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Ada' } });
+    fireEvent.change(screen.getByLabelText('Weather'), { target: { value: 'Rain' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Start mapping' }));
+
+    expect(screen.getByText('Record Observation')).toBeInTheDocument();
+    expect(screen.getByLabelText('Session')).toHaveTextContent('Location: Stortorget');
   });
 });

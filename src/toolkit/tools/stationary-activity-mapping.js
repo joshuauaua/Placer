@@ -1,4 +1,6 @@
 import { StationaryActivityMap } from '../../components/toolkit/StationaryActivityMap';
+import { InstructionsStep, SurveyAreaStep } from '../../components/toolkit/StationaryActivitySetup';
+import { defaultProjectSetup, projectSetupProblems, projectSetupToSave } from '../../lib/toolkit/stationaryActivity';
 import { PALETTE } from '../../theme';
 import { PUBLIC_LIFE_PROTOCOL_CREDIT, tone } from '../toolParts';
 
@@ -18,4 +20,16 @@ export default {
   blurbOnCover: true,
   credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
   component: StationaryActivityMap,
+  // A project sets it up as the tool itself starts: the instructions, then the area
+  // and location everybody mapping for the project shares (StationaryActivitySetup.jsx).
+  setupNote: 'You will outline the area this project maps and name its location. Everybody mapping for the project then starts from them, adding their own name, date, time and weather.',
+  setup: {
+    defaults: defaultProjectSetup,
+    problems: projectSetupProblems,
+    toSave: projectSetupToSave,
+    steps: [
+      { title: 'Instructions', Form: InstructionsStep, problems: () => [] },
+      { title: 'Survey area', Form: SurveyAreaStep, problems: projectSetupProblems },
+    ],
+  },
 };

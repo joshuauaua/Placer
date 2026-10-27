@@ -30,6 +30,7 @@ import { RoomBar } from './toolkit/RoomBar';
 import { ToolCover } from './toolkit/ToolCover';
 import { ContributeToolDialog } from './ContributeToolDialog';
 import { useRoom } from './toolkit/useRoom';
+import { useProjectToolSetup } from './toolkit/useProjectToolSetup';
 import { CATEGORIES, SORTS, TOOLS, filterTools, findCategory, findTool, sortTools } from '../toolkit/tools';
 import { projectIdFrom, roomIdFrom } from '../toolkit/rooms';
 import { isSupabaseConfigured } from '../services/rooms';
@@ -227,6 +228,9 @@ export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
     displayName,
   });
 
+  // Opened for a project, a tool it has set up starts from that (useProjectToolSetup).
+  const projectSetup = useProjectToolSetup(projectId, tool);
+
   useEffect(() => {
     if (!tool) return;
     posthog.capture('sandbox_experiment_opened', { experiment: tool.id });
@@ -318,8 +322,8 @@ export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
             breadcrumb={breadcrumb}
             onBack={() => navigate('/toolkit')}>
             <RoomBar t={t} tool={tool} room={room} />
-            <Tool t={t} tool={tool} room={room}
-              onLaunch={tool.launch && onLaunchTool ? () => onLaunchTool(tool.id, projectId) : undefined} />
+            {projectSetup.ready && <Tool t={t} tool={tool} room={room} setup={projectSetup.setup}
+              onLaunch={tool.launch && onLaunchTool ? () => onLaunchTool(tool.id, projectId) : undefined} />}
           </ToolLayout>
         ) : (
           <>
