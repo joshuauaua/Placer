@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vite-plus/test';
 import { screen, fireEvent, waitFor, within, act } from '@testing-library/react';
-import { markProjectToolConfigured, uploadSceneImage } from '../../services/projects';
-import { lastMap } from '../../test/maplibreStub';
+import { markProjectToolConfigured, readProjectToolSetup, saveProjectToolSetup, uploadSceneImage } from '../../services/projects';
+import { clickMap, lastMap } from '../../test/maplibreStub';
 import { createRoom } from '../../services/rooms';
 import { PROJECT, configureTool as setup, next, save } from '../../test/configureTool';
 import { findTool } from '../../toolkit/tools';
@@ -20,6 +20,8 @@ vi.mock('../../lib/streetViewCapture', async (importOriginal) => ({
 
 vi.mock('../../services/projects', () => ({
   markProjectToolConfigured: vi.fn(() => Promise.resolve()),
+  readProjectToolSetup: vi.fn(() => Promise.resolve(null)),
+  saveProjectToolSetup: vi.fn(() => Promise.resolve()),
   uploadSceneImage: vi.fn(() => Promise.resolve('scenes/proj-1/scene-1.webp')),
 }));
 
@@ -341,6 +343,50 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
       expect.objectContaining({ currency: 'SEK', budget: 40000, ownPosts: true }), null);
     expect(createRoom.mock.calls[0][3].posts[0]).toEqual(
       { key: 'trees', label: 'Street trees', icon: 'tree', unitCost: 2000 });
+  });
+});
+
+describe('ConfigureToolDialog, Stationary Activity Mapping', () => {
+  const CORNERS = [
+    { lat: 55.6000001, lng: 12.98 }, { lat: 55.6, lng: 13.0 }, { lat: 55.61, lng: 13.0 },
+  ];
+
+  it('goes as the tool does: introduced, then the instructions, then the area and location', async () => {
+    const { onConfigured } = setup('stationary-activity-mapping', {}, { intro: true });
+    // The introduction says what setting it up involves, and keeps its tagline for the tile.
+    expect(screen.getByText(/outline the area this project maps/)).toBeInTheDocument();
+    expect(screen.queryByText(/one person at a time/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+
+    expect(await screen.findByRole('heading', { name: 'Instructions' })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Postures' })).toBeInTheDocument();
+    next();
+
+    expect(screen.getByRole('heading', { name: 'Survey area' })).toBeInTheDocument();
+    save();
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('at least three corners');
+    expect(alert).toHaveTextContent('Name the location.');
+
+    CORNERS.forEach((corner) => act(() => clickMap(lastMap(), corner)));
+    fireEvent.change(screen.getByLabelText('Location'), { target: { value: '  Stortorget, Malmö ' } });
+    save();
+
+    await waitFor(() => expect(onConfigured).toHaveBeenCalled());
+    expect(saveProjectToolSetup).toHaveBeenCalledWith('proj-1', 'stationary-activity-mapping', {
+      area: [{ lat: 55.6, lng: 12.98 }, { lat: 55.6, lng: 13.0 }, { lat: 55.61, lng: 13.0 }],
+      location: 'Stortorget, Malmö',
+    });
+  });
+
+  it('starts a change from what was saved', async () => {
+    readProjectToolSetup.mockResolvedValueOnce({ area: CORNERS, location: 'Stortorget' });
+    setup('stationary-activity-mapping');
+    await screen.findByRole('heading', { name: 'Instructions' });
+    next();
+
+    expect(screen.getByLabelText('Location')).toHaveValue('Stortorget');
+    expect(screen.getByText('3 corners')).toBeInTheDocument();
   });
 });
 

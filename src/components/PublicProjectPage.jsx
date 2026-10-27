@@ -305,8 +305,11 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   // For 'locked': what the visitor may know about a private project they cannot see.
   const [preview, setPreview] = useState(null);
   const [following, setFollowing] = useState(false);
-  // Set once the visitor clicks Follow, so a slower isFollowing answer cannot undo it.
-  const followTouchedRef = useRef(false);
+  // Which project and account the visitor last clicked Follow for, so a slower
+  // isFollowing answer cannot undo the click. Keyed rather than a flag reset when the
+  // question is asked: on a slow machine the click can land before that effect runs,
+  // and resetting a flag there would let the answer overwrite it.
+  const followTouchedRef = useRef(null);
   const topRef = useRef(null);
   const tabsRef = useRef(null);
 
@@ -437,9 +440,9 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   useEffect(() => {
     if (!accountId || status !== 'ready') return;
     let cancelled = false;
-    followTouchedRef.current = false;
+    const key = `${projectId}:${accountId}`;
     isFollowing('project', projectId)
-      .then((value) => { if (!cancelled && !followTouchedRef.current) setFollowing(value); })
+      .then((value) => { if (!cancelled && followTouchedRef.current !== key) setFollowing(value); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [accountId, projectId, status]);
@@ -454,7 +457,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
 
   const toggleFollow = async () => {
     const next = !following;
-    followTouchedRef.current = true;
+    followTouchedRef.current = `${projectId}:${accountId}`;
     setFollowing(next);
     try {
       if (next) await follow('project', projectId, project.name);
@@ -576,7 +579,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
           {isCover(section) && <ToolIntro t={t} tool={section.tool} room={section.room} />}
         </>
       ) : (
-        <ProjectToolCard t={t} tool={section.tool} room={section.room} displayName={accountName} />
+        <ProjectToolCard t={t} tool={section.tool} room={section.room} projectId={projectId}
+          displayName={accountName} />
       ))}
     </section>
   );

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vite-plus/test';
 import {
-  CATEGORIES, ORGANISATIONS, REGISTERED_TOOLS, TOOLS, filterTools, findCategory, findTool, shownTools,
+  CATEGORIES, ORGANISATIONS, REGISTERED_TOOLS, TOOLS, filterTools, findCategory, findTool, projectSetupKind, shownTools,
 } from '../tools';
 
 describe('the register', () => {
@@ -44,15 +44,19 @@ describe('the register', () => {
     }
   });
 
-  it('gives every tool with a setup a room to use it in, and all three parts', () => {
-    // A setup is fixed when a room opens, so on a tool with no room it would never
-    // be asked for.
+  it('gives every setup all three parts', () => {
     for (const tool of REGISTERED_TOOLS.filter((entry) => entry.setup)) {
-      expect(tool.room, tool.id).toBeTruthy();
       expect(typeof tool.setup.defaults, tool.id).toBe('function');
       expect(typeof tool.setup.problems, tool.id).toBe('function');
-      expect(typeof tool.setup.Form, tool.id).toBe('function');
+      // One form, or a form per stage.
+      const forms = tool.setup.steps?.map((step) => step.Form) ?? [tool.setup.Form];
+      forms.forEach((Form) => expect(typeof Form, tool.id).toBe('function'));
     }
+  });
+
+  it('keeps a setup without a room on the project\'s tool', () => {
+    expect(projectSetupKind(findTool('stationary-activity-mapping'))).toBe('config');
+    expect(projectSetupKind(findTool('word-cloud'))).toBe('room');
   });
 
   it('starts every setup from one the tool can check', () => {

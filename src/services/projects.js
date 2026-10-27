@@ -773,6 +773,43 @@ export async function readConfiguredProjectTools(projectId) {
 }
 
 /**
+ * A project's setup of a tool that keeps one without a room (projectSetupKind
+ * 'config' in toolkit/tools.js), as it was saved, or null when it has not been set
+ * up. Readable by anybody who can see the project, like the rest of the row.
+ */
+export async function readProjectToolSetup(projectId, tool) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECT_TOOLS_TABLE)
+    .select('config')
+    .eq('project_id', projectId)
+    .eq('tool', tool)
+    .maybeSingle();
+
+  if (error) throw new Error(`Could not load how that tool is set up: ${error.message}`);
+  const config = data?.config;
+  return config && Object.keys(config).length > 0 ? config : null;
+}
+
+/**
+ * Save a project's setup of such a tool, which puts it live. Owner or collaborator
+ * only, and the tool has to be one of the project's.
+ */
+export async function saveProjectToolSetup(projectId, tool, config) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(PROJECT_TOOLS_TABLE)
+    .update({ config })
+    .eq('project_id', projectId)
+    .eq('tool', tool)
+    .select('tool');
+
+  if (error) throw new Error(`Could not save how that tool is set up: ${error.message}`);
+  if (!data?.length) throw new Error('Could not save how that tool is set up: it is not one of the project\'s tools.');
+  track('tool_configured', { project_id: projectId, tool, setup: 'config' });
+}
+
+/**
  * Mark a tool with nothing to fill in as configured for a project, which puts it
  * live: its config becomes an empty object rather than null. Owner or collaborator
  * only, and the tool has to be one of the project's.
