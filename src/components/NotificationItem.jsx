@@ -6,6 +6,7 @@
  */
 
 import { Icon } from './Icon';
+import { PALETTE } from '../theme';
 
 // The four categories services/notifications.js knows, each with an icon.
 const CATEGORY_ICONS = { engagement: 'comment', activity: 'bell', follower: 'user', system: 'gear' };
@@ -58,7 +59,7 @@ export function NotificationItem({ t, notification, onOpenProject, onOpenOrganis
       </span>
       {unread && (
         <span role="img" aria-label="Unread" style={{ width: 8, height: 8, borderRadius: '50%',
-          background: t.ink, flex: '0 0 auto', marginTop: 6 }} />
+          background: PALETTE.orange.c300, flex: '0 0 auto', marginTop: 6 }} />
       )}
     </>
   );

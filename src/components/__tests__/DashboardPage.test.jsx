@@ -29,7 +29,43 @@ describe('DashboardPage', () => {
     vi.clearAllMocks();
   });
 
-  it('gets you started: a quickstart tutorial and project examples', () => {
+  it('keeps Getting Started in the Guide shortcut once the first visits are over', () => {
+    const store = { 'placer.dashboardVisits.user-1': '9' };
+    vi.stubGlobal('localStorage', { getItem: (k) => store[k] ?? null, setItem: (k, v) => { store[k] = v; } });
+    vi.stubGlobal('sessionStorage', { getItem: () => '1', setItem: () => {} });
+    try {
+      setup();
+      const guide = screen.getByRole('button', { name: 'Guide' });
+      expect(guide).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('heading', { name: 'Getting Started' })).not.toBeInTheDocument();
+
+      fireEvent.click(guide);
+
+      expect(guide).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByRole('heading', { level: 2, name: 'Getting Started' })).toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('stops showing Getting Started after a few visits, and counts one visit per session', () => {
+    const store = { 'placer.dashboardVisits.user-1': '5' };
+    const session = {};
+    vi.stubGlobal('localStorage', { getItem: (k) => store[k] ?? null, setItem: (k, v) => { store[k] = v; } });
+    vi.stubGlobal('sessionStorage', { getItem: (k) => session[k] ?? null, setItem: (k, v) => { session[k] = v; } });
+    try {
+      const { unmount } = setup();
+      expect(screen.queryByRole('heading', { level: 2, name: 'Getting Started' })).not.toBeInTheDocument();
+      expect(store['placer.dashboardVisits.user-1']).toBe('6');
+      unmount();
+      setup(); // same session: no further count
+      expect(store['placer.dashboardVisits.user-1']).toBe('6');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('gets you started: a quickstart tutorial, project examples and the FAQ', () => {
     const onNavigate = vi.fn();
     render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={onNavigate} />);
 
@@ -39,7 +75,9 @@ describe('DashboardPage', () => {
     fireEvent.click(screen.getByRole('button',
       { name: /Project Examples\s*Explore what other projects exist on the platform/ }));
 
-    expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['quickstart', 'projects']);
+    fireEvent.click(screen.getByRole('button', { name: /FAQ\s*Answers to common questions about Placer/ }));
+
+    expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['quickstart', 'projects', 'faq']);
   });
 
   it('lists the quick actions under their own label', () => {
@@ -50,7 +88,7 @@ describe('DashboardPage', () => {
 
     const section = screen.getByRole('region', { name: 'Quick Actions' });
     expect(within(section).getAllByRole('button').map((button) => button.textContent))
-      .toEqual(['Edit my profile', 'Explore the map', 'Create a Project']);
+      .toEqual(['Create a Project', 'Explore the map', 'Edit your profile', 'Guide']);
 
     fireEvent.click(within(section).getByRole('button', { name: 'Create a Project' }));
     expect(onNewProject).toHaveBeenCalled();
@@ -63,6 +101,15 @@ describe('DashboardPage', () => {
       .toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Dashboard' })).not.toBeInTheDocument();
     expect(screen.queryByText('Change your name')).not.toBeInTheDocument();
+  });
+
+  it('shows your profile picture beside the heading', () => {
+    render(<DashboardPage t={THEME} profile={{ ...PROFILE, photo: 'me.webp' }} accountId="user-1"
+      onNavigate={vi.fn()} />);
+
+    const heading = screen.getByRole('heading', { level: 1, name: 'Welcome back, Mara Quinn' });
+    const photo = heading.closest('div').parentElement.querySelector('img');
+    expect(photo).toHaveAttribute('src', expect.stringContaining('me.webp'));
   });
 
   it('logs you out from beside the heading', () => {
@@ -85,14 +132,14 @@ describe('DashboardPage', () => {
     expect(onOpenPublicProfile).toHaveBeenCalledWith('user-1');
   });
 
-  it('offers editing your profile, the map and a new project', () => {
+  it('offers a new project, the map, your profile and the guide', () => {
     const onNavigate = vi.fn();
     const onExplore = vi.fn();
     const onNewProject = vi.fn();
     render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={onNavigate}
       onExplore={onExplore} onNewProject={onNewProject} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit my profile' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit your profile' }));
     fireEvent.click(screen.getByRole('button', { name: 'Explore the map' }));
     fireEvent.click(screen.getByRole('button', { name: 'Create a Project' }));
 
@@ -128,13 +175,13 @@ describe('DashboardPage, beyond the quick actions', () => {
     };
     const PROJECTS = [
       { id: 'p1', name: 'Riverside Greenway', projectType: 'steward', image: null, locationShapes: [{ path: [] }],
-        startDate: day(-10), endDate: day(10) },
+        startDate: day(-10), endDate: day(10), updatedAt: '2026-10-20T10:00:00Z' },
       { id: 'p2', name: 'Market Square', projectType: 'advocate', image: 'a.webp', locationShapes: [{ path: [] }],
-        startDate: day(-30), endDate: day(60) },
+        startDate: day(-30), endDate: day(60), updatedAt: '2026-10-25T10:00:00Z' },
       { id: 'p3', name: 'Old Harbour', projectType: 'other', image: 'b.webp', locationShapes: [{ path: [] }],
-        startDate: day(-90), endDate: day(-1) },
+        startDate: day(-90), endDate: day(-1), updatedAt: '2026-10-01T10:00:00Z' },
       { id: 'p4', name: 'School Street', projectType: 'steward', image: 'c.webp', locationShapes: [{ path: [] }],
-        startDate: day(5), endDate: day(90) },
+        startDate: day(5), endDate: day(90), updatedAt: '2026-10-22T10:00:00Z' },
     ];
     const NOTE = { id: 'n1', category: 'engagement', title: 'Sam commented on Riverside Greenway',
       body: 'Love the trees.', linkType: 'project', linkId: 'p1', readAt: null,
@@ -147,16 +194,17 @@ describe('DashboardPage, beyond the quick actions', () => {
         onNavigate={vi.fn()} {...handlers} />);
     };
 
-    it('shows the three most pressing projects, with a bar of the time gone', async () => {
+    it('shows every project, latest update first, with a bar of the time gone', async () => {
       renderWith({ projects: PROJECTS });
       const section = screen.getByRole('region', { name: 'Projects' });
       await within(section).findByText('Riverside Greenway');
 
       const names = within(section).getAllByRole('button').map((card) => card.textContent);
       expect(names.filter((text) => /Greenway|Square|Harbour|School/.test(text))).toEqual([
-        expect.stringContaining('Riverside Greenway'),
         expect.stringContaining('Market Square'),
         expect.stringContaining('School Street'),
+        expect.stringContaining('Riverside Greenway'),
+        expect.stringContaining('Old Harbour'),
       ]);
       expect(within(section).getByText('Pushing for change')).toBeInTheDocument();
       const bar = within(section).getByRole('progressbar', { name: 'Time gone on Riverside Greenway' });
@@ -185,12 +233,12 @@ describe('DashboardPage, beyond the quick actions', () => {
     it('lists next steps, soonest first, and acts on one', async () => {
       const onOpenProject = vi.fn();
       renderWith({ projects: PROJECTS, onOpenProject });
-      const card = screen.getByRole('region', { name: 'Your Next Steps' });
+      const card = screen.getByRole('region', { name: 'Up Next' });
 
       const first = await within(card).findByRole('button', { name: /school street starts in 5 days/i });
       const items = within(card).getAllByRole('listitem').map((item) => item.textContent);
-      expect(items[0]).toMatch(/Milestone.*School Street starts in 5 days/);
-      expect(items[1]).toMatch(/Deadline.*Riverside Greenway ends in 10 days/);
+      expect(items[0]).toMatch(/School Street starts in 5 days.*Milestone/);
+      expect(items[1]).toMatch(/Riverside Greenway ends in 10 days.*Deadline/);
 
       fireEvent.click(first);
       expect(onOpenProject).toHaveBeenCalledWith('p4');
@@ -200,7 +248,8 @@ describe('DashboardPage, beyond the quick actions', () => {
       const onNavigate = vi.fn();
       const onOpenProjectPage = vi.fn();
       renderWith({ notifications: [NOTE], onNavigate, onOpenProjectPage });
-      const card = screen.getByRole('region', { name: 'Your Activity' });
+      const card = screen.getByRole('region', { name: 'Up Next' });
+      fireEvent.click(within(card).getByRole('tab', { name: 'Your Activity' }));
 
       const row = await within(card).findByRole('link', { name: /sam commented on riverside greenway/i });
       fireEvent.click(row);
@@ -210,10 +259,28 @@ describe('DashboardPage, beyond the quick actions', () => {
       expect(onNavigate).toHaveBeenCalledWith('activity');
     });
 
+    it('marks the tabs with how many items are waiting', async () => {
+      renderWith({ projects: PROJECTS, notifications: [NOTE, { ...NOTE, id: 'n2', readAt: '2026-10-26T10:00:00Z' }] });
+      const card = screen.getByRole('region', { name: 'Up Next' });
+
+      expect(await within(card).findByRole('tab', { name: /^Your Activity\s+1 unread$/ })).toBeInTheDocument();
+      expect(within(card).getByRole('tab', { name: /^Your Next Steps\s+\d+ to do$/ })).toBeInTheDocument();
+    });
+
+    it('shows no count on a tab with nothing waiting', async () => {
+      renderWith();
+      const card = screen.getByRole('region', { name: 'Up Next' });
+      await waitFor(() => expect(listNotifications).toHaveBeenCalled());
+
+      expect(within(card).getByRole('tab', { name: 'Your Activity' })).toBeInTheDocument();
+      expect(within(card).getByRole('tab', { name: /^Your Next Steps/ })).toBeInTheDocument();
+    });
+
     it('says when there is no activity yet', async () => {
       renderWith();
-      expect(await within(screen.getByRole('region', { name: 'Your Activity' })).findByText(/nothing yet/i))
-        .toBeInTheDocument();
+      const card = screen.getByRole('region', { name: 'Up Next' });
+      fireEvent.click(within(card).getByRole('tab', { name: 'Your Activity' }));
+      expect(await within(card).findByText(/nothing yet/i)).toBeInTheDocument();
     });
   });
 });
