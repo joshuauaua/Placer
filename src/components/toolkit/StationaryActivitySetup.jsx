@@ -3,9 +3,14 @@
  * Step 2, the instructions: the field sheet's directions and its key.
  *
  * Step 3, setting up the session. The observer outlines the area they will map, a
- * corner per click on the map, and fills in the sheet's header: their name, the date
- * and time, the weather and the location. Start mapping stays put until everything is
- * there (sessionProblems), and says what is missing once tried.
+ * corner per click on the map once the polygon tool is on (a click otherwise only
+ * moves the map), and fills in the sheet's header: their name, the date and time, the
+ * weather and the location. Start mapping stays put until everything is there
+ * (sessionProblems), and says what is missing once tried.
+ *
+ * Over the area map's top-left corner sit two tools: search, which opens a field to
+ * find an address and moves the map there, and the polygon tool, which turns
+ * corner-adding on and off.
  *
  * A project sets the same tool up from its dashboard, in ConfigureToolDialog, in the
  * same order: the instructions (InstructionsStep), then the area and the location
@@ -17,14 +22,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { Panel } from '../ToolLayout';
 import { Btn } from '../UI';
+import { PlaceSearch } from '../PlaceSearch';
 import { PostureSymbol } from './PostureSymbol';
 import {
   ACTIVITIES, DIRECTIONS, HANDING_IN, MAX_CORNERS, POSTURE_LIST, WEATHER, sessionProblems,
 } from '../../lib/toolkit/stationaryActivity';
-import { addPin, createMap, fitPoints, onBackgroundClick, showAreas } from '../../lib/map';
+import { addPin, createMap, fitPoints, onBackgroundClick, showAreas, toLngLat } from '../../lib/map';
 
 const MAP_CENTER = { lat: 55.6054, lng: 12.9854 };
 const MAP_ZOOM = 16;
+// Close enough on a searched-for address to outline a square or a street around it.
+const FOUND_ZOOM = 17;
+
+// A tool button over the map: white, square, raised off the streets.
+const toolStyle = (t, on) => ({
+  width: 40, padding: 0, boxShadow: t.shadow,
+  ...(on ? { background: t.primaryBg, color: t.primaryFg, border: '1px solid transparent' } : null),
+});
 
 const inputStyle = (t) => ({
   width: '100%',
@@ -97,16 +111,24 @@ export function StationaryInstructions({ t }) {
 }
 
 /**
- * The survey area on a map. Each click adds a corner, up to MAX_CORNERS, unless it is
- * `readOnly` — a project's area, shown but not changed.
+ * The survey area on a map. While the polygon tool is on, each click adds a corner, up
+ * to MAX_CORNERS, unless it is `readOnly` — a project's area, shown but not changed,
+ * and without the tools.
  */
 export function SurveyAreaMap({ t, tool, area, onChange, readOnly = false, height = 420 }) {
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
+  // Off until the polygon tool is picked, so clicking about the map does not drop corners.
+  const [drawing, setDrawing] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
 
-  // Read through a ref, so the listener added once always extends the latest outline.
+  // Read through refs, so the listener added once always sees the tool's state and
+  // extends the latest outline.
   const latest = useRef(area);
   latest.current = area;
+  const drawingRef = useRef(drawing);
+  drawingRef.current = drawing;
   useEffect(() => {
     if (!mapRef.current) return undefined;
     let drawing;
@@ -119,7 +141,7 @@ export function SurveyAreaMap({ t, tool, area, onChange, readOnly = false, heigh
     if (latest.current.length > 0) fitPoints(drawing, latest.current, { padding: 60 });
     if (!readOnly) {
       onBackgroundClick(drawing, (point) => {
-        if (latest.current.length < MAX_CORNERS) onChange([...latest.current, point]);
+        if (drawingRef.current && latest.current.length < MAX_CORNERS) onChange([...latest.current, point]);
       });
     }
     setMap(drawing);
@@ -141,15 +163,54 @@ export function SurveyAreaMap({ t, tool, area, onChange, readOnly = false, heigh
     };
   }, [map, area, tool.color, readOnly]);
 
+  // A crosshair while drawing, MapLibre's own hand otherwise.
+  useEffect(() => {
+    if (!map) return;
+    map.getCanvas().style.cursor = drawing ? 'crosshair' : '';
+  }, [map, drawing]);
+
+  // Opened, the search field takes the typing straight away.
+  const searchRef = useRef(null);
+  useEffect(() => {
+    if (searchOpen) searchRef.current?.focus();
+  }, [searchOpen]);
+
+  const findPlace = (place) => {
+    map?.jumpTo({ center: toLngLat(place.point), zoom: FOUND_ZOOM });
+  };
+
   return (
     <>
       <p style={{ margin: '0 0 12px', fontSize: 14, color: t.inkDim, lineHeight: 1.5 }}>
         {readOnly
           ? 'The area this project maps, outlined for you.'
-          : 'Outline the area you will map: click its corners on the map, in order around the edge.'}
+          : 'Outline the area you will map: pick the polygon tool, then click its corners on the map, in order around the edge.'}
       </p>
-      <div ref={mapRef} role="region" aria-label="Survey area map"
-        style={{ width: '100%', height, borderRadius: 10, overflow: 'hidden', background: t.surfaceAlt }} />
+      <div style={{ position: 'relative' }}>
+        <div ref={mapRef} role="region" aria-label="Survey area map"
+          style={{ width: '100%', height, borderRadius: 10, overflow: 'hidden', background: t.surfaceAlt }} />
+        {!readOnly && (
+          <div style={{ position: 'absolute', top: 10, left: 10, right: 56, zIndex: 2,
+            display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <Btn t={t} type="button" variant="outline" size="sm" icon={searchOpen ? 'close' : 'search'}
+              ariaLabel={searchOpen ? 'Close address search' : 'Search for an address'}
+              ariaPressed={searchOpen} onClick={() => setSearchOpen((open) => !open)}
+              style={toolStyle(t, false)} />
+            <Btn t={t} type="button" variant="outline" size="sm" icon="polygon"
+              ariaLabel={drawing ? 'Stop drawing the area' : 'Draw the area'}
+              ariaPressed={drawing} onClick={() => setDrawing((on) => !on)}
+              style={toolStyle(t, drawing)} />
+            {searchOpen && (
+              <div style={{ flex: '1 1 auto', minWidth: 0, maxWidth: 360 }}>
+                <PlaceSearch id="stationary-area-search" value={query} onChange={setQuery} onPick={findPlace}
+                  inputRef={searchRef} ariaLabel="Address" placeholder="Search for an address…"
+                  near={map ? map.getCenter() : null} t={t}
+                  style={{ ...inputStyle(t), height: 40, padding: '0 14px', fontSize: 14, boxShadow: t.shadow }} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       {!readOnly && (
         <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           <Btn t={t} type="button" variant="ghost" size="sm" icon="undo" disabled={area.length === 0}
@@ -162,6 +223,7 @@ export function SurveyAreaMap({ t, tool, area, onChange, readOnly = false, heigh
           </Btn>
           <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint, marginLeft: 'auto' }}>
             {area.length} {area.length === 1 ? 'corner' : 'corners'}
+            {drawing ? ' · click the map to add one' : ''}
           </span>
         </div>
       )}
@@ -212,9 +274,7 @@ export function StationaryActivitySetup({ t, tool, session, fixed = false, onCha
           On a narrow screen they stack. */}
       <Panel t={t} title="Set up the session">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'stretch' }}>
-          <Panel t={t} style={{ ...INNER, flex: '3 1 420px' }} title="Survey area" aside={!fixed && (
-            <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>click the map to add a corner</span>
-          )}>
+          <Panel t={t} style={{ ...INNER, flex: '3 1 420px' }} title="Survey area">
             <SurveyAreaMap t={t} tool={tool} area={area} readOnly={fixed}
               onChange={(next) => onChange({ ...session, area: next })} />
           </Panel>

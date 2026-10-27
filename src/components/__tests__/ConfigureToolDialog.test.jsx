@@ -368,6 +368,7 @@ describe('ConfigureToolDialog, Stationary Activity Mapping', () => {
     expect(alert).toHaveTextContent('at least three corners');
     expect(alert).toHaveTextContent('Name the location.');
 
+    fireEvent.click(screen.getByRole('button', { name: 'Draw the area' }));
     CORNERS.forEach((corner) => act(() => clickMap(lastMap(), corner)));
     fireEvent.change(screen.getByLabelText('Location'), { target: { value: '  Stortorget, Malmö ' } });
     save();

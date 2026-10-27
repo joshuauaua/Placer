@@ -1,9 +1,15 @@
-import { describe, it, expect, afterEach } from 'vite-plus/test';
+import { describe, it, expect, afterEach, vi } from 'vite-plus/test';
 import { render, screen, cleanup, act, fireEvent } from '@testing-library/react';
 import { StationaryActivityMap } from '../toolkit/StationaryActivityMap';
 import { findTool } from '../../toolkit/tools';
 import { THEME } from '../../theme';
 import { clickMap, lastMap } from '../../test/maplibreStub';
+
+vi.mock('../../lib/geocode', () => ({
+  searchPlaces: vi.fn(() => Promise.resolve([
+    { label: 'Folkets Park, Malmö', name: 'Folkets Park', point: { lat: 55.59, lng: 13.01 }, townAndCountry: 'Malmö, Sweden' },
+  ])),
+}));
 
 function open() {
   return render(<StationaryActivityMap t={THEME} tool={findTool('stationary-activity-mapping')} />);
@@ -18,6 +24,7 @@ const AREA = [
 function configure({ area = AREA } = {}) {
   const view = open();
   fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Draw the area' }));
   area.forEach((corner) => act(() => clickMap(lastMap(), corner)));
   fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Ada' } });
   fireEvent.change(screen.getByLabelText('Location'), { target: { value: 'Stortorget' } });
@@ -101,6 +108,39 @@ describe('Stationary Activity Mapping', () => {
     expect(screen.getByText(/2 corners/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Start mapping' }));
     expect(screen.getByRole('alert')).toHaveTextContent('at least three corners');
+  });
+
+  it('adds corners only while the polygon tool is on', () => {
+    open();
+    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+    act(() => clickMap(lastMap(), AREA[0]));
+    expect(screen.getByText(/0 corners/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Draw the area' }));
+    act(() => clickMap(lastMap(), AREA[0]));
+    expect(screen.getByText(/1 corner\b/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Stop drawing the area' }));
+    act(() => clickMap(lastMap(), AREA[1]));
+    expect(screen.getByText(/1 corner\b/)).toBeInTheDocument();
+  });
+
+  it('opens a search field from the map that moves the map to the address picked', async () => {
+    open();
+    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+    expect(screen.queryByRole('combobox', { name: 'Address' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Search for an address' }));
+    const field = screen.getByRole('combobox', { name: 'Address' });
+    expect(field).toHaveFocus();
+    fireEvent.change(field, { target: { value: 'Folkets' } });
+    fireEvent.mouseDown(await screen.findByRole('option', { name: 'Folkets Park, Malmö' }));
+    expect(lastMap().center).toEqual({ lat: 55.59, lng: 13.01 });
+    // Picking a place moves the map but adds no corner.
+    expect(screen.getByText(/0 corners/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close address search' }));
+    expect(screen.queryByRole('combobox', { name: 'Address' })).not.toBeInTheDocument();
   });
 
   it('will not record a spot outside the survey area', () => {
