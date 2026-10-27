@@ -296,9 +296,62 @@ describe('your projects', () => {
     const mine = await projects.readMyProjects('user-1');
 
     expect(mine).toHaveLength(1);
-    // Only the owned-projects query and the collaborator-id lookup ran — no second
-    // projects query for an empty id list.
-    expect(from).toHaveBeenCalledTimes(2);
+    // No second projects query for an empty id list, and no collaborating-organisations
+    // lookup for an account that runs no organisation.
+    expect(from.mock.calls.filter(([table]) => table === 'projects')).toHaveLength(1);
+    expect(from).not.toHaveBeenCalledWith('project_collaborating_organisations');
+  });
+
+  it('includes what an organisation you run collaborates on', async () => {
+    await load();
+    const owned = { ...ROW, id: 'proj-owned' };
+    const viaOrganisation = { ...ROW, id: 'proj-org', owner_id: 'user-2' };
+    fromChains.project_collaborators = makeChain({ data: [], error: null });
+    fromChains.organisation_admins = makeChain({ data: [{ organisation_id: 'org-1' }], error: null });
+    fromChains.project_collaborating_organisations = makeChain({ data: [{ project_id: 'proj-org' }], error: null });
+
+    let projectsCallCount = 0;
+    from.mockImplementation((table) => {
+      if (table !== 'projects') return fromChains[table] ?? makeChain();
+      projectsCallCount += 1;
+      return makeChain({ data: [projectsCallCount === 1 ? owned : viaOrganisation], error: null });
+    });
+
+    const mine = await projects.readMyProjects('user-1');
+
+    expect(mine.map((p) => p.id)).toEqual(['proj-owned', 'proj-org']);
+    expect(fromChains.project_collaborating_organisations.calls).toContainEqual(['in', ['organisation_id', ['org-1']]]);
+  });
+});
+
+describe('collaborating organisations', () => {
+  it('reads them with their names and pictures', async () => {
+    await load();
+    fromChains.project_collaborating_organisations = makeChain({
+      data: [{ organisation_id: 'org-1', created_at: '2026-10-01', organisations: { name: 'Studio', avatar_path: null } }],
+      error: null,
+    });
+
+    await expect(projects.readCollaboratingOrganisations('proj-1'))
+      .resolves.toEqual([{ id: 'org-1', name: 'Studio', photo: null }]);
+  });
+
+  it('adds and removes one through the owner-checked functions', async () => {
+    await load();
+    rpc.mockResolvedValue({ data: true, error: null });
+
+    await projects.addCollaboratingOrganisation('proj-1', 'org-1');
+    await projects.removeCollaboratingOrganisation('proj-1', 'org-1');
+
+    expect(rpc).toHaveBeenCalledWith('project_add_organisation', { p_project_id: 'proj-1', p_organisation_id: 'org-1' });
+    expect(rpc).toHaveBeenCalledWith('project_remove_organisation', { p_project_id: 'proj-1', p_organisation_id: 'org-1' });
+  });
+
+  it('surfaces a refusal as a readable error', async () => {
+    await load();
+    rpc.mockResolvedValue({ data: null, error: { message: "only a project's owner may add a collaborator" } });
+
+    await expect(projects.addCollaboratingOrganisation('proj-1', 'org-1')).rejects.toThrow('only a project');
   });
 });
 

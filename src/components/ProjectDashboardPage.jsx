@@ -31,9 +31,11 @@ import {
 } from '../toolkit/rooms';
 import { downloadQrSvg } from '../lib/qrDownload';
 import {
+  addCollaboratingOrganisation,
   addCollaborator,
   addLink,
   deleteProject,
+  readCollaboratingOrganisations,
   readCollaborators,
   readAccessRequests,
   decideAccess,
@@ -47,6 +49,7 @@ import {
   readWorkshopTools,
   readStats,
   readProjectViews,
+  removeCollaboratingOrganisation,
   removeCollaborator,
   removeLink,
   removeProjectImageFile,
@@ -54,6 +57,7 @@ import {
   setProjectToolPlacement,
 } from '../services/projects';
 import { closeRoom, deleteRoom, setRoomCloses } from '../services/rooms';
+import { readAllOrganisations } from '../services/organisations';
 import { readComments, readProjectSummary, readUpdates } from '../services/projectPage';
 import { projectProgress } from '../lib/projectTimeline';
 import { DatePicker } from './DatePicker';
@@ -311,6 +315,114 @@ function CollaboratorRow({ t, collaborator, onRemove }) {
         color: t.inkDim, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: 0 }}>
         Remove
       </button>
+    </div>
+  );
+}
+
+/**
+ * The organisations collaborating on the project, under its people. Every admin of one
+ * counts as a collaborator (supabase/project-collaborating-organisations.sql). The owner
+ * adds them, from every organisation on PLACER; the owner, or one of an organisation's
+ * own admins, takes it off again. Stands apart from the rest of the dashboard: if they
+ * cannot be read, the section is left out rather than the dashboard failing with it.
+ */
+function CollaboratingOrganisations({ t, projectId, isOwner, myOrganisationIds }) {
+  // Null until loaded, and left null when they could not be.
+  const [organisations, setOrganisations] = useState(null);
+  const [everyOrganisation, setEveryOrganisation] = useState([]);
+  const [chosen, setChosen] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    readCollaboratingOrganisations(projectId)
+      .then((found) => { if (!cancelled) setOrganisations(found); })
+      .catch((err) => console.error("Could not load this project's organisations:", err));
+    return () => { cancelled = true; };
+  }, [projectId]);
+
+  useEffect(() => {
+    if (!isOwner) return undefined;
+    let cancelled = false;
+    readAllOrganisations()
+      .then((found) => { if (!cancelled) setEveryOrganisation(found); })
+      .catch((err) => console.error('Could not load the organisations to choose from:', err));
+    return () => { cancelled = true; };
+  }, [isOwner]);
+
+  if (organisations === null || (!isOwner && organisations.length === 0)) return null;
+
+  const onProject = new Set(organisations.map((org) => org.id));
+  const choices = everyOrganisation.filter((org) => !onProject.has(org.id));
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!chosen || adding) return;
+    setAdding(true);
+    setError(null);
+    try {
+      await addCollaboratingOrganisation(projectId, chosen);
+      setOrganisations(await readCollaboratingOrganisations(projectId));
+      setChosen('');
+    } catch (err) {
+      console.error('Could not add that organisation:', err);
+      setError(err?.message ?? 'Could not add that organisation.');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleRemove = async (organisation) => {
+    setOrganisations((current) => current.filter((org) => org.id !== organisation.id));
+    try {
+      await removeCollaboratingOrganisation(projectId, organisation.id);
+    } catch (err) {
+      console.error('Could not remove that organisation:', err);
+      setOrganisations(await readCollaboratingOrganisations(projectId));
+    }
+  };
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <h3 style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 4 }}>Organisations</h3>
+      <p style={{ fontSize: 13, color: t.inkDim, lineHeight: 1.55, marginBottom: 8 }}>
+        Every admin of an organisation added here can work on the project as a collaborator.
+      </p>
+      {organisations.length === 0 ? (
+        <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: 16 }}>No organisations yet.</p>
+      ) : (
+        <div style={{ marginBottom: isOwner ? 16 : 0 }}>
+          {organisations.map((organisation) => (
+            <div key={organisation.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: 12, padding: '10px 0', borderTop: `1px solid ${t.line}` }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: t.ink, overflowWrap: 'anywhere' }}>
+                {organisation.name}
+              </span>
+              {(isOwner || myOrganisationIds.has(organisation.id)) && (
+                <button onClick={() => handleRemove(organisation)} aria-label={`Remove ${organisation.name}`}
+                  style={{ background: 'none', border: 'none', color: t.inkDim, fontSize: 13, fontWeight: 500,
+                    cursor: 'pointer', padding: 0 }}>
+                  Remove
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {isOwner && (
+        <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8 }}>
+          <select value={chosen} onChange={(e) => setChosen(e.target.value)}
+            aria-label="Add an organisation as a collaborator" style={{ ...inputStyle(t), flex: 1, minWidth: 0 }}>
+            <option value="">{choices.length === 0 ? 'No organisations to add' : 'Choose an organisation'}</option>
+            {choices.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
+          </select>
+          <Btn t={t} variant="primary" size="sm" icon="plus" disabled={!chosen || adding} ariaLabel="Add organisation">
+            {adding ? 'Adding…' : 'Add'}
+          </Btn>
+        </form>
+      )}
+      {error && <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{error}</p>}
     </div>
   );
 }
@@ -1262,6 +1374,8 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                 {inviteError && (
                   <p role="alert" style={{ fontSize: 13, color: '#B3261E', marginTop: 10 }}>{inviteError}</p>
                 )}
+                <CollaboratingOrganisations t={t} projectId={project.id} isOwner={isOwner}
+                  myOrganisationIds={new Set(organisations.map((org) => org.id))} />
               </Card>
 
               <Card t={t} title="Reference Material">

@@ -4,7 +4,7 @@ import { PublicOrganisationPage } from '../PublicOrganisationPage';
 import {
   canClaimOrganisation, claimOrganisation, readOrganisation,
 } from '../../services/organisations';
-import { readOrganisationProjects } from '../../services/projects';
+import { readOrganisationCollaborations, readOrganisationProjects } from '../../services/projects';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/organisations', () => ({
@@ -16,6 +16,7 @@ vi.mock('../../services/organisations', () => ({
 
 vi.mock('../../services/projects', () => ({
   readOrganisationProjects: vi.fn(),
+  readOrganisationCollaborations: vi.fn(() => Promise.resolve([])),
 }));
 
 const ORG = { id: 'org-1', name: 'Malmö Stad', contactEmail: 'hello@malmo.se', website: 'https://malmo.se/',
@@ -28,6 +29,7 @@ describe('PublicOrganisationPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(readOrganisation).mockResolvedValue(ORG);
+    vi.mocked(readOrganisationCollaborations).mockResolvedValue([]);
     vi.mocked(readOrganisationProjects).mockResolvedValue([
       { id: 'proj-1', name: 'Riverside Greenway', description: '' },
     ]);
@@ -44,6 +46,31 @@ describe('PublicOrganisationPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Riverside Greenway/ }));
     expect(onOpenProject).toHaveBeenCalledWith('proj-1');
+  });
+
+  it('lists the projects it collaborates on beside those it runs, newest first, once each', async () => {
+    vi.mocked(readOrganisationProjects).mockResolvedValue([
+      { id: 'proj-1', name: 'Riverside Greenway', description: '', createdAt: '2026-09-01T00:00:00Z' },
+    ]);
+    vi.mocked(readOrganisationCollaborations).mockResolvedValue([
+      { id: 'proj-2', name: 'Harbour Square', description: '', createdAt: '2026-10-01T00:00:00Z' },
+      { id: 'proj-1', name: 'Riverside Greenway', description: '', createdAt: '2026-09-01T00:00:00Z' },
+    ]);
+    setup();
+
+    await screen.findByRole('button', { name: /Harbour Square/ });
+    const cards = screen.getAllByRole('button', { name: /Harbour Square|Riverside Greenway/ });
+    expect(cards.map((card) => card.textContent)).toEqual([
+      expect.stringContaining('Harbour Square'), expect.stringContaining('Riverside Greenway'),
+    ]);
+  });
+
+  it('still shows the projects it runs when its collaborations cannot be read', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(readOrganisationCollaborations).mockRejectedValue(new Error('relation does not exist'));
+    setup();
+
+    expect(await screen.findByRole('button', { name: /Riverside Greenway/ })).toBeInTheDocument();
   });
 
   it('puts its cover across the top, and a plain band without one', async () => {

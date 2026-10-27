@@ -1113,6 +1113,29 @@ select to_regclass('public.imaginations');                                  -- n
 select count(*) from public.profile_inquiries where config ? 'imaginationId'; -- one per imagination
 ```
 
+## 22. Organisations as collaborators
+
+`project-collaborating-organisations.sql` (also a migration) lets a project's owner add
+an organisation as a collaborator, from the dashboard's Settings tab. Every admin of the
+organisation then counts as one of the project's collaborators, including admins added
+later, and stops counting as soon as they leave or the organisation is taken off.
+Nothing is copied into `project_collaborators`.
+
+- **Who:** only the owner adds an organisation. The owner, or any of the organisation's
+  own admins, can remove it, since it is credited on the project's public page without
+  its admins being asked.
+- **How:** `project_collaborator_exists` now also returns true for an admin of a
+  collaborating organisation. The functions and policies that checked the roster inline
+  (the project and link write policies, `project_stats`, `project_rooms`,
+  `toolkit_room_create`, `toolkit_room_can_edit`, `project_is_member`, `project_member_ids`)
+  are re-issued to ask it instead. `project_public_summary` also returns `organisations`
+  and `can_edit`.
+
+Run it after every other file here. **Push it before merging** the app change: the
+dashboard and the organisation page leave the new parts out when the table is missing,
+but nobody can add an organisation until the table exists.
+
+
 ## Still to decide
 
 - **Projects have one role beyond the owner, not several.** A collaborator can edit

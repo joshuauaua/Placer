@@ -1303,6 +1303,22 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     expect(props.onOpenProfile).toHaveBeenCalledWith('user-3');
   });
 
+  it('credits a collaborating organisation, linking to its page', async () => {
+    vi.mocked(readProjectSummary).mockResolvedValue({
+      ...SUMMARY, organisations: [{ id: 'org-7', name: 'Studio Nord', photo: null }],
+    });
+    const props = setup({ onOpenOrganisation: vi.fn(), onOpenProfile: vi.fn() });
+
+    const list = within(await screen.findByRole('list', { name: 'Collaborators' }));
+    const link = await list.findByRole('link', { name: /Studio Nord/ });
+    expect(link).toHaveTextContent('Studio NordCollaborating organisation');
+    expect(link).toHaveAttribute('href', '/organisations/org-7');
+
+    fireEvent.click(link);
+    expect(props.onOpenOrganisation).toHaveBeenCalledWith('org-7');
+    expect(props.onOpenProfile).not.toHaveBeenCalled();
+  });
+
   it('still shows the owner when the numbers cannot be read', async () => {
     vi.mocked(readProjectSummary).mockRejectedValue(new Error('function does not exist'));
     vi.spyOn(console, 'error').mockImplementation(() => {});

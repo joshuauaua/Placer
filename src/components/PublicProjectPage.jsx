@@ -601,13 +601,16 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
 
   const owner = summary?.owner ?? { id: project.ownerId, name: project.ownerName, photo: null };
   const collaborators = summary?.collaborators ?? [];
-  // May remove any comment: the owner and the collaborators. May post and remove
+  const collaboratingOrganisations = summary?.organisations ?? [];
+  // May remove any comment: the owner and the collaborators — counting the admins of a
+  // collaborating organisation, which only the database can tell. May post and remove
   // updates: those two and the admins of the organisation it is run for, which only the
   // database can tell. May post as the organisation: its organisers only — the owner
   // and those admins. It checks all of it again (supabase/project-public-page.sql);
   // this only decides what to offer.
   const isTeam = Boolean(accountId)
-    && (accountId === project.ownerId || collaborators.some((person) => person.id === accountId));
+    && (accountId === project.ownerId || collaborators.some((person) => person.id === accountId)
+      || summary?.canEdit === true);
   const canPostUpdate = Boolean(accountId) && (summary ? summary.canPostUpdate : isTeam);
   const isOrganiser = Boolean(accountId)
     && (summary ? summary.canPostAsOrganisation : accountId === project.ownerId);
@@ -624,6 +627,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const people = [
     { id: owner.id, name: owner.name || project.ownerName, photo: owner.photo, role: 'Project owner' },
     ...collaborators.filter((person) => person.id !== owner.id).map((person) => ({ ...person, role: 'Collaborator' })),
+    ...collaboratingOrganisations.map((org) => ({ ...org, kind: 'organisation', role: 'Collaborating organisation' })),
   ];
 
   const counts = { updates: updates.posts.length, comments: comments.posts.length, links: links.length };
