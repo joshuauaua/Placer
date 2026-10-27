@@ -3,8 +3,8 @@
  * Organizer on the left: the organisation the project is run in the name of, if it
  * has one, and otherwise the account that started it — with how many projects it
  * runs, when it joined PLACER, what it says about itself, where it is, and a Follow
- * button. Collaborators on the right: the owner and everyone working on the project
- * with them, each a link to their public profile.
+ * button. Collaborators on the right: the owner, everyone working on the project with
+ * them, and the organisations collaborating on it, each a link to their public page.
  */
 
 import { Icon } from './Icon';
@@ -70,8 +70,11 @@ function Organizer({ t, organiser, accountId, onOpen }) {
   );
 }
 
-/** `people` is [{ id, name, photo, role }], the owner first. */
-function Collaborators({ t, people, onOpenProfile }) {
+/**
+ * `people` is [{ id, name, photo, role, kind }], the owner first. `kind` is
+ * 'organisation' for a collaborating organisation, and absent for a person.
+ */
+function Collaborators({ t, people, onOpenProfile, onOpenOrganisation }) {
   return (
     <div className="placer-card" style={{ padding: 24 }}>
       {people.length === 0 ? (
@@ -79,8 +82,14 @@ function Collaborators({ t, people, onOpenProfile }) {
       ) : (
         <ul aria-label="Collaborators" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {people.map((person, index) => (
-            <li key={person.id} style={{ borderTop: index === 0 ? 'none' : `1px solid ${t.line}` }}>
-              <a href={`/people/${person.id}`} onClick={(e) => { e.preventDefault(); onOpenProfile?.(person.id); }}
+            <li key={`${person.kind ?? 'person'}-${person.id}`}
+              style={{ borderTop: index === 0 ? 'none' : `1px solid ${t.line}` }}>
+              <a href={person.kind === 'organisation' ? `/organisations/${person.id}` : `/people/${person.id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (person.kind === 'organisation') onOpenOrganisation?.(person.id);
+                  else onOpenProfile?.(person.id);
+                }}
                 style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', color: t.ink,
                   textDecoration: 'none' }}>
                 <Avatar name={person.name} photo={person.photo} size={40} />
@@ -116,7 +125,7 @@ export function ProjectPeople({ t, organiser, people, accountId, onOpenOrganisat
         <h2 id="project-collaborators-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 16 }}>
           Collaborators
         </h2>
-        <Collaborators t={t} people={people} onOpenProfile={onOpenProfile} />
+        <Collaborators t={t} people={people} onOpenProfile={onOpenProfile} onOpenOrganisation={onOpenOrganisation} />
       </section>
     </div>
   );

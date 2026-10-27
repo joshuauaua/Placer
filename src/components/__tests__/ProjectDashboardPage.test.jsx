@@ -23,7 +23,11 @@ import {
   updateProject,
 } from '../../services/projects';
 import { closeRoom, createRoom, deleteRoom, rescheduleRoom, setRoomCloses } from '../../services/rooms';
-import { decideAccess, readAccessRequests, removeAccess } from '../../services/projects';
+import {
+  addCollaboratingOrganisation, decideAccess, readAccessRequests, readCollaboratingOrganisations, removeAccess,
+  removeCollaboratingOrganisation,
+} from '../../services/projects';
+import { readAllOrganisations } from '../../services/organisations';
 import { readPreferences, readProjectResponses, saveProjectResponses } from '../../services/notifications';
 import { hostedRoom } from '../../toolkit/rooms';
 import { downloadQrSvg } from '../../lib/qrDownload';
@@ -53,6 +57,9 @@ vi.mock('../../services/projects', async (importOriginal) => ({
       views: i >= 23 ? 5 : 1 })),
   })),
   readCollaborators: vi.fn(),
+  readCollaboratingOrganisations: vi.fn(() => Promise.resolve([])),
+  addCollaboratingOrganisation: vi.fn(() => Promise.resolve({ success: true })),
+  removeCollaboratingOrganisation: vi.fn(() => Promise.resolve({ success: true })),
   readLinks: vi.fn(),
   readProjectRooms: vi.fn(),
   addCollaborator: vi.fn(() => Promise.resolve({ success: true })),
@@ -86,6 +93,11 @@ vi.mock('../../services/notifications', async (importOriginal) => ({
   readPreferences: vi.fn(() => Promise.resolve({ project_responses: 'every' })),
   readProjectResponses: vi.fn(() => Promise.resolve(null)),
   saveProjectResponses: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('../../services/organisations', async (importOriginal) => ({
+  ...(await importOriginal()),
+  readAllOrganisations: vi.fn(() => Promise.resolve([])),
 }));
 
 vi.mock('../../lib/qrDownload', () => ({ downloadQrSvg: vi.fn(() => true) }));
@@ -497,6 +509,43 @@ describe('ProjectDashboardPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/no PLACER account/);
     consoleError.mockRestore();
+  });
+
+  it('lets the owner add an organisation as a collaborator', async () => {
+    tab = 'settings';
+    vi.mocked(readAllOrganisations).mockResolvedValue([
+      { id: 'org-1', name: 'Studio Nord' }, { id: 'org-2', name: 'City Parks' },
+    ]);
+    vi.mocked(readCollaboratingOrganisations)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: 'org-2', name: 'City Parks', photo: null }]);
+    setup({ accountId: 'user-1' });
+
+    const picker = await screen.findByLabelText('Add an organisation as a collaborator');
+    await within(picker).findByRole('option', { name: 'City Parks' });
+    fireEvent.change(picker, { target: { value: 'org-2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add organisation' }));
+
+    await waitFor(() => expect(addCollaboratingOrganisation).toHaveBeenCalledWith('proj-1', 'org-2'));
+    expect(await screen.findByRole('button', { name: 'Remove City Parks' })).toBeInTheDocument();
+    // Already on the project, so no longer offered.
+    expect(within(picker).queryByRole('option', { name: 'City Parks' })).not.toBeInTheDocument();
+  });
+
+  it("lets an organisation's admin take it off a project they do not own", async () => {
+    tab = 'settings';
+    vi.mocked(readCollaboratingOrganisations).mockResolvedValue([
+      { id: 'org-1', name: 'Studio Nord', photo: null }, { id: 'org-2', name: 'City Parks', photo: null },
+    ]);
+    setup({ accountId: 'user-2', organisations: [{ id: 'org-1', name: 'Studio Nord' }] });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove Studio Nord' }));
+
+    await waitFor(() => expect(removeCollaboratingOrganisation).toHaveBeenCalledWith('proj-1', 'org-1'));
+    // Not theirs to remove, and no picker: only the owner adds one.
+    expect(screen.getByText('City Parks')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove City Parks' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Add an organisation as a collaborator')).not.toBeInTheDocument();
   });
 
   it('has no invite form for a collaborator, only the owner', async () => {

@@ -2,7 +2,8 @@
  *
  * Laid out like a person's public profile (PublicProfilePage, and the same
  * .placer-profile-* classes): the name and location on a band across the top, a
- * Details card, then what the organisation does and the projects run in its name.
+ * Details card, then what the organisation does and its projects: those run in its name
+ * and those it collaborates on.
  * Needs no session — a link to it is something to share.
  *
  * An organisation whose last admin's account was deleted says so, and offers the
@@ -18,7 +19,7 @@ import { FollowButton } from './FollowButton';
 import {
   canClaimOrganisation, claimOrganisation, isSupabaseConfigured, readOrganisation,
 } from '../services/organisations';
-import { readOrganisationProjects } from '../services/projects';
+import { readOrganisationCollaborations, readOrganisationProjects } from '../services/projects';
 
 function ClaimNotice({ t, organisation, accountId, onClaimed }) {
   const [canClaim, setCanClaim] = useState(false);
@@ -84,15 +85,22 @@ export function PublicOrganisationPage({ t, organisationId, accountId = null, is
     let cancelled = false;
     setStatus('loading');
 
-    Promise.all([readOrganisation(organisationId), readOrganisationProjects(organisationId)])
-      .then(([found, run]) => {
+    // Collaborations are extra: without them the page still shows what it runs.
+    const collaborations = readOrganisationCollaborations(organisationId).catch((err) => {
+      console.error("Could not load the projects this organisation collaborates on:", err);
+      return [];
+    });
+    Promise.all([readOrganisation(organisationId), readOrganisationProjects(organisationId), collaborations])
+      .then(([found, run, collaboratingOn]) => {
         if (cancelled) return;
         if (!found) {
           setStatus('notFound');
           return;
         }
         setOrganisation(found);
-        setProjects(run);
+        const runIds = new Set(run.map((project) => project.id));
+        setProjects([...run, ...collaboratingOn.filter((project) => !runIds.has(project.id))]
+          .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))));
         setStatus('ready');
       })
       .catch((err) => {

@@ -19,6 +19,7 @@ import { readProjectOpenRooms } from './rooms';
 
 export const PROJECTS_TABLE = 'projects';
 export const COLLABORATORS_TABLE = 'project_collaborators';
+export const COLLABORATING_ORGANISATIONS_TABLE = 'project_collaborating_organisations';
 export const LINKS_TABLE = 'project_links';
 export const PROJECT_TOOLS_TABLE = 'project_tools';
 export const PROJECT_BUDGETS_TABLE = 'project_budgets';
@@ -302,10 +303,37 @@ export async function readOrganisationProjects(organisationId) {
 }
 
 /**
- * Every project this account owns or collaborates on, newest first. Two queries
- * rather than one: `project_collaborators` only tells this account about its own
- * membership (that is the whole point of its read policy), so there is no single
- * filter that reaches both halves at once.
+ * Every project an organisation collaborates on, newest first. Only those the caller
+ * can see: a private project's collaborating organisations are readable only by the
+ * people who can see the project (supabase/project-collaborating-organisations.sql).
+ */
+export async function readOrganisationCollaborations(organisationId) {
+  const supabase = await client();
+  const { data: rows, error } = await supabase
+    .from(COLLABORATING_ORGANISATIONS_TABLE)
+    .select('project_id')
+    .eq('organisation_id', organisationId);
+
+  if (error) throw new Error(`Could not load the organisation's projects: ${error.message}`);
+  const ids = (rows ?? []).map((row) => row.project_id);
+  if (ids.length === 0) return [];
+
+  const { data, error: projectsError } = await supabase
+    .from(PROJECTS_TABLE)
+    .select(PROJECT_COLUMNS)
+    .in('id', ids)
+    .order('created_at', { ascending: false });
+
+  if (projectsError) throw new Error(`Could not load the organisation's projects: ${projectsError.message}`);
+  return (data ?? []).map(fromRow);
+}
+
+/**
+ * Every project this account owns or collaborates on, newest first — as itself, or as
+ * an admin of an organisation that collaborates on it. Several queries rather than
+ * one: `project_collaborators` only tells this account about its own membership (that
+ * is the whole point of its read policy), so there is no single filter that reaches
+ * every half at once.
  */
 export async function readMyProjects(accountId) {
   if (!accountId) return [];
@@ -323,14 +351,15 @@ export async function readMyProjects(accountId) {
     .select('project_id')
     .eq('user_id', accountId);
 
-  const [ownedResult, collabResult] = await Promise.all([owned, collaboratingOn]);
+  const [ownedResult, collabResult, orgCollabIds] = await Promise.all([
+    owned, collaboratingOn, readProjectIdsOfMyOrganisations(supabase, accountId),
+  ]);
 
   if (ownedResult.error) throw new Error(`Could not load your projects: ${ownedResult.error.message}`);
   if (collabResult.error) throw new Error(`Could not load your projects: ${collabResult.error.message}`);
 
   const ownedIds = new Set((ownedResult.data ?? []).map((row) => row.id));
-  const collabIds = (collabResult.data ?? [])
-    .map((row) => row.project_id)
+  const collabIds = [...new Set([...(collabResult.data ?? []).map((row) => row.project_id), ...orgCollabIds])]
     .filter((id) => !ownedIds.has(id));
 
   let collaborating = [];
@@ -345,6 +374,25 @@ export async function readMyProjects(accountId) {
   }
 
   return [...(ownedResult.data ?? []), ...collaborating].map(fromRow);
+}
+
+/** The projects collaborated on by an organisation this account is an admin of. */
+async function readProjectIdsOfMyOrganisations(supabase, accountId) {
+  const { data: memberships, error } = await supabase
+    .from('organisation_admins')
+    .select('organisation_id')
+    .eq('user_id', accountId);
+  if (error) throw new Error(`Could not load your projects: ${error.message}`);
+
+  const organisationIds = (memberships ?? []).map((row) => row.organisation_id);
+  if (organisationIds.length === 0) return [];
+
+  const { data, error: collabError } = await supabase
+    .from(COLLABORATING_ORGANISATIONS_TABLE)
+    .select('project_id')
+    .in('organisation_id', organisationIds);
+  if (collabError) throw new Error(`Could not load your projects: ${collabError.message}`);
+  return (data ?? []).map((row) => row.project_id);
 }
 
 /**
@@ -512,6 +560,47 @@ export async function removeCollaborator(projectId, userId) {
     p_project_id: projectId, p_user_id: userId,
   });
   if (error) throw new Error(`Could not remove that collaborator: ${error.message}`);
+  return { success: true };
+}
+
+/**
+ * The organisations collaborating on a project, oldest first, as { id, name, photo }.
+ * Every admin of one counts as a collaborator (supabase/project-collaborating-organisations.sql).
+ */
+export async function readCollaboratingOrganisations(projectId) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(COLLABORATING_ORGANISATIONS_TABLE)
+    .select('organisation_id, created_at, organisations(name, avatar_path)')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(`Could not load the project's organisations: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    id: row.organisation_id,
+    name: row.organisations?.name ?? 'Organisation',
+    photo: mediaUrl(row.organisations?.avatar_path),
+  }));
+}
+
+/** Add an organisation as a collaborator. Owner-only. Organisations are public, so it is by id. */
+export async function addCollaboratingOrganisation(projectId, organisationId) {
+  const supabase = await client();
+  const { error } = await supabase.rpc('project_add_organisation', {
+    p_project_id: projectId, p_organisation_id: organisationId,
+  });
+  if (error) throw new Error(`Could not add that organisation: ${error.message}`);
+  track('project_organisation_added', { project_id: projectId });
+  return { success: true };
+}
+
+/** Take an organisation off a project. The project's owner, or one of the organisation's admins. */
+export async function removeCollaboratingOrganisation(projectId, organisationId) {
+  const supabase = await client();
+  const { error } = await supabase.rpc('project_remove_organisation', {
+    p_project_id: projectId, p_organisation_id: organisationId,
+  });
+  if (error) throw new Error(`Could not remove that organisation: ${error.message}`);
   return { success: true };
 }
 
