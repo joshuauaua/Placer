@@ -51,6 +51,15 @@ const ICON_ELEMENTS = {
       <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
     </>
   ),
+  polygon: (
+    <>
+      <path d="M6 5l13 3-2 11-12-2z" />
+      <circle cx="6" cy="5" r="1.6" />
+      <circle cx="19" cy="8" r="1.6" />
+      <circle cx="17" cy="19" r="1.6" />
+      <circle cx="5" cy="17" r="1.6" />
+    </>
+  ),
   undo: (
     <>
       <path d="M9 7L4 12l5 5" />

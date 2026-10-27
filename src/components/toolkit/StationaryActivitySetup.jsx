@@ -1,19 +1,33 @@
 /* PLACER — Toolkit: Stationary Activity Mapping, step 3 — setting up the session.
  *
  * Between the instructions and the map. The observer outlines the area they will map,
- * a corner per click on the map, and fills in the sheet's header: their name, the
+ * a corner per click on the map once the polygon tool is on (a click otherwise only
+ * moves the map), and fills in the sheet's header: their name, the
  * date and time, the weather and the location. Start mapping stays put until
  * everything is there (sessionProblems), and says what is missing once tried.
+ *
+ * Over the map's top-left corner sit two tools: search, which opens a field to find an
+ * address and moves the map there, and the polygon tool, which turns corner-adding on
+ * and off.
  */
 
 import { useEffect, useRef, useState } from 'react';
 import { Panel } from '../ToolLayout';
 import { Btn } from '../UI';
+import { PlaceSearch } from '../PlaceSearch';
 import { WEATHER, sessionProblems } from '../../lib/toolkit/stationaryActivity';
-import { addPin, createMap, fitPoints, onBackgroundClick, showAreas } from '../../lib/map';
+import { addPin, createMap, fitPoints, onBackgroundClick, showAreas, toLngLat } from '../../lib/map';
 
 const MAP_CENTER = { lat: 55.6054, lng: 12.9854 };
 const MAP_ZOOM = 16;
+// Close enough on a searched-for address to outline a square or a street around it.
+const FOUND_ZOOM = 17;
+
+// A tool button over the map: white, square, raised off the streets.
+const toolStyle = (t, on) => ({
+  width: 40, padding: 0, boxShadow: t.shadow,
+  ...(on ? { background: t.primaryBg, color: t.primaryFg, border: '1px solid transparent' } : null),
+});
 
 const inputStyle = (t) => ({
   width: '100%',
@@ -47,14 +61,21 @@ export function StationaryActivitySetup({ t, tool, session, onChange, onBack, on
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
   const [tried, setTried] = useState(false);
+  // Off until the polygon tool is picked, so clicking about the map does not drop corners.
+  const [drawing, setDrawing] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const problems = sessionProblems(session);
   const { area } = session;
   const set = (field) => (event) => onChange({ ...session, [field]: event.target.value });
 
-  // Each click on the map adds a corner to the outline. Read through a ref, so the
-  // listener added once always extends the latest outline.
+  // While drawing, each click on the map adds a corner to the outline. Read through
+  // refs, so the listener added once always sees the tool's state and extends the
+  // latest outline.
   const latest = useRef(session);
   latest.current = session;
+  const drawingRef = useRef(drawing);
+  drawingRef.current = drawing;
   useEffect(() => {
     if (!mapRef.current) return undefined;
     let drawing;
@@ -65,8 +86,9 @@ export function StationaryActivitySetup({ t, tool, session, onChange, onBack, on
       return undefined;
     }
     if (latest.current.area.length > 0) fitPoints(drawing, latest.current.area, { padding: 60 });
-    onBackgroundClick(drawing, (point) =>
-      onChange({ ...latest.current, area: [...latest.current.area, point] }));
+    onBackgroundClick(drawing, (point) => {
+      if (drawingRef.current) onChange({ ...latest.current, area: [...latest.current.area, point] });
+    });
     setMap(drawing);
     return () => drawing.remove();
     // The map is made once; the outline is drawn onto it below.
@@ -85,6 +107,22 @@ export function StationaryActivitySetup({ t, tool, session, onChange, onBack, on
       removeArea();
     };
   }, [map, area, tool.color]);
+
+  // A crosshair while drawing, MapLibre's own hand otherwise.
+  useEffect(() => {
+    if (!map) return;
+    map.getCanvas().style.cursor = drawing ? 'crosshair' : '';
+  }, [map, drawing]);
+
+  // Opened, the search field takes the typing straight away.
+  const searchRef = useRef(null);
+  useEffect(() => {
+    if (searchOpen) searchRef.current?.focus();
+  }, [searchOpen]);
+
+  const findPlace = (place) => {
+    map?.jumpTo({ center: toLngLat(place.point), zoom: FOUND_ZOOM });
+  };
 
   const start = (event) => {
     event.preventDefault();
@@ -105,14 +143,37 @@ export function StationaryActivitySetup({ t, tool, session, onChange, onBack, on
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'stretch' }}>
           <Panel t={t} style={{ ...INNER, flex: '3 1 420px' }} title="Survey area" aside={
             <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
-              {area.length} {area.length === 1 ? 'corner' : 'corners'} · click the map to add one
+              {area.length} {area.length === 1 ? 'corner' : 'corners'}
+              {drawing ? ' · click the map to add one' : ''}
             </span>
           }>
             <p style={{ margin: '0 0 12px', fontSize: 14, color: t.inkDim, lineHeight: 1.5 }}>
-              Outline the area you will map: click its corners on the map, in order around the edge.
+              Outline the area you will map: pick the polygon tool, then click its corners on the map,
+              in order around the edge.
             </p>
-            <div ref={mapRef} role="region" aria-label="Survey area map"
-              style={{ width: '100%', height: 420, borderRadius: 10, overflow: 'hidden', background: t.surfaceAlt }} />
+            <div style={{ position: 'relative' }}>
+              <div ref={mapRef} role="region" aria-label="Survey area map"
+                style={{ width: '100%', height: 420, borderRadius: 10, overflow: 'hidden', background: t.surfaceAlt }} />
+              <div style={{ position: 'absolute', top: 10, left: 10, right: 56, zIndex: 2,
+                display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <Btn t={t} type="button" variant="outline" size="sm" icon={searchOpen ? 'close' : 'search'}
+                  ariaLabel={searchOpen ? 'Close address search' : 'Search for an address'}
+                  ariaPressed={searchOpen} onClick={() => setSearchOpen((open) => !open)}
+                  style={toolStyle(t, false)} />
+                <Btn t={t} type="button" variant="outline" size="sm" icon="polygon"
+                  ariaLabel={drawing ? 'Stop drawing the area' : 'Draw the area'}
+                  ariaPressed={drawing} onClick={() => setDrawing((on) => !on)}
+                  style={toolStyle(t, drawing)} />
+                {searchOpen && (
+                  <div style={{ flex: '1 1 auto', minWidth: 0, maxWidth: 360 }}>
+                    <PlaceSearch id="stationary-area-search" value={query} onChange={setQuery} onPick={findPlace}
+                      inputRef={searchRef} ariaLabel="Address" placeholder="Search for an address…"
+                      near={map ? map.getCenter() : null} t={t}
+                      style={{ ...inputStyle(t), height: 40, padding: '0 14px', fontSize: 14, boxShadow: t.shadow }} />
+                  </div>
+                )}
+              </div>
+            </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <Btn t={t} type="button" variant="ghost" size="sm" icon="undo" disabled={area.length === 0}
                 onClick={() => onChange({ ...session, area: area.slice(0, -1) })}>
