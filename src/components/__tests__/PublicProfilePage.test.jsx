@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { PublicProfilePage } from '../PublicProfilePage';
 import { isSupabaseConfigured, readPublicProfile } from '../../services/auth';
 import { readProfileActivity, readProfileComments } from '../../services/profileActivity';
+import { deleteInquiry } from '../../services/inquiries';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/auth', () => ({
@@ -52,14 +53,32 @@ describe('saved inquiries, under Activity', () => {
   it("are on somebody's own profile, above their comments", async () => {
     setup({ accountId: 'user-1' });
 
-    fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
+    fireEvent.click(await screen.findByRole('tab', { name: /^Activity/ }));
 
-    const panel = within(screen.getByRole('tabpanel', { name: 'Activity' }));
+    const panel = within(screen.getByRole('tabpanel', { name: /^Activity/ }));
     expect(await panel.findByRole('list', { name: 'Saved inquiries' })).toHaveTextContent('Market square');
     const [kept, said] = panel.getAllByRole('heading', { level: 2 });
     expect(kept).toHaveTextContent('Saved inquiries');
     expect(said).toHaveTextContent('Comments');
     expect(panel.getByText('You have not commented on any projects yet.')).toBeInTheDocument();
+  });
+
+  it("count toward the Activity tab on your own profile, and drop from it when deleted", async () => {
+    vi.mocked(readProfileComments).mockResolvedValue([{ id: 'c1', projectId: 'p1', projectName: 'Greenway',
+      body: 'Nice.', createdAt: '2026-10-01T10:00:00Z' }]);
+    vi.mocked(deleteInquiry).mockResolvedValue();
+    setup({ accountId: 'user-1' });
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Activity (2)' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete Market square' }));
+    expect(await screen.findByRole('tab', { name: 'Activity (1)' })).toBeInTheDocument();
+  });
+
+  it("are not counted on anybody else's profile", async () => {
+    vi.mocked(readProfileComments).mockResolvedValue([{ id: 'c1', projectId: 'p1', projectName: 'Greenway',
+      body: 'Nice.', createdAt: '2026-10-01T10:00:00Z' }]);
+    setup({ accountId: 'user-2' });
+    expect(await screen.findByRole('tab', { name: 'Activity (1)' })).toBeInTheDocument();
   });
 
   it("are not on anybody else's profile, nor for somebody signed out", async () => {

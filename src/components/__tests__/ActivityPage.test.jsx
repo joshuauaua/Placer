@@ -2,12 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { ActivityPage } from '../ActivityPage';
 import { isSupabaseConfigured, listNotifications, markAllRead } from '../../services/notifications';
+import { readInquiries } from '../../services/inquiries';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/notifications', () => ({
   isSupabaseConfigured: vi.fn(() => true),
   listNotifications: vi.fn(() => Promise.resolve([])),
   markAllRead: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('../../services/inquiries', () => ({
+  readInquiries: vi.fn(() => Promise.resolve([])),
 }));
 
 const NOTES = [
@@ -23,6 +28,7 @@ describe('ActivityPage', () => {
     vi.mocked(isSupabaseConfigured).mockReturnValue(true);
     vi.mocked(listNotifications).mockResolvedValue(NOTES);
     vi.mocked(markAllRead).mockResolvedValue();
+    vi.mocked(readInquiries).mockResolvedValue([]);
   });
 
   it('lists every notification, newest first, under the breadcrumb back to the dashboard', async () => {
@@ -36,6 +42,30 @@ describe('ActivityPage', () => {
       expect.stringContaining('Ali followed you'),
     ]);
     expect(screen.getAllByRole('img', { name: 'Unread' })).toHaveLength(1);
+  });
+
+  it('mixes in the inquiries kept from standalone tools, by date, opening your profile', async () => {
+    vi.mocked(readInquiries).mockResolvedValue([{ id: 'q1', tool: 'desire-lines', title: 'Shortcut by the station',
+      note: '', config: {}, createdAt: '2026-09-15T10:00:00Z' }]);
+    const onOpenProfile = vi.fn();
+    render(<ActivityPage t={THEME} accountId="user-1" onOpenProfile={onOpenProfile} />);
+
+    const list = await screen.findByRole('list', { name: 'Activity' });
+    expect(within(list).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      expect.stringContaining('Sam commented on Riverside Greenway'),
+      expect.stringContaining('You saved Shortcut by the station'),
+      expect.stringContaining('Ali followed you'),
+    ]);
+    expect(screen.getAllByRole('img', { name: 'Unread' })).toHaveLength(1);
+    fireEvent.click(screen.getByRole('link', { name: /you saved shortcut by the station/i }));
+    expect(onOpenProfile).toHaveBeenCalledWith('user-1');
+  });
+
+  it('still lists the notifications when the inquiries cannot be read', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(readInquiries).mockRejectedValue(new Error('no table'));
+    render(<ActivityPage t={THEME} />);
+    expect(await screen.findByText('Sam commented on Riverside Greenway')).toBeInTheDocument();
   });
 
   it('opens a project a notification is about', async () => {
