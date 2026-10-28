@@ -1,6 +1,6 @@
 /* PLACER — Projects: every project this account can see, its own marked "Your project".
  *
- * Reached from the side nav. Opening one it owns or collaborates on goes to its
+ * Reached from the side nav. Only projects with an image are shown here. Opening one it owns or collaborates on goes to its
  * dashboard, and anyone else's to its public page. "Create a
  * Project" at the top right starts a new one. The header's toolbar is the Toolkit's
  * (GalleryToolbar): a menu for whose projects and what kind, an order (Recent, A-Z,
@@ -115,7 +115,7 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
     readVisibleProjects(accountId)
       .then((found) => {
         if (cancelled) return;
-        setProjects(found);
+        setProjects(found.filter((project) => project.image));
         setStatus('ready');
       })
       .catch((err) => {

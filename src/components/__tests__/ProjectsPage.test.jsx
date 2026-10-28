@@ -15,6 +15,8 @@ vi.mock('../../services/projects', () => ({
   ],
 }));
 
+const IMAGE = 'https://media.example/cover.jpg';
+
 /** A project's card or row, by its name, and not the save icon beside it that names it too. */
 const card = (pattern) => (name) => pattern.test(name) && !name.endsWith('favourites');
 
@@ -46,9 +48,9 @@ describe('ProjectsPage', () => {
 
   it('lists everyone\'s projects, opening yours on its dashboard and others\' on their page', async () => {
     readVisibleProjects.mockResolvedValue([
-      { id: 'p1', name: 'Harbour steps', description: 'Seating by the water', role: 'owner' },
-      { id: 'p2', name: 'School street', description: '', role: null },
-      { id: 'p3', name: 'Allotment gate', description: '', role: 'collaborator' },
+      { id: 'p1', name: 'Harbour steps', image: IMAGE, description: 'Seating by the water', role: 'owner' },
+      { id: 'p2', name: 'School street', image: IMAGE, description: '', role: null },
+      { id: 'p3', name: 'Allotment gate', image: IMAGE, description: '', role: 'collaborator' },
     ]);
     const { onOpenProjectDashboard, onOpenProjectPage } = setup();
 
@@ -63,9 +65,9 @@ describe('ProjectsPage', () => {
 
   it('labels only your own projects as yours, in the grid and the list', async () => {
     readVisibleProjects.mockResolvedValue([
-      { id: 'p1', name: 'Harbour steps', role: 'owner' },
-      { id: 'p2', name: 'School street', role: null },
-      { id: 'p3', name: 'Allotment gate', role: 'collaborator' },
+      { id: 'p1', name: 'Harbour steps', image: IMAGE, role: 'owner' },
+      { id: 'p2', name: 'School street', image: IMAGE, role: null },
+      { id: 'p3', name: 'Allotment gate', image: IMAGE, role: 'collaborator' },
     ]);
     setup();
 
@@ -77,8 +79,19 @@ describe('ProjectsPage', () => {
     expect(screen.getAllByText('Your project')).toHaveLength(1);
   });
 
+  it('leaves out projects without an image', async () => {
+    readVisibleProjects.mockResolvedValue([
+      { id: 'p1', name: 'Harbour steps', image: IMAGE, role: 'owner' },
+      { id: 'p2', name: 'School street', image: null, role: null },
+    ]);
+    setup();
+
+    expect(await screen.findByRole('button', { name: card(/Harbour steps/) })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: card(/School street/) })).not.toBeInTheDocument();
+  });
+
   it('offers to create one beside the heading, with projects or without', async () => {
-    readVisibleProjects.mockResolvedValue([{ id: 'p1', name: 'Harbour steps', description: '' }]);
+    readVisibleProjects.mockResolvedValue([{ id: 'p1', name: 'Harbour steps', image: IMAGE, description: '' }]);
     const { onNewProject } = setup();
 
     await screen.findByRole('button', { name: card(/Harbour steps/) });
@@ -113,13 +126,13 @@ describe('ProjectsPage', () => {
 
   describe('the toolbar', () => {
     const PROJECTS = [
-      { id: 'p1', name: 'Harbour steps', role: 'owner', projectType: 'steward',
+      { id: 'p1', name: 'Harbour steps', image: IMAGE, role: 'owner', projectType: 'steward',
         createdAt: '2026-09-01T00:00:00Z', startDate: '2026-11-01' },
-      { id: 'p2', name: 'School street', role: 'collaborator', projectType: 'advocate',
+      { id: 'p2', name: 'School street', image: IMAGE, role: 'collaborator', projectType: 'advocate',
         createdAt: '2026-09-20T00:00:00Z', startDate: null },
-      { id: 'p3', name: 'Allotment gate', role: 'owner', projectType: 'other',
+      { id: 'p3', name: 'Allotment gate', image: IMAGE, role: 'owner', projectType: 'other',
         createdAt: '2026-08-15T00:00:00Z', startDate: '2026-10-05' },
-      { id: 'p4', name: 'Bus shelter', role: null, projectType: 'advocate',
+      { id: 'p4', name: 'Bus shelter', image: IMAGE, role: null, projectType: 'advocate',
         createdAt: '2026-07-01T00:00:00Z', startDate: null },
     ];
     const names = () => screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
