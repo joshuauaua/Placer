@@ -398,9 +398,8 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
 
               {/* Below the opt-ins. Somebody taking part anonymously is only asked the
                   fields marked `askedWhenAnonymous` (their city), and has
-                  to fill those in. Otherwise submit stays available with all of it
-                  blank; typing anything here is what makes the fields required to be
-                  complete (see wantsContact in useSurveyForm). */}
+                  to fill those in. Everybody else has to leave a valid email; the
+                  other fields are optional (see canSubmit in useSurveyForm). */}
               {shownFields.length > 0 && (
                 <div style={{ marginTop: 32 }}>
                   <h3
@@ -451,7 +450,7 @@ export function SurveyForm({ t, content, submit, source, idPrefix = 'survey' }) 
                             value={survey.contact[field.key]}
                             placeholder={field.placeholder}
                             onChange={(e) => survey.setContactField(field.key, e.target.value)}
-                            required={survey.isAnonymous}
+                            required={survey.isAnonymous || field.type === 'email'}
                             style={inputStyle(t)}
                           />
                         </div>
