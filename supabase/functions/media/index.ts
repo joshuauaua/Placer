@@ -85,6 +85,9 @@ const FOLDERS: Record<string, Folder> = {
   // (supabase/case-study-submissions.sql). The submission row is never readable from
   // the browser, so there is no `current` to keep; each counts against the account.
   'case-studies': { types: PHOTO_TYPES, maxBytes: 1.5 * MB, owner: 'account' },
+  // A screenshot sent with a bug report (supabase/bug-report-screenshots.sql). Like a
+  // case study's picture, the row is never readable from the browser, so no `current`.
+  'bug-reports': { types: PHOTO_TYPES, maxBytes: 1.5 * MB, owner: 'account' },
 };
 const ACCOUNT_FOLDERS = Object.keys(FOLDERS).filter((name) => FOLDERS[name].owner === 'account');
 const PROJECT_FOLDERS = Object.keys(FOLDERS).filter((name) => FOLDERS[name].owner === 'project');

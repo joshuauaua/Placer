@@ -93,6 +93,7 @@ function bugMessage(record: Record<string, any>): string {
     esc(record.message).split('\n').map((line) => `> ${line}`).join('\n'),
     `*Page:* ${record.page ? `\`${esc(record.page)}\`` : '_not given_'}`,
     `*Browser:* ${record.user_agent ? esc(record.user_agent) : '_not given_'}`,
+    ...(record.has_screenshot ? ['*Screenshot:* attached (screenshot_path on the row)'] : []),
     `*Submitted:* ${esc(record.created_at)}  ·  id \`${esc(record.id)}\``,
   ].join('\n');
 }

@@ -1136,6 +1136,66 @@ dashboard and the organisation page leave the new parts out when the table is mi
 but nobody can add an organisation until the table exists.
 
 
+## 23. Screenshots with bug reports
+
+`bug-report-screenshots.sql` (also a migration) adds `screenshot_path` to `bug_reports`.
+Somebody signed in can attach a screenshot from the "Report a bug" panel, or paste one
+into its text box. It is re-encoded in the browser like every other picture (WebP, at
+most 1920px, metadata stripped) and uploaded through the `media` function (step 14) to
+`bug-reports/<user id>/`; the row keeps the key, so the file is at
+`<VITE_MEDIA_URL>/<screenshot_path>`. As with case study pictures, the bucket is read
+publicly, so the address is unguessable but not private. A signed-out visitor can still
+send a report, without a screenshot.
+
+Run it after `bug-reports.sql`, then deploy the function again so it accepts the new folder:
+
+```sh
+supabase functions deploy media
+```
+
+If bug reports go to Slack (step 16), run `bug-reports-slack.sql` again and redeploy
+`survey-to-slack`: the message then says when a screenshot is attached. The key itself
+stays out of Slack, since it carries the account's id.
+
+**Screenshots are deleted after 30 days.** A screenshot can show somebody's account or
+work, so it is not kept once the bug has had time to be looked into. A daily `pg_cron` job
+calls the `media-expire` function, which deletes every file under `bug-reports/` older
+than 30 days (by the file's own age, so a screenshot whose report never saved goes too)
+and clears `screenshot_path` on the reports that pointed at them. The reports themselves
+are kept. The privacy page says so; change `EXPIRE_DAYS` in
+`supabase/functions/media-expire/index.ts` and that page together.
+
+It uses the media function's R2 secrets (step 14) and one of its own. Enable `pg_cron` and
+`pg_net` under Database → Extensions, then:
+
+```sh
+supabase secrets set MEDIA_EXPIRE_SECRET=$(openssl rand -hex 32)
+supabase functions deploy media-expire
+```
+
+Store the same value in Vault from the SQL editor, then run
+`bug-report-screenshots-expire.sql` (not a migration: it names this project's URL):
+
+```sql
+select vault.create_secret('<same value as MEDIA_EXPIRE_SECRET>', 'media_expire_secret');
+```
+
+To check it by hand rather than wait for 03:41 UTC:
+
+```sh
+curl -X POST https://<project>.supabase.co/functions/v1/media-expire \
+  -H "x-cron-secret: <MEDIA_EXPIRE_SECRET>"
+# {"ok":true,"deleted":0}
+```
+
+`401` means the header does not match the secret; `500 not configured` means
+`MEDIA_EXPIRE_SECRET` is missing. Any other `500` names what failed — a missing R2 secret,
+or R2 refusing the listing — and a run that fails leaves everything for the next one.
+
+**Push the migration and deploy `media` before merging** the app change: until then a
+report with a screenshot is refused (the column does not exist), though one without
+still goes through.
+
 ## Still to decide
 
 - **Projects have one role beyond the owner, not several.** A collaborator can edit
