@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
-import { Avatar, Btn } from './UI';
+import { Btn } from './UI';
 import { LayeredCircles } from './LayeredCircles';
 import { NotificationItem } from './NotificationItem';
 import {
@@ -275,25 +275,22 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           gap: 16, flexWrap: 'wrap', marginBottom: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20, minWidth: 0 }}>
-            <Avatar name={name} photo={profile?.photo} size={72} />
-            <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
-              letterSpacing: '-0.03em', lineHeight: 1.15, overflowWrap: 'anywhere' }}>
-              Welcome back,{' '}
-              {/* Your name opens your public profile. No account id in the local, no-project
-                  mode, and so no public page to go to. */}
-              {accountId && onOpenPublicProfile ? (
-                <a href={`/people/${accountId}`} className="placer-name-link"
-                  onClick={(e) => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-                    e.preventDefault();
-                    onOpenPublicProfile(accountId);
-                  }}>
-                  {name}
-                </a>
-              ) : name}
-            </h1>
-          </div>
+          <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
+            letterSpacing: '-0.03em', lineHeight: 1.15, overflowWrap: 'anywhere', minWidth: 0 }}>
+            Welcome back,{' '}
+            {/* Your name opens your public profile. No account id in the local, no-project
+                mode, and so no public page to go to. */}
+            {accountId && onOpenPublicProfile ? (
+              <a href={`/people/${accountId}`} className="placer-name-link"
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                  e.preventDefault();
+                  onOpenPublicProfile(accountId);
+                }}>
+                {name}
+              </a>
+            ) : name}
+          </h1>
           {onSignOut && (
             <Btn t={t} variant="outline" size="sm" icon="logout" onClick={onSignOut}>
               Log Out
