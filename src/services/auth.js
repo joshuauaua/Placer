@@ -208,6 +208,33 @@ export async function updatePassword(password) {
   track('password_changed');
 }
 
+/** The answer changePassword throws when the current password is not the right one. */
+export const WRONG_CURRENT_PASSWORD = 'That is not your current password.';
+
+/**
+ * Change the signed-in account's password from Settings, which asks for the current
+ * one first, so a session left open on somebody else's screen cannot be used to take
+ * the account over. It is checked by signing in with it again, as the same account
+ * the session belongs to (its address is read from the session, not taken from the
+ * caller), which also leaves that session fresh for the update.
+ */
+export async function changePassword({ currentPassword, newPassword }) {
+  const supabase = await client();
+  const { data: session } = await supabase.auth.getSession();
+  const email = session?.session?.user?.email;
+  if (!email) throw new Error('Sign in to change your password.');
+
+  const { error: checkError } = await supabase.auth.signInWithPassword({ email, password: currentPassword });
+  if (checkError) {
+    if (checkError.status === 400) throw new Error(WRONG_CURRENT_PASSWORD);
+    throw new Error(`Could not check your current password: ${checkError.message}`);
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw new Error(`Could not change your password: ${error.message}`);
+  track('password_changed');
+}
+
 /** Sign out, and drop the stored session. */
 export async function signOutOfAccount() {
   const supabase = await client();
