@@ -25,7 +25,8 @@ import { copyWidths } from './responsiveImage';
  * How each kind of picture is sized. `square` centre-crops, for the avatar circle;
  * `responsive` adds the smaller copies (lib/responsiveImage.js). A scene is only ever
  * drawn whole, on the Idea Visualizer's stage, and a case study submission's picture
- * is never shown on a page at all, so neither has them.
+ * and a bug report's screenshot are never shown on a page at all, so none has them.
+ * A screenshot keeps a little more quality than a photo, so its text stays readable.
  */
 export const IMAGE_PRESETS = {
   avatar: { maxSide: 512, square: true, quality: 0.85 },
@@ -33,6 +34,7 @@ export const IMAGE_PRESETS = {
   project: { maxSide: 1600, quality: 0.82, responsive: true },
   scene: { maxSide: 1600, quality: 0.82 },
   submission: { maxSide: 1600, quality: 0.82 },
+  screenshot: { maxSide: 1920, quality: 0.85 },
   preview: { maxSide: 1920, quality: 0.85, responsive: true },
 };
 

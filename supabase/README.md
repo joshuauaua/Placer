@@ -1136,6 +1136,31 @@ dashboard and the organisation page leave the new parts out when the table is mi
 but nobody can add an organisation until the table exists.
 
 
+## 23. Screenshots with bug reports
+
+`bug-report-screenshots.sql` (also a migration) adds `screenshot_path` to `bug_reports`.
+Somebody signed in can attach a screenshot from the "Report a bug" panel, or paste one
+into its text box. It is re-encoded in the browser like every other picture (WebP, at
+most 1920px, metadata stripped) and uploaded through the `media` function (step 14) to
+`bug-reports/<user id>/`; the row keeps the key, so the file is at
+`<VITE_MEDIA_URL>/<screenshot_path>`. As with case study pictures, the bucket is read
+publicly, so the address is unguessable but not private. A signed-out visitor can still
+send a report, without a screenshot.
+
+Run it after `bug-reports.sql`, then deploy the function again so it accepts the new folder:
+
+```sh
+supabase functions deploy media
+```
+
+If bug reports go to Slack (step 16), run `bug-reports-slack.sql` again and redeploy
+`survey-to-slack`: the message then says when a screenshot is attached. The key itself
+stays out of Slack, since it carries the account's id.
+
+**Push the migration and deploy `media` before merging** the app change: until then a
+report with a screenshot is refused (the column does not exist), though one without
+still goes through.
+
 ## Still to decide
 
 - **Projects have one role beyond the owner, not several.** A collaborator can edit
