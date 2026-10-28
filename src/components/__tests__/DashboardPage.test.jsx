@@ -108,13 +108,12 @@ describe('DashboardPage', () => {
     expect(screen.queryByText('Change your name')).not.toBeInTheDocument();
   });
 
-  it('shows your profile picture beside the heading', () => {
+  it('shows no profile picture beside the heading', () => {
     render(<DashboardPage t={THEME} profile={{ ...PROFILE, photo: 'me.webp' }} accountId="user-1"
       onNavigate={vi.fn()} />);
 
     const heading = screen.getByRole('heading', { level: 1, name: 'Welcome back, Mara Quinn' });
-    const photo = heading.closest('div').parentElement.querySelector('img');
-    expect(photo).toHaveAttribute('src', expect.stringContaining('me.webp'));
+    expect(heading.parentElement.querySelector('img')).not.toBeInTheDocument();
   });
 
   it('logs you out from beside the heading', () => {
