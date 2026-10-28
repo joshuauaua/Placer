@@ -403,6 +403,12 @@ verify_jwt = true
 [functions.survey-to-slack]
 verify_jwt = false
 
+# Deletes bug report screenshots once they are 30 days old (supabase/functions/media-expire).
+# Called by a daily pg_cron job, which carries no user session, so the JWT check is off; the
+# function checks an x-cron-secret header instead.
+[functions.media-expire]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

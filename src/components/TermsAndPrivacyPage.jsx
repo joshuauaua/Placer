@@ -414,7 +414,9 @@ export function TermsAndPrivacyPage({ t }) {
           a bug&rdquo; button stores what you type in our database, along with the page you were on,
           your browser&rsquo;s name and version, and your account if you are signed in, so we can
           find and fix the problem. Please keep personal details out of the text box, since it is
-          stored exactly as written.
+          stored exactly as written. If you are signed in you can attach a screenshot; it is
+          shrunk and stripped of its metadata before it leaves your device, and deleted 30 days
+          after you send it. Leave out anything on screen you would rather we did not see.
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Toolkit rooms, if you join one.</strong> The Toolkit
@@ -501,7 +503,8 @@ export function TermsAndPrivacyPage({ t }) {
         <P t={t}>
           Survey answers are kept while this research runs. Toolkit rooms expire two hours after
           being opened, or at most 90 days after for one a project opened to run longer, and are
-          deleted within a day of ending. Analytics you have consented to are held for
+          deleted within a day of ending. A screenshot sent with a bug report is deleted 30 days
+          after it is sent. Analytics you have consented to are held for
           as long as our PostHog project is configured to keep them, and withdrawing consent stops
           anything further being collected.
         </P>

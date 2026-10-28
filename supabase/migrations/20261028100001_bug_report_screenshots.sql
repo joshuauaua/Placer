@@ -11,6 +11,9 @@
 -- media function to `bug-reports/<user id>/`, the same way a case study's picture
 -- goes to `case-studies/<user id>/`; the row keeps only its key.
 --
+-- Screenshots are deleted 30 days after they are sent, with screenshot_path cleared on
+-- the report: see bug-report-screenshots-expire.sql. The report itself is kept.
+--
 -- The key has to be under the sender's own folder, and so needs a sender: a signed-out
 -- visitor has no folder to upload to, and could otherwise point a report at any
 -- picture in the bucket.
