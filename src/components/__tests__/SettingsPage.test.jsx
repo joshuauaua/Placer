@@ -3,12 +3,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { photonFeature, stubPhoton } from '../../test/photon';
 import { SettingsPage } from '../SettingsPage';
 import { saveProfile } from '../../services/profile';
-import { removeProfileImageFile, updatePassword, uploadProfilePhoto } from '../../services/auth';
+import { changePassword, removeProfileImageFile, uploadProfilePhoto } from '../../services/auth';
 import { THEME } from '../../theme';
 import { STORAGE_KEY as LANGUAGE_KEY, setLanguage } from '../../i18n';
 
 vi.mock('../../services/auth', () => ({
-  updatePassword: vi.fn(() => Promise.resolve()),
+  changePassword: vi.fn(() => Promise.resolve()),
   uploadProfilePhoto: vi.fn(() => Promise.resolve('avatars/user-1/avatar-2.jpg')),
   removeProfileImageFile: vi.fn(() => Promise.resolve()),
 }));
@@ -344,38 +344,78 @@ describe('SettingsPage, changing a password', () => {
     vi.clearAllMocks();
   });
 
+  const currentPassword = () => screen.getByLabelText('Existing password');
   const newPassword = () => screen.getByLabelText('New password');
+  const repeatPassword = () => screen.getByLabelText('Confirm new password');
   const saveNewPassword = () => screen.getByRole('button', { name: /Save new password/ });
+  const fill = (current, next, repeat = next) => {
+    fireEvent.change(currentPassword(), { target: { value: current } });
+    fireEvent.change(newPassword(), { target: { value: next } });
+    fireEvent.change(repeatPassword(), { target: { value: repeat } });
+  };
 
-  it('cannot be submitted until the password is long enough', () => {
+  it('cannot be submitted until the new password is long enough', () => {
     setup({ option: PASSWORD, email: 'mara@example.com' });
 
     expect(saveNewPassword()).toBeDisabled();
 
-    fireEvent.change(newPassword(), { target: { value: 'short' } });
+    fill('oldpassword', 'short');
 
     expect(saveNewPassword()).toBeDisabled();
   });
 
-  it('changes the password', async () => {
+  it('asks for the existing password', () => {
     setup({ option: PASSWORD, email: 'mara@example.com' });
 
-    fireEvent.change(newPassword(), { target: { value: 'longenough' } });
+    fill('', 'longenough');
+
+    expect(saveNewPassword()).toBeDisabled();
+  });
+
+  it('needs the new password typed the same twice', () => {
+    setup({ option: PASSWORD, email: 'mara@example.com' });
+
+    fill('oldpassword', 'longenough', 'longenougj');
+
+    expect(saveNewPassword()).toBeDisabled();
+    expect(screen.getByText('The two new passwords do not match.')).toBeInTheDocument();
+    expect(repeatPassword()).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('shows and hides what is typed, field by field', () => {
+    setup({ option: PASSWORD, email: 'mara@example.com' });
+
+    const [showCurrent] = screen.getAllByRole('button', { name: 'Show password' });
+    expect(screen.getAllByRole('button', { name: 'Show password' })).toHaveLength(3);
+    fireEvent.click(showCurrent);
+
+    expect(currentPassword()).toHaveAttribute('type', 'text');
+    expect(newPassword()).toHaveAttribute('type', 'password');
+    fireEvent.click(screen.getByRole('button', { name: 'Hide password' }));
+    expect(currentPassword()).toHaveAttribute('type', 'password');
+  });
+
+  it('changes the password, checking the existing one, and clears the fields', async () => {
+    setup({ option: PASSWORD, email: 'mara@example.com' });
+
+    fill('oldpassword', 'longenough');
     fireEvent.click(saveNewPassword());
 
     expect(await screen.findByRole('status')).toHaveTextContent('Changed.');
-    expect(updatePassword).toHaveBeenCalledWith('longenough');
+    expect(changePassword).toHaveBeenCalledWith({ currentPassword: 'oldpassword', newPassword: 'longenough' });
+    expect(currentPassword()).toHaveValue('');
+    expect(repeatPassword()).toHaveValue('');
   });
 
   it('says so when the change fails instead of pretending it worked', async () => {
-    vi.mocked(updatePassword).mockRejectedValue(new Error('Could not change your password: nope'));
+    vi.mocked(changePassword).mockRejectedValue(new Error('That is not your current password.'));
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     setup({ option: PASSWORD, email: 'mara@example.com' });
 
-    fireEvent.change(newPassword(), { target: { value: 'longenough' } });
+    fill('wrongpassword', 'longenough');
     fireEvent.click(saveNewPassword());
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/nope/);
+    expect(await screen.findByRole('alert')).toHaveTextContent('That is not your current password.');
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
     consoleError.mockRestore();
   });

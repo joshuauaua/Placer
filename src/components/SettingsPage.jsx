@@ -15,11 +15,12 @@ import { PageHeader } from './PageHeader';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
 import { ImagePicker } from './ImagePicker';
 import {
-  removeProfileImageFile, updatePassword, uploadProfilePhoto,
+  changePassword, removeProfileImageFile, uploadProfilePhoto,
 } from '../services/auth';
 import { isSupabaseConfigured, readPreferences, savePreferences } from '../services/notifications';
 import { ProjectResponsesChoice } from './ProjectResponsesChoice';
 import { PlaceSearch } from './PlaceSearch';
+import { PasswordInput } from './PasswordInput';
 import { LANGUAGES, setLanguage, useText } from '../i18n';
 
 // The same floor AuthPage and ResetPasswordPage ask for.
@@ -350,23 +351,36 @@ function Organisations({ t, organisations, onNewOrganisation, onOpenOrganisation
   );
 }
 
+const labelStyle = (t) => ({ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 });
+
 // Only reachable on the account path — a local-only visitor has no password to
 // change, and no `email` is what tells this apart from that world (see useIdentity.js).
+// The current password is asked for first (services/auth.js changePassword), and the
+// new one twice, so a typo cannot lock somebody out.
 function ChangePassword({ t }) {
+  const [current, setCurrent] = useState('');
   const [password, setPassword] = useState('');
+  const [repeat, setRepeat] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
 
+  const mismatch = repeat !== '' && repeat !== password;
+  const ready = current !== '' && password.length >= MIN_PASSWORD && repeat === password && !busy;
+
+  const edit = (setter) => (e) => { setter(e.target.value); setDone(false); };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password.length < MIN_PASSWORD || busy) return;
+    if (!ready) return;
 
     setBusy(true);
     setError(null);
     try {
-      await updatePassword(password);
+      await changePassword({ currentPassword: current, newPassword: password });
+      setCurrent('');
       setPassword('');
+      setRepeat('');
       setDone(true);
     } catch (err) {
       console.error('Could not change your password:', err);
@@ -376,39 +390,46 @@ function ChangePassword({ t }) {
     }
   };
 
+  const fieldStyle = inputStyle(t);
+
   return (
     <Card t={t} title="Password">
       <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
         Change the password you sign in with.
       </p>
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="settings-new-password"
-          style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
-          New password
-        </label>
-        <input
-          id="settings-new-password"
-          type="password"
-          value={password}
-          autoComplete="new-password"
-          onChange={(e) => { setPassword(e.target.value); setDone(false); }}
-          style={{ ...inputStyle(t), maxWidth: 380, marginBottom: 8 }}
-        />
-        <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 20 }}>
+      <form onSubmit={handleSubmit} style={{ maxWidth: 380 }}>
+        <label htmlFor="settings-current-password" style={labelStyle(t)}>Existing password</label>
+        <div style={{ marginBottom: 20 }}>
+          <PasswordInput t={t} id="settings-current-password" value={current}
+            autoComplete="current-password" onChange={edit(setCurrent)} style={fieldStyle} />
+        </div>
+
+        <label htmlFor="settings-new-password" style={labelStyle(t)}>New password</label>
+        <PasswordInput t={t} id="settings-new-password" value={password}
+          autoComplete="new-password" onChange={edit(setPassword)} style={fieldStyle} />
+        <div style={{ fontSize: 13, color: t.inkDim, margin: '8px 0 20px' }}>
           At least {MIN_PASSWORD} characters.
+        </div>
+
+        <label htmlFor="settings-repeat-password" style={labelStyle(t)}>Confirm new password</label>
+        <PasswordInput t={t} id="settings-repeat-password" value={repeat}
+          autoComplete="new-password" onChange={edit(setRepeat)} style={fieldStyle}
+          aria-invalid={mismatch} aria-describedby={mismatch ? 'settings-repeat-password-error' : undefined} />
+        <div id="settings-repeat-password-error"
+          style={{ fontSize: 13, color: '#B3261E', fontWeight: 500, minHeight: 18, margin: '8px 0 12px' }}>
+          {mismatch ? 'The two new passwords do not match.' : ''}
         </div>
 
         {error && (
           <div role="alert" style={{ marginBottom: 18, padding: 14, borderRadius: 12,
             background: '#F5F5F5', borderLeft: '4px solid #B3261E', fontSize: 14,
-            color: t.ink, fontWeight: 500, lineHeight: 1.5, maxWidth: 380 }}>
+            color: t.ink, fontWeight: 500, lineHeight: 1.5 }}>
             {error}
           </div>
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Btn t={t} variant="primary" icon="check" type="submit"
-            disabled={password.length < MIN_PASSWORD || busy}>
+          <Btn t={t} variant="primary" icon="check" type="submit" disabled={!ready}>
             {busy ? 'Saving…' : 'Save new password'}
           </Btn>
           {done && (

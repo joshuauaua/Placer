@@ -301,6 +301,38 @@ describe('signing in with a password', () => {
   });
 });
 
+describe('changing a password from Settings', () => {
+  it('checks the current password as the signed-in account, then sets the new one', async () => {
+    await load();
+    signedIn();
+    signInWithPassword.mockResolvedValue({ data: { user: account() }, error: null });
+    updateUser.mockResolvedValue({ data: {}, error: null });
+
+    await auth.changePassword({ currentPassword: 'oldpassword', newPassword: 'longenough' });
+
+    expect(signInWithPassword).toHaveBeenCalledWith({ email: 'mara@example.com', password: 'oldpassword' });
+    expect(updateUser).toHaveBeenCalledWith({ password: 'longenough' });
+  });
+
+  it('changes nothing when the current password is wrong', async () => {
+    await load();
+    signedIn();
+    signInWithPassword.mockResolvedValue({ data: {}, error: { status: 400, message: 'Invalid login credentials' } });
+
+    await expect(auth.changePassword({ currentPassword: 'nope', newPassword: 'longenough' }))
+      .rejects.toThrow(auth.WRONG_CURRENT_PASSWORD);
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  it('needs somebody signed in', async () => {
+    await load();
+
+    await expect(auth.changePassword({ currentPassword: 'oldpassword', newPassword: 'longenough' }))
+      .rejects.toThrow(/Sign in/);
+    expect(signInWithPassword).not.toHaveBeenCalled();
+  });
+});
+
 describe('Google', () => {
   it('asks for the provider and a callback it can return to', async () => {
     await load();
