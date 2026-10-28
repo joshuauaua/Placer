@@ -12,6 +12,9 @@ import {
   MAX_MESSAGE_LENGTH, isSupabaseConfigured, reportBugByEmailHref, submitBugReport,
 } from '../services/bugReports';
 
+// How long the thanks stays up after a report is sent before the panel closes itself.
+export const SENT_DISMISS_MS = 3000;
+
 export function BugReportButton({ t }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
@@ -40,6 +43,13 @@ export function BugReportButton({ t }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
+
+  // The thanks needs no answer, so it goes away by itself.
+  useEffect(() => {
+    if (!open || status !== 'sent') return undefined;
+    const timer = setTimeout(close, SENT_DISMISS_MS);
+    return () => clearTimeout(timer);
+  }, [open, status]);
 
   const configured = isSupabaseConfigured();
   const empty = !message.trim();
@@ -84,12 +94,12 @@ export function BugReportButton({ t }) {
             </button>
           </div>
 
+          {/* The × above is the one way out; the thanks also closes itself (SENT_DISMISS_MS). */}
           {status === 'sent' ? (
             <div role="status">
-              <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.55, margin: '0 0 14px' }}>
+              <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.55, margin: 0 }}>
                 Thanks — it&rsquo;s with us. We read every one.
               </p>
-              <Btn t={t} size="sm" variant="outline" onClick={close}>Close</Btn>
             </div>
           ) : (
             <form onSubmit={send}>
@@ -109,7 +119,6 @@ export function BugReportButton({ t }) {
                 <p role="alert" style={{ fontSize: 13, color: '#C0392B', margin: '8px 0 0' }}>{error}</p>
               )}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
-                <Btn t={t} size="sm" variant="ghost" type="button" onClick={close}>Cancel</Btn>
                 <Btn t={t} size="sm" variant="primary" type="submit" icon="send"
                   disabled={empty || status === 'sending'}>
                   {status === 'sending' ? 'Sending…' : configured ? 'Send' : 'Send by email'}
@@ -128,7 +137,7 @@ export function BugReportButton({ t }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: t.surfaceAlt, color: t.inkDim, border: `1px solid ${t.lineStrong}`, boxShadow: t.shadow,
         }}>
-        <Icon name={open ? 'close' : 'bug'} size={22} stroke={1.9} />
+        <Icon name="bug" size={22} stroke={1.9} />
       </button>
     </>
   );

@@ -6,7 +6,7 @@ const insert = vi.fn();
 const from = vi.fn(() => ({ insert }));
 vi.mock('@supabase/supabase-js', () => ({ createClient: () => ({ from }) }));
 
-import { BugReportButton } from '../BugReportButton';
+import { BugReportButton, SENT_DISMISS_MS } from '../BugReportButton';
 import { reportBugByEmailHref } from '../../services/bugReports';
 
 const openPanel = () => fireEvent.click(screen.getByRole('button', { name: 'Report a bug' }));
@@ -25,6 +25,29 @@ describe('BugReportButton', () => {
     expect(screen.getByRole('dialog', { name: 'Report a bug' })).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('has one way out: the × in the panel', () => {
+    render(<BugReportButton t={THEME} />);
+    openPanel();
+    expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('closes the thanks by itself after a moment', async () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'anon');
+    insert.mockResolvedValue({ error: null });
+
+    render(<BugReportButton t={THEME} />);
+    openPanel();
+    type('The map is blank');
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await screen.findByRole('status');
+    expect(screen.getAllByRole('button', { name: /close/i })).toHaveLength(1);
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), { timeout: SENT_DISMISS_MS + 1000 });
   });
 
   it('will not send an empty report', () => {
