@@ -123,6 +123,26 @@ cross join lateral (
            case when jsonb_typeof(r.answers->'optIns') = 'array' then r.answers->'optIns' else '[]' end
          ) as o(key)
   union all
+  -- The landing page's waitlist survey (waitlistSurvey/) has no optIns: leaving an
+  -- address is joining the waitlist, and section3.coCreation holds how they would
+  -- help, apart from 'survey-only', which asks for nothing.
+  select case c.key
+           when 'prototype-testing' then 'Invite them to test early prototypes'
+           when 'interview'         then 'Book a 15-minute workflow interview'
+           when 'case-study'        then 'Take their project on as a test case study'
+           else 'Offered to help: ' || c.key
+         end
+    from jsonb_array_elements_text(
+           case jsonb_typeof(r.answers->'section3'->'coCreation')
+             when 'array'  then r.answers->'section3'->'coCreation'
+             when 'string' then jsonb_build_array(r.answers->'section3'->'coCreation')
+             else '[]'
+           end
+         ) as c(key)
+   where c.key <> 'survey-only'
+  union all
+  select 'Add to the waitlist' where r.source = 'landing_survey' and r.email is not null
+  union all
   select 'Confirm the User Labs place' where r.source = 'user_labs_application'
   union all
   select 'Add to the newsletter list' where r.source = 'newsletter_signup'

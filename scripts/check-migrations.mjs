@@ -125,6 +125,7 @@ const PLAN = [
   { name: '20261026100001_imaginations_retire.sql', src: 'imaginations-retire.sql' },
   { name: '20261027100001_project_collaborating_organisations.sql', src: 'project-collaborating-organisations.sql' },
   { name: '20261028100001_bug_report_screenshots.sql', src: 'bug-report-screenshots.sql' },
+  { name: '20261028120001_survey_followups_landing.sql', src: 'survey-followups-landing.sql' },
 ]
 
 const ROOM_TOOLS = 'room-tools'

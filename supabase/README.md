@@ -1064,7 +1064,7 @@ column, plus these views:
 
 | View | What it shows |
 | --- | --- |
-| `survey_followups` | The to-do list: one row per request ("Book a 1-on-1 demo", "Confirm the User Labs place", …) with the name and email |
+| `survey_followups` | The to-do list: one row per request ("Book a 1-on-1 demo", "Confirm the User Labs place", "Add to the waitlist", …) with the name and email. Landing page waitlist responses come from the address left and the "how would you like to be involved" answer |
 | `survey_form_responses` | Community, landing and trends surveys: contact details, `wants_report` / `wants_beta` / `wants_demo`, and each module's answers |
 | `survey_user_labs` | User Labs applications, one column per field |
 | `survey_newsletter` | Everyone who asked for the newsletter |
