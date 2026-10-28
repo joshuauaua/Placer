@@ -2,22 +2,39 @@
 
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
-import { Btn } from './UI';
+import { Avatar, Btn } from './UI';
 import { LayeredCircles } from './LayeredCircles';
 import { NotificationItem } from './NotificationItem';
 import {
   PROJECT_TYPE_NAMES, isSupabaseConfigured as projectsAvailable, readMyProjects,
 } from '../services/projects';
 import { listNotifications } from '../services/notifications';
-import { byUrgency, nextSteps, projectProgress } from '../lib/projectTimeline';
+import { nextSteps, projectProgress } from '../lib/projectTimeline';
 import { PALETTE } from '../theme';
 import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
 import { responsiveImage } from '../lib/responsiveImage';
 
-// How many of each the dashboard shows before View All.
-const PROJECTS_SHOWN = 3;
+// How many of each the dashboard shows before View All (projects scroll sideways, all of them).
 const STEPS_SHOWN = 5;
 const ACTIVITY_SHOWN = 5;
+
+// Getting Started is for newcomers: it is shown for this many visits to the dashboard,
+// counted per account on this device, and then goes away.
+const GETTING_STARTED_VISITS = 5;
+
+/** Counts this visit to the dashboard (once per browser session) and returns the total. */
+function countDashboardVisit(accountId) {
+  const key = `placer.dashboardVisits.${accountId ?? 'local'}`;
+  try {
+    const seen = Number(localStorage.getItem(key)) || 0;
+    if (sessionStorage.getItem(key)) return seen;
+    sessionStorage.setItem(key, '1');
+    localStorage.setItem(key, String(seen + 1));
+    return seen + 1;
+  } catch {
+    return 0; // storage blocked: keep showing it rather than guess
+  }
+}
 
 // A project's picture stand-in, by kind: one theme colour for each kind of project.
 const TYPE_TINTS = { steward: PALETTE.blue, advocate: PALETTE.orange, other: PALETTE.purple };
@@ -28,16 +45,16 @@ const STEP_KINDS = {
   action: { label: 'To do', colour: PALETTE.purple },
 };
 
-// One of the three things the dashboard offers to do next, as a card-sized button.
-/** A Quick Actions card: a grey tile with the icon above the label, both centred. */
-function Shortcut({ t, icon, label, onClick }) {
+/** A Quick Actions button: a small grey tile with the icon beside the label. */
+function Shortcut({ t, icon, label, onClick, expanded, controls }) {
   return (
     <button type="button" onClick={onClick} {...ARROW_ITEM} className="placer-quick-action"
-      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: 14, minHeight: 160, padding: 24, textAlign: 'center', background: t.surfaceAlt,
-        border: 'none', borderRadius: 16, cursor: 'pointer',
-        fontFamily: 'var(--placer-font)', fontSize: 17, fontWeight: 700, color: t.ink }}>
-      <Icon name={icon} size={30} stroke={2} />
+      aria-expanded={expanded} aria-controls={controls}
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+        minHeight: 56, padding: '12px 20px', textAlign: 'center', background: t.surfaceAlt,
+        border: 'none', borderRadius: 14, cursor: 'pointer',
+        fontFamily: 'var(--placer-font)', fontSize: 15, fontWeight: 700, color: t.ink }}>
+      <Icon name={icon} size={20} stroke={2} />
       {label}
     </button>
   );
@@ -94,13 +111,14 @@ function DashboardProjectCard({ t, project, onOpen }) {
   return (
     <button type="button" onClick={() => onOpen(project.id)} {...ARROW_ITEM} className="placer-dashboard-project"
       style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', padding: 0, overflow: 'hidden',
+        scrollSnapAlign: 'start',
         background: t.surface, border: `1px solid ${t.line}`, borderRadius: 16, cursor: 'pointer',
         fontFamily: 'var(--placer-font)', color: t.ink }}>
       {/* One portrait frame for every card. Without minHeight and overflow, a tall picture
           stretches its frame past the ratio and the cards come out uneven; a wide one is
           cropped to fit. */}
       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
-        aspectRatio: '3 / 4', minHeight: 0, overflow: 'hidden', flexShrink: 0,
+        height: 220, overflow: 'hidden', flexShrink: 0,
         background: tint.c50, color: tint.c700 }}>
         {project.image
           ? <img {...responsiveImage(project.image, '(max-width: 640px) 100vw, 320px')} alt=""
@@ -129,6 +147,23 @@ function DashboardProjectCard({ t, project, onOpen }) {
         </span>
       </span>
     </button>
+  );
+}
+
+/** A small count on a tab: how many items are waiting. Read out after the tab's name. */
+function TabBadge({ count, noun }) {
+  if (!count) return null;
+  return (
+    <>
+      <span aria-hidden="true" style={{ marginLeft: 8, minWidth: 18, height: 18, padding: '0 5px',
+        borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 11, fontWeight: 700, background: PALETTE.orange.c300, color: PALETTE.orange.c900 }}>
+        {count}
+      </span>
+      <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>
+        {` ${count} ${noun}`}
+      </span>
+    </>
   );
 }
 
@@ -201,8 +236,15 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
     return () => { cancelled = true; };
   }, [accountId]);
 
+  // Getting Started shows for the first few visits; after that it lives in the Guide shortcut.
+  const [visits] = useState(() => countDashboardVisit(accountId));
+  const [guideOpen, setGuideOpen] = useState(visits <= GETTING_STARTED_VISITS);
+  const [tab, setTab] = useState('steps'); // 'steps' | 'activity'
+
   const name = profile?.name ?? '';
-  const shownProjects = byUrgency(projects).slice(0, PROJECTS_SHOWN);
+  const recentProjects = [...projects].sort((a, b) =>
+    (b.updatedAt ?? b.createdAt ?? '').localeCompare(a.updatedAt ?? a.createdAt ?? ''));
+  const unreadActivity = activity.filter((n) => !n.readAt).length;
   const steps = projectsStatus === 'ready' ? nextSteps(projects, profile).slice(0, STEPS_SHOWN) : [];
 
   const actOn = (step) => {
@@ -211,6 +253,12 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
     else onNavigate(step.target);
   };
 
+  const tabStyle = (active) => ({
+    position: 'relative', padding: '8px 14px', borderRadius: 999, border: 'none', cursor: 'pointer',
+    fontFamily: 'var(--placer-font)', fontSize: 14, fontWeight: 700,
+    background: active ? t.ink : 'transparent', color: active ? t.page : t.inkDim,
+  });
+
   // The arrow keys move between every card on the page, section to section, as they
   // are laid out (lib/arrowKeys.js).
   return (
@@ -218,10 +266,12 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
       padding: '96px 40px 48px' }} className="placer-scroll">
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: 16, flexWrap: 'wrap', marginBottom: 64 }}>
+          gap: 16, flexWrap: 'wrap', marginBottom: 32 }}>
           {/* The heading and the profile link share a line, on their baselines, and the
               link drops under the heading when there is not room for both. */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px 20px', flexWrap: 'wrap', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, minWidth: 0 }}>
+            <Avatar name={name} photo={profile?.photo} size={72} />
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px 20px', flexWrap: 'wrap', minWidth: 0 }}>
             <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
               letterSpacing: '-0.03em', lineHeight: 1.15, overflowWrap: 'anywhere' }}>
               Welcome back, {name}
@@ -234,6 +284,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
                 View your public profile
               </a>
             )}
+            </div>
           </div>
           {onSignOut && (
             <Btn t={t} variant="outline" size="sm" icon="logout" onClick={onSignOut}>
@@ -242,125 +293,147 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
           )}
         </div>
 
-        <section aria-labelledby="dashboard-basics" style={{ marginBottom: 48 }}>
-          <SectionLabel t={t} id="dashboard-basics">Getting Started</SectionLabel>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
-            <BasicsCard t={t} hue={PALETTE.purple}
-              label="Quickstart tutorial" title="Create your first Project"
-              onClick={() => onNavigate('quickstart')} />
-            <BasicsCard t={t} hue={PALETTE.blue}
-              label="Project Examples" title="Explore what other projects exist on the platform"
-              onClick={() => onNavigate('projects')} />
-          </div>
-        </section>
-
-        <section aria-labelledby="dashboard-quick-actions" style={{ marginBottom: 48 }}>
-          <SectionLabel t={t} id="dashboard-quick-actions">Quick Actions</SectionLabel>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-            <Shortcut t={t} icon="pencil" label="Edit my profile" onClick={() => onNavigate('settings')} />
-            <Shortcut t={t} icon="pin" label="Explore the map"
-              onClick={() => (onExplore ? onExplore() : onNavigate('map'))} />
+        <section aria-label="Quick Actions" style={{ marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
             {onNewProject && (
               <Shortcut t={t} icon="plus" label="Create a Project" onClick={onNewProject} />
             )}
+            <Shortcut t={t} icon="pin" label="Explore the map"
+              onClick={() => (onExplore ? onExplore() : onNavigate('map'))} />
+            <Shortcut t={t} icon="pencil" label="Edit your profile" onClick={() => onNavigate('settings')} />
+            <Shortcut t={t} icon="bookmark" label="Guide" expanded={guideOpen} controls="dashboard-basics"
+              onClick={() => setGuideOpen((open) => !open)} />
           </div>
         </section>
 
-        <section aria-labelledby="dashboard-projects" style={{ marginBottom: 48 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-            marginBottom: 12 }}>
-            <SectionLabel t={t} id="dashboard-projects" style={{ marginBottom: 0 }}>Projects</SectionLabel>
-            <Btn t={t} variant="outline" size="sm" icon="arrowRight" onClick={() => onNavigate('projects')}>
-              View all projects
-            </Btn>
-          </div>
-          {projectsStatus === 'loading' && (
-            <p style={{ fontSize: 15, color: t.inkDim }}>Loading your projects…</p>
-          )}
-          {projectsStatus === 'error' && (
-            <p style={{ fontSize: 15, color: t.inkDim }}>Your projects could not be loaded. Try again in a moment.</p>
-          )}
-          {projectsStatus === 'ready' && shownProjects.length === 0 && (
-            // No button of its own: Create a Project is right above, in Quick Actions.
-            <p style={{ padding: 24, borderRadius: 16, border: `1px dashed ${t.lineStrong}`,
-              fontSize: 15, color: t.inkDim }}>
-              No projects yet. Projects you run or collaborate on will show up here.
-            </p>
-          )}
-          {shownProjects.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
-              {shownProjects.map((project) => (
-                <DashboardProjectCard key={project.id} t={t} project={project}
-                  onOpen={(id) => onOpenProject?.(id)} />
-              ))}
+        {guideOpen && (
+          <section id="dashboard-basics" aria-labelledby="dashboard-basics-title" style={{ marginBottom: 32 }}>
+            <SectionLabel t={t} id="dashboard-basics-title">Getting Started</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+              <BasicsCard t={t} hue={PALETTE.purple}
+                label="Quickstart tutorial" title="Create your first Project"
+                onClick={() => onNavigate('quickstart')} />
+              <BasicsCard t={t} hue={PALETTE.blue}
+                label="Project Examples" title="Explore what other projects exist on the platform"
+                onClick={() => onNavigate('projects')} />
+              <BasicsCard t={t} hue={PALETTE.orange}
+                label="FAQ" title="Answers to common questions about Placer"
+                onClick={() => onNavigate('faq')} />
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16,
           marginBottom: 48 }}>
-          <PanelCard t={t} id="dashboard-next-steps" title="Your Next Steps">
-            {projectsStatus === 'loading' && <p style={{ fontSize: 14, color: t.inkDim }}>Loading…</p>}
-            {projectsStatus !== 'loading' && steps.length === 0 && (
-              <p style={{ fontSize: 14, color: t.inkDim }}>You are all caught up.</p>
-            )}
-            {steps.length > 0 && (
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {steps.map((step) => {
-                  const kind = STEP_KINDS[step.kind];
-                  return (
-                    <li key={step.id} style={{ borderTop: `1px solid ${t.line}` }}>
-                      <button type="button" onClick={() => actOn(step)} {...ARROW_ITEM}
-                        className="placer-notification-row"
-                        style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: 'calc(100% + 20px)',
-                          margin: '0 -10px', padding: '12px 10px', border: 'none', background: 'transparent',
-                          borderRadius: 12, textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--placer-font)' }}>
-                        <span className="placer-mono" style={{ flex: '0 0 auto', fontSize: 10.5, letterSpacing: '0.06em',
-                          textTransform: 'uppercase', padding: '3px 8px', borderRadius: 999, marginTop: 1,
-                          background: kind.colour.c100, color: kind.colour.c900 }}>
-                          {kind.label}
-                        </span>
-                        <span style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: t.ink }}>
-                            {step.title}
-                          </span>
-                          <span style={{ display: 'block', fontSize: 13.5, color: t.inkDim, marginTop: 2 }}>
-                            {step.detail}
-                          </span>
-                        </span>
-                        <Icon name="chevRight" size={16} stroke={2} style={{ color: t.inkFaint, marginTop: 2 }} />
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </PanelCard>
-
-          <PanelCard t={t} id="dashboard-activity" title="Your Activity"
-            action={(
+          <PanelCard t={t} id="dashboard-tasks" title="Up Next"
+            action={tab === 'activity' ? (
               <Btn t={t} variant="outline" size="sm" icon="arrowRight" onClick={() => onNavigate('activity')}>
                 View All
               </Btn>
-            )}>
-            {activityStatus === 'loading' && <p style={{ fontSize: 14, color: t.inkDim }}>Loading…</p>}
-            {activityStatus === 'unavailable' && (
-              <p style={{ fontSize: 14, color: t.inkDim }}>Your activity is not available right now.</p>
+            ) : null}>
+            <div role="tablist" aria-label="Next steps and activity"
+              style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+              <button type="button" role="tab" id="tab-steps" aria-selected={tab === 'steps'}
+                aria-controls="panel-steps" onClick={() => setTab('steps')} style={tabStyle(tab === 'steps')}>
+                Your Next Steps
+                <TabBadge count={steps.length} noun="to do" />
+              </button>
+              <button type="button" role="tab" id="tab-activity" aria-selected={tab === 'activity'}
+                aria-controls="panel-activity" onClick={() => setTab('activity')} style={tabStyle(tab === 'activity')}>
+                Your Activity
+                <TabBadge count={unreadActivity} noun="unread" />
+              </button>
+            </div>
+            {tab === 'steps' && (
+              <div role="tabpanel" id="panel-steps" aria-labelledby="tab-steps">
+              {projectsStatus === 'loading' && <p style={{ fontSize: 14, color: t.inkDim }}>Loading…</p>}
+              {projectsStatus !== 'loading' && steps.length === 0 && (
+                <p style={{ fontSize: 14, color: t.inkDim }}>You are all caught up.</p>
+              )}
+              {steps.length > 0 && (
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                  {steps.map((step) => {
+                    const kind = STEP_KINDS[step.kind];
+                    return (
+                      <li key={step.id} style={{ borderTop: `1px solid ${t.line}` }}>
+                        <button type="button" onClick={() => actOn(step)} {...ARROW_ITEM}
+                          className="placer-notification-row"
+                          style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: 'calc(100% + 20px)',
+                            margin: '0 -10px', padding: '12px 10px', border: 'none', background: 'transparent',
+                            borderRadius: 12, textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--placer-font)' }}>
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: t.ink }}>
+                              {step.title}
+                            </span>
+                            <span style={{ display: 'block', fontSize: 13.5, color: t.inkDim, marginTop: 2 }}>
+                              {step.detail}
+                            </span>
+                          </span>
+                          <span className="placer-mono" style={{ flex: '0 0 auto', fontSize: 10.5, letterSpacing: '0.06em',
+                            textTransform: 'uppercase', padding: '3px 8px', borderRadius: 999, marginTop: 1,
+                            background: kind.colour.c100, color: kind.colour.c900 }}>
+                            {kind.label}
+                          </span>
+                          <Icon name="chevRight" size={16} stroke={2} style={{ color: t.inkFaint, marginTop: 2 }} />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              </div>
             )}
-            {activityStatus === 'ready' && activity.length === 0 && (
+            {tab === 'activity' && (
+              <div role="tabpanel" id="panel-activity" aria-labelledby="tab-activity">
+              {activityStatus === 'loading' && <p style={{ fontSize: 14, color: t.inkDim }}>Loading…</p>}
+              {activityStatus === 'unavailable' && (
+                <p style={{ fontSize: 14, color: t.inkDim }}>Your activity is not available right now.</p>
+              )}
+              {activityStatus === 'ready' && activity.length === 0 && (
+                <p style={{ fontSize: 14, color: t.inkDim }}>
+                  Nothing yet. Comments, follows and news from your projects will show up here.
+                </p>
+              )}
+              {activityStatus === 'ready' && activity.length > 0 && (
+                <ul aria-label="Recent activity" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                  {activity.map((notification) => (
+                    <li key={notification.id} style={{ borderTop: `1px solid ${t.line}` }}>
+                      <NotificationItem t={t} notification={notification} onOpenProject={onOpenProjectPage}
+                        onOpenOrganisation={onOpenOrganisationPage} compact />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              </div>
+            )}
+          </PanelCard>
+
+          <PanelCard t={t} id="dashboard-projects" title="Projects"
+            action={(
+              <Btn t={t} variant="outline" size="sm" icon="arrowRight" onClick={() => onNavigate('projects')}>
+                View all projects
+              </Btn>
+            )}>
+            {projectsStatus === 'loading' && (
+              <p style={{ fontSize: 14, color: t.inkDim }}>Loading your projects…</p>
+            )}
+            {projectsStatus === 'error' && (
+              <p style={{ fontSize: 14, color: t.inkDim }}>Your projects could not be loaded. Try again in a moment.</p>
+            )}
+            {projectsStatus === 'ready' && recentProjects.length === 0 && (
               <p style={{ fontSize: 14, color: t.inkDim }}>
-                Nothing yet. Comments, follows and news from your projects will show up here.
+                No projects yet. Projects you run or collaborate on will show up here.
               </p>
             )}
-            {activityStatus === 'ready' && activity.length > 0 && (
-              <ul aria-label="Recent activity" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {activity.map((notification) => (
-                  <li key={notification.id} style={{ borderTop: `1px solid ${t.line}` }}>
-                    <NotificationItem t={t} notification={notification} onOpenProject={onOpenProjectPage}
-                      onOpenOrganisation={onOpenOrganisationPage} compact />
-                  </li>
+            {recentProjects.length > 0 && (
+              <div role="group" aria-label="Your projects, latest update first" className="placer-scroll"
+                style={{ display: 'grid', gridAutoFlow: 'column', gridAutoColumns: 'minmax(220px, 1fr)', gap: 12,
+                  overflowX: 'auto', scrollSnapType: 'x proximity' }}>
+                {recentProjects.map((project) => (
+                  <DashboardProjectCard key={project.id} t={t} project={project}
+                    onOpen={(id) => onOpenProject?.(id)} />
                 ))}
-              </ul>
+              </div>
             )}
           </PanelCard>
         </div>
