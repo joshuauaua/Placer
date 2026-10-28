@@ -9,6 +9,8 @@ import {
   PROJECT_TYPE_NAMES, isSupabaseConfigured as projectsAvailable, readMyProjects,
 } from '../services/projects';
 import { listNotifications } from '../services/notifications';
+import { readInquiries } from '../services/inquiries';
+import { mergeActivity } from '../lib/activityFeed';
 import { nextSteps, projectProgress } from '../lib/projectTimeline';
 import { PALETTE } from '../theme';
 import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
@@ -210,7 +212,8 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
     return () => { cancelled = true; };
   }, [accountId]);
 
-  // The latest few notifications. Like projects, there are none to have without a
+  // The latest few notifications, with the inquiries kept from the Toolkit's standalone
+  // tools mixed in (lib/activityFeed.js). Like projects, there are none to have without a
   // Supabase project — and none before supabase/notifications.sql has run, which is
   // treated the same way rather than as something wrong.
   const [activity, setActivity] = useState([]);
@@ -222,10 +225,15 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
       return undefined;
     }
     let cancelled = false;
-    listNotifications({ limit: ACTIVITY_SHOWN })
-      .then((found) => {
+    // Inquiries are extra: if they cannot be read, the notifications still show.
+    const inquiries = readInquiries().catch((err) => {
+      console.error('Could not load your saved inquiries:', err);
+      return [];
+    });
+    Promise.all([listNotifications({ limit: ACTIVITY_SHOWN }), inquiries])
+      .then(([found, kept]) => {
         if (cancelled) return;
-        setActivity(found);
+        setActivity(mergeActivity(found, kept, accountId, ACTIVITY_SHOWN));
         setActivityStatus('ready');
       })
       .catch((err) => {
@@ -267,24 +275,24 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           gap: 16, flexWrap: 'wrap', marginBottom: 32 }}>
-          {/* The heading and the profile link share a line, on their baselines, and the
-              link drops under the heading when there is not room for both. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, minWidth: 0 }}>
             <Avatar name={name} photo={profile?.photo} size={72} />
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px 20px', flexWrap: 'wrap', minWidth: 0 }}>
             <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
               letterSpacing: '-0.03em', lineHeight: 1.15, overflowWrap: 'anywhere' }}>
-              Welcome back, {name}
+              Welcome back,{' '}
+              {/* Your name opens your public profile. No account id in the local, no-project
+                  mode, and so no public page to go to. */}
+              {accountId && onOpenPublicProfile ? (
+                <a href={`/people/${accountId}`} className="placer-name-link"
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                    e.preventDefault();
+                    onOpenPublicProfile(accountId);
+                  }}>
+                  {name}
+                </a>
+              ) : name}
             </h1>
-            {/* No account id in the local, no-project mode, and so no public page to go to. */}
-            {accountId && onOpenPublicProfile && (
-              <a href={`/people/${accountId}`}
-                onClick={(e) => { e.preventDefault(); onOpenPublicProfile(accountId); }}
-                style={{ fontSize: 16, color: t.ink, fontWeight: 500, textDecoration: 'underline' }}>
-                View your public profile
-              </a>
-            )}
-            </div>
           </div>
           {onSignOut && (
             <Btn t={t} variant="outline" size="sm" icon="logout" onClick={onSignOut}>
@@ -391,7 +399,8 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
               )}
               {activityStatus === 'ready' && activity.length === 0 && (
                 <p style={{ fontSize: 14, color: t.inkDim }}>
-                  Nothing yet. Comments, follows and news from your projects will show up here.
+                  Nothing yet. Comments, follows, news from your projects and the tools you save
+                  from the Toolkit will show up here.
                 </p>
               )}
               {activityStatus === 'ready' && activity.length > 0 && (
@@ -399,7 +408,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
                   {activity.map((notification) => (
                     <li key={notification.id} style={{ borderTop: `1px solid ${t.line}` }}>
                       <NotificationItem t={t} notification={notification} onOpenProject={onOpenProjectPage}
-                        onOpenOrganisation={onOpenOrganisationPage} compact />
+                        onOpenOrganisation={onOpenOrganisationPage} onOpenProfile={onOpenPublicProfile} compact />
                     </li>
                   ))}
                 </ul>

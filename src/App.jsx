@@ -757,7 +757,8 @@ function MainApp({ initialView = 'welcome' }) {
 
             {view === 'activity' && profile && (
               <Suspense fallback={<LoadingFallback />}>
-                <ActivityPage t={t} onOpenProject={showProjectPublic} onOpenOrganisation={showOrganisationPublic} />
+                <ActivityPage t={t} accountId={accountId} onOpenProject={showProjectPublic}
+                  onOpenOrganisation={showOrganisationPublic} onOpenProfile={showPublicProfile} />
               </Suspense>
             )}
 

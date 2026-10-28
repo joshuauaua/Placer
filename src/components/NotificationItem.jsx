@@ -1,7 +1,8 @@
 /* PLACER — one notification, as a row: what kind it is, what happened, and when.
  * Shared by the dashboard's Your Activity card and the full feed at /activity.
  *
- * A notification that links to a project or an organisation opens its public page.
+ * A notification that links to a project or an organisation opens its public page, and
+ * one that links to a profile (a saved inquiry, lib/activityFeed.js) opens that profile.
  * One that links to nothing is a plain row.
  */
 
@@ -30,18 +31,20 @@ export function timeAgo(value, now = new Date()) {
 const LINKS = {
   project: { path: (id) => `/projects/${encodeURIComponent(id)}`, handler: 'onOpenProject' },
   organisation: { path: (id) => `/organisations/${encodeURIComponent(id)}`, handler: 'onOpenOrganisation' },
+  profile: { path: (id) => `/people/${encodeURIComponent(id)}`, handler: 'onOpenProfile' },
 };
 
-export function NotificationItem({ t, notification, onOpenProject, onOpenOrganisation, compact = false }) {
+export function NotificationItem({ t, notification, onOpenProject, onOpenOrganisation, onOpenProfile,
+  compact = false }) {
   const unread = !notification.readAt;
   const link = LINKS[notification.linkType];
-  const open = link && notification.linkId ? { onOpenProject, onOpenOrganisation }[link.handler] : null;
+  const open = link && notification.linkId ? { onOpenProject, onOpenOrganisation, onOpenProfile }[link.handler] : null;
 
   const content = (
     <>
       <span aria-hidden="true" style={{ width: 36, height: 36, borderRadius: '50%', flex: '0 0 auto',
         display: 'flex', alignItems: 'center', justifyContent: 'center', background: t.surfaceAlt, color: t.ink }}>
-        <Icon name={CATEGORY_ICONS[notification.category] ?? 'bell'} size={17} stroke={2} />
+        <Icon name={notification.icon ?? CATEGORY_ICONS[notification.category] ?? 'bell'} size={17} stroke={2} />
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
         <span style={{ display: 'block', fontSize: 14.5, fontWeight: unread ? 700 : 500, color: t.ink }}>

@@ -134,6 +134,19 @@ describe('AuthPage, signing up', () => {
     vi.mocked(signUpWithPassword).mockResolvedValue({ needsConfirmation: true });
   });
 
+  it('shows the password being typed with the eye, and hides it again', () => {
+    setup('signup');
+    fireEvent.change(password(), { target: { value: 'correct horse' } });
+    expect(password()).toHaveAttribute('type', 'password');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show password' }));
+    expect(password()).toHaveAttribute('type', 'text');
+    expect(password()).toHaveValue('correct horse');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hide password' }));
+    expect(password()).toHaveAttribute('type', 'password');
+  });
+
   it('asks for a name, because an imagination has to be credited to something', () => {
     setup('signup');
 

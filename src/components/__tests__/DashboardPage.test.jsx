@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent, within } from '@testing-library/rea
 import { DashboardPage } from '../DashboardPage';
 import { readMyProjects } from '../../services/projects';
 import { listNotifications } from '../../services/notifications';
+import { readInquiries } from '../../services/inquiries';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/projects', () => ({
@@ -13,6 +14,10 @@ vi.mock('../../services/projects', () => ({
 
 vi.mock('../../services/notifications', () => ({
   listNotifications: vi.fn(() => Promise.resolve([])),
+}));
+
+vi.mock('../../services/inquiries', () => ({
+  readInquiries: vi.fn(() => Promise.resolve([])),
 }));
 
 const PROFILE = { name: 'Mara Quinn', bio: '' };
@@ -121,11 +126,12 @@ describe('DashboardPage', () => {
     expect(onSignOut).toHaveBeenCalled();
   });
 
-  it('links to your public profile', () => {
+  it('links your name to your public profile', () => {
     const onOpenPublicProfile = vi.fn();
     setup({ handlers: { onOpenPublicProfile } });
 
-    const link = screen.getByRole('link', { name: 'View your public profile' });
+    expect(screen.queryByText('View your public profile')).not.toBeInTheDocument();
+    const link = within(screen.getByRole('heading', { level: 1 })).getByRole('link', { name: 'Mara Quinn' });
     expect(link).toHaveAttribute('href', '/people/user-1');
     fireEvent.click(link);
 
@@ -187,9 +193,10 @@ describe('DashboardPage, beyond the quick actions', () => {
       body: 'Love the trees.', linkType: 'project', linkId: 'p1', readAt: null,
       createdAt: new Date().toISOString() };
 
-    const renderWith = ({ projects = [], notifications = [], ...handlers } = {}) => {
+    const renderWith = ({ projects = [], notifications = [], inquiries = [], ...handlers } = {}) => {
       vi.mocked(readMyProjects).mockResolvedValue(projects);
       vi.mocked(listNotifications).mockResolvedValue(notifications);
+      vi.mocked(readInquiries).mockImplementation(() => (inquiries instanceof Promise ? inquiries : Promise.resolve(inquiries)));
       render(<DashboardPage t={THEME} profile={{ ...PROFILE, location: 'Malmö' }} accountId="user-1"
         onNavigate={vi.fn()} {...handlers} />);
     };
@@ -257,6 +264,35 @@ describe('DashboardPage, beyond the quick actions', () => {
 
       expect(onOpenProjectPage).toHaveBeenCalledWith('p1');
       expect(onNavigate).toHaveBeenCalledWith('activity');
+    });
+
+    it('mixes in the inquiries kept from standalone tools, newest first, opening your profile', async () => {
+      const onOpenPublicProfile = vi.fn();
+      const older = { ...NOTE, id: 'n2', title: 'Ali followed you', linkType: null, linkId: null,
+        createdAt: '2026-09-01T10:00:00Z' };
+      const inquiry = { id: 'q1', tool: 'desire-lines', title: 'Shortcut by the station', note: '', config: {},
+        createdAt: '2026-10-01T10:00:00Z' };
+      renderWith({ notifications: [NOTE, older], inquiries: [inquiry], onOpenPublicProfile });
+      const card = screen.getByRole('region', { name: 'Up Next' });
+      fireEvent.click(within(card).getByRole('tab', { name: 'Your Activity' }));
+
+      const list = await within(card).findByRole('list', { name: 'Recent activity' });
+      await within(list).findByText('You saved Shortcut by the station');
+      expect(within(list).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+        expect.stringContaining('Sam commented'),
+        expect.stringContaining('You saved Shortcut by the station'),
+        expect.stringContaining('Ali followed you'),
+      ]);
+      fireEvent.click(within(list).getByRole('link', { name: /you saved shortcut by the station/i }));
+      expect(onOpenPublicProfile).toHaveBeenCalledWith('user-1');
+    });
+
+    it('still shows notifications when the inquiries cannot be read', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      renderWith({ notifications: [NOTE], inquiries: Promise.reject(new Error('no table')) });
+      const card = screen.getByRole('region', { name: 'Up Next' });
+      fireEvent.click(within(card).getByRole('tab', { name: 'Your Activity' }));
+      expect(await within(card).findByText('Sam commented on Riverside Greenway')).toBeInTheDocument();
     });
 
     it('marks the tabs with how many items are waiting', async () => {

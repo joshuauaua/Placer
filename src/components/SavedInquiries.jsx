@@ -8,7 +8,8 @@
  * own are summed up (`inquiry` in toolkit/tools.js). They can be deleted. Private to the
  * account (supabase/profile-inquiries.sql).
  *
- * The service arrives as a prop so a test can hand this a fake.
+ * The service arrives as a prop so a test can hand this a fake. `onCountChange` hears how
+ * many there are once loaded and after each delete, for the count on the Activity tab.
  */
 
 import { useEffect, useState } from 'react';
@@ -19,8 +20,12 @@ import { mediaUrl } from '../services/media';
 
 const FORMAT = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-export function SavedInquiries({ t, service = inquiryService }) {
+export function SavedInquiries({ t, service = inquiryService, onCountChange }) {
   const [state, setState] = useState({ status: 'loading', list: [] });
+
+  useEffect(() => {
+    if (state.status === 'ready') onCountChange?.(state.list.length);
+  }, [state.status, state.list.length, onCountChange]);
 
   useEffect(() => {
     let cancelled = false;

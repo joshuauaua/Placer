@@ -20,6 +20,7 @@ import { FollowButton } from './FollowButton';
 import { FollowListDialog } from './FollowListDialog';
 import { ProjectCard } from './ProjectCard';
 import { SavedInquiries } from './SavedInquiries';
+import { readInquiries } from '../services/inquiries';
 import { isSupabaseConfigured, readPublicProfile } from '../services/auth';
 import { readFollowCounts } from '../services/follows';
 import { readProfileOrganisations } from '../services/organisations';
@@ -49,6 +50,8 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
   // When they joined and their projects, and their comments: each { status, ... }.
   const [activity, setActivity] = useState({ status: 'loading', joinedAt: null, projects: [] });
   const [comments, setComments] = useState({ status: 'loading', list: [] });
+  // How many inquiries you have kept, for the Activity tab's count on your own profile.
+  const [inquiryCount, setInquiryCount] = useState(0);
   // Which list is open over the page: 'followers', 'following', or null.
   const [listOpen, setListOpen] = useState(null);
   const [tab, setTab] = useState('about');
@@ -95,6 +98,7 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
     setOrganisations(null);
     setActivity({ status: 'loading', joinedAt: null, projects: [] });
     setComments({ status: 'loading', list: [] });
+    setInquiryCount(0);
     setTab('about');
     readFollowCounts(userId)
       .then((found) => { if (!cancelled) setCounts(found); })
@@ -116,8 +120,14 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
         console.error("Could not load this account's comments:", err);
         if (!cancelled) setComments({ status: 'error', list: [] });
       });
+    // Inquiries are private, so only counted on your own profile.
+    if (accountId && accountId === userId) {
+      readInquiries()
+        .then((list) => { if (!cancelled) setInquiryCount(list.length); })
+        .catch((err) => console.error('Could not count your saved inquiries:', err));
+    }
     return () => { cancelled = true; };
-  }, [userId, status]);
+  }, [userId, status, accountId]);
 
   const shell = (children) => (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
@@ -209,8 +219,9 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
           style={{ borderBottom: `1px solid ${t.line}` }}>
           {TABS.map(({ id, label }) => {
             const current = id === tab;
-            // Activity counts comments, the part of it everybody sees.
-            const count = id === 'projects' ? activity.projects.length : id === 'activity' ? comments.list.length : 0;
+            // Activity counts comments, and on your own profile your saved inquiries too.
+            const count = id === 'projects' ? activity.projects.length
+              : id === 'activity' ? comments.list.length + (isYou ? inquiryCount : 0) : 0;
             return (
               <button key={id} id={`profile-tab-${id}`} type="button" role="tab" aria-selected={current}
                 aria-controls={`profile-panel-${id}`} aria-label={count > 0 ? `${label} (${count})` : undefined}
@@ -295,7 +306,7 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
           {tab === 'activity' && isYou && (
             <>
               <h2 style={{ fontSize: 19, fontWeight: 700, color: t.ink, margin: '0 0 12px' }}>Saved inquiries</h2>
-              <SavedInquiries t={t} />
+              <SavedInquiries t={t} onCountChange={setInquiryCount} />
               <h2 style={{ fontSize: 19, fontWeight: 700, color: t.ink, margin: '40px 0 12px' }}>Comments</h2>
             </>
           )}

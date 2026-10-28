@@ -30,20 +30,34 @@ const inputStyle = (t) => ({
 const MIN_PASSWORD = 8;
 
 function Field({ t, id, label, type, value, onChange, autoComplete, hint }) {
+  // A password can be shown, to check what was typed, with the eye at the end of the field.
+  const [shown, setShown] = useState(false);
+  const isPassword = type === 'password';
   return (
     <div style={{ marginBottom: 18 }}>
       <label htmlFor={id}
         style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
         {label}
       </label>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        autoComplete={autoComplete}
-        onChange={(e) => onChange(e.target.value)}
-        style={inputStyle(t)}
-      />
+      <div style={{ position: 'relative' }}>
+        <input
+          id={id}
+          type={isPassword && shown ? 'text' : type}
+          value={value}
+          autoComplete={autoComplete}
+          onChange={(e) => onChange(e.target.value)}
+          style={{ ...inputStyle(t), ...(isPassword ? { paddingRight: 48 } : null) }}
+        />
+        {isPassword && (
+          <button type="button" onClick={() => setShown((now) => !now)}
+            aria-label={shown ? 'Hide password' : 'Show password'} aria-pressed={shown} aria-controls={id}
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 44, display: 'flex',
+              alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none',
+              color: t.inkDim, cursor: 'pointer', padding: 0 }}>
+            <Icon name={shown ? 'eyeOff' : 'eye'} size={20} stroke={1.9} />
+          </button>
+        )}
+      </div>
       {hint && (
         <div style={{ fontSize: 13, color: t.inkDim, marginTop: 6 }}>{hint}</div>
       )}
@@ -242,7 +256,7 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
 
         {/* type="submit" and no onClick: Btn leaves `type` unset by default, which in a
             form means submit, so an onClick here would run handleSubmit twice. */}
-        <Btn t={t} variant="primary" icon="check" full
+        <Btn t={t} variant="primary" icon={signingUp ? undefined : 'check'} full
           type="submit" disabled={!ready || Boolean(busy)}>
           {busy === 'password'
             ? (signingUp ? 'Creating your account…' : 'Signing you in…')

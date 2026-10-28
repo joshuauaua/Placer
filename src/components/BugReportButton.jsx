@@ -126,7 +126,7 @@ export function BugReportButton({ t }) {
           position: 'fixed', right: 20, bottom, zIndex: 150,
           width: 48, height: 48, borderRadius: 999, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: t.primaryBg, color: t.primaryFg, border: 0, boxShadow: t.shadow,
+          background: t.surfaceAlt, color: t.inkDim, border: `1px solid ${t.lineStrong}`, boxShadow: t.shadow,
         }}>
         <Icon name={open ? 'close' : 'bug'} size={22} stroke={1.9} />
       </button>
