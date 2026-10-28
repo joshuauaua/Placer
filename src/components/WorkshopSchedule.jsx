@@ -11,7 +11,6 @@
  */
 
 import { useState } from 'react';
-import { formatLocale } from '../i18n';
 import { findTool } from '../toolkit/tools';
 
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()
@@ -21,9 +20,9 @@ const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() ==
 export function scheduleTime(value, now = new Date()) {
   const date = new Date(value ?? NaN);
   if (!Number.isFinite(date.getTime())) return null;
-  const time = date.toLocaleTimeString(formatLocale(), { hour: '2-digit', minute: '2-digit' });
+  const time = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   if (sameDay(date, now)) return time;
-  return `${date.toLocaleDateString(formatLocale(), { day: 'numeric', month: 'short' })}, ${time}`;
+  return `${date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}, ${time}`;
 }
 
 /**

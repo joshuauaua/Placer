@@ -19,21 +19,7 @@ import { Meter, Panel } from '../ToolLayout';
 import { Btn } from '../UI';
 import { AnswersEditor } from './OpenVoteSetup';
 import { DEFAULT_ANSWERS, OPTIONS, pollOptions, tally } from '../../lib/openVote';
-import { useText } from '../../i18n';
 import { KeepOnProfile, onItsOwn } from './KeepOnProfile';
-
-/**
- * The options with Yes, No and Undecided — the answers a poll starts with — in the
- * reader's language. Display only: the key a vote is saved under stays as it was.
- * Any other answer is shown as its organiser wrote it.
- */
-export function useOptionLabels(options) {
-  const { text } = useText();
-  return options.map((option) => {
-    const standard = OPTIONS.find((entry) => entry.label === option.label);
-    return standard ? { ...option, label: text(`openVote.options.${standard.key}`) } : option;
-  });
-}
 
 function VoteMeters({ t, options, result }) {
   return (
@@ -64,9 +50,7 @@ const PREVIEW_TICK_MS = 1200;
  * Holds still for anybody who has asked for less motion.
  */
 export function OpenVotePreview({ t }) {
-  const { text } = useText();
   const [votes, setVotes] = useState(PREVIEW_START);
-  const shown = useOptionLabels(OPTIONS);
 
   useEffect(() => {
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
@@ -84,26 +68,25 @@ export function OpenVotePreview({ t }) {
 
   const result = tally(votes, OPTIONS);
   return (
-    <div role="img" aria-label={text('openVote.preview.label')}
+    <div role="img" aria-label="An example poll, its tally changing as votes come in"
       style={{ padding: '14px 16px 4px', borderRadius: 12, border: `1px solid ${t.line}`, background: t.surface }}>
       <div aria-hidden="true">
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>{text('openVote.preview.question')}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>Should the square get more benches?</span>
           <div style={{ flex: 1 }} />
           <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint, whiteSpace: 'nowrap' }}>
             <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 3, marginRight: 6,
               background: '#B3261E', verticalAlign: 'middle' }} />
-            {text('openVote.preview.votes', { count: result.total })}
+            {result.total} {result.total === 1 ? 'vote' : 'votes'}
           </span>
         </div>
-        <VoteMeters t={t} options={shown} result={result} />
+        <VoteMeters t={t} options={OPTIONS} result={result} />
       </div>
     </div>
   );
 }
 
 export function OpenVote({ t, tool, room }) {
-  const { text } = useText();
   const [question, setQuestion] = useState('');
   const [answers, setAnswers] = useState(DEFAULT_ANSWERS);
   const fixedQuestion = room?.config?.question ?? null;
@@ -115,7 +98,6 @@ export function OpenVote({ t, tool, room }) {
     () => pollOptions(room?.config ? room.config.answers : editable ? answers : null),
     [room?.config, editable, answers],
   );
-  const shown = useOptionLabels(options);
 
   // Rewriting or removing the answer that was picked takes the pick away with it.
   useEffect(() => {
@@ -142,29 +124,30 @@ export function OpenVote({ t, tool, room }) {
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(280px, 1fr)', gap: 20, alignItems: 'start' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
         {fixedQuestion ? (
-          <Panel t={t} title={text('openVote.theQuestion')}>
+          <Panel t={t} title="The question">
             <p style={{ fontSize: 22, fontWeight: 700, color: t.ink, lineHeight: 1.35, letterSpacing: '-0.02em' }}>
               {fixedQuestion}
             </p>
           </Panel>
         ) : (
-        <Panel t={t} title={text('openVote.askSomething')}>
+        <Panel t={t} title="Ask something">
           <label htmlFor="open-vote-question"
             style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: t.inkDim, marginBottom: 8 }}>
-            {text('openVote.theQuestion')}
+            The question
           </label>
           <input
             id="open-vote-question"
             type="text"
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
-            placeholder={text('openVote.questionPlaceholder')}
+            placeholder="Yes or No?"
             style={{ width: '100%', padding: '12px 14px', fontSize: 18, fontWeight: 700, borderRadius: 12,
               border: `1.5px solid ${t.line}`, background: t.chrome, color: t.ink,
               fontFamily: 'var(--placer-font)', outline: 'none' }}
           />
           <p style={{ fontSize: 12.5, color: t.inkFaint, marginTop: 8, lineHeight: 1.5 }}>
-            {text('openVote.questionHint')}
+            Shown on this screen only — read it aloud, or put it on a slide. What gets counted is
+            the vote below, not the wording.
           </p>
           {editable && (
             <div style={{ marginTop: 20 }}>
@@ -174,9 +157,9 @@ export function OpenVote({ t, tool, room }) {
         </Panel>
         )}
 
-        <Panel t={t} title={text('openVote.castYourVote')}>
+        <Panel t={t} title="Cast your vote">
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {shown.map((option) => {
+            {options.map((option) => {
               const active = choice === option.key;
               return (
                 <Btn
@@ -200,7 +183,7 @@ export function OpenVote({ t, tool, room }) {
           </div>
           {choice && (
             <p style={{ fontSize: 12.5, color: t.inkDim, marginTop: 14 }}>
-              {text(inRoom ? 'openVote.sentToRoom' : 'openVote.changeYourMind')}
+              {inRoom ? 'Sent to the room.' : 'Change your mind any time — only the last vote counts.'}
             </p>
           )}
         </Panel>
@@ -208,39 +191,42 @@ export function OpenVote({ t, tool, room }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
         {inRoom ? (
-          <Panel t={t} title={text('openVote.roomsVote')} aside={
+          <Panel t={t} title="The room's vote" aside={
             <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
-              {text('openVote.cast', { count: room.participantCount })}
+              {room.participantCount} cast
             </span>
           }>
             {roomResult && roomResult.total > 0 ? (
-              <VoteMeters t={t} options={shown} result={roomResult} />
+              <VoteMeters t={t} options={options} result={roomResult} />
             ) : (
               <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
-                {text('openVote.emptyRoom')}
+                Nobody has voted yet. Yours will show up here as soon as you pick one.
               </p>
             )}
           </Panel>
         ) : (
-          <Panel t={t} title={text('openVote.result')}>
+          <Panel t={t} title="Result">
             {choice ? (
-              <VoteMeters t={t} options={shown} result={soloResult} />
+              <VoteMeters t={t} options={options} result={soloResult} />
             ) : (
               <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.65 }}>
-                {text('openVote.emptySolo')}
+                Pick an answer to see it here.
               </p>
             )}
           </Panel>
         )}
 
-        <Panel t={t} title={text('common.howItWorks')}>
+        <Panel t={t} title="How it works">
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6 }}>
-            {text('openVote.howItWorks')}
+            Open a room and share its PIN or QR code, and everybody who joins votes on whatever you
+            asked — the tally above updates live as each person picks. Opened from a project, a room
+            can stay open for up to 90 days, so its QR code can go on a poster. Closing the room, or
+            its time running out, lets go of every vote in it.
           </p>
         </Panel>
 
         {onItsOwn(room) && (
-          <KeepOnProfile t={t} tool={tool.id} intro={text('keep.intro.openVote')}
+          <KeepOnProfile t={t} tool={tool.id} intro="Save this question, its answers and your vote on your profile as an inquiry, to come back to later."
             inquiry={question.trim() ? {
               title: question.trim(), note: '', config: { question: question.trim(), answers, choice },
             } : null} />

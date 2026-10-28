@@ -17,7 +17,6 @@ import { Panel } from '../ToolLayout';
 import { Btn } from '../UI';
 import { useIdentity } from '../useIdentity';
 import { saveInquiry } from '../../services/inquiries';
-import { useText } from '../../i18n';
 
 /** Whether a tool is being used on its own, rather than in a room or for a project. */
 export function onItsOwn(room) {
@@ -25,7 +24,6 @@ export function onItsOwn(room) {
 }
 
 export function KeepOnProfile({ t, tool, inquiry, intro }) {
-  const { text } = useText();
   const { status, accountId } = useIdentity();
   const [, navigate] = useLocation();
   const [saving, setSaving] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
@@ -38,7 +36,7 @@ export function KeepOnProfile({ t, tool, inquiry, intro }) {
   if (status === 'signedOut') {
     return (
       <p style={{ margin: 0, fontSize: 13.5, color: t.inkDim, lineHeight: 1.6 }}>
-        {text('keep.signIn')}
+        Sign in to keep this on your profile and come back to it later.
       </p>
     );
   }
@@ -56,22 +54,22 @@ export function KeepOnProfile({ t, tool, inquiry, intro }) {
   };
 
   return (
-    <Panel t={t} title={text('keep.title')}>
+    <Panel t={t} title="Keep it">
       <p style={{ margin: '0 0 12px', fontSize: 13.5, color: t.inkDim, lineHeight: 1.6 }}>{intro}</p>
       <Btn t={t} variant="primary" size="sm" icon="bookmark"
         disabled={!inquiry || current === 'saving' || current === 'saved'} onClick={keep}>
-        {text(current === 'saving' ? 'keep.saving' : current === 'saved' ? 'keep.saved' : 'keep.save')}
+        {current === 'saving' ? 'Saving…' : current === 'saved' ? 'Saved to your profile' : 'Save to my profile'}
       </Btn>
       {current === 'saved' && accountId && (
         <p role="status" style={{ margin: '12px 0 0', fontSize: 13.5, color: t.ink }}>
           <a href={`/people/${accountId}`} onClick={(event) => { event.preventDefault(); navigate(`/people/${accountId}`); }}
             style={{ color: t.ink, fontWeight: 700 }}>
-            {text('keep.seeThem')}
+            See your saved inquiries
           </a>
         </p>
       )}
       {current === 'error' && (
-        <p role="alert" style={{ margin: '12px 0 0', fontSize: 13.5, color: t.ink }}>{text('keep.failed')}</p>
+        <p role="alert" style={{ margin: '12px 0 0', fontSize: 13.5, color: t.ink }}>It did not save. Please try again.</p>
       )}
     </Panel>
   );

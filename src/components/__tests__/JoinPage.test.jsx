@@ -4,7 +4,6 @@ import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { THEME } from '../../theme';
 import JoinPage from '../JoinPage';
-import { setLanguage } from '../../i18n';
 
 const joinRoom = vi.fn();
 const joinRoomByCode = vi.fn();
@@ -35,22 +34,6 @@ beforeEach(() => {
 
 afterEach(() => {
   localStorage.clear();
-  setLanguage('en');
-});
-
-describe('joining in another language', () => {
-  it("says when a room opens in the reader's own words and date format", async () => {
-    setLanguage('it');
-    joinRoomByCode.mockResolvedValue({
-      id: 'room-1', tool: 'open-vote', status: 'scheduled', endsAt: '2026-12-01T12:00:00Z',
-      opensAt: '2026-11-01T12:00:00Z',
-    });
-
-    renderAt(`code=${'a'.repeat(32)}`);
-
-    expect(screen.getByRole('heading', { name: 'Entra in una stanza' })).toBeInTheDocument();
-    expect(await screen.findByRole('status')).toHaveTextContent(/Questa stanza apre il 1 novembre 2026,? alle ore \d{2}:\d{2}\./);
-  });
 });
 
 describe('joining a long room by the code in its QR link', () => {

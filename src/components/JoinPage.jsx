@@ -21,13 +21,8 @@ import { Btn, Logo } from './UI';
 import { findTool } from '../toolkit/tools';
 import { PIN_LENGTH, formatPin, formatRoomDate, formatRoomStart, parseJoinCode, parsePin, roomPath } from '../toolkit/rooms';
 import { isSupabaseConfigured, joinRoom, joinRoomByCode } from '../services/rooms';
-// plainText inside the callbacks: they are effect dependencies, and the hook's text is
-// a new function every render.
-import { text as plainText, useText } from '../i18n';
-import { LanguagePicker } from './LanguagePicker';
 
 export function JoinPage({ t }) {
-  const { text } = useText();
   const [, navigate] = useLocation();
   const search = useSearch();
   const [typed, setTyped] = useState('');
@@ -63,7 +58,7 @@ export function JoinPage({ t }) {
         if (!tool) {
           // The room is for a tool this build does not have — an old link
           // against a newer database, or the other way round.
-          setError(plainText('join.unknownTool'));
+          setError('That room is for a tool this version of PLACER does not have.');
           setStatus('error');
           return;
         }
@@ -100,7 +95,7 @@ export function JoinPage({ t }) {
           return;
         }
         if (!findTool(room.tool)) {
-          setError(plainText('join.unknownTool'));
+          setError('That room is for a tool this version of PLACER does not have.');
           setStatus('error');
           return;
         }
@@ -133,24 +128,24 @@ export function JoinPage({ t }) {
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
       <div style={{ width: '100%', maxWidth: 420 }}>
-        <div style={{ marginBottom: 28, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ marginBottom: 28 }}>
           <Logo t={t} size={22} />
-          <LanguagePicker t={t} />
         </div>
 
         <h1 className="placer-disp" style={{ fontSize: 34, fontWeight: 700, color: t.ink,
           letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 12 }}>
-          {text('join.title')}
+          Join a room
         </h1>
 
         {!configured ? (
           <p role="status" style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6 }}>
-            {text('join.notConfigured')} <span className="placer-mono">supabase/README.md</span>.
+            Rooms are not switched on for this site. A room is shared between devices, so it needs a database behind it — see <span className="placer-mono">supabase/README.md</span>.
           </p>
         ) : (
           <>
             <p style={{ fontSize: 15.5, color: t.inkDim, lineHeight: 1.6, marginBottom: 24 }}>
-              {text('join.intro')}
+              Type the six digits on the facilitator's screen. Your answers join everyone else's in
+              the room.
             </p>
 
             <form
@@ -160,7 +155,7 @@ export function JoinPage({ t }) {
               }}>
               <label htmlFor="join-pin" style={{ display: 'block', fontSize: 12.5, fontWeight: 700,
                 color: t.inkDim, marginBottom: 6 }}>
-                {text('join.pin')}
+                Room PIN
               </label>
               <input
                 id="join-pin"
@@ -191,25 +186,29 @@ export function JoinPage({ t }) {
                 full
                 disabled={!ready || status === 'joining'}
                 style={{ marginTop: 14 }}>
-                {text(status === 'joining' ? 'join.looking' : 'join.join')}
+                {status === 'joining' ? 'Looking for it…' : 'Join'}
               </Btn>
             </form>
 
             {status === 'unknown' && (
               <p role="status" style={{ marginTop: 16, fontSize: 14, color: '#B3261E', lineHeight: 1.6 }}>
-                {text(codeFromUrl && !ready ? 'join.deadLink' : 'join.noRoom')}
+                {codeFromUrl && !ready
+                  ? 'That link does not lead to a room any more. It may have ended a while ago.'
+                  : 'No open room has that PIN. It may have been closed, or one of the digits may be off.'}
               </p>
             )}
 
             {status === 'scheduled' && (
               <p role="status" style={{ marginTop: 16, fontSize: 14, color: t.ink, lineHeight: 1.6 }}>
-                {opensOn ? text('room.opensOn', { date: opensOn }) : text('room.notOpenYet')} {text('join.comeBack')}
+                {opensOn ? `This room opens on ${opensOn}.` : 'This room has not opened yet.'} Come
+                back then to take part.
               </p>
             )}
 
             {status === 'ended' && (
               <p role="status" style={{ marginTop: 16, fontSize: 14, color: t.ink, lineHeight: 1.6 }}>
-                {endedOn ? text('join.closedOn', { date: endedOn }) : text('join.hasClosed')} {text('join.thanks')}
+                {endedOn ? `This room closed on ${endedOn}.` : 'This room has closed.'} Thanks for
+                looking — it is not taking any more answers.
               </p>
             )}
 
