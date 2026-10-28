@@ -40,8 +40,9 @@ const PASSWORD = 'Change your password';
 const ORGANISATIONS = 'Manage your organisations';
 const ANALYTICS = 'Analytics';
 
-const nameField = () => screen.getByLabelText('Your name');
-const saveButton = () => screen.getByRole('button', { name: /Save name/ });
+const nameField = () => screen.getByLabelText('Display name');
+// The profile's one save, under all of its fields.
+const saveButton = () => screen.getByRole('button', { name: 'Save' });
 
 describe('SettingsPage', () => {
   afterEach(() => {
@@ -153,7 +154,7 @@ describe('SettingsPage, options', () => {
 
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent))
       .toEqual(['Profile Settings', 'Account', 'Preferences', 'Data and Privacy']);
-    expect(screen.queryByLabelText('Your name')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Display name')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: PROFILE })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: PASSWORD })).toBeInTheDocument();
   });
@@ -161,9 +162,9 @@ describe('SettingsPage, options', () => {
   it('opens an option and goes back to the list', () => {
     setup({ option: PROFILE });
 
-    expect(screen.getByLabelText('Your name')).toHaveValue('Mara Quinn');
+    expect(screen.getByLabelText('Display name')).toHaveValue('Mara Quinn');
     fireEvent.click(screen.getByRole('button', { name: /All settings/ }));
-    expect(screen.queryByLabelText('Your name')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Display name')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: PROFILE })).toBeInTheDocument();
   });
 
@@ -205,16 +206,24 @@ describe('SettingsPage, bio and location', () => {
     expect(screen.queryByRole('radio', { name: 'Organisation' })).not.toBeInTheDocument();
   });
 
-  it('saves a contact email and a website', async () => {
-    const { onSaveProfile } = setup({ option: PROFILE, profile: { name: 'Mara Quinn', bio: '', contactEmail: '', website: '' } });
+  it('saves a contact email and a website together, and only what changed', async () => {
+    const { onSaveProfile } = setup({ option: PROFILE, profile: { name: 'Mara Quinn', bio: 'Cyclist', contactEmail: '', website: '' } });
 
     fireEvent.change(screen.getByLabelText('Contact email'), { target: { value: 'hi@mara.se' } });
-    fireEvent.click(screen.getByRole('button', { name: /Save contact email/ }));
     fireEvent.change(screen.getByLabelText('Website'), { target: { value: 'mara.se' } });
-    fireEvent.click(screen.getByRole('button', { name: /Save website/ }));
+    fireEvent.click(saveButton());
 
-    await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ contactEmail: 'hi@mara.se' }));
-    await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ website: 'mara.se' }));
+    await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ contactEmail: 'hi@mara.se', website: 'mara.se' }));
+    expect(onSaveProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it('has one save for the whole profile, and no description over each field', () => {
+    setup({ option: PROFILE, email: 'mara@example.com' });
+
+    expect(screen.getAllByRole('button', { name: /^Save/ })).toEqual([saveButton()]);
+    expect(screen.queryByText(/shown on your public profile/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/A picture of you/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Your name')).not.toBeInTheDocument();
   });
 
   it('offers no cover image at all, only the profile photo', () => {
@@ -261,18 +270,19 @@ describe('SettingsPage, bio and location', () => {
     expect(screen.getByLabelText('Location')).toHaveValue('Malmö');
   });
 
-  it('cannot save a field until it actually changes', () => {
+  it('cannot save until a field actually changes', () => {
     setup({ option: PROFILE, profile: { name: 'Mara Quinn', bio: 'Cyclist', location: '' } });
 
-    expect(screen.getByRole('button', { name: /Save bio/ })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Save location/ })).toBeDisabled();
+    expect(saveButton()).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Bio'), { target: { value: 'Runner' } });
+    expect(saveButton()).toBeEnabled();
   });
 
   it('saves a bio, blank being a valid value since it is optional', async () => {
     const { onSaveProfile } = setup({ option: PROFILE, profile: { name: 'Mara Quinn', bio: 'Cyclist', location: '' } });
 
     fireEvent.change(screen.getByLabelText('Bio'), { target: { value: '' } });
-    fireEvent.click(screen.getByRole('button', { name: /Save bio/ }));
+    fireEvent.click(saveButton());
 
     await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({ bio: '' }));
   });
@@ -281,7 +291,7 @@ describe('SettingsPage, bio and location', () => {
     const { onSaveProfile } = setup({ option: PROFILE, profile: { name: 'Mara Quinn', bio: '', location: '' } });
 
     fireEvent.change(screen.getByLabelText('Location'), { target: { value: 'Malmö' } });
-    fireEvent.click(screen.getByRole('button', { name: /Save location/ }));
+    fireEvent.click(saveButton());
 
     expect(await screen.findAllByRole('status')).not.toHaveLength(0);
     // Typed rather than chosen from the suggestions, so there is no place to open Explore at.
@@ -306,8 +316,8 @@ describe('SettingsPage, bio and location', () => {
 
       fireEvent.mouseDown(option);
       expect(screen.getByLabelText('Location')).toHaveValue('Malmö, Sweden');
-      expect(screen.getByText('Explore opens here.')).toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: /Save location/ }));
+      expect(screen.queryByText(/Explore opens/)).not.toBeInTheDocument();
+      fireEvent.click(saveButton());
 
       await waitFor(() => expect(onSaveProfile).toHaveBeenCalledWith({
         location: 'Malmö, Sweden', locationPoint: { lat: 55.6, lng: 13 } }));
