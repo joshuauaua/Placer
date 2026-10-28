@@ -157,10 +157,7 @@ export function useSurveyForm({ content, submit, source }) {
 
   const chosenOptIns = content.optIns.filter((entry) => optIns[entry.key]).map((entry) => entry.key);
   // The contact fields show unconditionally on the closing step (see SurveyForm),
-  // not gated behind an opt-in checkbox — the checkboxes are now separate, further
-  // asks. Whether the respondent has actually started leaving their details is
-  // read off the fields themselves, the same "typed something" signal `isAnswered`
-  // uses for a required text question.
+  // not gated behind an opt-in checkbox — the checkboxes are separate, further asks.
   const trimmedContact = Object.fromEntries(
     Object.entries(contact).map(([key, value]) => [key, value.trim()]),
   );
@@ -172,16 +169,12 @@ export function useSurveyForm({ content, submit, source }) {
   const isAnonymous = Boolean(anonymousOptIn && optIns[anonymousOptIn.key]);
   const anonymousFields = content.contact.fields.filter((field) => field.askedWhenAnonymous);
   const anonymousComplete = anonymousFields.every((field) => filled(trimmedContact[field.key]));
-  const wantsContact = !isAnonymous && Object.values(trimmedContact).some(filled);
+  // Everybody who has not asked to stay anonymous leaves an address: without one,
+  // a report or beta request has nowhere to go. The other fields stay optional.
+  const wantsContact = !isAnonymous;
   const emailField = content.contact.fields.find((field) => field.type === 'email');
-  const contactComplete = content.contact.fields.every((field) =>
-    field.type === 'email'
-      ? EMAIL_PATTERN.test(trimmedContact[field.key])
-      : filled(trimmedContact[field.key]),
-  );
-  // Details are only required once the respondent has actually started leaving them,
-  // or, anonymously, the few still asked of them.
-  const canSubmit = isAnonymous ? anonymousComplete : !wantsContact || contactComplete;
+  const emailValid = EMAIL_PATTERN.test(trimmedContact[emailField.key]);
+  const canSubmit = isAnonymous ? anonymousComplete : emailValid;
 
   /**
    * Records the current question's answer. Single-choice and `scale` questions
@@ -306,19 +299,17 @@ export function useSurveyForm({ content, submit, source }) {
     setIsSubmitting(true);
 
     try {
-      // Nothing typed before the last opt-in was cleared is kept: no opt-in, no
-      // details. `email` is also sent on its own because it is a column of its
-      // own on the responses table.
+      // Anonymously, only the fields still asked are kept; otherwise the optional
+      // fields left blank are dropped. `email` is also sent on its own because it
+      // is a column of its own on the responses table.
       await submit({
         ...answers,
         otherText: pruneOtherText(content, answers, otherText),
         optIns: chosenOptIns,
         contact: isAnonymous
           ? Object.fromEntries(anonymousFields.map((field) => [field.key, trimmedContact[field.key]]))
-          : wantsContact
-            ? trimmedContact
-            : null,
-        email: wantsContact && emailField ? trimmedContact[emailField.key] : null,
+          : Object.fromEntries(Object.entries(trimmedContact).filter(([, value]) => filled(value))),
+        email: wantsContact ? trimmedContact[emailField.key] : null,
         source,
       });
       posthog.capture('survey_submitted', {

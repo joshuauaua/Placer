@@ -88,20 +88,21 @@ describe('PlacemakingTrendsSurveyPage', () => {
       walkToOptIn();
     });
 
-    it('offers Submit right away, with the contact fields present but empty', () => {
-      expect(button(content.steps.submitLabel)).not.toBeDisabled();
+    it('holds Submit at first, with the contact fields present but empty', () => {
+      expect(button(content.steps.submitLabel)).toBeDisabled();
       content.optIns.forEach((entry) => expect(optIn(entry.label)).not.toBeChecked());
       expect(heading(content.contact.title)).toBeInTheDocument();
       content.contact.fields.forEach((entry) => expect(field(entry.label)).toHaveValue(''));
+      expect(field('Email Address')).toBeRequired();
     });
 
-    it('holds Submit once any detail is typed, until it is all there and the address is plausible', () => {
+    it('holds Submit until the address is plausible, whatever else is filled in', () => {
       fireEvent.change(field('Full Name'), { target: { value: 'A. Planner' } });
-      expect(button(content.steps.submitLabel)).toBeDisabled();
-
       fireEvent.change(field('City'), {
         target: { value: 'Rotterdam, Netherlands' },
       });
+      expect(button(content.steps.submitLabel)).toBeDisabled();
+
       fireEvent.change(field('Email Address'), { target: { value: 'not-an-email' } });
       expect(button(content.steps.submitLabel)).toBeDisabled();
 
@@ -109,9 +110,11 @@ describe('PlacemakingTrendsSurveyPage', () => {
       expect(button(content.steps.submitLabel)).not.toBeDisabled();
     });
 
-    it('does not require contact details just because an opt-in is ticked', () => {
-      fireEvent.click(optIn(content.optIns[0].label));
+    it('needs only the email, with or without an opt-in ticked', () => {
+      fireEvent.change(field('Email Address'), { target: { value: 'planner@city.gov' } });
+      expect(button(content.steps.submitLabel)).not.toBeDisabled();
 
+      fireEvent.click(optIn(content.optIns[0].label));
       expect(button(content.steps.submitLabel)).not.toBeDisabled();
     });
 
@@ -216,18 +219,30 @@ describe('PlacemakingTrendsSurveyPage', () => {
       });
     });
 
-    it('stores a response with no details when nothing is filled in', async () => {
+    it('stores only the email when the other details are left blank', async () => {
       render(<PlacemakingTrendsSurveyPage t={THEME} />);
       walkToOptIn();
 
+      fireEvent.change(field('Email Address'), { target: { value: ' planner@city.gov ' } });
       fireEvent.click(button(content.steps.submitLabel));
 
       expect(await screen.findByRole('heading', { name: content.success.title })).toBeInTheDocument();
 
       const stored = JSON.parse(localStorage.getItem('placemaking_survey_responses'));
-      expect(stored[0].email).toBeNull();
-      expect(stored[0].contact).toBeNull();
+      expect(stored[0].email).toBe('planner@city.gov');
+      expect(stored[0].contact).toEqual({ email: 'planner@city.gov' });
       expect(stored[0].optIns).toEqual([]);
+    });
+
+    it('does not submit without an email unless anonymous', () => {
+      render(<PlacemakingTrendsSurveyPage t={THEME} />);
+      walkToOptIn();
+
+      fireEvent.click(button(content.steps.submitLabel));
+      fireEvent.keyDown(document.body, { key: 'Enter' });
+
+      expect(heading(content.steps.optInTitle)).toBeInTheDocument();
+      expect(localStorage.getItem('placemaking_survey_responses')).toBeNull();
     });
 
     it('stores an anonymous response with only city and country', async () => {
@@ -251,6 +266,7 @@ describe('PlacemakingTrendsSurveyPage', () => {
     it('keeps two surveys apart in the same local store', async () => {
       render(<PlacemakingTrendsSurveyPage t={THEME} />);
       walkToOptIn();
+      fireEvent.change(field('Email Address'), { target: { value: 'planner@city.gov' } });
       fireEvent.click(button(content.steps.submitLabel));
       await screen.findByRole('heading', { name: content.success.title });
 
@@ -270,6 +286,7 @@ describe('PlacemakingTrendsSurveyPage', () => {
     it('submits when Enter is pressed on the closing step', async () => {
       render(<PlacemakingTrendsSurveyPage t={THEME} />);
       walkToOptIn();
+      fireEvent.change(field('Email Address'), { target: { value: 'planner@city.gov' } });
       fireEvent.keyDown(document.body, { key: 'Enter' });
 
       expect(await screen.findByRole('heading', { name: content.success.title })).toBeInTheDocument();
