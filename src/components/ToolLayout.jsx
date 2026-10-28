@@ -4,7 +4,6 @@
 
 import { Icon } from './Icon';
 import { Btn, Chip } from './UI';
-import { text as plainText, toolText, useText } from '../i18n';
 
 /**
  * A tool's header and body. The scrolling container is the Toolkit page's,
@@ -17,13 +16,12 @@ import { text as plainText, toolText, useText } from '../i18n';
  * `breadcrumb`, when given, replaces All tools, as on ToolCover.
  */
 export function ToolLayout({ t, tool, onBack, actions, breadcrumb = null, children }) {
-  const { text, language } = useText();
   return (
     <div>
       {breadcrumb ?? (
         <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack}
           style={{ padding: '0 12px 0 6px', marginBottom: 18, color: t.inkDim }}>
-          {text('tool.allTools')}
+          All tools
         </Btn>
       )}
 
@@ -36,16 +34,16 @@ export function ToolLayout({ t, tool, onBack, actions, breadcrumb = null, childr
               <Icon name={tool.icon} size={22} stroke={2.2} />
             </span>
             <h1 className="placer-disp" style={{ fontSize: 32, fontWeight: 700, color: t.ink, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-              {toolText(tool, 'name', language)}
+              {tool.name}
             </h1>
           </div>
           {/* A tool whose cover says it all (blurbOnCover) keeps only its credits here. */}
           {!tool.blurbOnCover && (
-            <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6, maxWidth: 660 }}>{toolText(tool, 'blurb', language)}</p>
+            <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6, maxWidth: 660 }}>{tool.blurb}</p>
           )}
           {tool.createdBy && (
             <p className="placer-mono" style={{ marginTop: tool.blurbOnCover ? 0 : 12, fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: t.inkFaint }}>
-              {text('tool.by', { name: tool.createdBy })}
+              By {tool.createdBy}
             </p>
           )}
           {tool.credit && (
@@ -127,7 +125,7 @@ export function Meter({ t, label, value, color, caption, signed }) {
 }
 
 /** The row of preset buttons every tool opens with. */
-export function PresetRow({ t, presets, active, onPick, color, label = plainText('common.presets') }) {
+export function PresetRow({ t, presets, active, onPick, color, label = 'Presets' }) {
   return (
     // Grouped and named, because a preset can share a name with something in the
     // tool's own palette — "Play street" is both a preset and a segment type.

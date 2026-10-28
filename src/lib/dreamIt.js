@@ -10,8 +10,6 @@
  * it is refreshed or left.
  */
 
-import { text } from '../i18n';
-
 export const PROMPTS = [
   'If this place had a voice, what would it say?',
   'What is missing here that would bring joy or comfort?',
@@ -29,14 +27,6 @@ export const PROMPTS = [
   'Imagine this place on its best day — what is going on?',
   'What would you want to find here on a cold, dark evening?',
 ];
-
-/**
- * Our prompts in the reader's language (dreamIt.prompts in the dictionary, in the same
- * order as PROMPTS, which stays the English original).
- */
-export function ourPrompts() {
-  return PROMPTS.map((prompt, index) => text(`dreamIt.prompts.${index}`));
-}
 
 /** The prompts in a new order. `random` is a parameter so this can be tested. */
 export function shuffle(prompts = PROMPTS, random = Math.random) {
@@ -84,17 +74,16 @@ export function writesOwn(mode) {
  * be: nothing written, one they (or, when both are in play, we) already have, or one
  * past the most allowed.
  */
-export function addPrompt(own, written, mode = 'own') {
-  const prompt = String(typeof written === 'string' ? written : '').replace(/\s+/g, ' ').trim().slice(0, MAX_PROMPT_LENGTH);
+export function addPrompt(own, text, mode = 'own') {
+  const prompt = String(typeof text === 'string' ? text : '').replace(/\s+/g, ' ').trim().slice(0, MAX_PROMPT_LENGTH);
   if (!prompt || own.length >= MAX_OWN_PROMPTS) return own;
-  const taken = (mode === 'both' ? [...ourPrompts(), ...own] : own).map((entry) => entry.toLowerCase());
+  const taken = (mode === 'both' ? [...PROMPTS, ...own] : own).map((entry) => entry.toLowerCase());
   return taken.includes(prompt.toLowerCase()) ? own : [...own, prompt];
 }
 
 /** The prompts a deck is made of: ours, a group's own, or ours with theirs after. */
 export function deckPrompts(mode, own = []) {
   if (mode === 'own') return own;
-  const ours = ourPrompts();
-  if (mode === 'both') return [...ours, ...own.filter((prompt) => !ours.includes(prompt))];
-  return ours;
+  if (mode === 'both') return [...PROMPTS, ...own.filter((prompt) => !PROMPTS.includes(prompt))];
+  return PROMPTS;
 }

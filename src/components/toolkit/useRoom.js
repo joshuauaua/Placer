@@ -29,7 +29,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { text } from '../../i18n';
 import {
   forgetHostedRoom,
   hostedRoom,
@@ -116,19 +115,19 @@ export function useRoom({ tool, roomId, displayName, service = roomService }) {
         if (!live) return;
 
         if (!room) {
-          setError(text('room.errors.missing'));
+          setError('That room does not exist. It may already have been closed.');
           setStatus('error');
           return;
         }
         if (room.tool !== tool.id) {
-          setError(text('room.errors.otherTool'));
+          setError('That room belongs to a different tool.');
           setStatus('error');
           return;
         }
 
         const setup = roomSetup(tool, room.config);
         if (setup === undefined) {
-          setError(text('room.errors.unknownSetup'));
+          setError('This room was set up in a way this version of the tool cannot show.');
           setStatus('error');
           return;
         }

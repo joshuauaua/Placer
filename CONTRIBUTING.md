@@ -47,28 +47,6 @@ existing ones fits. A tool that can be run in a room (`room: { empty, combine }`
 entry) also needs a row in the database's `toolkit_room_tools`: a file of its own in
 `supabase/room-tools/` (see the README there), which is a database change — see below.
 
-## Translations
-
-Joining a room, the tool cover and header, the room bar and the five room tools are
-shown in English, Turkish or Italian (`src/i18n/`). On those screens, text goes in
-`src/i18n/en.json` and is read with `text('key')` from `useText()`, never written into
-the component: `src/i18n/__tests__/noHardcodedText.test.js` fails on a translated
-screen with words left in it.
-
-You only write the English. When a pull request changes it, the translations workflow
-drafts the Turkish and Italian with Claude and commits them to the pull request for a
-native speaker to read in the diff. To do the same locally, or to see what is behind:
-
-- `npm run i18n:check` — what each language is missing, or translated from English
-  that has since been reworded
-- `npm run i18n:translate` — drafts those (needs `ANTHROPIC_API_KEY`, and
-  `npm install --no-save @anthropic-ai/sdk` once)
-- `npm run i18n:stamp -- --lang tr <key>` — after fixing a translation by hand, so it
-  stops counting as out of date
-
-A translated tool's name, tagline and blurb are copied into `en.json` under `tools`;
-change them in both places, and a test says so if you forget one.
-
 ## What review will look for
 
 The codebase has strong habits. Matching them makes review quick:

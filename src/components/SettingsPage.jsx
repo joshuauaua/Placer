@@ -21,7 +21,6 @@ import { isSupabaseConfigured, readPreferences, savePreferences } from '../servi
 import { ProjectResponsesChoice } from './ProjectResponsesChoice';
 import { PlaceSearch } from './PlaceSearch';
 import { PasswordInput } from './PasswordInput';
-import { LANGUAGES, setLanguage, useText } from '../i18n';
 
 // The same floor AuthPage and ResetPasswordPage ask for.
 const MIN_PASSWORD = 8;
@@ -403,39 +402,6 @@ function Analytics({ t, onNavigate }) {
   );
 }
 
-/**
- * Which language PLACER is shown in (src/i18n). Kept per browser, like the analytics
- * choice above. Its own words are in the language chosen, and each language is named
- * in itself, so somebody who landed here in the wrong one can still find theirs.
- */
-function LanguageSetting({ t }) {
-  const { text, language } = useText();
-  return (
-    <Card t={t} title={text('settings.language.title')}>
-      <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-        <legend style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
-          {text('settings.language.choose')}
-        </legend>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {LANGUAGES.map((option) => (
-            <label key={option.code} lang={option.code}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12,
-                cursor: 'pointer', border: `1.5px solid ${language === option.code ? t.ink : t.line}`,
-                background: t.chrome, fontSize: 15, fontWeight: 600, color: t.ink }}>
-              <input type="radio" name="settings-language" value={option.code}
-                checked={language === option.code} onChange={() => setLanguage(option.code)} />
-              {option.name}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginTop: 16 }}>
-        {text('settings.language.scope')}
-      </p>
-    </Card>
-  );
-}
-
 // One row per category the pasted feature list describes, in that order. `inapp`
 // and `email` are the notification_preferences columns this row's two checkboxes
 // read and write.
@@ -567,7 +533,6 @@ function NotificationPreferences({ t }) {
 
 export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
   organisations = [], onNewOrganisation, onOpenOrganisationDashboard, onReplayTour }) {
-  const { text } = useText();
   // The open option's key, or null for the list of them.
   const requested = new URLSearchParams(useSearch()).get('open');
   const [open, setOpen] = useState(requested);
@@ -619,11 +584,6 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
       show: Boolean(email) && isSupabaseConfigured(),
       description: 'What you hear about, in the app and by email',
       cards: <NotificationPreferences t={t} />,
-    },
-    language: {
-      category: 'Preferences', icon: 'comment', title: text('settings.language.title'), show: true,
-      description: text('settings.language.description'),
-      cards: <LanguageSetting t={t} />,
     },
     tour: {
       category: 'Preferences', icon: 'sparkle', title: 'Take the welcome tour again',
