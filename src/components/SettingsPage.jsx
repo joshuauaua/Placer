@@ -39,11 +39,15 @@ const inputStyle = (t) => ({
   outline: 'none',
 });
 
-function Card({ t, title, children }) {
+// With `htmlFor`, the title is the label of the one field in the card, rather than
+// being repeated as a label over it.
+function Card({ t, title, htmlFor, children }) {
   return (
     <section style={{ padding: 28, marginBottom: 24, background: t.surface, borderRadius: 12,
       border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
-      <h3 style={{ fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: 8 }}>{title}</h3>
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: htmlFor ? 12 : 8 }}>
+        {htmlFor ? <label htmlFor={htmlFor}>{title}</label> : title}
+      </h3>
       {children}
     </section>
   );
@@ -89,191 +93,104 @@ function OptionRow({ t, icon, title, description, onClick }) {
   );
 }
 
-function DisplayName({ t, profile, onSaveProfile }) {
-  const [name, setName] = useState(profile?.name ?? '');
-  const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+const PROFILE_FIELDS = ['name', 'bio', 'location', 'contactEmail', 'website'];
 
-  const trimmed = name.trim();
-  const unchanged = trimmed === (profile?.name ?? '');
-
-  // Saving is a request now, not a localStorage write, so it can be slow and it can
-  // fail. Both states are shown rather than swallowed: a name that silently did not
-  // save is worse than one that says so.
-  const handleSave = async () => {
-    setStatus('saving');
-    try {
-      await onSaveProfile({ name: trimmed });
-      setStatus('saved');
-    } catch (err) {
-      console.error('Could not save your name:', err);
-      setStatus('error');
-    }
-  };
-
-  return (
-    <Card t={t} title="Display name">
-      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
-        The name shown on what you post from now on. Changing it does not rename
-        what you have already posted.
-      </p>
-      <label htmlFor="settings-display-name"
-        style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
-        Your name
-      </label>
-      <input
-        id="settings-display-name"
-        type="text"
-        value={name}
-        onChange={(e) => { setName(e.target.value); setStatus('idle'); }}
-        style={{ ...inputStyle(t), maxWidth: 380, marginBottom: 20 }}
-      />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Btn t={t} variant="primary" icon="check" onClick={handleSave}
-          disabled={!trimmed || unchanged || status === 'saving'}>
-          {status === 'saving' ? 'Saving…' : 'Save name'}
-        </Btn>
-        {status === 'saved' && (
-          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>
-            Saved.
-          </span>
-        )}
-        {status === 'error' && (
-          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 500 }}>
-            Could not save that. Try again.
-          </span>
-        )}
-      </div>
-    </Card>
-  );
-}
-
-// Bio and Location share this shape with each other but not with DisplayName: both
-// are optional, so there is no "blank is invalid" rule to encode, and one of them
-// wants a textarea. DisplayName stays its own component rather than becoming a third
-// call to this one — a required field with its own copy is a different enough thing
-// that folding it in would mean threading an "isRequired" branch through a function
-// two of its three uses do not need.
-function ProfileField({ t, profile, onSaveProfile, fieldKey, title, description, label, id, placeholder, multiline,
-  inputType = 'text' }) {
-  const [value, setValue] = useState(profile?.[fieldKey] ?? '');
-  const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
-
-  const trimmed = value.trim();
-  const unchanged = trimmed === (profile?.[fieldKey] ?? '');
-
-  const handleSave = async () => {
-    setStatus('saving');
-    try {
-      await onSaveProfile({ [fieldKey]: trimmed });
-      setStatus('saved');
-    } catch (err) {
-      console.error(`Could not save your ${label.toLowerCase()}:`, err);
-      setStatus('error');
-    }
-  };
-
-  const fieldStyle = { ...inputStyle(t), maxWidth: 380, marginBottom: 20,
-    ...(multiline ? { resize: 'vertical', minHeight: 88, fontFamily: 'var(--placer-font)' } : {}) };
-
-  return (
-    <Card t={t} title={title}>
-      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
-        {description}
-      </p>
-      <label htmlFor={id}
-        style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
-        {label}
-      </label>
-      {multiline ? (
-        <textarea id={id} rows={4} value={value} placeholder={placeholder}
-          onChange={(e) => { setValue(e.target.value); setStatus('idle'); }}
-          style={fieldStyle} />
-      ) : (
-        <input id={id} type={inputType} value={value} placeholder={placeholder}
-          onChange={(e) => { setValue(e.target.value); setStatus('idle'); }}
-          style={fieldStyle} />
-      )}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Btn t={t} variant="primary" icon="check" onClick={handleSave}
-          disabled={unchanged || status === 'saving'}>
-          {status === 'saving' ? 'Saving…' : `Save ${label.toLowerCase()}`}
-        </Btn>
-        {status === 'saved' && (
-          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>
-            Saved.
-          </span>
-        )}
-        {status === 'error' && (
-          <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 500 }}>
-            Could not save that. Try again.
-          </span>
-        )}
-      </div>
-    </Card>
-  );
-}
+const profileValues = (profile) => ({
+  ...Object.fromEntries(PROFILE_FIELDS.map((key) => [key, profile?.[key] ?? ''])),
+  locationPoint: profile?.locationPoint ?? null,
+});
 
 /**
- * The location, with place suggestions as it is typed — the same OpenStreetMap search
- * as the map's own box (PlaceSearch), but only towns, cities and regions, since what is typed here is
- * shown on the public profile. Choosing a suggestion also keeps where it is
+ * Name, bio, location, contact email and website, saved together by the one button
+ * under them. Only what changed is sent, so saving a new bio cannot blank anything
+ * else. The name is the only one that may not be left empty.
+ *
+ * The location suggests places as it is typed: the same OpenStreetMap search as the
+ * map's own box (PlaceSearch), but only towns, cities and regions, since what is typed
+ * here is shown on the public profile. Choosing a suggestion also keeps where it is
  * (profile.locationPoint), which is where the Explore map opens; typed text that was
- * not chosen from the list is saved as it is, with no place, and Explore opens where it
- * always has.
+ * not chosen from the list is saved as it is, with no place.
  */
-function LocationField({ t, profile, onSaveProfile }) {
-  const [value, setValue] = useState(profile?.location ?? '');
-  // The place behind `value`, when it came from a suggestion; null once edited by hand.
-  const [point, setPoint] = useState(profile?.locationPoint ?? null);
+function ProfileDetails({ t, profile, onSaveProfile }) {
+  const [values, setValues] = useState(() => profileValues(profile));
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
 
-  const trimmed = value.trim();
-  const saved = profile?.locationPoint ?? null;
-  const samePoint = (point?.lat === saved?.lat && point?.lng === saved?.lng);
-  const unchanged = trimmed === (profile?.location ?? '') && samePoint;
+  const set = (changes) => { setValues((current) => ({ ...current, ...changes })); setStatus('idle'); };
+  const bind = (key) => ({ value: values[key], onChange: (e) => set({ [key]: e.target.value }) });
 
+  const saved = profileValues(profile);
+  const patch = Object.fromEntries(PROFILE_FIELDS
+    .map((key) => [key, values[key].trim()])
+    .filter(([key, value]) => value !== saved[key]));
+  // No text, no place: clearing the location clears where Explore opens too.
+  const point = values.location.trim() ? values.locationPoint : null;
+  if ('location' in patch || point?.lat !== saved.locationPoint?.lat || point?.lng !== saved.locationPoint?.lng) {
+    patch.locationPoint = point;
+  }
+
+  const unchanged = Object.keys(patch).length === 0;
+  const nameMissing = !values.name.trim();
+
+  // Saving is a request, not a localStorage write, so it can be slow and it can fail.
+  // Both states are shown rather than swallowed: a change that silently did not save
+  // is worse than one that says so.
   const handleSave = async () => {
     setStatus('saving');
     try {
-      // No text, no place: clearing the location clears where Explore opens too.
-      await onSaveProfile({ location: trimmed, locationPoint: trimmed ? point : null });
+      await onSaveProfile(patch);
       setStatus('saved');
     } catch (err) {
-      console.error('Could not save your location:', err);
+      console.error('Could not save your profile:', err);
       setStatus('error');
     }
   };
 
+  const fieldStyle = { ...inputStyle(t), maxWidth: 380 };
+  const location = values.location.trim();
+
   return (
-    <Card t={t} title="Location">
-      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
-        Where you&rsquo;re based, shown on your public profile under your name. Pick your town
-        or city from the suggestions and the Explore map will open there. Optional.
-      </p>
-      <label htmlFor="settings-location"
-        style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
-        Location
-      </label>
-      <div style={{ maxWidth: 380, marginBottom: 12 }}>
-        <PlaceSearch id="settings-location" value={value} placeholder="e.g. Malmö, Sweden" regions
-          onChange={(next) => { setValue(next); setPoint(null); setStatus('idle'); }}
-          onPick={(picked) => { setValue(picked.label); setPoint(picked.point); setStatus('idle'); }}
-          style={inputStyle(t)} />
-      </div>
-      <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: 20 }}>
-        {point
-          ? 'Explore opens here.'
-          : trimmed
-            ? 'Not a place from the suggestions, so Explore opens where it always does.'
-            : 'No location, so Explore opens where it always does.'}
-      </p>
+    <>
+      <Card t={t} title="Display name" htmlFor="settings-display-name">
+        <input id="settings-display-name" type="text" {...bind('name')} style={fieldStyle} />
+      </Card>
+      <Card t={t} title="Bio" htmlFor="settings-bio">
+        <textarea id="settings-bio" rows={4} placeholder="What you're into, or what brought you here."
+          {...bind('bio')}
+          style={{ ...fieldStyle, resize: 'vertical', minHeight: 88, fontFamily: 'var(--placer-font)' }} />
+      </Card>
+      <Card t={t} title="Location" htmlFor="settings-location">
+        <div style={{ maxWidth: 380 }}>
+          <PlaceSearch id="settings-location" value={values.location} placeholder="e.g. Malmö, Sweden" regions
+            onChange={(next) => set({ location: next, locationPoint: null })}
+            onPick={(picked) => set({ location: picked.label, locationPoint: picked.point })}
+            style={inputStyle(t)} />
+        </div>
+        {!values.locationPoint && (
+          <p style={{ fontSize: 13.5, color: t.inkFaint, marginTop: 12 }}>
+            {location
+              ? 'Not a place from the suggestions, so Explore opens where it always does.'
+              : 'No location, so Explore opens where it always does.'}
+          </p>
+        )}
+      </Card>
+      <Card t={t} title="Contact email" htmlFor="settings-contact-email">
+        <input id="settings-contact-email" type="email" placeholder="e.g. hello@example.com"
+          {...bind('contactEmail')} style={fieldStyle} />
+      </Card>
+      <Card t={t} title="Website" htmlFor="settings-website">
+        <input id="settings-website" type="url" placeholder="e.g. example.com"
+          {...bind('website')} style={fieldStyle} />
+      </Card>
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Btn t={t} variant="primary" icon="check" onClick={handleSave}
-          disabled={unchanged || status === 'saving'}>
-          {status === 'saving' ? 'Saving…' : 'Save location'}
+        <Btn t={t} variant="primary" onClick={handleSave}
+          disabled={unchanged || nameMissing || status === 'saving'}>
+          {status === 'saving' ? 'Saving…' : 'Save'}
         </Btn>
         {status === 'saved' && (
-          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>Saved.</span>
+          <span role="status" style={{ fontSize: 14, color: t.inkDim, fontWeight: 500 }}>
+            Saved.
+          </span>
         )}
         {status === 'error' && (
           <span role="alert" style={{ fontSize: 14, color: t.ink, fontWeight: 500 }}>
@@ -281,7 +198,7 @@ function LocationField({ t, profile, onSaveProfile }) {
           </span>
         )}
       </div>
-    </Card>
+    </>
   );
 }
 
@@ -304,11 +221,6 @@ function ProfilePhotoPicker({ t, profile, onSaveProfile }) {
 
   return (
     <Card t={t} title="Profile photo">
-      <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
-        A picture of you, shown in the circle wherever your avatar appears. Until you add
-        one, the circle shows your initials. It is cropped to a square from the middle, and
-        saved without its location data. Optional.
-      </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
         <Avatar name={profile?.name ?? ''} photo={photo} size={72} />
         <ImagePicker t={t} hasImage={!!photo} uploadLabel="Upload a photo" replaceLabel="Replace photo"
@@ -661,20 +573,7 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
       cards: (
         <>
           {email && <ProfilePhotoPicker {...profileArgs} />}
-          <DisplayName {...profileArgs} />
-          <ProfileField {...profileArgs} fieldKey="bio"
-            title="Bio" label="Bio" id="settings-bio" multiline
-            description="A couple of lines about you, shown on your public profile. Optional."
-            placeholder="What you're into, or what brought you here." />
-          <LocationField {...profileArgs} />
-          <ProfileField {...profileArgs} fieldKey="contactEmail"
-            title="Contact email" label="Contact email" id="settings-contact-email" inputType="email"
-            description="An address people can reach you at, shown on your public profile. It does not have to be the one you sign in with, which is never shown. Optional."
-            placeholder="e.g. hello@example.com" />
-          <ProfileField {...profileArgs} fieldKey="website"
-            title="Website" label="Website" id="settings-website" inputType="url"
-            description="A link shown on your public profile. Optional."
-            placeholder="e.g. example.com" />
+          <ProfileDetails {...profileArgs} />
         </>
       ),
     },
