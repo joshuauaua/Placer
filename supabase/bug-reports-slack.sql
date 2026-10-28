@@ -23,15 +23,15 @@ begin
       'Content-Type', 'application/json',
       'x-webhook-secret', (select decrypted_secret from vault.decrypted_secrets
                            where name = 'survey_webhook_secret')),
-    -- Only what the message shows; user_id stays out of Slack, and so does the
-    -- screenshot's key, which has the account's id in it.
+    -- Only what the message shows. user_id stays out of Slack; the screenshot's key
+    -- goes in so the picture can be shown, which does carry the account's id inside it.
     body    := jsonb_build_object('type', 'INSERT', 'schema', 'public',
                                   'table', 'bug_reports',
                                   'record', jsonb_build_object(
                                     'id', new.id, 'created_at', new.created_at,
                                     'message', new.message, 'page', new.page,
                                     'user_agent', new.user_agent,
-                                    'has_screenshot', new.screenshot_path is not null))
+                                    'screenshot_path', new.screenshot_path))
   );
   return new;
 end;

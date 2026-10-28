@@ -25,6 +25,8 @@
 //   SLACK_TOOL_WEBHOOK_URL optional; tool submissions go here instead when set
 //   SLACK_CASE_STUDY_WEBHOOK_URL optional; case study submissions go here instead when set
 //   SURVEY_WEBHOOK_SECRET  any long random string; the triggers send the same
+//   MEDIA_URL              optional; the bucket's public address (the app's VITE_MEDIA_URL).
+//                          When set, a bug report's screenshot is linked and shown inline.
 
 const SOURCES: Record<string, string> = {
   community_survey: 'Community survey (/survey)',
@@ -86,14 +88,26 @@ function surveyMessage(record: Record<string, any>): string {
   return lines.join('\n');
 }
 
+// Where a bug report's screenshot can be seen, or null. The key is checked against the
+// shape the bug_reports constraint allows, so nothing else can be made into a link.
+const SCREENSHOT_KEY = /^bug-reports\/[0-9a-f-]{36}\/[A-Za-z0-9_-]+\.(jpg|png|webp)$/;
+function screenshotUrl(record: Record<string, any>): string | null {
+  const base = Deno.env.get('MEDIA_URL');
+  const key = record.screenshot_path;
+  if (!base || typeof key !== 'string' || !SCREENSHOT_KEY.test(key)) return null;
+  return `${base.replace(/\/+$/, '')}/${key}`;
+}
+
 function bugMessage(record: Record<string, any>): string {
+  const screenshot = screenshotUrl(record);
   return [
     ':beetle: *New bug report*',
     // Quoted so a multi-line report stays visibly one block.
     esc(record.message).split('\n').map((line) => `> ${line}`).join('\n'),
     `*Page:* ${record.page ? `\`${esc(record.page)}\`` : '_not given_'}`,
     `*Browser:* ${record.user_agent ? esc(record.user_agent) : '_not given_'}`,
-    ...(record.has_screenshot ? ['*Screenshot:* attached (screenshot_path on the row)'] : []),
+    ...(screenshot ? [`*Screenshot:* <${screenshot}|open>`]
+      : record.screenshot_path ? ['*Screenshot:* attached (screenshot_path on the row)'] : []),
     `*Submitted:* ${esc(record.created_at)}  ·  id \`${esc(record.id)}\``,
   ].join('\n');
 }
@@ -140,10 +154,21 @@ Deno.serve(async (req) => {
     return Response.json({ ok: true, skipped: true });
   }
   let url: string, text: string;
+  // Block Kit, only when there is a picture to show: the text in sections (3,000
+  // characters each at most) and the screenshot under it. `text` stays the fallback.
+  let blocks: unknown[] | undefined;
   if (payload.table === 'survey_responses') {
     [url, text] = [slackUrl, surveyMessage(payload.record)];
   } else if (payload.table === 'bug_reports') {
     [url, text] = [bugSlackUrl!, bugMessage(payload.record)];
+    const screenshot = screenshotUrl(payload.record);
+    if (screenshot) {
+      blocks = [];
+      for (let i = 0; i < text.length; i += 3000) {
+        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: text.slice(i, i + 3000) } });
+      }
+      blocks.push({ type: 'image', image_url: screenshot, alt_text: 'Screenshot sent with the bug report' });
+    }
   } else if (payload.table === 'tool_submissions') {
     [url, text] = [toolSlackUrl!, toolMessage(payload.record)];
   } else if (payload.table === 'case_study_submissions') {
@@ -155,7 +180,7 @@ Deno.serve(async (req) => {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify(blocks ? { text, blocks } : { text }),
   });
   if (!res.ok) {
     // Shows in the webhook's response log (net._http_response); the row itself is saved regardless.
