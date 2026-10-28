@@ -1154,8 +1154,17 @@ supabase functions deploy media
 ```
 
 If bug reports go to Slack (step 16), run `bug-reports-slack.sql` again and redeploy
-`survey-to-slack`: the message then says when a screenshot is attached. The key itself
-stays out of Slack, since it carries the account's id.
+`survey-to-slack`. To have the screenshot shown in the message, with a link to it, give
+the function the bucket's public address too (the app's `VITE_MEDIA_URL`):
+
+```sh
+supabase secrets set MEDIA_URL=https://media.plcr.org
+supabase functions deploy survey-to-slack
+```
+
+Without `MEDIA_URL` the message only says a screenshot is attached. The key, and so the
+link, carries the reporter's account id; that is in Slack now, though `user_id` still is
+not. After 30 days the file is deleted (below), and the picture in Slack stops loading.
 
 **Screenshots are deleted after 30 days.** A screenshot can show somebody's account or
 work, so it is not kept once the bug has had time to be looked into. A daily `pg_cron` job
