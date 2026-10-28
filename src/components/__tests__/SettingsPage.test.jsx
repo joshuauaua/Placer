@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { photonFeature, stubPhoton } from '../../test/photon';
 import { SettingsPage } from '../SettingsPage';
 import { saveProfile } from '../../services/profile';
@@ -29,7 +29,7 @@ const setup = (overrides = {}) => {
   };
   const { option, ...rest } = props;
   render(<SettingsPage {...rest} />);
-  // Settings are edited behind the option that holds them, so open that one first.
+  // Settings are edited beside the side menu, under the option that holds them, so open that one first.
   if (option) fireEvent.click(screen.getByRole('button', { name: option }));
   return rest;
 };
@@ -148,23 +148,29 @@ describe('SettingsPage, options', () => {
     vi.clearAllMocks();
   });
 
-  it('lists options under their categories rather than editing anything up front', () => {
+  it('lists the options in a side menu, under their categories, with the first one open', () => {
     setup({ email: 'mara@example.com', onNewOrganisation: vi.fn() });
 
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent))
-      .toEqual(['Profile Settings', 'Account', 'Data and Privacy']);
-    expect(screen.queryByLabelText('Display name')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: PROFILE })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: PASSWORD })).toBeInTheDocument();
+    const nav = within(screen.getByRole('navigation', { name: 'Settings' }));
+    expect(nav.getByText('Profile Settings')).toBeInTheDocument();
+    expect(nav.getByText('Data and Privacy')).toBeInTheDocument();
+    expect(nav.queryByText('Notifications')).not.toBeInTheDocument();
+    expect(nav.getByRole('button', { name: PROFILE })).toHaveAttribute('aria-current', 'true');
+    expect(nav.getByRole('button', { name: PASSWORD })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: PROFILE })).toBeInTheDocument();
+    expect(screen.getByLabelText('Display name')).toHaveValue('Mara Quinn');
   });
 
-  it('opens an option and goes back to the list', () => {
-    setup({ option: PROFILE });
+  it('shows another option beside the menu when it is chosen', () => {
+    setup({ option: PASSWORD, email: 'mara@example.com' });
 
-    expect(screen.getByLabelText('Display name')).toHaveValue('Mara Quinn');
-    fireEvent.click(screen.getByRole('button', { name: /All settings/ }));
+    expect(screen.getByRole('button', { name: PASSWORD })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('button', { name: PROFILE })).not.toHaveAttribute('aria-current');
+    expect(screen.getByLabelText('New password')).toBeInTheDocument();
     expect(screen.queryByLabelText('Display name')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: PROFILE })).toBeInTheDocument();
+    // The menu stays, so going back is one more click in it.
+    fireEvent.click(screen.getByRole('button', { name: PROFILE }));
+    expect(screen.getByLabelText('Display name')).toHaveValue('Mara Quinn');
   });
 
   it('sends Your data straight to the Terms and Privacy page', () => {

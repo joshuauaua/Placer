@@ -1686,19 +1686,88 @@ a {
   padding-top: 64px;
 }
 
-/* PLACER — a settings option (see SettingsPage.jsx): a row that opens one group of
- * settings. White, grey-100 on hover. */
-.placer-settings-option {
+/* PLACER — the settings card (see SettingsPage.jsx): a side menu of options on the
+ * left, the open one's settings on the right. On a phone the menu goes over the
+ * settings as one row that scrolls sideways, without its category labels. */
+.placer-settings-card {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.placer-settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 12px;
+  border-right: 1px solid;
+}
+
+.placer-settings-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.placer-settings-pane {
+  padding: 32px 36px;
+  min-width: 0;
+}
+
+.placer-settings-section {
+  padding: 24px 0;
+}
+
+.placer-settings-section:last-child {
+  padding-bottom: 0;
+}
+
+.placer-settings-nav-item {
   transition: background 0.15s ease;
 }
 
-.placer-settings-option:hover {
+.placer-settings-nav-item:hover,
+.placer-settings-nav-item[aria-current="true"] {
   background: var(--placer-grey-100) !important;
 }
 
-.placer-settings-option:focus-visible {
+.placer-settings-nav-item:focus-visible {
   outline: 2px solid var(--placer-ink);
   outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .placer-settings-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .placer-settings-nav {
+    flex-direction: row;
+    gap: 4px;
+    padding: 12px;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid;
+  }
+
+  .placer-settings-nav-group {
+    flex-direction: row;
+    gap: 4px;
+  }
+
+  .placer-settings-nav-category {
+    display: none;
+  }
+
+  /* !important because the item's inline `all: unset` would otherwise win. */
+  .placer-settings-nav-item {
+    white-space: nowrap !important;
+    flex-shrink: 0;
+  }
+
+  .placer-settings-pane {
+    padding: 24px 20px;
+  }
 }
 
 /* PLACER — the sidebar (see SideNav.jsx), for anyone who is signed in.

@@ -1,11 +1,11 @@
 /* PLACER — account settings: your name, and what the app is allowed to measure.
  *
- * A header that stays put while the page scrolls, then the settings grouped into
- * categories. Nothing is edited on that first screen: each category is a list of
- * options, and an option opens its group of settings in place of the list, with a
- * way back. Which option is open is local state, not a route, though an address with
- * `?open=<key>` (the welcome tour's Edit my profile goes to /settings?open=profile)
- * starts with that option open. */
+ * A header that stays put while the page scrolls, then one card: a side menu of the
+ * options, grouped into categories, and beside it the open option's settings. The
+ * first option is open to begin with. Which option is open is local state, not a
+ * route, though an address with `?open=<key>` (the welcome tour's Edit my profile goes
+ * to /settings?open=profile) starts with that option open. On a phone the menu sits
+ * over the settings as a row that scrolls sideways. */
 
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useSearch } from 'wouter';
@@ -39,12 +39,13 @@ const inputStyle = (t) => ({
   outline: 'none',
 });
 
-// With `htmlFor`, the title is the label of the one field in the card, rather than
-// being repeated as a label over it.
+// One group of settings in the open option's pane: its heading, then its fields. The
+// pane is already inside the page's one card, so these are divided by a rule rather
+// than boxed again. With `htmlFor`, the title is the label of the one field in it,
+// rather than being repeated as a label over it.
 function Card({ t, title, htmlFor, children }) {
   return (
-    <section style={{ padding: 28, marginBottom: 24, background: t.surface, borderRadius: 12,
-      border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
+    <section className="placer-settings-section" style={{ borderTop: `1px solid ${t.line}` }}>
       <h3 style={{ fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: htmlFor ? 12 : 8 }}>
         {htmlFor ? <label htmlFor={htmlFor}>{title}</label> : title}
       </h3>
@@ -53,42 +54,18 @@ function Card({ t, title, htmlFor, children }) {
   );
 }
 
-// A category: its heading over a rule, then its options. One whose options are all
-// account-only renders nothing on the local, no-account path.
-function Category({ t, title, children }) {
-  const options = [].concat(children).filter(Boolean);
-  if (options.length === 0) return null;
+// One option in the card's side menu: its icon and title. The open one is marked as
+// the current one; one that goes elsewhere in the app carries a chevron instead.
+function NavItem({ t, icon, title, current, leaves, onClick }) {
   return (
-    <section style={{ marginBottom: 40 }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, color: t.ink, letterSpacing: '-0.01em',
-        padding: '0 4px 12px', marginBottom: 16, borderBottom: `1px solid ${t.line}` }}>
-        {title}
-      </h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{options}</div>
-    </section>
-  );
-}
-
-// One option: an icon in its own cell, a title over what it covers, and a chevron.
-// The whole row is the button, named by its title.
-function OptionRow({ t, icon, title, description, onClick }) {
-  return (
-    <button type="button" onClick={onClick} aria-label={title} className="placer-settings-option"
-      style={{ all: 'unset', boxSizing: 'border-box', width: '100%', cursor: 'pointer',
-        display: 'grid', gridTemplateColumns: '80px 1fr 56px', alignItems: 'stretch', minHeight: 84,
-        background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, fontFamily: 'var(--placer-font)' }}>
-      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-        borderRight: `1px solid ${t.line}`, color: t.ink }}>
-        <Icon name={icon} size={28} stroke={1.8} />
-      </span>
-      <span style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4,
-        padding: '14px 20px', minWidth: 0 }}>
-        <span style={{ fontSize: 16, fontWeight: 500, color: t.ink }}>{title}</span>
-        <span style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.45 }}>{description}</span>
-      </span>
-      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.ink }}>
-        <Icon name="chevRight" size={20} stroke={2} />
-      </span>
+    <button type="button" onClick={onClick} aria-current={current ? 'true' : undefined}
+      className="placer-settings-nav-item"
+      style={{ all: 'unset', boxSizing: 'border-box', cursor: 'pointer', display: 'flex',
+        alignItems: 'center', gap: 12, minHeight: 44, padding: '10px 12px', borderRadius: 12,
+        fontFamily: 'var(--placer-font)', fontSize: 15, fontWeight: current ? 700 : 500, color: t.ink }}>
+      <Icon name={icon} size={20} stroke={1.8} />
+      <span style={{ flex: 1, minWidth: 0 }}>{title}</span>
+      {leaves && <Icon name="chevRight" size={16} stroke={2} />}
     </button>
   );
 }
@@ -603,39 +580,51 @@ export function SettingsPage({ t, profile, email, onSaveProfile, onNavigate,
     },
   };
 
-  const current = open && options[open]?.show && options[open].cards ? options[open] : null;
+  const shown = Object.entries(options).filter(([, option]) => option.show);
+  // The open option, or the first one with settings of its own when none is asked for.
+  const [openKey, current] = shown.find(([key, option]) => key === open && option.cards)
+    ?? shown.find(([, option]) => option.cards);
   const categories = ['Profile Settings', 'Account', 'Notifications', 'Preferences', 'Data and Privacy'];
 
   return (
     <div ref={topRef} style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '0 40px 48px', scrollMarginTop: 64 }} className="placer-scroll">
       <PageHeader t={t} title="Settings"
-        maxWidth={760} />
+        maxWidth={1040} />
 
-      <div style={{ maxWidth: 760, margin: '0 auto', paddingBottom: 40 }}>
-        {current ? (
-          <>
-            <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={() => setOpen(null)}
-              style={{ marginLeft: -12, marginBottom: 12 }}>
-              All settings
-            </Btn>
-            <h2 style={{ fontSize: 28, fontWeight: 700, color: t.ink, letterSpacing: '-0.02em', marginBottom: 24 }}>
+      <div style={{ maxWidth: 1040, margin: '0 auto', paddingBottom: 40 }}>
+        <div className="placer-settings-card" style={{ background: t.surface, borderRadius: 16,
+          border: `1px solid ${t.line}`, boxShadow: t.shadow }}>
+          <nav aria-label="Settings" className="placer-settings-nav" style={{ borderColor: t.line }}>
+            {categories.map((category) => {
+              const items = shown.filter(([, option]) => option.category === category);
+              if (items.length === 0) return null;
+              return (
+                <div key={category} className="placer-settings-nav-group">
+                  <div className="placer-settings-nav-category" style={{ fontSize: 12, fontWeight: 700,
+                    color: t.inkFaint, textTransform: 'uppercase', letterSpacing: '0.04em', padding: '0 12px 6px' }}>
+                    {category}
+                  </div>
+                  {items.map(([key, option]) => (
+                    <NavItem key={key} t={t} icon={option.icon} title={option.title}
+                      current={key === openKey} leaves={!option.cards}
+                      onClick={option.onSelect ?? (() => setOpen(key))} />
+                  ))}
+                </div>
+              );
+            })}
+          </nav>
+
+          <div className="placer-settings-pane">
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: t.ink, letterSpacing: '-0.02em', marginBottom: 6 }}>
               {current.title}
             </h2>
+            <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.5, marginBottom: 24 }}>
+              {current.description}
+            </p>
             {current.cards}
-          </>
-        ) : (
-          categories.map((category) => (
-            <Category key={category} t={t} title={category}>
-              {Object.entries(options)
-                .filter(([, option]) => option.category === category && option.show)
-                .map(([key, option]) => (
-                  <OptionRow key={key} t={t} icon={option.icon} title={option.title}
-                    description={option.description} onClick={option.onSelect ?? (() => setOpen(key))} />
-                ))}
-            </Category>
-          ))
-        )}
+          </div>
+        </div>
       </div>
     </div>
   );
