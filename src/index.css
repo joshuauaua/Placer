@@ -1916,11 +1916,13 @@ a {
   gap: 40px;
 }
 
-/* The credit and the funder's lockup, side by side at the bottom right. */
+/* The funder's lockup over the credit, both at the far right. */
 .placer-footer-credit {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  text-align: right;
 }
 
 /* The funder's lockup is ink on white; inverted it is white on black, and
@@ -1993,7 +1995,8 @@ a {
   }
 
   .placer-footer-credit {
-    flex-direction: column;
+    align-items: center;
+    text-align: center;
   }
 
   .placer-footer-links {

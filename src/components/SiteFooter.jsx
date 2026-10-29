@@ -153,10 +153,12 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
             </span>
           </div>
 
-          {/* Who builds and funds it, on one line at the right. The lockup reads
+          {/* Who builds and funds it, at the far right: the lockup over the credit. It reads
               "Funded by Swedish Institute" as part of the artwork; index.css
               turns it white. */}
           <div className="placer-footer-credit">
+            <img className="placer-footer-funder" src={logoSwedishInstitute} alt="Funded by Swedish Institute"
+              style={{ height: 32, width: 'auto' }} />
             <span style={{ color: t.inkDim }}>
               PLACER is developed by{' '}
               <a href="https://stpln.se/" target="_blank" rel="noopener noreferrer" className="placer-footer-link"
@@ -165,8 +167,6 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
               <a href="https://ankaraaks.com/" target="_blank" rel="noopener noreferrer" className="placer-footer-link"
                 style={{ textDecoration: 'underline' }}>Ankara Aks</a>, funded by the Swedish Institute.
             </span>
-            <img className="placer-footer-funder" src={logoSwedishInstitute} alt="Funded by Swedish Institute"
-              style={{ height: 32, width: 'auto' }} />
           </div>
         </div>
       </div>
