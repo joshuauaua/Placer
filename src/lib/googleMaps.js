@@ -12,10 +12,6 @@
  * finished — gets back that same in-flight promise rather than a second script tag.
  */
 
-export function isGoogleMapsConfigured() {
-  return Boolean(import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
-}
-
 export function googleMapsApiKey() {
   return import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 }

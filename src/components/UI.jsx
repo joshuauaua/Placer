@@ -266,16 +266,3 @@ export function Vote({ t, count, voted, size = 'md', rank }) {
     </div>
   );
 }
-
-export function SearchBar({ t, value, placeholder, width = '100%' }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 48, width, padding: '0 16px',
-      borderRadius: 12, border: `1px solid ${t.lineStrong}`, background: t.surface, color: t.ink }}>
-      <Icon name="search" size={19} stroke={2} style={{ color: t.inkDim }} />
-      <span style={{ flex: 1, fontFamily: 'var(--placer-font)', fontSize: 15, fontWeight: value ? 600 : 400,
-        color: value ? t.ink : t.inkDim, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-        {value || placeholder}
-      </span>
-    </div>
-  );
-}
