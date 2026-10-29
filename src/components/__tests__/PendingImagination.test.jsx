@@ -8,16 +8,23 @@ import { useIdentity } from '../useIdentity';
 /*
  * The other half of requiring an account to save an idea.
  *
- * Signing in with Google, or confirming a new account by email, reloads the page — and
- * everything somebody has made up to that point lives in MainApp's React state. So it is
- * written to localStorage on the way out and picked up here on the way back. Without
- * this, gating the Save step would mean losing a drawing to sign in, which would be a
- * worse app than the one that had no accounts.
+ * Confirming a new account by email reloads the page — and everything somebody has made
+ * up to that point lives in Idea Visualizer's React state. So it is written to
+ * localStorage on the way out, and picked up by the tool when the confirmation link
+ * brings the new account back to it. Without this, gating the Save step would mean
+ * losing a drawing to sign in, which would be a worse app than the one that had no
+ * accounts.
  *
- * useIdentity is mocked because what is under test is what App does with the answer, not
- * how the answer is arrived at — that is useIdentity.test.jsx.
+ * useIdentity is mocked because what is under test is what the tool does with the
+ * answer, not how the answer is arrived at — that is useIdentity.test.jsx.
  */
 vi.mock('../useIdentity', () => ({ useIdentity: vi.fn() }));
+
+// The map step, where the tool starts when there is nothing to pick up.
+vi.mock('../MapContainer', () => ({ default: () => <div data-testid="idea-map" /> }));
+
+// Where the confirmation link comes back to: the tool, started.
+const TOOL_PATH = '/toolkit/reimagine-a-space?start';
 
 const PENDING_KEY = 'placemaking_pending_imagination';
 
@@ -55,10 +62,10 @@ const identity = (over = {}) => {
   });
 };
 
-const renderApp = (path = '/') => {
-  const { hook } = memoryLocation({ path });
+const renderApp = (path = TOOL_PATH) => {
+  const { hook, searchHook } = memoryLocation({ path });
   return render(
-    <Router hook={hook}>
+    <Router hook={hook} searchHook={searchHook}>
       <App />
     </Router>
   );
@@ -121,7 +128,7 @@ describe('an imagination parked while signing in', () => {
 
     renderApp();
 
-    expect(await screen.findByText(/The open toolkit for participatory placemaking/)).toBeInTheDocument();
+    expect(await screen.findByTestId('idea-map')).toBeInTheDocument();
     // Still theirs to come back to, rather than thrown away on the way past.
     expect(localStorage.getItem(PENDING_KEY)).not.toBeNull();
   });
@@ -133,14 +140,15 @@ describe('an imagination parked while signing in', () => {
     renderApp();
 
     expect(await screen.findByText('Loading…')).toBeInTheDocument();
+    expect(screen.queryByTestId('idea-map')).not.toBeInTheDocument();
     expect(localStorage.getItem(PENDING_KEY)).not.toBeNull();
   });
 
-  // With nothing to restore, signing in lands where it always does: the dashboard.
+  // With nothing to restore, the tool starts where it always does: the map.
   it('stays out of the way when nothing was parked', async () => {
     renderApp();
 
-    expect(await screen.findByRole('heading', { level: 1, name: /^Welcome back/ })).toBeInTheDocument();
+    expect(await screen.findByTestId('idea-map')).toBeInTheDocument();
   });
 
   it('ignores a stale parked imagination rather than resurrecting it', async () => {
@@ -148,8 +156,18 @@ describe('an imagination parked while signing in', () => {
 
     renderApp();
 
-    expect(await screen.findByRole('heading', { level: 1, name: /^Welcome back/ })).toBeInTheDocument();
+    expect(await screen.findByTestId('idea-map')).toBeInTheDocument();
     expect(localStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+
+  // It belongs to the tool now, so signing in anywhere else lands where it always does.
+  it('leaves it for the tool rather than taking over the dashboard', async () => {
+    park();
+
+    renderApp('/');
+
+    expect(await screen.findByRole('heading', { level: 1, name: /^Welcome back/ })).toBeInTheDocument();
+    expect(localStorage.getItem(PENDING_KEY)).not.toBeNull();
   });
 });
 

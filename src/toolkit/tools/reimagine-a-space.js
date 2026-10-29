@@ -19,8 +19,8 @@ export default {
   icon: 'sparkle',
   createdBy: 'PLACER',
   duration: 'About 5 minutes',
+  // Takes the whole window once started: see FULL_SCREEN_TOOLS in lib/routes.js.
   component: ReimagineASpace,
-  launch: true,
   // The introduction to configuring it says no more than the tool's own blurb.
   setupNote: null,
   setup: {

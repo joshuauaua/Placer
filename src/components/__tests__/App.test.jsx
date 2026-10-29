@@ -108,16 +108,32 @@ describe('App', () => {
     expect(history.at(-1)).toBe('/explore');
   });
 
-  it('starts an imagination from the Toolkit\'s Idea Visualizer, on its own map', async () => {
-    const { hook, history } = memoryLocation({ path: '/toolkit/reimagine-a-space', record: true });
-    render(<Router hook={hook}><App /></Router>);
+  it('starts the Toolkit\'s Idea Visualizer on its own map, at an address of its own', async () => {
+    const { hook, searchHook, history } = memoryLocation({ path: '/toolkit/reimagine-a-space', record: true });
+    render(<Router hook={hook} searchHook={searchHook}><App /></Router>);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Get started' }));
 
-    // The mocked map throws, so reaching the boundary means the imagine map rendered —
-    // and the Toolkit's URL has been left, since that flow has none.
+    // The mocked map throws, so reaching the boundary means the map step rendered.
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
-    expect(history.at(-1)).toBe('/');
+    expect(history.at(-1)).toBe('/toolkit/reimagine-a-space?start');
+  });
+
+  it('gives a started Idea Visualizer the whole window, without the nav bar or footer', async () => {
+    const { hook, searchHook } = memoryLocation({ path: '/toolkit/reimagine-a-space?start' });
+    render(<Router hook={hook} searchHook={searchHook}><App /></Router>);
+
+    expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'App' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
+  });
+
+  it('leaves ?start alone on a tool that is not full-screen', async () => {
+    const { hook, searchHook } = memoryLocation({ path: '/toolkit/budget-ballot?start' });
+    render(<Router hook={hook} searchHook={searchHook}><App /></Router>);
+
+    expect(await screen.findByRole('button', { name: 'Get started' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'App' })).toBeInTheDocument();
   });
 
   it('skips the map for a project that has set Idea Visualizer up, drawing on its base image', async () => {

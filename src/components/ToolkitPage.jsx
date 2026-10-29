@@ -36,6 +36,7 @@ import { projectIdFrom, roomIdFrom } from '../toolkit/rooms';
 import { isSupabaseConfigured } from '../services/rooms';
 import { readProjectCrumb } from '../services/projects';
 import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
+import { FULL_SCREEN_TOOLS, isFullScreenTool, startedToolPath } from '../lib/routes';
 
 /**
  * The way back from a tool opened for a project. For somebody who can edit it — the
@@ -191,12 +192,7 @@ function Row({ t, tool, onOpen }) {
 
 const NO_FILTERS = { category: null, groupOnly: false };
 
-/**
- * `onLaunchTool(toolId, projectId)` takes over from a tool marked `launch` (see
- * toolkit/tools.js) when its cover's Get started is pressed — App, which runs that
- * tool's flow. Without it, such a tool opens like any other.
- */
-export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
+export function ToolkitPage({ t, displayName = null }) {
   const [location, navigate] = useLocation();
   const search = useSearch();
   const requestedId = toolIdFrom(location);
@@ -260,6 +256,12 @@ export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
   const clearFilters = () => { setFilters(NO_FILTERS); setFavouritesOnly(false); };
 
   const Tool = tool?.component;
+  // A full-screen tool (lib/routes.js) is started by its address rather than by
+  // startedId, and App gives it the whole window: it is all there is on the page.
+  if (tool && Tool && isFullScreenTool(location, search)) {
+    return <Tool t={t} tool={tool} />;
+  }
+
   const breadcrumb = tool && projectId ? (
     <Breadcrumb t={t} trail={projectTrail(projectId, crumb)} current={tool.name} style={{ marginBottom: 24 }} />
   ) : null;
@@ -270,7 +272,7 @@ export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
     return (
       <ToolCover t={t} tool={tool} breadcrumb={breadcrumb}
         onStart={() => {
-          if (tool.launch && onLaunchTool) onLaunchTool(tool.id, projectId);
+          if (FULL_SCREEN_TOOLS.includes(tool.id)) navigate(startedToolPath(tool.id, search));
           else setStartedId(tool.id);
         }}
         onBack={() => navigate('/toolkit')} />
@@ -322,8 +324,7 @@ export function ToolkitPage({ t, displayName = null, onLaunchTool }) {
             breadcrumb={breadcrumb}
             onBack={() => navigate('/toolkit')}>
             <RoomBar t={t} tool={tool} room={room} />
-            {projectSetup.ready && <Tool t={t} tool={tool} room={room} setup={projectSetup.setup}
-              onLaunch={tool.launch && onLaunchTool ? () => onLaunchTool(tool.id, projectId) : undefined} />}
+            {projectSetup.ready && <Tool t={t} tool={tool} room={room} setup={projectSetup.setup} />}
           </ToolLayout>
         ) : (
           <>
