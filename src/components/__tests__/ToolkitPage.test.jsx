@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vite-plus/test';
+import { describe, it, expect } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
@@ -442,47 +442,38 @@ describe('inside the app', () => {
 });
 
 describe('Idea Visualizer', () => {
-  const renderWith = (path, searchPath, onLaunchTool) => {
+  const renderWith = (path, searchPath) => {
     const location = memoryLocation({ path, searchPath, record: true });
     render(
-      <Router hook={location.hook}>
-        <ToolkitPage t={THEME} onLaunchTool={onLaunchTool} />
+      <Router hook={location.hook} searchHook={location.searchHook}>
+        <ToolkitPage t={THEME} />
       </Router>
     );
+    return location;
   };
 
   it('is a tool in the Imagine category, with its own cover', () => {
-    renderWith('/toolkit/reimagine-a-space', '', vi.fn());
+    renderWith('/toolkit/reimagine-a-space', '');
 
     expect(screen.getByRole('heading', { name: 'Idea Visualizer' })).toBeInTheDocument();
     expect(screen.getByText('A tool to help anyone quickly create a visualization of an idea they have.')).toBeInTheDocument();
     expect(screen.getByText('Imagine')).toBeInTheDocument();
   });
 
-  it('hands Get started over to the imagination flow, with the project it was opened for', () => {
-    const onLaunchTool = vi.fn();
-    renderWith('/toolkit/reimagine-a-space', 'project=proj-1', onLaunchTool);
+  it('starts at an address of its own, keeping the project it was opened for', () => {
+    const location = renderWith('/toolkit/reimagine-a-space', 'project=proj-1');
 
     fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
 
-    expect(onLaunchTool).toHaveBeenCalledWith('reimagine-a-space', 'proj-1');
-  });
-
-  it('opens like any other tool where nothing takes the hand-over, with a way to start', () => {
-    renderWith('/toolkit/reimagine-a-space', '', undefined);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
-
-    expect(screen.getByText(/Pick a spot on the map and open it in Street View/)).toBeInTheDocument();
+    expect(location.history.at(-1)).toBe('/toolkit/reimagine-a-space?project=proj-1&start');
   });
 
   it('leaves every other tool opening on its own page', () => {
-    const onLaunchTool = vi.fn();
-    renderWith('/toolkit/budget-ballot', '', onLaunchTool);
+    const location = renderWith('/toolkit/budget-ballot', '');
 
     fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
 
-    expect(onLaunchTool).not.toHaveBeenCalled();
+    expect(location.history.at(-1)).toBe('/toolkit/budget-ballot');
     expect(screen.getByText('What the street could have')).toBeInTheDocument();
   });
 });

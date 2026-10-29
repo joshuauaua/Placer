@@ -1,9 +1,9 @@
-/* PLACER — layout primitives shared by the three imagination steps
-   (place assets, describe, post) */
+/* PLACER — layout primitives shared by Idea Visualizer's four steps
+   (choose a spot, place assets, describe, save) */
 
 import { Icon } from './Icon';
 
-const STEPS = ['Place assets', 'Describe', 'Save'];
+const STEPS = ['Choose a spot', 'Place assets', 'Describe', 'Save'];
 
 export function StepBar({ t, step = 1 }) {
   return (
@@ -20,7 +20,7 @@ export function StepBar({ t, step = 1 }) {
               </span>
               <span style={{ fontSize: 14, fontWeight: on ? 800 : 600, color: on ? t.ink : t.inkDim }}>{s}</span>
             </div>
-            {i < 2 && <span style={{ width: 26, height: 1.5, background: t.line }} />}
+            {i < STEPS.length - 1 && <span style={{ width: 26, height: 1.5, background: t.line }} />}
           </div>
         );
       })}
@@ -30,8 +30,8 @@ export function StepBar({ t, step = 1 }) {
 
 /**
  * Full-bleed step screen: back button, centred StepBar, caller-supplied actions on
- * the right, and the step's own content filling the rest. These screens sit outside
- * MainApp's nav bar and footer, so the top bar is all the chrome they get.
+ * the right, and the step's own content filling the rest. Idea Visualizer draws them
+ * over the nav bar and footer, so the top bar is all the chrome they get.
  */
 export function FlowScreen({ t, step, onBack, backLabel = 'Back to map', actions, children }) {
   return (

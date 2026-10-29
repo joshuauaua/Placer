@@ -1,4 +1,4 @@
-/* PLACER — Step 1: place assets on the captured view */
+/* PLACER — Step 2: place assets on the captured view */
 
 import { useRef, lazy, Suspense } from 'react';
 import { Btn } from './UI';
@@ -57,7 +57,7 @@ export function StreetScreen({
   return (
     <FlowScreen
       t={t}
-      step={1}
+      step={2}
       onBack={onBack}
       backLabel={backLabel}
       actions={

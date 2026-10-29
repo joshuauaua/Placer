@@ -19,7 +19,7 @@ vi.mock('../../services/projects', async (importOriginal) => ({
 
 const renderAt = (path, searchPath = '') => {
   const location = memoryLocation({ path, searchPath, record: true });
-  render(<Router hook={location.hook}><ToolkitPage t={THEME} onLaunchTool={vi.fn()} /></Router>);
+  render(<Router hook={location.hook}><ToolkitPage t={THEME} /></Router>);
   return location;
 };
 

@@ -16,18 +16,14 @@ import { NotFoundPage } from './components/NotFoundPage';
 import { GlassNavbar } from './components/GlassNavbar';
 import { SiteFooter } from './components/SiteFooter';
 import { SideNav } from './components/SideNav';
-import { clearPendingImagination, readPendingImagination, savePendingImagination } from './services/api';
 import { useIdentity } from './components/useIdentity';
 import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
-import { readReimagineScene } from './services/projects';
 import { isNewProjectShortcut } from './lib/shortcuts';
-import { CASE_STUDY_FORM_PATH } from './lib/routes';
+import { CASE_STUDY_FORM_PATH, isFullScreenTool } from './lib/routes';
 import { WelcomeTour } from './components/WelcomeTour';
 
-const StreetScreen = lazy(() => import('./components/StreetScreen'));
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
-const MapContainer = lazy(() => import('./components/MapContainer'));
 const ExplorePage = lazy(() => import('./components/ExplorePage'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
 const UserLabsPage = lazy(() => import('./components/UserLabsPage'));
@@ -38,8 +34,6 @@ const FaqPage = lazy(() => import('./components/FaqPage'));
 const QuickstartPage = lazy(() => import('./components/QuickstartPage'));
 const ContactPage = lazy(() => import('./components/ContactPage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
-const DescribePage = lazy(() => import('./components/DescribePage'));
-const PostPage = lazy(() => import('./components/PostPage'));
 const ToolkitPage = lazy(() => import('./components/ToolkitPage'));
 const JoinPage = lazy(() => import('./components/JoinPage'));
 const DashboardPage = lazy(() => import('./components/DashboardPage'));
@@ -58,23 +52,12 @@ const OrganisationSetupPage = lazy(() => import('./components/OrganisationSetupP
 const OrganisationDashboardPage = lazy(() => import('./components/OrganisationDashboardPage'));
 const PublicOrganisationPage = lazy(() => import('./components/PublicOrganisationPage'));
 
-const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
-
-// The three steps of making an imagination. They render full-bleed, without the nav
-// bar and footer the other views sit inside.
-const FLOW_VIEWS = ['street', 'describe', 'post'];
-
-// The Toolkit tool the imagination flow belongs to (toolkit/tools.js).
-const REIMAGINE_TOOL = 'reimagine-a-space';
-
 // The account views live in the URL, for the same reason the Toolkit does: a
 // settings page you cannot bookmark or refresh into is a worse settings page.
 //
-// Sign in and sign up are in here rather than being routes of their own, and that is
-// load-bearing rather than tidy: every one of these paths is matched by the catch-all
-// Route below, so moving between them never unmounts MainApp. Somebody who reaches the
-// Post step signed out can therefore sign in and come back to the capture, the drawing
-// and the draft they left in MainApp's state. A sibling Route would throw all of it away.
+// Sign in and sign up are in here rather than being routes of their own: every one of
+// these paths is matched by the catch-all Route below, so moving between them never
+// unmounts MainApp, and nothing held in its state is lost on the way.
 const ACCOUNT_PATHS = {
   dashboard: '/dashboard',
   activity: '/activity',
@@ -200,27 +183,9 @@ function SignedOutNotice({ t, onSignIn }) {
 
 function MainApp({ initialView = 'welcome' }) {
   const t = THEME;
-  // 'welcome', 'map', 'imagine', 'street', 'describe', 'post', 'about', 'contact',
-  // 'resources', 'guides', 'faq', 'toolkit', 'terms'. 'map' is Explore; 'imagine' is
-  // the map an imagination is captured from, which is not Explore's and has no URL,
-  // since the capture flow it starts lives in this state too.
+  // 'welcome', 'map', 'about', 'contact', 'resources', 'guides', 'faq', 'toolkit',
+  // 'terms'. 'map' is Explore.
   const [currentView, setCurrentView] = useState(initialView);
-  const [capturedView, setCapturedView] = useState(null);
-  // The imagination being built. Held here rather than in StreetScreen so that
-  // stepping forward to Describe and back again does not throw the drawing away.
-  const [canvasAssets, setCanvasAssets] = useState([]);
-  const [draft, setDraft] = useState(EMPTY_DRAFT);
-  // Composite of the photo plus everything drawn on it, exported when leaving step 1.
-  const [preview, setPreview] = useState(null);
-  // Where the map should open. Set when an idea is saved, so the map comes
-  // back centred on where it was made instead of the default location.
-  const [mapFocus, setMapFocus] = useState(null);
-  // Set when Idea Visualizer is started for a project (opened from the project's
-  // page, so its URL carries ?project=), so the imagination that comes out the other
-  // end of the capture flow is attached to it. Cleared by saving, and by starting a capture any other way (handleExplore) —
-  // otherwise a project visited earlier in the session could tag something unrelated.
-  const [activeProjectId, setActiveProjectId] = useState(null);
-
   // Who is signed in, and how that question is being answered — a real Supabase account
   // where a project is configured, the localStorage record from before accounts existed
   // where there is none. useIdentity is the only thing that knows the difference; here
@@ -281,7 +246,8 @@ function MainApp({ initialView = 'welcome' }) {
     && { new: 'organisationNew', public: 'organisationPublic', dashboard: 'organisationDashboard' }[organisationRoute.mode];
   // `/projects/new?organisation=<id>`, from an organisation's dashboard: the new
   // project starts out run in that organisation's name.
-  const newProjectOrganisationId = new URLSearchParams(useSearch()).get('organisation');
+  const search = useSearch();
+  const newProjectOrganisationId = new URLSearchParams(search).get('organisation');
   const personId = personIdFrom(location);
   const resourceSlug = resourceSlugFrom(location);
   // An address none of those know, and that is not the home page the views without
@@ -335,10 +301,6 @@ function MainApp({ initialView = 'welcome' }) {
     };
   }, [view, location]);
 
-  // The imagine map fills the window and does not scroll, so it has no footer. Explore
-  // scrolls like a page, its map in a frame of its own, with the footer under it.
-  const fullHeight = view === 'imagine';
-
   const showNewProject = () => navigate('/projects/new');
   const showNewOrganisationProject = (organisationId) =>
     navigate(`/projects/new?organisation=${encodeURIComponent(organisationId)}`);
@@ -380,104 +342,6 @@ function MainApp({ initialView = 'welcome' }) {
     setCurrentView(next);
   };
 
-  // Imagining is the Toolkit's Idea Visualizer now, opened like any tool — from the
-  // Toolkit, or from a project's page with the project attached. Its Get started hands
-  // back here to run the flow.
-  //
-  // A project with the tool's room open (its address and the Street View photo the
-  // organiser took, see IdeaVisualizerSetup) skips the map: everyone draws on that
-  // photo, pinned at that address. One without, or whose photo cannot be loaded, gets
-  // the map as before, so taking part is never blocked.
-  const handleLaunchTool = async (toolId, projectId) => {
-    if (toolId !== REIMAGINE_TOOL) return;
-    posthog.capture('imagination_started', { project: Boolean(projectId) });
-    setActiveProjectId(projectId ?? null);
-
-    let scene = null;
-    if (projectId) {
-      try {
-        scene = await readReimagineScene(projectId);
-      } catch (err) {
-        console.error("Could not load the project's scene, so starting from the map:", err);
-      }
-    }
-    if (!scene) {
-      show('imagine');
-      return;
-    }
-    handleCaptureView({
-      position: scene.position,
-      pov: null,
-      fov: null,
-      source: 'project',
-      timestamp: new Date().toISOString(),
-      screenshot: scene.screenshot,
-    });
-  };
-
-  const handleCaptureView = (viewData) => {
-    setCapturedView(viewData);
-    // A new capture starts a new imagination.
-    setCanvasAssets([]);
-    setDraft(EMPTY_DRAFT);
-    setPreview(null);
-    show('street');
-  };
-
-  // A project's scene was never picked from the map, so back from it is the project.
-  const fromProjectScene = capturedView?.source === 'project' && activeProjectId;
-  const handleBackToMap = () => {
-    if (fromProjectScene) {
-      // Off the flow, so the scene does not come back the next time '/' is opened.
-      setCurrentView('welcome');
-      showProjectPublic(activeProjectId);
-    } else {
-      show('imagine');
-    }
-  };
-
-  const handleNextStep = (canvasPreview) => {
-    setPreview(canvasPreview);
-    show('describe');
-  };
-
-  const handleDraftChange = (patch) => {
-    setDraft((current) => ({ ...current, ...patch }));
-  };
-
-  // Written down before somebody is sent off to Google or to their email, and picked up
-  // again on the way back — both of those reload the page, and everything above is React
-  // state. See PostPage's SignInToPost, which calls this before it navigates.
-  const stashDraft = () => savePendingImagination({
-    capturedView, canvasAssets, draft, preview, projectId: activeProjectId,
-  });
-
-  useEffect(() => {
-    // Only once there is an account to post under, and only when this tab is not already
-    // in the middle of something — signing in with a password never leaves the page, so
-    // in that case what is in memory is already the right thing and is newer than any
-    // parked copy.
-    if (identityStatus !== 'signedIn' || capturedView) return undefined;
-
-    let cancelled = false;
-
-    readPendingImagination().then((pending) => {
-      if (cancelled || !pending) return;
-      setCapturedView(pending.capturedView ?? null);
-      setCanvasAssets(pending.canvasAssets ?? []);
-      setDraft(pending.draft ?? EMPTY_DRAFT);
-      setPreview(pending.preview ?? null);
-      setActiveProjectId(pending.projectId ?? null);
-      clearPendingImagination();
-      // Back where they left off, which is the whole point of having parked it. Off
-      // /dashboard first, where the redirect below will already have sent them.
-      navigate('/', { replace: true });
-      setCurrentView('post');
-    });
-
-    return () => { cancelled = true; };
-  }, [identityStatus, capturedView, navigate]);
-
   // The dashboard is home for anyone with a real account: signing in lands on it, and
   // so does opening the app cold with a session, or the logo. The landing page is only
   // for visitors who are signed out. Not in the local, no-project mode, where everybody
@@ -486,23 +350,8 @@ function MainApp({ initialView = 'welcome' }) {
     if (view === 'welcome' && identityStatus === 'signedIn') navigate('/dashboard', { replace: true });
   }, [view, identityStatus, navigate]);
 
-  const handlePosted = () => {
-    // Saved, so there is nothing left to come back to.
-    clearPendingImagination();
-    setMapFocus(capturedView?.position ?? null);
-    setCapturedView(null);
-    setCanvasAssets([]);
-    setDraft(EMPTY_DRAFT);
-    setPreview(null);
-    setActiveProjectId(null);
-    show('imagine');
-  };
-
   const handleExplore = () => {
     posthog.capture('explore_started');
-    // The ordinary way onto the map, as opposed to arriving through a project's
-    // public page — see activeProjectId's own comment.
-    setActiveProjectId(null);
     show('map');
   };
 
@@ -534,53 +383,12 @@ function MainApp({ initialView = 'welcome' }) {
     show('welcome');
   };
 
-  const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-
-
-  if (FLOW_VIEWS.includes(view)) {
+  // A full-screen tool, started, has the whole window: no nav bar, no side nav and no
+  // footer, the tool's own top bar the only chrome (FULL_SCREEN_TOOLS, lib/routes.js).
+  if (isFullScreenTool(location, search)) {
     return (
       <Suspense fallback={<LoadingFallback />}>
-        {view === 'street' && (
-          <StreetScreen
-            t={t}
-            onBack={handleBackToMap}
-            backLabel={fromProjectScene ? 'Back to project' : undefined}
-            onNext={handleNextStep}
-            capturedView={capturedView}
-            canvasAssets={canvasAssets}
-            onCanvasAssetsChange={setCanvasAssets}
-          />
-        )}
-        {view === 'describe' && (
-          <DescribePage
-            t={t}
-            draft={draft}
-            onDraftChange={handleDraftChange}
-            onBack={() => show('street')}
-            onNext={() => show('post')}
-            preview={preview}
-            needsAccount={identityStatus === 'signedOut'}
-          />
-        )}
-        {view === 'post' && (
-          <PostPage
-            t={t}
-            draft={draft}
-            preview={preview}
-            capturedView={capturedView}
-            canvasAssets={canvasAssets}
-            onBack={() => show('describe')}
-            onPosted={handlePosted}
-            accountId={accountId}
-            // Saving is the one thing an account is required for. Where there is no
-            // project configured there are no accounts either, so identityStatus is
-            // 'local' and this stays false — the flow works exactly as it always did.
-            needsAccount={identityStatus === 'signedOut'}
-            checkingAccount={identityLoading}
-            onStashDraft={stashDraft}
-            projectId={activeProjectId}
-          />
-        )}
+        <ToolkitPage t={t} displayName={profile?.name ?? null} />
       </Suspense>
     );
   }
@@ -598,12 +406,12 @@ function MainApp({ initialView = 'welcome' }) {
         onSearchSelect={({ kind, id }) => showPublicPage(kind, id)}
       />
 
-      {/* Main Content. The imagine map fills it and has no footer. Every other view scrolls
-          here, with the footer after it — see .placer-scroll-view in index.css. The
+      {/* Main Content. Every view scrolls here, with the footer after it — see
+          .placer-scroll-view in index.css. The
           side nav shares a row with the page rather than with the whole area, so it
           ends where the page does and the footer runs the full width beneath both. */}
-      <div className={`placer-under-glass-nav${fullHeight ? '' : ' placer-scroll-view'}`}
-        style={{ flex: 1, minHeight: 0, position: 'relative', overflow: fullHeight ? 'hidden' : undefined }}>
+      <div className="placer-under-glass-nav placer-scroll-view"
+        style={{ flex: 1, minHeight: 0, position: 'relative' }}>
         <div className="placer-app-row">
           {/* Only once somebody is signed in: everything on it is a place an account
               goes back to. Held back while the session is still being read, the same as
@@ -653,18 +461,6 @@ function MainApp({ initialView = 'welcome' }) {
                   onSignIn={handleSignIn}
                   onOpenProject={showProjectPublic}
                   onOpenOrganisation={showOrganisationPublic}
-                />
-              </Suspense>
-            )}
-
-            {view === 'imagine' && (
-              <Suspense fallback={<LoadingFallback />}>
-                <MapContainer
-                  onCaptureView={handleCaptureView}
-                  apiKey={GOOGLE_MAPS_API_KEY}
-                  initialCenter={mapFocus}
-                  homeCenter={profile?.locationPoint ?? null}
-                  onOpenProject={showProjectPublic}
                 />
               </Suspense>
             )}
@@ -725,7 +521,6 @@ function MainApp({ initialView = 'welcome' }) {
                 <ToolkitPage
                   t={t}
                   displayName={profile?.name ?? null}
-                  onLaunchTool={handleLaunchTool}
                 />
               </Suspense>
             )}
@@ -873,10 +668,8 @@ function MainApp({ initialView = 'welcome' }) {
             )}
           </div>
         </div>
-        {!fullHeight && (
-          <SiteFooter t={t} view={view}
-            onNavigate={(next) => (next === 'map' ? handleExplore() : show(next))} />
-        )}
+        <SiteFooter t={t} view={view}
+          onNavigate={(next) => (next === 'map' ? handleExplore() : show(next))} />
       </div>
     </div>
   );

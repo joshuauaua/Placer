@@ -72,11 +72,9 @@
  * `Preview` is optional: a small component, { t }, shown in ConfigureToolDialog's
  * introduction under the blurb — the tool at work, before anything is set up.
  *
- * `launch` marks a tool that is a flow of App's own rather than a component on the
- * Toolkit's page: Get started on its cover hands over to that flow (ToolkitPage's
- * onLaunchTool), carrying the project it was opened for. Idea Visualizer is one —
- * the imagination flow runs full-bleed, step by step, and keeps its draft in App.
- * Its `component` is only what shows where nothing takes the hand-over.
+ * A tool whose id is in FULL_SCREEN_TOOLS (lib/routes.js) takes the whole window once
+ * started, with no nav bar or footer, and its `component` is given only { t, tool }.
+ * Idea Visualizer is one: its steps are screens of their own, each with its own top bar.
  *
  * `inquiry` is optional, for a tool that can be kept on a profile when it is used on its
  * own (components/toolkit/KeepOnProfile.jsx, services/inquiries.js). It says how one of

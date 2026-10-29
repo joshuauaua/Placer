@@ -18,7 +18,6 @@ import { isSupabaseConfigured, readProjectLocations } from '../services/projects
 import { captureStreetView as captureStreetViewImage, readPanoramaView as readView } from '../lib/streetViewCapture';
 import { loadGoogleMaps } from '../lib/googleMaps';
 import { addPlainMarker, createMap, onBackgroundClick, showAreas, toLngLat } from '../lib/map';
-import { PageHeader } from './PageHeader';
 import { PlaceSearch } from './PlaceSearch';
 
 // A project's drawn area: a map area is a theme colour's 300, outlined in its 700.
@@ -318,12 +317,6 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: t.page }}>
-      {/* The map does not scroll, so the header stays put above it simply by being
-          outside it; the map takes the rest of the height. */}
-      <div style={{ flex: '0 0 auto', padding: '0 40px' }}>
-        <PageHeader t={t} title="Idea Visualizer"
-          style={{ marginBottom: 0 }} />
-      </div>
       {/* Map View */}
       <div style={{ flex: 1, minHeight: 0 }}>
         <div style={{ width: '100%', height: '100%', position: 'relative', background: t.surface }}>

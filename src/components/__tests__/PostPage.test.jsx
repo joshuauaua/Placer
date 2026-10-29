@@ -258,6 +258,20 @@ describe('PostPage, reached without an account', () => {
       .toBeLessThan(vi.mocked(signUpWithPassword).mock.invocationCallOrder[0]);
   });
 
+  it('sends the confirmation link back to the tool, where the parked idea is picked up', async () => {
+    signedOut({ returnTo: '/toolkit/reimagine-a-space?project=proj-1&start' });
+
+    fireEvent.click(screen.getByRole('link', { name: 'Create an account' }));
+    fireEvent.change(screen.getByLabelText('Invite code'), { target: { value: 'PLACER-MARA' } });
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'Mara Quinn' } });
+    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'mara@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'longenough' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+
+    await waitFor(() => expect(signUpWithPassword).toHaveBeenCalledWith(
+      expect.objectContaining({ returnTo: '/toolkit/reimagine-a-space?project=proj-1&start' })));
+  });
+
   it('says where the idea has gone once a confirmation is pending', async () => {
     signedOut();
 

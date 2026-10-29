@@ -84,10 +84,11 @@ function Shell({ t, title, blurb, children }) {
  * the panel where the Post button would be. That second case is the reason it carries no
  * heading of its own — the Post step already has one — and the reason for onLeaving:
  * two of the three ways in navigate the whole page away, and the caller needs a chance
- * to write down whatever it would rather not lose first.
+ * to write down whatever it would rather not lose first. `returnTo` is where the
+ * confirmation link of a new account comes back to, so it can be picked up again there.
  */
 export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeaving,
-  onAwaitingConfirmation }) {
+  onAwaitingConfirmation, returnTo }) {
   const signingUp = mode === 'signup';
 
   const [name, setName] = useState('');
@@ -141,6 +142,7 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
           password,
           displayName: trimmedName,
           inviteCode: trimmedCode,
+          returnTo,
         });
         if (needsConfirmation) {
           setSentTo(trimmedEmail);

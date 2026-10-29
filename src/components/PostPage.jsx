@@ -1,4 +1,4 @@
-/* PLACER — Step 3: review the idea and keep it on your profile.
+/* PLACER — Step 4: review the idea and keep it on your profile.
  *
  * Made with the Idea Visualizer on its own, an idea is saved as an inquiry on the
  * signed-in account's profile (services/inquiries.js), private to them, like any other
@@ -41,15 +41,15 @@ function Row({ t, label, children }) {
  * The gate, for somebody who has reached the last step without an account.
  *
  * Deliberately inline rather than a redirect. Everything that has been made so far —
- * the capture, the assets, the lines, the description — lives in MainApp's state, and
- * sending somebody to /signin and back would be the one thing this screen must not do.
- * Signing in with a password happens here without the page moving at all.
+ * the capture, the assets, the lines, the description — lives in Idea Visualizer's
+ * state, and sending somebody to /signin and back would be the one thing this screen
+ * must not do. Signing in with a password happens here without the page moving at all.
  *
- * The other two ways in cannot be kept on the page: Google redirects, and a confirmation
- * link is opened from a mail client. onLeaving is what parks the imagination before
- * either of those happens, so it is still here on the way back.
+ * Signing up cannot be kept on the page: the confirmation link is opened from a mail
+ * client. onLeaving is what parks the imagination before that happens, and `returnTo`
+ * is the tool's own address, so the link comes back to it and finds the idea there.
  */
-function SignInToSave({ t, mode, onModeChange, onLeaving }) {
+function SignInToSave({ t, mode, onModeChange, onLeaving, returnTo }) {
   const [awaiting, setAwaiting] = useState(null);
 
   return (
@@ -70,6 +70,7 @@ function SignInToSave({ t, mode, onModeChange, onLeaving }) {
         mode={mode}
         onModeChange={onModeChange}
         onLeaving={onLeaving}
+        returnTo={returnTo}
         onAwaitingConfirmation={setAwaiting}
         // Nothing to do on success: the account arrives through useIdentity, this panel
         // goes away, and the Save button takes its place.
@@ -81,7 +82,7 @@ function SignInToSave({ t, mode, onModeChange, onLeaving }) {
 
 export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
   onBack, onPosted, accountId = null,
-  needsAccount = false, checkingAccount = false, onStashDraft, projectId = null }) {
+  needsAccount = false, checkingAccount = false, onStashDraft, returnTo, projectId = null }) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
   const [error, setError] = useState(null);
   const [authMode, setAuthMode] = useState('signin');
@@ -119,7 +120,7 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
   return (
     <FlowScreen
       t={t}
-      step={3}
+      step={4}
       onBack={onBack}
       backLabel="Back to describe"
       actions={
@@ -197,6 +198,7 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
               mode={authMode}
               onModeChange={setAuthMode}
               onLeaving={onStashDraft}
+              returnTo={returnTo}
             />
           ) : (
             <div style={{ marginTop: 32, padding: 14, background: t.surfaceAlt, borderRadius: 12,

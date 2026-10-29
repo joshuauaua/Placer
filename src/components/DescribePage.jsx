@@ -1,4 +1,4 @@
-/* PLACER — Step 2: describe the imagination */
+/* PLACER — Step 3: describe the imagination */
 
 import { Btn, Chip } from './UI';
 import { FlowScreen } from './FlowLayout';
@@ -47,7 +47,7 @@ export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview,
   return (
     <FlowScreen
       t={t}
-      step={2}
+      step={3}
       onBack={onBack}
       backLabel="Back to canvas"
       actions={

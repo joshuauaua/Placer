@@ -117,8 +117,11 @@ function callbackUrl(next = '/') {
  * reason the display name does. The code is looked at first, so that a mistyped one
  * gets a sentence; if it is refused anyway — used up by somebody else in between —
  * Supabase only reports a database error, which is translated back here.
+ *
+ * `returnTo` is where the confirmation link lands once it has signed somebody in: the
+ * home page, unless they were in the middle of something (Idea Visualizer's Save step).
  */
-export async function signUpWithPassword({ email, password, displayName, inviteCode }) {
+export async function signUpWithPassword({ email, password, displayName, inviteCode, returnTo = '/' }) {
   const supabase = await client();
 
   const { data: valid, error: checkError } = await supabase.rpc('invite_code_check', {
@@ -132,7 +135,7 @@ export async function signUpWithPassword({ email, password, displayName, inviteC
     password,
     options: {
       data: { display_name: displayName ?? null, invite_code: inviteCode ?? null },
-      emailRedirectTo: callbackUrl('/'),
+      emailRedirectTo: callbackUrl(returnTo),
     },
   });
 
