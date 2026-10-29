@@ -1153,11 +1153,12 @@ a {
   outline-offset: 4px;
 }
 
-/* The close of the page: the waitlist, centred on an ink band, in the
- * statement's capitals at a size down. */
+/* The close of the page: the waitlist, centred on a dark band a shade lighter
+ * than the ink footer under it, so the two read apart, in the statement's
+ * capitals at a size down. */
 .placer-landing-waitlist {
   padding: 96px var(--placer-margin);
-  background: var(--placer-ink);
+  background: #262626;
   color: var(--placer-white);
   text-align: center;
 }
