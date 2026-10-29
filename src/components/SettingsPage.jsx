@@ -9,7 +9,7 @@
 
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useSearch } from 'wouter';
-import { Avatar, Btn, LoadingMark } from './UI';
+import { Avatar, Btn, LoadingMark, inputStyle, labelStyle } from './UI';
 import { Icon } from './Icon';
 import { PageHeader } from './PageHeader';
 import { readConsent, grantConsent, denyConsent, GRANTED, DENIED } from '../analytics';
@@ -24,20 +24,6 @@ import { PasswordInput } from './PasswordInput';
 
 // The same floor AuthPage and ResetPasswordPage ask for.
 const MIN_PASSWORD = 8;
-
-// Copied from DescribePage rather than shared, matching how the form styling is
-// already duplicated across the pages that need it.
-const inputStyle = (t) => ({
-  width: '100%',
-  padding: '12px 16px',
-  fontSize: 15,
-  border: `1.5px solid ${t.line}`,
-  borderRadius: 12,
-  background: t.chrome,
-  color: t.ink,
-  fontFamily: 'var(--placer-font)',
-  outline: 'none',
-});
 
 // One group of settings in the open option's pane: its heading, then its fields. The
 // pane is already inside the page's one card, so these are divided by a rule rather
@@ -238,8 +224,6 @@ function Organisations({ t, organisations, onNewOrganisation, onOpenOrganisation
     </Card>
   );
 }
-
-const labelStyle = (t) => ({ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 });
 
 // Only reachable on the account path — a local-only visitor has no password to
 // change, and no `email` is what tells this apart from that world (see useIdentity.js).

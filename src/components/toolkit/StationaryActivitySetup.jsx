@@ -21,7 +21,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Panel } from '../ToolLayout';
-import { Btn } from '../UI';
+import { Btn, Field, inputStyle } from '../UI';
 import { PlaceSearch } from '../PlaceSearch';
 import { PostureSymbol } from './PostureSymbol';
 import {
@@ -40,36 +40,11 @@ const toolStyle = (t, on) => ({
   ...(on ? { background: t.primaryBg, color: t.primaryFg, border: '1px solid transparent' } : null),
 });
 
-const inputStyle = (t) => ({
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: '12px 16px',
-  fontSize: 15,
-  border: `1.5px solid ${t.line}`,
-  borderRadius: 12,
-  background: t.chrome,
-  color: t.ink,
-  fontFamily: 'var(--placer-font)',
-  outline: 'none',
-});
-
 // A card inside the setup card: flat, so the two read as parts of the one around them.
 const INNER = { boxShadow: 'none', minWidth: 0 };
 
 const keyHeading = (t) => ({ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
   textTransform: 'uppercase', color: t.inkDim, margin: '0 0 10px' });
-
-function Field({ t, label, htmlFor, children }) {
-  return (
-    <div>
-      <label htmlFor={htmlFor}
-        style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
 
 /** The field sheet's directions, and its key to the symbols and activities. */
 export function StationaryInstructions({ t }) {
@@ -242,7 +217,7 @@ export function SurveyAreaStep({ t, tool, setup, onChange }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <SurveyAreaMap t={t} tool={tool} area={setup.area} height={300}
         onChange={(area) => onChange({ ...setup, area })} />
-      <Field t={t} label="Location" htmlFor="stationary-project-location">
+      <Field t={t} spacing={0} label="Location" htmlFor="stationary-project-location">
         <input id="stationary-project-location" type="text" maxLength={120} placeholder="e.g. Stortorget, Malmö"
           value={setup.location} onChange={(event) => onChange({ ...setup, location: event.target.value })}
           style={inputStyle(t)} />
@@ -281,22 +256,22 @@ export function StationaryActivitySetup({ t, tool, session, fixed = false, onCha
 
           <Panel t={t} style={{ ...INNER, flex: '2 1 260px' }} title="Session">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              <Field t={t} label="Name" htmlFor="stationary-name">
+              <Field t={t} spacing={0} label="Name" htmlFor="stationary-name">
                 <input id="stationary-name" type="text" maxLength={80} autoComplete="name"
                   value={session.name} onChange={set('name')} style={inputStyle(t)} />
               </Field>
-              <Field t={t} label="Location" htmlFor="stationary-location">
+              <Field t={t} spacing={0} label="Location" htmlFor="stationary-location">
                 <input id="stationary-location" type="text" maxLength={120} placeholder="e.g. Stortorget, Malmö"
                   value={session.location} onChange={set('location')} readOnly={fixed}
                   style={{ ...inputStyle(t), ...(fixed ? { background: t.surfaceAlt, color: t.inkDim } : null) }} />
               </Field>
-              <Field t={t} label="Date" htmlFor="stationary-date">
+              <Field t={t} spacing={0} label="Date" htmlFor="stationary-date">
                 <input id="stationary-date" type="date" value={session.date} onChange={set('date')} style={inputStyle(t)} />
               </Field>
-              <Field t={t} label="Time" htmlFor="stationary-time">
+              <Field t={t} spacing={0} label="Time" htmlFor="stationary-time">
                 <input id="stationary-time" type="time" value={session.time} onChange={set('time')} style={inputStyle(t)} />
               </Field>
-              <Field t={t} label="Weather" htmlFor="stationary-weather">
+              <Field t={t} spacing={0} label="Weather" htmlFor="stationary-weather">
                 <select id="stationary-weather" value={session.weather} onChange={set('weather')} style={inputStyle(t)}>
                   <option value="">Pick the weather</option>
                   {WEATHER.map((weather) => <option key={weather} value={weather}>{weather}</option>)}

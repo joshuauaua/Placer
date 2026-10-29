@@ -20,7 +20,7 @@
 
 import { DateRangePicker } from './DatePicker';
 import { useEffect, useState } from 'react';
-import { Btn } from './UI';
+import { Btn, Field, inputStyle } from './UI';
 import { ImagePicker } from './ImagePicker';
 import { GalleryPicker } from './GalleryPicker';
 import { PageLayoutEditor } from './PageLayoutEditor';
@@ -37,40 +37,12 @@ import { TOOLS, findTool } from '../toolkit/tools';
 import { arrangeSections, layoutFor, projectSections } from '../lib/projectSections';
 import { ToolsByCategory } from './toolkit/ToolsByCategory';
 
-// Matches DescribePage's form styling.
-const inputStyle = (t) => ({
-  width: '100%',
-  padding: '12px 16px',
-  fontSize: 15,
-  border: `1.5px solid ${t.line}`,
-  borderRadius: 12,
-  background: t.chrome,
-  color: t.ink,
-  fontFamily: 'var(--placer-font)',
-  outline: 'none',
-});
-
 // Edit project's tabs, in order. A new project is set up in steps instead.
 const EDIT_TABS = [
   { id: 'general', label: 'General settings' },
   { id: 'media', label: 'Images and Media' },
   { id: 'layout', label: 'Page Layout' },
 ];
-
-function Field({ t, label, htmlFor, hint, children }) {
-  return (
-    <div style={{ marginBottom: 26 }}>
-      <label htmlFor={htmlFor}
-        style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
-        {label}
-      </label>
-      {hint && (
-        <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 10, lineHeight: 1.5 }}>{hint}</div>
-      )}
-      {children}
-    </div>
-  );
-}
 
 /** The six steps of starting a project, in order. */
 const STEPS = ['What is a project', 'Project type', 'The basics', 'Tools', 'Visuals'];

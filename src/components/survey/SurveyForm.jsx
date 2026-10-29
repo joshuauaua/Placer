@@ -6,22 +6,9 @@
 
 import coverArt from '../../assets/cover-bench.png';
 import { Icon } from '../Icon';
-import { Btn } from '../UI';
+import { Btn, inputStyle } from '../UI';
 import { SurveyQuestion } from './SurveyQuestion';
 import { useSurveyForm } from './useSurveyForm';
-
-// Matches the form inputs on Describe and the admin dashboard.
-const inputStyle = (t) => ({
-  width: '100%',
-  padding: '12px 16px',
-  fontSize: 15,
-  border: `1.5px solid ${t.line}`,
-  borderRadius: 12,
-  background: t.chrome,
-  color: t.ink,
-  fontFamily: 'var(--placer-font)',
-  outline: 'none',
-});
 
 // The alert red used across the app.
 const DANGER = '#B3261E';

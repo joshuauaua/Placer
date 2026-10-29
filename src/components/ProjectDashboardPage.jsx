@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { Icon } from './Icon';
-import { Btn, LoadingMark, PageLoader } from './UI';
+import { Btn, LoadingMark, PageLoader, compactInputStyle } from './UI';
 import { ProjectSetupPage } from './ProjectSetupPage';
 import { TOOLS, findTool, isToolLive, projectSetupKind } from '../toolkit/tools';
 import { ConfigureToolDialog } from './ConfigureToolDialog';
@@ -66,17 +66,6 @@ import { ProjectResponsesChoice } from './ProjectResponsesChoice';
 
 // The alert red used across the app.
 const DANGER = '#B3261E';
-
-const inputStyle = (t) => ({
-  padding: '10px 14px',
-  fontSize: 14,
-  border: `1.5px solid ${t.line}`,
-  borderRadius: 12,
-  background: t.chrome,
-  color: t.ink,
-  fontFamily: 'var(--placer-font)',
-  outline: 'none',
-});
 
 // `action`, when given, sits at the far right of the title's row.
 const NUMBER = new Intl.NumberFormat('en-GB');
@@ -413,7 +402,7 @@ function CollaboratingOrganisations({ t, projectId, isOwner, myOrganisationIds }
       {isOwner && (
         <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8 }}>
           <select value={chosen} onChange={(e) => setChosen(e.target.value)}
-            aria-label="Add an organisation as a collaborator" style={{ ...inputStyle(t), flex: 1, minWidth: 0 }}>
+            aria-label="Add an organisation as a collaborator" style={{ ...compactInputStyle(t), flex: 1, minWidth: 0 }}>
             <option value="">{choices.length === 0 ? 'No organisations to add' : 'Choose an organisation'}</option>
             {choices.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
           </select>
@@ -883,7 +872,7 @@ function DeleteProjectDialog({ t, project, onDeleted, onClose }) {
           </label>
           <input id="delete-project-name" ref={fieldRef} value={typed} autoComplete="off"
             onChange={(e) => { setTyped(e.target.value); setError(null); }}
-            style={{ ...inputStyle(t), width: '100%', boxSizing: 'border-box' }} />
+            style={{ ...compactInputStyle(t), width: '100%', boxSizing: 'border-box' }} />
           {error && <p role="alert" style={{ fontSize: 13, color: DANGER, marginTop: 10 }}>{error}</p>}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
             <Btn t={t} variant="outline" size="sm" type="button" onClick={onClose} disabled={deleting}>Cancel</Btn>
@@ -1365,7 +1354,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                   <form onSubmit={handleInvite} style={{ display: 'flex', gap: 8 }}>
                     <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)}
                       placeholder="Invite by email" aria-label="Invite a collaborator by email"
-                      style={{ ...inputStyle(t), flex: 1 }} />
+                      style={{ ...compactInputStyle(t), flex: 1 }} />
                     <Btn t={t} variant="primary" size="sm" icon="plus" disabled={inviting} ariaLabel="Add collaborator">
                       {inviting ? 'Adding…' : 'Add'}
                     </Btn>
@@ -1391,9 +1380,9 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                 )}
                 <form onSubmit={handleAddLink} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <input type="text" value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)}
-                    placeholder="Title" aria-label="Link title" style={{ ...inputStyle(t), flex: '1 1 160px' }} />
+                    placeholder="Title" aria-label="Link title" style={{ ...compactInputStyle(t), flex: '1 1 160px' }} />
                   <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)}
-                    placeholder="https://…" aria-label="Link URL" style={{ ...inputStyle(t), flex: '2 1 220px' }} />
+                    placeholder="https://…" aria-label="Link URL" style={{ ...compactInputStyle(t), flex: '2 1 220px' }} />
                   <Btn t={t} variant="primary" size="sm" icon="plus" disabled={addingLink}
                     ariaLabel="Add link">
                     {addingLink ? 'Adding…' : 'Add'}

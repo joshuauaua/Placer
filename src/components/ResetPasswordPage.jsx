@@ -2,24 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
-import { Btn } from './UI';
+import { Btn, inputStyle } from './UI';
 import { Icon } from './Icon';
 import { readSession, updatePassword } from '../services/auth';
 
 // The same floor AuthPage asks for.
 const MIN_PASSWORD = 8;
-
-const inputStyle = (t) => ({
-  width: '100%',
-  padding: '12px 16px',
-  fontSize: 15,
-  border: `1.5px solid ${t.line}`,
-  borderRadius: 12,
-  background: t.chrome,
-  color: t.ink,
-  fontFamily: 'var(--placer-font)',
-  outline: 'none',
-});
 
 /**
  * A reset link signs somebody in before it gets here — that session is the proof that

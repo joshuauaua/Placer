@@ -1,19 +1,7 @@
 /* PLACER — one survey question, as a group of option buttons. */
 
 import { Icon } from '../Icon';
-
-// Matches the inputs in SurveyForm, and on Describe and the admin dashboard.
-const inputStyle = (t) => ({
-  width: '100%',
-  padding: '12px 16px',
-  fontSize: 15,
-  border: `1.5px solid ${t.line}`,
-  borderRadius: 12,
-  background: t.chrome,
-  color: t.ink,
-  fontFamily: 'var(--placer-font)',
-  outline: 'none',
-});
+import { inputStyle } from '../UI';
 
 /**
  * `scale` questions lay their options out in a wrapping row, which suits a short

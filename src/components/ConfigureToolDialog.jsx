@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Btn } from './UI';
+import { Btn, Field, inputStyle } from './UI';
 import { Icon } from './Icon';
 import { DatePicker } from './DatePicker';
 import { markProjectToolConfigured, readProjectToolSetup, saveProjectToolSetup } from '../services/projects';
@@ -32,32 +32,6 @@ import { SetupSteps } from './toolkit/SetupSteps';
 const DEFAULT_PROJECT_LIFETIME = '30d';
 // When a room scheduled for later starts on its day, until another time is chosen.
 const DEFAULT_START_TIME = '09:00';
-
-const inputStyle = (t) => ({
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: '12px 16px',
-  fontSize: 15,
-  border: `1.5px solid ${t.line}`,
-  borderRadius: 12,
-  background: t.chrome,
-  color: t.ink,
-  fontFamily: 'var(--placer-font)',
-  outline: 'none',
-});
-
-function Field({ t, label, htmlFor, hint, children }) {
-  return (
-    <div style={{ marginBottom: 22 }}>
-      <label htmlFor={htmlFor}
-        style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
-        {label}
-      </label>
-      {hint && <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 10, lineHeight: 1.5 }}>{hint}</div>}
-      {children}
-    </div>
-  );
-}
 
 /**
  * When a room set up in stages starts: now, or at a time on a day within the project's
@@ -168,7 +142,7 @@ function RoomForm({ t, project, tool, room = null, busy, setBusy, onDone, onErro
   };
 
   const openFor = (
-    <Field t={t} label="Open for" htmlFor="configure-lifetime"
+    <Field t={t} spacing={22} label="Open for" htmlFor="configure-lifetime"
       hint="How long people can take part, from when it starts. You can close it sooner from the dashboard.">
       <select id="configure-lifetime" value={lifetime} onChange={(e) => setLifetime(e.target.value)}
         disabled={busy} style={{ ...inputStyle(t), width: 'auto' }}>
