@@ -39,21 +39,20 @@ describe('App', () => {
     renderAt('/');
 
     expect(
-      screen.getByText(/The open toolkit for participatory placemaking/i)
+      screen.getByRole('heading', { level: 1, name: 'Understand, imagine and plan. Together.' })
     ).toBeInTheDocument();
-    expect(screen.queryByText('a toolkit for participatory placemaking')).not.toBeInTheDocument();
     expect(screen.getByText(/funded by the Swedish Institute/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'STPLN' })).toHaveAttribute('href', 'https://stpln.se/');
-    expect(screen.getByRole('link', { name: 'Ankara Aks' })).toHaveAttribute('href', 'https://ankaraaks.com/');
+    expect(screen.getAllByRole('link', { name: 'STPLN' })[0]).toHaveAttribute('href', 'https://stpln.se/');
+    expect(screen.getAllByRole('link', { name: 'Ankara Aks' })[0]).toHaveAttribute('href', 'https://ankaraaks.com/');
     expect(screen.getByRole('img', { name: 'Funded by Swedish Institute' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Join the Waitlist' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Get started' })).toBeInTheDocument();
     // Only the holding page's own bar, with its menu: not the full nav bar.
     expect(screen.getByRole('button', { name: /menu/i })).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
     expect(screen.queryByText('Sandbox')).not.toBeInTheDocument();
   });
 
-  it('sets the landing copy on a card over the city drawing, as decoration', () => {
+  it('sets the landing copy beside the city drawing, as decoration', () => {
     const { container } = renderAt('/');
 
     // The drawings are a CSS background, so they never reach assistive tech:
@@ -61,8 +60,8 @@ describe('App', () => {
     const page = container.querySelector('.placer-landing');
     expect(page.style.getPropertyValue('--placer-landing-city')).toMatch(/landing-city\.svg/);
     expect(page.style.getPropertyValue('--placer-landing-city-mobile')).toMatch(/landing-city-mobile\.svg/);
-    expect(page.querySelector('.placer-landing-column')).toHaveTextContent(
-      /The open toolkit for participatory placemaking/i
+    expect(page.querySelector('.placer-landing-hero-text')).toHaveTextContent(
+      /Understand, imagine and plan\. Together\./i
     );
     // Nothing decorative should reach the accessibility tree as an image.
     expect(screen.queryAllByRole('img', { name: '' })).toHaveLength(0);
@@ -73,7 +72,7 @@ describe('App', () => {
     renderAt('/');
 
     expect(screen.getByRole('navigation')).toBeInTheDocument();
-    expect(screen.getByText(/The open toolkit for participatory placemaking/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Understand, imagine and plan. Together.' })).toBeInTheDocument();
   });
 
   it('renders SurveyPage at /survey', async () => {

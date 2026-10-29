@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { NEUTRAL } from '../theme';
 import { saveSurveyResponse } from '../services/api';
 import { BrandLogo } from './UI';
+import logoSwedishInstitute from '../assets/logo-swedish-institute.png';
 
 // Each column's entries. One with a `view` opens that MainApp view, one with an
 // `href` opens outside the app, and one with neither is a placeholder for a page
@@ -152,6 +153,19 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
             <p className="placer-footer-blurb" style={{ marginTop: 16, maxWidth: 360, fontSize: 14, lineHeight: '20px', color: t.inkDim }}>
               Reimagine your city. A toolkit for shaping shared spaces together.
             </p>
+
+            {/* Who builds and funds it. The lockup reads "Funded by Swedish
+                Institute" as part of the artwork; index.css turns it white. */}
+            <p className="placer-footer-credit" style={{ marginTop: 24, maxWidth: 360, fontSize: 12, lineHeight: '18px', color: t.inkDim }}>
+              PLACER is developed by{' '}
+              <a href="https://stpln.se/" target="_blank" rel="noopener noreferrer" className="placer-footer-link"
+                style={{ textDecoration: 'underline' }}>STPLN</a>{' '}
+              and{' '}
+              <a href="https://ankaraaks.com/" target="_blank" rel="noopener noreferrer" className="placer-footer-link"
+                style={{ textDecoration: 'underline' }}>Ankara Aks</a>, funded by the Swedish Institute.
+            </p>
+            <img className="placer-footer-funder" src={logoSwedishInstitute} alt="Funded by Swedish Institute"
+              style={{ marginTop: 16, height: 32, width: 'auto' }} />
           </div>
 
           {FOOTER_LAYOUT.map((headings) => (

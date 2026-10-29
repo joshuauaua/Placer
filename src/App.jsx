@@ -10,6 +10,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieBanner } from './components/CookieBanner';
 import { LandingPage } from './components/LandingPage';
 import { GlassNavbar } from './components/GlassNavbar';
+import { JoinBar } from './components/JoinBar';
 import { SiteFooter } from './components/SiteFooter';
 
 const StreetScreen = lazy(() => import('./components/StreetScreen'));
@@ -75,6 +76,8 @@ function MainApp({ initialView = 'welcome' }) {
   const [mapFocus, setMapFocus] = useState(null);
 
   const showNav = isNavEnabled();
+  const [joinBarOpen, setJoinBarOpen] = useState(true);
+  const showJoinBar = !showNav && joinBarOpen;
 
   // The Sandbox is the one view that lives in the URL, because every experiment has a
   // link worth sharing. So it is read off the location rather than held in state, and
@@ -205,6 +208,7 @@ function MainApp({ initialView = 'welcome' }) {
       {/* With the full nav bar off, this is the only way to reach About or
           Contact, and the only way back once there. */}
       {!showNav && <GlassNavbar t={t} view={view} onNavigate={show} />}
+      {showJoinBar && <JoinBar t={t} onClose={() => setJoinBarOpen(false)} />}
 
       {/* Navigation Bar */}
       {showNav && (
@@ -249,7 +253,8 @@ function MainApp({ initialView = 'welcome' }) {
       {/* Main Content. The map fills it and has no footer. Every other view scrolls
           here, with the footer after it — see .placer-scroll-view in index.css. */}
       <div ref={scrollRef} className={view === 'map' ? undefined : 'placer-scroll-view'}
-        style={{ flex: 1, minHeight: 0, position: 'relative', overflow: view === 'map' ? 'hidden' : undefined }}>
+        style={{ flex: 1, minHeight: 0, position: 'relative', overflow: view === 'map' ? 'hidden' : undefined,
+          paddingTop: showJoinBar ? 'var(--placer-join-bar-h)' : undefined }}>
         {view === 'welcome' && <LandingPage t={t} />}
 
         {view === 'map' && (

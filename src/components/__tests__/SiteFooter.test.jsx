@@ -20,6 +20,15 @@ describe('SiteFooter newsletter sign-up', () => {
 });
 
 describe('SiteFooter layout', () => {
+  it('credits who builds and funds PLACER, with the funder lockup', () => {
+    render(<SiteFooter t={THEME} view="welcome" onNavigate={() => {}} />);
+
+    expect(screen.getByText(/funded by the Swedish Institute/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'STPLN' })).toHaveAttribute('href', 'https://stpln.se/');
+    expect(screen.getByRole('link', { name: 'Ankara Aks' })).toHaveAttribute('href', 'https://ankaraaks.com/');
+    expect(screen.getByRole('img', { name: 'Funded by Swedish Institute' })).toBeInTheDocument();
+  });
+
   it('lists Instagram and Email under About Us', () => {
     render(<SiteFooter t={THEME} view="welcome" onNavigate={() => {}} />);
 
