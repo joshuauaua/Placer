@@ -130,10 +130,13 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
 
         <div className="placer-footer-bottom" style={{ marginTop: 48, paddingTop: 24, borderTop: `1px solid ${t.line}`,
           fontSize: 12, lineHeight: '16px', letterSpacing: '0.01em' }}>
-          {/* The AGPL asks that people using the site can get its source, so the
-              repository is linked beside the licence. Under it, the logo in
-              white (LOGO BB), at the footer's 16px cap height. */}
+          {/* The logo in white (LOGO BB), at the footer's 16px cap height, and
+              under it the licence. The AGPL asks that people using the site can
+              get its source, so the repository is linked beside it. */}
           <div className="placer-footer-signoff">
+            <div onClick={() => onNavigate('welcome')} style={{ cursor: 'pointer', display: 'inline-block', color: t.ink }}>
+              <BrandLogo height={16} label="PLACER" />
+            </div>
             <span style={{ color: t.inkDim }}>
               Open source under the{' '}
               <a href={LICENSE_URL} target="_blank" rel="noopener noreferrer" className="placer-footer-link"
@@ -148,9 +151,6 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
               {' · '}
               <FooterLink active={view === 'terms'} onClick={() => onNavigate('terms')}>Privacy and Terms</FooterLink>
             </span>
-            <div onClick={() => onNavigate('welcome')} style={{ cursor: 'pointer', display: 'inline-block', color: t.ink }}>
-              <BrandLogo height={16} label="PLACER" />
-            </div>
           </div>
 
           {/* Who builds and funds it, on one line at the right. The lockup reads

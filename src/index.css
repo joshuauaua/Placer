@@ -1933,7 +1933,7 @@ a {
   opacity: 0.85;
 }
 
-/* The licence over the logo, at the bottom left. */
+/* The logo over the licence, at the bottom left. */
 .placer-footer-signoff {
   display: flex;
   flex-direction: column;
