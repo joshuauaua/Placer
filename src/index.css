@@ -469,13 +469,13 @@ a {
 }
 
 .placer-landing-partners-title {
-  margin: 0 0 32px;
-  font-size: 13px;
-  line-height: 18px;
+  margin: 0 0 40px;
+  font-size: 20px !important;
+  line-height: 26px !important;
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--placer-grey-500);
+  color: var(--placer-grey-700);
 }
 
 .placer-landing-partners-list {
