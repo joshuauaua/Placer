@@ -1916,19 +1916,35 @@ a {
   gap: 40px;
 }
 
+/* The credit and the funder's lockup, side by side at the bottom right. */
+.placer-footer-credit {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 /* The funder's lockup is ink on white; inverted it is white on black, and
  * screen drops the black into the ink footer. */
 .placer-footer-funder {
+  flex: 0 0 auto;
   display: block;
   filter: grayscale(1) invert(1);
   mix-blend-mode: screen;
   opacity: 0.85;
 }
 
+/* The licence over the logo, at the bottom left. */
+.placer-footer-signoff {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
 .placer-footer-bottom {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
 }
@@ -1956,55 +1972,6 @@ a {
   outline-color: var(--placer-white);
 }
 
-/* The newsletter sign-up: its heading, a grey-700 outlined field and a white button
- * with the same rounded corners as every other button, on one line. */
-.placer-footer-newsletter {
-  display: flex;
-  align-items: center;
-  gap: 8px 16px;
-  max-width: 640px;
-}
-
-.placer-footer-newsletter input {
-  flex: 1;
-  min-width: 0;
-  height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--placer-grey-700);
-  border-radius: 0;
-  background: transparent;
-  color: var(--placer-white);
-  font: inherit;
-  font-size: 14px;
-}
-
-.placer-footer-newsletter input::placeholder {
-  color: var(--placer-grey-500);
-}
-
-.placer-footer-newsletter input:focus-visible {
-  outline: 1px solid var(--placer-white);
-  border-color: var(--placer-white);
-}
-
-.placer-footer-newsletter button {
-  height: 44px;
-  padding: 0 16px;
-  border: none;
-  border-radius: 12px;
-  background: var(--placer-white);
-  color: var(--placer-ink);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.placer-footer-newsletter button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
 @media (max-width: 1023px) {
   .placer-footer {
     padding: 40px 20px;
@@ -2021,11 +1988,12 @@ a {
     text-align: center;
   }
 
-  .placer-footer-blurb,
-  .placer-footer-credit,
-  .placer-footer-funder {
-    margin-left: auto;
-    margin-right: auto;
+  .placer-footer-signoff {
+    align-items: center;
+  }
+
+  .placer-footer-credit {
+    flex-direction: column;
   }
 
   .placer-footer-links {
@@ -2038,21 +2006,6 @@ a {
 
   .placer-footer-bottom {
     flex-direction: column;
-  }
-
-  /* The heading, the field and the button stack, centred on one narrower measure,
-   * the address typed centred in line with them. */
-  .placer-footer-newsletter {
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-    max-width: 320px;
-    margin: 0 auto;
-  }
-
-  .placer-footer-newsletter input {
-    flex: none;
-    text-align: center;
   }
 }
 
