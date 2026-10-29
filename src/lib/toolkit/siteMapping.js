@@ -149,12 +149,6 @@ export function isSurveyComplete(answers) {
   return answeredCount(answers) === SURVEY_QUESTIONS.length;
 }
 
-/** First unanswered question key, or null when the stack is done. */
-export function nextUnanswered(answers) {
-  const found = SURVEY_QUESTIONS.find((q) => answers?.[q.key] !== true && answers?.[q.key] !== false);
-  return found ? found.key : null;
-}
-
 export function invitingCount(answers) {
   return SURVEY_QUESTIONS.filter((q) => q.kind === 'inviting' && answers?.[q.key] === true).length;
 }

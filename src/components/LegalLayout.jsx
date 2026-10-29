@@ -192,17 +192,3 @@ export function ExternalLink({ t, href, children }) {
     </a>
   );
 }
-
-export function PageLink({ t, onClick, children }) {
-  return (
-    <span
-      onClick={onClick}
-      role="link"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
-      style={{ color: t.ink, fontWeight: 500, textDecoration: 'underline', cursor: 'pointer' }}
-    >
-      {children}
-    </span>
-  );
-}

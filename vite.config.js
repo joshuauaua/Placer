@@ -115,7 +115,7 @@ export default defineConfig({
     },
   },
   lint: {
-    ignorePatterns: ['dist/**', 'docs/ref/**'],
+    ignorePatterns: ['dist/**'],
   },
   test: {
     globals: true,

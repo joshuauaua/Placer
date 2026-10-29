@@ -1,9 +1,6 @@
 /**
- * Mock API Service Layer using localStorage
- *
- * This service encapsulates all data persistence operations.
- * Replace localStorage calls with actual HTTP requests to swap
- * in a real backend without changing UI components.
+ * What PLACER keeps in the browser, and the survey responses: the GDPR export and
+ * erasure of it, and the Idea Visualizer draft parked while its author signs up.
  */
 
 import { getSupabase } from './supabase';
@@ -21,9 +18,10 @@ export const SURVEY_TABLE = 'survey_responses';
 // together.
 const STORAGE_KEYS = {
   // Imaginations, their votes and their comments as this browser kept them before
-  // there were accounts. Nothing writes them any more (an idea is kept on the profile
-  // now, services/inquiries.js), but a browser may still hold some, and they stay
-  // listed so the export and erasure requests still reach them.
+  // there were accounts, and the placeholder asset library that used to be seeded on
+  // every page load. Nothing writes them any more (an idea is kept on the profile now,
+  // services/inquiries.js), but a browser may still hold some, and they stay listed so
+  // the export and erasure requests still reach them.
   IMAGINATIONS: 'placemaking_imaginations',
   ASSETS_LIBRARY: 'placemaking_assets',
   UPVOTES: 'placemaking_upvotes',
@@ -53,78 +51,6 @@ const STORAGE_KEYS = {
 
 // Simulate network delay for realistic async behavior
 const simulateDelay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
-
-/**
- * Initialize default asset library if not present
- */
-const initializeDefaultAssets = () => {
-  const existing = localStorage.getItem(STORAGE_KEYS.ASSETS_LIBRARY);
-  if (!existing) {
-    const defaultAssets = [
-      {
-        id: 'asset-1',
-        name: 'Park Bench',
-        category: 'furniture',
-        imageUrl: 'https://via.placeholder.com/150/8B4513/FFFFFF?text=Bench',
-        width: 150,
-        height: 80
-      },
-      {
-        id: 'asset-2',
-        name: 'Tree',
-        category: 'nature',
-        imageUrl: 'https://via.placeholder.com/120/228B22/FFFFFF?text=Tree',
-        width: 120,
-        height: 180
-      },
-      {
-        id: 'asset-3',
-        name: 'Shrub',
-        category: 'nature',
-        imageUrl: 'https://via.placeholder.com/80/32CD32/FFFFFF?text=Shrub',
-        width: 80,
-        height: 60
-      },
-      {
-        id: 'asset-4',
-        name: 'Street Lamp',
-        category: 'lighting',
-        imageUrl: 'https://via.placeholder.com/60/FFD700/000000?text=Lamp',
-        width: 60,
-        height: 140
-      },
-      {
-        id: 'asset-5',
-        name: 'Flower Bed',
-        category: 'nature',
-        imageUrl: 'https://via.placeholder.com/100/FF69B4/FFFFFF?text=Flowers',
-        width: 100,
-        height: 50
-      },
-      {
-        id: 'asset-6',
-        name: 'Bike Rack',
-        category: 'furniture',
-        imageUrl: 'https://via.placeholder.com/90/808080/FFFFFF?text=Bike+Rack',
-        width: 90,
-        height: 70
-      }
-    ];
-    localStorage.setItem(STORAGE_KEYS.ASSETS_LIBRARY, JSON.stringify(defaultAssets));
-  }
-};
-
-// Initialize on module load
-initializeDefaultAssets();
-
-/**
- * Fetch all available assets from the library
- */
-export const fetchAssets = async () => {
-  await simulateDelay();
-  const assets = localStorage.getItem(STORAGE_KEYS.ASSETS_LIBRARY);
-  return assets ? JSON.parse(assets) : [];
-};
 
 /**
  * Fetch every submitted survey response
@@ -275,8 +201,7 @@ export const exportAllData = async () => {
 
 /**
  * Delete every piece of PLACER data held in this browser.
- * Backs the erasure request on the GDPR page. The default asset library is
- * recreated on the next page load, since it is seed data rather than user data.
+ * Backs the erasure request on the GDPR page.
  */
 export const eraseAllData = async () => {
   await simulateDelay();

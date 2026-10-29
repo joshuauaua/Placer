@@ -234,8 +234,3 @@ export function fitPoints(map, points, { padding = 40, maxZoom = 17, animate = f
   points.forEach((point) => bounds.extend(toLngLat(point)));
   map.fitBounds(bounds, { padding, maxZoom, animate });
 }
-
-/** A link to `point` on openstreetmap.org, for "open in a map". */
-export function osmUrl({ lat, lng }, zoom = 18) {
-  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=${zoom}/${lat}/${lng}`;
-}
