@@ -17,6 +17,7 @@ import userLabsPhotoSmall from '../assets/user-labs-800.webp';
 import { bundledImage } from '../lib/responsiveImage';
 import { saveSurveyResponse } from '../services/api';
 import { PhotoSplit, PhotoSplitHeading } from './PhotoSplit';
+import { inputStyle, labelStyle } from './UI';
 
 // If saving fails, the visitor can still apply the way they used to: by email, to
 // the same address ContactPage.jsx shows.
@@ -37,21 +38,6 @@ const UPCOMING_LAB = {
 };
 
 const EMPTY_FORM = { lab: '', name: '', email: '', phone: '', role: '', motivation: '', dietary: '', newsletter: false };
-
-/** Matches the form inputs on the survey's contact step (placemakingSurvey/SurveyQuestion). */
-const inputStyle = (t) => ({
-  width: '100%',
-  padding: '12px 16px',
-  fontSize: 15,
-  border: `1.5px solid ${t.line}`,
-  borderRadius: 12,
-  background: t.chrome,
-  color: t.ink,
-  fontFamily: 'var(--placer-font)',
-  outline: 'none',
-});
-
-const labelStyle = (t) => ({ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 });
 
 function UpcomingLab({ t }) {
   return (

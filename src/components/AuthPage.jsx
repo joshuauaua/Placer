@@ -1,7 +1,7 @@
 /* PLACER — signing in, and signing up */
 
 import { useState } from 'react';
-import { Btn } from './UI';
+import { Btn, inputStyle } from './UI';
 import { Icon } from './Icon';
 import { PasswordInput } from './PasswordInput';
 import { PALETTE } from '../theme';
@@ -10,20 +10,6 @@ import {
   signInWithPassword,
   signUpWithPassword,
 } from '../services/auth';
-
-// Copied from SettingsPage rather than shared, matching how the form styling is
-// already duplicated across the pages that need it.
-const inputStyle = (t) => ({
-  width: '100%',
-  padding: '12px 16px',
-  fontSize: 15,
-  border: `1.5px solid ${t.line}`,
-  borderRadius: 12,
-  background: t.chrome,
-  color: t.ink,
-  fontFamily: 'var(--placer-font)',
-  outline: 'none',
-});
 
 // Supabase's own floor is six. Eight is asked for here because this password is the
 // only thing standing in front of somebody's account, and the difference in

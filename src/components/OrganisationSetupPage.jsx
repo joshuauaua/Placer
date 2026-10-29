@@ -4,7 +4,7 @@
  * address, which places its pin on the Explore map instead. */
 
 import { useEffect, useState } from 'react';
-import { Avatar, Btn } from './UI';
+import { Avatar, Btn, Field, inputStyle } from './UI';
 import { ImagePicker } from './ImagePicker';
 import {
   createOrganisation, removeOrganisationAvatarFile, removeOrganisationCoverFile, updateOrganisation,
@@ -12,34 +12,6 @@ import {
 } from '../services/organisations';
 import { checkPickedImage } from '../services/media';
 import { AddressInput } from './AddressInput';
-
-// Matches ProjectSetupPage's form styling.
-const inputStyle = (t) => ({
-  width: '100%',
-  padding: '12px 16px',
-  fontSize: 15,
-  border: `1.5px solid ${t.line}`,
-  borderRadius: 12,
-  background: t.chrome,
-  color: t.ink,
-  fontFamily: 'var(--placer-font)',
-  outline: 'none',
-});
-
-function Field({ t, label, htmlFor, hint, children }) {
-  return (
-    <div style={{ marginBottom: 26 }}>
-      <label htmlFor={htmlFor}
-        style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
-        {label}
-      </label>
-      {hint && (
-        <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 10, lineHeight: 1.5 }}>{hint}</div>
-      )}
-      {children}
-    </div>
-  );
-}
 
 /**
  * `organisation` is null to create a new one, or an existing one (services/organisations'

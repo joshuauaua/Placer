@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Icon } from './Icon';
-import { Btn } from './UI';
+import { Btn, inputStyle, labelStyle } from './UI';
 
 function StatCard({ icon, label, value, change, color, t }) {
   const cardColor = color || t.accent;
@@ -603,7 +603,7 @@ export function AdminDashboard({ t }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                   {/* Title */}
                   <div>
-                    <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+                    <label style={labelStyle(t)}>
                       Article Title *
                     </label>
                     <input
@@ -612,23 +612,13 @@ export function AdminDashboard({ t }) {
                       value={newArticle.title}
                       onChange={(e) => setNewArticle({ ...newArticle, title: e.target.value })}
                       placeholder="e.g., How to Design Better Public Spaces"
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        fontSize: 15,
-                        border: `1.5px solid ${t.line}`,
-                        borderRadius: 12,
-                        background: t.chrome,
-                        color: t.ink,
-                        fontFamily: 'var(--placer-font)',
-                        outline: 'none'
-                      }}
+                      style={inputStyle(t)}
                     />
                   </div>
 
                   {/* Excerpt */}
                   <div>
-                    <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+                    <label style={labelStyle(t)}>
                       Excerpt *
                     </label>
                     <textarea
@@ -637,24 +627,13 @@ export function AdminDashboard({ t }) {
                       onChange={(e) => setNewArticle({ ...newArticle, excerpt: e.target.value })}
                       placeholder="Brief description of the article..."
                       rows={3}
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        fontSize: 15,
-                        border: `1.5px solid ${t.line}`,
-                        borderRadius: 12,
-                        background: t.chrome,
-                        color: t.ink,
-                        fontFamily: 'var(--placer-font)',
-                        outline: 'none',
-                        resize: 'vertical'
-                      }}
+                      style={{ ...inputStyle(t), resize: 'vertical' }}
                     />
                   </div>
 
                   {/* Tags */}
                   <div>
-                    <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+                    <label style={labelStyle(t)}>
                       Tags
                     </label>
                     <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
@@ -715,7 +694,7 @@ export function AdminDashboard({ t }) {
                   {/* Icon & Color */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+                      <label style={labelStyle(t)}>
                         Icon
                       </label>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -743,7 +722,7 @@ export function AdminDashboard({ t }) {
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+                      <label style={labelStyle(t)}>
                         Color
                       </label>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -768,7 +747,7 @@ export function AdminDashboard({ t }) {
 
                   {/* Read Time */}
                   <div>
-                    <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+                    <label style={labelStyle(t)}>
                       Read Time
                     </label>
                     <input
@@ -792,7 +771,7 @@ export function AdminDashboard({ t }) {
 
                   {/* Preview */}
                   <div>
-                    <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8 }}>
+                    <label style={labelStyle(t)}>
                       Preview
                     </label>
                     <div style={{

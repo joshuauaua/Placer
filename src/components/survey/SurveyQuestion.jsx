@@ -2,19 +2,7 @@
 
 import { Icon } from '../Icon';
 import { otherOption, questionType, scaleRange } from './content';
-
-/** Matches the form inputs on Describe, the admin dashboard and the survey's own contact step. */
-const inputStyle = (t) => ({
-  width: '100%',
-  padding: '12px 16px',
-  fontSize: 15,
-  border: `1.5px solid ${t.line}`,
-  borderRadius: 12,
-  background: t.chrome,
-  color: t.ink,
-  fontFamily: 'var(--placer-font)',
-  outline: 'none',
-});
+import { inputStyle } from '../UI';
 
 /** The tint a selected option carries, which differs by theme. */
 const selectedFill = (t) => t.surfaceAlt;

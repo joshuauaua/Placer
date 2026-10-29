@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Btn, PageLoader } from './UI';
+import { Btn, PageLoader, compactInputStyle } from './UI';
 import { ProjectCard } from './ProjectCard';
 import { moveWithArrows } from '../lib/arrowKeys';
 import { OrganisationSetupPage } from './OrganisationSetupPage';
@@ -18,17 +18,6 @@ import { readOrganisationProjects } from '../services/projects';
 
 // The alert red used across the app.
 const DANGER = '#B3261E';
-
-const inputStyle = (t) => ({
-  padding: '10px 14px',
-  fontSize: 14,
-  border: `1.5px solid ${t.line}`,
-  borderRadius: 12,
-  background: t.chrome,
-  color: t.ink,
-  fontFamily: 'var(--placer-font)',
-  outline: 'none',
-});
 
 function Card({ t, title, children }) {
   return (
@@ -105,7 +94,7 @@ function CloseOrganisation({ t, organisation, onClosed }) {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <input id="close-organisation-name" value={typed} autoComplete="off"
             onChange={(e) => { setTyped(e.target.value); setError(null); }}
-            style={{ ...inputStyle(t), flex: '1 1 240px' }} />
+            style={{ ...compactInputStyle(t), flex: '1 1 240px' }} />
           <Btn t={t} variant="outline" size="sm" icon="trash" type="submit" disabled={!matches || closing}
             style={{ color: DANGER, borderColor: DANGER }}>
             {closing ? 'Closing…' : 'Close organisation'}
@@ -312,7 +301,7 @@ export function OrganisationDashboardPage({ t, accountId, organisationId,
           <form onSubmit={handleInvite} style={{ display: 'flex', gap: 8 }}>
             <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)}
               placeholder="Add an admin by email" aria-label="Add an admin by email"
-              style={{ ...inputStyle(t), flex: 1 }} />
+              style={{ ...compactInputStyle(t), flex: 1 }} />
             <Btn t={t} variant="primary" size="sm" icon="plus" type="submit" disabled={inviting} ariaLabel="Add admin">
               {inviting ? 'Adding…' : 'Add'}
             </Btn>
