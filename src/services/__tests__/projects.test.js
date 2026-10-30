@@ -447,6 +447,23 @@ describe('collaborators', () => {
     ]);
   });
 
+  it('reads pending and declined invitations for the project owner', async () => {
+    await load();
+    fromChains.project_collaboration_invitations = makeChain({
+      data: [{ user_id: 'user-2', email: 'devon@example.com', display_name: 'Devon Park',
+        status: 'pending', created_at: '2026-09-02T10:00:00.000Z' }],
+      error: null,
+    });
+
+    const invitations = await projects.readCollaboratorInvitations('proj-1');
+
+    expect(invitations).toEqual([
+      { userId: 'user-2', email: 'devon@example.com', displayName: 'Devon Park',
+        status: 'pending', createdAt: '2026-09-02T10:00:00.000Z' },
+    ]);
+    expect(fromChains.project_collaboration_invitations.calls).toContainEqual(['in', ['status', ['pending', 'declined']]]);
+  });
+
   it('invites by email through the RPC, not a direct insert', async () => {
     await load();
     rpc.mockResolvedValue({ error: null });
@@ -455,6 +472,29 @@ describe('collaborators', () => {
 
     expect(rpc).toHaveBeenCalledWith('project_add_collaborator', {
       p_project_id: 'proj-1', p_email: 'devon@example.com',
+    });
+  });
+
+  it('reads pending invitations for the signed-in account', async () => {
+    await load();
+    rpc.mockResolvedValue({ data: [{ project_id: 'proj-1', project_name: 'Riverside Greenway',
+      inviter_name: 'Mara Quinn', created_at: '2026-09-02T10:00:00.000Z' }], error: null });
+
+    await expect(projects.readPendingCollaboratorInvitations()).resolves.toEqual([
+      { projectId: 'proj-1', projectName: 'Riverside Greenway', inviterName: 'Mara Quinn',
+        createdAt: '2026-09-02T10:00:00.000Z' },
+    ]);
+    expect(rpc).toHaveBeenCalledWith('project_collaboration_invitations');
+  });
+
+  it('responds to a collaboration invitation through the RPC', async () => {
+    await load();
+    rpc.mockResolvedValue({ error: null });
+
+    await projects.respondToCollaboratorInvitation('proj-1', true);
+
+    expect(rpc).toHaveBeenCalledWith('project_respond_to_collaboration_invitation', {
+      p_project_id: 'proj-1', p_accept: true,
     });
   });
 

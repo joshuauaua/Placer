@@ -6,6 +6,7 @@ import {
   addLink,
   deleteProject,
   readCollaborators,
+  readCollaboratorInvitations,
   readLinks,
   readProject,
   readProjectRooms,
@@ -57,6 +58,7 @@ vi.mock('../../services/projects', async (importOriginal) => ({
       views: i >= 23 ? 5 : 1 })),
   })),
   readCollaborators: vi.fn(),
+  readCollaboratorInvitations: vi.fn(() => Promise.resolve([])),
   readCollaboratingOrganisations: vi.fn(() => Promise.resolve([])),
   addCollaboratingOrganisation: vi.fn(() => Promise.resolve({ success: true })),
   removeCollaboratingOrganisation: vi.fn(() => Promise.resolve({ success: true })),
@@ -138,6 +140,7 @@ describe('ProjectDashboardPage', () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
     vi.mocked(readStats).mockResolvedValue(STATS);
     vi.mocked(readCollaborators).mockResolvedValue([]);
+    vi.mocked(readCollaboratorInvitations).mockResolvedValue([]);
     vi.mocked(readLinks).mockResolvedValue([]);
     vi.mocked(readProjectRooms).mockResolvedValue([]);
     vi.mocked(readProjectTools).mockResolvedValue([]);
@@ -484,17 +487,20 @@ describe('ProjectDashboardPage', () => {
 
   it('invites a collaborator by email', async () => {
     tab = 'settings';
+    vi.mocked(readCollaboratorInvitations)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { userId: 'user-2', email: 'devon@example.com', displayName: 'Devon Park', status: 'pending' },
+      ]);
     setup({ accountId: 'user-1' });
-    vi.mocked(readCollaborators).mockResolvedValue([
-      { userId: 'user-2', email: 'devon@example.com', displayName: 'Devon Park' },
-    ]);
     await screen.findByText(/Just Mara Quinn so far/);
 
     fireEvent.change(screen.getByLabelText('Invite a collaborator by email'), { target: { value: 'devon@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add collaborator' }));
 
     await waitFor(() => expect(addCollaborator).toHaveBeenCalledWith('proj-1', 'devon@example.com'));
-    expect(await screen.findByText('Devon Park')).toBeInTheDocument();
+    expect(await screen.findByText('Invitation pending')).toBeInTheDocument();
+    expect(screen.getByText('Devon Park')).toBeInTheDocument();
   });
 
   it('says so when inviting fails', async () => {

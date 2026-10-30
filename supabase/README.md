@@ -376,6 +376,11 @@ own header: locations are free-text place names rather than geocoded points, and
 collaborators are invited by email through `project_add_collaborator` because nothing in
 PLACER lets one account look another up.
 
+Run `project-collaboration-invitations.sql` after `projects.sql` to make account
+collaboration require the invitee's consent. New invitations do not grant access;
+the invitee can accept or decline them from the Projects page. Accepted accounts
+then appear in `project_collaborators` as before.
+
 **The `toolkit_room_create` re-run is not harmless if a room is open.** Dropping and
 recreating the function does not touch `toolkit_rooms` rows, so nothing already open is
 lost — but a facilitator's browser is holding the *old* function's shape in memory only
