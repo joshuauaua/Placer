@@ -1,16 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { ProjectsPage, sortProjects } from '../ProjectsPage';
-import {
-  isSupabaseConfigured, readPendingCollaboratorInvitations, readVisibleProjects, respondToCollaboratorInvitation,
-} from '../../services/projects';
+import { isSupabaseConfigured, readVisibleProjects } from '../../services/projects';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/projects', () => ({
   isSupabaseConfigured: vi.fn(() => true),
   readVisibleProjects: vi.fn(() => Promise.resolve([])),
-  readPendingCollaboratorInvitations: vi.fn(() => Promise.resolve([])),
-  respondToCollaboratorInvitation: vi.fn(() => Promise.resolve({ success: true })),
   PROJECT_TYPE_NAMES: { steward: 'Have a say over a place', advocate: 'Pushing for change', other: 'Something else' },
   PROJECT_TYPES: [
     { key: 'steward', title: 'I have a say over a place', description: '' },
@@ -35,10 +31,6 @@ describe('ProjectsPage', () => {
     isSupabaseConfigured.mockReturnValue(true);
     readVisibleProjects.mockReset();
     readVisibleProjects.mockResolvedValue([]);
-    readPendingCollaboratorInvitations.mockReset();
-    readPendingCollaboratorInvitations.mockResolvedValue([]);
-    respondToCollaboratorInvitation.mockReset();
-    respondToCollaboratorInvitation.mockResolvedValue({ success: true });
   });
 
   afterEach(() => {
@@ -121,33 +113,6 @@ describe('ProjectsPage', () => {
     setup();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not load projects');
-  });
-
-  it('lets an invited account accept and opens the project dashboard', async () => {
-    readPendingCollaboratorInvitations.mockResolvedValue([
-      { projectId: 'p-invited', projectName: 'Harbour steps', inviterName: 'Mara Quinn' },
-    ]);
-    const { onOpenProjectDashboard } = setup();
-
-    expect(await screen.findByText('Harbour steps')).toBeInTheDocument();
-    expect(screen.getByText('Invited by Mara Quinn')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
-
-    await waitFor(() => expect(respondToCollaboratorInvitation).toHaveBeenCalledWith('p-invited', true));
-    expect(onOpenProjectDashboard).toHaveBeenCalledWith('p-invited');
-  });
-
-  it('lets an invited account decline without opening the project', async () => {
-    readPendingCollaboratorInvitations.mockResolvedValue([
-      { projectId: 'p-invited', projectName: 'Harbour steps', inviterName: 'Mara Quinn' },
-    ]);
-    const { onOpenProjectDashboard } = setup();
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Decline' }));
-
-    await waitFor(() => expect(respondToCollaboratorInvitation).toHaveBeenCalledWith('p-invited', false));
-    expect(onOpenProjectDashboard).not.toHaveBeenCalled();
-    expect(screen.queryByText('Harbour steps')).not.toBeInTheDocument();
   });
 
   it('asks for nothing with no Supabase project', async () => {

@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { ActivityPage } from '../ActivityPage';
 import { isSupabaseConfigured, listNotifications, markAllRead } from '../../services/notifications';
 import { readInquiries } from '../../services/inquiries';
+import { readPendingCollaboratorInvitations, respondToCollaboratorInvitation } from '../../services/projects';
 import { THEME } from '../../theme';
 
 vi.mock('../../services/notifications', () => ({
@@ -13,6 +14,11 @@ vi.mock('../../services/notifications', () => ({
 
 vi.mock('../../services/inquiries', () => ({
   readInquiries: vi.fn(() => Promise.resolve([])),
+}));
+
+vi.mock('../../services/projects', () => ({
+  readPendingCollaboratorInvitations: vi.fn(() => Promise.resolve([])),
+  respondToCollaboratorInvitation: vi.fn(() => Promise.resolve({ success: true })),
 }));
 
 const NOTES = [
@@ -29,6 +35,8 @@ describe('ActivityPage', () => {
     vi.mocked(listNotifications).mockResolvedValue(NOTES);
     vi.mocked(markAllRead).mockResolvedValue();
     vi.mocked(readInquiries).mockResolvedValue([]);
+    vi.mocked(readPendingCollaboratorInvitations).mockResolvedValue([]);
+    vi.mocked(respondToCollaboratorInvitation).mockResolvedValue({ success: true });
   });
 
   it('lists every notification, newest first, under the breadcrumb back to the dashboard', async () => {
@@ -73,6 +81,36 @@ describe('ActivityPage', () => {
     render(<ActivityPage t={THEME} onOpenProject={onOpenProject} />);
     fireEvent.click(await screen.findByRole('link', { name: /sam commented/i }));
     expect(onOpenProject).toHaveBeenCalledWith('p1');
+  });
+
+  it('shows pending project invitations on Activity and opens the dashboard after accepting', async () => {
+    vi.mocked(readPendingCollaboratorInvitations).mockResolvedValue([
+      { projectId: 'p-invited', projectName: 'Harbour steps', inviterName: 'Mara Quinn' },
+    ]);
+    const onOpenProjectDashboard = vi.fn();
+    render(<ActivityPage t={THEME} accountId="user-1" onOpenProjectDashboard={onOpenProjectDashboard} />);
+
+    expect(await screen.findByText('Harbour steps')).toBeInTheDocument();
+    expect(screen.getByText('Invited by Mara Quinn')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+
+    await waitFor(() => expect(respondToCollaboratorInvitation).toHaveBeenCalledWith('p-invited', true));
+    expect(onOpenProjectDashboard).toHaveBeenCalledWith('p-invited');
+    expect(screen.queryByText('Harbour steps')).not.toBeInTheDocument();
+  });
+
+  it('lets an invited account decline from Activity without opening the project', async () => {
+    vi.mocked(readPendingCollaboratorInvitations).mockResolvedValue([
+      { projectId: 'p-invited', projectName: 'Harbour steps', inviterName: 'Mara Quinn' },
+    ]);
+    const onOpenProjectDashboard = vi.fn();
+    render(<ActivityPage t={THEME} accountId="user-1" onOpenProjectDashboard={onOpenProjectDashboard} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Decline' }));
+
+    await waitFor(() => expect(respondToCollaboratorInvitation).toHaveBeenCalledWith('p-invited', false));
+    expect(onOpenProjectDashboard).not.toHaveBeenCalled();
+    expect(screen.queryByText('Harbour steps')).not.toBeInTheDocument();
   });
 
   it('marks everything read', async () => {
