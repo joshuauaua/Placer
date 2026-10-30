@@ -851,6 +851,13 @@ Optional. Requires step 2. Each new row in `survey_responses` is posted to a Sla
 channel by the `survey-to-slack` Edge Function (`supabase/functions/survey-to-slack`),
 with the form it came from, the email, and the contact details if any were given.
 
+A response that asks somebody to do something — beta registration, a demo, a test case
+study, prototype testing, a workflow interview or a User Labs place, the same tasks as
+`survey_followups` (step 20) — gets a **To do** list in its message. Slack has no
+checkboxes, so react with :white_check_mark: once they are done (and tick `contacted` on
+the row, as in step 20). Mailing lists — the Trends report, the waitlist, the
+newsletter — get no to-do line.
+
 **In Slack**
 
 1. Create the channel, e.g. `#survey-responses`.

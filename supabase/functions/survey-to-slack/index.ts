@@ -72,6 +72,32 @@ function userLabsLines(answers: Record<string, any>): string[] {
   return lines;
 }
 
+// What a response asks somebody to do, worded as in the survey_followups view
+// (supabase/survey-followup.sql). Only tasks: the Trends report, the waitlist and the
+// newsletter are mailing lists, so they get no line.
+const OPT_IN_ACTIONS: Record<string, string> = {
+  beta: 'Register the municipality for the beta',
+  demo: 'Book a 1-on-1 demo',
+};
+// The landing page's waitlist survey asks how they would help (waitlistSurvey/, coCreation).
+const CO_CREATION_ACTIONS: Record<string, string> = {
+  'prototype-testing': 'Invite them to test early prototypes',
+  interview: 'Book a 15-minute workflow interview',
+  'case-study': 'Take their project on as a test case study',
+};
+
+function surveyActions(record: Record<string, any>): string[] {
+  const answers = record.answers ?? {};
+  const optIns: string[] = Array.isArray(answers.optIns) ? answers.optIns : [];
+  const coCreation = answers.section3?.coCreation;
+  const offers: string[] = Array.isArray(coCreation) ? coCreation : typeof coCreation === 'string' ? [coCreation] : [];
+  return [
+    ...optIns.filter((key) => key in OPT_IN_ACTIONS).map((key) => OPT_IN_ACTIONS[key]),
+    ...offers.filter((key) => key in CO_CREATION_ACTIONS).map((key) => CO_CREATION_ACTIONS[key]),
+    ...(record.source === 'user_labs_application' ? ['Confirm the User Labs place'] : []),
+  ];
+}
+
 function surveyMessage(record: Record<string, any>): string {
   const contact = record.answers?.contact ?? {};
   const optIns: string[] = Array.isArray(record.answers?.optIns) ? record.answers.optIns : [];
@@ -84,6 +110,12 @@ function surveyMessage(record: Record<string, any>): string {
   if (contact.department) lines.push(`*Department:* ${esc(contact.department)}`);
   if (optIns.length) lines.push(`*Opted into:* ${optIns.map(esc).join(', ')}`);
   if (record.source === 'user_labs_application') lines.push(...userLabsLines(record.answers ?? {}));
+  // Slack has no checkboxes, so whoever does a task reacts to the message once it is done.
+  const actions = surveyActions(record);
+  if (actions.length) {
+    lines.push('*To do* — react with :white_check_mark: once done:',
+      ...actions.map((action) => `:white_large_square: ${action}`));
+  }
   lines.push(`*Submitted:* ${esc(record.submitted_at)}  ·  id \`${esc(record.id)}\``);
   return lines.join('\n');
 }
