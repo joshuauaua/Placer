@@ -75,8 +75,9 @@ function Fallback({ t }) {
 }
 
 // `className` swaps the character button for another look, such as the landing
-// card's text link, and drops the button's own colours with it.
-export function HaveYourSay({ t, className }) {
+// hero's Get started, and drops the button's own colours with it. `label` names
+// the button; the dialog keeps the waitlist's name.
+export function HaveYourSay({ t, className, label = LABEL }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const panelRef = useRef(null);
@@ -139,7 +140,7 @@ export function HaveYourSay({ t, className }) {
         style={className ? undefined
           : { background: TRIGGER_BG, color: TRIGGER_FG, border: `1px solid ${TRIGGER_BORDER}` }}
       >
-        {LABEL}
+        {label}
       </button>
 
       {open && (

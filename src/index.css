@@ -346,19 +346,94 @@ a {
   overflow: hidden;
 }
 
-/* PLACER — the landing page's isometric city.
+/* PLACER — the landing page.
  *
- * One drawing behind the whole page, covering it at any size and centred so the
- * crossroads in the middle stays in view. It slowly zooms in and, once it is all
- * the way in, back out again, clipped to the page by the backdrop around it. A
- * phone gets a portrait drawing instead. The image URLs come from the component
- * as custom properties; which one shows, its fit and its motion live here.
+ * A hero filling the space under the nav bar: the pitch on the left, on the
+ * page's own column edge, and the isometric city on the right, bleeding to the
+ * window's edge. The drawing slowly zooms in and back out, clipped by its frame.
+ * Below 1024px they stack, the pitch first, and the portrait drawing takes over.
+ * Then a quiet credit strip across the foot.
+ *
+ * The image URLs come from the component as custom properties; which one shows,
+ * its fit and its motion live here.
  */
-.placer-landing-backdrop {
-  position: absolute;
-  inset: 0;
+.placer-landing {
+  /* The nav bar floats over the top 64px. */
+  padding-top: 64px;
+  box-sizing: border-box;
+}
+
+.placer-landing-hero {
+  flex: 1 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 560px;
+}
+
+.placer-landing-hero-text {
+  align-self: center;
+  box-sizing: border-box;
+  /* Starts where the nav bar's wordmark does. */
+  padding: 64px 56px 64px var(--placer-margin);
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* The hero's headline and the statement's below it share one large size. */
+.placer-landing {
+  --placer-landing-big: clamp(40px, 5.6vw, 80px);
+}
+
+/* !important to beat the type scale's h1 rule, which is itself !important. */
+.placer-landing-title {
+  margin: 0 0 24px;
+  font-family: var(--placer-font-display);
+  font-size: var(--placer-landing-big) !important;
+  line-height: 1.02 !important;
+  font-weight: 700;
+  letter-spacing: -0.03em !important;
+  text-transform: uppercase;
+}
+
+.placer-landing-pitch {
+  margin: 0 0 32px;
+  max-width: 46ch;
+  font-size: var(--placer-body-lg);
+  line-height: var(--placer-body-lg-lh);
+  color: var(--placer-grey-700);
+}
+
+/* Get started: the site's ink primary button, a touch larger. */
+.placer-landing-cta {
+  height: 52px;
+  padding: 0 28px;
+  border: 1px solid transparent;
+  border-radius: var(--placer-radius-sm);
+  background: var(--placer-ink);
+  color: var(--placer-white);
+  font-family: var(--placer-font);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.placer-landing-cta:hover {
+  background: var(--placer-grey-700);
+}
+
+.placer-landing-cta:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 3px;
+}
+
+.placer-landing-hero-art {
+  position: relative;
   overflow: hidden;
-  pointer-events: none;
+  background: var(--placer-grey-100);
 }
 
 .placer-landing-city {
@@ -368,8 +443,8 @@ a {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  /* Faint, so the linework sets the scene without competing with the card. */
-  opacity: 0.2;
+  /* The linework is ink; this greys it so it frames the pitch rather than fights it. */
+  opacity: 0.45;
   will-change: transform;
   animation: placer-landing-zoom 40s ease-in-out infinite alternate;
 }
@@ -385,556 +460,985 @@ a {
   }
 }
 
-.placer-landing {
-  /* The nav bar floats over the top 64px, so the card centres in what is left.
-   * No bottom padding: the credit strip runs to the page's foot. */
-  padding: 88px 24px 0;
+/* The practices PLACER is built with: a heading over a row of logos, greyed
+ * until hovered like the funder's. */
+.placer-landing-partners {
+  padding: 56px var(--placer-margin) 64px;
+  border-top: 1px solid rgba(17, 17, 17, 0.08);
+  text-align: center;
 }
 
-/* PLACER — the landing card.
- *
- * The spacing lives here rather than inline because a phone rearranges it and an
- * inline style cannot be overridden by a media query. Only the colours are set in
- * the component.
- *
- * A wide card centred in the space under the nav bar, on a 12-column grid: the
- * badge, headline, pitch and numbered steps in the left five columns, and the
- * right seven taken by the media, a photo over a tinted bar with a button,
- * rotating through three slides with their dots over the photo. The media
- * bleeds through the card's padding to its top, right and bottom edges.
- *
- * Below 1024px only the pitch is left, full width: the carousel goes.
- */
-.placer-landing-column {
-  width: 100%;
-  max-width: 1240px;
-  --placer-landing-pad-y: 40px;
-  --placer-landing-pad-x: 56px;
-  padding: var(--placer-landing-pad-y) var(--placer-landing-pad-x);
-  border-radius: 7px;
-  border: 1px solid rgba(17, 17, 17, 0.08);
-  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.06), 0 12px 32px rgba(17, 17, 17, 0.1);
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  column-gap: 48px;
-}
-
-/* Near-solid white with a crisp edge, so the copy never reads as floating over
- * the line drawing. It sits on a layer behind the content rather than on
- * the card itself: a backdrop-filter on the card would make it the containing
- * block for the waitlist dialog, which is position:fixed inside a slide, and
- * trap it there. For the same reason nothing here sets a z-index or isolation;
- * the content paints over the layer by being positioned after it. */
-.placer-landing-column::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: rgba(255, 255, 255, 0.96);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  pointer-events: none;
-}
-
-.placer-landing-column > * {
-  position: relative;
-}
-
-/* Every line of the left column starts on the same edge: no indents, no
- * hanging icons, the step numbers sitting in the text's own flow. */
-.placer-landing-info {
-  grid-column: 1 / span 5;
-  grid-row: 1;
-  align-self: center;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-/* Where the project stands: a small pill over the headline, in the accent
- * purple. */
-.placer-landing-badge {
-  margin: 0 0 16px;
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--placer-purple-100);
-  background: var(--placer-purple-50);
-  font-size: 12px;
-  line-height: 18px;
+.placer-landing-partners-title {
+  margin: 0 0 40px;
+  font-size: 20px !important;
+  line-height: 26px !important;
   font-weight: 500;
-  letter-spacing: 0.01em;
-  color: var(--placer-purple-700);
-}
-
-/* The headline: what PLACER is for, in sentence case. */
-.placer-landing-title {
-  font-size: 40px !important;
-  line-height: 46px !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.02em !important;
-  max-width: 16ch;
-  margin: 0 0 16px;
-}
-
-.placer-landing-pitch {
-  margin: 0;
-  max-width: 40ch;
-  font-size: var(--placer-body-lg);
-  font-weight: 400;
-  line-height: var(--placer-body-lg-lh);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--placer-grey-700);
 }
 
-/* Understand, Imagine, Plan: a step number in a small circle before each,
- * then the title in bold ink over its line in grey, with room between the rows. */
-.placer-landing-features {
-  list-style: none;
-  margin: 24px 0;
+.placer-landing-partners-list {
+  margin: 0;
   padding: 0;
+  list-style: none;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-  font-size: 16px;
-  line-height: 24px;
-}
-
-.placer-landing-feature {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-/* A 24px ink ring on white, its digit centred in ink. */
-.placer-landing-feature-step {
-  flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
-  box-sizing: border-box;
-  border: 1px solid var(--placer-ink);
-  border-radius: 50%;
-  background: #FFFFFF;
-  display: inline-flex;
-  align-items: center;
+  flex-wrap: wrap;
   justify-content: center;
-  font-size: 12px;
-  line-height: 1;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  color: var(--placer-ink);
+  align-items: center;
+  gap: 32px 72px;
 }
 
-.placer-landing-feature-title {
-  display: block;
-  font-weight: 700;
-  color: var(--placer-ink);
-}
-
-.placer-landing-feature-text {
-  color: var(--placer-grey-700);
-}
-
-/* The closing line as the pitch's payoff: bold ink at heading size, set off
- * from the steps by a short rule above it. */
-.placer-landing-tagline {
-  margin: 0;
-  padding-top: 20px;
-  position: relative;
-  font-size: var(--placer-h3);
-  line-height: var(--placer-h3-lh);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--placer-ink);
-}
-
-.placer-landing-tagline::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 32px;
-  height: 2px;
-  background: var(--placer-ink);
-}
-
-/* The right seven columns, pulled out through the padding to the card's top,
- * right and bottom edges. */
-.placer-landing-actions {
-  grid-column: 6 / -1;
-  grid-row: 1;
-  margin: calc(-1 * var(--placer-landing-pad-y)) calc(-1 * var(--placer-landing-pad-x))
-    calc(-1 * var(--placer-landing-pad-y)) 0;
-  position: relative;
-  min-width: 0;
+.placer-landing-partner {
   display: flex;
-  flex-direction: column;
-}
-
-/* All three slides share one grid area, so they cross-fade in place, and the
- * stack fills the media's height, the photos covering it whatever its shape.
- * Only opacity changes: a transform would trap the waitlist dialog, which is
- * position:fixed inside its slide. */
-.placer-landing-slides {
-  flex: 1 1 auto;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(360px, 1fr);
-}
-
-/* One slide: the photo filling it, the title and button over its foot on a
- * dark fade so they read on any picture. Its right-hand corners follow the
- * card's (7px, less the card's 1px border); the card cannot clip it, as
- * overflow on the card would trap the waitlist dialog. */
-.placer-landing-option {
-  grid-column: 1;
-  grid-row: 1;
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  border-radius: 0 6px 6px 0;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.6s ease, visibility 0s linear 0.6s;
-}
-
-.placer-landing-option[data-active="true"] {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.6s ease, visibility 0s;
-}
-
-.placer-landing-option-photo {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: inherit;
-}
-
-/* The title over the photo's foot, the button under it, on a layer the size of
- * the slide that carries the fade. The fade is on this layer rather than a
- * pseudo-element under it, since the photo would paint over that, and nothing
- * here takes a z-index, which would trap the waitlist dialog under the nav. */
-.placer-landing-option-body {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 32px;
-  border-radius: inherit;
-  background: linear-gradient(to top, rgba(17, 17, 17, 0.8) 0%, rgba(17, 17, 17, 0.5) 30%, rgba(17, 17, 17, 0) 65%);
-}
-
-.placer-landing-option-title {
-  margin: 0;
-  max-width: 20ch;
-  font-size: 28px;
-  line-height: 34px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: #FFFFFF;
-}
-
-/* The call to action as a compact primary button: ink fill, white label,
- * grey-700 on hover. A link, or (for the waitlist, which opens a dialog) a
- * button. */
-.placer-landing-option-link {
-  flex: 0 0 auto;
-  display: inline-flex;
   align-items: center;
   height: 40px;
-  padding: 0 16px;
-  border: none;
-  border-radius: 12px;
-  background: var(--placer-ink);
-  cursor: pointer;
-  font-family: var(--placer-font);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  color: #FFFFFF;
-  text-decoration: none;
-  transition: background-color 0.15s ease;
-}
-
-.placer-landing-option-link::after {
-  content: "→";
-  margin-left: 8px;
-  transition: transform 0.15s ease;
-}
-
-.placer-landing-option-link:hover {
-  background: var(--placer-grey-700);
-}
-
-.placer-landing-option-link:hover::after {
-  transform: translateX(2px);
-}
-
-.placer-landing-option-link:focus-visible {
-  outline: 2px solid var(--placer-ink);
-  outline-offset: 2px;
-}
-
-/* On the photo, the button turns white with an ink label. */
-.placer-landing-option .placer-landing-option-link {
-  background: #FFFFFF;
   color: var(--placer-ink);
-}
-
-.placer-landing-option .placer-landing-option-link:hover {
-  background: var(--placer-grey-100);
-}
-
-.placer-landing-option .placer-landing-option-link:focus-visible {
-  outline-color: #FFFFFF;
-}
-
-/* In the photo's bottom-right corner, level with the button, on a small smoked
- * pill so they read on any picture. The blur is safe here: the waitlist dialog
- * is not inside it. */
-.placer-landing-dots {
-  grid-column: 1;
-  grid-row: 1;
-  align-self: end;
-  justify-self: end;
-  position: relative;
-  margin: 0 32px 40px 0;
-  display: flex;
-  gap: 0;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: rgba(17, 17, 17, 0.35);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-/* A 6px white dot inside a 24px hit area; the current one stretches to a
- * solid pill. */
-.placer-landing-dot {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 9px solid transparent;
-  border-radius: 999px;
-  box-sizing: border-box;
-  background-color: rgba(255, 255, 255, 0.5);
-  background-clip: padding-box;
-  cursor: pointer;
-  transition: width 0.3s ease, background-color 0.3s ease;
-}
-
-.placer-landing-dot:hover {
-  background-color: rgba(255, 255, 255, 0.8);
-}
-
-.placer-landing-dot[aria-current="true"] {
-  width: 36px;
-  background-color: #FFFFFF;
-}
-
-.placer-landing-dot:focus-visible {
-  outline: 2px solid #FFFFFF;
-  outline-offset: -2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .placer-landing-option,
-  .placer-landing-option[data-active="true"],
-  .placer-landing-option-link,
-  .placer-landing-option-link::after,
-  .placer-landing-dot {
-    transition: none;
-  }
-}
-
-/* A quiet strip across the foot of the page, out of the card: the credit at
- * one end, the lockup the other. It bleeds through the page's side padding to
- * run edge to edge. */
-.placer-landing-footer {
-  position: relative;
-  margin: 32px -24px 0;
-  padding: 16px max(24px, calc((100% - 1240px) / 2 + 24px));
-  background: rgba(255, 255, 255, 0.92);
-  border-top: 1px solid rgba(17, 17, 17, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px 32px;
-}
-
-.placer-landing-credit {
-  margin: 0;
-  font-size: 12px;
-  line-height: 18px;
-  letter-spacing: 0.01em;
-  color: var(--placer-grey-500);
-}
-
-/* The partners by name, in ink but unadorned until hovered. */
-.placer-landing-credit-link {
-  color: var(--placer-grey-700);
-  font-weight: 500;
   text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-
-.placer-landing-credit-link:hover,
-.placer-landing-credit-link:focus-visible {
-  color: var(--placer-ink);
-  border-bottom-color: var(--placer-ink);
-}
-
-.placer-landing-credit-link:focus-visible {
-  outline: 2px solid var(--placer-ink);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
-.placer-landing-funder {
-  flex: 0 0 auto;
+  border-radius: 4px;
   opacity: 0.7;
   filter: grayscale(1);
   transition: opacity 0.15s ease, filter 0.15s ease;
 }
 
-.placer-landing-funder:hover {
+.placer-landing-partner:hover,
+.placer-landing-partner:focus-visible {
   opacity: 1;
   filter: none;
 }
 
+.placer-landing-partner:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 4px;
+}
+
+.placer-landing-partner img {
+  height: 40px;
+  width: auto;
+  /* The logo files are on white; this drops the white into the page. */
+  mix-blend-mode: multiply;
+}
+
+.placer-landing-partner-name {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* How it works, in a line: a large two-line heading and a sentence under it,
+ * centred on the page. */
+.placer-landing-statement {
+  padding: 120px var(--placer-margin);
+  border-top: 1px solid rgba(17, 17, 17, 0.08);
+  text-align: center;
+}
+
+.placer-landing-statement-title {
+  margin: 0 0 24px;
+  font-family: var(--placer-font-display);
+  font-size: var(--placer-landing-big);
+  line-height: 1.02;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+.placer-landing-statement-text {
+  margin: 0 auto;
+  max-width: 40ch;
+  font-size: 20px;
+  line-height: 30px;
+  color: var(--placer-grey-700);
+}
+
+/* How it works, under the statement: three steps as tabs on the left, the
+ * active one's picture on the right. Left-aligned again, unlike the statement. */
+.placer-landing-steps {
+  max-width: 1240px;
+  margin: 80px auto 0;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 64px;
+  align-items: center;
+  text-align: left;
+}
+
+.placer-landing-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.placer-landing-step {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  gap: 20px;
+  padding: 24px;
+  border-radius: var(--placer-radius-lg);
+  cursor: pointer;
+  color: var(--placer-grey-500);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.placer-landing-step:hover {
+  background: var(--placer-grey-100);
+}
+
+.placer-landing-step[aria-selected="true"] {
+  background: var(--placer-grey-100);
+  color: var(--placer-ink);
+}
+
+.placer-landing-step:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+.placer-landing-step-number {
+  position: relative;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* The active number trades its border for the ring: a grey track, and an ink
+ * line drawn round it from twelve o'clock over the step's time. */
+.placer-landing-step[aria-selected="true"] .placer-landing-step-number {
+  border-color: transparent;
+}
+
+.placer-landing-step-ring {
+  position: absolute;
+  inset: -1px;
+  width: 40px;
+  height: 40px;
+  transform: rotate(-90deg);
+}
+
+.placer-landing-step-ring circle {
+  fill: none;
+  stroke-width: 2;
+}
+
+.placer-landing-step-ring-track {
+  stroke: var(--placer-grey-300);
+}
+
+.placer-landing-step-ring-fill {
+  stroke: var(--placer-ink);
+  stroke-linecap: round;
+  stroke-dasharray: var(--placer-landing-ring-length);
+  stroke-dashoffset: var(--placer-landing-ring-length);
+  animation: placer-landing-ring var(--placer-landing-step-ms) linear forwards;
+}
+
+.placer-landing-steps[data-paused="true"] .placer-landing-step-ring-fill {
+  animation-play-state: paused;
+}
+
+@keyframes placer-landing-ring {
+  to { stroke-dashoffset: 0; }
+}
+
+/* No turn-taking (see LandingSteps), so no filling: a whole ring marks the active step. */
+@media (prefers-reduced-motion: reduce) {
+  .placer-landing-step-ring-fill {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+.placer-landing-step-title {
+  display: block;
+  margin: 6px 0 6px;
+  font-size: var(--placer-h3);
+  line-height: var(--placer-h3-lh);
+  font-weight: 700;
+}
+
+.placer-landing-step-text {
+  display: block;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.placer-landing-step:not([aria-selected="true"]) .placer-landing-step-text {
+  color: var(--placer-grey-500);
+}
+
+.placer-landing-step[aria-selected="true"] .placer-landing-step-text {
+  color: var(--placer-grey-700);
+}
+
+/* Room for a screen recording at 4:3. Until there is one, a grey frame
+ * naming the step. */
+.placer-landing-steps-media {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--placer-radius-lg);
+  overflow: hidden;
+  background: var(--placer-grey-100);
+  border: 1px solid var(--placer-grey-200);
+}
+
+.placer-landing-step-media {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placer-landing-step-media[hidden] {
+  display: none;
+}
+
+.placer-landing-step-media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placer-landing-step-placeholder {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--placer-grey-500);
+}
+
+/* What people say: one testimonial at a time, a photo on the left and the
+ * quote on the right of one grey card, with arrows and a count under it. No
+ * heading on screen; the section is named for screen readers. */
+.placer-landing-testimonials {
+  padding: 96px var(--placer-margin);
+  border-top: 1px solid rgba(17, 17, 17, 0.08);
+}
+
+.placer-landing-testimonials-stage {
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.placer-landing-testimonial {
+  margin: 0;
+  border-radius: var(--placer-radius-lg);
+  overflow: hidden;
+  background: var(--placer-grey-100);
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  min-height: 400px;
+}
+
+.placer-landing-testimonial[hidden] {
+  display: none;
+}
+
+.placer-landing-testimonial-photo {
+  position: relative;
+  background: var(--placer-grey-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placer-landing-testimonial-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placer-landing-testimonial-placeholder {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--placer-grey-500);
+}
+
+.placer-landing-testimonial-body {
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 32px;
+}
+
+.placer-landing-testimonial blockquote {
+  margin: 0;
+}
+
+.placer-landing-testimonial blockquote p {
+  margin: 0;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--placer-ink);
+}
+
+.placer-landing-testimonial figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.placer-landing-testimonial-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--placer-ink);
+}
+
+.placer-landing-testimonial-role {
+  font-size: 14px;
+  color: var(--placer-grey-500);
+}
+
+.placer-landing-testimonials-controls {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.placer-landing-testimonials-arrow {
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--placer-grey-300);
+  border-radius: 50%;
+  background: var(--placer-white);
+  color: var(--placer-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.placer-landing-testimonials-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.placer-landing-testimonials-arrow:hover:not(:disabled) {
+  background: var(--placer-grey-100);
+  border-color: var(--placer-ink);
+}
+
+.placer-landing-testimonials-arrow:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+.placer-landing-testimonials-count {
+  min-width: 48px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--placer-grey-700);
+}
+
+/* Under the engagement statement: a two-way toggle, then one grey card for the
+ * chosen audience, its expandables on the left and the open one's picture on
+ * the right. Left-aligned again inside the card. */
+.placer-landing-audiences {
+  max-width: 1240px;
+  margin: 56px auto 0;
+}
+
+.placer-landing-audience-toggle {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--placer-grey-100);
+  border: 1px solid var(--placer-grey-200);
+}
+
+.placer-landing-audience-toggle button {
+  height: 44px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--placer-grey-700);
+  font-family: var(--placer-font);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.placer-landing-audience-toggle button:hover {
+  color: var(--placer-ink);
+}
+
+.placer-landing-audience-toggle button[aria-selected="true"] {
+  background: var(--placer-ink);
+  color: var(--placer-white);
+}
+
+.placer-landing-audience-toggle button:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+.placer-landing-audience-card {
+  margin-top: 32px;
+  padding: 32px;
+  border-radius: var(--placer-radius-lg);
+  background: var(--placer-grey-100);
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 40px;
+  align-items: center;
+  text-align: left;
+}
+
+.placer-landing-audience-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.placer-landing-audience-item {
+  border-bottom: 1px solid var(--placer-grey-300);
+}
+
+.placer-landing-audience-item:first-child {
+  border-top: 1px solid var(--placer-grey-300);
+}
+
+.placer-landing-audience-item button {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 20px 4px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  font-size: var(--placer-h3);
+  line-height: var(--placer-h3-lh);
+  font-weight: 700;
+  color: var(--placer-grey-500);
+  transition: color 0.15s ease;
+}
+
+.placer-landing-audience-item button:hover,
+.placer-landing-audience-item[data-open="true"] button {
+  color: var(--placer-ink);
+}
+
+/* The icon in a white disc, ink once its item is open. */
+.placer-landing-audience-item-icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.placer-landing-audience-item[data-open="true"] .placer-landing-audience-item-icon {
+  background: var(--placer-ink);
+  border-color: var(--placer-ink);
+  color: var(--placer-white);
+}
+
+.placer-landing-audience-item-title {
+  flex: 1;
+}
+
+.placer-landing-audience-item button:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.placer-landing-audience-item p {
+  margin: -8px 4px 20px 60px;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--placer-grey-700);
+}
+
+/* Room for a screen recording at 4:3, as the steps have. */
+.placer-landing-audience-media {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--placer-radius-sm);
+  overflow: hidden;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placer-landing-audience-media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Under the "Easy to start" statement: three cards in a row, each a picture
+ * over its title and line. Left-aligned inside. A phone stacks them. */
+.placer-landing-start-cards {
+  max-width: 1240px;
+  margin: 64px auto 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  text-align: left;
+}
+
+.placer-landing-start-card {
+  padding: 16px 16px 28px;
+  border-radius: var(--placer-radius-lg);
+  background: var(--placer-grey-100);
+}
+
+.placer-landing-start-card-media {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--placer-radius-sm);
+  overflow: hidden;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placer-landing-start-card-media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placer-landing-start-card-title {
+  margin: 24px 8px 8px;
+  font-size: var(--placer-h3) !important;
+  line-height: var(--placer-h3-lh) !important;
+  font-weight: 700;
+  color: var(--placer-ink);
+}
+
+.placer-landing-start-card-text {
+  margin: 0 8px;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--placer-grey-700);
+}
+
+/* Case studies under "The power of participation": a row of large cards that
+ * scrolls sideways, each nearly the page's width so the next peeks in, snapping
+ * to one card at a time. Each is a photo on the left and the story on the
+ * right; a phone puts the photo over the story. The arrows reuse the
+ * testimonials'. */
+.placer-landing-cases {
+  max-width: 1400px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+/* Over the cards, the section's title and text on the left, left-aligned, and
+ * the map of the case studies on the right: the Explore map's ground, rounded
+ * like the cards. A tablet or phone stacks them, the title first. */
+.placer-landing-power {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 64px;
+  align-items: center;
+  margin-bottom: 64px;
+}
+
+/* A size down from the other statements, to fit "participation." in half the row. */
+.placer-landing-power-intro .placer-landing-statement-title {
+  font-size: clamp(40px, 4.4vw, 64px);
+}
+
+.placer-landing-power-intro .placer-landing-statement-text {
+  margin: 0;
+}
+
+.placer-landing-cases-map {
+  position: relative;
+  height: 480px;
+  border-radius: var(--placer-radius-lg);
+  overflow: hidden;
+  background: var(--placer-grey-100);
+}
+
+.placer-landing-cases-track {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  column-gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.placer-landing-cases-track::-webkit-scrollbar {
+  display: none;
+}
+
+.placer-landing-case {
+  flex: 0 0 88%;
+  scroll-snap-align: start;
+}
+
+.placer-landing-case article {
+  height: 100%;
+  border-radius: var(--placer-radius-lg);
+  overflow: hidden;
+  background: var(--placer-grey-100);
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  min-height: 480px;
+}
+
+.placer-landing-case-photo {
+  position: relative;
+  background: var(--placer-grey-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placer-landing-case-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placer-landing-case-body {
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.placer-landing-case-place {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--placer-grey-500);
+}
+
+.placer-landing-case-title {
+  margin: 0 0 16px;
+  font-size: clamp(28px, 2.8vw, 40px) !important;
+  line-height: 1.1 !important;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--placer-ink);
+}
+
+.placer-landing-case-summary {
+  margin: 0;
+  font-size: var(--placer-body-lg);
+  line-height: var(--placer-body-lg-lh);
+  color: var(--placer-grey-700);
+}
+
+.placer-landing-case-link {
+  margin-top: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--placer-ink);
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 2px;
+}
+
+.placer-landing-case-link:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 4px;
+}
+
+/* The close of the page: the waitlist, centred on a dark band a shade lighter
+ * than the ink footer under it, so the two read apart, in the statement's
+ * capitals at a size down. */
+.placer-landing-waitlist {
+  padding: 96px var(--placer-margin);
+  background: #262626;
+  color: var(--placer-white);
+  text-align: center;
+}
+
+.placer-landing-waitlist-title {
+  margin: 0 0 16px;
+  font-family: var(--placer-font-display);
+  font-size: clamp(32px, 4vw, 56px);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+.placer-landing-waitlist-text {
+  margin: 0 auto 32px;
+  max-width: 44ch;
+  font-size: var(--placer-body-lg);
+  line-height: var(--placer-body-lg-lh);
+  color: var(--placer-grey-300);
+}
+
+.placer-landing-waitlist-form {
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  gap: 12px;
+}
+
+/* Named for screen readers; the placeholder says it to everyone else. */
+.placer-landing-waitlist-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.placer-landing-waitlist-form input {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  border: 1px solid var(--placer-grey-700);
+  border-radius: var(--placer-radius-sm);
+  background: var(--placer-white);
+  color: var(--placer-ink);
+  font-family: var(--placer-font);
+  font-size: 16px;
+}
+
+.placer-landing-waitlist-form input:focus-visible {
+  outline: 2px solid var(--placer-white);
+  outline-offset: 2px;
+}
+
+.placer-landing-waitlist-form button {
+  flex: 0 0 auto;
+  height: 52px;
+  padding: 0 24px;
+  border: 1px solid var(--placer-white);
+  border-radius: var(--placer-radius-sm);
+  background: var(--placer-white);
+  color: var(--placer-ink);
+  font-family: var(--placer-font);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.placer-landing-waitlist-form button:hover:not(:disabled) {
+  background: var(--placer-grey-200);
+}
+
+.placer-landing-waitlist-form button:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.placer-landing-waitlist-form button:focus-visible {
+  outline: 2px solid var(--placer-white);
+  outline-offset: 2px;
+}
+
+.placer-landing-waitlist-done {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.placer-landing-waitlist-error {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--placer-grey-300);
+}
+
 @media (max-width: 1023px) {
+  /* The drawing takes whatever height the pitch leaves. */
+  .placer-landing-hero {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    min-height: 0;
+  }
+
+  .placer-landing-partners {
+    padding: 40px var(--placer-margin) 48px;
+  }
+
+  .placer-landing-statement {
+    padding: 64px var(--placer-margin);
+  }
+
+  .placer-landing-statement-text {
+    font-size: var(--placer-body-lg);
+    line-height: var(--placer-body-lg-lh);
+  }
+
+  .placer-landing-testimonials {
+    padding: 64px var(--placer-margin);
+  }
+
+  .placer-landing-testimonial {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .placer-landing-testimonial-photo {
+    aspect-ratio: 4 / 3;
+  }
+
+  .placer-landing-testimonial-body {
+    padding: 24px;
+    gap: 24px;
+  }
+
+  .placer-landing-testimonial blockquote p {
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .placer-landing-audiences {
+    margin-top: 40px;
+  }
+
+  .placer-landing-audience-toggle button {
+    padding: 0 16px;
+    font-size: 14px;
+  }
+
+  .placer-landing-audience-card {
+    padding: 20px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .placer-landing-audience-item button {
+    font-size: 18px;
+    line-height: 24px;
+    padding: 16px 4px;
+  }
+
+  .placer-landing-start-cards {
+    margin-top: 40px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .placer-landing-power {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 40px;
+    margin-bottom: 40px;
+  }
+
+  .placer-landing-cases-map {
+    height: 320px;
+  }
+
+  .placer-landing-case article {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .placer-landing-case-photo {
+    aspect-ratio: 4 / 3;
+  }
+
+  .placer-landing-case-body {
+    padding: 24px;
+  }
+
+  .placer-landing-waitlist {
+    padding: 64px var(--placer-margin);
+  }
+
+  .placer-landing-waitlist-form {
+    flex-direction: column;
+  }
+
+  .placer-landing-steps {
+    margin-top: 48px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .placer-landing-step {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .placer-landing-partners-list {
+    gap: 24px 40px;
+  }
+
+  .placer-landing-partner,
+  .placer-landing-partner img {
+    height: 32px;
+  }
+
+  .placer-landing-hero-text {
+    max-width: none;
+    padding: 48px var(--placer-margin) 40px;
+  }
+
+  .placer-landing-title {
+    margin-bottom: 16px;
+  }
+
+  .placer-landing-pitch {
+    margin-bottom: 28px;
+  }
+
+  .placer-landing-cta {
+    width: 100%;
+    height: 48px;
+  }
+
+  .placer-landing-hero-art {
+    min-height: 320px;
+  }
+
   .placer-landing-city {
     background-image: var(--placer-landing-city-mobile);
   }
 
-  .placer-landing {
-    padding: 88px 16px 0;
-  }
-
-  .placer-landing-footer {
-    margin: 32px -16px 0;
-    padding: 16px;
-    flex-direction: column;
-    text-align: center;
-  }
-
-  /* A little narrower than the screen, so more of the drawing shows each side. */
-  .placer-landing-column {
-    max-width: 340px;
-    --placer-landing-pad-y: 32px;
-    --placer-landing-pad-x: 24px;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
-    row-gap: 32px;
-    padding-bottom: var(--placer-landing-pad-y);
-  }
-
-  .placer-landing-info {
-    grid-column: 1 / -1;
-    align-items: center;
-    text-align: center;
-  }
-
-  /* The steps stay aligned with each other, their numbers in one column, and
-   * the list as a whole is centred. */
-  .placer-landing-feature {
-    text-align: left;
-  }
-
-  /* No card on a phone: the copy sits straight on the drawing, held clear of
-   * its lines by a soft wash behind it (below) rather than a panel. */
-  .placer-landing-column {
-    border: none;
-    box-shadow: none;
-  }
-
-  .placer-landing-column::before {
-    display: none;
-  }
-
-  .placer-landing-info {
-    text-shadow: 0 0 2px #FFFFFF, 0 0 8px #FFFFFF;
-  }
-
-  /* A white wash over the middle of the drawing, where the copy sits, that
-   * fades out with no edge, so the city still frames the page. */
-  .placer-landing-backdrop::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse 75% 42% at 50% 54%,
-      rgba(255, 255, 255, 0.96) 45%, rgba(255, 255, 255, 0) 100%);
-  }
-
-  /* The hierarchy, top down: the wordmark, the pitch in ink, the steps a size
-   * under it, then the tagline and the button. */
-  .placer-landing-pitch {
-    font-size: 17px;
-    line-height: 26px;
-    color: var(--placer-ink);
-  }
-
-  .placer-landing-features {
-    font-size: 15px;
-    line-height: 22px;
-  }
-
-  .placer-landing-feature-text {
-    color: var(--placer-ink);
-  }
-
-  .placer-landing-tagline {
-    font-size: 18px;
-    line-height: 24px;
-  }
-
-  /* The rule over the tagline, centred with it. */
-  .placer-landing-tagline::before {
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  .placer-landing-title {
-    font-size: 32px !important;
-    line-height: 38px !important;
-    margin-bottom: 16px;
-  }
-
-  .placer-landing-features {
-    margin: 28px 0;
-  }
-
-  /* The waitlist button closing the pitch, a phone's 48px tall. */
-  .placer-landing-cta {
-    margin-top: 28px;
-  }
-
-  .placer-landing-cta .placer-landing-option-link {
-    height: 48px;
-    padding: 0 20px;
-    font-size: 16px;
-  }
-
-  /* A phone shows the pitch alone: the carousel goes. */
-  .placer-landing-actions {
-    display: none;
-  }
 }
 
 /* PLACER — the landing page's feedback, User Labs and survey triggers.
  *
- * The landing card shows its calls to action as compact ink buttons now (see
- * .placer-landing-option-link); these are the character-button look.
+ * The landing hero has its own ink button (.placer-landing-cta); these are the
+ * character-button look.
  *
  * The geometry lives here rather than inline because an inline style cannot be
  * overridden by a media query. Only the colours are set in the component.
@@ -1053,8 +1557,7 @@ a {
 /* Browsers without backdrop-filter get a near-opaque bar instead of an
    unreadable clear one. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .placer-glass,
-  .placer-landing-column::before {
+  .placer-glass {
     background: rgba(255, 255, 255, 0.85);
   }
 }
@@ -1345,10 +1848,37 @@ a {
   gap: 40px;
 }
 
+/* The funder's lockup over the credit, both at the far right. */
+.placer-footer-credit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  text-align: right;
+}
+
+/* The funder's lockup is ink on white; inverted it is white on black, and
+ * screen drops the black into the ink footer. */
+.placer-footer-funder {
+  flex: 0 0 auto;
+  display: block;
+  filter: grayscale(1) invert(1);
+  mix-blend-mode: screen;
+  opacity: 0.85;
+}
+
+/* The logo over the licence, at the bottom left. */
+.placer-footer-signoff {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
 .placer-footer-bottom {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
 }
@@ -1376,55 +1906,6 @@ a {
   outline-color: var(--placer-white);
 }
 
-/* The newsletter sign-up: its heading, a grey-700 outlined field and a white button
- * with the same rounded corners as every other button, on one line. */
-.placer-footer-newsletter {
-  display: flex;
-  align-items: center;
-  gap: 8px 16px;
-  max-width: 640px;
-}
-
-.placer-footer-newsletter input {
-  flex: 1;
-  min-width: 0;
-  height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--placer-grey-700);
-  border-radius: 0;
-  background: transparent;
-  color: var(--placer-white);
-  font: inherit;
-  font-size: 14px;
-}
-
-.placer-footer-newsletter input::placeholder {
-  color: var(--placer-grey-500);
-}
-
-.placer-footer-newsletter input:focus-visible {
-  outline: 1px solid var(--placer-white);
-  border-color: var(--placer-white);
-}
-
-.placer-footer-newsletter button {
-  height: 44px;
-  padding: 0 16px;
-  border: none;
-  border-radius: 12px;
-  background: var(--placer-white);
-  color: var(--placer-ink);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.placer-footer-newsletter button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
 @media (max-width: 1023px) {
   .placer-footer {
     padding: 40px 20px;
@@ -1441,9 +1922,13 @@ a {
     text-align: center;
   }
 
-  .placer-footer-blurb {
-    margin-left: auto;
-    margin-right: auto;
+  .placer-footer-signoff {
+    align-items: center;
+  }
+
+  .placer-footer-credit {
+    align-items: center;
+    text-align: center;
   }
 
   .placer-footer-links {
@@ -1456,21 +1941,6 @@ a {
 
   .placer-footer-bottom {
     flex-direction: column;
-  }
-
-  /* The heading, the field and the button stack, centred on one narrower measure,
-   * the address typed centred in line with them. */
-  .placer-footer-newsletter {
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-    max-width: 320px;
-    margin: 0 auto;
-  }
-
-  .placer-footer-newsletter input {
-    flex: none;
-    text-align: center;
   }
 }
 

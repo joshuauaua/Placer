@@ -1,9 +1,8 @@
 /* PLACER — the site footer */
 
-import { useState } from 'react';
 import { NEUTRAL } from '../theme';
-import { saveSurveyResponse } from '../services/api';
 import { BrandLogo } from './UI';
+import logoSwedishInstitute from '../assets/logo-swedish-institute.png';
 
 // Each column's entries. One with a `view` opens that MainApp view, one with an
 // `href` opens outside the app, and one with neither is a placeholder for a page
@@ -33,8 +32,7 @@ export const FOOTER_COLUMNS = [
   },
 ];
 
-// How the footer lays FOOTER_COLUMNS out beside its brand column on the left: one
-// inner array per column, its sections stacked top to bottom. A section left out here
+// How the footer lays FOOTER_COLUMNS out, from the left: one inner array per column, its sections stacked top to bottom. A section left out here
 // is not shown, so a new one has to be placed.
 const FOOTER_LAYOUT = [
   ['Project News'],
@@ -65,57 +63,6 @@ const SOCIALS = [
   { label: 'Email', href: `mailto:${CONTACT_EMAIL}` },
 ];
 
-// Newsletter sign-ups land in survey_responses with only an email, under their
-// own source, beside the surveys' own newsletter opt-ins.
-const NEWSLETTER_SOURCE = 'newsletter_signup';
-
-function NewsletterSignup({ t }) {
-  const [email, setEmail] = useState('');
-  const [status, setStatus] = useState('idle'); // idle | sending | done | error
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setStatus('sending');
-    try {
-      await saveSurveyResponse({ source: NEWSLETTER_SOURCE, email: email.trim() });
-      setStatus('done');
-    } catch {
-      setStatus('error');
-    }
-  };
-
-  if (status === 'done') {
-    return (
-      <p role="status" style={{ fontSize: 14, lineHeight: '20px', color: t.ink }}>
-        Thanks — you're on the list.
-      </p>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit}>
-      {/* The heading, the field and the button on one line. */}
-      <div className="placer-footer-newsletter">
-        <label htmlFor="placer-footer-newsletter" className="placer-footer-heading"
-          style={{ fontSize: 14, lineHeight: '20px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-          Follow our newsletter
-        </label>
-        <input id="placer-footer-newsletter" type="email" required autoComplete="email"
-          placeholder="you@example.com" value={email}
-          onChange={(e) => setEmail(e.target.value)} />
-        <button type="submit" disabled={status === 'sending'}>
-          {status === 'sending' ? 'Signing up…' : 'Sign up'}
-        </button>
-      </div>
-      {status === 'error' && (
-        <p role="alert" style={{ marginTop: 8, fontSize: 12, lineHeight: '16px', color: t.inkDim }}>
-          That did not go through. Please try again.
-        </p>
-      )}
-    </form>
-  );
-}
-
 function FooterLink({ active, onClick, children }) {
   return (
     <span
@@ -144,16 +91,6 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
     <footer style={{ background: t.chrome, color: t.ink }}>
       <div className="placer-footer" style={{ maxWidth: 1440, margin: '0 auto' }}>
         <div className="placer-footer-grid">
-          <div>
-            {/* The logo in white (LOGO BB), at the footer's 16px cap height. */}
-            <div onClick={() => onNavigate('welcome')} style={{ cursor: 'pointer', display: 'inline-block', color: t.ink }}>
-              <BrandLogo height={16} label="PLACER" />
-            </div>
-            <p className="placer-footer-blurb" style={{ marginTop: 16, maxWidth: 360, fontSize: 14, lineHeight: '20px', color: t.inkDim }}>
-              Reimagine your city. A toolkit for shaping shared spaces together.
-            </p>
-          </div>
-
           {FOOTER_LAYOUT.map((headings) => (
             <div key={headings.join()} style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
               {headings.map((heading) => FOOTER_COLUMNS.find((column) => column.heading === heading))
@@ -191,28 +128,46 @@ export function SiteFooter({ t: pageTheme, view, onNavigate }) {
 
         </div>
 
-        {/* The newsletter, on its own line just above the rule. */}
-        <div style={{ marginTop: 40 }}>
-          <NewsletterSignup t={t} />
-        </div>
-
-        <div className="placer-footer-bottom" style={{ marginTop: 24, paddingTop: 24, borderTop: `1px solid ${t.line}`,
+        <div className="placer-footer-bottom" style={{ marginTop: 48, paddingTop: 24, borderTop: `1px solid ${t.line}`,
           fontSize: 12, lineHeight: '16px', letterSpacing: '0.01em' }}>
-          {/* The AGPL asks that people using the site can get its source, so the
-              repository is linked beside the licence. */}
-          <span style={{ color: t.inkDim }}>
-            Open source under the{' '}
-            <a href={LICENSE_URL} target="_blank" rel="noopener noreferrer" className="placer-footer-link"
-              style={{ textDecoration: 'underline' }}>
-              AGPLv3 License
-            </a>
-            {' · '}
-            <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer" className="placer-footer-link"
-              style={{ textDecoration: 'underline' }}>
-              Source code
-            </a>
-          </span>
-          <FooterLink active={view === 'terms'} onClick={() => onNavigate('terms')}>Privacy and Terms</FooterLink>
+          {/* The logo in white (LOGO BB), at the footer's 16px cap height, and
+              under it the licence. The AGPL asks that people using the site can
+              get its source, so the repository is linked beside it. */}
+          <div className="placer-footer-signoff">
+            <div onClick={() => onNavigate('welcome')} style={{ cursor: 'pointer', display: 'inline-block', color: t.ink }}>
+              <BrandLogo height={16} label="PLACER" />
+            </div>
+            <span style={{ color: t.inkDim }}>
+              Open source under the{' '}
+              <a href={LICENSE_URL} target="_blank" rel="noopener noreferrer" className="placer-footer-link"
+                style={{ textDecoration: 'underline' }}>
+                AGPLv3 License
+              </a>
+              {' · '}
+              <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer" className="placer-footer-link"
+                style={{ textDecoration: 'underline' }}>
+                Source code
+              </a>
+              {' · '}
+              <FooterLink active={view === 'terms'} onClick={() => onNavigate('terms')}>Privacy and Terms</FooterLink>
+            </span>
+          </div>
+
+          {/* Who builds and funds it, at the far right: the lockup over the credit. It reads
+              "Funded by Swedish Institute" as part of the artwork; index.css
+              turns it white. */}
+          <div className="placer-footer-credit">
+            <img className="placer-footer-funder" src={logoSwedishInstitute} alt="Funded by Swedish Institute"
+              style={{ height: 32, width: 'auto' }} />
+            <span style={{ color: t.inkDim }}>
+              PLACER is developed by{' '}
+              <a href="https://stpln.se/" target="_blank" rel="noopener noreferrer" className="placer-footer-link"
+                style={{ textDecoration: 'underline' }}>STPLN</a>{' '}
+              and{' '}
+              <a href="https://ankaraaks.com/" target="_blank" rel="noopener noreferrer" className="placer-footer-link"
+                style={{ textDecoration: 'underline' }}>Ankara Aks</a>, funded by the Swedish Institute.
+            </span>
+          </div>
         </div>
       </div>
     </footer>
