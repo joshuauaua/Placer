@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, within, act } from '@testing-library/react';
 import { LandingPage } from '../LandingPage';
 import { THEME } from '../../theme';
+import { lastMap } from '../../test/maplibreStub';
 
 describe('LandingPage hero', () => {
   afterEach(() => {
@@ -161,6 +162,16 @@ describe('LandingPage hero', () => {
     // At the start of the row, only forward makes sense.
     expect(within(section).getByRole('button', { name: 'Previous case study' })).toBeDisabled();
     expect(within(section).getByRole('button', { name: 'Next case study' })).toBeEnabled();
+  });
+
+  it('puts a map over the case studies, opening on Malmö', async () => {
+    render(<LandingPage t={THEME} />);
+    const section = screen.getByRole('region', { name: 'The power ofparticipation.' });
+
+    const map = await within(section).findByTestId('landing-cases-map');
+    expect(map.compareDocumentPosition(within(section).getByRole('list', { name: 'Case studies' })))
+      .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(lastMap().options.center).toEqual([12.9854, 55.6054]);
   });
 
   it('puts an email from the waitlist form on the waitlist', async () => {

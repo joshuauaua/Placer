@@ -8,7 +8,7 @@
  * Shown as the home view only, with the nav bar hidden (see App.jsx).
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 
 import cityDrawing from '../assets/landing-city.svg';
 import cityDrawingMobile from '../assets/landing-city-mobile.svg';
@@ -17,6 +17,9 @@ import logoAks from '../assets/logo-aks.png';
 import { saveSurveyResponse } from '../services/api';
 import { HaveYourSay } from './HaveYourSay';
 import { Icon } from './Icon';
+
+// MapLibre is heavy, and the map is far down the page, so it loads on its own.
+const LandingCasesMap = lazy(() => import('./LandingCasesMap'));
 
 /* The practices PLACER is built with, under the hero. Logos are stored at 160px
  * tall. One without a logo file yet shows its name instead. */
@@ -379,7 +382,8 @@ const START_CARDS = [
 
 /* Projects PLACER has been used on, as large cards. Placeholders until the
  * write-ups exist: set each entry's photo (an imported image), title, place and
- * summary, and `href` to the full case study once it is published. */
+ * summary, `position` ({ lat, lng }) to pin it on the map above the cards, and
+ * `href` to the full case study once it is published. */
 const CASE_STUDIES = [
   {
     key: 'one',
@@ -387,6 +391,7 @@ const CASE_STUDIES = [
     place: 'City, Country',
     title: 'Case study title',
     summary: 'A short summary of the project, who took part and what their participation changed.',
+    position: null,
     href: null,
   },
   {
@@ -395,6 +400,7 @@ const CASE_STUDIES = [
     place: 'City, Country',
     title: 'Case study title',
     summary: 'A short summary of the project, who took part and what their participation changed.',
+    position: null,
     href: null,
   },
   {
@@ -403,6 +409,7 @@ const CASE_STUDIES = [
     place: 'City, Country',
     title: 'Case study title',
     summary: 'A short summary of the project, who took part and what their participation changed.',
+    position: null,
     href: null,
   },
 ];
@@ -411,7 +418,8 @@ const CASE_STUDIES = [
  * next peeking in at the edge. The arrows step a card at a time (the row snaps
  * to each), and on a phone a swipe does the same. An arrow greys out at its
  * end. The row itself scrolls, so the cards stay ordinary content to a screen
- * reader or a tab. */
+ * reader or a tab. Over the row, a map of where they happened, as on Explore;
+ * picking a pin scrolls the row to its card. */
 function LandingCases() {
   const track = useRef(null);
   const [atStart, setAtStart] = useState(true);
@@ -432,8 +440,19 @@ function LandingCases() {
     el.scrollBy({ left: direction * (card.offsetWidth + gap), behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
   };
 
+  const show = (index) => {
+    const el = track.current;
+    const card = el?.querySelectorAll('.placer-landing-case')[index];
+    if (!el || !card) return;
+    el.scrollTo({ left: card.offsetLeft - el.offsetLeft, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+  };
+
   return (
     <div className="placer-landing-cases">
+      <Suspense fallback={<div className="placer-landing-cases-map" />}>
+        <LandingCasesMap studies={CASE_STUDIES} onPick={show} />
+      </Suspense>
+
       <ul className="placer-landing-cases-track" ref={track} onScroll={update} aria-label="Case studies">
         {CASE_STUDIES.map((study) => (
           <li key={study.key} className="placer-landing-case">

@@ -1054,6 +1054,17 @@ a {
   text-align: left;
 }
 
+/* The map over the cards: the Explore map's ground in a frame as wide as the
+ * row, rounded like the cards. */
+.placer-landing-cases-map {
+  position: relative;
+  height: 420px;
+  margin-bottom: 24px;
+  border-radius: var(--placer-radius-lg);
+  overflow: hidden;
+  background: var(--placer-grey-100);
+}
+
 .placer-landing-cases-track {
   margin: 0;
   padding: 0;
@@ -1330,6 +1341,10 @@ a {
 
   .placer-landing-cases {
     margin-top: 40px;
+  }
+
+  .placer-landing-cases-map {
+    height: 320px;
   }
 
   .placer-landing-case article {
