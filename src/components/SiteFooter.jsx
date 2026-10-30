@@ -63,7 +63,7 @@ function FooterLink({ active, onClick, children }) {
 }
 
 /**
- * The footer under every MainApp view except the map. `view` is the one showing, so
+ * The footer under every MainApp view except the map, for somebody signed out. `view` is the one showing, so
  * its link can read as the current page; `onNavigate` is MainApp's `show`.
  */
 export function SiteFooter({ t: pageTheme, view, onNavigate }) {
