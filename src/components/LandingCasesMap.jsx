@@ -44,8 +44,11 @@ export default function LandingCasesMap({ studies, onPick }) {
     placed.forEach(({ study, index }) => {
       addPin(map, study.position, { ...PIN, title: study.title, onClick: () => pick.current?.(index) });
     });
-    if (placed.length > 1) fitPoints(map, placed.map(({ study }) => study.position), { padding: 64, maxZoom: 13 });
-    else if (placed.length === 1) map.jumpTo({ center: toLngLat(placed[0].study.position) });
+    // Framed once the map has its size and style, or the padding is lost.
+    map.ready.then(() => {
+      if (placed.length > 1) fitPoints(map, placed.map(({ study }) => study.position), { padding: 64, maxZoom: 13 });
+      else if (placed.length === 1) map.jumpTo({ center: toLngLat(placed[0].study.position) });
+    });
 
     return () => map.remove();
   }, [studies]);

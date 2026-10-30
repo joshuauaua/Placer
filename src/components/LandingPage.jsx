@@ -382,34 +382,35 @@ const START_CARDS = [
 
 /* Projects PLACER has been used on, as large cards. Placeholders until the
  * write-ups exist: set each entry's photo (an imported image), title, place and
- * summary, `position` ({ lat, lng }) to pin it on the map above the cards, and
- * `href` to the full case study once it is published. */
+ * summary, `position` ({ lat, lng }) to pin it on the map beside the section's
+ * title, and `href` to the full case study once it is published. For now the
+ * placeholders sit in the partners' cities, so the map has something on it. */
 const CASE_STUDIES = [
   {
     key: 'one',
     photo: null,
-    place: 'City, Country',
+    place: 'Malmö, Sweden',
     title: 'Case study title',
     summary: 'A short summary of the project, who took part and what their participation changed.',
-    position: null,
+    position: { lat: 55.6054, lng: 12.9854 },
     href: null,
   },
   {
     key: 'two',
     photo: null,
-    place: 'City, Country',
+    place: 'New York, United States',
     title: 'Case study title',
     summary: 'A short summary of the project, who took part and what their participation changed.',
-    position: null,
+    position: { lat: 40.7128, lng: -74.006 },
     href: null,
   },
   {
     key: 'three',
     photo: null,
-    place: 'City, Country',
+    place: 'Ankara, Türkiye',
     title: 'Case study title',
     summary: 'A short summary of the project, who took part and what their participation changed.',
-    position: null,
+    position: { lat: 39.9334, lng: 32.8597 },
     href: null,
   },
 ];
@@ -418,9 +419,10 @@ const CASE_STUDIES = [
  * next peeking in at the edge. The arrows step a card at a time (the row snaps
  * to each), and on a phone a swipe does the same. An arrow greys out at its
  * end. The row itself scrolls, so the cards stay ordinary content to a screen
- * reader or a tab. Over the row, a map of where they happened, as on Explore;
- * picking a pin scrolls the row to its card. */
-function LandingCases() {
+ * reader or a tab. Above the row, `intro` (the section's title and text) sits
+ * beside a map of where they happened, as on Explore; picking a pin scrolls
+ * the row to its card. */
+function LandingCases({ intro }) {
   const track = useRef(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
@@ -449,9 +451,12 @@ function LandingCases() {
 
   return (
     <div className="placer-landing-cases">
-      <Suspense fallback={<div className="placer-landing-cases-map" />}>
-        <LandingCasesMap studies={CASE_STUDIES} onPick={show} />
-      </Suspense>
+      <div className="placer-landing-power">
+        <div className="placer-landing-power-intro">{intro}</div>
+        <Suspense fallback={<div className="placer-landing-cases-map" />}>
+          <LandingCasesMap studies={CASE_STUDIES} onPick={show} />
+        </Suspense>
+      </div>
 
       <ul className="placer-landing-cases-track" ref={track} onScroll={update} aria-label="Case studies">
         {CASE_STUDIES.map((study) => (
@@ -655,17 +660,19 @@ export function LandingPage({ t }) {
         </ul>
       </section>
 
-      {/* What participation does, over the case studies. */}
+      {/* What participation does, beside a map of the case studies and over their cards. */}
       <section className="placer-landing-statement" aria-labelledby="placer-landing-power-title">
-        <h2 id="placer-landing-power-title" className="placer-landing-statement-title" style={{ color: t.ink }}>
-          The power of<br />participation.
-        </h2>
-        <p className="placer-landing-statement-text">
-          PLACER makes it simple to bring people into decisions about the places they share, and to turn what they
-          tell you into change that lasts.
-        </p>
-
-        <LandingCases />
+        <LandingCases intro={(
+          <>
+            <h2 id="placer-landing-power-title" className="placer-landing-statement-title" style={{ color: t.ink }}>
+              The power of<br />participation.
+            </h2>
+            <p className="placer-landing-statement-text">
+              PLACER makes it simple to bring people into decisions about the places they share, and to turn what
+              they tell you into change that lasts.
+            </p>
+          </>
+        )} />
       </section>
 
       <WaitlistSignup />

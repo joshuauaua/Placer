@@ -164,14 +164,15 @@ describe('LandingPage hero', () => {
     expect(within(section).getByRole('button', { name: 'Next case study' })).toBeEnabled();
   });
 
-  it('puts a map over the case studies, opening on Malmö', async () => {
+  it('maps the case studies beside the title, a pin for each', async () => {
     render(<LandingPage t={THEME} />);
     const section = screen.getByRole('region', { name: 'The power ofparticipation.' });
 
     const map = await within(section).findByTestId('landing-cases-map');
+    expect(map.parentElement).toContainElement(within(section).getByRole('heading', { level: 2 }));
     expect(map.compareDocumentPosition(within(section).getByRole('list', { name: 'Case studies' })))
       .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(lastMap().options.center).toEqual([12.9854, 55.6054]);
+    expect(lastMap().markers).toHaveLength(3);
   });
 
   it('puts an email from the waitlist form on the waitlist', async () => {

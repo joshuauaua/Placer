@@ -1050,16 +1050,33 @@ a {
  * testimonials'. */
 .placer-landing-cases {
   max-width: 1400px;
-  margin: 64px auto 0;
+  margin: 0 auto;
   text-align: left;
 }
 
-/* The map over the cards: the Explore map's ground in a frame as wide as the
- * row, rounded like the cards. */
+/* Over the cards, the section's title and text on the left, left-aligned, and
+ * the map of the case studies on the right: the Explore map's ground, rounded
+ * like the cards. A tablet or phone stacks them, the title first. */
+.placer-landing-power {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 64px;
+  align-items: center;
+  margin-bottom: 64px;
+}
+
+/* A size down from the other statements, to fit "participation." in half the row. */
+.placer-landing-power-intro .placer-landing-statement-title {
+  font-size: clamp(40px, 4.4vw, 64px);
+}
+
+.placer-landing-power-intro .placer-landing-statement-text {
+  margin: 0;
+}
+
 .placer-landing-cases-map {
   position: relative;
-  height: 420px;
-  margin-bottom: 24px;
+  height: 480px;
   border-radius: var(--placer-radius-lg);
   overflow: hidden;
   background: var(--placer-grey-100);
@@ -1339,8 +1356,10 @@ a {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .placer-landing-cases {
-    margin-top: 40px;
+  .placer-landing-power {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 40px;
+    margin-bottom: 40px;
   }
 
   .placer-landing-cases-map {
