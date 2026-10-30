@@ -5,6 +5,7 @@ import { memoryLocation } from 'wouter/memory-location';
 import App from '../../App';
 import { TermsAndPrivacyPage } from '../TermsAndPrivacyPage';
 import { THEME } from '../../theme';
+import { signOut } from '../../services/profile';
 
 function renderAt(path) {
   const { hook } = memoryLocation({ path });
@@ -33,6 +34,8 @@ describe('terms and privacy page', () => {
   });
 
   it('reaches the page from the footer link', async () => {
+    // Signed out, since the footer is not shown to somebody signed in.
+    signOut();
     renderAt('/');
 
     fireEvent.click(screen.getByRole('link', { name: 'Terms of Service' }));

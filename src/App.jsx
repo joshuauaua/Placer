@@ -668,8 +668,12 @@ function MainApp({ initialView = 'welcome' }) {
             )}
           </div>
         </div>
-        <SiteFooter t={t} view={view}
-          onNavigate={(next) => (next === 'map' ? handleExplore() : show(next))} />
+        {/* Only for somebody signed out. Held back while the session is read, so somebody
+            signed in does not see it flash up, the same as the side nav. */}
+        {!identityLoading && !profile && (
+          <SiteFooter t={t} view={view}
+            onNavigate={(next) => (next === 'map' ? handleExplore() : show(next))} />
+        )}
       </div>
     </div>
   );

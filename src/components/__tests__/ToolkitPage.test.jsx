@@ -370,10 +370,9 @@ describe('the gallery', () => {
 });
 
 describe('inside the app', () => {
-  // Signed in, Toolkit and Explore live in the side nav and About and Resources in
-  // the footer. Each is scoped so "Toolkit" is not also the page heading.
+  // Signed in, Toolkit and Explore live in the side nav, and there is no footer.
+  // Scoped so "Toolkit" is not also the page heading.
   const sideNav = () => within(screen.getByRole('navigation', { name: 'App' }));
-  const footer = () => within(screen.getByRole('contentinfo'));
 
   it('reaches the Toolkit from the side nav', async () => {
     const { location } = renderAt('/');
@@ -384,12 +383,12 @@ describe('inside the app', () => {
     expect(location.history.at(-1)).toBe('/toolkit');
   });
 
-  it('keeps the side nav and footer around a tool', async () => {
+  it('keeps the side nav around a tool, without the footer', async () => {
     renderAt('/toolkit/street-mixer');
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' })).toBeInTheDocument();
     expect(sideNav().getByRole('button', { name: 'Toolkit' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Terms of Service' })).toBeInTheDocument();
+    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
   });
 
   it('serves the gallery and a tool from the one route', async () => {
@@ -404,20 +403,15 @@ describe('inside the app', () => {
     const { location } = renderAt('/toolkit/street-mixer');
     await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' });
 
-    fireEvent.click(footer().getByText('Who We Are'));
+    fireEvent.click(sideNav().getByRole('button', { name: 'Settings' }));
 
-    // The About page is a photo of the team, so its alt text is what marks it.
-    expect(
-      await screen.findByRole('img', { name: /people behind PLACER/i }),
-    ).toBeInTheDocument();
-    expect(location.history.at(-1)).toBe('/about');
+    await waitFor(() => expect(location.history.at(-1)).toBe('/settings'));
     expect(screen.queryByRole('heading', { level: 1, name: 'Street Section Mixer' })).not.toBeInTheDocument();
   });
 
   it('goes back into the Toolkit from another view', async () => {
-    const { location } = renderAt('/');
+    const { location } = renderAt('/resources');
 
-    fireEvent.click(footer().getByText('Resources', { selector: '[role="link"]' }));
     await screen.findByRole('heading', { level: 1, name: 'Resources' });
     fireEvent.click(sideNav().getByRole('button', { name: 'Toolkit' }));
 
