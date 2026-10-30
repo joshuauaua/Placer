@@ -568,11 +568,11 @@ export function LandingPage({ t }) {
       <section className="placer-landing-hero">
         <div className="placer-landing-hero-text">
           <h1 className="placer-landing-title" style={{ color: t.ink }}>
-            Understand, imagine and plan. Together.
+            Understand, Imagine and Plan the City. Together.
           </h1>
 
           <p className="placer-landing-pitch">
-            Get everyone involved in shaping the world around. With tools built for
+            Get everyone involved in shaping the urban environment. With tools built for
             interaction, you’ll spark engagement and turn live insights into action.
           </p>
 

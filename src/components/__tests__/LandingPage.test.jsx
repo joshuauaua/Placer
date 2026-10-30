@@ -12,9 +12,9 @@ describe('LandingPage hero', () => {
   it('says what PLACER is for, with one way in', () => {
     render(<LandingPage t={THEME} />);
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Understand, imagine and plan. Together.' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Understand, Imagine and Plan the City. Together.' }))
       .toBeInTheDocument();
-    expect(screen.getByText(/Get everyone involved in shaping the world around/)).toBeInTheDocument();
+    expect(screen.getByText(/Get everyone involved in shaping the urban environment/)).toBeInTheDocument();
     const hero = screen.getByRole('heading', { level: 1 }).closest('section');
     expect(within(hero).getAllByRole('button')).toHaveLength(1);
   });

@@ -39,7 +39,7 @@ describe('App', () => {
     renderAt('/');
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Understand, imagine and plan. Together.' })
+      screen.getByRole('heading', { level: 1, name: 'Understand, Imagine and Plan the City. Together.' })
     ).toBeInTheDocument();
     expect(screen.getByText(/funded by the Swedish Institute/i)).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'STPLN' })[0]).toHaveAttribute('href', 'https://stpln.se/');
@@ -61,7 +61,7 @@ describe('App', () => {
     expect(page.style.getPropertyValue('--placer-landing-city')).toMatch(/landing-city\.svg/);
     expect(page.style.getPropertyValue('--placer-landing-city-mobile')).toMatch(/landing-city-mobile\.svg/);
     expect(page.querySelector('.placer-landing-hero-text')).toHaveTextContent(
-      /Understand, imagine and plan\. Together\./i
+      /Understand, Imagine and Plan the City\. Together\./i
     );
     // Nothing decorative should reach the accessibility tree as an image.
     expect(screen.queryAllByRole('img', { name: '' })).toHaveLength(0);
@@ -72,7 +72,7 @@ describe('App', () => {
     renderAt('/');
 
     expect(screen.getByRole('navigation')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 1, name: 'Understand, imagine and plan. Together.' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Understand, Imagine and Plan the City. Together.' })).toBeInTheDocument();
   });
 
   it('renders SurveyPage at /survey', async () => {
