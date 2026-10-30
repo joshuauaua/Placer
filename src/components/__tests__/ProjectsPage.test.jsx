@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { ProjectsPage, sortProjects } from '../ProjectsPage';
 import {
   isSupabaseConfigured, readPendingCollaboratorInvitations, readVisibleProjects, respondToCollaboratorInvitation,
