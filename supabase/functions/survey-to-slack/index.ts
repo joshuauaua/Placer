@@ -24,10 +24,6 @@
 //   SLACK_BUG_WEBHOOK_URL  optional; bug reports go here instead when set
 //   SLACK_TOOL_WEBHOOK_URL optional; tool submissions go here instead when set
 //   SLACK_CASE_STUDY_WEBHOOK_URL optional; case study submissions go here instead when set
-//   SLACK_ACTION_WEBHOOK_URL optional; a survey response that asks somebody to do something
-//                          (beta, a demo, a test case study, an interview, User Labs, …) is
-//                          also posted here — #placer-dumpster, which turns each message
-//                          into a GitHub issue
 //   SURVEY_WEBHOOK_SECRET  any long random string; the triggers send the same
 //   MEDIA_URL              optional; the bucket's public address (the app's VITE_MEDIA_URL).
 //                          When set, a bug report's screenshot is linked and shown inline.
@@ -76,25 +72,9 @@ function userLabsLines(answers: Record<string, any>): string[] {
   return lines;
 }
 
-function surveyMessage(record: Record<string, any>): string {
-  const contact = record.answers?.contact ?? {};
-  const optIns: string[] = Array.isArray(record.answers?.optIns) ? record.answers.optIns : [];
-  const lines = [
-    `:memo: *New response — ${esc(SOURCES[record.source] ?? record.source)}*`,
-    `*Email:* ${record.email ? esc(record.email) : '_not given_'}`,
-  ];
-  if (contact.name) lines.push(`*Name:* ${esc(contact.name)}`);
-  if (contact.city) lines.push(`*City:* ${esc(contact.city)}`);
-  if (contact.department) lines.push(`*Department:* ${esc(contact.department)}`);
-  if (optIns.length) lines.push(`*Opted into:* ${optIns.map(esc).join(', ')}`);
-  if (record.source === 'user_labs_application') lines.push(...userLabsLines(record.answers ?? {}));
-  lines.push(`*Submitted:* ${esc(record.submitted_at)}  ·  id \`${esc(record.id)}\``);
-  return lines.join('\n');
-}
-
 // What a response asks somebody to do, worded as in the survey_followups view
 // (supabase/survey-followup.sql). Only tasks: the Trends report, the waitlist and the
-// newsletter are mailing lists, so they stay out.
+// newsletter are mailing lists, so they get no line.
 const OPT_IN_ACTIONS: Record<string, string> = {
   beta: 'Register the municipality for the beta',
   demo: 'Book a 1-on-1 demo',
@@ -118,20 +98,26 @@ function surveyActions(record: Record<string, any>): string[] {
   ];
 }
 
-// The post for #placer-dumpster, or null when the response asks for nothing. Each message
-// there becomes a GitHub issue, so the first line is a plain title — no emoji or bold —
-// saying what to do and for whom; the body is the usual survey message.
-function surveyActionMessage(record: Record<string, any>): string | null {
+function surveyMessage(record: Record<string, any>): string {
+  const contact = record.answers?.contact ?? {};
+  const optIns: string[] = Array.isArray(record.answers?.optIns) ? record.answers.optIns : [];
+  const lines = [
+    `:memo: *New response — ${esc(SOURCES[record.source] ?? record.source)}*`,
+    `*Email:* ${record.email ? esc(record.email) : '_not given_'}`,
+  ];
+  if (contact.name) lines.push(`*Name:* ${esc(contact.name)}`);
+  if (contact.city) lines.push(`*City:* ${esc(contact.city)}`);
+  if (contact.department) lines.push(`*Department:* ${esc(contact.department)}`);
+  if (optIns.length) lines.push(`*Opted into:* ${optIns.map(esc).join(', ')}`);
+  if (record.source === 'user_labs_application') lines.push(...userLabsLines(record.answers ?? {}));
+  // Slack has no checkboxes, so whoever does a task reacts to the message once it is done.
   const actions = surveyActions(record);
-  if (!actions.length) return null;
-  const answers = record.answers ?? {};
-  const who = answers.contact?.city || answers.contact?.name || answers.name || record.email;
-  const [, ...body] = surveyMessage(record).split('\n');
-  return [
-    `${actions.join('; ')}${who ? ` — ${esc(who)}` : ''}`,
-    `*Form:* ${esc(SOURCES[record.source] ?? record.source)}`,
-    ...body,
-  ].join('\n');
+  if (actions.length) {
+    lines.push('*To do* — react with :white_check_mark: once done:',
+      ...actions.map((action) => `:white_large_square: ${action}`));
+  }
+  lines.push(`*Submitted:* ${esc(record.submitted_at)}  ·  id \`${esc(record.id)}\``);
+  return lines.join('\n');
 }
 
 // Where a bug report's screenshot can be seen, or null. The key is checked against the
@@ -188,7 +174,6 @@ Deno.serve(async (req) => {
   const bugSlackUrl = Deno.env.get('SLACK_BUG_WEBHOOK_URL') || slackUrl;
   const toolSlackUrl = Deno.env.get('SLACK_TOOL_WEBHOOK_URL') || slackUrl;
   const caseStudySlackUrl = Deno.env.get('SLACK_CASE_STUDY_WEBHOOK_URL') || slackUrl;
-  const actionSlackUrl = Deno.env.get('SLACK_ACTION_WEBHOOK_URL');
   if (!secret || !slackUrl) {
     return Response.json({ error: 'not configured' }, { status: 500 });
   }
@@ -204,11 +189,8 @@ Deno.serve(async (req) => {
   // Block Kit, only when there is a picture to show: the text in sections (3,000
   // characters each at most) and the screenshot under it. `text` stays the fallback.
   let blocks: unknown[] | undefined;
-  // A second, plain post to the follow-up channel, when the row asks for one.
-  let actionText: string | null = null;
   if (payload.table === 'survey_responses') {
     [url, text] = [slackUrl, surveyMessage(payload.record)];
-    actionText = surveyActionMessage(payload.record);
   } else if (payload.table === 'bug_reports') {
     [url, text] = [bugSlackUrl!, bugMessage(payload.record)];
     const screenshot = screenshotUrl(payload.record);
@@ -227,21 +209,14 @@ Deno.serve(async (req) => {
     return Response.json({ ok: true, skipped: true });
   }
 
-  const post = (to: string, body: unknown) => fetch(to, {
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify(blocks ? { text, blocks } : { text }),
   });
-  const [res, actionRes] = await Promise.all([
-    post(url, blocks ? { text, blocks } : { text }),
-    actionSlackUrl && actionText ? post(actionSlackUrl, { text: actionText }) : null,
-  ]);
-  // Shows in the webhook's response log (net._http_response); the row itself is saved regardless.
   if (!res.ok) {
+    // Shows in the webhook's response log (net._http_response); the row itself is saved regardless.
     return Response.json({ error: `slack answered ${res.status}` }, { status: 502 });
-  }
-  if (actionRes && !actionRes.ok) {
-    return Response.json({ error: `follow-up channel answered ${actionRes.status}` }, { status: 502 });
   }
   return Response.json({ ok: true });
 });

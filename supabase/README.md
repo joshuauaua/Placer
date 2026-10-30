@@ -851,6 +851,13 @@ Optional. Requires step 2. Each new row in `survey_responses` is posted to a Sla
 channel by the `survey-to-slack` Edge Function (`supabase/functions/survey-to-slack`),
 with the form it came from, the email, and the contact details if any were given.
 
+A response that asks somebody to do something — beta registration, a demo, a test case
+study, prototype testing, a workflow interview or a User Labs place, the same tasks as
+`survey_followups` (step 20) — gets a **To do** list in its message. Slack has no
+checkboxes, so react with :white_check_mark: once they are done (and tick `contacted` on
+the row, as in step 20). Mailing lists — the Trends report, the waitlist, the
+newsletter — get no to-do line.
+
 **In Slack**
 
 1. Create the channel, e.g. `#survey-responses`.
@@ -1204,39 +1211,6 @@ or R2 refusing the listing — and a run that fails leaves everything for the ne
 **Push the migration and deploy `media` before merging** the app change: until then a
 report with a screenshot is refused (the column does not exist), though one without
 still goes through.
-
-## 24. Survey follow-ups as GitHub issues
-
-Optional. Requires step 15. A survey response that asks somebody to do something is
-posted a second time, to `#placer-dumpster`, which turns every message posted there into
-a GitHub issue. "Something to do" is the tasks in `survey_followups` (step 20): beta
-registration, a demo, a test case study, early prototype testing, a workflow interview,
-or a User Labs place. The Trends report, the waitlist and the newsletter are mailing
-lists, so they only go to the survey channel as before.
-
-The issue's title is the message's first line: what to do, then the city, name or email
-of who asked. The body is the same as the survey channel's message.
-
-Add an Incoming Webhook for `#placer-dumpster` to the same Slack app as in step 15, then:
-
-```sh
-supabase secrets set SLACK_ACTION_WEBHOOK_URL=https://hooks.slack.com/services/…
-supabase functions deploy survey-to-slack
-```
-
-Nothing to run in SQL: the trigger from step 15 already hands every response to the
-function. Without the secret, nothing goes to the dumpster.
-
-**The issues carry respondents' names and emails**, so the repository they land in must
-be private. Closing an issue does not delete it; remember that, as with the Slack
-message, when answering an erasure request.
-
-### Verify
-
-Fill in `/survey` and tick the beta box; a message should appear in both channels, and
-an issue shortly after. A `502 follow-up channel answered …` in `net._http_response`
-(see step 15) means Slack refused the dumpster post; the survey channel's post still
-went through.
 
 ## Still to decide
 
