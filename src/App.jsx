@@ -553,6 +553,7 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'activity' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <ActivityPage t={t} accountId={accountId} onOpenProject={showProjectPublic}
+                  onOpenProjectDashboard={showProjectDashboard}
                   onOpenOrganisation={showOrganisationPublic} onOpenProfile={showPublicProfile} />
               </Suspense>
             )}

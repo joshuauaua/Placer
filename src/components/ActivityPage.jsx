@@ -13,12 +13,17 @@ import { PageHeader } from './PageHeader';
 import { NotificationItem } from './NotificationItem';
 import { isSupabaseConfigured, listNotifications, markAllRead } from '../services/notifications';
 import { readInquiries } from '../services/inquiries';
+import { readPendingCollaboratorInvitations, respondToCollaboratorInvitation } from '../services/projects';
 import { mergeActivity } from '../lib/activityFeed';
 
 const FEED_LIMIT = 100;
 
-export function ActivityPage({ t, accountId = null, onOpenProject, onOpenOrganisation, onOpenProfile }) {
+export function ActivityPage({ t, accountId = null, onOpenProject, onOpenProjectDashboard,
+  onOpenOrganisation, onOpenProfile }) {
   const [notifications, setNotifications] = useState([]);
+  const [invitations, setInvitations] = useState([]);
+  const [respondingTo, setRespondingTo] = useState(null);
+  const [invitationError, setInvitationError] = useState(null);
   const [status, setStatus] = useState(() => (isSupabaseConfigured() ? 'loading' : 'unavailable'));
 
   useEffect(() => {
@@ -29,10 +34,18 @@ export function ActivityPage({ t, accountId = null, onOpenProject, onOpenOrganis
       console.error('Could not load your saved inquiries:', err);
       return [];
     });
-    Promise.all([listNotifications({ limit: FEED_LIMIT }), inquiries])
-      .then(([found, kept]) => {
+    const invitations = accountId
+      ? readPendingCollaboratorInvitations().catch((err) => {
+        console.error('Could not load project invitations:', err);
+        if (!cancelled) setInvitationError(err?.message ?? 'Could not load project invitations.');
+        return [];
+      })
+      : Promise.resolve([]);
+    Promise.all([listNotifications({ limit: FEED_LIMIT }), inquiries, invitations])
+      .then(([found, kept, pendingInvitations]) => {
         if (cancelled) return;
         setNotifications(mergeActivity(found, kept, accountId));
+        setInvitations(pendingInvitations);
         setStatus('ready');
       })
       .catch((err) => {
@@ -44,6 +57,22 @@ export function ActivityPage({ t, accountId = null, onOpenProject, onOpenOrganis
   }, [accountId]);
 
   const unread = notifications.filter((item) => !item.readAt).length;
+
+  const respond = async (invitation, accept) => {
+    if (respondingTo) return;
+    setRespondingTo(invitation.projectId);
+    setInvitationError(null);
+    try {
+      await respondToCollaboratorInvitation(invitation.projectId, accept);
+      setInvitations((current) => current.filter((item) => item.projectId !== invitation.projectId));
+      if (accept) onOpenProjectDashboard?.(invitation.projectId);
+    } catch (err) {
+      console.error('Could not respond to the project invitation:', err);
+      setInvitationError(err?.message ?? 'Could not respond to the project invitation.');
+    } finally {
+      setRespondingTo(null);
+    }
+  };
 
   const readAll = async () => {
     const before = notifications;
@@ -72,7 +101,52 @@ export function ActivityPage({ t, accountId = null, onOpenProject, onOpenOrganis
         ) : null} />
       <div style={{ maxWidth: 760 }}>
         {message && <p style={{ fontSize: 15, color: t.inkDim }}>{message}</p>}
-        {status === 'ready' && notifications.length === 0 && (
+        {status === 'ready' && invitations.length > 0 && (
+          <section aria-labelledby="project-invitations-heading"
+            style={{ margin: '0 0 24px', padding: 20, borderRadius: 16, background: t.surface,
+              border: `1px solid ${t.line}` }}>
+            <h2 id="project-invitations-heading" style={{ fontSize: 18, fontWeight: 700, color: t.ink,
+              margin: '0 0 8px' }}>
+              Project invitations
+            </h2>
+            <p style={{ fontSize: 14, color: t.inkDim, margin: '0 0 8px' }}>
+              Accept to join a project as a collaborator, or decline to leave it unchanged.
+            </p>
+            {invitations.map((invitation) => (
+              <div key={invitation.projectId} style={{ display: 'flex', alignItems: 'center',
+                justifyContent: 'space-between', gap: 16, padding: '12px 0',
+                borderTop: `1px solid ${t.line}` }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: t.ink }}>{invitation.projectName}</div>
+                  <div style={{ fontSize: 13, color: t.inkDim }}>
+                    Invited by {invitation.inviterName}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flex: '0 0 auto' }}>
+                  <Btn t={t} variant="outline" size="sm" disabled={respondingTo !== null}
+                    onClick={() => respond(invitation, false)}>
+                    {respondingTo === invitation.projectId ? 'Saving…' : 'Decline'}
+                  </Btn>
+                  <Btn t={t} variant="primary" size="sm" disabled={respondingTo !== null}
+                    onClick={() => respond(invitation, true)}>
+                    {respondingTo === invitation.projectId ? 'Saving…' : 'Accept'}
+                  </Btn>
+                </div>
+              </div>
+            ))}
+            {invitationError && (
+              <p role="alert" style={{ fontSize: 13, color: '#B3261E', margin: '10px 0 0' }}>
+                {invitationError}
+              </p>
+            )}
+          </section>
+        )}
+        {status === 'ready' && invitationError && invitations.length === 0 && (
+          <p role="alert" style={{ fontSize: 13, color: '#B3261E', margin: '0 0 16px' }}>
+            {invitationError}
+          </p>
+        )}
+        {status === 'ready' && notifications.length === 0 && invitations.length === 0 && (
           <p style={{ fontSize: 15, color: t.inkDim }}>
             Nothing yet. Comments, follows, news from the projects you are part of and the tools you
             save from the Toolkit will show up here.
