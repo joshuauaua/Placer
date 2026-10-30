@@ -17,15 +17,26 @@ describe('SideNav', () => {
   it('puts the collapse toggle and New project first, then the dashboard, then the other places', () => {
     setup();
 
-    expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label')))
-      .toEqual(['Collapse side nav', 'New project', 'Dashboard', 'Explore', 'Projects', 'Toolkit', 'Settings']);
+    expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
+      .toEqual(['Collapse side nav', 'New project', 'Dashboard', 'Explore', 'Projects', 'Toolkit', 'Settings',
+        'Guides', 'FAQ', 'Terms and Privacy']);
+  });
+
+  it('opens the Guides, the FAQ and the terms from the small links under Settings', () => {
+    const { onNavigate } = setup({ view: 'faq' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guides' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Terms and Privacy' }));
+    expect(onNavigate.mock.calls).toEqual([['guides'], ['terms']]);
+    expect(screen.getByRole('button', { name: 'FAQ' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('shows Organisations only for an account that runs one', () => {
     const { onNavigate } = setup({ showOrganisations: true });
 
-    expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label')))
-      .toEqual(['Collapse side nav', 'New project', 'Dashboard', 'Explore', 'Projects', 'Organisations', 'Toolkit', 'Settings']);
+    expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
+      .toEqual(['Collapse side nav', 'New project', 'Dashboard', 'Explore', 'Projects', 'Organisations', 'Toolkit', 'Settings',
+        'Guides', 'FAQ', 'Terms and Privacy']);
     fireEvent.click(screen.getByRole('button', { name: 'Organisations' }));
     expect(onNavigate).toHaveBeenCalledWith('organisations');
   });

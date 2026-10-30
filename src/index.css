@@ -1891,6 +1891,44 @@ a {
   border-top: 1px solid var(--placer-grey-200);
 }
 
+/* Guides, FAQ and Terms and Privacy, a short list of small grey text links under
+   Settings. */
+.placer-side-nav-small {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.placer-side-nav-small-link {
+  all: unset;
+  cursor: pointer;
+  font-family: var(--placer-font);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.01em;
+  color: var(--placer-grey-500);
+  white-space: nowrap;
+}
+
+.placer-side-nav-small-link:hover,
+.placer-side-nav-small-link[aria-current='page'] {
+  color: var(--placer-ink);
+  text-decoration: underline;
+}
+
+.placer-side-nav-small-link:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.placer-side-nav.is-collapsed .placer-side-nav-small {
+  display: none;
+}
+
 /* New project, above the places and set apart from them as the one action: a
    primary button, ink with white text, grey-700 on hover. */
 .placer-side-nav-primary {
@@ -2015,6 +2053,10 @@ a {
   }
 
   .placer-side-nav-bottom::before {
+    display: none;
+  }
+
+  .placer-side-nav-small {
     display: none;
   }
 

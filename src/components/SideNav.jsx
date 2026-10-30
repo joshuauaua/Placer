@@ -2,7 +2,9 @@
  *
  * The places someone with an account goes back to: their dashboard, the map, their
  * projects, their organisations (once they run one) and the Toolkit, under a primary button for starting a new project,
- * with their settings apart from the rest at the bottom. It sits under the glass
+ * with their settings apart from the rest at the bottom and, under them, small links to
+ * the Guides, the FAQ and the terms, which the footer had before it went for anyone
+ * signed in. It sits under the glass
  * nav bar rather than beside it, so the bar still spans the full width, and it
  * stops where the page does, so the footer does too. The button at its top
  * collapses it to a rail of icons. Below 1024px it becomes the glass tab bar
@@ -58,6 +60,14 @@ function NavLabel({ label, short }) {
  * `expanded` holds it open whatever was chosen, without forgetting the choice: the
  * welcome tour sets it, so the places it points at are there with their names.
  */
+// The small links under Settings. Desktop only: the phone's tab bar has no room, and a
+// collapsed rail has no room for their words.
+const SMALL_LINKS = [
+  { label: 'Guides', view: 'guides' },
+  { label: 'FAQ', view: 'faq' },
+  { label: 'Terms and Privacy', view: 'terms' },
+];
+
 export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganisations = false, expanded = false }) {
   const [chosenCollapsed, setCollapsed] = useState(readCollapsed);
   const collapsed = chosenCollapsed && !expanded;
@@ -123,6 +133,18 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganis
           </button>
         );
       })}
+
+      <ul className="placer-side-nav-small">
+        {SMALL_LINKS.map(({ label, view: target }) => (
+          <li key={target}>
+            <button onClick={() => onNavigate(target)}
+              aria-current={view === target ? 'page' : undefined}
+              className="placer-side-nav-small-link">
+              {label}
+            </button>
+          </li>
+        ))}
+      </ul>
     </nav>
   );
 }
