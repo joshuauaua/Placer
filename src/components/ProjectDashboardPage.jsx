@@ -37,6 +37,7 @@ import {
   deleteProject,
   readCollaboratingOrganisations,
   readCollaborators,
+  readCollaboratorInvitations,
   readAccessRequests,
   decideAccess,
   removeAccess,
@@ -303,6 +304,32 @@ function CollaboratorRow({ t, collaborator, onRemove }) {
       <button onClick={() => onRemove(collaborator)} style={{ background: 'none', border: 'none',
         color: t.inkDim, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: 0 }}>
         Remove
+      </button>
+    </div>
+  );
+}
+
+function CollaboratorInvitationRow({ t, invitation, onRemove }) {
+  const pending = invitation.status === 'pending';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '10px 0', borderTop: `1px solid ${t.line}` }}>
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>
+          {invitation.displayName || invitation.email}
+        </div>
+        {invitation.displayName && (
+          <div style={{ fontSize: 12.5, color: t.inkDim }}>{invitation.email}</div>
+        )}
+        <div style={{ fontSize: 12.5, color: t.inkDim }}>
+          {pending ? 'Invitation pending' : 'Invitation declined'}
+        </div>
+      </div>
+      <button onClick={() => onRemove(invitation)} aria-label={pending
+        ? `Cancel invitation to ${invitation.email}` : `Dismiss declined invitation to ${invitation.email}`}
+        style={{ background: 'none', border: 'none', color: t.inkDim, fontSize: 13,
+          fontWeight: 500, cursor: 'pointer', padding: 0 }}>
+        {pending ? 'Cancel' : 'Dismiss'}
       </button>
     </div>
   );
@@ -906,6 +933,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   const [summary, setSummary] = useState(null);
   const [postCounts, setPostCounts] = useState(null);
   const [collaborators, setCollaborators] = useState([]);
+  const [collaboratorInvitations, setCollaboratorInvitations] = useState([]);
   const [links, setLinks] = useState([]);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteError, setInviteError] = useState(null);
@@ -955,15 +983,17 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   }, []);
 
   const loadEverything = useCallback(async (id) => {
-    const [proj, projStats, roster, docs] = await Promise.all([
+    const [proj, projStats, roster, invitations, docs] = await Promise.all([
       readProject(id),
       readStats(id),
       readCollaborators(id),
+      readCollaboratorInvitations(id),
       readLinks(id),
     ]);
     setProject(proj);
     setStats(projStats);
     setCollaborators(roster);
+    setCollaboratorInvitations(invitations);
     setLinks(docs);
   }, []);
 
@@ -1024,7 +1054,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
     setInviteError(null);
     try {
       await addCollaborator(project.id, inviteEmail.trim());
-      setCollaborators(await readCollaborators(project.id));
+      setCollaboratorInvitations(await readCollaboratorInvitations(project.id));
       setInviteEmail('');
     } catch (err) {
       console.error('Could not add that collaborator:', err);
@@ -1036,11 +1066,16 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
 
   const handleRemoveCollaborator = async (collaborator) => {
     setCollaborators((current) => current.filter((c) => c.userId !== collaborator.userId));
+    setCollaboratorInvitations((current) => current.filter((c) => c.userId !== collaborator.userId));
     try {
       await removeCollaborator(project.id, collaborator.userId);
     } catch (err) {
       console.error('Could not remove that collaborator:', err);
-      setCollaborators(await readCollaborators(project.id));
+      const [roster, invitations] = await Promise.all([
+        readCollaborators(project.id), readCollaboratorInvitations(project.id),
+      ]);
+      setCollaborators(roster);
+      setCollaboratorInvitations(invitations);
     }
   };
 
@@ -1347,6 +1382,14 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                             {collaborator.displayName || collaborator.email}
                           </div>
                         )
+                    ))}
+                  </div>
+                )}
+                {isOwner && collaboratorInvitations.length > 0 && (
+                  <div aria-label="Collaboration invitations">
+                    {collaboratorInvitations.map((invitation) => (
+                      <CollaboratorInvitationRow key={invitation.userId} t={t} invitation={invitation}
+                        onRemove={handleRemoveCollaborator} />
                     ))}
                   </div>
                 )}

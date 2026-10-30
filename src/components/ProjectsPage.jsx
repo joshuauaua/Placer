@@ -17,7 +17,8 @@ import { ProjectCard } from './ProjectCard';
 import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
 import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from './GalleryToolbar';
 import {
-  PROJECT_TYPES, PROJECT_TYPE_NAMES, isSupabaseConfigured as projectsAvailable, readVisibleProjects,
+  PROJECT_TYPES, PROJECT_TYPE_NAMES, isSupabaseConfigured as projectsAvailable, readPendingCollaboratorInvitations,
+  readVisibleProjects, respondToCollaboratorInvitation,
 } from '../services/projects';
 import { responsiveImage } from '../lib/responsiveImage';
 
@@ -102,6 +103,9 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
   const [favourites, toggleFavourite] = useFavourites('placer_projects_favourites');
   const [favouritesOnly, setFavouritesOnly] = useState(false);
   const [view, changeView] = useGalleryView('placer_projects_view');
+  const [invitations, setInvitations] = useState([]);
+  const [respondingTo, setRespondingTo] = useState(null);
+  const [invitationError, setInvitationError] = useState(null);
 
   useEffect(() => {
     if (!projectsAvailable() || !accountId) {
@@ -127,6 +131,24 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
     return () => { cancelled = true; };
   }, [accountId]);
 
+  useEffect(() => {
+    if (!projectsAvailable() || !accountId) {
+      setInvitations([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+    readPendingCollaboratorInvitations()
+      .then((found) => { if (!cancelled) setInvitations(found); })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('Could not load project invitations:', err);
+        setInvitationError(err?.message ?? 'Could not load project invitations.');
+      });
+
+    return () => { cancelled = true; };
+  }, [accountId]);
+
   const matching = sortProjects(projects.filter((project) => {
     if (filters.role === 'others' && project.role) return false;
     if ((filters.role === 'owner' || filters.role === 'collaborator') && project.role !== filters.role) return false;
@@ -140,6 +162,22 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
   const labelOf = (project) => (project.role === 'owner' ? YOUR_PROJECT : null);
   const clearFilters = () => { setFilters(NO_FILTERS); setFavouritesOnly(false); };
   const roleName = ROLES.find((role) => role.id === filters.role).name;
+
+  const respond = async (invitation, accept) => {
+    if (respondingTo) return;
+    setRespondingTo(invitation.projectId);
+    setInvitationError(null);
+    try {
+      await respondToCollaboratorInvitation(invitation.projectId, accept);
+      setInvitations((current) => current.filter((item) => item.projectId !== invitation.projectId));
+      if (accept) onOpenProjectDashboard(invitation.projectId);
+    } catch (err) {
+      console.error('Could not respond to the project invitation:', err);
+      setInvitationError(err?.message ?? 'Could not respond to the project invitation.');
+    } finally {
+      setRespondingTo(null);
+    }
+  };
 
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
@@ -175,6 +213,51 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
           <p style={{ fontSize: 14, color: t.inkFaint }}>
             Projects are not available in this environment.
           </p>
+        )}
+
+        {projectsAvailable() && invitations.length > 0 && (
+          <section aria-labelledby="project-invitations-heading"
+            style={{ margin: '0 0 24px', padding: 20, borderRadius: 16, background: t.surface,
+              border: `1px solid ${t.line}` }}>
+            <h2 id="project-invitations-heading" style={{ fontSize: 18, fontWeight: 700, color: t.ink,
+              margin: '0 0 8px' }}>
+              Project invitations
+            </h2>
+            <p style={{ fontSize: 14, color: t.inkDim, margin: '0 0 8px' }}>
+              Accept to join a project as a collaborator, or decline to leave it unchanged.
+            </p>
+            {invitations.map((invitation) => (
+              <div key={invitation.projectId} style={{ display: 'flex', alignItems: 'center',
+                justifyContent: 'space-between', gap: 16, padding: '12px 0',
+                borderTop: `1px solid ${t.line}` }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: t.ink }}>{invitation.projectName}</div>
+                  <div style={{ fontSize: 13, color: t.inkDim }}>
+                    Invited by {invitation.inviterName}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flex: '0 0 auto' }}>
+                  <Btn t={t} variant="outline" size="sm" disabled={respondingTo !== null}
+                    onClick={() => respond(invitation, false)}>
+                    {respondingTo === invitation.projectId ? 'Saving…' : 'Decline'}
+                  </Btn>
+                  <Btn t={t} variant="primary" size="sm" disabled={respondingTo !== null}
+                    onClick={() => respond(invitation, true)}>
+                    {respondingTo === invitation.projectId ? 'Saving…' : 'Accept'}
+                  </Btn>
+                </div>
+              </div>
+            ))}
+            {invitationError && (
+              <p role="alert" style={{ fontSize: 13, color: '#B3261E', margin: '10px 0 0' }}>
+                {invitationError}
+              </p>
+            )}
+          </section>
+        )}
+
+        {projectsAvailable() && invitationError && invitations.length === 0 && (
+          <p role="alert" style={{ fontSize: 13, color: '#B3261E' }}>{invitationError}</p>
         )}
 
         {projectsAvailable() && status === 'loading' && <PageLoader label="Loading projects…" />}

@@ -19,6 +19,7 @@ import { readProjectOpenRooms } from './rooms';
 
 export const PROJECTS_TABLE = 'projects';
 export const COLLABORATORS_TABLE = 'project_collaborators';
+export const COLLABORATION_INVITATIONS_TABLE = 'project_collaboration_invitations';
 export const COLLABORATING_ORGANISATIONS_TABLE = 'project_collaborating_organisations';
 export const LINKS_TABLE = 'project_links';
 export const PROJECT_TOOLS_TABLE = 'project_tools';
@@ -539,9 +540,38 @@ export async function readCollaborators(projectId) {
   }));
 }
 
+/** Pending invitations for a project, visible to its owner in the dashboard. */
+export async function readCollaboratorInvitations(projectId) {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from(COLLABORATION_INVITATIONS_TABLE)
+    .select('user_id, email, display_name, status, created_at')
+    .eq('project_id', projectId)
+    .in('status', ['pending', 'declined'])
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(`Could not load the project's invitations: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    userId: row.user_id, email: row.email, displayName: row.display_name,
+    status: row.status, createdAt: row.created_at,
+  }));
+}
+
+/** Pending invitations sent to the signed-in account. */
+export async function readPendingCollaboratorInvitations() {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('project_collaboration_invitations');
+
+  if (error) throw new Error(`Could not load project invitations: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    projectId: row.project_id, projectName: row.project_name, inviterName: row.inviter_name,
+    createdAt: row.created_at,
+  }));
+}
+
 /**
  * Invite a collaborator by email. Owner-only, and there is no directory to search —
- * see project_add_collaborator in supabase/projects.sql for the full reasoning.
+ * see project_add_collaborator in supabase/project-collaboration-invitations.sql.
  */
 export async function addCollaborator(projectId, email) {
   const supabase = await client();
@@ -549,7 +579,17 @@ export async function addCollaborator(projectId, email) {
     p_project_id: projectId, p_email: email,
   });
   if (error) throw new Error(`Could not add that collaborator: ${error.message}`);
-  track('project_collaborator_added', { project_id: projectId });
+  track('project_collaboration_invited', { project_id: projectId });
+  return { success: true };
+}
+
+/** Accept or decline a pending collaboration invitation. */
+export async function respondToCollaboratorInvitation(projectId, accept) {
+  const supabase = await client();
+  const { error } = await supabase.rpc('project_respond_to_collaboration_invitation', {
+    p_project_id: projectId, p_accept: accept,
+  });
+  if (error) throw new Error(`Could not respond to that invitation: ${error.message}`);
   return { success: true };
 }
 
