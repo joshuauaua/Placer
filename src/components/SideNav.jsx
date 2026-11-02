@@ -82,7 +82,7 @@ const TOOL_KINDS = [
 ];
 
 // The menu's width: three cards side by side, narrower if the window is.
-const MENU_WIDTH = 456;
+const MENU_WIDTH = 640;
 
 /**
  * The dropdown off Create a tool, its three choices side by side as cards. It is drawn into document.body, fixed beside the
@@ -158,7 +158,7 @@ function CreateToolMenu({ anchor, onChoose, onClose }) {
             className="placer-create-tool-item">
             <span className="placer-create-tool-icon"
               style={{ background: kind?.colour?.c100, color: kind?.colour?.c900 }}>
-              <Icon name={icon} size={18} stroke={2} />
+              <Icon name={icon} size={24} stroke={2} />
             </span>
             <span className="placer-create-tool-label">{label}</span>
             <span className="placer-create-tool-description">{hint}</span>
