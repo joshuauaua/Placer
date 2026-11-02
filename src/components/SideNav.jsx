@@ -88,9 +88,10 @@ const MENU_WIDTH = 640;
  * The dropdown off Create a tool, its three choices side by side as cards. It is drawn into document.body, fixed beside the
  * button, because the side nav scrolls (overflow-y: auto) and would clip anything
  * hanging out of it: under the button in the side nav, above it in the phone's tab
- * bar. Escape or a press anywhere else closes it, the same as UserMenu.
+ * bar. Escape or a press anywhere else closes it, the same as UserMenu. The Tools
+ * page's Create a Tool shortcut opens it too (DashboardPage).
  */
-function CreateToolMenu({ anchor, onChoose, onClose }) {
+export function CreateToolMenu({ anchor, onChoose, onClose }) {
   const menuRef = useRef(null);
   const [place, setPlace] = useState(null);
 

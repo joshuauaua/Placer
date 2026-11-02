@@ -319,3 +319,41 @@ describe('DashboardPage, beyond the quick actions', () => {
     });
   });
 });
+
+describe('DashboardPage as the Tools page', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('has Create a Tool in place of Create a Project, and no Guide or Getting Started', async () => {
+    setup({ handlers: { variant: 'tools', onNewProject: vi.fn(), onCreateTool: vi.fn() } });
+    const actions = screen.getByRole('region', { name: 'Quick Actions' });
+
+    expect(within(actions).getAllByRole('button').map((b) => b.textContent))
+      .toEqual(['Create a Tool', 'Explore the map', 'Edit your profile']);
+    expect(screen.queryByText('Getting Started')).toBeNull();
+    await waitFor(() => expect(readMyProjects).toHaveBeenCalled());
+  });
+
+  it('opens Understand, Re-Imagine and Plan from Create a Tool, and creates the kind chosen', async () => {
+    const onCreateTool = vi.fn();
+    setup({ handlers: { variant: 'tools', onCreateTool } });
+    const create = screen.getByRole('button', { name: 'Create a Tool' });
+
+    fireEvent.click(create);
+    expect(create).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByRole('menuitem', { name: /Plan/ }));
+    expect(onCreateTool).toHaveBeenCalledWith('plan');
+    expect(screen.queryByRole('menu')).toBeNull();
+    await waitFor(() => expect(readMyProjects).toHaveBeenCalled());
+  });
+
+  it('leaves the dashboard itself as it was', async () => {
+    setup({ handlers: { onNewProject: vi.fn() } });
+    const actions = screen.getByRole('region', { name: 'Quick Actions' });
+
+    expect(within(actions).getAllByRole('button').map((b) => b.textContent))
+      .toEqual(['Create a Project', 'Explore the map', 'Edit your profile', 'Guide']);
+    await waitFor(() => expect(readMyProjects).toHaveBeenCalled());
+  });
+});

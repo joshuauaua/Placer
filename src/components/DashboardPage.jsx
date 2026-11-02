@@ -1,8 +1,9 @@
 /* PLACER — your dashboard: shortcuts to what to do next */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn } from './UI';
+import { CreateToolMenu } from './SideNav';
 import { LayeredCircles } from './LayeredCircles';
 import { NotificationItem } from './NotificationItem';
 import {
@@ -48,10 +49,10 @@ const STEP_KINDS = {
 };
 
 /** A Quick Actions button: a small grey tile with the icon beside the label. */
-function Shortcut({ t, icon, label, onClick, expanded, controls }) {
+function Shortcut({ t, icon, label, onClick, expanded, controls, popup, buttonRef }) {
   return (
-    <button type="button" onClick={onClick} {...ARROW_ITEM} className="placer-quick-action"
-      aria-expanded={expanded} aria-controls={controls}
+    <button ref={buttonRef} type="button" onClick={onClick} {...ARROW_ITEM} className="placer-quick-action"
+      aria-expanded={expanded} aria-controls={controls} aria-haspopup={popup}
       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
         minHeight: 56, padding: '12px 20px', textAlign: 'center', background: t.surfaceAlt,
         border: 'none', borderRadius: 14, cursor: 'pointer',
@@ -184,9 +185,18 @@ function PanelCard({ t, id, title, action, children }) {
   );
 }
 
+/**
+ * `variant` is 'dashboard', or 'tools' for the Tools page, which is this page for now
+ * with two changes: its first shortcut is Create a Tool, opening the same choice of
+ * Understand, Re-Imagine and Plan as the side nav's button (`onCreateTool` gets the
+ * one picked), and it has no Guide, nor the Getting Started cards the Guide opens.
+ */
 export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewProject,
   onSignOut, onExplore, onOpenPublicProfile, onOpenProject, onOpenProjectPage,
-  onOpenOrganisationPage }) {
+  onOpenOrganisationPage, variant = 'dashboard', onCreateTool }) {
+  const tools = variant === 'tools';
+  const [createOpen, setCreateOpen] = useState(false);
+  const createRef = useRef(null);
   // The account's projects, for the Projects row and Next Steps. Projects need a
   // Supabase project, so without one there are simply none.
   const [projects, setProjects] = useState([]);
@@ -246,7 +256,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
 
   // Getting Started shows for the first few visits; after that it lives in the Guide shortcut.
   const [visits] = useState(() => countDashboardVisit(accountId));
-  const [guideOpen, setGuideOpen] = useState(visits <= GETTING_STARTED_VISITS);
+  const [guideOpen, setGuideOpen] = useState(!tools && visits <= GETTING_STARTED_VISITS);
   const [tab, setTab] = useState('steps'); // 'steps' | 'activity'
 
   const name = profile?.name ?? '';
@@ -300,15 +310,24 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
 
         <section aria-label="Quick Actions" style={{ marginBottom: 24 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-            {onNewProject && (
+            {tools ? (
+              <Shortcut t={t} icon="plus" label="Create a Tool" popup="menu" expanded={createOpen}
+                buttonRef={createRef} onClick={() => setCreateOpen((open) => !open)} />
+            ) : onNewProject && (
               <Shortcut t={t} icon="plus" label="Create a Project" onClick={onNewProject} />
             )}
             <Shortcut t={t} icon="pin" label="Explore the map"
               onClick={() => (onExplore ? onExplore() : onNavigate('map'))} />
             <Shortcut t={t} icon="pencil" label="Edit your profile" onClick={() => onNavigate('settings')} />
-            <Shortcut t={t} icon="bookmark" label="Guide" expanded={guideOpen} controls="dashboard-basics"
-              onClick={() => setGuideOpen((open) => !open)} />
+            {!tools && (
+              <Shortcut t={t} icon="bookmark" label="Guide" expanded={guideOpen} controls="dashboard-basics"
+                onClick={() => setGuideOpen((open) => !open)} />
+            )}
           </div>
+          {createOpen && (
+            <CreateToolMenu anchor={createRef} onClose={() => setCreateOpen(false)}
+              onChoose={(category) => { setCreateOpen(false); onCreateTool?.(category); }} />
+          )}
         </section>
 
         {guideOpen && (

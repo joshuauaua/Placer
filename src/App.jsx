@@ -75,7 +75,7 @@ const ACCOUNT_VIEWS = {
   // Where Project Examples was, before the dashboard's card went to Projects instead.
   '/project-examples': 'projects',
   '/activity': 'activity',
-  // For now the dashboard again, under a name of its own: what will become the
+  // For now the dashboard again, with Create a Tool and no Guide: what will become the
   // tool-first account's home for the tools it has made.
   '/tools': 'tools',
   '/projects': 'projects',
@@ -291,6 +291,8 @@ function MainApp({ initialView = 'welcome' }) {
   }, [view, location]);
 
   const showNewProject = () => navigate('/projects/new');
+  // Create a tool, from the side nav or the Tools page: the Toolkit, on the kind picked.
+  const showCreateTool = (category) => navigate(`/toolkit?category=${encodeURIComponent(category)}&create`);
   const showNewOrganisationProject = (organisationId) =>
     navigate(`/projects/new?organisation=${encodeURIComponent(organisationId)}`);
   const showNewOrganisation = () => navigate('/organisations/new');
@@ -432,7 +434,7 @@ function MainApp({ initialView = 'welcome' }) {
             <SideNav t={t} view={view}
               onNavigate={(next) => { show(next); scrollPageToTop(); }}
               onExplore={() => { handleExplore(); scrollPageToTop(); }}
-              onCreateTool={(category) => { navigate(`/toolkit?category=${encodeURIComponent(category)}&create`); scrollPageToTop(); }}
+              onCreateTool={(category) => { showCreateTool(category); scrollPageToTop(); }}
               showOrganisations={isSupabaseConfigured()}
               expanded={tourOpen} />
           )}
@@ -563,10 +565,12 @@ function MainApp({ initialView = 'welcome' }) {
               </Suspense>
             )}
 
-            {/* Tools: a copy of the dashboard for now, until it has tools of its own to show. */}
+            {/* Tools: the dashboard for now, with Create a Tool and no Guide
+                (DashboardPage's 'tools' variant), until it has tools of its own to show. */}
             {view === 'tools' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
+                  variant="tools" onCreateTool={showCreateTool}
                   onNewProject={showNewProject}
                   onSignOut={handleSignOut} onExplore={handleExplore}
                   onOpenPublicProfile={showPublicProfile}
