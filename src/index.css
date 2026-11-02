@@ -3573,6 +3573,97 @@ a {
   margin-right: 4px;
 }
 
+/* The collaborators' avatars, overlapping, each ringed in white. */
+.placer-configurator-people {
+  display: flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.placer-configurator-person {
+  display: flex;
+  border-radius: 50%;
+}
+
+.placer-configurator-person + .placer-configurator-person {
+  margin-left: -8px;
+}
+
+.placer-configurator-more-people {
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  background: var(--placer-grey-100);
+  box-shadow: 0 0 0 2px var(--placer-white);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* The ⋯ button and its menu of the tool's settings, under it at the right. */
+.placer-configurator-settings {
+  position: relative;
+}
+
+.placer-configurator-dots {
+  all: unset;
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--placer-radius-sm);
+  cursor: pointer;
+  color: var(--placer-ink);
+}
+
+.placer-configurator-dots:hover,
+.placer-configurator-dots[aria-expanded='true'] {
+  background: var(--placer-grey-100);
+}
+
+.placer-configurator-dots:focus-visible {
+  outline: 2px solid var(--placer-ink);
+}
+
+.placer-configurator-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 70;
+  min-width: 220px;
+  padding: 6px 0;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  border-radius: var(--placer-radius-sm);
+  box-shadow: var(--placer-shadow);
+}
+
+.placer-configurator-menu-item {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-family: var(--placer-font);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--placer-ink);
+}
+
+.placer-configurator-menu-item.is-divided {
+  border-top: 1px solid var(--placer-grey-200);
+}
+
+.placer-configurator-menu-item:hover,
+.placer-configurator-menu-item:focus-visible {
+  background: var(--placer-grey-100);
+}
+
 .placer-configurator-body {
   flex: 1 1 auto;
   min-height: 0;

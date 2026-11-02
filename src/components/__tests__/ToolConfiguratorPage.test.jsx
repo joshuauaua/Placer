@@ -10,11 +10,11 @@ import { THEME } from '../../theme';
 const QUESTION_LABEL = 'The question';
 const panelQuestion = () => within(screen.getByRole('complementary', { name: 'Configuration' })).getByLabelText(QUESTION_LABEL);
 
-function renderAt(path, Page = ToolConfiguratorPage) {
+function renderAt(path, Page = ToolConfiguratorPage, props = {}) {
   const location = memoryLocation({ path, record: true });
   const result = render(
     <Router hook={location.hook}>
-      <Page t={THEME} />
+      <Page t={THEME} {...props} />
     </Router>
   );
   return { ...result, location };
@@ -36,7 +36,7 @@ describe('ToolConfiguratorPage', () => {
     expect(within(bar).getByText('Co-Budget')).toBeInTheDocument();
     expect(within(bar).getByText('Plan')).toBeInTheDocument();
     expect(within(bar).getAllByRole('button').map((b) => b.getAttribute('aria-label')))
-      .toEqual(['Back to the Toolkit', 'Preview', 'Publish']);
+      .toEqual(['Back to the Toolkit', 'Tool settings', 'Preview', 'Publish']);
 
     expect(screen.getByRole('main', { name: 'Canvas' })).toBeInTheDocument();
     const panel = screen.getByRole('complementary', { name: 'Configuration' });
@@ -101,6 +101,37 @@ describe('ToolConfiguratorPage', () => {
     renderAt('/toolkit/fifteen-minute/configure');
 
     expect(screen.getByText(/nothing to configure/)).toBeInTheDocument();
+  });
+
+  it('shows the collaborators’ avatars in the top bar: for now, whoever is signed in', () => {
+    renderAt('/toolkit/word-cloud/configure', ToolConfiguratorPage, { profile: { id: 'p1', name: 'Ada Lovelace' } });
+
+    const bar = screen.getByRole('banner', { name: 'Configure a tool' });
+    expect(within(bar).getByRole('group', { name: 'Collaborators: Ada Lovelace' })).toHaveTextContent('AL');
+  });
+
+  it('has no avatars with nobody signed in', () => {
+    renderAt('/toolkit/word-cloud/configure');
+
+    expect(screen.queryByRole('group', { name: /Collaborators/ })).toBeNull();
+  });
+
+  it('opens the tool’s settings from the three dots, each saying it is not built yet', () => {
+    renderAt('/toolkit/word-cloud/configure');
+    const dots = screen.getByRole('button', { name: 'Tool settings' });
+
+    fireEvent.click(dots);
+    expect(dots).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent))
+      .toEqual(['Rename', 'Duplicate', 'Manage collaborators', 'Delete tool']);
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete tool' }));
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.getByRole('status')).toHaveTextContent('Delete tool is not built yet.');
+
+    fireEvent.click(dots);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('menu')).toBeNull();
   });
 
   it('says Preview and Publish are not built yet', () => {

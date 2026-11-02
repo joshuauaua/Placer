@@ -8,10 +8,12 @@
  *              slide, pick one to show it on the canvas and configure it in the panel,
  *              or remove one while there are others. It starts with one. Any other
  *              tool is configured as that one slide, with no panel.
- *   top bar  — back to the Toolkit, the tool's name and category, then Preview (the
+ *   top bar  — back to the Toolkit, the tool's name and category, then the avatars
+ *              of the tool's collaborators, a ⋯ menu of its settings, Preview (the
  *              tool as it would look on a desktop and on a phone) and, at the
- *              right-hand end, Publish (put the tool live). Neither is built yet: each
- *              only says so.
+ *              right-hand end, Publish (put the tool live). A tool has no collaborators
+ *              of its own yet, so the avatars are whoever is signed in; and nothing in
+ *              the menu, Preview or Publish is built yet: each only says so.
  *   canvas   — the tool itself, as it is set up so far. It is the Toolkit's own
  *              component, given the setup the way it would get it live: a tool that
  *              runs in a room gets it as `room.config` on a room that is not open, any
@@ -26,9 +28,9 @@
  * Below 900px any slides become a row over the canvas, and the panel goes under it.
  */
 
-import { Component, useMemo, useState } from 'react';
+import { Component, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
-import { Btn } from './UI';
+import { Avatar, Btn } from './UI';
 import { Icon } from './Icon';
 import { findCategory, findTool, setupSteps } from '../toolkit/tools';
 
@@ -99,7 +101,94 @@ function previewRoom(config) {
   };
 }
 
-function TopBar({ t, tool, notice, onBack, onPreview, onPublish }) {
+// How many collaborators' avatars show before the rest are a count.
+const MAX_AVATARS = 3;
+
+/** The collaborators' avatars, overlapping, with a count for any past MAX_AVATARS. */
+function Collaborators({ people }) {
+  if (people.length === 0) return null;
+  const shown = people.slice(0, MAX_AVATARS);
+  const more = people.length - shown.length;
+  const names = people.map((person) => person.name).join(', ');
+  return (
+    <div role="group" aria-label={`Collaborators: ${names}`} title={names} className="placer-configurator-people">
+      {shown.map((person, index) => (
+        <span key={person.id ?? `${person.name}-${index}`} className="placer-configurator-person">
+          <Avatar name={person.name} photo={person.photo} size={32} ring="#FFFFFF" />
+        </span>
+      ))}
+      {more > 0 && <span className="placer-configurator-person placer-configurator-more-people">+{more}</span>}
+    </div>
+  );
+}
+
+// What the ⋯ menu offers. None of it is built yet.
+const TOOL_SETTINGS = [
+  { key: 'rename', label: 'Rename', icon: 'pencil' },
+  { key: 'duplicate', label: 'Duplicate', icon: 'layers' },
+  { key: 'collaborators', label: 'Manage collaborators', icon: 'user' },
+  { key: 'delete', label: 'Delete tool', icon: 'trash', divided: true },
+];
+
+/**
+ * The ⋯ button and its menu of the tool's settings. Escape, or a press anywhere
+ * else, closes it, the same as UserMenu.
+ */
+function SettingsMenu({ onChoose }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    wrapRef.current?.querySelector('[role="menuitem"]')?.focus();
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      buttonRef.current?.focus();
+    };
+    const onPointerDown = (e) => {
+      if (!wrapRef.current?.contains(e.target)) setOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('mousedown', onPointerDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('mousedown', onPointerDown);
+    };
+  }, [open]);
+
+  const onMenuKeyDown = (e) => {
+    const step = { ArrowDown: 1, ArrowUp: -1 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const items = [...wrapRef.current.querySelectorAll('[role="menuitem"]')];
+    const at = items.indexOf(document.activeElement);
+    items[(at + step + items.length) % items.length]?.focus();
+  };
+
+  return (
+    <div ref={wrapRef} className="placer-configurator-settings">
+      <button ref={buttonRef} onClick={() => setOpen((was) => !was)} aria-label="Tool settings"
+        aria-haspopup="menu" aria-expanded={open} title="Tool settings" className="placer-configurator-dots">
+        <Icon name="more" size={20} stroke={2} />
+      </button>
+      {open && (
+        <div role="menu" aria-label="Tool settings" onKeyDown={onMenuKeyDown} className="placer-configurator-menu">
+          {TOOL_SETTINGS.map(({ key, label, icon, divided }) => (
+            <button key={key} role="menuitem" onClick={() => { setOpen(false); onChoose(label); }}
+              className={`placer-configurator-menu-item${divided ? ' is-divided' : ''}`}>
+              <Icon name={icon} size={17} stroke={2} />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TopBar({ t, tool, people, notice, onBack, onSetting, onPreview, onPublish }) {
   const category = findCategory(tool?.category);
   return (
     <header aria-label="Configure a tool" className="placer-configurator-bar">
@@ -119,6 +208,8 @@ function TopBar({ t, tool, notice, onBack, onPreview, onPublish }) {
         <span role="status" className="placer-configurator-notice">{notice}</span>
         {tool && (
           <>
+            <Collaborators people={people} />
+            <SettingsMenu onChoose={onSetting} />
             {/* Their words go below 600px (index.css), leaving the icons; the names stay. */}
             <Btn t={t} variant="quiet" size="sm" icon="eye" onClick={onPreview} ariaLabel="Preview">
               <span className="placer-configurator-btn-label">Preview</span>
@@ -205,7 +296,7 @@ function SlidesPanel({ tool, slides, selectedId, onSelect, onAdd, onRemove }) {
   );
 }
 
-export function ToolConfiguratorPage({ t }) {
+export function ToolConfiguratorPage({ t, profile = null }) {
   const [location, navigate] = useLocation();
   const tool = findTool(configuredToolIdFrom(location));
   const Tool = tool?.component;
@@ -251,6 +342,8 @@ export function ToolConfiguratorPage({ t }) {
   return (
     <div className="placer-configurator">
       <TopBar t={t} tool={tool} notice={notice} onBack={back}
+        people={profile?.name ? [{ id: profile.id ?? 'me', name: profile.name, photo: profile.photo ?? null }] : []}
+        onSetting={(label) => setNotice(`${label} is not built yet.`)}
         onPreview={() => setNotice('Preview is not built yet.')}
         onPublish={() => setNotice('Publishing is not built yet.')} />
 

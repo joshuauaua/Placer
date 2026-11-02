@@ -387,7 +387,7 @@ function MainApp({ initialView = 'welcome' }) {
         />
         <div className="placer-under-glass-nav" style={{ flex: 1, minHeight: 0 }}>
           <Suspense fallback={<LoadingFallback />}>
-            <ToolConfiguratorPage t={t} />
+            <ToolConfiguratorPage t={t} profile={profile} />
           </Suspense>
         </div>
       </div>

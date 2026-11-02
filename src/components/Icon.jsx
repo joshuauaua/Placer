@@ -9,6 +9,8 @@ const ICON_ELEMENTS = {
   ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  // Three dots in a row: a menu of more things to do with what it sits beside.
+  more: <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth="3.2" strokeLinecap="round" />,
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
   chevDown: <path d="M5 9l7 7 7-7" />,
