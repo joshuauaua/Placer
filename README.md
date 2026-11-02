@@ -4,11 +4,6 @@ Placer is the open toolkit for co-designing shared spaces. It gives residents,
 placemakers and cities one place to understand how a space is used today, imagine how
 it could change, and plan that change together.
 
-It is a React single-page app. Supabase holds accounts and data, Cloudflare R2 holds
-uploaded pictures, and Google Maps provides the maps and Street View. Every backend is
-optional: with none configured, the app still runs and keeps everything in the
-browser.
-
 ## What you can do
 
 ### Imagine a space
