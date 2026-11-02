@@ -13,14 +13,16 @@ describe('TEMPLATES', () => {
 });
 
 describe('PopularTemplates', () => {
-  it('shows a card per template, with its title and the kind of tool it is, and its colour for a picture', () => {
+  it('shows a card per template, with its title and the kind of tool it is, and its icon on its colour for a picture', () => {
     render(<PopularTemplates t={THEME} onOpen={vi.fn()} />);
     const section = screen.getByRole('region', { name: 'Popular Templates' });
 
     const card = within(section).getByRole('button', { name: 'Interior Shared Space Ideation, Idea Visualizer' });
-    // No pictures yet: a block of the tool's category colour stands in.
+    // No pictures yet: the tool's icon on its category colour stands in.
     expect(within(card).queryByRole('img')).toBeNull();
-    expect(card.querySelector('.placer-template-image')).toHaveStyle({ background: 'rgb(255, 217, 184)' });
+    const cover = card.querySelector('.placer-template-image');
+    expect(cover).toHaveStyle({ background: 'rgb(255, 217, 184)' });
+    expect(cover.querySelector('svg')).not.toBeNull();
     expect(card).toHaveTextContent('Interior Shared Space Ideation');
     expect(card).toHaveTextContent('Idea Visualizer');
     expect(within(section).getByRole('button', { name: 'Split a group budget for an event, Co-Budget' })).toBeInTheDocument();

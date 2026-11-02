@@ -9,7 +9,7 @@
  *   title  — what it is for, in a few words
  *   tool   — the id of the tool it uses
  *   image  — optional { small, large, alt }: the picture, 800 and 1600 pixels wide.
- *            Without one, the card shows its tool's category colour in its place —
+ *            Without one, the card shows its tool's icon on its category colour —
  *            which every template does for now, until they have pictures of their own.
  */
 

@@ -1,5 +1,5 @@
 /* PLACER — Popular Templates, on the Tools page: a card each, with its picture (or its
- * tool's category colour standing in for one), its
+ * tool's icon on its category colour standing in for one), its
  * title and, under that, the kind of tool it is, in its category's colour. Choosing
  * one calls `onOpen` with the tool's id. The register is toolkit/templates.js. */
 
@@ -24,8 +24,12 @@ function TemplateCard({ template, onOpen }) {
               alt={template.image.alt} loading="lazy" />
           </span>
         ) : (
-          // A placeholder until the template has a picture: its tool's category colour.
-          <span className="placer-template-image" style={{ background: colour?.c100 }} />
+          // A placeholder until the template has a picture: its tool's icon on its
+          // category's colour, as My Tools draws a started tool.
+          <span className="placer-template-image placer-started-cover"
+            style={{ background: colour?.c100, color: colour?.c700 }}>
+            <Icon name={tool.icon} size={40} stroke={1.8} />
+          </span>
         )}
         <span className="placer-template-text">
           <span className="placer-template-title">{template.title}</span>
