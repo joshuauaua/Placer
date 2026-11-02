@@ -332,11 +332,12 @@ describe('DashboardPage as the Tools page', () => {
     expect(within(actions).getAllByRole('button').map((b) => b.textContent))
       .toEqual(['Create a Tool', 'Explore the map', 'Edit your profile']);
     expect(screen.getByRole('region', { name: 'Getting Started' })).toBeInTheDocument();
-    // Then My Tools, then Popular Templates.
-    const order = ['Getting Started', 'My Tools', 'Popular Templates']
+    // Then My Tools, Tutorials and Popular Templates, in that order.
+    const order = ['Getting Started', 'My Tools', 'Tutorials', 'Popular Templates']
       .map((name) => screen.getByRole('region', { name }));
-    expect(order[0].compareDocumentPosition(order[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(order[1].compareDocumentPosition(order[2]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    for (let i = 1; i < order.length; i++) {
+      expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
     await waitFor(() => expect(readMyProjects).toHaveBeenCalled());
   });
 

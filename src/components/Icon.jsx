@@ -165,6 +165,8 @@ const ICON_ELEMENTS = {
     </>
   ),
   play: <path d="M5 4l4 8m6-8l-4 8M4 12h16M9 12l-1 8M15 12l1 8" />,
+  // A video's play button: a triangle in a circle. (`play` is a playground.)
+  video: <path d="M12 3a9 9 0 110 18 9 9 0 010-18zM10 8.5v7l6-3.5-6-3.5z" />,
   light: <path d="M12 3v2M9 5h6l1 5a4 4 0 01-8 0l1-5zM12 14v7M9 21h6" />,
   cart: (
     <>

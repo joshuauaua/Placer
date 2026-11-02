@@ -6,6 +6,7 @@ import { Btn } from './UI';
 import { CreateToolMenu } from './SideNav';
 import { PopularTemplates } from './PopularTemplates';
 import { MyTools } from './MyTools';
+import { Tutorials } from './Tutorials';
 import { LayeredCircles } from './LayeredCircles';
 import { NotificationItem } from './NotificationItem';
 import {
@@ -192,7 +193,7 @@ function PanelCard({ t, id, title, action, children }) {
  * with two changes: its first shortcut is Create a Tool, opening the same choice of
  * Understand, Re-Imagine and Plan as the side nav's button (`onCreateTool` gets the
  * one picked), and it has no Guide: its Getting Started is always shown, under the
- * shortcuts, with My Tools and Popular Templates after it (`onOpenStartedTool` gets a started
+ * shortcuts, with My Tools, Tutorials and Popular Templates after it (`onOpenStartedTool` gets a started
  * tool's tool id and id, `onOpenTemplate` the template's tool id).
  */
 export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewProject,
@@ -354,6 +355,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
 
         {tools && <MyTools t={t} accountId={accountId}
           onOpen={(toolId, id) => onOpenStartedTool?.(toolId, id)} />}
+        {tools && <Tutorials t={t} />}
         {tools && <PopularTemplates t={t} onOpen={(toolId) => onOpenTemplate?.(toolId)} />}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16,
