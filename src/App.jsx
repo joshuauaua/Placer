@@ -571,6 +571,7 @@ function MainApp({ initialView = 'welcome' }) {
               <Suspense fallback={<LoadingFallback />}>
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
                   variant="tools" onCreateTool={showCreateTool}
+                  onOpenTemplate={(toolId) => navigate(`/toolkit/${encodeURIComponent(toolId)}/configure`)}
                   onNewProject={showNewProject}
                   onSignOut={handleSignOut} onExplore={handleExplore}
                   onOpenPublicProfile={showPublicProfile}

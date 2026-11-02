@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn } from './UI';
 import { CreateToolMenu } from './SideNav';
+import { PopularTemplates } from './PopularTemplates';
 import { LayeredCircles } from './LayeredCircles';
 import { NotificationItem } from './NotificationItem';
 import {
@@ -189,11 +190,12 @@ function PanelCard({ t, id, title, action, children }) {
  * `variant` is 'dashboard', or 'tools' for the Tools page, which is this page for now
  * with two changes: its first shortcut is Create a Tool, opening the same choice of
  * Understand, Re-Imagine and Plan as the side nav's button (`onCreateTool` gets the
- * one picked), and it has no Guide, nor the Getting Started cards the Guide opens.
+ * one picked), and it has no Guide, nor the Getting Started cards the Guide opens, but
+ * Popular Templates in their place (`onOpenTemplate` gets the template's tool id).
  */
 export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewProject,
   onSignOut, onExplore, onOpenPublicProfile, onOpenProject, onOpenProjectPage,
-  onOpenOrganisationPage, variant = 'dashboard', onCreateTool }) {
+  onOpenOrganisationPage, variant = 'dashboard', onCreateTool, onOpenTemplate }) {
   const tools = variant === 'tools';
   const [createOpen, setCreateOpen] = useState(false);
   const createRef = useRef(null);
@@ -329,6 +331,8 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
               onChoose={(category) => { setCreateOpen(false); onCreateTool?.(category); }} />
           )}
         </section>
+
+        {tools && <PopularTemplates t={t} onOpen={(toolId) => onOpenTemplate?.(toolId)} />}
 
         {guideOpen && (
           <section id="dashboard-basics" aria-labelledby="dashboard-basics-title" style={{ marginBottom: 32 }}>

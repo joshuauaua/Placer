@@ -3959,3 +3959,86 @@ a {
     padding: 0 12px !important;
   }
 }
+
+/* PLACER — Popular Templates on the Tools page (components/PopularTemplates.jsx): a
+ * grid of cards, each a picture over its title and the kind of tool it is. */
+.placer-template-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.placer-template-card {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  border-radius: var(--placer-radius-lg);
+  font-family: var(--placer-font);
+  color: var(--placer-ink);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.placer-template-card:hover {
+  box-shadow: var(--placer-shadow);
+  transform: translateY(-2px);
+}
+
+.placer-template-card:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+.placer-template-image {
+  display: block;
+  aspect-ratio: 16 / 10;
+  background: var(--placer-grey-100);
+  overflow: hidden;
+}
+
+.placer-template-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placer-template-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px 16px;
+}
+
+.placer-template-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.placer-template-tool {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-template-card {
+    transition: none;
+  }
+
+  .placer-template-card:hover {
+    transform: none;
+  }
+}

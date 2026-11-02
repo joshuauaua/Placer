@@ -335,6 +335,16 @@ describe('DashboardPage as the Tools page', () => {
     await waitFor(() => expect(readMyProjects).toHaveBeenCalled());
   });
 
+  it('has Popular Templates, each opening its tool', async () => {
+    const onOpenTemplate = vi.fn();
+    setup({ handlers: { variant: 'tools', onOpenTemplate } });
+
+    const templates = screen.getByRole('region', { name: 'Popular Templates' });
+    fireEvent.click(within(templates).getByRole('button', { name: /Community Event Ice-breaker/ }));
+    expect(onOpenTemplate).toHaveBeenCalledWith('pop-quiz');
+    await waitFor(() => expect(readMyProjects).toHaveBeenCalled());
+  });
+
   it('opens Understand, Re-Imagine and Plan from Create a Tool, and creates the kind chosen', async () => {
     const onCreateTool = vi.fn();
     setup({ handlers: { variant: 'tools', onCreateTool } });
@@ -354,6 +364,7 @@ describe('DashboardPage as the Tools page', () => {
 
     expect(within(actions).getAllByRole('button').map((b) => b.textContent))
       .toEqual(['Create a Project', 'Explore the map', 'Edit your profile', 'Guide']);
+    expect(screen.queryByRole('region', { name: 'Popular Templates' })).toBeNull();
     await waitFor(() => expect(readMyProjects).toHaveBeenCalled());
   });
 });
