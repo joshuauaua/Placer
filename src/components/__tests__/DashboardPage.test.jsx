@@ -325,13 +325,18 @@ describe('DashboardPage as the Tools page', () => {
     vi.clearAllMocks();
   });
 
-  it('has Create a Tool in place of Create a Project, and no Guide or Getting Started', async () => {
+  it('has Create a Tool in place of Create a Project, no Guide, and Getting Started always', async () => {
     setup({ handlers: { variant: 'tools', onNewProject: vi.fn(), onCreateTool: vi.fn() } });
     const actions = screen.getByRole('region', { name: 'Quick Actions' });
 
     expect(within(actions).getAllByRole('button').map((b) => b.textContent))
       .toEqual(['Create a Tool', 'Explore the map', 'Edit your profile']);
-    expect(screen.queryByText('Getting Started')).toBeNull();
+    expect(screen.getByRole('region', { name: 'Getting Started' })).toBeInTheDocument();
+    // Then My Tools, then Popular Templates.
+    const order = ['Getting Started', 'My Tools', 'Popular Templates']
+      .map((name) => screen.getByRole('region', { name }));
+    expect(order[0].compareDocumentPosition(order[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(order[1].compareDocumentPosition(order[2]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await waitFor(() => expect(readMyProjects).toHaveBeenCalled());
   });
 

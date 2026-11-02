@@ -392,9 +392,13 @@ function MainApp({ initialView = 'welcome' }) {
           onSearchSelect={({ kind, id }) => showPublicPage(kind, id)}
         />
         <div className="placer-under-glass-nav" style={{ flex: 1, minHeight: 0 }}>
-          <Suspense fallback={<LoadingFallback />}>
-            <ToolConfiguratorPage t={t} profile={profile} />
-          </Suspense>
+          {/* Held back while the session is read: what it opens, and where it keeps
+              what is started, are the account's. */}
+          {identityLoading ? <LoadingFallback /> : (
+            <Suspense fallback={<LoadingFallback />}>
+              <ToolConfiguratorPage t={t} profile={profile} accountId={accountId} />
+            </Suspense>
+          )}
         </div>
       </div>
     );
@@ -572,6 +576,8 @@ function MainApp({ initialView = 'welcome' }) {
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
                   variant="tools" onCreateTool={showCreateTool}
                   onOpenTemplate={(toolId) => navigate(`/toolkit/${encodeURIComponent(toolId)}/configure`)}
+                  onOpenStartedTool={(toolId, id) =>
+                    navigate(`/toolkit/${encodeURIComponent(toolId)}/configure?draft=${encodeURIComponent(id)}`)}
                   onNewProject={showNewProject}
                   onSignOut={handleSignOut} onExplore={handleExplore}
                   onOpenPublicProfile={showPublicProfile}

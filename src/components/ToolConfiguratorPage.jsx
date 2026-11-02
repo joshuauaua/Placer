@@ -25,14 +25,19 @@
  *              with whatever is wrong with it underneath. A tool without a setup says
  *              there is nothing to configure.
  *
+ * Each tool started here is kept (services/startedTools.js) as soon as something in it
+ * is changed, and listed under My Tools on the Tools page. From then on its address
+ * carries its id, ?draft=<id>, which is how My Tools opens it again.
+ *
  * Below 900px any slides become a row over the canvas, and the panel goes under it.
  */
 
 import { Component, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, useSearch } from 'wouter';
 import { Avatar, Btn } from './UI';
 import { Icon } from './Icon';
 import { findCategory, findTool, setupSteps } from '../toolkit/tools';
+import { newId, readStartedTool, saveStartedTool } from '../services/startedTools';
 
 /** The tool id in /toolkit/<id>/configure, or null for any other address. */
 export function configuredToolIdFrom(path) {
@@ -250,9 +255,20 @@ function ConfigPanel({ t, tool, setup, onChange }) {
 }
 
 // Slides need ids of their own, so removing one never confuses which is which.
-let nextSlideId = 1;
 function newSlide(tool) {
-  return { id: `slide-${nextSlideId++}`, setup: tool?.setup?.defaults() ?? null };
+  return { id: newId('slide'), setup: tool?.setup?.defaults() ?? null };
+}
+
+/**
+ * What the page opens on: the started tool in ?draft= when it is this tool's, or a
+ * fresh one, not yet kept, of one slide of the tool's defaults.
+ */
+function opening(tool, accountId, draftId) {
+  const kept = tool && draftId ? readStartedTool(accountId, draftId) : null;
+  if (kept && kept.tool === tool.id && Array.isArray(kept.slides) && kept.slides.length > 0) {
+    return { draftId: kept.id, slides: kept.slides };
+  }
+  return { draftId: null, slides: [newSlide(tool)] };
 }
 
 function SlidesPanel({ tool, slides, selectedId, onSelect, onAdd, onRemove }) {
@@ -292,22 +308,49 @@ function SlidesPanel({ tool, slides, selectedId, onSelect, onAdd, onRemove }) {
   );
 }
 
-export function ToolConfiguratorPage({ t, profile = null }) {
+export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
   const [location, navigate] = useLocation();
+  const search = useSearch();
   const tool = findTool(configuredToolIdFrom(location));
   const Tool = tool?.component;
+  const requestedDraft = new URLSearchParams(search).get('draft');
 
-  // The tool's slides, each with its own setup, and the one on the canvas.
-  const [slides, setSlides] = useState(() => [newSlide(tool)]);
-  const [selectedId, setSelectedId] = useState(() => slides[0].id);
-  // Another tool, from the same page: start again from one slide of its defaults.
+  // The tool's slides, each with its own setup, and the one on the canvas; and the id
+  // it is kept under, null until it has been changed and so kept.
+  const [start] = useState(() => opening(tool, accountId, requestedDraft));
+  const [draftId, setDraftId] = useState(start.draftId);
+  const [slides, setSlidesNow] = useState(start.slides);
+  const [selectedId, setSelectedId] = useState(() => start.slides[0].id);
+  const [changed, setChanged] = useState(false);
+  // Another tool, from the same page: start again on it.
   const [slidesFor, setSlidesFor] = useState(tool?.id ?? null);
   if ((tool?.id ?? null) !== slidesFor) {
-    const first = newSlide(tool);
+    const next = opening(tool, accountId, requestedDraft);
     setSlidesFor(tool?.id ?? null);
-    setSlides([first]);
-    setSelectedId(first.id);
+    setDraftId(next.draftId);
+    setSlidesNow(next.slides);
+    setSelectedId(next.slides[0].id);
+    setChanged(false);
   }
+  // Every change to the slides goes through here, which is what starts keeping them.
+  const setSlides = (update) => {
+    setSlidesNow(update);
+    setChanged(true);
+  };
+
+  // Keep the tool once something has changed, and from then on with every change. The
+  // first time, it gets its id, and the address takes it, in place.
+  useEffect(() => {
+    if (!changed || !tool) return;
+    const id = draftId ?? newId('tool');
+    saveStartedTool(accountId, { id, tool: tool.id, slides });
+    if (!draftId) {
+      setDraftId(id);
+      const query = new URLSearchParams(search);
+      query.set('draft', id);
+      navigate(`${location}?${query.toString()}`, { replace: true });
+    }
+  }, [changed, slides]); // eslint-disable-line react-hooks/exhaustive-deps
   const selected = slides.find((slide) => slide.id === selectedId) ?? slides[0];
   const setup = selected.setup;
   const setSetup = (next) => setSlides((all) => all.map((slide) => (slide.id === selected.id ? { ...slide, setup: next } : slide)));

@@ -5,6 +5,7 @@ import { memoryLocation } from 'wouter/memory-location';
 import { ToolConfiguratorPage, configuredToolIdFrom } from '../ToolConfiguratorPage';
 import { ToolkitPage } from '../ToolkitPage';
 import { THEME } from '../../theme';
+import { listStartedTools, saveStartedTool } from '../../services/startedTools';
 
 // The Poll's question, as its setup form in the Configuration panel labels it.
 const QUESTION_LABEL = 'The question';
@@ -95,6 +96,31 @@ describe('ToolConfiguratorPage', () => {
 
     expect(within(slides).getAllByRole('button', { name: /^Slide \d$/ })).toHaveLength(1);
     expect(within(slides).getByRole('button', { name: 'Slide 1' })).toHaveAttribute('aria-current', 'true');
+    expect(panelQuestion()).toHaveValue('Trees or benches?');
+  });
+
+  it('keeps a tool once something in it changes, not before, and gives its address the id', () => {
+    localStorage.clear();
+    const { location } = renderAt('/toolkit/open-vote/configure', ToolConfiguratorPage, { accountId: 'acc' });
+    expect(listStartedTools('acc')).toEqual([]);
+
+    fireEvent.change(panelQuestion(), { target: { value: 'Trees or benches?' } });
+    const [kept] = listStartedTools('acc');
+    expect(kept.tool).toBe('open-vote');
+    expect(kept.slides[0].setup.question).toBe('Trees or benches?');
+    expect(location.history.at(-1)).toBe(`/toolkit/open-vote/configure?draft=${kept.id}`);
+  });
+
+  it('opens a started tool again from its id, slides and all', () => {
+    localStorage.clear();
+    saveStartedTool('acc', { id: 'poll-1', tool: 'open-vote', slides: [
+      { id: 's1', setup: { question: 'Trees or benches?', answers: ['Trees', 'Benches'] } },
+      { id: 's2', setup: { question: 'More light?', answers: ['Yes', 'No'] } },
+    ] });
+    renderAt('/toolkit/open-vote/configure?draft=poll-1', ToolConfiguratorPage, { accountId: 'acc' });
+
+    expect(within(screen.getByRole('navigation', { name: 'Slides' })).getAllByRole('button', { name: /^Slide \d$/ }))
+      .toHaveLength(2);
     expect(panelQuestion()).toHaveValue('Trees or benches?');
   });
 

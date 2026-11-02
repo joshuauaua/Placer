@@ -5,6 +5,7 @@ import { Icon } from './Icon';
 import { Btn } from './UI';
 import { CreateToolMenu } from './SideNav';
 import { PopularTemplates } from './PopularTemplates';
+import { MyTools } from './MyTools';
 import { LayeredCircles } from './LayeredCircles';
 import { NotificationItem } from './NotificationItem';
 import {
@@ -190,12 +191,13 @@ function PanelCard({ t, id, title, action, children }) {
  * `variant` is 'dashboard', or 'tools' for the Tools page, which is this page for now
  * with two changes: its first shortcut is Create a Tool, opening the same choice of
  * Understand, Re-Imagine and Plan as the side nav's button (`onCreateTool` gets the
- * one picked), and it has no Guide, nor the Getting Started cards the Guide opens, but
- * Popular Templates in their place (`onOpenTemplate` gets the template's tool id).
+ * one picked), and it has no Guide: its Getting Started is always shown, under the
+ * shortcuts, with My Tools and Popular Templates after it (`onOpenStartedTool` gets a started
+ * tool's tool id and id, `onOpenTemplate` the template's tool id).
  */
 export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewProject,
   onSignOut, onExplore, onOpenPublicProfile, onOpenProject, onOpenProjectPage,
-  onOpenOrganisationPage, variant = 'dashboard', onCreateTool, onOpenTemplate }) {
+  onOpenOrganisationPage, variant = 'dashboard', onCreateTool, onOpenTemplate, onOpenStartedTool }) {
   const tools = variant === 'tools';
   const [createOpen, setCreateOpen] = useState(false);
   const createRef = useRef(null);
@@ -258,7 +260,8 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
 
   // Getting Started shows for the first few visits; after that it lives in the Guide shortcut.
   const [visits] = useState(() => countDashboardVisit(accountId));
-  const [guideOpen, setGuideOpen] = useState(!tools && visits <= GETTING_STARTED_VISITS);
+  // The Tools page has no Guide, so its Getting Started is always there.
+  const [guideOpen, setGuideOpen] = useState(tools || visits <= GETTING_STARTED_VISITS);
   const [tab, setTab] = useState('steps'); // 'steps' | 'activity'
 
   const name = profile?.name ?? '';
@@ -332,8 +335,6 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
           )}
         </section>
 
-        {tools && <PopularTemplates t={t} onOpen={(toolId) => onOpenTemplate?.(toolId)} />}
-
         {guideOpen && (
           <section id="dashboard-basics" aria-labelledby="dashboard-basics-title" style={{ marginBottom: 32 }}>
             <SectionLabel t={t} id="dashboard-basics-title">Getting Started</SectionLabel>
@@ -350,6 +351,10 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
             </div>
           </section>
         )}
+
+        {tools && <MyTools t={t} accountId={accountId}
+          onOpen={(toolId, id) => onOpenStartedTool?.(toolId, id)} />}
+        {tools && <PopularTemplates t={t} onOpen={(toolId) => onOpenTemplate?.(toolId)} />}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16,
           marginBottom: 48 }}>

@@ -4023,6 +4023,11 @@ a {
   font-size: 16px;
   font-weight: 700;
   line-height: 1.3;
+  /* Two lines at most: a started tool's title is whatever its first slide asks. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .placer-template-tool {
@@ -4041,4 +4046,26 @@ a {
   .placer-template-card:hover {
     transform: none;
   }
+}
+
+/* PLACER — My Tools on the Tools page (components/MyTools.jsx): the same cards as the
+ * templates, with the tool's icon on its category's colour in place of a picture. */
+.placer-started-cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placer-started-details {
+  font-size: 13px;
+  color: var(--placer-grey-700);
+}
+
+.placer-started-empty {
+  margin: 0;
+  padding: 20px;
+  border: 1px dashed var(--placer-grey-300);
+  border-radius: var(--placer-radius-lg);
+  font-size: 14px;
+  color: var(--placer-grey-700);
 }
