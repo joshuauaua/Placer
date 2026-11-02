@@ -69,6 +69,11 @@
  * under who made it wherever the tool describes itself (ToolCover, ToolLayout,
  * ConfigureToolDialog).
  *
+ * `slides` is optional: true for a tool that can run as several slides, each the tool
+ * with a setup of its own — a Poll asking one question after another. Its configuration
+ * page (ToolConfiguratorPage) then has a Slides panel for adding, picking and removing
+ * them. Without it the tool is configured as one.
+ *
  * `Preview` is optional: a small component, { t }, shown in ConfigureToolDialog's
  * introduction under the blurb — the tool at work, before anything is set up.
  *

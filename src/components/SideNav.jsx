@@ -1,10 +1,11 @@
 /* PLACER — the side nav, down the left edge for anyone who is signed in.
  *
  * The places someone with an account goes back to: their dashboard, the map, their
- * projects, their organisations (once they run one) and the Toolkit, under a primary button for starting a new project,
- * with their settings apart from the rest at the bottom and, under them, small links to
- * the Guides, the FAQ and the terms, which the footer had before it went for anyone
- * signed in. It sits under the glass
+ * projects, their organisations (once they run one) and the Toolkit, under a primary button for creating a tool —
+ * a dropdown of the Toolkit's three kinds, Understand, Re-Imagine and Plan (CreateToolMenu) —
+ * with small links to the Guides, the FAQ and the terms (which the footer had before it
+ * went for anyone signed in) low down above a line, and their settings under that line
+ * at the very bottom. It sits under the glass
  * nav bar rather than beside it, so the bar still spans the full width, and it
  * stops where the page does, so the footer does too. The button at its top
  * collapses it to a rail of icons. Below 1024px it becomes the glass tab bar
@@ -17,8 +18,11 @@
  * reached from Projects, so Projects stays marked while it is open.
  */
 
-import { useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
+import { findCategory } from '../toolkit/tools';
+import { isNewProjectShortcut } from '../lib/shortcuts';
 
 // Collapsed or not is a per-browser convenience, so it lives in localStorage and
 // every read and write is allowed to fail — a private window just starts expanded.
@@ -60,7 +64,7 @@ function NavLabel({ label, short }) {
  * `expanded` holds it open whatever was chosen, without forgetting the choice: the
  * welcome tour sets it, so the places it points at are there with their names.
  */
-// The small links under Settings. Desktop only: the phone's tab bar has no room, and a
+// The small links above Settings. Desktop only: the phone's tab bar has no room, and a
 // collapsed rail has no room for their words.
 const SMALL_LINKS = [
   { label: 'Guides', view: 'guides' },
@@ -68,9 +72,126 @@ const SMALL_LINKS = [
   { label: 'Terms and Privacy', view: 'terms' },
 ];
 
-export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganisations = false, expanded = false }) {
+// What Create a tool offers: one of the Toolkit's categories each. Imagine reads as
+// Re-Imagine here, the verb for what the tools of that kind are for. Each has a few
+// words of its own rather than the category's full description, to fit a card.
+const TOOL_KINDS = [
+  { category: 'understand', label: 'Understand', hint: 'How a place is used', icon: 'eye' },
+  { category: 'imagine', label: 'Re-Imagine', hint: 'How it could change', icon: 'sparkle' },
+  { category: 'plan', label: 'Plan', hint: 'Shape the change', icon: 'layers' },
+];
+
+// The menu's width: three cards side by side, narrower if the window is.
+const MENU_WIDTH = 456;
+
+/**
+ * The dropdown off Create a tool, its three choices side by side as cards. It is drawn into document.body, fixed beside the
+ * button, because the side nav scrolls (overflow-y: auto) and would clip anything
+ * hanging out of it: under the button in the side nav, above it in the phone's tab
+ * bar. Escape or a press anywhere else closes it, the same as UserMenu.
+ */
+function CreateToolMenu({ anchor, onChoose, onClose }) {
+  const menuRef = useRef(null);
+  const [place, setPlace] = useState(null);
+
+  // Layout effects, so the menu is placed and its first choice focused before the
+  // browser paints or takes the next key: an arrow pressed straight after N still lands.
+  useLayoutEffect(() => {
+    const measure = () => {
+      const rect = anchor.current?.getBoundingClientRect();
+      if (!rect) return;
+      const above = rect.top > window.innerHeight / 2;
+      const width = Math.min(MENU_WIDTH, window.innerWidth - 16);
+      const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
+      setPlace(above
+        ? { left, width, bottom: window.innerHeight - rect.top + 8 }
+        : { left, width, top: rect.bottom + 8 });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [anchor]);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape') return;
+      onClose();
+      anchor.current?.focus();
+    };
+    const onPointerDown = (e) => {
+      if (menuRef.current?.contains(e.target) || anchor.current?.contains(e.target)) return;
+      onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('mousedown', onPointerDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('mousedown', onPointerDown);
+    };
+  }, [anchor, onClose]);
+
+  // The first choice takes focus once the menu is placed, so it can be used from the keyboard.
+  useLayoutEffect(() => {
+    if (place) menuRef.current?.querySelector('[role="menuitem"]')?.focus();
+  }, [Boolean(place)]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The arrow keys move between the choices: left and right, as they are laid out, and
+  // up and down as well.
+  const onMenuKeyDown = (e) => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const items = [...menuRef.current.querySelectorAll('[role="menuitem"]')];
+    const at = items.indexOf(document.activeElement);
+    const next = (at + step + items.length) % items.length;
+    items[next]?.focus();
+  };
+
+  return createPortal(
+    <div ref={menuRef} role="menu" aria-label="Create a tool" onKeyDown={onMenuKeyDown}
+      className="placer-create-tool-menu"
+      style={{ ...place, visibility: place ? 'visible' : 'hidden' }}>
+      {TOOL_KINDS.map(({ category, label, hint, icon }) => {
+        const kind = findCategory(category);
+        return (
+          <button key={category} role="menuitem" onClick={() => onChoose(category)}
+            className="placer-create-tool-item">
+            <span className="placer-create-tool-icon"
+              style={{ background: kind?.colour?.c100, color: kind?.colour?.c900 }}>
+              <Icon name={icon} size={18} stroke={2} />
+            </span>
+            <span className="placer-create-tool-label">{label}</span>
+            <span className="placer-create-tool-description">{hint}</span>
+          </button>
+        );
+      })}
+    </div>,
+    document.body,
+  );
+}
+
+export function SideNav({ view, onNavigate, onExplore, onCreateTool, showOrganisations = false, expanded = false }) {
   const [chosenCollapsed, setCollapsed] = useState(readCollapsed);
   const collapsed = chosenCollapsed && !expanded;
+
+  // Create a tool's dropdown, which N opens too, for anyone signed in (the side nav
+  // is only there for them) — never while something is being typed (lib/shortcuts.js).
+  const [menuOpen, setMenuOpen] = useState(false);
+  const createRef = useRef(null);
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (!isNewProjectShortcut(e)) return;
+      e.preventDefault();
+      setMenuOpen(true);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+  const closeMenu = () => setMenuOpen(false);
+  const chooseKind = (category) => {
+    setMenuOpen(false);
+    onCreateTool?.(category);
+  };
 
   const toggle = () => {
     writeCollapsed(!collapsed);
@@ -78,7 +199,7 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganis
   };
 
   const items = [
-    // First, straight under New project: the dashboard is home for a signed-in account.
+    // First, straight under Create a tool: the dashboard is home for a signed-in account.
     { key: 'dashboard', label: 'Dashboard', short: 'Home', icon: 'home', onSelect: () => onNavigate('dashboard'), active: ['dashboard', 'activity'] },
     { key: 'map', label: 'Explore', icon: 'pin', onSelect: onExplore, active: ['map'] },
     { key: 'projects', label: 'Projects', icon: 'grid', onSelect: () => onNavigate('projects'), active: ['projects', 'projectDashboard'] },
@@ -89,6 +210,24 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganis
     { key: 'toolkit', label: 'Toolkit', icon: 'flask', onSelect: () => onNavigate('toolkit'), active: ['toolkit'] },
     { key: 'settings', label: 'Settings', icon: 'gear', onSelect: () => onNavigate('settings'), active: ['settings'], bottom: true },
   ];
+
+  const renderItem = (item) => {
+    const current = item.active.includes(view);
+    return (
+      <button
+        key={item.key}
+        onClick={item.onSelect}
+        aria-label={item.label}
+        aria-current={current ? 'page' : undefined}
+        data-tour={item.key}
+        title={item.label}
+        className={`placer-side-nav-link${item.bottom ? ' placer-side-nav-bottom' : ''}`}
+      >
+        <Icon name={item.icon} size={20} stroke={2} />
+        <NavLabel label={item.label} short={item.short} />
+      </button>
+    );
+  };
 
   return (
     <nav aria-label="App" className={`placer-side-nav${collapsed ? ' is-collapsed' : ''}`}
@@ -104,35 +243,22 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganis
       </button>
 
       <button
-        onClick={onNewProject}
-        aria-label="New project"
+        ref={createRef}
+        onClick={() => setMenuOpen((open) => !open)}
+        aria-label="Create a tool"
         aria-keyshortcuts="N"
-        aria-current={view === 'projectNew' ? 'page' : undefined}
-        data-tour="newProject"
-        title="New project (N)"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        data-tour="createTool"
+        title="Create a tool (N)"
         className="placer-side-nav-link placer-side-nav-primary"
       >
         <Icon name="plus" size={20} stroke={2.2} />
-        <NavLabel label="New project" short="New" />
+        <NavLabel label="Create a tool" short="Create" />
       </button>
+      {menuOpen && <CreateToolMenu anchor={createRef} onChoose={chooseKind} onClose={closeMenu} />}
 
-      {items.map((item) => {
-        const current = item.active.includes(view);
-        return (
-          <button
-            key={item.key}
-            onClick={item.onSelect}
-            aria-label={item.label}
-            aria-current={current ? 'page' : undefined}
-            data-tour={item.key}
-            title={item.label}
-            className={`placer-side-nav-link${item.bottom ? ' placer-side-nav-bottom' : ''}`}
-          >
-            <Icon name={item.icon} size={20} stroke={2} />
-            <NavLabel label={item.label} short={item.short} />
-          </button>
-        );
-      })}
+      {items.filter((item) => !item.bottom).map(renderItem)}
 
       <ul className="placer-side-nav-small">
         {SMALL_LINKS.map(({ label, view: target }) => (
@@ -145,6 +271,8 @@ export function SideNav({ view, onNavigate, onExplore, onNewProject, showOrganis
           </li>
         ))}
       </ul>
+
+      {items.filter((item) => item.bottom).map(renderItem)}
     </nav>
   );
 }

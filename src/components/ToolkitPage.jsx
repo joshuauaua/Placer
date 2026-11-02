@@ -244,8 +244,20 @@ export function ToolkitPage({ t, displayName = null }) {
   const [contributing, setContributing] = useState(false);
 
   // The gallery's filters. Held here rather than in the URL: they are a
-  // way of browsing, not something worth a link of its own.
-  const [filters, setFilters] = useState(NO_FILTERS);
+  // way of browsing, not something worth a link of its own. The one exception is
+  // ?category=, which the side nav's Create a tool menu opens the gallery on: it picks
+  // the category to start from, each time it changes, and the toolbar takes over after.
+  // Arrived from Create a tool (?create): a tool opens into its configuration page
+  // (ToolConfiguratorPage) rather than onto its cover.
+  const creating = new URLSearchParams(search).has('create');
+  const openTool = (id) => navigate(creating ? `/toolkit/${id}/configure` : `/toolkit/${id}`);
+  const requestedCategory = findCategory(new URLSearchParams(search).get('category'))?.id ?? null;
+  const [filters, setFilters] = useState(() => ({ ...NO_FILTERS, category: requestedCategory }));
+  const [appliedCategory, setAppliedCategory] = useState(requestedCategory);
+  if (requestedCategory !== appliedCategory) {
+    setAppliedCategory(requestedCategory);
+    if (requestedCategory) setFilters({ ...NO_FILTERS, category: requestedCategory });
+  }
   const [sort, setSort] = useState({ id: SORTS[0].id, direction: SORTS[0].direction });
   const [favourites, toggleFavourite] = useFavourites('placer_toolkit_favourites');
   const [favouritesOnly, setFavouritesOnly] = useState(false);
@@ -353,7 +365,7 @@ export function ToolkitPage({ t, displayName = null }) {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
                     {inCategory.map((entry) => (
                       <div key={entry.id} style={{ position: 'relative', display: 'flex', alignSelf: 'start' }}>
-                        <Tile t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
+                        <Tile t={t} tool={entry} onOpen={() => openTool(entry.id)} />
                         <FavouriteButton t={t} name={entry.name} favourite={favourites.includes(entry.id)}
                           onToggle={() => toggleFavourite(entry.id)}
                           style={{ position: 'absolute', right: 0, bottom: -7 }} />
@@ -365,7 +377,7 @@ export function ToolkitPage({ t, displayName = null }) {
                     {inCategory.map((entry) => (
                       <div key={entry.id} style={{ display: 'flex', alignItems: 'center',
                         borderBottom: `1px solid ${t.line}` }}>
-                        <Row t={t} tool={entry} onOpen={() => navigate(`/toolkit/${entry.id}`)} />
+                        <Row t={t} tool={entry} onOpen={() => openTool(entry.id)} />
                         <FavouriteButton t={t} name={entry.name} favourite={favourites.includes(entry.id)}
                           onToggle={() => toggleFavourite(entry.id)} style={{ margin: '0 12px' }} />
                       </div>

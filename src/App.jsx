@@ -18,8 +18,7 @@ import { SiteFooter } from './components/SiteFooter';
 import { SideNav } from './components/SideNav';
 import { useIdentity } from './components/useIdentity';
 import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
-import { isNewProjectShortcut } from './lib/shortcuts';
-import { CASE_STUDY_FORM_PATH, isFullScreenTool } from './lib/routes';
+import { CASE_STUDY_FORM_PATH, isFullScreenTool, isToolConfigurator } from './lib/routes';
 import { WelcomeTour } from './components/WelcomeTour';
 
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -35,6 +34,7 @@ const QuickstartPage = lazy(() => import('./components/QuickstartPage'));
 const ContactPage = lazy(() => import('./components/ContactPage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const ToolkitPage = lazy(() => import('./components/ToolkitPage'));
+const ToolConfiguratorPage = lazy(() => import('./components/ToolConfiguratorPage'));
 const JoinPage = lazy(() => import('./components/JoinPage'));
 const DashboardPage = lazy(() => import('./components/DashboardPage'));
 const ActivityPage = lazy(() => import('./components/ActivityPage'));
@@ -264,21 +264,6 @@ function MainApp({ initialView = 'welcome' }) {
   const scrollPageToTop = () => document.querySelector('.placer-scroll-view')?.scrollTo?.(0, 0);
   useEffect(() => { scrollPageToTop(); }, [view, location]);
 
-  // N starts a new project, for anyone with the side nav's New project button to press
-  // — never while something is being typed (lib/shortcuts.js).
-  const canStartProject = !identityLoading && Boolean(profile);
-  useEffect(() => {
-    if (!canStartProject) return undefined;
-    const onKeyDown = (e) => {
-      if (!isNewProjectShortcut(e) || view === 'projectNew') return;
-      e.preventDefault();
-      navigate('/projects/new');
-      scrollPageToTop();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [canStartProject, view, navigate]);
-
   // The side nav is fixed and runs from the nav bar down to the footer: as the footer
   // comes up into the window, tell the CSS how much of the window it has taken.
   useEffect(() => {
@@ -385,6 +370,29 @@ function MainApp({ initialView = 'welcome' }) {
 
   // A full-screen tool, started, has the whole window: no nav bar, no side nav and no
   // footer, the tool's own top bar the only chrome (FULL_SCREEN_TOOLS, lib/routes.js).
+  // Configuring a tool keeps the nav bar, with its own top bar under it, but has the
+  // rest of the window for its canvas and panel: no side nav and no footer.
+  if (isToolConfigurator(location)) {
+    return (
+      <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', background: t.page, color: t.ink }}>
+        <GlassNavbar
+          t={t}
+          profile={profile}
+          loading={identityLoading}
+          onNavigate={show}
+          onSignIn={handleLogIn}
+          onCreateAccount={handleCreateAccount}
+          onSignOut={handleSignOut}
+          onSearchSelect={({ kind, id }) => showPublicPage(kind, id)}
+        />
+        <div className="placer-under-glass-nav" style={{ flex: 1, minHeight: 0 }}>
+          <Suspense fallback={<LoadingFallback />}>
+            <ToolConfiguratorPage t={t} />
+          </Suspense>
+        </div>
+      </div>
+    );
+  }
   if (isFullScreenTool(location, search)) {
     return (
       <Suspense fallback={<LoadingFallback />}>
@@ -420,7 +428,8 @@ function MainApp({ initialView = 'welcome' }) {
             <SideNav t={t} view={view}
               onNavigate={(next) => { show(next); scrollPageToTop(); }}
               onExplore={() => { handleExplore(); scrollPageToTop(); }}
-              onNewProject={() => { showNewProject(); scrollPageToTop(); }} showOrganisations={isSupabaseConfigured()}
+              onCreateTool={(category) => { navigate(`/toolkit?category=${encodeURIComponent(category)}&create`); scrollPageToTop(); }}
+              showOrganisations={isSupabaseConfigured()}
               expanded={tourOpen} />
           )}
 

@@ -4,7 +4,7 @@ import { SideNav } from '../SideNav';
 import { THEME } from '../../theme';
 
 function setup(props = {}) {
-  const handlers = { onNavigate: vi.fn(), onExplore: vi.fn(), onNewProject: vi.fn() };
+  const handlers = { onNavigate: vi.fn(), onExplore: vi.fn(), onCreateTool: vi.fn() };
   render(<SideNav t={THEME} view="welcome" {...handlers} {...props} />);
   return handlers;
 }
@@ -14,15 +14,15 @@ describe('SideNav', () => {
     localStorage.clear();
   });
 
-  it('puts the collapse toggle and New project first, then the dashboard, then the other places', () => {
+  it('puts the collapse toggle and Create a tool first, then the dashboard, then the other places', () => {
     setup();
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
-      .toEqual(['Collapse side nav', 'New project', 'Dashboard', 'Explore', 'Projects', 'Toolkit', 'Settings',
-        'Guides', 'FAQ', 'Terms and Privacy']);
+      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Explore', 'Projects', 'Toolkit',
+        'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
   });
 
-  it('opens the Guides, the FAQ and the terms from the small links under Settings', () => {
+  it('opens the Guides, the FAQ and the terms from the small links above Settings', () => {
     const { onNavigate } = setup({ view: 'faq' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Guides' }));
@@ -35,8 +35,8 @@ describe('SideNav', () => {
     const { onNavigate } = setup({ showOrganisations: true });
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
-      .toEqual(['Collapse side nav', 'New project', 'Dashboard', 'Explore', 'Projects', 'Organisations', 'Toolkit', 'Settings',
-        'Guides', 'FAQ', 'Terms and Privacy']);
+      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Explore', 'Projects', 'Organisations', 'Toolkit',
+        'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
     fireEvent.click(screen.getByRole('button', { name: 'Organisations' }));
     expect(onNavigate).toHaveBeenCalledWith('organisations');
   });
@@ -71,7 +71,7 @@ describe('SideNav', () => {
 
   it('is held expanded for the welcome tour without forgetting it was collapsed', () => {
     localStorage.setItem('placer_side_nav_collapsed', 'true');
-    const handlers = { onNavigate: vi.fn(), onExplore: vi.fn(), onNewProject: vi.fn() };
+    const handlers = { onNavigate: vi.fn(), onExplore: vi.fn(), onCreateTool: vi.fn() };
     const { rerender } = render(<SideNav t={THEME} view="dashboard" {...handlers} expanded />);
     const nav = screen.getByRole('navigation', { name: 'App' });
 
@@ -83,19 +83,47 @@ describe('SideNav', () => {
   });
 
   it('wires each item to its own handler', () => {
-    const { onNavigate, onExplore, onNewProject } = setup();
+    const { onNavigate, onExplore } = setup();
 
     fireEvent.click(screen.getByRole('button', { name: 'Explore' }));
     expect(onExplore).toHaveBeenCalledTimes(1);
-
-    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
-    expect(onNewProject).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole('button', { name: 'Projects' }));
     fireEvent.click(screen.getByRole('button', { name: 'Toolkit' }));
     fireEvent.click(screen.getByRole('button', { name: 'Dashboard' }));
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['projects', 'toolkit', 'dashboard', 'settings']);
+  });
+
+  it('opens a menu of Understand, Re-Imagine and Plan from Create a tool, and creates the kind chosen', () => {
+    const { onCreateTool } = setup();
+    const create = screen.getByRole('button', { name: 'Create a tool' });
+
+    expect(screen.queryByRole('menu')).toBeNull();
+    fireEvent.click(create);
+    expect(create).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getAllByRole('menuitem').map((item) => item.querySelector('.placer-create-tool-label').textContent))
+      .toEqual(['Understand', 'Re-Imagine', 'Plan']);
+    expect(screen.getAllByRole('menuitem').map((item) => item.querySelector('.placer-create-tool-description').textContent))
+      .toEqual(['How a place is used', 'How it could change', 'Shape the change']);
+
+    fireEvent.click(screen.getByRole('menuitem', { name: /Re-Imagine/ }));
+    expect(onCreateTool).toHaveBeenCalledWith('imagine');
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('closes the Create a tool menu on Escape or a press elsewhere, and opens it with N', () => {
+    const { onCreateTool } = setup();
+
+    fireEvent.keyDown(document.body, { key: 'n' });
+    expect(screen.getByRole('menu', { name: 'Create a tool' })).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('menu')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create a tool' }));
+    fireEvent.mouseDown(screen.getByRole('button', { name: 'Settings' }));
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(onCreateTool).not.toHaveBeenCalled();
   });
 
   it('marks the current view, and keeps Projects marked on a project dashboard', () => {
@@ -112,7 +140,7 @@ describe('SideNav on a phone', () => {
   it('has a short label for each tab whose full one would not fit, keeping the full name for screen readers', () => {
     setup({ showOrganisations: true });
 
-    for (const [full, short] of [['New project', 'New'], ['Dashboard', 'Home'], ['Organisations', 'Orgs']]) {
+    for (const [full, short] of [['Create a tool', 'Create'], ['Dashboard', 'Home'], ['Organisations', 'Orgs']]) {
       const button = screen.getByRole('button', { name: full });
       expect(button.querySelector('.placer-side-nav-label-long')).toHaveTextContent(full);
       expect(button.querySelector('.placer-side-nav-label-short')).toHaveTextContent(short);
