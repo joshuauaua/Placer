@@ -3560,13 +3560,6 @@ a {
   text-overflow: ellipsis;
 }
 
-.placer-configurator-tag {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
 .placer-configurator-notice {
   font-size: 13px;
   color: var(--placer-grey-700);
@@ -3958,7 +3951,6 @@ a {
 }
 
 @media (max-width: 599px) {
-  .placer-configurator-tag,
   .placer-configurator-btn-label {
     display: none;
   }

@@ -8,7 +8,7 @@
  *              slide, pick one to show it on the canvas and configure it in the panel,
  *              or remove one while there are others. It starts with one. Any other
  *              tool is configured as that one slide, with no panel.
- *   top bar  — back to the Toolkit, the tool's name and category, then the avatars
+ *   top bar  — back to the Toolkit, the tool's name, then the avatars
  *              of the tool's collaborators, a ⋯ menu of its settings, Preview (the
  *              tool as it would look on a desktop and on a phone) and, at the
  *              right-hand end, Publish (put the tool live). A tool has no collaborators
@@ -189,7 +189,6 @@ function SettingsMenu({ onChoose }) {
 }
 
 function TopBar({ t, tool, people, notice, onBack, onSetting, onPreview, onPublish }) {
-  const category = findCategory(tool?.category);
   return (
     <header aria-label="Configure a tool" className="placer-configurator-bar">
       <div className="placer-configurator-bar-start">
@@ -198,9 +197,6 @@ function TopBar({ t, tool, people, notice, onBack, onSetting, onPreview, onPubli
         {tool && (
           <div className="placer-configurator-title">
             <span className="placer-configurator-name">{tool.name}</span>
-            {category && (
-              <span className="placer-configurator-tag" style={{ color: category.colour.c700 }}>{category.name}</span>
-            )}
           </div>
         )}
       </div>

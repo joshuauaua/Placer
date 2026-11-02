@@ -34,7 +34,8 @@ describe('ToolConfiguratorPage', () => {
 
     const bar = screen.getByRole('banner', { name: 'Configure a tool' });
     expect(within(bar).getByText('Co-Budget')).toBeInTheDocument();
-    expect(within(bar).getByText('Plan')).toBeInTheDocument();
+    // Its name only: the category is not shown here.
+    expect(within(bar).queryByText('Plan')).toBeNull();
     expect(within(bar).getAllByRole('button').map((b) => b.getAttribute('aria-label')))
       .toEqual(['Back to the Toolkit', 'Tool settings', 'Preview', 'Publish']);
 
