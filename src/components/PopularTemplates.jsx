@@ -1,4 +1,5 @@
-/* PLACER — Popular Templates, on the Tools page: a card each, with its picture, its
+/* PLACER — Popular Templates, on the Tools page: a card each, with its picture (or its
+ * tool's category colour standing in for one), its
  * title and, under that, the kind of tool it is, in its category's colour. Choosing
  * one calls `onOpen` with the tool's id. The register is toolkit/templates.js. */
 
@@ -17,10 +18,15 @@ function TemplateCard({ template, onOpen }) {
     <li>
       <button type="button" {...ARROW_ITEM} onClick={() => onOpen(tool.id)} className="placer-template-card"
         aria-label={`${template.title}, ${tool.name}`}>
-        <span className="placer-template-image">
-          <img {...bundledImage(template.image.small, template.image.large, CARD_SIZES)}
-            alt={template.image.alt} loading="lazy" />
-        </span>
+        {template.image ? (
+          <span className="placer-template-image">
+            <img {...bundledImage(template.image.small, template.image.large, CARD_SIZES)}
+              alt={template.image.alt} loading="lazy" />
+          </span>
+        ) : (
+          // A placeholder until the template has a picture: its tool's category colour.
+          <span className="placer-template-image" style={{ background: colour?.c100 }} />
+        )}
         <span className="placer-template-text">
           <span className="placer-template-title">{template.title}</span>
           <span className="placer-template-tool" style={{ color: colour?.c700 }}>

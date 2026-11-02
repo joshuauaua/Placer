@@ -13,12 +13,14 @@ describe('TEMPLATES', () => {
 });
 
 describe('PopularTemplates', () => {
-  it('shows a card per template, with its picture, its title and the kind of tool it is', () => {
+  it('shows a card per template, with its title and the kind of tool it is, and its colour for a picture', () => {
     render(<PopularTemplates t={THEME} onOpen={vi.fn()} />);
     const section = screen.getByRole('region', { name: 'Popular Templates' });
 
     const card = within(section).getByRole('button', { name: 'Interior Shared Space Ideation, Idea Visualizer' });
-    expect(within(card).getByRole('img')).toHaveAttribute('alt');
+    // No pictures yet: a block of the tool's category colour stands in.
+    expect(within(card).queryByRole('img')).toBeNull();
+    expect(card.querySelector('.placer-template-image')).toHaveStyle({ background: 'rgb(255, 217, 184)' });
     expect(card).toHaveTextContent('Interior Shared Space Ideation');
     expect(card).toHaveTextContent('Idea Visualizer');
     expect(within(section).getByRole('button', { name: 'Split a group budget for an event, Co-Budget' })).toBeInTheDocument();
