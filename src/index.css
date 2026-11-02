@@ -3967,8 +3967,22 @@ a {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  /* Four across, so a row of cards spans the page as Getting Started's does, however
+     wide the window; two on narrower screens, one on a phone. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
+}
+
+@media (max-width: 1099px) {
+  .placer-template-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 599px) {
+  .placer-template-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .placer-template-card {
