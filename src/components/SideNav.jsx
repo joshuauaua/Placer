@@ -1,7 +1,7 @@
 /* PLACER — the side nav, down the left edge for anyone who is signed in.
  *
  * The places someone with an account goes back to: their dashboard, the map, their
- * projects, their organisations (once they run one) and the Toolkit, under a primary button for creating a tool —
+ * projects, their organisations (once they run one), the Toolkit and their Tools, under a primary button for creating a tool —
  * a dropdown of the Toolkit's three kinds, Understand, Re-Imagine and Plan (CreateToolMenu) —
  * with small links to the Guides, the FAQ and the terms (which the footer had before it
  * went for anyone signed in) low down above a line, and their settings under that line
@@ -208,6 +208,9 @@ export function SideNav({ view, onNavigate, onExplore, onCreateTool, showOrganis
     ...(showOrganisations ? [{ key: 'organisations', label: 'Organisations', short: 'Orgs', icon: 'building',
       onSelect: () => onNavigate('organisations'), active: ['organisations', 'organisationNew', 'organisationDashboard'] }] : []),
     { key: 'toolkit', label: 'Toolkit', icon: 'flask', onSelect: () => onNavigate('toolkit'), active: ['toolkit'] },
+    // Last of the places, under the Toolkit: the tools this account has made. For now
+    // it is a copy of the dashboard (App).
+    { key: 'tools', label: 'Tools', icon: 'layers', onSelect: () => onNavigate('tools'), active: ['tools'] },
     { key: 'settings', label: 'Settings', icon: 'gear', onSelect: () => onNavigate('settings'), active: ['settings'], bottom: true },
   ];
 

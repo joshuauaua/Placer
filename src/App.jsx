@@ -60,6 +60,7 @@ const PublicOrganisationPage = lazy(() => import('./components/PublicOrganisatio
 // unmounts MainApp, and nothing held in its state is lost on the way.
 const ACCOUNT_PATHS = {
   dashboard: '/dashboard',
+  tools: '/tools',
   activity: '/activity',
   projects: '/projects',
   organisations: '/organisations',
@@ -74,6 +75,9 @@ const ACCOUNT_VIEWS = {
   // Where Project Examples was, before the dashboard's card went to Projects instead.
   '/project-examples': 'projects',
   '/activity': 'activity',
+  // For now the dashboard again, under a name of its own: what will become the
+  // tool-first account's home for the tools it has made.
+  '/tools': 'tools',
   '/projects': 'projects',
   '/organisations': 'organisations',
   '/settings': 'settings',
@@ -158,7 +162,7 @@ function LoadingFallback() {
 }
 
 // Views that need an account, and say so to someone who has logged out.
-const SIGNED_IN_VIEWS = ['dashboard', 'activity', 'settings', 'projects', 'organisations',
+const SIGNED_IN_VIEWS = ['dashboard', 'tools', 'activity', 'settings', 'projects', 'organisations',
   'projectNew', 'projectDashboard', 'organisationNew', 'organisationDashboard'];
 
 // What /dashboard, /projects and /settings show to someone who has logged out. Not a redirect,
@@ -549,6 +553,18 @@ function MainApp({ initialView = 'welcome' }) {
             )}
 
             {view === 'dashboard' && profile && (
+              <Suspense fallback={<LoadingFallback />}>
+                <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
+                  onNewProject={showNewProject}
+                  onSignOut={handleSignOut} onExplore={handleExplore}
+                  onOpenPublicProfile={showPublicProfile}
+                  onOpenProject={showProjectDashboard} onOpenProjectPage={showProjectPublic}
+                  onOpenOrganisationPage={showOrganisationPublic} />
+              </Suspense>
+            )}
+
+            {/* Tools: a copy of the dashboard for now, until it has tools of its own to show. */}
+            {view === 'tools' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
                   onNewProject={showNewProject}

@@ -18,7 +18,7 @@ describe('SideNav', () => {
     setup();
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
-      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Explore', 'Projects', 'Toolkit',
+      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Explore', 'Projects', 'Toolkit', 'Tools',
         'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
   });
 
@@ -35,7 +35,7 @@ describe('SideNav', () => {
     const { onNavigate } = setup({ showOrganisations: true });
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
-      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Explore', 'Projects', 'Organisations', 'Toolkit',
+      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Explore', 'Projects', 'Organisations', 'Toolkit', 'Tools',
         'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
     fireEvent.click(screen.getByRole('button', { name: 'Organisations' }));
     expect(onNavigate).toHaveBeenCalledWith('organisations');
@@ -92,7 +92,8 @@ describe('SideNav', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Toolkit' }));
     fireEvent.click(screen.getByRole('button', { name: 'Dashboard' }));
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['projects', 'toolkit', 'dashboard', 'settings']);
+    fireEvent.click(screen.getByRole('button', { name: 'Tools' }));
+    expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['projects', 'toolkit', 'dashboard', 'settings', 'tools']);
   });
 
   it('opens a menu of Understand, Re-Imagine and Plan from Create a tool, and creates the kind chosen', () => {
