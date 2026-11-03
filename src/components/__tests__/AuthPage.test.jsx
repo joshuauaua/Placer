@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { AuthPage } from '../AuthPage';
 import {
   sendPasswordReset,
@@ -213,5 +213,27 @@ describe('AuthPage, signing up', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Sign in' }));
 
     expect(onNavigate).toHaveBeenCalledWith('signin');
+  });
+});
+
+describe('AuthPage, during the closed beta', () => {
+  const note = () => screen.getByRole('note', { name: 'Closed beta' });
+
+  it('says signing in is for beta users, and how to join', () => {
+    setup('signin');
+
+    expect(note()).toHaveTextContent('Currently only for beta users');
+    expect(note()).toHaveTextContent('If you would like to join it, reach out to us at info@plcr.org.');
+    expect(within(note()).getByRole('link', { name: 'info@plcr.org' }))
+      .toHaveAttribute('href', 'mailto:info@plcr.org?subject=Joining%20the%20PLACER%20beta');
+  });
+
+  it('says signing up needs a code, and offers to apply for the beta', () => {
+    setup('signup');
+
+    expect(note()).toHaveTextContent('An invite code is needed to sign up');
+    expect(within(note()).getByRole('link', { name: 'Apply to join the beta' }))
+      .toHaveAttribute('href', 'mailto:info@plcr.org?subject=Joining%20the%20PLACER%20beta');
+    expect(screen.getByLabelText('Invite code')).toBeInTheDocument();
   });
 });
