@@ -5,6 +5,7 @@ import { Btn, inputStyle } from './UI';
 import { Icon } from './Icon';
 import { PasswordInput } from './PasswordInput';
 import { PALETTE } from '../theme';
+import { OPERATOR } from '../legal';
 import {
   sendPasswordReset,
   signInWithPassword,
@@ -32,6 +33,41 @@ function Field({ t, id, label, type, value, onChange, autoComplete, hint }) {
       )}
       {hint && (
         <div style={{ fontSize: 13, color: t.inkDim, marginTop: 6 }}>{hint}</div>
+      )}
+    </div>
+  );
+}
+
+// PLACER is in a closed beta: accounts are for the people taking part, and a new one
+// needs an invite code (checked and spent on the server, supabase/invites.sql). The way
+// in for anybody else is to write to us, with the subject already filled in.
+const BETA_MAILTO = `mailto:${OPERATOR.email}?subject=${encodeURIComponent('Joining the PLACER beta')}`;
+
+/**
+ * Says so at the top of the form, on the purple the page sits on: on sign in, that
+ * accounts are for beta users and how to join; on sign up, where a code comes from.
+ */
+function BetaNote({ t, signingUp }) {
+  const mail = (
+    <a href={BETA_MAILTO} style={{ color: t.ink, fontWeight: 500 }}>{OPERATOR.email}</a>
+  );
+  return (
+    <div role="note" aria-label="Closed beta" style={{ display: 'flex', gap: 12, alignItems: 'flex-start',
+      margin: '0 0 22px', padding: '14px 16px', borderRadius: 12, background: PALETTE.purple.c100,
+      border: `1px solid ${PALETTE.purple.c300}`, fontSize: 14, lineHeight: 1.55, color: t.ink }}>
+      <Icon name="lock" size={18} stroke={2} style={{ flex: '0 0 auto', marginTop: 2 }} />
+      {signingUp ? (
+        <div>
+          <strong style={{ display: 'block', marginBottom: 2 }}>An invite code is needed to sign up</strong>
+          PLACER is in a closed beta. Don&rsquo;t have a code?{' '}
+          <a href={BETA_MAILTO} style={{ color: t.ink, fontWeight: 700 }}>Apply to join the beta</a>{' '}
+          by writing to {mail}.
+        </div>
+      ) : (
+        <div>
+          <strong style={{ display: 'block', marginBottom: 2 }}>Currently only for beta users</strong>
+          PLACER is in a closed beta. If you would like to join it, reach out to us at {mail}.
+        </div>
       )}
     </div>
   );
@@ -189,12 +225,13 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
 
   return (
     <>
+      <BetaNote t={t} signingUp={signingUp} />
       <form onSubmit={handleSubmit}>
         {signingUp && (
           <Field
             t={t} id="auth-invite" label="Invite code" type="text" value={inviteCode}
             onChange={setInviteCode} autoComplete="off"
-            hint="PLACER is in a closed beta, so new accounts need a code from us."
+            hint="The code from your beta invitation."
           />
         )}
         {signingUp && (
