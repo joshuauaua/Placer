@@ -137,6 +137,11 @@ describe('App', () => {
   });
 
   it('skips the map for a project that has set Idea Visualizer up, drawing on its base image', async () => {
+    // jsdom never loads a picture, and the step waits for the photo's size to shape
+    // the stage; this one says it is 1000 × 700 as soon as it is asked.
+    vi.stubGlobal('Image', class {
+      set src(value) { this.naturalWidth = 1000; this.naturalHeight = 700; setTimeout(() => this.onload?.(), 0); }
+    });
     vi.mocked(readReimagineScene).mockResolvedValueOnce({
       address: 'Folkets Park, Malmö', position: { lat: 55.59, lng: 13.01 }, screenshot: 'data:image/webp;base64,AAAA',
     });
@@ -155,6 +160,7 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Back to project/ }));
     expect(history.at(-1)).toBe('/projects/proj-1');
+    vi.unstubAllGlobals();
   });
 
   it('starts from the map when the project\'s scene cannot be loaded', async () => {

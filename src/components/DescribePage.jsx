@@ -1,8 +1,13 @@
-/* PLACER — Step 3: describe the imagination */
+/* PLACER — Step 3: describe the scene and the idea.
+ *
+ * A title, a category and the idea itself are needed to go on. What the place is like
+ * today and who the idea is for are asked too, and optional: they are what turns a
+ * picture into something a planner can act on. */
 
 import { Btn, Chip, Field, inputStyle } from './UI';
 import { FlowScreen } from './FlowLayout';
 import { CAT_LIST } from '../theme';
+import { MAX_DESCRIPTION } from '../lib/ideaVisualizer';
 
 /**
  * `onDraftChange` receives a partial patch ({ title }, { cat }, …) for the parent to
@@ -30,11 +35,11 @@ export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview,
           <div style={{ marginBottom: 36 }}>
             <h1 className="placer-disp" style={{ fontSize: 36, fontWeight: 700, color: t.ink,
               letterSpacing: '-0.03em', marginBottom: 12, lineHeight: 1.1 }}>
-              Describe your imagination
+              Describe the scene and your idea
             </h1>
             <p style={{ fontSize: 17, color: t.inkDim, lineHeight: 1.6 }}>
-              Tell people what you changed and why it matters. This is what they read
-              before they vote.
+              Say what the place is like now, what you would change, and who it is for.
+              The more you tell, the easier it is for others to see what you see.
             </p>
           </div>
 
@@ -42,7 +47,8 @@ export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview,
             <img
               src={preview}
               alt="Your imagination"
-              style={{ width: '100%', borderRadius: 12, border: `1px solid ${t.line}`,
+              style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain', background: t.surfaceAlt,
+                borderRadius: 12, border: `1px solid ${t.line}`,
                 boxShadow: t.shadow, marginBottom: 32, display: 'block' }}
             />
           )}
@@ -75,20 +81,48 @@ export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview,
             </div>
           </Field>
 
-          <Field t={t} spacing={28} label="Description *" htmlFor="imagination-blurb">
+          <Field t={t} spacing={28} label="The place today" htmlFor="imagination-scene"
+            hint="Optional. What is there now, how it is used, and what is missing or not working.">
+            <textarea
+              id="imagination-scene"
+              value={draft.scene ?? ''}
+              onChange={(e) => onDraftChange({ scene: e.target.value })}
+              placeholder="e.g., A wide pavement in full sun, with nowhere to sit and cars parked on the corner."
+              rows={3}
+              maxLength={MAX_DESCRIPTION}
+              style={{ ...inputStyle(t), resize: 'vertical' }}
+            />
+          </Field>
+
+          <Field t={t} spacing={28} label="Your idea *" htmlFor="imagination-blurb"
+            hint="What you placed in the picture, and what it would change.">
             <textarea
               id="imagination-blurb"
               value={draft.blurb}
               onChange={(e) => onDraftChange({ blurb: e.target.value })}
-              placeholder="What is wrong with the space today, and what would your change do for it?"
+              placeholder="e.g., Trees for shade, benches under them, and planters to keep cars off the corner."
               rows={5}
+              maxLength={MAX_DESCRIPTION}
+              style={{ ...inputStyle(t), resize: 'vertical' }}
+            />
+          </Field>
+
+          <Field t={t} spacing={28} label="Who is it for?" htmlFor="imagination-audience"
+            hint="Optional. The people who would use it, and when.">
+            <textarea
+              id="imagination-audience"
+              value={draft.audience ?? ''}
+              onChange={(e) => onDraftChange({ audience: e.target.value })}
+              placeholder="e.g., Parents waiting at the school gate, and older neighbours on their way to the shops."
+              rows={2}
+              maxLength={MAX_DESCRIPTION}
               style={{ ...inputStyle(t), resize: 'vertical' }}
             />
           </Field>
 
           {!complete && (
             <div style={{ fontSize: 13.5, color: t.inkDim, fontWeight: 500 }}>
-              Fill in the title, category, and description to continue.
+              Fill in the title, category, and your idea to continue.
             </div>
           )}
 

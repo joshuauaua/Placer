@@ -7,7 +7,7 @@
 // one wide image.
 
 import {
-  DEFAULT_SIZE, fetchAsDataUrl, fovFromPanoramaZoom, streetViewBackgroundTiles, streetViewStaticUrl,
+  DEFAULT_SIZE, MAX_STATIC_SIZE, fetchAsDataUrl, fovFromPanoramaZoom, streetViewBackgroundTiles, streetViewStaticUrl,
 } from './staticMaps';
 import { tilingGain } from './panoGeometry';
 
@@ -16,6 +16,26 @@ import { tilingGain } from './panoGeometry';
 // the panorama zooms in and the wide shot is already spending its own 640px on a
 // narrow arc. At two columns this bows out somewhere around fov 30.
 const MIN_TILING_GAIN = 1.25;
+
+// The shapes a capture may take, as width over height: from a tall phone's view to a
+// wide monitor's. Outside these the 640px cap leaves too few pixels on the short side.
+const MIN_ASPECT = 0.5;
+const MAX_ASPECT = 2.5;
+
+/**
+ * The wide frame for a view of `aspect` (width / height, e.g. the panorama's own size
+ * on screen), at the 640px cap on its longer side. Without one, the stage's 10:7.
+ * Capturing at the shape that was on screen is what keeps the photo the view the
+ * person framed: the same horizontal field of view over a different shape would add
+ * or cut sky and ground, and putting a 10:7 image into a wider frame would crop it.
+ */
+export function captureSize(aspect) {
+  if (!Number.isFinite(aspect) || aspect <= 0) return DEFAULT_SIZE;
+  const shape = Math.min(MAX_ASPECT, Math.max(MIN_ASPECT, aspect));
+  return shape >= 1
+    ? { width: MAX_STATIC_SIZE, height: Math.round(MAX_STATIC_SIZE / shape) }
+    : { width: Math.round(MAX_STATIC_SIZE * shape), height: MAX_STATIC_SIZE };
+}
 
 // Ceiling on the stitched output, independent of the gain. Composing runs one
 // inverse projection per output pixel, and past the 1000x700 stage the extra
@@ -48,15 +68,15 @@ export function readPanoramaView(panorama, fallback = null) {
 // anything else — a rejected key, a network fault — would meet the single wide request
 // in exactly the same way, so retrying it just spends another request to learn the
 // same thing.
-async function captureTiled(apiKey, view) {
-  const wide = { width: DEFAULT_SIZE.width, height: DEFAULT_SIZE.height, fov: view.fov };
+async function captureTiled(apiKey, view, wideSize) {
+  const wide = { width: wideSize.width, height: wideSize.height, fov: view.fov };
   const sources = streetViewBackgroundTiles({
     apiKey,
     location: view.position,
     heading: view.heading,
     pitch: view.pitch,
     fov: view.fov,
-    wideSize: DEFAULT_SIZE,
+    wideSize,
   });
   const tiles = sources.map(({ tile }) => tile);
   const gain = tilingGain(tiles, wide);
@@ -76,12 +96,13 @@ async function captureTiled(apiKey, view) {
 }
 
 /**
- * The view as a data: URL. Throws a StaticImageError with status 404 where the spot
+ * The view as a data: URL, `aspect` wide for each unit tall (captureSize). Throws a StaticImageError with status 404 where the spot
  * has no Street View coverage (return_error_code=true in streetViewStaticUrl makes
  * Google send that instead of a gray placeholder), for the caller to fall back on.
  */
-export async function captureStreetView(apiKey, view) {
-  const stitched = await captureTiled(apiKey, view);
+export async function captureStreetView(apiKey, view, { aspect } = {}) {
+  const wideSize = captureSize(aspect);
+  const stitched = await captureTiled(apiKey, view, wideSize);
   if (stitched) return stitched;
   return fetchAsDataUrl(streetViewStaticUrl({
     apiKey,
@@ -89,5 +110,6 @@ export async function captureStreetView(apiKey, view) {
     heading: view.heading,
     pitch: view.pitch,
     fov: view.fov,
+    size: wideSize,
   }));
 }

@@ -1,9 +1,9 @@
 /* PLACER — layout primitives shared by Idea Visualizer's four steps
-   (choose a spot, place assets, describe, save) */
+   (choose the view, place assets, describe, save) */
 
 import { Icon } from './Icon';
 
-const STEPS = ['Choose a spot', 'Place assets', 'Describe', 'Save'];
+const STEPS = ['Choose a view', 'Place assets', 'Describe', 'Save'];
 
 export function StepBar({ t, step = 1 }) {
   return (

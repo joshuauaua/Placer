@@ -1,8 +1,9 @@
 /* PLACER — Toolkit: Idea Visualizer.
  *
- * Four steps, a screen each: choose a spot on the map (MapContainer), place benches,
- * trees and the rest into its Street View (StreetScreen), describe the idea
- * (DescribePage) and save it to the profile (PostPage). It is one of
+ * Four steps, a screen each: pin a place on the map and take its photo, from Street
+ * View or uploaded from your own camera (MapContainer); place benches, trees and the
+ * rest onto that photo, and colour and doodle on it with the pen (StreetScreen); describe the place and the idea in more detail
+ * (DescribePage); and save it to the profile (PostPage). It is one of
  * FULL_SCREEN_TOOLS (lib/routes.js), so once its cover's Get started is pressed it has
  * the whole window, at /toolkit/reimagine-a-space?start.
  *
@@ -34,7 +35,8 @@ const StreetScreen = lazy(() => import('../StreetScreen'));
 const DescribePage = lazy(() => import('../DescribePage'));
 const PostPage = lazy(() => import('../PostPage'));
 
-const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
+// `scene` is what the place is like today, `audience` who the idea is for: both optional.
+const EMPTY_DRAFT = { title: '', cat: '', blurb: '', scene: '', audience: '' };
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
@@ -48,6 +50,8 @@ export function ReimagineASpace({ t, tool }) {
   const [step, setStep] = useState(null);
   const [capturedView, setCapturedView] = useState(null);
   const [canvasAssets, setCanvasAssets] = useState([]);
+  // What has been drawn with the pen, over the photo (ImaginationCanvas).
+  const [lines, setLines] = useState([]);
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   // Composite of the photo plus everything drawn on it, exported when leaving the canvas.
   const [preview, setPreview] = useState(null);
@@ -59,6 +63,7 @@ export function ReimagineASpace({ t, tool }) {
   const capture = (viewData) => {
     setCapturedView(viewData);
     setCanvasAssets([]);
+    setLines([]);
     setDraft(EMPTY_DRAFT);
     setPreview(null);
     setStep('street');
@@ -77,7 +82,8 @@ export function ReimagineASpace({ t, tool }) {
       if (pending) {
         setCapturedView(pending.capturedView ?? null);
         setCanvasAssets(pending.canvasAssets ?? []);
-        setDraft(pending.draft ?? EMPTY_DRAFT);
+        setLines(pending.lines ?? []);
+        setDraft({ ...EMPTY_DRAFT, ...pending.draft });
         setPreview(pending.preview ?? null);
         clearPendingImagination();
         setStep('post');
@@ -100,6 +106,7 @@ export function ReimagineASpace({ t, tool }) {
       }
       capture({
         position: scene.position,
+        address: scene.address || null,
         pov: null,
         fov: null,
         source: 'project',
@@ -123,6 +130,7 @@ export function ReimagineASpace({ t, tool }) {
     setMapFocus(capturedView?.position ?? null);
     setCapturedView(null);
     setCanvasAssets([]);
+    setLines([]);
     setDraft(EMPTY_DRAFT);
     setPreview(null);
     setStep('map');
@@ -141,7 +149,6 @@ export function ReimagineASpace({ t, tool }) {
                 apiKey={GOOGLE_MAPS_API_KEY}
                 initialCenter={mapFocus}
                 homeCenter={profile?.locationPoint ?? null}
-                onOpenProject={(id) => navigate(`/projects/${id}`)}
               />
             </div>
           </FlowScreen>
@@ -151,11 +158,13 @@ export function ReimagineASpace({ t, tool }) {
           <StreetScreen
             t={t}
             onBack={fromProjectScene ? leave : () => setStep('map')}
-            backLabel={fromProjectScene ? 'Back to project' : undefined}
+            backLabel={fromProjectScene ? 'Back to project' : 'Back to the view'}
             onNext={(canvasPreview) => { setPreview(canvasPreview); setStep('describe'); }}
             capturedView={capturedView}
             canvasAssets={canvasAssets}
             onCanvasAssetsChange={setCanvasAssets}
+            lines={lines}
+            onLinesChange={setLines}
           />
         )}
 
@@ -178,6 +187,7 @@ export function ReimagineASpace({ t, tool }) {
             preview={preview}
             capturedView={capturedView}
             canvasAssets={canvasAssets}
+            lines={lines}
             onBack={() => setStep('describe')}
             onPosted={handlePosted}
             accountId={accountId}
@@ -186,7 +196,7 @@ export function ReimagineASpace({ t, tool }) {
             // and this stays false.
             needsAccount={status === 'signedOut'}
             checkingAccount={status === 'loading'}
-            onStashDraft={() => savePendingImagination({ capturedView, canvasAssets, draft, preview })}
+            onStashDraft={() => savePendingImagination({ capturedView, canvasAssets, lines, draft, preview })}
             // This address, ?start and all, so the confirmation link comes back here.
             returnTo={`/toolkit/${tool.id}?${search}`}
             projectId={projectId}
