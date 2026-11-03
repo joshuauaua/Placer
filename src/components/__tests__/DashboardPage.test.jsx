@@ -320,8 +320,8 @@ describe('DashboardPage tools', () => {
     expect(within(actions).getAllByRole('button').map((b) => b.textContent))
       .toEqual(['Create a Tool', 'Explore the map', 'Edit your profile', 'Guide']);
     expect(screen.getByRole('region', { name: 'Getting Started' })).toBeInTheDocument();
-    // Then My Tools, Tutorials and Popular Templates, in that order.
-    const order = ['Getting Started', 'My Tools', 'Tutorials', 'Popular Templates']
+    // Then My Tools, Popular Templates and Tutorials, in that order.
+    const order = ['Getting Started', 'My Tools', 'Popular Templates', 'Tutorials']
       .map((name) => screen.getByRole('region', { name }));
     for (let i = 1; i < order.length; i++) {
       expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

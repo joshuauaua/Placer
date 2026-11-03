@@ -1,9 +1,9 @@
 /* PLACER — the step after picking a tool in Create a tool: which board it goes on.
  *
  * Create a tool picks a kind (CreateToolMenu), then a tool (ChooseToolDialog), then
- * this: add the tool to one of your boards, picked from a dropdown of every board you
- * run or collaborate on (readMyProjects), or create a new board for it. A new board
- * needs a name; it can be made private, and made a group board, which invites
+ * this: one dropdown of every board you run or collaborate on (readMyProjects), and
+ * at its foot "+ Create a new board". Picking a board adds the tool to it; picking
+ * the last option brings out what a new board needs. A new board needs a name; it can be made private, and made a group board, which invites
  * collaborators by email as it is created (addCollaborator — there is no directory of
  * people to search, so an address is how somebody is found).
  *
@@ -24,6 +24,8 @@ import {
 import { findCategory } from '../toolkit/tools';
 
 const NAME_MAX = 80;
+// The dropdown's last option, which is not a board but the way to make one.
+const NEW_BOARD = '__new__';
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** An on/off switch with its label beside it and a line under it saying what on means. */
@@ -44,25 +46,6 @@ function Switch({ t, id, label, description, checked, onChange }) {
       <div style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.5, marginTop: 6, paddingLeft: 56 }}>
         {description}
       </div>
-    </div>
-  );
-}
-
-/**
- * One of the two ways to go, as a card with a radio in it. The label is the radio and
- * its title only: what goes under it (the dropdown) is a control of its own.
- */
-function Choice({ t, name, value, checked, onChange, title, children }) {
-  return (
-    <div style={{ padding: '14px 16px', borderRadius: 14,
-      border: `1.5px solid ${checked ? t.ink : t.line}`, background: checked ? t.surfaceAlt : 'transparent',
-      marginBottom: 12 }}>
-      <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-        <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)}
-          style={{ width: 18, height: 18, margin: 0, accentColor: t.ink }} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: t.ink }}>{title}</span>
-      </label>
-      {children && <div style={{ marginTop: 10, paddingLeft: 28 }}>{children}</div>}
     </div>
   );
 }
@@ -145,13 +128,12 @@ export function AddToBoardDialog({ t, tool, accountId, ownerName = '', onDone, o
     return () => { cancelled = true; };
   }, [available, accountId]);
 
-  const [mode, setMode] = useState(null); // 'existing' | 'new'; null until the boards are in
-  const [boardId, setBoardId] = useState('');
-  // With boards to pick from, the dropdown comes first; with none, a new board.
-  if (boards && mode === null) {
-    setMode(boards.length > 0 ? 'existing' : 'new');
-    if (boards.length > 0) setBoardId(boards[0].id);
-  }
+  // What the dropdown has picked: a board's id, or NEW_BOARD. Null until the boards are
+  // in; then the first board, or a new one when there are none.
+  const [picked, setPicked] = useState(null);
+  if (boards && picked === null) setPicked(boards.length > 0 ? boards[0].id : NEW_BOARD);
+  const mode = picked === NEW_BOARD ? 'new' : 'existing';
+  const boardId = mode === 'existing' ? picked : '';
 
   const [name, setName] = useState('');
   const [isPrivate, setPrivate] = useState(false);
@@ -254,26 +236,20 @@ export function AddToBoardDialog({ t, tool, accountId, ownerName = '', onDone, o
     body = <p style={{ fontSize: 15, color: t.inkDim }}>Loading your boards…</p>;
   } else {
     body = (
-      <div role="radiogroup" aria-label="Board">
-        <Choice t={t} name="board-mode" value="existing" checked={mode === 'existing'} onChange={setMode}
-          title="Add to an existing board">
-          {boards.length > 0 ? (
-            mode === 'existing' ? (
-              <select aria-label="Your boards" value={boardId} onChange={(e) => setBoardId(e.target.value)}
-                style={{ ...inputStyle(t), padding: '10px 14px', fontSize: 15 }}>
-                {boards.map((board) => <option key={board.id} value={board.id}>{board.name}</option>)}
-              </select>
-            ) : null
-          ) : (
-            <span style={{ fontSize: 14, color: t.inkDim }}>
-              {loadFailed ? 'Your boards could not be loaded.' : 'You have no boards yet.'}
-            </span>
-          )}
-        </Choice>
-        <Choice t={t} name="board-mode" value="new" checked={mode === 'new'} onChange={setMode}
-          title="Create a new board" />
+      <div>
+        <label htmlFor="board-pick" style={labelStyle(t)}>Board</label>
+        <select id="board-pick" value={picked ?? NEW_BOARD} onChange={(e) => setPicked(e.target.value)}
+          style={{ ...inputStyle(t), marginBottom: 8 }}>
+          {boards.map((board) => <option key={board.id} value={board.id}>{board.name}</option>)}
+          <option value={NEW_BOARD}>+ Create a new board</option>
+        </select>
+        {boards.length === 0 && (
+          <p style={{ fontSize: 14, color: t.inkDim, margin: '0 0 8px' }}>
+            {loadFailed ? 'Your boards could not be loaded, but you can make a new one.' : 'You have no boards yet.'}
+          </p>
+        )}
         {mode === 'new' && (
-          <div style={{ padding: '8px 4px 0' }}>
+          <div style={{ marginTop: 16, padding: '18px 18px 2px', borderRadius: 14, background: t.surfaceAlt }}>
             <label htmlFor="board-name" style={labelStyle(t)}>Board name</label>
             <input id="board-name" type="text" value={name} maxLength={NAME_MAX} required
               onChange={(e) => setName(e.target.value)} placeholder="e.g. Rethinking Möllevångstorget"
@@ -290,7 +266,7 @@ export function AddToBoardDialog({ t, tool, accountId, ownerName = '', onDone, o
       </div>
     );
     actions = (
-      <Btn t={t} type="submit" icon={mode === 'new' ? 'plus' : 'arrowRight'} disabled={busy || (mode === 'existing' && boards.length === 0)}>
+      <Btn t={t} type="submit" icon={mode === 'new' ? 'plus' : 'arrowRight'} disabled={busy}>
         {busy ? 'Saving…' : mode === 'new' ? 'Create' : 'Add to board'}
       </Btn>
     );

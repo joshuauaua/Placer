@@ -34,13 +34,16 @@ describe('AddToBoardDialog', () => {
     vi.mocked(readMyProjects).mockResolvedValue([]);
   });
 
-  it('offers your boards in a dropdown, and adds the tool to the one picked', async () => {
+  it('offers your boards in one dropdown, with Create a new board last, and adds the tool to the one picked', async () => {
     vi.mocked(readMyProjects).mockResolvedValue(BOARDS);
     const { onDone } = setup();
 
-    const dropdown = await screen.findByRole('combobox', { name: 'Your boards' });
-    expect(within(dropdown).getAllByRole('option').map((o) => o.textContent)).toEqual(['Möllan', 'Folkets Park']);
-    expect(screen.getByRole('radio', { name: 'Add to an existing board' })).toBeChecked();
+    const dropdown = await screen.findByRole('combobox', { name: 'Board' });
+    expect(within(dropdown).getAllByRole('option').map((o) => o.textContent))
+      .toEqual(['Möllan', 'Folkets Park', '+ Create a new board']);
+    expect(dropdown).toHaveValue('b-1');
+    // A board is picked, so nothing about a new one is asked.
+    expect(screen.queryByLabelText('Board name')).toBeNull();
     fireEvent.change(dropdown, { target: { value: 'b-2' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add to board' }));
 
@@ -49,10 +52,28 @@ describe('AddToBoardDialog', () => {
     expect(createProject).not.toHaveBeenCalled();
   });
 
+  it('brings out the new board\'s options when Create a new board is picked, and puts them away again', async () => {
+    vi.mocked(readMyProjects).mockResolvedValue(BOARDS);
+    setup();
+    const dropdown = await screen.findByRole('combobox', { name: 'Board' });
+
+    fireEvent.change(dropdown, { target: { value: '__new__' } });
+    expect(screen.getByLabelText('Board name')).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Private' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Group board' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument();
+
+    fireEvent.change(dropdown, { target: { value: 'b-1' } });
+    expect(screen.queryByLabelText('Board name')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add to board' })).toBeInTheDocument();
+  });
+
   it('starts on a new board when there are none to add to', async () => {
     setup();
 
-    expect(await screen.findByRole('radio', { name: 'Create a new board' })).toBeChecked();
+    const dropdown = await screen.findByRole('combobox', { name: 'Board' });
+    expect(within(dropdown).getAllByRole('option').map((o) => o.textContent)).toEqual(['+ Create a new board']);
+    expect(screen.getByLabelText('Board name')).toBeInTheDocument();
     expect(screen.getByText('You have no boards yet.')).toBeInTheDocument();
   });
 
