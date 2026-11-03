@@ -82,6 +82,16 @@ describe('PostPage', () => {
     expect(screen.getByText('51.5074, -0.1278')).toBeInTheDocument();
   });
 
+  it('counts what was drawn, and keeps the lines with the idea', async () => {
+    const lines = [{ id: 'l1', tool: 'pen', color: '#3A39FF', size: 8, opacity: 1, points: [0, 0, 10, 10] }];
+    setup({ lines });
+
+    expect(screen.getByText(/lines drawn/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save to my profile' }));
+    await waitFor(() => expect(saveInquiry).toHaveBeenCalled());
+    expect(saveInquiry.mock.calls[0][0].config.lines).toEqual(lines);
+  });
+
   it('names the address the photo was pinned at, when there is one', () => {
     setup({ capturedView: { ...CAPTURED, address: 'Folkets Park, Malmö' } });
     expect(screen.getByText('Folkets Park, Malmö')).toBeInTheDocument();
@@ -139,6 +149,7 @@ describe('PostPage', () => {
         pov: CAPTURED.pov,
         fov: 90,
         canvasAssets: [{ id: 'a1' }, { id: 'a2' }],
+        lines: [],
         projectId: null,
       },
       preview: 'data:image/jpeg;base64,mockPreview',

@@ -64,7 +64,7 @@ export function recordedVisual({ assets, title, description } = {}, knownTypes) 
  * are the inquiry's own title and note. The picture is not here: it is uploaded, and its
  * key added as `preview`.
  */
-export function ideaInquiryConfig({ category, loc, capturedView, canvasAssets, details = {}, projectId = null }) {
+export function ideaInquiryConfig({ category, loc, capturedView, canvasAssets, lines = [], details = {}, projectId = null }) {
   return {
     category: category || null,
     loc: loc || null,
@@ -77,6 +77,8 @@ export function ideaInquiryConfig({ category, loc, capturedView, canvasAssets, d
     pov: capturedView?.pov ?? null,
     fov: capturedView?.fov ?? null,
     canvasAssets: Array.isArray(canvasAssets) ? canvasAssets : [],
+    // What was drawn with the pen, in stage units, as ImaginationCanvas keeps it.
+    lines: Array.isArray(lines) ? lines : [],
     projectId,
   };
 }

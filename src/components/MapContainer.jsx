@@ -239,7 +239,10 @@ const MapContainer = ({ onCaptureView, apiKey = '', initialCenter = null, homeCe
     setStreetViewMessage('');
     let screenshot = null;
     try {
-      screenshot = await captureStreetViewImage(apiKey, streetView);
+      // At the shape the panorama has on screen, so the photo is the view as framed.
+      const box = panoramaElRef.current?.getBoundingClientRect?.();
+      const aspect = box?.width > 0 && box?.height > 0 ? box.width / box.height : undefined;
+      screenshot = await captureStreetViewImage(apiKey, streetView, { aspect });
     } catch (error) {
       console.error('Error capturing Street View:', error);
       setStreetViewMessage(error?.status === 404

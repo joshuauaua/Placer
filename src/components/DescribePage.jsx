@@ -47,7 +47,8 @@ export function DescribePage({ t, draft, onDraftChange, onBack, onNext, preview,
             <img
               src={preview}
               alt="Your imagination"
-              style={{ width: '100%', borderRadius: 12, border: `1px solid ${t.line}`,
+              style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain', background: t.surfaceAlt,
+                borderRadius: 12, border: `1px solid ${t.line}`,
                 boxShadow: t.shadow, marginBottom: 32, display: 'block' }}
             />
           )}

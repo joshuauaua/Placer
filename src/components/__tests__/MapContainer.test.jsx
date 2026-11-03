@@ -427,6 +427,21 @@ describe('MapContainer', () => {
       expect(onCaptureView).not.toHaveBeenCalled();
     });
 
+    it('takes the photo in the shape the panorama has on screen, so it is not stretched or cut', async () => {
+      vi.mocked(stitchPanoTiles).mockResolvedValueOnce(null);
+      window.google = mockGoogleMaps({ panorama: mockPanorama({ ...OPEN_PANORAMA, zoom: 4 }) });
+      const fetchMock = stubStaticImageFetch();
+      const onCaptureView = vi.fn();
+      render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
+      vi.spyOn(screen.getByTestId('street-view'), 'getBoundingClientRect')
+        .mockReturnValue({ width: 1440, height: 810, top: 0, left: 0, right: 1440, bottom: 810 });
+
+      fireEvent.click(takePhotoButton());
+      await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
+
+      expect(requestsOf(fetchMock).at(-1).params.get('size')).toBe('640x360');
+    });
+
     it('relabels to "Taking the photo…" and disables the button while it is taken', () => {
       window.google = mockGoogleMaps({ panorama: mockPanorama(OPEN_PANORAMA) });
       stubStaticImageFetch();

@@ -80,7 +80,7 @@ function SignInToSave({ t, mode, onModeChange, onLeaving, returnTo }) {
   );
 }
 
-export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
+export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], lines = [],
   onBack, onPosted, accountId = null,
   needsAccount = false, checkingAccount = false, onStashDraft, returnTo, projectId = null }) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
@@ -100,7 +100,7 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
         tool: TOOL_ID,
         title: draft.title,
         note: draft.blurb ?? '',
-        config: ideaInquiryConfig({ category: draft.cat, loc, capturedView, canvasAssets, projectId,
+        config: ideaInquiryConfig({ category: draft.cat, loc, capturedView, canvasAssets, lines, projectId,
           details: { scene: draft.scene, audience: draft.audience } }),
         preview: preview ?? capturedView?.screenshot ?? null,
       });
@@ -158,7 +158,8 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
             <img
               src={preview || capturedView.screenshot}
               alt="Your idea"
-              style={{ width: '100%', borderRadius: 12, border: `1px solid ${t.line}`,
+              style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain', background: t.surfaceAlt,
+                borderRadius: 12, border: `1px solid ${t.line}`,
                 boxShadow: t.shadow, marginBottom: 32, display: 'block' }}
             />
           )}
@@ -181,6 +182,7 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
           </Row>
           <Row t={t} label="On the canvas">
             <span className="placer-disp" style={{ fontWeight: 700 }}>{canvasAssets.length}</span> assets placed
+            {lines.length > 0 && <>, <span className="placer-disp" style={{ fontWeight: 700 }}>{lines.length}</span> lines drawn</>}
           </Row>
 
           {error && (
