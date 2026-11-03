@@ -321,6 +321,45 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
       </Section>
 
+      {/* What protects what people put into PLACER, said only as far as it is true: room
+          answers are not anonymous for somebody signed in, and their individual answers are
+          readable by anyone who can see the room while it is open (toolkit_contributions'
+          read policy, supabase/project-privacy.sql). Keep this in step with the code. */}
+      <Section t={t} title="Privacy safeguards">
+        <P t={t}>
+          How what you put into PLACER is protected, in short. The sections below say exactly
+          what is stored and for how long.
+        </P>
+        <Bullets t={t} items={[
+          <>
+            <strong style={{ color: t.ink }}>Surveys are anonymous</strong> unless you choose to
+            leave an email address, and they are not linked to any account.
+          </>,
+          <>
+            <strong style={{ color: t.ink }}>You can take part in a Toolkit room without an
+            account</strong>, and then your answers carry no name. If you are signed in, your
+            display name goes with your answers, and others in the room can see it.
+          </>,
+          <>
+            <strong style={{ color: t.ink }}>A room shows everybody&rsquo;s answers combined.</strong>{' '}
+            While it is open, the individual answers behind those results, with any display
+            name, can be read by anyone who can see its board &mdash; on a private board, only
+            the people let into it.
+          </>,
+          <>
+            <strong style={{ color: t.ink }}>Room answers are not kept.</strong> They are stored
+            on our server only while the room runs, and deleted at most a day after it ends.
+            The board&rsquo;s organisers may be notified that somebody answered, by display name
+            if they had one, and that notification stays in their account.
+          </>,
+          <>
+            <strong style={{ color: t.ink }}>Comments, posts and replies on a board are
+            public</strong>, with your display name &mdash; on a private board, to the people
+            let into it.
+          </>,
+        ]} />
+      </Section>
+
       <Section t={t} title="Information PLACER holds">
         <P t={t}>
           <strong style={{ color: t.ink }}>Your account.</strong> Making an account means giving
