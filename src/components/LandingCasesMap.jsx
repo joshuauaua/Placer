@@ -7,15 +7,15 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { CHARACTER } from '../theme';
+import { NEUTRAL } from '../theme';
 import { addPin, createMap, fitPoints, toLngLat } from '../lib/map';
 
 // STPLN, Malmöhusvägen 5, Malmö — where Explore opens too.
 const HOME = { lat: 55.6054, lng: 12.9854 };
 const HOME_ZOOM = 12;
 
-// Case studies are orange on Explore, so here too.
-const PIN = { fill: CHARACTER.citizen.c100, ring: CHARACTER.citizen.c700 };
+// The landing page's red (see index.css), as the dots on the study cards are.
+const PIN = { fill: '#FF5A23', ring: NEUTRAL.ink };
 
 const hasCoords = (position) =>
   Number.isFinite(position?.lat) && Number.isFinite(position?.lng);

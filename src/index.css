@@ -356,11 +356,24 @@ a {
  *
  * The image URLs come from the component as custom properties; which one shows,
  * its fit and its motion live here.
+ *
+ * This page has its own five accents, kept here so the rest of the site stays
+ * black and white. What may sit on each, for legibility:
+ *
+ *   lilac, sky  ink, grey-700 or blue text; never grey-500 or white
+ *   yellow      ink or grey-700 text; never white
+ *   red         ink text only, and it is too light to be text on white
+ *   blue        white text only; the one colour for actions
  */
 .placer-landing {
   /* The nav bar floats over the top 64px. */
   padding-top: 64px;
   box-sizing: border-box;
+  --placer-landing-lilac: #DDD2FB;
+  --placer-landing-sky: #C6DEF8;
+  --placer-landing-yellow: #F3BB06;
+  --placer-landing-red: #FF5A23;
+  --placer-landing-blue: #3A39FF;
 }
 
 .placer-landing-hero {
@@ -397,6 +410,16 @@ a {
   text-transform: uppercase;
 }
 
+/* The headline's last word, marked in yellow. A box of its own, as an inline
+ * background is taller than the tight line height and covers the line above. */
+.placer-landing-title-mark {
+  display: inline-block;
+  margin-top: 0.08em;
+  padding: 0.04em 0.1em 0.02em;
+  line-height: 0.92;
+  background: var(--placer-landing-yellow);
+}
+
 .placer-landing-pitch {
   margin: 0 0 32px;
   max-width: 46ch;
@@ -405,13 +428,13 @@ a {
   color: var(--placer-grey-700);
 }
 
-/* Get started: the site's ink primary button, a touch larger. */
+/* Get started: the site's primary button in the page's blue, a touch larger. */
 .placer-landing-cta {
   height: 52px;
   padding: 0 28px;
   border: 1px solid transparent;
   border-radius: var(--placer-radius-sm);
-  background: var(--placer-ink);
+  background: var(--placer-landing-blue);
   color: var(--placer-white);
   font-family: var(--placer-font);
   font-size: 16px;
@@ -422,7 +445,7 @@ a {
 }
 
 .placer-landing-cta:hover {
-  background: var(--placer-grey-700);
+  background: var(--placer-ink);
 }
 
 .placer-landing-cta:focus-visible {
@@ -433,7 +456,7 @@ a {
 .placer-landing-hero-art {
   position: relative;
   overflow: hidden;
-  background: var(--placer-grey-100);
+  background: var(--placer-landing-lilac);
 }
 
 .placer-landing-city {
@@ -443,8 +466,10 @@ a {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  /* The linework is ink; this greys it so it frames the pitch rather than fights it. */
-  opacity: 0.45;
+  /* The linework is ink; this greys it so it frames the pitch rather than fights
+   * it, and multiply drops the drawing's white fills into the lilac behind. */
+  opacity: 0.6;
+  mix-blend-mode: multiply;
   will-change: transform;
   animation: placer-landing-zoom 40s ease-in-out infinite alternate;
 }
@@ -581,12 +606,9 @@ a {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.placer-landing-step:hover {
-  background: var(--placer-grey-100);
-}
-
+.placer-landing-step:hover,
 .placer-landing-step[aria-selected="true"] {
-  background: var(--placer-grey-100);
+  background: var(--placer-landing-lilac);
   color: var(--placer-ink);
 }
 
@@ -610,7 +632,7 @@ a {
   font-weight: 700;
 }
 
-/* The active number trades its border for the ring: a grey track, and an ink
+/* The active number trades its border for the ring: a white track, and a blue
  * line drawn round it from twelve o'clock over the step's time. */
 .placer-landing-step[aria-selected="true"] .placer-landing-step-number {
   border-color: transparent;
@@ -630,11 +652,11 @@ a {
 }
 
 .placer-landing-step-ring-track {
-  stroke: var(--placer-grey-300);
+  stroke: var(--placer-white);
 }
 
 .placer-landing-step-ring-fill {
-  stroke: var(--placer-ink);
+  stroke: var(--placer-landing-blue);
   stroke-linecap: round;
   stroke-dasharray: var(--placer-landing-ring-length);
   stroke-dashoffset: var(--placer-landing-ring-length);
@@ -675,18 +697,18 @@ a {
   color: var(--placer-grey-500);
 }
 
+.placer-landing-step:hover .placer-landing-step-text,
 .placer-landing-step[aria-selected="true"] .placer-landing-step-text {
   color: var(--placer-grey-700);
 }
 
-/* Room for a screen recording at 4:3. Until there is one, a grey frame
+/* Room for a screen recording at 4:3. Until there is one, a sky frame
  * naming the step. */
 .placer-landing-steps-media {
   aspect-ratio: 4 / 3;
   border-radius: var(--placer-radius-lg);
   overflow: hidden;
-  background: var(--placer-grey-100);
-  border: 1px solid var(--placer-grey-200);
+  background: var(--placer-landing-sky);
 }
 
 .placer-landing-step-media {
@@ -707,18 +729,19 @@ a {
   object-fit: cover;
 }
 
+/* Ink, because it sits on every accent but blue. */
 .placer-landing-step-placeholder {
   font-size: 15px;
   font-weight: 500;
-  color: var(--placer-grey-500);
+  color: var(--placer-ink);
 }
 
 /* What people say: one testimonial at a time, a photo on the left and the
- * quote on the right of one grey card, with arrows and a count under it. No
- * heading on screen; the section is named for screen readers. */
+ * quote on the right of one white card on a sky band, with arrows and a count
+ * under it. No heading on screen; the section is named for screen readers. */
 .placer-landing-testimonials {
   padding: 96px var(--placer-margin);
-  border-top: 1px solid rgba(17, 17, 17, 0.08);
+  background: var(--placer-landing-sky);
 }
 
 .placer-landing-testimonials-stage {
@@ -730,7 +753,7 @@ a {
   margin: 0;
   border-radius: var(--placer-radius-lg);
   overflow: hidden;
-  background: var(--placer-grey-100);
+  background: var(--placer-white);
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
   min-height: 400px;
@@ -742,7 +765,7 @@ a {
 
 .placer-landing-testimonial-photo {
   position: relative;
-  background: var(--placer-grey-200);
+  background: var(--placer-landing-yellow);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -759,7 +782,7 @@ a {
 .placer-landing-testimonial-placeholder {
   font-size: 15px;
   font-weight: 500;
-  color: var(--placer-grey-500);
+  color: var(--placer-ink);
 }
 
 .placer-landing-testimonial-body {
@@ -819,7 +842,7 @@ a {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .placer-landing-testimonials-arrow:disabled {
@@ -828,8 +851,9 @@ a {
 }
 
 .placer-landing-testimonials-arrow:hover:not(:disabled) {
-  background: var(--placer-grey-100);
-  border-color: var(--placer-ink);
+  background: var(--placer-landing-blue);
+  border-color: var(--placer-landing-blue);
+  color: var(--placer-white);
 }
 
 .placer-landing-testimonials-arrow:focus-visible {
@@ -846,7 +870,7 @@ a {
   color: var(--placer-grey-700);
 }
 
-/* Under the engagement statement: a two-way toggle, then one grey card for the
+/* Under the engagement statement: a two-way toggle, then one lilac card for the
  * chosen audience, its expandables on the left and the open one's picture on
  * the right. Left-aligned again inside the card. */
 .placer-landing-audiences {
@@ -881,7 +905,7 @@ a {
 }
 
 .placer-landing-audience-toggle button[aria-selected="true"] {
-  background: var(--placer-ink);
+  background: var(--placer-landing-blue);
   color: var(--placer-white);
 }
 
@@ -894,7 +918,7 @@ a {
   margin-top: 32px;
   padding: 32px;
   border-radius: var(--placer-radius-lg);
-  background: var(--placer-grey-100);
+  background: var(--placer-landing-lilac);
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
   gap: 40px;
@@ -909,11 +933,11 @@ a {
 }
 
 .placer-landing-audience-item {
-  border-bottom: 1px solid var(--placer-grey-300);
+  border-bottom: 1px solid rgba(17, 17, 17, 0.16);
 }
 
 .placer-landing-audience-item:first-child {
-  border-top: 1px solid var(--placer-grey-300);
+  border-top: 1px solid rgba(17, 17, 17, 0.16);
 }
 
 .placer-landing-audience-item button {
@@ -928,7 +952,7 @@ a {
   font-size: var(--placer-h3);
   line-height: var(--placer-h3-lh);
   font-weight: 700;
-  color: var(--placer-grey-500);
+  color: var(--placer-grey-700);
   transition: color 0.15s ease;
 }
 
@@ -937,7 +961,7 @@ a {
   color: var(--placer-ink);
 }
 
-/* The icon in a white disc, ink once its item is open. */
+/* The icon in a white disc, blue once its item is open. */
 .placer-landing-audience-item-icon {
   flex: 0 0 auto;
   width: 40px;
@@ -952,8 +976,8 @@ a {
 }
 
 .placer-landing-audience-item[data-open="true"] .placer-landing-audience-item-icon {
-  background: var(--placer-ink);
-  border-color: var(--placer-ink);
+  background: var(--placer-landing-blue);
+  border-color: var(--placer-landing-blue);
   color: var(--placer-white);
 }
 
@@ -1008,7 +1032,15 @@ a {
 .placer-landing-start-card {
   padding: 16px 16px 28px;
   border-radius: var(--placer-radius-lg);
-  background: var(--placer-grey-100);
+  background: var(--placer-landing-sky);
+}
+
+.placer-landing-start-card:nth-child(2) {
+  background: var(--placer-landing-yellow);
+}
+
+.placer-landing-start-card:nth-child(3) {
+  background: var(--placer-landing-lilac);
 }
 
 .placer-landing-start-card-media {
@@ -1079,7 +1111,7 @@ a {
   height: 480px;
   border-radius: var(--placer-radius-lg);
   overflow: hidden;
-  background: var(--placer-grey-100);
+  background: var(--placer-landing-sky);
 }
 
 .placer-landing-cases-track {
@@ -1107,7 +1139,7 @@ a {
   height: 100%;
   border-radius: var(--placer-radius-lg);
   overflow: hidden;
-  background: var(--placer-grey-100);
+  background: var(--placer-landing-sky);
   display: grid;
   grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   min-height: 480px;
@@ -1115,7 +1147,7 @@ a {
 
 .placer-landing-case-photo {
   position: relative;
-  background: var(--placer-grey-200);
+  background: var(--placer-landing-red);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1144,7 +1176,19 @@ a {
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--placer-grey-500);
+  color: var(--placer-grey-700);
+}
+
+/* A red dot, like the study's pin on the map. */
+.placer-landing-case-place::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--placer-landing-red);
+  box-shadow: 0 0 0 1px var(--placer-ink);
 }
 
 .placer-landing-case-title {
@@ -1172,7 +1216,7 @@ a {
   font-weight: 500;
   color: var(--placer-ink);
   text-decoration: none;
-  border-bottom: 1px solid currentColor;
+  border-bottom: 2px solid var(--placer-landing-blue);
   padding-bottom: 2px;
 }
 
@@ -1181,12 +1225,12 @@ a {
   outline-offset: 4px;
 }
 
-/* The close of the page: the waitlist, centred on a dark band a shade lighter
- * than the ink footer under it, so the two read apart, in the statement's
- * capitals at a size down. */
+/* The close of the page: the waitlist, centred on a blue band over the ink
+ * footer, in the statement's capitals at a size down. The band's one button is
+ * yellow, as blue cannot stand out on blue. */
 .placer-landing-waitlist {
   padding: 96px var(--placer-margin);
-  background: #262626;
+  background: var(--placer-landing-blue);
   color: var(--placer-white);
   text-align: center;
 }
@@ -1206,7 +1250,7 @@ a {
   max-width: 44ch;
   font-size: var(--placer-body-lg);
   line-height: var(--placer-body-lg-lh);
-  color: var(--placer-grey-300);
+  color: var(--placer-white);
 }
 
 .placer-landing-waitlist-form {
@@ -1232,7 +1276,7 @@ a {
   height: 52px;
   box-sizing: border-box;
   padding: 0 16px;
-  border: 1px solid var(--placer-grey-700);
+  border: 1px solid var(--placer-white);
   border-radius: var(--placer-radius-sm);
   background: var(--placer-white);
   color: var(--placer-ink);
@@ -1249,9 +1293,9 @@ a {
   flex: 0 0 auto;
   height: 52px;
   padding: 0 24px;
-  border: 1px solid var(--placer-white);
+  border: 1px solid var(--placer-landing-yellow);
   border-radius: var(--placer-radius-sm);
-  background: var(--placer-white);
+  background: var(--placer-landing-yellow);
   color: var(--placer-ink);
   font-family: var(--placer-font);
   font-size: 16px;
@@ -1261,7 +1305,8 @@ a {
 }
 
 .placer-landing-waitlist-form button:hover:not(:disabled) {
-  background: var(--placer-grey-200);
+  background: var(--placer-white);
+  border-color: var(--placer-white);
 }
 
 .placer-landing-waitlist-form button:disabled {
@@ -1283,7 +1328,7 @@ a {
 .placer-landing-waitlist-error {
   margin: 12px 0 0;
   font-size: 14px;
-  color: var(--placer-grey-300);
+  color: var(--placer-white);
 }
 
 @media (max-width: 1023px) {

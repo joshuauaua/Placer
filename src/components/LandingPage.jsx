@@ -501,7 +501,7 @@ function LandingCases({ intro }) {
 // in survey_followups as "Add to the waitlist" beside it, with no answers.
 const WAITLIST_SOURCE = 'landing_survey';
 
-/* The close of the page: an email field and a button, on an ink band. */
+/* The close of the page: an email field and a button, on a blue band. */
 function WaitlistSignup() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('idle'); // idle | sending | done | error
@@ -573,7 +573,7 @@ export function LandingPage({ t }) {
       <section className="placer-landing-hero">
         <div className="placer-landing-hero-text">
           <h1 className="placer-landing-title" style={{ color: t.ink }}>
-            Understand, Imagine and Plan the City. Together.
+            Understand, Imagine and Plan the City. <span className="placer-landing-title-mark">Together.</span>
           </h1>
 
           <p className="placer-landing-pitch">
