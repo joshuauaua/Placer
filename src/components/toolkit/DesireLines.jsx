@@ -107,7 +107,7 @@ function Solo({ t, tool }) {
         <>
           <KeepOnProfile t={t} tool="desire-lines"
             inquiry={{ title: site.name, note: site.note ?? '', config: inquiryConfig({ site, note: site.note, state }) }}
-            intro="Save this site, your marks and your walks on your profile as an inquiry, to start or add to a project's Desire Lines later." />
+            intro="Save this site, your marks and your walks on your profile as an inquiry, to start or add to a board's Desire Lines later." />
           <Btn t={t} variant="quiet" size="sm" icon="pin" onClick={() => { setSite(null); setState(emptyDesire()); }}>
             Choose another site
           </Btn>

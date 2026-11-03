@@ -60,7 +60,7 @@ function Organizer({ t, organiser, accountId, onOpen }) {
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {typeof organiser.projects === 'number' && (
           <Fact t={t} icon="grid">
-            {organiser.projects} {organiser.projects === 1 ? 'project' : 'projects'} created
+            {organiser.projects} {organiser.projects === 1 ? 'board' : 'boards'} created
           </Fact>
         )}
         {joined && <Fact t={t} icon="calendar">On PLACER since {joined}</Fact>}

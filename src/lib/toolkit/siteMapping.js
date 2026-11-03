@@ -333,7 +333,7 @@ export function siteFromConfig(config) {
   if (!config || !isPoint(config.point)) return null;
   const bounds = Array.isArray(config.bounds) && config.bounds.length === 4 && config.bounds.every(Number.isFinite)
     ? config.bounds : null;
-  const name = typeof config.name === 'string' && config.name.trim() ? config.name.trim() : 'Project site';
+  const name = typeof config.name === 'string' && config.name.trim() ? config.name.trim() : 'Board site';
   return {
     name,
     lat: config.point.lat,

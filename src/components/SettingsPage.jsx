@@ -200,7 +200,7 @@ function Organisations({ t, organisations, onNewOrganisation, onOpenOrganisation
     <Card t={t} title="Organisations">
       <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
         A page for a municipality, studio, association or any other group you are part of,
-        with its own public page, admins, and projects run in its name. Once you run one, it
+        with its own public page, admins, and boards run in its name. Once you run one, it
         is under Organisations in the side menu.
       </p>
       {organisations.length > 0 && (
@@ -368,11 +368,11 @@ function Analytics({ t, onNavigate }) {
 // read and write.
 const NOTIFICATION_KINDS = [
   { inapp: 'engagement_inapp', email: 'engagement_email', title: 'Engagement',
-    description: 'When someone answers a Toolkit tool in a project you run, and when one of its sessions closes.' },
+    description: 'When someone answers a Toolkit tool in a board you run, and when one of its sessions closes.' },
   { inapp: 'activity_inapp', email: 'activity_email', title: 'Activity',
-    description: 'When someone you follow starts a project, or a project or organisation you follow has news or new Toolkit results.' },
+    description: 'When someone you follow starts a board, or a board or organisation you follow has news or new Toolkit results.' },
   { inapp: 'follower_inapp', email: 'follower_email', title: 'Followers',
-    description: 'When someone follows your profile, a project you run, or an organisation you are an admin of.' },
+    description: 'When someone follows your profile, a board you run, or an organisation you are an admin of.' },
   { inapp: 'system_inapp', email: 'system_email', title: 'System',
     description: 'Platform announcements and account maintenance.' },
 ];
@@ -477,13 +477,13 @@ function NotificationPreferences({ t }) {
             * can set it differently for that project. */}
           <div style={{ borderTop: `1px solid ${t.line}`, paddingTop: 18 }}>
             <ProjectResponsesChoice t={t} name="settings-project-responses"
-              legend="Responses on your projects"
+              legend="Responses on your boards"
               value={prefs.project_responses}
               disabled={savingKey === 'project_responses'}
               onChange={(level) => save('project_responses', level)} />
             <p style={{ fontSize: 12.5, color: t.inkFaint, lineHeight: 1.5, marginTop: 12 }}>
-              Answers to the tools in the Toolkit sessions of projects you run. You can choose
-              differently for one project from its dashboard.
+              Answers to the tools in the Toolkit sessions of boards you run. You can choose
+              differently for one board from its dashboard.
             </p>
           </div>
         </div>

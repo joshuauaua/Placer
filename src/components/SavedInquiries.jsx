@@ -56,7 +56,7 @@ export function SavedInquiries({ t, service = inquiryService, onCountChange }) {
     return (
       <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, maxWidth: 560 }}>
         Nothing kept yet. Use a tool on its own, such as Desire Lines, and save it to your
-        profile to come back to it or start a project from it later.
+        profile to come back to it or start a board from it later.
       </p>
     );
   }
@@ -98,7 +98,7 @@ export function SavedInquiries({ t, service = inquiryService, onCountChange }) {
         );
       })}
       <li style={{ borderTop: `1px solid ${t.line}`, paddingTop: 14, fontSize: 13.5, color: t.inkDim }}>
-        A Desire Lines inquiry can be chosen when you set up Desire Lines for a project, to start from its site.
+        A Desire Lines inquiry can be chosen when you set up Desire Lines for a board, to start from its site.
       </li>
     </ul>
   );

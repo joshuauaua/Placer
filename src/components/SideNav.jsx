@@ -203,7 +203,7 @@ export function SideNav({ view, onNavigate, onExplore, onCreateTool, showOrganis
     // First, straight under Create a tool: the dashboard is home for a signed-in account.
     { key: 'dashboard', label: 'Dashboard', short: 'Home', icon: 'home', onSelect: () => onNavigate('dashboard'), active: ['dashboard', 'activity'] },
     { key: 'map', label: 'Explore', icon: 'pin', onSelect: onExplore, active: ['map'] },
-    { key: 'projects', label: 'Projects', icon: 'grid', onSelect: () => onNavigate('projects'), active: ['projects', 'projectDashboard'] },
+    { key: 'projects', label: 'Boards', icon: 'grid', onSelect: () => onNavigate('projects'), active: ['projects', 'projectDashboard'] },
     // Only for an account that runs at least one organisation — until then there is
     // nothing to go back to, and creating one starts from Settings.
     ...(showOrganisations ? [{ key: 'organisations', label: 'Organisations', short: 'Orgs', icon: 'building',

@@ -74,7 +74,7 @@ export function QuestionStep({ t, setup, onChange }) {
         style={{ height: 48, padding: '0 14px', borderRadius: 12, border: `1px solid ${t.lineStrong}`,
           background: t.surface, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 17, fontWeight: 700 }} />
       <span id={`${id}-question-hint`} style={{ fontSize: 12.5, color: t.inkDim }}>
-        On the project's page it is shown above the answers.
+        On the board's page it is shown above the answers.
       </span>
     </div>
   );

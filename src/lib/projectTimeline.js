@@ -134,7 +134,7 @@ export function nextSteps(projects, profile, now = new Date()) {
   });
 
   if (projects.length === 0) {
-    steps.push({ id: 'first-project', kind: 'action', target: 'newProject', title: 'Start your first project',
+    steps.push({ id: 'first-project', kind: 'action', target: 'newProject', title: 'Start your first board',
       detail: 'Set out a place and what you want to find out about it.', days: Infinity });
   }
   if (profile && !profile.location) {

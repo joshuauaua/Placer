@@ -106,7 +106,7 @@ beforeEach(() => {
   onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe } } });
 });
 
-describe('auth, with no project configured', () => {
+describe('auth, with no board configured', () => {
   it('says which variables are missing rather than failing obscurely', async () => {
     await load({ configured: false });
 
@@ -172,7 +172,7 @@ describe('signing up', () => {
       .resolves.toEqual({ needsConfirmation: true });
   });
 
-  it('reports no confirmation needed when the project hands back a session', async () => {
+  it('reports no confirmation needed when the board hands back a session', async () => {
     await load();
     signUp.mockResolvedValue({
       data: { user: account(), session: { access_token: 'tok' } }, error: null,
@@ -550,7 +550,7 @@ describe('following the session', () => {
     expect(unsubscribe).toHaveBeenCalled();
   });
 
-  it('treats an unreachable project as signed out rather than crashing the page', async () => {
+  it('treats an unreachable board as signed out rather than crashing the page', async () => {
     await load();
     getSession.mockRejectedValue(new Error('offline'));
     const onChange = vi.fn();

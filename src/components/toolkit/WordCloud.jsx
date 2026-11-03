@@ -442,7 +442,7 @@ export function WordCloud({ t, room }) {
             <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6 }}>
               Open a room and share its PIN or QR code, and everybody who joins adds a few words of
               their own — the cloud above grows live, and a word gets larger each time another
-              person says it. Opened from a project, a room can stay open for up to 90 days, so its
+              person says it. Opened from a board, a room can stay open for up to 90 days, so its
               QR code can go on a poster. Closing the room, or its time running out, lets go of
               every word in it.
             </p>

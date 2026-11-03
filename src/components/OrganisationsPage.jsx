@@ -220,7 +220,7 @@ export function OrganisationsPage({ t, organisations = [], onNewOrganisation, on
 
         {status !== 'loading' && total === 0 && (
           <p style={{ fontSize: 14, color: t.inkFaint }}>
-            No organisations yet. An organisation runs projects in its own name and has a public
+            No organisations yet. An organisation runs boards in its own name and has a public
             page of its own.
           </p>
         )}

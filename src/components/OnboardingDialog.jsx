@@ -48,12 +48,12 @@ export const ONBOARDING_STEPS = [
     id: 'projects',
     icon: 'grid',
     colour: PALETTE.orange,
-    title: () => 'Projects are where change starts',
-    body: 'A project is how people say what they want to change about a place, and bring '
-      + 'others in to shape it. Everything in PLACER gathers around a project page: people, '
+    title: () => 'Boards are where change starts',
+    body: 'A board is how people say what they want to change about a place, and bring '
+      + 'others in to shape it. Everything in PLACER gathers around a board page: people, '
       + 'ideas, updates and its decisions. Have a look at what others have started.',
-    spotlight: { target: 'projects', label: 'Projects', call: 'onOpenProjects' },
-    action: { label: 'See the projects', icon: 'grid', call: 'onOpenProjects' },
+    spotlight: { target: 'projects', label: 'Boards', call: 'onOpenProjects' },
+    action: { label: 'See the boards', icon: 'grid', call: 'onOpenProjects' },
   },
   {
     id: 'toolkit',
@@ -67,14 +67,14 @@ export const ONBOARDING_STEPS = [
       'Planning to drive change in it',
     ],
     more: 'Some are done solo and others in a group, and they come in all shapes and sizes. '
-      + 'We recommend mixing and matching them to fit what your project needs.',
+      + 'We recommend mixing and matching them to fit what your board needs.',
   },
   {
     id: 'explore',
     icon: 'pin',
     colour: PALETTE.orange,
     title: () => 'Explore what is happening',
-    body: 'The Explore map shows projects and organisations near you. Follow the ones you '
+    body: 'The Explore map shows boards and organisations near you. Follow the ones you '
       + 'care about, and their news lands in Your Activity on the dashboard.',
     spotlight: { target: 'map', label: 'Explore', call: 'onExplore' },
     action: { label: 'Open the map', icon: 'pin', call: 'onExplore' },
@@ -83,11 +83,11 @@ export const ONBOARDING_STEPS = [
     id: 'project',
     icon: 'grid',
     colour: PALETTE.purple,
-    title: () => 'Start your own project',
-    body: 'When you are ready, start your own project. Give it a location and a timeframe, '
+    title: () => 'Start your own board',
+    body: 'When you are ready, start your own board. Give it a location and a timeframe, '
       + 'choose its tools, and share a public page where anyone can take part.',
-    spotlight: { target: 'newProject', label: 'New project', call: 'onNewProject' },
-    action: { label: 'Create a project', icon: 'plus', call: 'onNewProject' },
+    spotlight: { target: 'newProject', label: 'New board', call: 'onNewProject' },
+    action: { label: 'Create a board', icon: 'plus', call: 'onNewProject' },
   },
   {
     id: 'profile',
@@ -95,7 +95,7 @@ export const ONBOARDING_STEPS = [
     colour: PALETTE.blue,
     title: () => 'Make your profile yours',
     body: 'Add a photo, a short bio and your home area, so people know who is behind a '
-      + 'project, and the map opens where you are.',
+      + 'board, and the map opens where you are.',
     action: { label: 'Edit my profile', icon: 'pencil', call: 'onEditProfile' },
   },
 ];

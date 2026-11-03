@@ -98,7 +98,7 @@ describe('PublicProjectPage', () => {
     vi.clearAllMocks();
   });
 
-  it('shows the project once loaded', async () => {
+  it('shows the board once loaded', async () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
 
     setup();
@@ -152,7 +152,7 @@ describe('PublicProjectPage', () => {
 
     setup();
 
-    expect(await screen.findByRole('heading', { name: 'About the project' })).toHaveClass('placer-visually-hidden');
+    expect(await screen.findByRole('heading', { name: 'About the board' })).toHaveClass('placer-visually-hidden');
     expect(screen.getByRole('heading', { name: 'Then' })).not.toHaveClass('placer-visually-hidden');
     expect(screen.getByRole('heading', { name: 'Goals' })).not.toHaveClass('placer-visually-hidden');
   });
@@ -166,12 +166,12 @@ describe('PublicProjectPage', () => {
     expect(screen.queryByRole('heading', { name: 'Photos' })).not.toBeInTheDocument();
   });
 
-  it('says so when the project cannot be found', async () => {
+  it('says so when the board cannot be found', async () => {
     vi.mocked(readProject).mockResolvedValue(null);
 
     setup();
 
-    expect(await screen.findByText('Project not found')).toBeInTheDocument();
+    expect(await screen.findByText('Board not found')).toBeInTheDocument();
   });
 
   it('says so when loading fails', async () => {
@@ -180,7 +180,7 @@ describe('PublicProjectPage', () => {
 
     setup();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Could not load this project/);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Could not load this board/);
     consoleError.mockRestore();
   });
 
@@ -196,7 +196,7 @@ describe('PublicProjectPage', () => {
     expect(screen.getByRole('link', { name: /Council report/ })).toHaveAttribute('href', 'https://example.com/report');
   });
 
-  it('dates a project without dates by the day it was started', async () => {
+  it('dates a board without dates by the day it was started', async () => {
     vi.mocked(readProject).mockResolvedValue({ ...PROJECT, startDate: null, endDate: null,
       createdAt: '2026-03-05T10:00:00Z' });
 
@@ -205,16 +205,16 @@ describe('PublicProjectPage', () => {
     expect(await screen.findByText('5 Mar 2026')).toBeInTheDocument();
   });
 
-  it('goes back to all projects', async () => {
+  it('goes back to all boards', async () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
     const { onBack } = setup();
 
-    fireEvent.click(await screen.findByRole('button', { name: /All Projects/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /All Boards/ }));
 
     expect(onBack).toHaveBeenCalled();
   });
 
-  it('ends with related projects, which open', async () => {
+  it('ends with related boards, which open', async () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
     vi.mocked(readRelatedProjects).mockResolvedValue([
       { id: 'proj-2', name: 'Harbour Steps', ownerName: 'Ines', description: '', locations: [], createdAt: '2026-02-01' },
@@ -223,14 +223,14 @@ describe('PublicProjectPage', () => {
     ]);
     const { onOpenProject } = setup();
 
-    expect(await screen.findByRole('heading', { name: 'Related Projects' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Related Boards' })).toBeInTheDocument();
     expect(readRelatedProjects).toHaveBeenCalledWith(PROJECT);
 
     fireEvent.click(screen.getByRole('button', { name: /Market Square/ }));
     expect(onOpenProject).toHaveBeenCalledWith('proj-3');
   });
 
-  it('still shows the project when related projects fail to load', async () => {
+  it('still shows the board when related boards fail to load', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(readProject).mockResolvedValue(PROJECT);
     vi.mocked(readRelatedProjects).mockRejectedValue(new Error('network down'));
@@ -239,7 +239,7 @@ describe('PublicProjectPage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' })).toBeInTheDocument();
     await waitFor(() => expect(consoleError).toHaveBeenCalled());
-    expect(screen.queryByRole('heading', { name: 'Related Projects' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Related Boards' })).not.toBeInTheDocument();
     consoleError.mockRestore();
   });
 
@@ -247,25 +247,25 @@ describe('PublicProjectPage', () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
 
     const { onSignIn } = setup({ accountId: null, onSignIn: vi.fn() });
-    fireEvent.click(await screen.findByRole('button', { name: 'Follow this project' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Follow this board' }));
 
     expect(onSignIn).toHaveBeenCalled();
     expect(follow).not.toHaveBeenCalled();
   });
 
-  it('follows and unfollows the project', async () => {
+  it('follows and unfollows the board', async () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
     vi.mocked(isFollowing).mockResolvedValue(false);
 
     setup({ accountId: 'user-2' });
-    const button = await screen.findByRole('button', { name: 'Follow this project' });
+    const button = await screen.findByRole('button', { name: 'Follow this board' });
 
     fireEvent.click(button);
 
     await waitFor(() => expect(follow).toHaveBeenCalledWith('project', 'proj-1', 'Riverside Greenway'));
-    expect(await screen.findByRole('button', { name: 'Following this project' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Following this board' })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Following this project' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Following this board' }));
 
     await waitFor(() => expect(unfollow).toHaveBeenCalledWith('project', 'proj-1'));
   });
@@ -276,14 +276,14 @@ describe('PublicProjectPage', () => {
     vi.mocked(isFollowing).mockReturnValue(new Promise((resolve) => { answer = resolve; }));
 
     setup({ accountId: 'user-2' });
-    fireEvent.click(await screen.findByRole('button', { name: 'Follow this project' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Follow this board' }));
     await waitFor(() => expect(isFollowing).toHaveBeenCalledWith('project', 'proj-1'));
     await act(async () => { answer(false); });
 
-    expect(screen.getByRole('button', { name: 'Following this project' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Following this board' })).toBeInTheDocument();
   });
 
-  it('shows a map of the drawn location outline at the top, when the project has one', async () => {
+  it('shows a map of the drawn location outline at the top, when the board has one', async () => {
     vi.mocked(readProject).mockResolvedValue({
       ...PROJECT,
       locationShapes: [{ path: [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }] }],
@@ -294,7 +294,7 @@ describe('PublicProjectPage', () => {
     expect(await screen.findByRole('img', { name: /Map of the area for Riverside Greenway/ })).toBeInTheDocument();
   });
 
-  it('has no map when the project has no drawn location outline', async () => {
+  it('has no map when the board has no drawn location outline', async () => {
     vi.mocked(readProject).mockResolvedValue(PROJECT);
 
     setup();
@@ -426,7 +426,7 @@ describe('PublicProjectPage, taking part', () => {
 
     await screen.findByRole('heading', { level: 2, name: 'Should the square be car-free?' });
     const titles = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
-    expect(titles.slice(0, 2)).toEqual(['Should the square be car-free?', 'About the project']);
+    expect(titles.slice(0, 2)).toEqual(['Should the square be car-free?', 'About the board']);
     expect(screen.queryByRole('heading', { level: 2, name: 'We want your opinion' })).not.toBeInTheDocument();
   });
 
@@ -685,7 +685,7 @@ describe('PublicProjectPage, taking part', () => {
     expect(screen.queryByRole('heading', { name: 'We want your opinion' })).not.toBeInTheDocument();
   });
 
-  it('leaves out a tool that has not been configured for the project yet', async () => {
+  it('leaves out a tool that has not been configured for the board yet', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['street-mixer', 'reimagine-a-space']);
     vi.mocked(readConfiguredProjectTools).mockResolvedValueOnce(new Set(['street-mixer']));
 
@@ -830,7 +830,7 @@ describe('PublicProjectPage, taking part', () => {
     });
   });
 
-  it('still shows the project when it cannot tell which tools are configured', async () => {
+  it('still shows the board when it cannot tell which tools are configured', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(readProjectTools).mockResolvedValue(['street-mixer']);
     vi.mocked(readConfiguredProjectTools).mockRejectedValueOnce(new Error('network down'));
@@ -990,7 +990,7 @@ describe('PublicProjectPage, taking part', () => {
     });
   });
 
-  it('does not show a room the project has not added the tool for', async () => {
+  it('does not show a room the board has not added the tool for', async () => {
     vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL]);
 
     setup();
@@ -1018,16 +1018,16 @@ describe('PublicProjectPage, taking part', () => {
     expect(await screen.findByText('Nothing to take part in yet. Check back soon.')).toBeInTheDocument();
   });
 
-  it('shows its tools under the Project tab, in the order they were added', async () => {
+  it('shows its tools under the Board tab, in the order they were added', async () => {
     vi.mocked(readProjectTools).mockResolvedValue(['reimagine-a-space', 'open-vote']);
     vi.mocked(readProjectOpenRooms).mockResolvedValue([POLL, IDEA]);
 
     setup();
 
-    const panel = await screen.findByRole('tabpanel', { name: 'Project' });
+    const panel = await screen.findByRole('tabpanel', { name: 'Board' });
     await within(panel).findByRole('heading', { name: 'We want your opinion' });
     expect(within(panel).getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent))
-      .toEqual(['About the project', 'Share your idea for this place', 'We want your opinion']);
+      .toEqual(['About the board', 'Share your idea for this place', 'We want your opinion']);
   });
 
   it('skips a tool the Toolkit no longer has', async () => {
@@ -1063,7 +1063,7 @@ describe('PublicProjectPage, taking part', () => {
   });
 });
 
-describe('PublicProjectPage, a private project', () => {
+describe('PublicProjectPage, a private board', () => {
   const LOCKED = { name: 'Folkets Park Square', visibility: 'private', canView: false, requestStatus: null };
 
   beforeEach(() => {
@@ -1086,7 +1086,7 @@ describe('PublicProjectPage, a private project', () => {
     setup({ onSignIn });
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Folkets Park Square' })).toBeInTheDocument();
-    expect(screen.getByText(/This is a private project/)).toBeInTheDocument();
+    expect(screen.getByText(/This is a private board/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Sign in to ask to see it' }));
     expect(onSignIn).toHaveBeenCalled();
   });
@@ -1095,9 +1095,9 @@ describe('PublicProjectPage, a private project', () => {
     vi.mocked(readProjectAccess).mockResolvedValue(LOCKED);
     setup({ accountId: 'user-2', accountName: 'Ana' });
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Ask to see this project' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Ask to see this board' }));
 
-    expect(await screen.findByText(/You have asked to see this project/)).toBeInTheDocument();
+    expect(await screen.findByText(/You have asked to see this board/)).toBeInTheDocument();
     expect(requestProjectAccess).toHaveBeenCalledWith('proj-1', 'Ana');
   });
 
@@ -1106,21 +1106,21 @@ describe('PublicProjectPage, a private project', () => {
     setup({ accountId: 'user-2' });
 
     expect(await screen.findByText('Its organisers have not let you in.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ask to see this project' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ask to see this board' })).not.toBeInTheDocument();
   });
 
-  it('says not found for a project that does not exist at all', async () => {
+  it('says not found for a board that does not exist at all', async () => {
     vi.mocked(readProjectAccess).mockResolvedValue(null);
     setup();
 
-    expect(await screen.findByText('Project not found')).toBeInTheDocument();
+    expect(await screen.findByText('Board not found')).toBeInTheDocument();
   });
 
-  it('marks a private project as private for the people who can see it', async () => {
+  it('marks a private board as private for the people who can see it', async () => {
     vi.mocked(readProject).mockResolvedValue({ ...PROJECT, visibility: 'private' });
     setup({ accountId: 'user-1' });
 
-    expect(await screen.findByText('Private project')).toBeInTheDocument();
+    expect(await screen.findByText('Private board')).toBeInTheDocument();
     expect(readProjectAccess).not.toHaveBeenCalled();
   });
 });
@@ -1162,51 +1162,51 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     vi.setSystemTime(new Date('2026-12-21T12:00:00Z'));
     setup();
 
-    const glance = within(await screen.findByRole('complementary', { name: 'Project at a glance' }));
+    const glance = within(await screen.findByRole('complementary', { name: 'Board at a glance' }));
     expect(await glance.findByText('1,234')).toBeInTheDocument();
     expect(glance.getByText('views')).toBeInTheDocument();
     expect(glance.getByText('7')).toBeInTheDocument();
     expect(glance.getByText('followers')).toBeInTheDocument();
     expect(glance.getByText('10')).toBeInTheDocument();
     expect(glance.getByText('days left')).toBeInTheDocument();
-    expect(glance.getByRole('button', { name: 'Follow this project' })).toBeInTheDocument();
+    expect(glance.getByRole('button', { name: 'Follow this board' })).toBeInTheDocument();
     expect(glance.queryByText(/Interactions|Tools live|People involved/)).not.toBeInTheDocument();
     vi.useRealTimers();
   });
 
-  it('opens the Project tab with the description, then the goals', async () => {
+  it('opens the Board tab with the description, then the goals', async () => {
     setup();
 
-    const panel = within(await screen.findByRole('tabpanel', { name: 'Project' }));
+    const panel = within(await screen.findByRole('tabpanel', { name: 'Board' }));
     expect(panel.getAllByRole('heading', { level: 2 }).slice(0, 2).map((heading) => heading.textContent))
-      .toEqual(['About the project', 'Goals']);
+      .toEqual(['About the board', 'Goals']);
     expect(panel.getByText('A park along the old railway.')).toBeInTheDocument();
     expect(panel.getByText(/Turn the old rail corridor/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', { name: /Updates/ }));
-    expect(screen.queryByRole('heading', { name: 'About the project' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'About the board' })).not.toBeInTheDocument();
   });
 
-  it('offers its owner and collaborators Edit project, which opens its dashboard', async () => {
+  it('offers its owner and collaborators Edit board, which opens its dashboard', async () => {
     const { onEdit } = setup({ accountId: 'user-3', onEdit: vi.fn() });
 
-    fireEvent.click(await screen.findByRole('button', { name: /Edit project/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Edit board/ }));
     expect(onEdit).toHaveBeenCalledWith('proj-1');
   });
 
-  it('has no Edit project for anybody else, signed in or not', async () => {
+  it('has no Edit board for anybody else, signed in or not', async () => {
     setup({ accountId: 'user-9', onEdit: vi.fn() });
     await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' });
     await waitFor(() => expect(readProjectSummary).toHaveBeenCalled());
-    expect(screen.queryByRole('button', { name: /Edit project/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Edit board/ })).not.toBeInTheDocument();
   });
 
-  it('has no Edit project for an admin of its organisation who is not on the project', async () => {
+  it('has no Edit board for an admin of its organisation who is not on the board', async () => {
     vi.mocked(readProjectSummary).mockResolvedValue({ ...SUMMARY, canPostUpdate: true });
     setup({ accountId: 'user-9', onEdit: vi.fn() });
     await screen.findByRole('heading', { level: 1, name: 'Riverside Greenway' });
     await waitFor(() => expect(readProjectSummary).toHaveBeenCalled());
-    expect(screen.queryByRole('button', { name: /Edit project/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Edit board/ })).not.toBeInTheDocument();
   });
 
   it('heads the page with the title and its own subtitle, and the byline under the image', async () => {
@@ -1223,7 +1223,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     expect(byline.previousElementSibling.tagName).not.toBe('H1');
   });
 
-  it('has no subtitle when the project has none, rather than repeating its description', async () => {
+  it('has no subtitle when the board has none, rather than repeating its description', async () => {
     vi.mocked(readProject).mockResolvedValue({ ...PROJECT, summary: 'A park along the old railway.' });
     setup();
 
@@ -1231,26 +1231,26 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     expect(document.querySelector('.placer-project-subtitle')).not.toBeInTheDocument();
   });
 
-  it('has four tabs, and keeps the people and related projects under every one', async () => {
+  it('has four tabs, and keeps the people and related boards under every one', async () => {
     setup();
 
     const tabs = await screen.findAllByRole('tab');
-    expect(tabs.map((tab) => tab.textContent.replace(/\d+$/, ''))).toEqual(['Project', 'Updates', 'Comments', 'Reference Material']);
-    expect(screen.getByRole('tab', { name: 'Project' })).toHaveAttribute('aria-selected', 'true');
+    expect(tabs.map((tab) => tab.textContent.replace(/\d+$/, ''))).toEqual(['Board', 'Updates', 'Comments', 'Reference Material']);
+    expect(screen.getByRole('tab', { name: 'Board' })).toHaveAttribute('aria-selected', 'true');
 
     for (const name of [/Updates/, /Comments/, /Reference Material/]) {
       fireEvent.click(screen.getByRole('tab', { name }));
       expect(screen.getByRole('tab', { name })).toHaveAttribute('aria-selected', 'true');
       expect(screen.getByRole('heading', { name: 'Organizer' })).toBeInTheDocument();
       expect(screen.getByRole('heading', { name: 'Collaborators' })).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: 'Related Projects' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Related Boards' })).toBeInTheDocument();
     }
   });
 
   it('moves between tabs with the arrow keys', async () => {
     setup();
 
-    const project = await screen.findByRole('tab', { name: 'Project' });
+    const project = await screen.findByRole('tab', { name: 'Board' });
     fireEvent.keyDown(project, { key: 'ArrowRight' });
     expect(screen.getByRole('tab', { name: /Updates/ })).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(screen.getByRole('tab', { name: /Updates/ }), { key: 'ArrowLeft' });
@@ -1263,7 +1263,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
 
     const organizer = within((await screen.findByRole('heading', { name: 'Organizer' })).closest('section'));
     expect(await organizer.findByText('Landscape architect.')).toBeInTheDocument();
-    expect(organizer.getByText('3 projects created')).toBeInTheDocument();
+    expect(organizer.getByText('3 boards created')).toBeInTheDocument();
     expect(organizer.getByText('On PLACER since March 2025')).toBeInTheDocument();
     expect(organizer.getByText('Malmö')).toBeInTheDocument();
     expect(organizer.getByRole('button', { name: 'Follow' })).toBeInTheDocument();
@@ -1272,7 +1272,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     expect(props.onOpenProfile).toHaveBeenCalledWith('user-1');
   });
 
-  it('introduces the organisation instead, when the project is run for one', async () => {
+  it('introduces the organisation instead, when the board is run for one', async () => {
     vi.mocked(readProject).mockResolvedValue({ ...PROJECT, organisationId: 'org-1' });
     vi.mocked(readOrganisation).mockResolvedValue({ id: 'org-1', name: 'STPLN', description: 'A culture hub.',
       location: 'Malmö, Sweden', address: '', avatar: null, createdAt: '2026-10-01T00:00:00Z' });
@@ -1282,7 +1282,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
 
     const organizer = within((await screen.findByRole('heading', { name: 'Organizer' })).closest('section'));
     expect(await organizer.findByText('A culture hub.')).toBeInTheDocument();
-    expect(await organizer.findByText('2 projects created')).toBeInTheDocument();
+    expect(await organizer.findByText('2 boards created')).toBeInTheDocument();
     expect(organizer.getByText('Organisation')).toBeInTheDocument();
 
     fireEvent.click(organizer.getByRole('link', { name: 'STPLN' }));
@@ -1296,7 +1296,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     await list.findByText('Ines Berg');
     const links = list.getAllByRole('link');
     expect(links).toHaveLength(2);
-    expect(links[0]).toHaveTextContent('Mara QuinnProject owner');
+    expect(links[0]).toHaveTextContent('Mara QuinnBoard owner');
     expect(links[1]).toHaveTextContent('Ines BergCollaborator');
 
     fireEvent.click(list.getByRole('link', { name: /Ines Berg/ }));
@@ -1326,7 +1326,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
 
     const list = within(await screen.findByRole('list', { name: 'Collaborators' }));
     expect(list.getByText('Mara Quinn')).toBeInTheDocument();
-    expect(screen.getByRole('complementary', { name: 'Project at a glance' })).toHaveTextContent('–views');
+    expect(screen.getByRole('complementary', { name: 'Board at a glance' })).toHaveTextContent('–views');
   });
 
   it('shows updates to everyone, and lets the owner post them', async () => {
@@ -1365,7 +1365,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     expect(screen.queryByRole('button', { name: /Remove update/ })).not.toBeInTheDocument();
   });
 
-  it("lets an admin of the project's organisation post an update", async () => {
+  it("lets an admin of the board's organisation post an update", async () => {
     vi.mocked(readProjectSummary).mockResolvedValue({ ...SUMMARY, canPostUpdate: true });
     setup({ accountId: 'user-7' });
 
@@ -1458,7 +1458,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
     expect(screen.queryByLabelText('Reply to Oskar')).not.toBeInTheDocument();
   });
 
-  it("lets the project's people remove anybody's comment", async () => {
+  it("lets the board's people remove anybody's comment", async () => {
     setup({ accountId: 'user-1' });
 
     fireEvent.click(await screen.findByRole('tab', { name: /Comments/ }));
@@ -1569,7 +1569,7 @@ describe('PublicProjectPage, its header, tabs and people', () => {
       await waitFor(() => expect(postComment).toHaveBeenCalledWith('proj-1', 'Count me in.', null));
     });
 
-    it('offers no choice on a project that is not run for an organisation', async () => {
+    it('offers no choice on a board that is not run for an organisation', async () => {
       vi.mocked(readProject).mockResolvedValue(PROJECT);
       setup({ accountId: 'user-1', accountName: 'Mara Quinn' });
 

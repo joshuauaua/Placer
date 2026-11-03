@@ -85,29 +85,29 @@ const next = () => fireEvent.click(screen.getByRole('button', { name: /^Next/ })
 
 /** From the cover, through the type step, to the basics. */
 const toBasics = (type = /I have a say over a place/) => {
-  fireEvent.click(screen.getByRole('button', { name: /Create a new project/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Create a new board/ }));
   fireEvent.click(screen.getByRole('radio', { name: type }));
   next();
 };
 
-describe('ProjectSetupPage, starting a project', () => {
+describe('ProjectSetupPage, starting a board', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('opens on a cover saying what a project is', () => {
+  it('opens on a cover saying what a board is', () => {
     setup();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Start a Project' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Start a Board' })).toBeInTheDocument();
     expect(screen.getByText(/Bring people together around a place/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Name *')).not.toBeInTheDocument();
   });
 
-  it('asks what kind of project it is, and will not go on without an answer', () => {
+  it('asks what kind of board it is, and will not go on without an answer', () => {
     setup();
-    fireEvent.click(screen.getByRole('button', { name: /Create a new project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Create a new board/ }));
 
-    expect(screen.getByText('Step 2 of 5 · Project type')).toBeInTheDocument();
+    expect(screen.getByText('Step 2 of 5 · Board type')).toBeInTheDocument();
     expect(screen.getAllByRole('radio')).toHaveLength(3);
     expect(screen.getByRole('radio', { name: /I have a say over a place/ })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /I want to push for change/ })).toBeInTheDocument();
@@ -118,7 +118,7 @@ describe('ProjectSetupPage, starting a project', () => {
     expect(screen.getByRole('button', { name: /^Next/ })).toBeEnabled();
   });
 
-  it('tailors the goals question to the kind of project', () => {
+  it('tailors the goals question to the kind of board', () => {
     setup();
     toBasics(/I want to push for change/);
 
@@ -156,7 +156,7 @@ describe('ProjectSetupPage, starting a project', () => {
     expect(screen.getByLabelText('Name *')).toHaveValue('Riverside Greenway');
   });
 
-  it('starts a project with what was filled in across the five steps', async () => {
+  it('starts a board with what was filled in across the five steps', async () => {
     createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
     const { onSaved } = setup();
 
@@ -173,7 +173,7 @@ describe('ProjectSetupPage, starting a project', () => {
     next();
     expect(screen.getByText('Step 5 of 5 · Visuals')).toBeInTheDocument();
     expect(createProject).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Start board/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith({ id: 'proj-1', name: 'Riverside Greenway' }));
     expect(createProject).toHaveBeenCalledWith({
@@ -209,7 +209,7 @@ describe('ProjectSetupPage, starting a project', () => {
     fireEvent.change(screen.getByLabelText('Address'), { target: { value: 'The old rail yard' } });
     next();
     next();
-    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Start board/ }));
 
     await waitFor(() => expect(createProject).toHaveBeenCalledWith(expect.objectContaining({
       address: 'The old rail yard', locationPoint: null, locations: ['The old rail yard'],
@@ -247,13 +247,13 @@ describe('ProjectSetupPage, starting a project', () => {
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
     next();
     next();
-    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Start board/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(saveProjectTools).not.toHaveBeenCalled();
   });
 
-  it('keeps the project and the choice when the tools fail to save, so saving again retries', async () => {
+  it('keeps the board and the choice when the tools fail to save, so saving again retries', async () => {
     createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
     updateProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
     saveProjectTools.mockRejectedValueOnce(new Error('network down'));
@@ -264,7 +264,7 @@ describe('ProjectSetupPage, starting a project', () => {
     next();
     fireEvent.click(screen.getByRole('button', { name: /Co-Budget/ }));
     next();
-    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Start board/ }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('its tools could not be: network down');
     expect(onSaved).not.toHaveBeenCalled();
@@ -293,7 +293,7 @@ describe('ProjectSetupPage, starting a project', () => {
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
     next();
     next();
-    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Start board/ }));
 
     await waitFor(() => expect(createProject).toHaveBeenCalledWith(
       expect.objectContaining({ organisationId: 'org-1' })));
@@ -306,7 +306,7 @@ describe('ProjectSetupPage, starting a project', () => {
     expect(screen.getByLabelText('Run by')).toHaveValue('');
   });
 
-  it('moves on a step, rather than starting the project, when Enter is pressed in a field', () => {
+  it('moves on a step, rather than starting the board, when Enter is pressed in a field', () => {
     setup();
     toBasics();
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'Riverside Greenway' } });
@@ -317,7 +317,7 @@ describe('ProjectSetupPage, starting a project', () => {
     expect(createProject).not.toHaveBeenCalled();
   });
 
-  it('says so when starting the project fails', async () => {
+  it('says so when starting the board fails', async () => {
     createProject.mockRejectedValue(new Error('name too long'));
     setup();
 
@@ -325,7 +325,7 @@ describe('ProjectSetupPage, starting a project', () => {
     fireEvent.change(screen.getByLabelText('Name *'), { target: { value: 'x'.repeat(200) } });
     next();
     next();
-    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Start board/ }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('name too long');
   });
@@ -334,14 +334,14 @@ describe('ProjectSetupPage, starting a project', () => {
     const { onCancel } = setup();
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    fireEvent.click(screen.getByRole('button', { name: /Create a new project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Create a new board/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(onCancel).toHaveBeenCalledTimes(2);
   });
 });
 
-describe('ProjectSetupPage, editing a project', () => {
+describe('ProjectSetupPage, editing a board', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -353,7 +353,7 @@ describe('ProjectSetupPage, editing a project', () => {
     address: 'Folkets Park, Amiralsgatan 35, Malmö', locationPoint: { lat: 55.59, lng: 13.01 },
   };
 
-  it('starts filled in with the project already there', () => {
+  it('starts filled in with the board already there', () => {
     setup({ project: PROJECT });
 
     expect(screen.getByLabelText('Name *')).toHaveValue('Riverside Greenway');
@@ -365,12 +365,12 @@ describe('ProjectSetupPage, editing a project', () => {
   it('is one page, with no cover or steps', () => {
     setup({ project: PROJECT });
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Edit project' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Create a new project/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Edit board' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Create a new board/ })).not.toBeInTheDocument();
     expect(screen.queryByText(/Step \d of 5/)).not.toBeInTheDocument();
   });
 
-  it('keeps the place names of a project whose address was not touched', async () => {
+  it('keeps the place names of a board whose address was not touched', async () => {
     updateProject.mockResolvedValue(PROJECT);
     setup({ project: { ...PROJECT, address: '', locationPoint: null } });
 
@@ -415,14 +415,14 @@ describe('ProjectSetupPage, editing a project', () => {
       expect.objectContaining({ name: 'New name' })));
   });
 
-  it('does not show or change the kind of project', () => {
+  it('does not show or change the kind of board', () => {
     setup({ project: PROJECT });
 
-    expect(screen.queryByText(/What kind of project/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/What kind of board/)).not.toBeInTheDocument();
     expect(screen.queryByText('I want to push for change in a place')).not.toBeInTheDocument();
   });
 
-  it('leaves the organisation alone when editing a project run by one this account does not run', async () => {
+  it('leaves the organisation alone when editing a board run by one this account does not run', async () => {
     updateProject.mockResolvedValue(PROJECT);
     setup({ project: { ...PROJECT, organisationId: 'org-elsewhere' }, organisations: ORGANISATIONS });
 
@@ -451,13 +451,13 @@ describe('ProjectSetupPage, the budget question', () => {
     vi.clearAllMocks();
   });
 
-  const budgetQuestion = () => screen.getByRole('group', { name: 'Do you have a budget for this project?' });
+  const budgetQuestion = () => screen.getByRole('group', { name: 'Do you have a budget for this board?' });
 
   /** From the basics, past every later step, to starting the project. */
   const startFromBasics = () => {
     next();
     next();
-    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Start board/ }));
   };
 
   it('asks it in the basics, with no amount until the answer is yes', () => {
@@ -498,7 +498,7 @@ describe('ProjectSetupPage, the budget question', () => {
     expect(screen.getByLabelText('Currency')).toHaveValue('TRY');
   });
 
-  it('follows the project to its place, until a currency is picked', async () => {
+  it('follows the board to its place, until a currency is picked', async () => {
     createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
     const { onSaved } = setup({ accountLocation: 'Istanbul, Türkiye' });
 
@@ -508,13 +508,13 @@ describe('ProjectSetupPage, the budget question', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
     next();
     next();
-    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Start board/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(saveProjectBudget).toHaveBeenCalledWith('proj-1', expect.objectContaining({ currency: 'SEK' }));
   });
 
-  it('keeps a currency picked by hand, wherever the project is', async () => {
+  it('keeps a currency picked by hand, wherever the board is', async () => {
     createProject.mockResolvedValue({ id: 'proj-1', name: 'Riverside Greenway' });
     const { onSaved } = setup({ accountLocation: 'Istanbul, Türkiye' });
 
@@ -525,7 +525,7 @@ describe('ProjectSetupPage, the budget question', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Pick the suggestion' }));
     next();
     next();
-    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Start board/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(saveProjectBudget).toHaveBeenCalledWith('proj-1', expect.objectContaining({ currency: 'TRY' }));
@@ -594,7 +594,7 @@ describe('ProjectSetupPage, the budget question', () => {
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(saveProjectBudget).not.toHaveBeenCalled();
-    expect(screen.queryByRole('group', { name: 'Do you have a budget for this project?' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Do you have a budget for this board?' })).not.toBeInTheDocument();
   });
 });
 
@@ -637,7 +637,7 @@ describe('ProjectSetupPage, public or private', () => {
     expect(screen.getByText(/Only you, your collaborators/)).toBeInTheDocument();
     next();
     next();
-    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Start board/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(createProject).toHaveBeenCalledWith(expect.objectContaining({ visibility: 'private' }));
@@ -678,7 +678,7 @@ describe('ProjectSetupPage, Idea Visualizer', () => {
     expect(screen.queryByLabelText('Location *')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Next/ })).toBeEnabled();
     next();
-    fireEvent.click(screen.getByRole('button', { name: /Start project/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Start board/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(saveProjectTools).toHaveBeenCalledWith('proj-1', ['reimagine-a-space'], 'user-1');
@@ -699,7 +699,7 @@ describe('ProjectSetupPage, photos beside the header image', () => {
   });
   const file = (name) => new File(['x'], name, { type: 'image/jpeg' });
 
-  it('are not offered until the project is started, since its id names their folder', () => {
+  it('are not offered until the board is started, since its id names their folder', () => {
     setup();
     toBasics();
 
@@ -805,7 +805,7 @@ describe('ProjectSetupPage, photos beside the header image', () => {
   });
 });
 
-describe('ProjectSetupPage, arranging the project\'s page', () => {
+describe('ProjectSetupPage, arranging the board\'s page', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -831,7 +831,7 @@ describe('ProjectSetupPage, arranging the project\'s page', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Page Layout' }));
 
     await screen.findByRole('list', { name: 'Page sections' });
-    expect(sectionNames()).toEqual(['Car-free square?', 'About the project', 'Goals']);
+    expect(sectionNames()).toEqual(['Car-free square?', 'About the board', 'Goals']);
   });
 
   it('saves a new order and a new title with the rest of the changes', async () => {
@@ -841,7 +841,7 @@ describe('ProjectSetupPage, arranging the project\'s page', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Move We want your opinion up' }));
     fireEvent.change(screen.getByPlaceholderText('We want your opinion'), { target: { value: 'Car-free square?' } });
-    expect(sectionNames()).toEqual(['About the project', 'Car-free square?', 'Goals']);
+    expect(sectionNames()).toEqual(['About the board', 'Car-free square?', 'Goals']);
     fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
 
     await waitFor(() => expect(updateProject).toHaveBeenCalledWith('proj-1', expect.objectContaining({
@@ -897,7 +897,7 @@ describe('ProjectSetupPage, arranging the project\'s page', () => {
     setup({ project: PROJECT });
     fireEvent.click(screen.getByRole('tab', { name: 'Page Layout' }));
 
-    const handle = await screen.findByRole('button', { name: 'Drag About the project to reorder' });
+    const handle = await screen.findByRole('button', { name: 'Drag About the board to reorder' });
     expect(handle).toHaveAttribute('aria-roledescription', 'sortable');
   });
 });

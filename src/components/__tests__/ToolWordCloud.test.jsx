@@ -190,7 +190,7 @@ describe('Word Cloud', () => {
   });
 });
 
-describe('Word Cloud on a project page', () => {
+describe('Word Cloud on a board page', () => {
   it('offers the cloud in full screen once this browser has sent its words', async () => {
     const service = {
       saveContribution: vi.fn().mockResolvedValue(true),

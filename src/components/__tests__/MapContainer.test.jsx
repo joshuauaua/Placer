@@ -547,7 +547,7 @@ describe('MapContainer', () => {
     });
   });
 
-  it('shows only the pin: no project areas and no map key', async () => {
+  it('shows only the pin: no board areas and no map key', async () => {
     render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
     expect(lastMap().getSource('project-areas')).toBeFalsy();

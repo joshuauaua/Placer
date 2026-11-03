@@ -11,35 +11,35 @@ import { Btn } from './UI';
 // that follows them.
 const STEPS = [
   {
-    title: 'Understand What a Project Is',
-    body: 'A project brings people together around a place. It serves as a digital hub where communities can understand a location, reimagine its future, make decisions, and drive real-world change.',
+    title: 'Understand What a Board Is',
+    body: 'A board brings people together around a place. It serves as a digital hub where communities can understand a location, reimagine its future, make decisions, and drive real-world change.',
   },
   {
-    title: 'Choose Your Project Type',
+    title: 'Choose Your Board Type',
     body: 'Indicate whether you have official decision-making authority over the site, are advocating for community change, or are pursuing another goal. This tailors the remaining setup steps to your focus.',
   },
   {
     title: 'Fill In the Basics',
     points: [
       { label: 'Details', text: 'Provide a clear, recognizable name and define your core goals.' },
-      { label: 'Timeline', text: 'Set start and end dates to give your project structure.' },
+      { label: 'Timeline', text: 'Set start and end dates to give your board structure.' },
       { label: 'Organization', text: 'Choose whether to publish under an organization account or as an individual.' },
       { label: 'Location', text: 'Enter key addresses or draw custom boundaries and target areas directly on the interactive map.' },
     ],
   },
   {
     title: 'Select Your Interactive Tools',
-    body: 'Choose from a library of engagement tools created by expert organizations. Select and layer tools based on what your project needs to achieve:',
+    body: 'Choose from a library of engagement tools created by expert organizations. Select and layer tools based on what your board needs to achieve:',
     points: [
       { label: 'Understand', text: 'Collect local data, run community surveys, and gather baseline insights.' },
       { label: 'Imagine', text: 'Use visual interactive tools to help participants explore possibilities and share ideas.' },
       { label: 'Plan', text: 'Mobilize action with community polls, co-budgeting exercises, and decision-making modules.' },
     ],
-    after: 'Participants can engage with these tools throughout the lifecycle of your project via a direct link, PIN, or QR code.',
+    after: 'Participants can engage with these tools throughout the lifecycle of your board via a direct link, PIN, or QR code.',
   },
   {
     title: 'Add Visuals & Customize the Page',
-    body: 'Upload a crisp landscape photo to serve as the main project banner and preview card image. Customize the page layout to make sure it looks inviting and informative to the public before you launch.',
+    body: 'Upload a crisp landscape photo to serve as the main board banner and preview card image. Customize the page layout to make sure it looks inviting and informative to the public before you launch.',
   },
 ];
 
@@ -50,7 +50,7 @@ const NEXT = [
   },
   {
     title: 'Share the Public Page',
-    body: 'Distribute your project link so the community can follow updates and map out ideas in real time.',
+    body: 'Distribute your board link so the community can follow updates and map out ideas in real time.',
   },
   {
     title: 'Gather & Track Input',
@@ -96,14 +96,14 @@ export function QuickstartPage({ t, onNewProject }) {
         </div>
         <h1 className="placer-disp" style={{ fontSize: 48, fontWeight: 700, color: t.ink,
           letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 16 }}>
-          Create Your First Project
+          Create Your First Board
         </h1>
         <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, marginBottom: 40 }}>
-          Launch a project in five quick steps. Here is how to set it up and what you can do
-          once your project is live.
+          Launch a board in five quick steps. Here is how to set it up and what you can do
+          once your board is live.
         </p>
 
-        <h2 className="placer-h2" style={{ color: t.ink, marginBottom: 4 }}>Setting Up Your Project</h2>
+        <h2 className="placer-h2" style={{ color: t.ink, marginBottom: 4 }}>Setting Up Your Board</h2>
         <ol style={{ listStyle: 'none', padding: 0, margin: '0 0 48px' }}>
           {STEPS.map((step, index) => (
             <Step key={step.title} t={t} number={index + 1} {...step} />
@@ -122,7 +122,7 @@ export function QuickstartPage({ t, onNewProject }) {
 
         {onNewProject && (
           <Btn t={t} variant="primary" size="lg" icon="plus" onClick={onNewProject}>
-            Create a Project
+            Create a Board
           </Btn>
         )}
       </div>

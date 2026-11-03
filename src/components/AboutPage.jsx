@@ -38,7 +38,7 @@ const PILLARS = [
   {
     image: streetBicycle,
     title: 'Plan',
-    body: 'Bring everything together on a dedicated project page. Research, community ideas, and interactive outputs are displayed in one transparent space—creating a living repository for your placemaking journey.',
+    body: 'Bring everything together on a dedicated board page. Research, community ideas, and interactive outputs are displayed in one transparent space—creating a living repository for your placemaking journey.',
   },
 ];
 

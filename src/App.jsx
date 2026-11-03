@@ -16,6 +16,7 @@ import { NotFoundPage } from './components/NotFoundPage';
 import { GlassNavbar } from './components/GlassNavbar';
 import { SiteFooter } from './components/SiteFooter';
 import { SideNav } from './components/SideNav';
+import { findTool } from './toolkit/tools';
 import { useIdentity } from './components/useIdentity';
 import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
 import { CASE_STUDY_FORM_PATH, isFullScreenTool, isToolConfigurator } from './lib/routes';
@@ -35,6 +36,7 @@ const ContactPage = lazy(() => import('./components/ContactPage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const ToolkitPage = lazy(() => import('./components/ToolkitPage'));
 const ChooseToolDialog = lazy(() => import('./components/ChooseToolDialog'));
+const AddToBoardDialog = lazy(() => import('./components/AddToBoardDialog'));
 const ToolConfiguratorPage = lazy(() => import('./components/ToolConfiguratorPage'));
 const JoinPage = lazy(() => import('./components/JoinPage'));
 const DashboardPage = lazy(() => import('./components/DashboardPage'));
@@ -62,7 +64,7 @@ const PublicOrganisationPage = lazy(() => import('./components/PublicOrganisatio
 const ACCOUNT_PATHS = {
   dashboard: '/dashboard',
   activity: '/activity',
-  projects: '/projects',
+  projects: '/boards',
   organisations: '/organisations',
   settings: '/settings',
   signin: '/signin',
@@ -77,7 +79,7 @@ const ACCOUNT_VIEWS = {
   '/activity': 'activity',
   // Where the Tools page was, before it became the dashboard.
   '/tools': 'dashboard',
-  '/projects': 'projects',
+  '/boards': 'projects',
   '/organisations': 'organisations',
   '/settings': 'settings',
   '/signin': 'signin',
@@ -107,15 +109,16 @@ const STATIC_VIEWS = {
 };
 
 /**
- * `/projects/new`, `/projects/<id>` (the public page) or `/projects/<id>/dashboard`,
- * read off the location the same way the Toolkit is — a project's dashboard and its
+ * `/boards/new`, `/boards/<id>` (the public page) or `/boards/<id>/dashboard`,
+ * read off the location the same way the Toolkit is — a board's dashboard and its
  * public page both need a link worth bookmarking or sharing. Null for anything else,
- * including a bare `/projects` with nothing after it.
+ * including a bare `/boards` with nothing after it. (Boards are projects inside the
+ * code and the database; only what people see calls them boards.)
  */
 function projectRouteFrom(path) {
-  if (!path.startsWith('/projects/')) return null;
-  if (path === '/projects/new') return { mode: 'new' };
-  const match = /^\/projects\/([^/]+)(\/dashboard)?$/.exec(path);
+  if (!path.startsWith('/boards/')) return null;
+  if (path === '/boards/new') return { mode: 'new' };
+  const match = /^\/boards\/([^/]+)(\/dashboard)?$/.exec(path);
   if (!match) return null;
   return { mode: match[2] ? 'dashboard' : 'public', id: match[1] };
 }
@@ -164,7 +167,7 @@ function LoadingFallback() {
 const SIGNED_IN_VIEWS = ['dashboard', 'activity', 'settings', 'projects', 'organisations',
   'projectNew', 'projectDashboard', 'organisationNew', 'organisationDashboard'];
 
-// What /dashboard, /projects and /settings show to someone who has logged out. Not a redirect,
+// What /dashboard, /boards and /settings show to someone who has logged out. Not a redirect,
 // so the URL still works once they log back in.
 function SignedOutNotice({ t, onSignIn }) {
   return (
@@ -176,7 +179,7 @@ function SignedOutNotice({ t, onSignIn }) {
           You are logged out
         </h1>
         <p style={{ fontSize: 15, color: t.inkDim, marginBottom: 24 }}>
-          Log back in to see your dashboard, projects and settings.
+          Log back in to see your dashboard, boards and settings.
         </p>
         <Btn t={t} variant="primary" onClick={onSignIn}>Sign in</Btn>
       </div>
@@ -247,7 +250,7 @@ function MainApp({ initialView = 'welcome' }) {
   const organisationRoute = organisationRouteFrom(location);
   const organisationView = organisationRoute
     && { new: 'organisationNew', public: 'organisationPublic', dashboard: 'organisationDashboard' }[organisationRoute.mode];
-  // `/projects/new?organisation=<id>`, from an organisation's dashboard: the new
+  // `/boards/new?organisation=<id>`, from an organisation's dashboard: the new
   // project starts out run in that organisation's name.
   const search = useSearch();
   const newProjectOrganisationId = new URLSearchParams(search).get('organisation');
@@ -289,14 +292,17 @@ function MainApp({ initialView = 'welcome' }) {
     };
   }, [view, location]);
 
-  const showNewProject = () => navigate('/projects/new');
+  const showNewProject = () => navigate('/boards/new');
   // Create a tool, from the side nav or the dashboard: once the kind is picked, a dialog
-  // of the tools of that kind (ChooseToolDialog), each opening its configuration page.
+  // of the tools of that kind (ChooseToolDialog); once a tool is, which board it goes on
+  // (AddToBoardDialog); and then its configuration page, for that board.
   const [createCategory, setCreateCategory] = useState(null);
-  const showCreateTool = (category) => setCreateCategory(category);
-  const closeCreateTool = useCallback(() => setCreateCategory(null), []);
+  const [createToolId, setCreateToolId] = useState(null);
+  const showCreateTool = (category) => { setCreateToolId(null); setCreateCategory(category); };
+  const closeCreateTool = useCallback(() => { setCreateCategory(null); setCreateToolId(null); }, []);
+  const createTool = createToolId ? findTool(createToolId) : null;
   const showNewOrganisationProject = (organisationId) =>
-    navigate(`/projects/new?organisation=${encodeURIComponent(organisationId)}`);
+    navigate(`/boards/new?organisation=${encodeURIComponent(organisationId)}`);
   const showNewOrganisation = () => navigate('/organisations/new');
   const showOrganisationDashboard = (id) => navigate(`/organisations/${encodeURIComponent(id)}/dashboard`);
   const showOrganisationPublic = (id) => navigate(`/organisations/${encodeURIComponent(id)}`);
@@ -310,8 +316,8 @@ function MainApp({ initialView = 'welcome' }) {
     else if (kind === 'caseStudy') navigate(`/resources/${encodeURI(id)}`);
     else showProjectPublic(id);
   };
-  const showProjectDashboard = (id) => navigate(`/projects/${id}/dashboard`);
-  const showProjectPublic = (id) => navigate(`/projects/${id}`);
+  const showProjectDashboard = (id) => navigate(`/boards/${id}/dashboard`);
+  const showProjectPublic = (id) => navigate(`/boards/${id}`);
   const showPublicProfile = (id) => navigate(`/people/${encodeURIComponent(id)}`);
   // A room the project already has, from its dashboard — the dashboard has already
   // told this browser it may run it, so it opens as the facilitator's view.
@@ -442,7 +448,7 @@ function MainApp({ initialView = 'welcome' }) {
           )}
 
           {/* The welcome tour, over whichever page it has led to: its steps go to the
-              projects, the map, a new project and Settings, and it carries on
+              boards, the map, a new board and Settings, and it carries on
               over each. */}
           {!identityLoading && profile && (
             <WelcomeTour t={t} accountId={accountId} name={profile.name}
@@ -529,12 +535,24 @@ function MainApp({ initialView = 'welcome' }) {
               </Suspense>
             )}
 
-            {createCategory && (
+            {createCategory && !createTool && (
               <Suspense fallback={null}>
                 <ChooseToolDialog t={t} category={createCategory} onClose={closeCreateTool}
-                  onPick={(toolId) => {
-                    setCreateCategory(null);
-                    navigate(`/toolkit/${encodeURIComponent(toolId)}/configure`);
+                  onPick={setCreateToolId} />
+              </Suspense>
+            )}
+
+            {createTool && (
+              <Suspense fallback={null}>
+                <AddToBoardDialog t={t} tool={createTool} accountId={accountId} ownerName={profile?.name ?? ''}
+                  onClose={closeCreateTool}
+                  // Back to the tools of the same kind.
+                  onBack={() => setCreateToolId(null)}
+                  onDone={(boardId) => {
+                    const toolId = createTool.id;
+                    closeCreateTool();
+                    navigate(`/toolkit/${encodeURIComponent(toolId)}/configure`
+                      + (boardId ? `?project=${encodeURIComponent(boardId)}` : ''));
                   }} />
               </Suspense>
             )}
@@ -655,8 +673,8 @@ function MainApp({ initialView = 'welcome' }) {
             )}
 
             {/* projectNew and projectDashboard need an account (SIGNED_IN_VIEWS) —
-                starting or managing a project is not something a signed-out visitor can
-                do. projectPublic needs nothing: a project's public page is exactly the
+                starting or managing a board is not something a signed-out visitor can
+                do. projectPublic needs nothing: a board's public page is exactly the
                 thing anyone should be able to open cold, unsignedin, from a shared link. */}
             {view === 'projectNew' && profile && (
               <Suspense fallback={<LoadingFallback />}>
@@ -747,6 +765,18 @@ function SandboxRedirect() {
   return <Redirect to={`~/toolkit${path}${search ? `?${search}` : ''}`} replace />;
 }
 
+/**
+ * Boards used to be called projects, at /projects. Links to them are out there in
+ * messages, QR codes and bookmarks, so they are sent on to the same place under
+ * /boards, query string and all.
+ */
+function ProjectsRedirect() {
+  const [rest] = useLocation();
+  const search = useSearch();
+  const path = rest === '/' ? '' : rest;
+  return <Redirect to={`~/boards${path}${search ? `?${search}` : ''}`} replace />;
+}
+
 function App() {
   const t = THEME;
 
@@ -759,6 +789,7 @@ function App() {
           {/* An entry point only — a scanned QR code or a typed PIN — so it is its
               own route rather than a view inside MainApp. */}
           <Route path="/sandbox" nest><SandboxRedirect /></Route>
+          <Route path="/projects" nest><ProjectsRedirect /></Route>
           <Route path="/join"><Suspense fallback={<LoadingFallback />}><JoinPage t={t} /></Suspense></Route>
           {/* Where every link Supabase mails out comes back to, and the screen that
               link leads to. Both are only ever arrived at cold, from another

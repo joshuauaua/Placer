@@ -136,7 +136,7 @@ describe('App', () => {
     expect(screen.getByRole('navigation', { name: 'App' })).toBeInTheDocument();
   });
 
-  it('skips the map for a project that has set Idea Visualizer up, drawing on its base image', async () => {
+  it('skips the map for a board that has set Idea Visualizer up, drawing on its base image', async () => {
     // jsdom never loads a picture, and the step waits for the photo's size to shape
     // the stage; this one says it is 1000 × 700 as soon as it is asked.
     vi.stubGlobal('Image', class {
@@ -152,18 +152,18 @@ describe('App', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Get started' }));
 
-    expect(await screen.findByRole('button', { name: /Back to project/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Back to board/ })).toBeInTheDocument();
     expect(readReimagineScene).toHaveBeenCalledWith('proj-1');
     expect(await screen.findByRole('img', { name: 'Canvas background' }))
       .toHaveAttribute('src', 'data:image/webp;base64,AAAA');
     expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Back to project/ }));
-    expect(history.at(-1)).toBe('/projects/proj-1');
+    fireEvent.click(screen.getByRole('button', { name: /Back to board/ }));
+    expect(history.at(-1)).toBe('/boards/proj-1');
     vi.unstubAllGlobals();
   });
 
-  it('starts from the map when the project\'s scene cannot be loaded', async () => {
+  it('starts from the map when the board\'s scene cannot be loaded', async () => {
     vi.mocked(readReimagineScene).mockRejectedValueOnce(new Error('blocked by CORS'));
     const { hook, searchHook } = memoryLocation({ path: '/toolkit/reimagine-a-space?project=proj-1' });
     render(<Router hook={hook} searchHook={searchHook}><App /></Router>);
@@ -195,7 +195,7 @@ describe('App', () => {
     });
 
     it('leads somebody signed in back to their dashboard', async () => {
-      const { hook, history } = memoryLocation({ path: '/projects/abc/nope', record: true });
+      const { hook, history } = memoryLocation({ path: '/boards/abc/nope', record: true });
       render(<Router hook={hook}><App /></Router>);
 
       fireEvent.click(screen.getByRole('button', { name: 'Go to your dashboard' }));
@@ -289,9 +289,9 @@ describe('App', () => {
       const location = renderRecording('/dashboard');
       await screen.findByRole('heading', { level: 1, name: /^Welcome back/ });
 
-      fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Projects' }));
+      fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Boards' }));
 
-      await waitFor(() => expect(location.history.at(-1)).toBe('/projects'));
+      await waitFor(() => expect(location.history.at(-1)).toBe('/boards'));
     });
 
     it('offers Create Account and Log In after logging out, and nothing else', () => {
@@ -335,18 +335,18 @@ describe('App', () => {
       expect(screen.queryByRole('navigation', { name: 'App' })).not.toBeInTheDocument();
     });
 
-    it('opens Projects from the side nav and puts it in the URL', async () => {
+    it('opens Boards from the side nav and puts it in the URL', async () => {
       const location = renderRecording();
 
-      fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Projects' }));
+      fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Boards' }));
 
-      expect(await screen.findByRole('heading', { level: 1, name: 'Projects' })).toBeInTheDocument();
-      expect(location.history.at(-1)).toBe('/projects');
+      expect(await screen.findByRole('heading', { level: 1, name: 'Boards' })).toBeInTheDocument();
+      expect(location.history.at(-1)).toBe('/boards');
     });
 
-    it('says so when /projects is reached while logged out', () => {
+    it('says so when /boards is reached while logged out', () => {
       localStorage.setItem('placemaking_profile', JSON.stringify({ signedIn: false }));
-      renderRecording('/projects');
+      renderRecording('/boards');
 
       expect(screen.getByText('You are logged out')).toBeInTheDocument();
     });
@@ -416,5 +416,30 @@ describe('App', () => {
       expect(await screen.findByLabelText('Username')).toBeInTheDocument();
       expect(location.history.at(-1)).toBe('/signup');
     });
+  });
+});
+
+describe('the old /projects links', () => {
+  const visit = (path) => {
+    const location = memoryLocation({ path, record: true });
+    render(<Router hook={location.hook}><App /></Router>);
+    return location;
+  };
+
+  it.each([
+    ['/projects', '/boards'],
+    ['/projects/new', '/boards/new'],
+    ['/projects/proj-1', '/boards/proj-1'],
+    ['/projects/proj-1/dashboard', '/boards/proj-1/dashboard'],
+  ])('sends %s on to %s', async (from, to) => {
+    const location = visit(from);
+
+    await waitFor(() => expect(location.history.at(-1)).toBe(to));
+  });
+
+  it('keeps the query string', async () => {
+    const location = visit('/projects/new?organisation=org-1');
+
+    await waitFor(() => expect(location.history.at(-1)).toBe('/boards/new?organisation=org-1'));
   });
 });

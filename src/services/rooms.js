@@ -177,7 +177,7 @@ export async function readProjectOpenRooms(projectId) {
   const supabase = await client();
   const { data, error } = await supabase.rpc('project_open_rooms', { p_project_id: projectId });
 
-  if (error) throw new Error(`Could not read the project's open rooms: ${error.message}`);
+  if (error) throw new Error(`Could not read the board's open rooms: ${error.message}`);
   return (data ?? []).map((row) => ({
     id: row.room_id,
     tool: row.tool,
@@ -196,7 +196,7 @@ export async function readProjectRoomSchedule(projectId) {
   const supabase = await client();
   const { data, error } = await supabase.rpc('project_room_schedule', { p_project_id: projectId });
 
-  if (error) throw new Error(`Could not read the project's room schedule: ${error.message}`);
+  if (error) throw new Error(`Could not read the board's room schedule: ${error.message}`);
   return (data ?? []).map((row) => ({
     id: row.room_id,
     tool: row.tool,

@@ -35,6 +35,6 @@ describe('isToolConfigurator', () => {
     expect(isToolConfigurator('/toolkit/word-cloud/configure')).toBe(true);
     expect(isToolConfigurator('/toolkit/word-cloud')).toBe(false);
     expect(isToolConfigurator('/toolkit')).toBe(false);
-    expect(isToolConfigurator('/projects/1/configure')).toBe(false);
+    expect(isToolConfigurator('/boards/1/configure')).toBe(false);
   });
 });

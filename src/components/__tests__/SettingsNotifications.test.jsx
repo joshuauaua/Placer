@@ -18,10 +18,10 @@ const open = async () => {
   render(<SettingsPage t={THEME} profile={{ name: 'Mara Quinn', bio: '' }} email="mara@example.com" onSaveProfile={vi.fn()}
     onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: 'Notification preferences' }));
-  return screen.findByRole('group', { name: 'Responses on your projects' });
+  return screen.findByRole('group', { name: 'Responses on your boards' });
 };
 
-describe('SettingsPage, responses on your projects', () => {
+describe('SettingsPage, responses on your boards', () => {
   afterEach(() => vi.clearAllMocks());
 
   it('defaults to every response', async () => {
@@ -33,7 +33,7 @@ describe('SettingsPage, responses on your projects', () => {
     expect(screen.queryByRole('radio', { name: /Use my default/ })).not.toBeInTheDocument();
   });
 
-  it('saves a new default for every project', async () => {
+  it('saves a new default for every board', async () => {
     vi.mocked(readPreferences).mockResolvedValue({ ...DEFAULT_PREFERENCES });
     await open();
 
@@ -60,6 +60,6 @@ describe('SettingsPage, responses on your projects', () => {
     vi.mocked(readPreferences).mockResolvedValue({ ...DEFAULT_PREFERENCES });
     await open();
 
-    expect(screen.getByText(/a project you run, or an organisation you are an admin of/)).toBeInTheDocument();
+    expect(screen.getByText(/a board you run, or an organisation you are an admin of/)).toBeInTheDocument();
   });
 });

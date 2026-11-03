@@ -170,7 +170,7 @@ describe('Pop Quiz in a room', () => {
   });
 });
 
-describe('setting it up for a project', () => {
+describe('setting it up for a board', () => {
   beforeEach(() => {
     createRoom.mockResolvedValue({ id: 'room-1', pin: '123456', facilitatorToken: 'facilitator-1' });
   });

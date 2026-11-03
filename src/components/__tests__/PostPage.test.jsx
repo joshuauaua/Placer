@@ -165,7 +165,7 @@ describe('PostPage', () => {
     expect(saveInquiry.mock.calls[0][0].preview).toBe('data:image/jpeg;base64,mockScreenshot');
   });
 
-  it('keeps the project the flow was entered for', async () => {
+  it('keeps the board the flow was entered for', async () => {
     setup({ projectId: 'proj-1' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Save to my profile' }));

@@ -216,7 +216,7 @@ export function CaseStudyDialog({ t, signedIn = false, onClose }) {
         ) : (
           <form ref={formRef} onSubmit={send} noValidate>
             <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, margin: '0 0 8px' }}>
-              Used PLACER on a project? Tell us how it went, and we may feature it in our
+              Used PLACER on a board? Tell us how it went, and we may feature it in our
               Resources.
             </p>
             <p style={{ fontSize: 13, color: t.inkDim, margin: '0 0 20px' }}>
@@ -253,7 +253,7 @@ export function CaseStudyDialog({ t, signedIn = false, onClose }) {
 
             {picture('logo', 'Client logo', logo, setLogo, 'A JPEG, PNG or WebP.')}
             {picture('image', 'Case study image or screenshot', image, setImage,
-              'A JPEG, PNG or WebP — a photo of the place or a screenshot of the project.')}
+              'A JPEG, PNG or WebP — a photo of the place or a screenshot of the board.')}
 
             {status === 'error' && error && (
               <p role="alert" style={{ fontSize: 13.5, color: ERROR_RED, margin: '12px 0 0' }}>{error}</p>

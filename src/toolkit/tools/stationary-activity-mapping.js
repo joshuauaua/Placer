@@ -22,7 +22,7 @@ export default {
   component: StationaryActivityMap,
   // A project sets it up as the tool itself starts: the instructions, then the area
   // and location everybody mapping for the project shares (StationaryActivitySetup.jsx).
-  setupNote: 'You will outline the area this project maps and name its location. Everybody mapping for the project then starts from them, adding their own name, date, time and weather.',
+  setupNote: 'You will outline the area this board maps and name its location. Everybody mapping for the board then starts from them, adding their own name, date, time and weather.',
   setup: {
     defaults: defaultProjectSetup,
     problems: projectSetupProblems,

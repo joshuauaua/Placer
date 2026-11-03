@@ -59,7 +59,7 @@ describe('ChooseToolDialog', () => {
 });
 
 describe('Create a tool, in the app', () => {
-  it('opens the tools of the kind picked, and a tool into its configuration', async () => {
+  it('opens the tools of the kind picked, then which board, then the tool\'s configuration', async () => {
     const location = memoryLocation({ path: '/dashboard', record: true });
     render(<Router hook={location.hook}><App /></Router>);
     const nav = within(await screen.findByRole('navigation', { name: 'App' }));
@@ -72,7 +72,16 @@ describe('Create a tool, in the app', () => {
     expect(location.history.at(-1)).toBe('/dashboard');
     fireEvent.click(within(dialog).getByRole('button', { name: /Co-Budget/ }));
 
-    expect(location.history.at(-1)).toBe('/toolkit/budget-ballot/configure');
+    // Then which board it goes on. Without a Supabase project here, there can be none.
+    const board = await screen.findByRole('dialog', { name: 'Add Co-Budget to a board' });
     expect(screen.queryByRole('dialog', { name: 'Plan tools' })).toBeNull();
+    fireEvent.click(within(board).getByRole('button', { name: 'Back' }));
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Plan tools' }))
+      .getByRole('button', { name: /Co-Budget/ }));
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Add Co-Budget to a board' }))
+      .getByRole('button', { name: 'Continue without a board' }));
+
+    expect(location.history.at(-1)).toBe('/toolkit/budget-ballot/configure');
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

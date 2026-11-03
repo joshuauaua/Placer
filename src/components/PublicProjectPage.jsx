@@ -208,14 +208,14 @@ function LockedProject({ t, preview, accountId, accountName, onSignIn, projectId
       </span>
       <h1 style={{ color: t.ink, marginBottom: 8 }}>{preview.name}</h1>
       <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6, marginBottom: 24 }}>
-        This is a private project. Only the people its organisers let in can see it and take part.
+        This is a private board. Only the people its organisers let in can see it and take part.
       </p>
 
       {!accountId ? (
         <Btn t={t} variant="primary" icon="user" onClick={onSignIn}>Sign in to ask to see it</Btn>
       ) : status === 'pending' ? (
         <p role="status" style={{ fontSize: 15, color: t.ink, fontWeight: 500 }}>
-          You have asked to see this project. Its organisers will let you know.
+          You have asked to see this board. Its organisers will let you know.
         </p>
       ) : status === 'declined' ? (
         <p role="status" style={{ fontSize: 15, color: t.ink, fontWeight: 500 }}>
@@ -223,7 +223,7 @@ function LockedProject({ t, preview, accountId, accountName, onSignIn, projectId
         </p>
       ) : (
         <Btn t={t} variant="primary" icon="lock" onClick={ask} disabled={sending}>
-          {sending ? 'Asking…' : 'Ask to see this project'}
+          {sending ? 'Asking…' : 'Ask to see this board'}
         </Btn>
       )}
 
@@ -251,13 +251,13 @@ function timeLeft(progress) {
   const days = (n) => (n === 1 ? 'day' : 'days');
   if (progress.state === 'ongoing') return { value: progress.daysLeft, label: `${days(progress.daysLeft)} left` };
   if (progress.state === 'upcoming') return { value: progress.daysToStart, label: `${days(progress.daysToStart)} until it starts` };
-  if (progress.state === 'ended') return { value: 'Ended', label: 'this project has finished' };
+  if (progress.state === 'ended') return { value: 'Ended', label: 'this board has finished' };
   return { value: 'Open', label: 'no end date set' };
 }
 
 // The Workshop Room is there only for a project with a live tool in it.
 const TABS = [
-  { id: 'project', label: 'Project' },
+  { id: 'project', label: 'Board' },
   { id: 'workshop', label: 'Workshop Room' },
   { id: 'updates', label: 'Updates' },
   { id: 'comments', label: 'Comments' },
@@ -471,7 +471,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const backButton = (
     <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={() => onBack?.()}
       style={{ padding: '0 12px 0 6px', marginBottom: 24 }}>
-      All Projects
+      All Boards
     </Btn>
   );
 
@@ -494,7 +494,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
       <div ref={topRef} className="placer-project" style={{ background: t.page }}>
         {backButton}
         <div style={{ textAlign: 'center', padding: 48 }}>
-          <h1 style={{ color: t.ink, marginBottom: 8 }}>Project not found</h1>
+          <h1 style={{ color: t.ink, marginBottom: 8 }}>Board not found</h1>
           <p style={{ fontSize: 16, color: t.inkDim }}>It may have been removed.</p>
         </div>
       </div>
@@ -504,7 +504,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   if (status === 'error') {
     return (
       <div ref={topRef} role="alert" style={{ padding: 48, fontSize: 14, color: t.ink, fontWeight: 500 }}>
-        Could not load this project. See the console for details.
+        Could not load this board. See the console for details.
       </div>
     );
   }
@@ -625,7 +625,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   });
 
   const people = [
-    { id: owner.id, name: owner.name || project.ownerName, photo: owner.photo, role: 'Project owner' },
+    { id: owner.id, name: owner.name || project.ownerName, photo: owner.photo, role: 'Board owner' },
     ...collaborators.filter((person) => person.id !== owner.id).map((person) => ({ ...person, role: 'Collaborator' })),
     ...collaboratingOrganisations.map((org) => ({ ...org, kind: 'organisation', role: 'Collaborating organisation' })),
   ];
@@ -683,7 +683,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
           {isTeam && onEdit && (
             <Btn t={t} variant="outline" icon="pencil" onClick={() => onEdit(project.id)}
               style={{ flex: '0 0 auto', marginTop: 4 }}>
-              Edit project
+              Edit board
             </Btn>
           )}
         </div>
@@ -730,12 +730,12 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
             )}
             {project.visibility === 'private' && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <Icon name="lock" size={16} stroke={2} />Private project
+                <Icon name="lock" size={16} stroke={2} />Private board
               </span>
             )}
           </div>
 
-          <aside aria-label="Project at a glance" className="placer-project-glance">
+          <aside aria-label="Board at a glance" className="placer-project-glance">
             <Stat t={t} value={left.value} label={left.label} />
             <Stat t={t} value={summary ? NUMBER.format(summary.views) : '–'}
               label={summary?.views === 1 ? 'view' : 'views'} />
@@ -744,14 +744,14 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
             {/* Signed out, it asks them to sign in first: following needs an account. */}
             <Btn t={t} size="lg" full variant={following ? 'outline' : 'primary'} icon="bookmark"
               onClick={accountId ? toggleFollow : onSignIn} style={{ marginTop: 20, height: 56, fontSize: 16 }}>
-              {following ? 'Following this project' : 'Follow this project'}
+              {following ? 'Following this board' : 'Follow this board'}
             </Btn>
           </aside>
         </div>
       </header>
 
       <div ref={tabsRef} className="placer-project-tabs" style={{ background: t.page, borderBottom: `1px solid ${t.line}` }}>
-        <div role="tablist" aria-label="Project sections" onKeyDown={onTabKey}
+        <div role="tablist" aria-label="Board sections" onKeyDown={onTabKey}
           style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
           {tabs.map(({ id, label }) => {
             const current = id === tab;
@@ -848,7 +848,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         <section id="project-related" className="placer-project-section placer-project-related"
           aria-labelledby="project-related-heading">
           <h2 id="project-related-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 20 }}>
-            Related Projects
+            Related Boards
           </h2>
           <div className="placer-project-related-grid">
             {related.map((other) => (
