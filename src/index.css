@@ -3698,11 +3698,56 @@ a {
   }
 }
 
-/* PLACER — a row in a list: Projects, Organisations and Create a tool's list of tools
- * (ChooseToolDialog.jsx). It lifts to grey on hover. */
+/* PLACER — a row in a list: Projects and Organisations. It lifts to grey on hover. */
 .placer-toolkit-row:hover,
 .placer-toolkit-row:focus-visible {
   background: var(--placer-grey-100) !important;
+}
+
+/* PLACER — Create a tool's tools of one kind (ChooseToolDialog.jsx): a large panel with
+ * the tools as cards, as many across as fit at 260px or more — three on a laptop, one
+ * on a phone. A card rises on hover, with a shadow, and takes an ink ring on focus. */
+.placer-choose-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+  padding: 28px;
+}
+
+.placer-choose-tool-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.placer-choose-tool-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--placer-shadow);
+  border-color: transparent !important;
+}
+
+.placer-choose-tool-card:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .placer-choose-tool-grid {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .placer-choose-tool-panel {
+    max-height: 92vh !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-choose-tool-card {
+    transition: none;
+  }
+
+  .placer-choose-tool-card:hover {
+    transform: none;
+  }
 }
 
 /* PLACER — Explore (see ExplorePage.jsx). A page that scrolls, with the footer

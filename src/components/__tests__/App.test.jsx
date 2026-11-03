@@ -53,6 +53,18 @@ describe('App', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Understand, Imagine and Plan the City. Together.' })).toBeInTheDocument();
   });
 
+  it('never shows the side nav on the landing page, even to somebody counted as signed in', () => {
+    // Tests run with no Supabase project, where everybody counts as signed in.
+    renderAt('/');
+    expect(screen.getByRole('heading', { level: 1, name: 'Understand, Imagine and Plan the City. Together.' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'App' })).toBeNull();
+  });
+
+  it('still shows the side nav on the dashboard', async () => {
+    renderAt('/dashboard');
+    expect(await screen.findByRole('navigation', { name: 'App' })).toBeInTheDocument();
+  });
+
   it('sets the landing copy beside the city drawing, as decoration', () => {
     const { container } = renderAt('/');
 
@@ -94,7 +106,7 @@ describe('App', () => {
   });
 
   it('ErrorBoundary catches errors thrown by route content instead of crashing the app', async () => {
-    renderAt('/');
+    renderAt('/dashboard');
 
     fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Explore' }));
 
@@ -102,7 +114,7 @@ describe('App', () => {
   });
 
   it('puts Explore at its own address, /explore', () => {
-    const { hook, history } = memoryLocation({ path: '/', record: true });
+    const { hook, history } = memoryLocation({ path: '/dashboard', record: true });
     render(<Router hook={hook}><App /></Router>);
 
     fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Explore' }));
@@ -335,7 +347,7 @@ describe('App', () => {
     });
 
     it('shows the side nav when signed in, and it navigates by URL', async () => {
-      const location = renderRecording();
+      const location = renderRecording('/dashboard');
 
       const sideNav = within(screen.getByRole('navigation', { name: 'App' }));
       fireEvent.click(sideNav.getByRole('button', { name: 'Settings' }));
@@ -346,7 +358,8 @@ describe('App', () => {
     });
 
     it('drops the side nav after logging out', () => {
-      renderRecording();
+      renderRecording('/dashboard');
+      expect(screen.getByRole('navigation', { name: 'App' })).toBeInTheDocument();
 
       fireEvent.click(trigger());
       fireEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));
@@ -355,7 +368,7 @@ describe('App', () => {
     });
 
     it('opens Boards from the side nav and puts it in the URL', async () => {
-      const location = renderRecording();
+      const location = renderRecording('/dashboard');
 
       fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Boards' }));
 
