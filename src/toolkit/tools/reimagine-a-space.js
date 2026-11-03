@@ -14,7 +14,7 @@ export default {
   category: 'imagine',
   name: 'Idea Visualizer',
   tagline: 'A tool to help anyone quickly create a visualization of an idea they have.',
-  blurb: 'Pick a spot on the map and step into its Street View. Place benches, trees, lighting, and more where they would go, and save it to your profile to come back to.',
+  blurb: 'Pin a place and take its photo in Street View, or upload one you took there. Place trees, benches, stalls, lighting and more where they would go, describe your idea, and save it to your profile.',
   ...tone(PALETTE.orange),
   icon: 'sparkle',
   createdBy: 'PLACER',

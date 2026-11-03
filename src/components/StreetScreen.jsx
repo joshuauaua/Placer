@@ -26,6 +26,9 @@ export function StreetScreen({
   // steps can show what the user actually made.
   const handleNext = () => {
     let preview = null;
+    // The selection's resize handles are on the stage too, and are not part of the idea.
+    const handles = stageRef.current?.find?.('Transformer') ?? [];
+    handles.forEach((handle) => handle.hide());
     try {
       // JPEG rather than PNG because saveImagination rewrites the whole array into
       // localStorage's ~5 MB budget and a full-size PNG of a 1000x700 stage runs
@@ -46,6 +49,8 @@ export function StreetScreen({
       // stage untainted (see src/lib/staticMaps.js) — but a tainted canvas must not
       // stop the user advancing. The next step falls back to the bare screenshot.
       console.error('Could not export canvas preview:', error);
+    } finally {
+      handles.forEach((handle) => handle.show());
     }
     posthog.capture('imagination_description_started', {
       assets_count: canvasAssets.length,

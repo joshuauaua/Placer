@@ -82,6 +82,27 @@ describe('PostPage', () => {
     expect(screen.getByText('51.5074, -0.1278')).toBeInTheDocument();
   });
 
+  it('names the address the photo was pinned at, when there is one', () => {
+    setup({ capturedView: { ...CAPTURED, address: 'Folkets Park, Malmö' } });
+    expect(screen.getByText('Folkets Park, Malmö')).toBeInTheDocument();
+  });
+
+  it('shows the place today and who it is for, and keeps them with the idea', async () => {
+    setup({ draft: { ...DRAFT, scene: 'A sunny car park.', audience: 'Parents at the gate.' },
+      capturedView: { ...CAPTURED, source: 'upload', address: 'Folkets Park, Malmö' } });
+
+    expect(screen.getByText('A sunny car park.')).toBeInTheDocument();
+    expect(screen.getByText('Parents at the gate.')).toBeInTheDocument();
+    expect(screen.getByText('Your own photo')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save to my profile' }));
+    await waitFor(() => expect(saveInquiry).toHaveBeenCalled());
+    expect(saveInquiry.mock.calls[0][0].config).toMatchObject({
+      scene: 'A sunny car park.', audience: 'Parents at the gate.', address: 'Folkets Park, Malmö',
+      loc: 'Folkets Park, Malmö', source: 'upload',
+    });
+  });
+
   it('falls back to "Not recorded" when the capture has no position', () => {
     setup({ capturedView: { ...CAPTURED, position: null } });
     expect(screen.getByText('Not recorded')).toBeInTheDocument();
@@ -110,6 +131,9 @@ describe('PostPage', () => {
       config: {
         category: 'green',
         loc: '51.5074, -0.1278',
+        scene: null,
+        audience: null,
+        address: null,
         position: CAPTURED.position,
         source: 'streetview',
         pov: CAPTURED.pov,

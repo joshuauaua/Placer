@@ -59,14 +59,19 @@ export function recordedVisual({ assets, title, description } = {}, knownTypes) 
 /**
  * An idea made with the tool on its own, as it is kept on a profile (services/
  * inquiries.js): what kind of idea, where it was captured from, and what was placed on
- * it, which is what it takes to open it on the canvas again. The title and description
+ * it, which is what it takes to open it on the canvas again, and the details the
+ * description step asks for beyond them. The title and description
  * are the inquiry's own title and note. The picture is not here: it is uploaded, and its
  * key added as `preview`.
  */
-export function ideaInquiryConfig({ category, loc, capturedView, canvasAssets, projectId = null }) {
+export function ideaInquiryConfig({ category, loc, capturedView, canvasAssets, details = {}, projectId = null }) {
   return {
     category: category || null,
     loc: loc || null,
+    // What the place is like today and who the idea is for, as DescribePage asks.
+    scene: text(details.scene, MAX_DESCRIPTION) || null,
+    audience: text(details.audience, MAX_DESCRIPTION) || null,
+    address: text(capturedView?.address, 200) || null,
     position: capturedView?.position ?? null,
     source: capturedView?.source ?? null,
     pov: capturedView?.pov ?? null,

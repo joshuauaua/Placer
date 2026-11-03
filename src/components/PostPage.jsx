@@ -88,7 +88,7 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
   const [authMode, setAuthMode] = useState('signin');
   const [, navigate] = useLocation();
 
-  const loc = formatLoc(capturedView?.position);
+  const loc = capturedView?.address || formatLoc(capturedView?.position);
   // With no Supabase project there are no accounts, and so no profile to keep it on.
   const canSave = isSupabaseConfigured();
 
@@ -100,7 +100,8 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
         tool: TOOL_ID,
         title: draft.title,
         note: draft.blurb ?? '',
-        config: ideaInquiryConfig({ category: draft.cat, loc, capturedView, canvasAssets, projectId }),
+        config: ideaInquiryConfig({ category: draft.cat, loc, capturedView, canvasAssets, projectId,
+          details: { scene: draft.scene, audience: draft.audience } }),
         preview: preview ?? capturedView?.screenshot ?? null,
       });
       posthog.capture('idea_saved', {
@@ -168,7 +169,13 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [],
           </h2>
 
           <Row t={t} label="Category"><CatTag cat={draft.cat} t={t} /></Row>
-          <Row t={t} label="Description">{draft.blurb}</Row>
+          <Row t={t} label="The idea">{draft.blurb}</Row>
+          {draft.scene?.trim() && <Row t={t} label="The place today">{draft.scene}</Row>}
+          {draft.audience?.trim() && <Row t={t} label="Who it is for">{draft.audience}</Row>}
+          <Row t={t} label="Photo">
+            {capturedView?.source === 'upload' ? 'Your own photo'
+              : capturedView?.source === 'project' ? "The project's photo" : 'Street View'}
+          </Row>
           <Row t={t} label="Location">
             {loc || <span style={{ color: t.inkDim }}>Not recorded</span>}
           </Row>

@@ -59,8 +59,22 @@ describe('DescribePage', () => {
   it('reports a description change as a patch', () => {
     const { onDraftChange } = setup();
 
-    fireEvent.change(screen.getByLabelText('Description *'), { target: { value: 'More trees.' } });
+    fireEvent.change(screen.getByLabelText('Your idea *'), { target: { value: 'More trees.' } });
     expect(onDraftChange).toHaveBeenCalledWith({ blurb: 'More trees.' });
+  });
+
+  it('asks what the place is like today and who it is for, as patches', () => {
+    const { onDraftChange } = setup();
+
+    fireEvent.change(screen.getByLabelText('The place today'), { target: { value: 'A sunny car park.' } });
+    expect(onDraftChange).toHaveBeenCalledWith({ scene: 'A sunny car park.' });
+    fireEvent.change(screen.getByLabelText('Who is it for?'), { target: { value: 'Parents at the gate.' } });
+    expect(onDraftChange).toHaveBeenCalledWith({ audience: 'Parents at the gate.' });
+  });
+
+  it('does not need the place or the people to go on', () => {
+    setup({ draft: FILLED });
+    expect(screen.getByText('Next: Save')).not.toBeDisabled();
   });
 
   it('reports the chosen category as a patch', () => {

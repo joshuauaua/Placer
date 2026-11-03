@@ -9,7 +9,7 @@ import 'konva/lib/shapes/Transformer';
 import 'konva/lib/shapes/Image';
 import useImage from 'use-image';
 import { THEME } from '../theme';
-import { CAT } from '../theme';
+import { CAT, CAT_LIST } from '../theme';
 
 const Asset = ({ asset, isSelected, onSelect, onChange }) => {
   const shapeRef = useRef();
@@ -187,8 +187,10 @@ const ImaginationCanvas = ({
       label: libraryAsset.label,
       cat: libraryAsset.cat,
       icon: libraryAsset.icon,
-      x: width / 2,
-      y: height / 2,
+      // Each new one a step along from the last, so several added in a row do not hide
+      // under one another.
+      x: width / 2 + ((canvasAssets.length % 5) - 2) * 60,
+      y: height / 2 + ((Math.floor(canvasAssets.length / 5) % 3) - 1) * 60,
       scale: 1,
       rotation: 0
     };
@@ -313,31 +315,39 @@ const ImaginationCanvas = ({
         <h3 style={{ fontSize: 18, fontWeight: 700, color: t.ink, marginBottom: 16 }}>Asset Library</h3>
 
         <div style={{ flex: 1, overflowY: 'auto' }} className="placer-scroll">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {availableAssets.map((asset) => {
-              const cat = CAT[asset.cat];
-              return (
-                <button
-                  key={asset.type}
-                  onClick={() => handleAddAsset(asset)}
-                  style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, padding: 12, cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 60, height: 60, borderRadius: 12, background: cat.color + '22',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
-                    {asset.icon ? (
-                      <img src={asset.icon} alt="" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
-                    ) : (
-                      cat.icon === 'tree' ? '🌳' : cat.icon === 'bench' ? '🪑' : cat.icon === 'light' ? '💡' :
-                      cat.icon === 'play' ? '🎪' : cat.icon === 'cart' ? '🛒' : cat.icon === 'bike' ? '🚲' : '📦'
-                    )}
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: t.ink, textAlign: 'center' }}>
-                    {asset.label}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          {/* Grouped under the categories the description picks from, in their order. */}
+          {CAT_LIST.map((category) => {
+            const inCategory = availableAssets.filter((asset) => asset.cat === category.key);
+            if (inCategory.length === 0) return null;
+            return (
+              <section key={category.key} aria-label={category.label} style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+                  color: t.inkDim, margin: '0 0 10px' }}>
+                  {category.label}
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  {inCategory.map((asset) => (
+                    <button
+                      key={asset.type}
+                      type="button"
+                      onClick={() => handleAddAsset(asset)}
+                      style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, padding: 12, cursor: 'pointer',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 60, height: 60, borderRadius: 12, background: category.color + '0F',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
+                        {asset.icon ? (
+                          <img src={asset.icon} alt="" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+                        ) : '📦'}
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: t.ink, textAlign: 'center' }}>
+                        {asset.label}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -1,25 +1,33 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import MapContainer from '../MapContainer';
-import { isSupabaseConfigured, readProjectLocations } from '../../services/projects';
 import { stitchPanoTiles } from '../../lib/panoStitch';
+import { encodeImage } from '../../lib/imageEncode';
 import { resetGoogleMapsLoaderForTests } from '../../lib/googleMaps';
-import { PALETTE } from '../../theme';
-import { clickLayer, clickMap, lastMap, maps } from '../../test/maplibreStub';
+import { clickMap, lastMap, maps } from '../../test/maplibreStub';
 import { photonFeature, stubPhoton } from '../../test/photon';
 
-// What the stand-in map's canvas reads back as: a capture of the map itself.
+// What the stand-in map's canvas reads back as: a capture of the map itself, which
+// is never taken as the photo.
 const MAP_IMAGE = 'data:image/png;base64,MAP';
+// The mocked encodeImage's blob, read back as a data URL.
+const UPLOADED = `data:image/webp;base64,${btoa('photo')}`;
 
-vi.mock('../../services/projects', () => ({
-  isSupabaseConfigured: vi.fn(() => true),
-  readProjectLocations: vi.fn(() => Promise.resolve([])),
-}));
+const streetViewButton = () => screen.getByRole('button', { name: 'Street View' });
+const takePhotoButton = () => screen.getByRole('button', { name: 'Take this photo' });
+const uploadPhoto = (file = new File(['raw'], 'corner.jpg', { type: 'image/jpeg' })) =>
+  fireEvent.change(screen.getByTestId('upload-photo'), { target: { files: [file] } });
 
 // Stitching is real canvas work, which jsdom has no 2D context for. Mocked so
 // these tests can pin the request routing either side of it: a resolved value
 // stands for a composed frame, null for one that could not be composed.
 const STITCHED = 'data:image/jpeg;base64,mockStitched';
+// Re-encoding is canvas work too. An uploaded photo comes back as this blob.
+vi.mock('../../lib/imageEncode', () => ({
+  IMAGE_PRESETS: { scene: { maxSide: 1600, quality: 0.82 } },
+  encodeImage: vi.fn(() => Promise.resolve({ blob: new Blob(['photo'], { type: 'image/webp' }) })),
+}));
+
 vi.mock('../../lib/panoStitch', () => ({
   stitchPanoTiles: vi.fn(() => Promise.resolve(STITCHED)),
 }));
@@ -88,26 +96,27 @@ describe('MapContainer', () => {
     // means it outlives a single test too, unless cleared here.
     resetGoogleMapsLoaderForTests();
     vi.restoreAllMocks();
-    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
-    vi.mocked(readProjectLocations).mockResolvedValue([]);
     vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
-  it('draws the map without a Google key, and offers no Street View without one', () => {
+  it('draws the map without a Google key, offering Street View but not letting it open', () => {
     const appendChildSpy = vi.spyOn(document.head, 'appendChild');
     render(<MapContainer onCaptureView={vi.fn()} apiKey="" />);
 
     expect(maps).toHaveLength(1);
-    expect(screen.getByLabelText('Capture view')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Open Street View at the chosen spot')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Upload a photo' })).toBeInTheDocument();
+    // Still offered as one of the two ways to a photo, so uploading never looks like
+    // the only one; it just cannot open without the key.
+    expect(screen.getByRole('button', { name: 'Street View' })).toBeDisabled();
+    expect(screen.getByText(/needs a Google Maps key/)).toBeInTheDocument();
     expect(appendChildSpy.mock.calls.some(([el]) => el.tagName === 'SCRIPT')).toBe(false);
   });
 
   it('offers Street View once Google has loaded', () => {
     window.google = mockGoogleMaps();
     render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-    expect(screen.getByLabelText('Open Street View at the chosen spot')).toBeEnabled();
+    expect(streetViewButton()).toBeEnabled();
   });
 
   it('appends a script tag to document.head when apiKey is provided and window.google is absent', () => {
@@ -133,18 +142,48 @@ describe('MapContainer', () => {
     expect(screen.getByPlaceholderText('Search for an address...')).toBeInTheDocument();
   });
 
-  it('renders the capture button as an icon only, with no visible text', () => {
-    render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-
-    const button = screen.getByLabelText('Capture view');
-    expect(button).toBeInTheDocument();
-    expect(button.textContent).toBe('');
-    expect(button.querySelector('svg')).toBeInTheDocument();
-  });
-
   it('does not render a coordinate readout', () => {
     render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
     expect(screen.queryByText('55.6054, 12.9854')).not.toBeInTheDocument();
+  });
+
+  it('offers no way to take the map itself as the photo', () => {
+    render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+    expect(screen.queryByRole('button', { name: 'Take this photo' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Capture view')).not.toBeInTheDocument();
+  });
+
+  it('pins an uploaded photo where the map is pinned, re-encoded on the device', async () => {
+    const onCaptureView = vi.fn();
+    render(<MapContainer onCaptureView={onCaptureView} apiKey="" />);
+    act(() => clickMap(lastMap(), { lat: 55.59, lng: 13.0 }));
+
+    const file = new File(['raw'], 'corner.jpg', { type: 'image/jpeg' });
+    uploadPhoto(file);
+    await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
+
+    expect(encodeImage).toHaveBeenCalledWith(file, expect.objectContaining({ maxSide: 1600 }));
+    expect(onCaptureView).toHaveBeenCalledWith({
+      position: { lat: 55.59, lng: 13.0 },
+      address: null,
+      pov: null,
+      fov: null,
+      source: 'upload',
+      timestamp: expect.any(String),
+      screenshot: UPLOADED,
+    });
+  });
+
+  it('says so, and goes nowhere, when an uploaded file is not a picture', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(encodeImage).mockRejectedValueOnce(new Error('That file could not be read as a picture.'));
+    const onCaptureView = vi.fn();
+    render(<MapContainer onCaptureView={onCaptureView} apiKey="" />);
+
+    uploadPhoto();
+
+    expect(await screen.findByRole('status')).toHaveTextContent('That file could not be read as a picture.');
+    expect(onCaptureView).not.toHaveBeenCalled();
   });
 
   it('floats the search box centered along the bottom, on top of the map', () => {
@@ -162,77 +201,6 @@ describe('MapContainer', () => {
       transform: 'translateX(-50%)',
     });
     expect(Number(floatingBar.style.zIndex)).toBeGreaterThan(0);
-  });
-
-  it('places the capture button after the search box in the same floating bar', () => {
-    render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-
-    const searchBox = screen.getByPlaceholderText('Search for an address...').parentElement.parentElement;
-    const floatingBar = searchBox.parentElement;
-    const button = screen.getByLabelText('Capture view');
-
-    expect(button.parentElement).toBe(floatingBar);
-
-    const order = Array.from(floatingBar.children);
-    expect(order.indexOf(button)).toBeGreaterThan(order.indexOf(searchBox));
-  });
-
-  it('calls onCaptureView with position, pov, timestamp, and screenshot data when "Capture View" is clicked', async () => {
-    window.google = mockGoogleMaps();
-    const onCaptureView = vi.fn();
-    render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
-
-    fireEvent.click(screen.getByLabelText('Capture view'));
-
-    await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
-
-    expect(onCaptureView).toHaveBeenCalledWith({
-      position: { lat: 55.6054, lng: 12.9854 },
-      // The map's own zoom: it opens at 15.
-      pov: { heading: 0, pitch: 0, zoom: 15 },
-      // A map capture has no panorama field of view.
-      fov: null,
-      source: 'map',
-      timestamp: expect.any(String),
-      screenshot: MAP_IMAGE,
-    });
-  });
-
-  it('sends capture data with a whole-number pov.zoom read from the live map', async () => {
-    const onCaptureView = vi.fn();
-    render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
-    lastMap().zoom = 15.4;
-
-    fireEvent.click(screen.getByLabelText('Capture view'));
-
-    await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
-
-    const captureData = onCaptureView.mock.calls[0][0];
-    expect(captureData.pov).toEqual({ heading: 0, pitch: 0, zoom: 15 });
-  });
-
-  it('calls onCaptureView with screenshot: null when the map cannot be read', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    const onCaptureView = vi.fn();
-    render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
-    lastMap().canvas.toDataURL = () => { throw new Error('capture failed'); };
-
-    fireEvent.click(screen.getByLabelText('Capture view'));
-
-    await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
-
-    expect(onCaptureView).toHaveBeenCalledWith(
-      expect.objectContaining({ screenshot: null })
-    );
-  });
-
-  it('relabels to "Capturing view" and disables the button while capturing', () => {
-    const onCaptureView = vi.fn();
-    render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
-
-    fireEvent.click(screen.getByLabelText('Capture view'));
-
-    expect(screen.getByLabelText('Capturing view')).toBeDisabled();
   });
 
   describe('when a Street View panorama is open', () => {
@@ -270,7 +238,7 @@ describe('MapContainer', () => {
       const onCaptureView = vi.fn();
       render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-      fireEvent.click(screen.getByLabelText('Capture view'));
+      fireEvent.click(takePhotoButton());
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
       const requested = new URL(fetchMock.mock.calls[0][0]);
@@ -284,7 +252,7 @@ describe('MapContainer', () => {
       const onCaptureView = vi.fn();
       render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-      fireEvent.click(screen.getByLabelText('Capture view'));
+      fireEvent.click(takePhotoButton());
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
       const requests = requestsOf(fetchMock);
@@ -305,7 +273,7 @@ describe('MapContainer', () => {
       const onCaptureView = vi.fn();
       render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-      fireEvent.click(screen.getByLabelText('Capture view'));
+      fireEvent.click(takePhotoButton());
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
       for (const { params } of requestsOf(fetchMock)) {
@@ -320,7 +288,7 @@ describe('MapContainer', () => {
       const onCaptureView = vi.fn();
       render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-      fireEvent.click(screen.getByLabelText('Capture view'));
+      fireEvent.click(takePhotoButton());
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
       const requests = requestsOf(fetchMock);
@@ -346,7 +314,7 @@ describe('MapContainer', () => {
       const onCaptureView = vi.fn();
       render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-      fireEvent.click(screen.getByLabelText('Capture view'));
+      fireEvent.click(takePhotoButton());
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
       const requests = requestsOf(fetchMock);
@@ -364,7 +332,7 @@ describe('MapContainer', () => {
       const onCaptureView = vi.fn();
       render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-      fireEvent.click(screen.getByLabelText('Capture view'));
+      fireEvent.click(takePhotoButton());
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
       const requests = requestsOf(fetchMock);
@@ -384,7 +352,7 @@ describe('MapContainer', () => {
       const onCaptureView = vi.fn();
       render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-      fireEvent.click(screen.getByLabelText('Capture view'));
+      fireEvent.click(takePhotoButton());
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
       const captureData = onCaptureView.mock.calls[0][0];
@@ -399,7 +367,7 @@ describe('MapContainer', () => {
       const onCaptureView = vi.fn();
       render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-      fireEvent.click(screen.getByLabelText('Capture view'));
+      fireEvent.click(takePhotoButton());
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
       // Auto-detect needs both to plan higher-resolution tiles over the same view.
@@ -416,7 +384,7 @@ describe('MapContainer', () => {
       const onCaptureView = vi.fn();
       render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-      fireEvent.click(screen.getByLabelText('Capture view'));
+      fireEvent.click(takePhotoButton());
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
 
       // The STPLN, Malmö default the map is centred on.
@@ -426,7 +394,8 @@ describe('MapContainer', () => {
         .toEqual({ lat: 55.6054, lng: 12.9854 });
     });
 
-    it('falls back to the map at that spot when it has no Street View coverage', async () => {
+    it('says there is no photo, rather than taking the map, when the spot has no coverage', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
       window.google = mockGoogleMaps({ panorama: mockPanorama(OPEN_PANORAMA) });
       // return_error_code=true makes Google 404 rather than serve a gray tile.
       const fetchMock = vi.fn(() => Promise.resolve({ ok: false, status: 404 }));
@@ -434,32 +403,38 @@ describe('MapContainer', () => {
       const onCaptureView = vi.fn();
       render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-      fireEvent.click(screen.getByLabelText('Capture view'));
-      await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
+      fireEvent.click(takePhotoButton());
 
+      expect(await screen.findByRole('status')).toHaveTextContent(/no Street View photo of this spot/);
       // A 404 from the tiles already means no coverage, so there is no point asking
       // the same endpoint for the wide image too.
       expect(requestsOf(fetchMock)).toHaveLength(4);
-      // The map, moved to where the panorama was and zoomed in, stands in for it.
-      expect(lastMap().center).toEqual({ lat: 55.60123, lng: 12.98456 });
-      expect(lastMap().zoom).toBe(18);
-      expect(onCaptureView.mock.calls[0][0].screenshot).toBe(MAP_IMAGE);
+      expect(onCaptureView).not.toHaveBeenCalled();
     });
 
-    it('does not retry as a map image when the key is rejected with a 403', async () => {
+    it('says the photo could not be taken when the key is rejected with a 403', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
       window.google = mockGoogleMaps({ panorama: mockPanorama(OPEN_PANORAMA) });
       const fetchMock = stubStaticImageFetch({ status: 403 });
       const onCaptureView = vi.fn();
       render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" />);
 
-      fireEvent.click(screen.getByLabelText('Capture view'));
-      await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
+      fireEvent.click(takePhotoButton());
 
-      // A misconfigured key is not missing coverage — retrying the wide image would
-      // just 403 again, and the map fallback would hide the real cause.
+      expect(await screen.findByRole('status')).toHaveTextContent('Could not take the photo.');
       const requests = requestsOf(fetchMock);
       expect(requests.every((r) => r.pathname === '/maps/api/streetview')).toBe(true);
-      expect(onCaptureView.mock.calls[0][0].screenshot).toBeNull();
+      expect(onCaptureView).not.toHaveBeenCalled();
+    });
+
+    it('relabels to "Taking the photo…" and disables the button while it is taken', () => {
+      window.google = mockGoogleMaps({ panorama: mockPanorama(OPEN_PANORAMA) });
+      stubStaticImageFetch();
+      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
+
+      fireEvent.click(takePhotoButton());
+
+      expect(screen.getByRole('button', { name: 'Taking the photo…' })).toBeDisabled();
     });
   });
 
@@ -473,7 +448,7 @@ describe('MapContainer', () => {
 
     // The captured payload is the only surface for the chosen spot now that the
     // coordinate readout is gone — it proves the click updated state...
-    fireEvent.click(screen.getByLabelText('Capture view'));
+    uploadPhoto();
     await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
     expect(onCaptureView.mock.calls[0][0].position).toEqual({ lat: 1.2345, lng: 6.789 });
 
@@ -490,6 +465,8 @@ describe('MapContainer', () => {
     const spots = lastMap().markers.filter((marker) => !pins().includes(marker));
     expect(spots).toHaveLength(1);
     expect(spots[0].getLngLat()).toEqual({ lat: 1.2345, lng: 6.789 });
+    // In the electric blue the guide names it by.
+    expect(spots[0].color).toBe('#3A39FF');
   });
 
   describe('Street View', () => {
@@ -499,7 +476,7 @@ describe('MapContainer', () => {
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
       act(() => clickMap(lastMap(), { lat: 55.59, lng: 13.0 }));
 
-      act(() => fireEvent.click(screen.getByLabelText('Open Street View at the chosen spot')));
+      act(() => fireEvent.click(streetViewButton()));
 
       const service = window.google.maps.StreetViewService.mock.results[0].value;
       expect(service.getPanorama).toHaveBeenCalledWith(
@@ -508,7 +485,7 @@ describe('MapContainer', () => {
       expect(panorama.setVisible).toHaveBeenCalledWith(true);
       expect(screen.getByTestId('street-view')).toHaveStyle({ visibility: 'visible' });
       // The legend describes the map, which is hidden behind the panorama.
-      expect(screen.queryByLabelText('Open Street View at the chosen spot')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Street View' })).not.toBeInTheDocument();
     });
 
     it('says so when there is no Street View near the chosen spot', () => {
@@ -516,7 +493,7 @@ describe('MapContainer', () => {
       window.google = mockGoogleMaps({ panorama, coverage: null });
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
-      act(() => fireEvent.click(screen.getByLabelText('Open Street View at the chosen spot')));
+      act(() => fireEvent.click(streetViewButton()));
 
       expect(screen.getByRole('status')).toHaveTextContent(/No Street View near this spot/);
       expect(panorama.setVisible).not.toHaveBeenCalled();
@@ -526,7 +503,7 @@ describe('MapContainer', () => {
       const panorama = mockPanorama({ position: { lat: 55.611, lng: 12.991 } });
       window.google = mockGoogleMaps({ panorama });
       render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-      act(() => fireEvent.click(screen.getByLabelText('Open Street View at the chosen spot')));
+      act(() => fireEvent.click(streetViewButton()));
 
       act(() => fireEvent.click(screen.getByRole('button', { name: 'Back to the map' })));
 
@@ -547,99 +524,19 @@ describe('MapContainer', () => {
 
       expect(lastMap().center).toEqual({ lat: 55.594, lng: 13.007 });
       expect(lastMap().zoom).toBe(17);
-      fireEvent.click(screen.getByLabelText('Capture view'));
+      uploadPhoto();
       await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
+      // Pinned there, and under the address it was picked as.
       expect(onCaptureView.mock.calls[0][0].position).toEqual({ lat: 55.594, lng: 13.007 });
+      expect(onCaptureView.mock.calls[0][0].address).toMatch(/^Folkets Park/);
     });
   });
 
-  describe('project location outlines', () => {
-    const TRIANGLE = [{ lat: 55.6, lng: 12.98 }, { lat: 55.61, lng: 12.98 }, { lat: 55.61, lng: 12.99 }];
-    const PROJECT = { id: 'proj-1', name: 'Riverside Greenway', locationShapes: [{ path: TRIANGLE }] };
+  it('shows only the pin: no project areas and no map key', async () => {
+    render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
 
-    const areas = () => lastMap().getSource('project-areas')?.data.features ?? [];
-
-    it('draws one polygon per shape a project has drawn', async () => {
-      vi.mocked(readProjectLocations).mockResolvedValue([PROJECT]);
-
-      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-
-      await waitFor(() => expect(areas()).toHaveLength(1));
-      expect(areas()[0].geometry.coordinates[0].slice(0, 3))
-        .toEqual(TRIANGLE.map(({ lat, lng }) => [lng, lat]));
-      expect(areas()[0].properties).toEqual({ fill: PALETTE.blue.c300, stroke: PALETTE.blue.c700 });
-    });
-
-    it('draws a polygon for every shape across every project', async () => {
-      vi.mocked(readProjectLocations).mockResolvedValue([
-        PROJECT,
-        { id: 'proj-2', name: 'Second project', locationShapes: [{ path: TRIANGLE }, { path: TRIANGLE }] },
-      ]);
-
-      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-
-      await waitFor(() => expect(areas()).toHaveLength(3));
-    });
-
-    it('ignores a shape with fewer than 3 points', async () => {
-      vi.mocked(readProjectLocations).mockResolvedValue([
-        { id: 'proj-1', name: 'Too small', locationShapes: [{ path: TRIANGLE.slice(0, 2) }] },
-      ]);
-
-      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-
-      await waitFor(() => expect(readProjectLocations).toHaveBeenCalled());
-      await act(async () => {});
-      expect(areas()).toHaveLength(0);
-    });
-
-    it('draws no polygons when Supabase is not configured', async () => {
-      vi.mocked(isSupabaseConfigured).mockReturnValue(false);
-
-      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-
-      await act(async () => {});
-      expect(readProjectLocations).not.toHaveBeenCalled();
-      expect(areas()).toHaveLength(0);
-    });
-
-    it('sends you to the project\'s public page when its outline is clicked', async () => {
-      vi.mocked(readProjectLocations).mockResolvedValue([PROJECT]);
-      const onOpenProject = vi.fn();
-
-      render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" onOpenProject={onOpenProject} />);
-
-      await waitFor(() => expect(areas()).toHaveLength(1));
-      act(() => clickLayer(lastMap(), 'project-areas-fill', 0));
-
-      expect(onOpenProject).toHaveBeenCalledWith('proj-1');
-    });
-
-    it('does not count a click on an outline as choosing a spot', async () => {
-      vi.mocked(readProjectLocations).mockResolvedValue([PROJECT]);
-      const onCaptureView = vi.fn();
-      render(<MapContainer onCaptureView={onCaptureView} apiKey="test-key" onOpenProject={vi.fn()} />);
-      await waitFor(() => expect(areas()).toHaveLength(1));
-
-      act(() => clickLayer(lastMap(), 'project-areas-fill', 0));
-      fireEvent.click(screen.getByLabelText('Capture view'));
-
-      await waitFor(() => expect(onCaptureView).toHaveBeenCalled());
-      expect(onCaptureView.mock.calls[0][0].position).toEqual({ lat: 55.6054, lng: 12.9854 });
-    });
-
-    it('removes its polygons on unmount', async () => {
-      vi.mocked(readProjectLocations).mockResolvedValue([PROJECT]);
-
-      const { unmount } = render(<MapContainer onCaptureView={vi.fn()} apiKey="test-key" />);
-      await waitFor(() => expect(areas()).toHaveLength(1));
-
-      const map = lastMap();
-      unmount();
-
-      expect(map.getLayer('project-areas-fill')).toBeUndefined();
-      expect(map.getSource('project-areas')).toBeUndefined();
-    });
+    expect(lastMap().getSource('project-areas')).toBeFalsy();
+    expect(screen.queryByText('Map key')).not.toBeInTheDocument();
   });
 
   describe('initialCenter', () => {

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { render, fireEvent, screen, cleanup } from '@testing-library/react';
+import { render, fireEvent, screen, cleanup, within } from '@testing-library/react';
 import ImaginationCanvas from '../ImaginationCanvas';
+import { ASSET_LIB } from '../../data';
+import { CAT } from '../../theme';
 
 vi.mock('react-konva/lib/ReactKonvaCore', () => ({
   Stage: ({ children }) => (
@@ -35,6 +37,26 @@ describe('ImaginationCanvas', () => {
   it('renders without crashing', () => {
     render(<ImaginationCanvas availableAssets={[]} canvasAssets={[]} onCanvasAssetsChange={() => {}} />);
     expect(screen.getByText('Asset Library')).toBeInTheDocument();
+  });
+
+  it('offers every asset in the library, grouped under its category', () => {
+    render(<ImaginationCanvas availableAssets={ASSET_LIB} canvasAssets={[]} onCanvasAssetsChange={() => {}} />);
+
+    for (const asset of ASSET_LIB) {
+      const group = screen.getByRole('region', { name: CAT[asset.cat].label });
+      expect(within(group).getByRole('button', { name: asset.label })).toBeInTheDocument();
+    }
+  });
+
+  it('places an asset from the library on the stage', () => {
+    const onCanvasAssetsChange = vi.fn();
+    render(<ImaginationCanvas availableAssets={ASSET_LIB} canvasAssets={[]} onCanvasAssetsChange={onCanvasAssetsChange} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Picnic table' }));
+
+    expect(onCanvasAssetsChange).toHaveBeenCalledWith([
+      expect.objectContaining({ type: 'picnic-table', label: 'Picnic table', cat: 'seating' }),
+    ]);
   });
 
   it('deletes the selected asset when Delete is pressed', () => {
