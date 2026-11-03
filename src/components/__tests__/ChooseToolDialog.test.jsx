@@ -19,18 +19,35 @@ describe('ChooseToolDialog', () => {
   it('lists every tool of the kind picked, A-Z, and none of the others', () => {
     setup({ category: 'understand' });
 
-    const dialog = screen.getByRole('dialog', { name: 'Understand tools' });
-    const names = within(dialog).getAllByRole('listitem').map((item) => item.querySelector('button span + span span').textContent);
+    const dialog = screen.getByRole('dialog', { name: 'Understand' });
+    const names = within(dialog).getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent);
     expect(names).toEqual(toolsIn('understand').map((tool) => tool.name).sort((a, b) => a.localeCompare(b)));
     for (const tool of TOOLS.filter((entry) => entry.category !== 'understand')) {
       expect(within(dialog).queryByText(tool.name)).toBeNull();
     }
   });
 
+  it('shows the tools as cards in a large panel, each with its tagline and maker', () => {
+    setup({ category: 'plan' });
+
+    const dialog = screen.getByRole('dialog', { name: 'Plan' });
+    expect(dialog).toHaveStyle({ maxWidth: '960px' });
+    // The kind as a small heading, and what its tools are for under it, in bold.
+    expect(within(dialog).getByRole('heading', { level: 2, name: 'Plan' })).toHaveStyle({ fontSize: '15px' });
+    expect(within(dialog).getByText('Tools for planning the change, together, in one place.'))
+      .toHaveStyle({ fontWeight: '700' });
+    expect(within(dialog).getByRole('list', { name: 'Tools' })).toHaveClass('placer-choose-tool-grid');
+    const card = within(dialog).getByRole('button', { name: /Co-Budget/ });
+    expect(card).toHaveClass('placer-choose-tool-card');
+    const budget = TOOLS.find((tool) => tool.id === 'budget-ballot');
+    expect(card).toHaveTextContent(budget.tagline);
+    expect(card).toHaveTextContent(`By ${budget.createdBy}`);
+  });
+
   it('calls Imagine Re-Imagine, as Create a tool does', () => {
     setup({ category: 'imagine' });
 
-    expect(screen.getByRole('dialog', { name: 'Re-Imagine tools' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Re-Imagine' })).toBeInTheDocument();
   });
 
   it('picks a tool by its id', () => {
@@ -67,16 +84,16 @@ describe('Create a tool, in the app', () => {
     fireEvent.click(nav.getByRole('button', { name: 'Create a tool' }));
     fireEvent.click(screen.getByRole('menuitem', { name: /Plan/ }));
 
-    const dialog = await screen.findByRole('dialog', { name: 'Plan tools' });
+    const dialog = await screen.findByRole('dialog', { name: 'Plan' });
     // Still on the dashboard underneath: no trip through a gallery.
     expect(location.history.at(-1)).toBe('/dashboard');
     fireEvent.click(within(dialog).getByRole('button', { name: /Co-Budget/ }));
 
     // Then which board it goes on. Without a Supabase project here, there can be none.
     const board = await screen.findByRole('dialog', { name: 'Add Co-Budget to a board' });
-    expect(screen.queryByRole('dialog', { name: 'Plan tools' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Plan' })).toBeNull();
     fireEvent.click(within(board).getByRole('button', { name: 'Back' }));
-    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Plan tools' }))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Plan' }))
       .getByRole('button', { name: /Co-Budget/ }));
     fireEvent.click(within(await screen.findByRole('dialog', { name: 'Add Co-Budget to a board' }))
       .getByRole('button', { name: 'Continue without a board' }));
