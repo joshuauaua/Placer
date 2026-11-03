@@ -16,6 +16,10 @@
 --
 --   select vault.update_secret(id, '<new secret>')
 --     from vault.secrets where name = 'survey_webhook_secret';
+--
+-- A case study (source `case_study_submission`) carries its pictures in `answers` as
+-- data URLs, megabytes of them. Slack needs none of that, so the row goes without
+-- them: `hero` and `images` are taken out and `pictures`, how many there were, put in.
 
 create extension if not exists pg_net;
 
@@ -33,7 +37,14 @@ begin
       'x-webhook-secret', (select decrypted_secret from vault.decrypted_secrets
                            where name = 'survey_webhook_secret')),
     body    := jsonb_build_object('type', 'INSERT', 'schema', 'public',
-                                  'table', 'survey_responses', 'record', to_jsonb(new))
+                                  'table', 'survey_responses', 'record',
+                                  case when new.source = 'case_study_submission' then
+                                    jsonb_set(to_jsonb(new), '{answers}',
+                                      (new.answers - 'hero' - 'images') || jsonb_build_object('pictures',
+                                        (case when new.answers->>'hero' is not null then 1 else 0 end)
+                                        + (case when jsonb_typeof(new.answers->'images') = 'array'
+                                                then jsonb_array_length(new.answers->'images') else 0 end)))
+                                  else to_jsonb(new) end)
   );
   return new;
 end;

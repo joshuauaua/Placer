@@ -33,6 +33,7 @@ const SOURCES: Record<string, string> = {
   landing_survey: 'Landing page survey',
   placemaking_trends_survey: 'Placemaking trends survey',
   user_labs_application: 'User Labs application',
+  case_study_submission: 'Case study',
 };
 
 // Slack's mrkdwn treats these three as control characters; escaping them is all
@@ -168,6 +169,36 @@ function caseStudyMessage(record: Record<string, any>): string {
   ].join('\n');
 }
 
+// A case study sent through the "Add a case study" form, into survey_responses. The
+// trigger sends it without its pictures, only how many there were (survey-slack.sql).
+// The story fields can run to 3,000 characters, so only the first lines are quoted.
+function quoted(value: unknown, max = 600): string {
+  const text = String(value ?? '').trim();
+  if (!text) return '> _not given_';
+  const cut = text.length > max ? `${text.slice(0, max)}…` : text;
+  return esc(cut).split('\n').map((line) => `> ${line}`).join('\n');
+}
+
+function caseStudyResponseMessage(record: Record<string, any>): string {
+  const a = record.answers ?? {};
+  const dates = a.dates ?? {};
+  const when = [dates.start, dates.ongoing ? 'ongoing' : dates.end].filter(Boolean).join(' – ');
+  const contact = a.contact ?? {};
+  const lines = [
+    `:bookmark_tabs: *New case study — ${esc(a.title || 'untitled')}*`,
+  ];
+  if (a.subtitle) lines.push(`_${esc(a.subtitle)}_`);
+  if (a.place) lines.push(`*Where:* ${esc(a.place)}${when ? `  ·  ${esc(when)}` : ''}`);
+  if (a.organisation?.name) lines.push(`*Lead organisation:* ${esc(a.organisation.name)}`);
+  lines.push('*The need:*', quoted(a.need), '*What came of it:*', quoted(a.outcome));
+  lines.push(`*Pictures:* ${Number(a.pictures) || 0}`);
+  lines.push(`*Sent by:* ${esc(contact.name || 'not given')}${contact.role ? `, ${esc(contact.role)}` : ''}`
+    + ` <${record.email ? esc(record.email) : 'no email'}>`);
+  lines.push(`*Consent to publish:* ${a.consent ? 'yes' : 'no'}`);
+  lines.push(`*Submitted:* ${esc(record.submitted_at)}  ·  id \`${esc(record.id)}\``);
+  return lines.join('\n');
+}
+
 Deno.serve(async (req) => {
   const secret = Deno.env.get('SURVEY_WEBHOOK_SECRET');
   const slackUrl = Deno.env.get('SLACK_WEBHOOK_URL');
@@ -189,7 +220,9 @@ Deno.serve(async (req) => {
   // Block Kit, only when there is a picture to show: the text in sections (3,000
   // characters each at most) and the screenshot under it. `text` stays the fallback.
   let blocks: unknown[] | undefined;
-  if (payload.table === 'survey_responses') {
+  if (payload.table === 'survey_responses' && payload.record.source === 'case_study_submission') {
+    [url, text] = [caseStudySlackUrl!, caseStudyResponseMessage(payload.record)];
+  } else if (payload.table === 'survey_responses') {
     [url, text] = [slackUrl, surveyMessage(payload.record)];
   } else if (payload.table === 'bug_reports') {
     [url, text] = [bugSlackUrl!, bugMessage(payload.record)];

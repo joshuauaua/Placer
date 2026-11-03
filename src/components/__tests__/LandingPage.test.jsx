@@ -196,3 +196,12 @@ describe('LandingPage on Development', () => {
     expect(screen.getByRole('img', { name: 'Funded by Swedish Institute' })).toBeInTheDocument();
   });
 });
+
+describe('LandingPage, adding a case study', () => {
+  it('invites a case study after the case studies, opening the form', () => {
+    render(<LandingPage t={THEME} />);
+
+    const band = screen.getByRole('region', { name: 'Add a case study' });
+    expect(within(band).getByRole('link', { name: 'Add a case study' })).toHaveAttribute('href', '/add-a-case-study');
+  });
+});

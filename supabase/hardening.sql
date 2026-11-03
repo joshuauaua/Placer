@@ -17,13 +17,16 @@
 alter table public.survey_responses drop constraint if exists survey_responses_source_known;
 alter table public.survey_responses add constraint survey_responses_source_known
   check (source in ('community_survey', 'landing_survey', 'placemaking_trends_survey', 'user_labs_application',
-                    'toolkit_contribution', 'newsletter_signup'));
+                    'toolkit_contribution', 'newsletter_signup', 'case_study_submission'));
 
 -- 2. Bound the payloads. The real survey sends well under 2 kB; without a cap a
 --    single request could store megabytes, as many times as it likes.
 alter table public.survey_responses drop constraint if exists survey_responses_answers_size;
 alter table public.survey_responses add constraint survey_responses_answers_size
-  check (length(answers::text) <= 8000);
+  -- 8000 for every form but the case study, which carries up to seven pictures,
+  -- each at most 1600px and re-encoded on the device (src/lib/pictureEncode.js).
+  check (length(answers::text) <= 8000
+         or (source = 'case_study_submission' and length(answers::text) <= 6000000));
 
 alter table public.survey_responses drop constraint if exists survey_responses_other_text_size;
 alter table public.survey_responses add constraint survey_responses_other_text_size

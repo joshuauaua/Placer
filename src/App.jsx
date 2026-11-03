@@ -19,7 +19,7 @@ import { SideNav } from './components/SideNav';
 import { findTool } from './toolkit/tools';
 import { useIdentity } from './components/useIdentity';
 import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
-import { CASE_STUDY_FORM_PATH, isFullScreenTool, isToolConfigurator } from './lib/routes';
+import { CASE_STUDY_FORM_PATH, OLD_CASE_STUDY_FORM_PATH, isFullScreenTool, isToolConfigurator } from './lib/routes';
 import { WelcomeTour } from './components/WelcomeTour';
 
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -27,6 +27,7 @@ const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const ExplorePage = lazy(() => import('./components/ExplorePage'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
 const UserLabsPage = lazy(() => import('./components/UserLabsPage'));
+const CaseStudyPage = lazy(() => import('./components/CaseStudyPage'));
 const ResourcesPage = lazy(() => import('./components/ResourcesPage'));
 const ResourceArticlePage = lazy(() => import('./components/ResourceArticlePage'));
 const GuidesPage = lazy(() => import('./components/GuidesPage'));
@@ -101,12 +102,11 @@ const STATIC_PATHS = {
   terms: '/terms-and-privacy',
   // Linked from the landing page's Apply to User Labs card.
   userLabs: '/user-labs',
+  // The case study form, from the landing page's "Add a case study" and Resources'
+  // "Submit a case study". It opens on an invitation code for now.
+  addCaseStudy: CASE_STUDY_FORM_PATH,
 };
-const STATIC_VIEWS = {
-  ...Object.fromEntries(Object.entries(STATIC_PATHS).map(([view, path]) => [path, view])),
-  // The Resources page with its case study form open over it (ResourcesPage reads it).
-  [CASE_STUDY_FORM_PATH]: 'resources',
-};
+const STATIC_VIEWS = Object.fromEntries(Object.entries(STATIC_PATHS).map(([view, path]) => [path, view]));
 
 /**
  * `/boards/new`, `/boards/<id>` (the public page) or `/boards/<id>/dashboard`,
@@ -149,11 +149,11 @@ function personIdFrom(path) {
 /**
  * `/resources/<slug>`, one article from Storyblok — read off the location for the
  * same reason a person's public profile is. The slug is the story's full slug, so it
- * may contain slashes when the story sits in a folder. Null for anything else,
- * including the case study form's address, which is the Resources page itself.
+ * may contain slashes when the story sits in a folder. Null for anything else.
+ * (The case study form's old address under /resources never gets here: it is
+ * redirected before MainApp, to CASE_STUDY_FORM_PATH.)
  */
 function resourceSlugFrom(path) {
-  if (path === CASE_STUDY_FORM_PATH) return null;
   const match = /^\/resources\/(.+)$/.exec(path);
   return match ? decodeURIComponent(match[1]) : null;
 }
@@ -499,9 +499,15 @@ function MainApp({ initialView = 'welcome' }) {
               </Suspense>
             )}
 
+            {view === 'addCaseStudy' && (
+              <Suspense fallback={<LoadingFallback />}>
+                <CaseStudyPage t={t} />
+              </Suspense>
+            )}
+
             {view === 'resources' && (
               <Suspense fallback={<LoadingFallback />}>
-                <ResourcesPage t={t} signedIn={Boolean(accountId)} />
+                <ResourcesPage t={t} />
               </Suspense>
             )}
 
@@ -789,6 +795,8 @@ function App() {
           {/* An entry point only — a scanned QR code or a typed PIN — so it is its
               own route rather than a view inside MainApp. */}
           <Route path="/sandbox" nest><SandboxRedirect /></Route>
+          {/* The case study form used to open over Resources. */}
+          <Route path={OLD_CASE_STUDY_FORM_PATH}><Redirect to={CASE_STUDY_FORM_PATH} replace /></Route>
           <Route path="/projects" nest><ProjectsRedirect /></Route>
           <Route path="/join"><Suspense fallback={<LoadingFallback />}><JoinPage t={t} /></Suspense></Route>
           {/* Where every link Supabase mails out comes back to, and the screen that

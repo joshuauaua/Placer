@@ -1,8 +1,11 @@
 /* PLACER — addresses that both App.jsx and a lazily loaded page need to know, kept here
  * so App can read them without pulling the page into the main bundle. */
 
-/** The case study form's own address: the Resources page, with the form open over it. */
-export const CASE_STUDY_FORM_PATH = '/resources/submit-case-study';
+/** The case study form (CaseStudyPage), from the landing page and from Resources. */
+export const CASE_STUDY_FORM_PATH = '/add-a-case-study';
+
+/** Where the form was before it had a page of its own, sent on to it (App.jsx). */
+export const OLD_CASE_STUDY_FORM_PATH = '/resources/submit-case-study';
 
 /**
  * Toolkit tools that take the whole window once started: no nav bar and no footer, the

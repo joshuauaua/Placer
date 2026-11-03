@@ -15,18 +15,26 @@ create extension if not exists pgcrypto;
 create table if not exists public.survey_responses (
   id           uuid        primary key default gen_random_uuid(),
   submitted_at timestamptz not null    default now(),
-  -- Which form it came from: `community_survey` is the /survey route,
-  -- `landing_survey` the dialog on the landing page, and -- both served by the
-  -- landingpage branch -- `placemaking_trends_survey` the municipal survey,
-  -- `user_labs_application` the User Labs sign-up form and `newsletter_signup` the
-  -- newsletter field in the site footer (an email and empty answers).
-  -- `toolkit_contribution` is the Toolkit's Contribute dialog.
+  -- Which form it came from:
+  --   `community_survey`          the /survey route
+  --   `landing_survey`            the same survey, in the dialog on the landing page
+  --   `placemaking_trends_survey` the municipal survey (landingpage branch)
+  --   `user_labs_application`     the User Labs sign-up form (landingpage branch)
+  --   `newsletter_signup`         the newsletter field in the landingpage branch's
+  --                               site footer (an email and empty answers)
+  --   `toolkit_contribution`      the Toolkit's Contribute dialog
+  --   `case_study_submission`     the "Add a case study" form at /add-a-case-study
   source       text        not null,
   -- Optional: only present when the visitor asked to be contacted.
   email        text,
-  -- { module1: {...}, module2: {...}, module3: {...}, module4: {...} } plus the
-  -- closing step: `optIns` (the keys ticked) and `contact` (name, city,
-  -- department, email) or null when nothing was opted into.
+  -- Everything else the form sent, so its shape follows `source`. For the surveys:
+  -- { module1: {...}, ... } plus the closing step: `optIns` (the keys ticked) and
+  -- `contact` (name, city, department, email) or null when nothing was opted into.
+  --   case_study_submission: title, subtitle, place, dates, need, approach, audience,
+  --     outcome, funding, organisation, organisations, members, links, contact,
+  --     consent, and the pictures as data URLs (hero, images), shrunk on the device
+  --     (src/lib/caseStudy.js; the address is in `email`). Far larger than the
+  --     rest, so the size check below gives it a limit of its own.
   answers      jsonb       not null,
   -- Free text typed against an `other` option, keyed by module then question.
   other_text   jsonb       not null    default '{}'::jsonb
@@ -68,11 +76,14 @@ create policy "signed-in people can submit a survey response"
 alter table public.survey_responses drop constraint if exists survey_responses_source_known;
 alter table public.survey_responses add constraint survey_responses_source_known
   check (source in ('community_survey', 'landing_survey', 'placemaking_trends_survey', 'user_labs_application',
-                    'toolkit_contribution', 'newsletter_signup'));
+                    'toolkit_contribution', 'newsletter_signup', 'case_study_submission'));
 
 alter table public.survey_responses drop constraint if exists survey_responses_answers_size;
 alter table public.survey_responses add constraint survey_responses_answers_size
-  check (length(answers::text) <= 8000);
+  -- 8000 for every form but the case study, which carries up to seven pictures,
+  -- each at most 1600px and re-encoded on the device (src/lib/pictureEncode.js).
+  check (length(answers::text) <= 8000
+         or (source = 'case_study_submission' and length(answers::text) <= 6000000));
 
 alter table public.survey_responses drop constraint if exists survey_responses_other_text_size;
 alter table public.survey_responses add constraint survey_responses_other_text_size
