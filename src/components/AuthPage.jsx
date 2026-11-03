@@ -267,7 +267,7 @@ export function AuthForm({ t, mode = 'signin', onModeChange, onSignedIn, onLeavi
 
         {/* type="submit" and no onClick: Btn leaves `type` unset by default, which in a
             form means submit, so an onClick here would run handleSubmit twice. */}
-        <Btn t={t} variant="primary" icon={signingUp ? undefined : 'check'} full
+        <Btn t={t} variant="primary" full
           type="submit" disabled={!ready || Boolean(busy)}>
           {busy === 'password'
             ? (signingUp ? 'Creating your account…' : 'Signing you in…')

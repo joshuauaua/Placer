@@ -1,11 +1,11 @@
 /* PLACER — the side nav, down the left edge for anyone who is signed in.
  *
- * The places someone with an account goes back to: their dashboard, the map, their
- * projects, their organisations (once they run one), the Toolkit and their Tools, under a primary button for creating a tool —
- * a dropdown of the three kinds of tool, Understand, Re-Imagine and Plan (CreateToolMenu) —
- * with small links to the Guides, the FAQ and the terms (which the footer had before it
- * went for anyone signed in) low down above a line, and their settings under that line
- * at the very bottom. It sits under the glass
+ * The places someone with an account goes back to: their dashboard and their boards,
+ * under a primary button for creating a tool — a dropdown of the three kinds of tool,
+ * Understand, Re-Imagine and Plan (CreateToolMenu) — with small links low down above a
+ * line: Explore, their organisations (once they run one), the Guides, the FAQ and the
+ * terms (which the footer had before it went for anyone signed in). Their settings
+ * are under that line at the very bottom. It sits under the glass
  * nav bar rather than beside it, so the bar still spans the full width, and it
  * stops where the page does, so the footer does too. The button at its top
  * collapses it to a rail of icons. Below 1024px it becomes the glass tab bar
@@ -64,12 +64,13 @@ function NavLabel({ label, short }) {
  * `expanded` holds it open whatever was chosen, without forgetting the choice: the
  * welcome tour sets it, so the places it points at are there with their names.
  */
-// The small links above Settings. Desktop only: the phone's tab bar has no room, and a
-// collapsed rail has no room for their words.
+// The small links above Settings that only open a view. Desktop only: the phone's tab
+// bar has no room, and a collapsed rail has no room for their words. Explore and
+// Organisations go before these (SideNav), as they need more than a view to open.
 const SMALL_LINKS = [
-  { label: 'Guides', view: 'guides' },
-  { label: 'FAQ', view: 'faq' },
-  { label: 'Terms and Privacy', view: 'terms' },
+  { key: 'guides', label: 'Guides', view: 'guides' },
+  { key: 'faq', label: 'FAQ', view: 'faq' },
+  { key: 'terms', label: 'Terms and Privacy', view: 'terms' },
 ];
 
 // What Create a tool offers: one of the tool categories each. Imagine reads as
@@ -202,13 +203,18 @@ export function SideNav({ view, onNavigate, onExplore, onCreateTool, showOrganis
   const items = [
     // First, straight under Create a tool: the dashboard is home for a signed-in account.
     { key: 'dashboard', label: 'Dashboard', short: 'Home', icon: 'home', onSelect: () => onNavigate('dashboard'), active: ['dashboard', 'activity'] },
-    { key: 'map', label: 'Explore', icon: 'pin', onSelect: onExplore, active: ['map'] },
     { key: 'projects', label: 'Boards', icon: 'grid', onSelect: () => onNavigate('projects'), active: ['projects', 'projectDashboard'] },
-    // Only for an account that runs at least one organisation — until then there is
-    // nothing to go back to, and creating one starts from Settings.
-    ...(showOrganisations ? [{ key: 'organisations', label: 'Organisations', short: 'Orgs', icon: 'building',
-      onSelect: () => onNavigate('organisations'), active: ['organisations', 'organisationNew', 'organisationDashboard'] }] : []),
     { key: 'settings', label: 'Settings', icon: 'gear', onSelect: () => onNavigate('settings'), active: ['settings'], bottom: true },
+  ];
+
+  // The small links: Explore, then Organisations — only for an account that runs at
+  // least one, since until then there is nothing to go back to and creating one starts
+  // from Settings — then the ones that only open a view.
+  const smallLinks = [
+    { key: 'map', label: 'Explore', onSelect: onExplore, active: ['map'] },
+    ...(showOrganisations ? [{ key: 'organisations', label: 'Organisations', onSelect: () => onNavigate('organisations'),
+      active: ['organisations', 'organisationNew', 'organisationDashboard'] }] : []),
+    ...SMALL_LINKS.map(({ key, label, view: target }) => ({ key, label, onSelect: () => onNavigate(target), active: [target] })),
   ];
 
   const renderItem = (item) => {
@@ -261,12 +267,13 @@ export function SideNav({ view, onNavigate, onExplore, onCreateTool, showOrganis
       {items.filter((item) => !item.bottom).map(renderItem)}
 
       <ul className="placer-side-nav-small">
-        {SMALL_LINKS.map(({ label, view: target }) => (
-          <li key={target}>
-            <button onClick={() => onNavigate(target)}
-              aria-current={view === target ? 'page' : undefined}
+        {smallLinks.map((link) => (
+          <li key={link.key}>
+            <button onClick={link.onSelect}
+              aria-current={link.active.includes(view) ? 'page' : undefined}
+              data-tour={link.key}
               className="placer-side-nav-small-link">
-              {label}
+              {link.label}
             </button>
           </li>
         ))}

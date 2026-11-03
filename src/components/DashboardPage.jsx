@@ -24,6 +24,24 @@ import { responsiveImage } from '../lib/responsiveImage';
 const STEPS_SHOWN = 5;
 const ACTIVITY_SHOWN = 5;
 
+// Getting Started is for newcomers: it is shown for this many visits to the dashboard,
+// counted per account on this device, and then goes away.
+const GETTING_STARTED_VISITS = 5;
+
+/** Counts this visit to the dashboard (once per browser session) and returns the total. */
+function countDashboardVisit(accountId) {
+  const key = `placer.dashboardVisits.${accountId ?? 'local'}`;
+  try {
+    const seen = Number(localStorage.getItem(key)) || 0;
+    if (sessionStorage.getItem(key)) return seen;
+    sessionStorage.setItem(key, '1');
+    localStorage.setItem(key, String(seen + 1));
+    return seen + 1;
+  } catch {
+    return 0; // storage blocked: keep showing it rather than guess
+  }
+}
+
 // A project's picture stand-in, by kind: one theme colour for each kind of project.
 const TYPE_TINTS = { steward: PALETTE.blue, advocate: PALETTE.orange, other: PALETTE.purple };
 
@@ -34,10 +52,10 @@ const STEP_KINDS = {
 };
 
 /** A Quick Actions button: a small grey tile with the icon beside the label. */
-function Shortcut({ t, icon, label, onClick, expanded, popup, buttonRef }) {
+function Shortcut({ t, icon, label, onClick, expanded, controls, popup, buttonRef }) {
   return (
     <button ref={buttonRef} type="button" onClick={onClick} {...ARROW_ITEM} className="placer-quick-action"
-      aria-expanded={expanded} aria-haspopup={popup}
+      aria-expanded={expanded} aria-controls={controls} aria-haspopup={popup}
       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
         minHeight: 56, padding: '12px 20px', textAlign: 'center', background: t.surfaceAlt,
         border: 'none', borderRadius: 14, cursor: 'pointer',
@@ -173,12 +191,13 @@ function PanelCard({ t, id, title, action, children }) {
 /**
  * The tool-first dashboard. Its first shortcut is Create a Tool, opening the same choice
  * of Understand, Re-Imagine and Plan as the side nav's button (`onCreateTool` gets the
- * one picked). Getting Started is always shown, under the shortcuts, with My Tools,
- * Tutorials and Popular Templates after it (`onOpenStartedTool` gets a started tool's
+ * one picked). Getting Started, under the shortcuts, shows for the first few visits
+ * and after that lives in the Guide shortcut; My Tools, Tutorials and Popular
+ * Templates come after it (`onOpenStartedTool` gets a started tool's
  * tool id and id, `onOpenTemplate` the template's tool id).
  */
 export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewProject,
-  onSignOut, onExplore, onOpenPublicProfile, onOpenProject, onOpenProjectPage,
+  onExplore, onOpenPublicProfile, onOpenProject, onOpenProjectPage,
   onOpenOrganisationPage, onCreateTool, onOpenTemplate, onOpenStartedTool }) {
   const [createOpen, setCreateOpen] = useState(false);
   const createRef = useRef(null);
@@ -239,6 +258,9 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
     return () => { cancelled = true; };
   }, [accountId]);
 
+  // Getting Started shows for the first few visits; after that it lives in the Guide shortcut.
+  const [visits] = useState(() => countDashboardVisit(accountId));
+  const [guideOpen, setGuideOpen] = useState(visits <= GETTING_STARTED_VISITS);
   const [tab, setTab] = useState('steps'); // 'steps' | 'activity'
 
   const name = profile?.name ?? '';
@@ -283,11 +305,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
               </a>
             ) : name}
           </h1>
-          {onSignOut && (
-            <Btn t={t} variant="outline" size="sm" icon="logout" onClick={onSignOut}>
-              Log Out
-            </Btn>
-          )}
+          {/* No Log Out here: it is in the account menu, the avatar at the top right. */}
         </div>
 
         <section aria-label="Quick Actions" style={{ marginBottom: 24 }}>
@@ -297,6 +315,8 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
             <Shortcut t={t} icon="pin" label="Explore the map"
               onClick={() => (onExplore ? onExplore() : onNavigate('map'))} />
             <Shortcut t={t} icon="pencil" label="Edit your profile" onClick={() => onNavigate('settings')} />
+            <Shortcut t={t} icon="bookmark" label="Guide" expanded={guideOpen} controls="dashboard-basics"
+              onClick={() => setGuideOpen((open) => !open)} />
           </div>
           {createOpen && (
             <CreateToolMenu anchor={createRef} onClose={() => setCreateOpen(false)}
@@ -304,20 +324,22 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
           )}
         </section>
 
-        <section id="dashboard-basics" aria-labelledby="dashboard-basics-title" style={{ marginBottom: 32 }}>
-          <SectionLabel t={t} id="dashboard-basics-title">Getting Started</SectionLabel>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
-            <BasicsCard t={t} hue={PALETTE.purple}
-              label="Quickstart tutorial" title="Create your first Board"
-              onClick={() => onNavigate('quickstart')} />
-            <BasicsCard t={t} hue={PALETTE.blue}
-              label="Board Examples" title="Explore what other boards exist on the platform"
-              onClick={() => onNavigate('projects')} />
-            <BasicsCard t={t} hue={PALETTE.orange}
-              label="FAQ" title="Answers to common questions about Placer"
-              onClick={() => onNavigate('faq')} />
-          </div>
-        </section>
+        {guideOpen && (
+          <section id="dashboard-basics" aria-labelledby="dashboard-basics-title" style={{ marginBottom: 32 }}>
+            <SectionLabel t={t} id="dashboard-basics-title">Getting Started</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+              <BasicsCard t={t} hue={PALETTE.purple}
+                label="Quickstart tutorial" title="Create your first Board"
+                onClick={() => onNavigate('quickstart')} />
+              <BasicsCard t={t} hue={PALETTE.blue}
+                label="Board Examples" title="Explore what other boards exist on the platform"
+                onClick={() => onNavigate('projects')} />
+              <BasicsCard t={t} hue={PALETTE.orange}
+                label="FAQ" title="Answers to common questions about Placer"
+                onClick={() => onNavigate('faq')} />
+            </div>
+          </section>
+        )}
 
         <MyTools t={t} accountId={accountId}
           onOpen={(toolId, id) => onOpenStartedTool?.(toolId, id)} />

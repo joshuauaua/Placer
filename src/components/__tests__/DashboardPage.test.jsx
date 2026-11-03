@@ -34,6 +34,42 @@ describe('DashboardPage', () => {
     vi.clearAllMocks();
   });
 
+  it('keeps Getting Started in the Guide shortcut once the first visits are over', () => {
+    const store = { 'placer.dashboardVisits.user-1': '9' };
+    vi.stubGlobal('localStorage', { getItem: (k) => store[k] ?? null, setItem: (k, v) => { store[k] = v; } });
+    vi.stubGlobal('sessionStorage', { getItem: () => '1', setItem: () => {} });
+    try {
+      setup();
+      const guide = screen.getByRole('button', { name: 'Guide' });
+      expect(guide).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('heading', { name: 'Getting Started' })).not.toBeInTheDocument();
+
+      fireEvent.click(guide);
+
+      expect(guide).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByRole('heading', { level: 2, name: 'Getting Started' })).toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('stops showing Getting Started after a few visits, and counts one visit per session', () => {
+    const store = { 'placer.dashboardVisits.user-1': '5' };
+    const session = {};
+    vi.stubGlobal('localStorage', { getItem: (k) => store[k] ?? null, setItem: (k, v) => { store[k] = v; } });
+    vi.stubGlobal('sessionStorage', { getItem: (k) => session[k] ?? null, setItem: (k, v) => { session[k] = v; } });
+    try {
+      const { unmount } = setup();
+      expect(screen.queryByRole('heading', { level: 2, name: 'Getting Started' })).not.toBeInTheDocument();
+      expect(store['placer.dashboardVisits.user-1']).toBe('6');
+      unmount();
+      setup(); // same session: no further count
+      expect(store['placer.dashboardVisits.user-1']).toBe('6');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('gets you started: a quickstart tutorial, board examples and the FAQ', () => {
     const onNavigate = vi.fn();
     render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={onNavigate} />);
@@ -54,7 +90,7 @@ describe('DashboardPage', () => {
 
     const section = screen.getByRole('region', { name: 'Quick Actions' });
     expect(within(section).getAllByRole('button').map((button) => button.textContent))
-      .toEqual(['Create a Tool', 'Explore the map', 'Edit your profile']);
+      .toEqual(['Create a Tool', 'Explore the map', 'Edit your profile', 'Guide']);
   });
 
   it('welcomes you back by name, in place of a "Dashboard" title', () => {
@@ -74,13 +110,10 @@ describe('DashboardPage', () => {
     expect(heading.parentElement.querySelector('img')).not.toBeInTheDocument();
   });
 
-  it('logs you out from beside the heading', () => {
-    const onSignOut = vi.fn();
-    setup({ handlers: { onSignOut } });
+  it('has no Log Out of its own: that is in the account menu', () => {
+    setup({ handlers: { onSignOut: vi.fn() } });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Log Out' }));
-
-    expect(onSignOut).toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /log out/i })).toBeNull();
   });
 
   it('links your name to your public profile', () => {
@@ -280,12 +313,12 @@ describe('DashboardPage tools', () => {
     vi.clearAllMocks();
   });
 
-  it('has Create a Tool, no Guide, and Getting Started always', async () => {
+  it('has Create a Tool and the Guide, with Getting Started open on a first visit', async () => {
     setup({ handlers: { onNewProject: vi.fn(), onCreateTool: vi.fn() } });
     const actions = screen.getByRole('region', { name: 'Quick Actions' });
 
     expect(within(actions).getAllByRole('button').map((b) => b.textContent))
-      .toEqual(['Create a Tool', 'Explore the map', 'Edit your profile']);
+      .toEqual(['Create a Tool', 'Explore the map', 'Edit your profile', 'Guide']);
     expect(screen.getByRole('region', { name: 'Getting Started' })).toBeInTheDocument();
     // Then My Tools, Tutorials and Popular Templates, in that order.
     const order = ['Getting Started', 'My Tools', 'Tutorials', 'Popular Templates']

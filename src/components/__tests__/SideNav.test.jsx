@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { SideNav } from '../SideNav';
 import { THEME } from '../../theme';
 
@@ -14,12 +14,25 @@ describe('SideNav', () => {
     localStorage.clear();
   });
 
-  it('puts the collapse toggle and Create a tool first, then the dashboard, then the other places', () => {
+  it('puts the collapse toggle and Create a tool first, then the dashboard and boards, then the small links', () => {
     setup();
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
-      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Explore', 'Boards',
-        'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
+      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Boards',
+        'Explore', 'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
+  });
+
+  it('keeps Explore and Organisations with the small links above Settings', () => {
+    const { onNavigate, onExplore } = setup({ showOrganisations: true, view: 'map' });
+    const small = screen.getByRole('list');
+
+    expect(within(small).getAllByRole('button').map((b) => b.textContent))
+      .toEqual(['Explore', 'Organisations', 'Guides', 'FAQ', 'Terms and Privacy']);
+    expect(within(small).getByRole('button', { name: 'Explore' })).toHaveAttribute('aria-current', 'page');
+    fireEvent.click(within(small).getByRole('button', { name: 'Explore' }));
+    fireEvent.click(within(small).getByRole('button', { name: 'Organisations' }));
+    expect(onExplore).toHaveBeenCalledTimes(1);
+    expect(onNavigate).toHaveBeenCalledWith('organisations');
   });
 
   it('opens the Guides, the FAQ and the terms from the small links above Settings', () => {
@@ -35,8 +48,8 @@ describe('SideNav', () => {
     const { onNavigate } = setup({ showOrganisations: true });
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
-      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Explore', 'Boards', 'Organisations',
-        'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
+      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Boards',
+        'Explore', 'Organisations', 'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
     fireEvent.click(screen.getByRole('button', { name: 'Organisations' }));
     expect(onNavigate).toHaveBeenCalledWith('organisations');
   });
@@ -140,7 +153,7 @@ describe('SideNav on a phone', () => {
   it('has a short label for each tab whose full one would not fit, keeping the full name for screen readers', () => {
     setup({ showOrganisations: true });
 
-    for (const [full, short] of [['Create a tool', 'Create'], ['Dashboard', 'Home'], ['Organisations', 'Orgs']]) {
+    for (const [full, short] of [['Create a tool', 'Create'], ['Dashboard', 'Home']]) {
       const button = screen.getByRole('button', { name: full });
       expect(button.querySelector('.placer-side-nav-label-long')).toHaveTextContent(full);
       expect(button.querySelector('.placer-side-nav-label-short')).toHaveTextContent(short);
@@ -150,6 +163,6 @@ describe('SideNav on a phone', () => {
   it('gives no short form to a label that already fits', () => {
     setup();
 
-    expect(screen.getByRole('button', { name: 'Explore' }).querySelector('.placer-side-nav-label-short')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Boards' }).querySelector('.placer-side-nav-label-short')).toBeNull();
   });
 });
