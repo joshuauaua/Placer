@@ -4671,13 +4671,38 @@ a {
   color: var(--placer-grey-700);
 }
 
-.placer-started-empty {
-  margin: 0;
-  padding: 20px;
-  border: 1px dashed var(--placer-grey-300);
-  border-radius: var(--placer-radius-lg);
-  font-size: 14px;
-  color: var(--placer-grey-700);
+.placer-add-tool-card {
+  background: transparent;
+  border: 2px dashed var(--placer-grey-300);
+}
+
+.placer-add-tool-card:hover,
+.placer-add-tool-card[aria-expanded="true"] {
+  border-color: var(--placer-grey-500);
+}
+
+/* The card's picture, empty: the + in a circle at its middle. */
+.placer-add-tool-plus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--placer-ink);
+}
+
+.placer-add-tool-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: var(--placer-grey-100);
+  transition: background 0.15s ease;
+}
+
+.placer-add-tool-card:hover .placer-add-tool-circle {
+  background: var(--placer-grey-200);
 }
 
 /* PLACER — Tutorials on the Tools page (components/Tutorials.jsx): the templates' card
