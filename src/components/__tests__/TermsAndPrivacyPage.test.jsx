@@ -130,3 +130,20 @@ describe('TermsAndPrivacyPage data controls', () => {
     expect(screen.getByText(/has been deleted/i)).toBeInTheDocument();
   });
 });
+
+describe('the privacy safeguards', () => {
+  // Said only as far as the code bears them out: worth a test, so that a later edit
+  // cannot quietly promise more than PLACER does.
+  it('says what is anonymous, what is not, and who can read room answers', () => {
+    render(<TermsAndPrivacyPage t={THEME} />);
+    const section = screen.getByRole('heading', { name: 'Privacy safeguards' }).closest('section')
+      ?? screen.getByRole('heading', { name: 'Privacy safeguards' }).parentElement;
+
+    expect(section).toHaveTextContent('Surveys are anonymous unless you choose to leave an email address');
+    expect(section).toHaveTextContent('If you are signed in, your display name goes with your answers');
+    expect(section).toHaveTextContent('can be read by anyone who can see its board');
+    expect(section).toHaveTextContent('deleted at most a day after it ends');
+    expect(section).toHaveTextContent('that notification stays in their account');
+    expect(section).not.toHaveTextContent(/anonymi[sz]ed by default|full compliance/i);
+  });
+});
