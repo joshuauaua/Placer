@@ -185,7 +185,7 @@ describe('AuthPage, signing up', () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it('goes straight in when the project is not asking for confirmation', async () => {
+  it('goes straight in when the board is not asking for confirmation', async () => {
     vi.mocked(signUpWithPassword).mockResolvedValue({ needsConfirmation: false });
     const { onNavigate } = setup('signup');
     fill({ name: 'Mara Quinn', code: 'PLACER-MARA' });

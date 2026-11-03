@@ -24,13 +24,13 @@ import { responsiveImage } from '../lib/responsiveImage';
 // The menu's two questions: whose project it is, and what kind (PROJECT_TYPES' keys,
 // named shortly enough for a menu).
 const ROLES = [
-  { id: null, name: 'All projects' },
+  { id: null, name: 'All boards' },
   { id: 'owner', name: 'Run by you' },
   { id: 'collaborator', name: 'Collaborating on' },
   { id: 'others', name: "Other people's" },
 ];
 
-const YOUR_PROJECT = 'Your project';
+const YOUR_PROJECT = 'Your board';
 
 const SORTS = [
   { id: 'recent', name: 'Recent', direction: 'desc' },
@@ -144,10 +144,10 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
       padding: '0 32px 48px' }} className="placer-scroll">
-      <PageHeader t={t} title="Projects" inset={32} maxWidth="none"
+      <PageHeader t={t} title="Boards" inset={32} maxWidth="none"
         actions={projectsAvailable() && onNewProject ? (
           <Btn t={t} variant="primary" icon="plus" onClick={onNewProject}>
-            Create a Project
+            Create a Board
           </Btn>
         ) : null}
         toolbar={projectsAvailable() ? (
@@ -173,22 +173,22 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
       <div>
         {!projectsAvailable() && (
           <p style={{ fontSize: 14, color: t.inkFaint }}>
-            Projects are not available in this environment.
+            Boards are not available in this environment.
           </p>
         )}
 
-        {projectsAvailable() && status === 'loading' && <PageLoader label="Loading projects…" />}
+        {projectsAvailable() && status === 'loading' && <PageLoader label="Loading boards…" />}
 
         {projectsAvailable() && status === 'error' && (
           <div role="alert" style={{ padding: 16, borderRadius: 12, background: '#F5F5F5',
             borderLeft: '4px solid #B3261E', fontSize: 14, fontWeight: 500, color: t.ink }}>
-            Could not load projects. See the console for details.
+            Could not load boards. See the console for details.
           </div>
         )}
 
         {projectsAvailable() && status === 'ready' && projects.length === 0 && (
           <p style={{ fontSize: 14, color: t.inkFaint }}>
-            No projects yet. A project gets a dashboard, a public page, and lets people
+            No boards yet. A board gets a dashboard, a public page, and lets people
             collaborate with you on it.
           </p>
         )}
@@ -197,8 +197,8 @@ export function ProjectsPage({ t, accountId = null, onNewProject, onOpenProjectD
           <div style={{ textAlign: 'center', padding: '64px 20px', color: t.inkDim }}>
             <p style={{ fontSize: 16, marginBottom: 16 }}>
               {favouritesOnly && favourites.length === 0
-                ? 'No favourites yet. Tap the save icon on a project to keep it here.'
-                : 'No projects match those filters.'}
+                ? 'No favourites yet. Tap the save icon on a board to keep it here.'
+                : 'No boards match those filters.'}
             </p>
             <Btn t={t} variant="outline" onClick={clearFilters}>Clear filters</Btn>
           </div>

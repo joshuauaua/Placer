@@ -37,16 +37,16 @@ describe('ProjectsPage', () => {
     localStorage.clear();
   });
 
-  it('shows the spinning loader while the projects load', () => {
+  it('shows the spinning loader while the boards load', () => {
     readVisibleProjects.mockReturnValue(new Promise(() => {}));
     const { container } = render(<ProjectsPage t={THEME} accountId="acct-1" onNewProject={vi.fn()}
       onOpenProjectDashboard={vi.fn()} onOpenProjectPage={vi.fn()} />);
 
     expect(container.querySelector('.placer-page-loader')).toBeInTheDocument();
-    expect(screen.getByText('Loading projects…')).toBeInTheDocument();
+    expect(screen.getByText('Loading boards…')).toBeInTheDocument();
   });
 
-  it('lists everyone\'s projects, opening yours on its dashboard and others\' on their page', async () => {
+  it('lists everyone\'s boards, opening yours on its dashboard and others\' on their page', async () => {
     readVisibleProjects.mockResolvedValue([
       { id: 'p1', name: 'Harbour steps', image: IMAGE, description: 'Seating by the water', role: 'owner' },
       { id: 'p2', name: 'School street', image: IMAGE, description: '', role: null },
@@ -63,7 +63,7 @@ describe('ProjectsPage', () => {
     expect(onOpenProjectPage).toHaveBeenCalledWith('p2');
   });
 
-  it('labels only your own projects as yours, in the grid and the list', async () => {
+  it('labels only your own boards as yours, in the grid and the list', async () => {
     readVisibleProjects.mockResolvedValue([
       { id: 'p1', name: 'Harbour steps', image: IMAGE, role: 'owner' },
       { id: 'p2', name: 'School street', image: IMAGE, role: null },
@@ -71,15 +71,15 @@ describe('ProjectsPage', () => {
     ]);
     setup();
 
-    expect(await screen.findByRole('button', { name: card(/Your project.*Harbour steps/) })).toBeInTheDocument();
-    expect(screen.getAllByText('Your project')).toHaveLength(1);
+    expect(await screen.findByRole('button', { name: card(/Your board.*Harbour steps/) })).toBeInTheDocument();
+    expect(screen.getAllByText('Your board')).toHaveLength(1);
 
     fireEvent.click(within(screen.getByRole('group', { name: 'View' })).getByRole('button', { name: 'List' }));
-    expect(screen.getByRole('button', { name: card(/Harbour steps.*Your project/) })).toBeInTheDocument();
-    expect(screen.getAllByText('Your project')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: card(/Harbour steps.*Your board/) })).toBeInTheDocument();
+    expect(screen.getAllByText('Your board')).toHaveLength(1);
   });
 
-  it('leaves out projects without an image', async () => {
+  it('leaves out boards without an image', async () => {
     readVisibleProjects.mockResolvedValue([
       { id: 'p1', name: 'Harbour steps', image: IMAGE, role: 'owner' },
       { id: 'p2', name: 'School street', image: null, role: null },
@@ -90,12 +90,12 @@ describe('ProjectsPage', () => {
     expect(screen.queryByRole('button', { name: card(/School street/) })).not.toBeInTheDocument();
   });
 
-  it('offers to create one beside the heading, with projects or without', async () => {
+  it('offers to create one beside the heading, with boards or without', async () => {
     readVisibleProjects.mockResolvedValue([{ id: 'p1', name: 'Harbour steps', image: IMAGE, description: '' }]);
     const { onNewProject } = setup();
 
     await screen.findByRole('button', { name: card(/Harbour steps/) });
-    fireEvent.click(screen.getByRole('button', { name: 'Create a Project' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create a Board' }));
 
     expect(onNewProject).toHaveBeenCalledTimes(1);
   });
@@ -103,25 +103,25 @@ describe('ProjectsPage', () => {
   it('has the one create button, not a second, when there are none yet', async () => {
     setup();
 
-    expect(await screen.findByText(/No projects yet/)).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /Create a Project|Start a project/ })).toHaveLength(1);
+    expect(await screen.findByText(/No boards yet/)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Create a Board|Start a board/ })).toHaveLength(1);
   });
 
-  it('says so when your projects cannot be loaded', async () => {
+  it('says so when your boards cannot be loaded', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     readVisibleProjects.mockRejectedValue(new Error('boom'));
     setup();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Could not load projects');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not load boards');
   });
 
   it('asks for nothing with no Supabase project', async () => {
     isSupabaseConfigured.mockReturnValue(false);
     setup();
 
-    expect(await screen.findByText('Projects are not available in this environment.')).toBeInTheDocument();
+    expect(await screen.findByText('Boards are not available in this environment.')).toBeInTheDocument();
     expect(readVisibleProjects).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: 'Create a Project' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Create a Board' })).not.toBeInTheDocument();
   });
 
   describe('the toolbar', () => {
@@ -192,14 +192,14 @@ describe('ProjectsPage', () => {
       isSupabaseConfigured.mockReturnValue(false);
       setup();
 
-      await screen.findByText('Projects are not available in this environment.');
+      await screen.findByText('Boards are not available in this environment.');
       expect(screen.queryByRole('group', { name: 'Sort' })).not.toBeInTheDocument();
     });
   });
 });
 
 describe('sortProjects', () => {
-  it('puts a project with no date last, whichever way round', () => {
+  it('puts a board with no date last, whichever way round', () => {
     const projects = [{ name: 'A', startDate: null }, { name: 'B', startDate: '2026-01-01' },
       { name: 'C', startDate: '2026-05-01' }];
 

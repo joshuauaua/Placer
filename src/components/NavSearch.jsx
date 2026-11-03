@@ -33,7 +33,7 @@ const DEBOUNCE_MS = 200;
 
 const GROUPS = [
   { kind: 'tool', label: 'Tools' },
-  { kind: 'project', label: 'Projects' },
+  { kind: 'project', label: 'Boards' },
   { kind: 'person', label: 'People' },
   { kind: 'organisation', label: 'Organisations' },
   { kind: 'caseStudy', label: 'Case studies' },
@@ -42,7 +42,7 @@ const GROUPS = [
 // What a result without a picture of its own shows instead. A tool brings its own icon.
 const ICONS = { organisation: 'building', project: 'grid', caseStudy: 'bookmark', tool: 'flask' };
 
-const LABEL = 'Search tools, projects, people and case studies';
+const LABEL = 'Search tools, boards, people and case studies';
 
 /**
  * The results in the order the groups are listed, so that the arrow keys, which go by

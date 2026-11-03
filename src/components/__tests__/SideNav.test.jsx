@@ -18,7 +18,7 @@ describe('SideNav', () => {
     setup();
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
-      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Explore', 'Projects',
+      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Explore', 'Boards',
         'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
   });
 
@@ -35,7 +35,7 @@ describe('SideNav', () => {
     const { onNavigate } = setup({ showOrganisations: true });
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
-      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Explore', 'Projects', 'Organisations',
+      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Explore', 'Boards', 'Organisations',
         'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
     fireEvent.click(screen.getByRole('button', { name: 'Organisations' }));
     expect(onNavigate).toHaveBeenCalledWith('organisations');
@@ -88,7 +88,7 @@ describe('SideNav', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Explore' }));
     expect(onExplore).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Projects' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Boards' }));
     fireEvent.click(screen.getByRole('button', { name: 'Dashboard' }));
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['projects', 'dashboard', 'settings']);
@@ -126,10 +126,10 @@ describe('SideNav', () => {
     expect(onCreateTool).not.toHaveBeenCalled();
   });
 
-  it('marks the current view, and keeps Projects marked on a project dashboard', () => {
+  it('marks the current view, and keeps Boards marked on a board dashboard', () => {
     setup({ view: 'projectDashboard' });
 
-    expect(screen.getByRole('button', { name: 'Projects' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('button', { name: 'Boards' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('button', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
   });
 });

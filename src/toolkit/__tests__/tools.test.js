@@ -54,7 +54,7 @@ describe('the register', () => {
     }
   });
 
-  it('keeps a setup without a room on the project\'s tool', () => {
+  it('keeps a setup without a room on the board\'s tool', () => {
     expect(projectSetupKind(findTool('stationary-activity-mapping'))).toBe('config');
     expect(projectSetupKind(findTool('word-cloud'))).toBe('room');
   });

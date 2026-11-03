@@ -169,7 +169,7 @@ export async function readProjectResponses(projectId) {
   const supabase = await client();
   const { data: account } = await supabase.auth.getUser();
   const userId = account?.user?.id;
-  if (!userId) throw new Error('Reading project notifications needs an account.');
+  if (!userId) throw new Error('Reading board notifications needs an account.');
 
   const { data, error } = await supabase
     .from(PROJECT_SETTINGS_TABLE)
@@ -178,7 +178,7 @@ export async function readProjectResponses(projectId) {
     .eq('project_id', projectId)
     .maybeSingle();
 
-  if (error) throw new Error(`Could not load this project's notification settings: ${error.message}`);
+  if (error) throw new Error(`Could not load this board's notification settings: ${error.message}`);
   return data?.responses ?? null;
 }
 
@@ -194,7 +194,7 @@ export async function saveProjectResponses(projectId, level) {
   const supabase = await client();
   const { data: account } = await supabase.auth.getUser();
   const userId = account?.user?.id;
-  if (!userId) throw new Error('Saving project notifications needs an account.');
+  if (!userId) throw new Error('Saving board notifications needs an account.');
 
   const { error } = level === null
     ? await supabase.from(PROJECT_SETTINGS_TABLE).delete().eq('user_id', userId).eq('project_id', projectId)
@@ -203,6 +203,6 @@ export async function saveProjectResponses(projectId, level) {
       { onConflict: 'user_id,project_id' },
     );
 
-  if (error) throw new Error(`Could not save this project's notification settings: ${error.message}`);
+  if (error) throw new Error(`Could not save this board's notification settings: ${error.message}`);
   track('project_notification_settings_saved', { project_id: projectId, level });
 }

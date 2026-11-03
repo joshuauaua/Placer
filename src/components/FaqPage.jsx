@@ -23,7 +23,7 @@ const QUESTIONS = [
   },
   {
     q: 'Do I need an account?',
-    a: 'You can explore the map and read what others have imagined without one. To post an imagination, follow people and projects, or run a project of your own, create a free account.',
+    a: 'You can explore the map and read what others have imagined without one. To post an imagination, follow people and boards, or run a board of your own, create a free account.',
   },
   {
     q: 'What is an imagination?',
@@ -39,7 +39,7 @@ const QUESTIONS = [
   },
   {
     q: 'Can my organisation use PLACER?',
-    a: 'Yes. Create an organisation from Settings, add fellow admins, and run projects in its name, each with its own public page.',
+    a: 'Yes. Create an organisation from Settings, add fellow admins, and run boards in its name, each with its own public page.',
   },
   {
     q: 'Who is behind PLACER?',

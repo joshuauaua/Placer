@@ -283,7 +283,7 @@ export function AdminDashboard({ t }) {
                 <StatCard t={t} icon="users" label="Total Users" value={userStats.totalUsers.toLocaleString()} change="+12.5%" />
                 <StatCard t={t} icon="eye" label="Total Visits" value={analytics.totalVisits.toLocaleString()} change="+8.3%" />
                 <StatCard t={t} icon="clipboard" label="Survey Responses" value={surveyStats.totalResponses} change="+15.2%" />
-                <StatCard t={t} icon="fileText" label="Active Projects" value={userStats.activeProjects} change="+5.7%" />
+                <StatCard t={t} icon="fileText" label="Active Boards" value={userStats.activeProjects} change="+5.7%" />
               </div>
 
               <div style={{
@@ -530,7 +530,7 @@ export function AdminDashboard({ t }) {
                 <StatCard t={t} icon="users" label="Total Users" value={userStats.totalUsers.toLocaleString()} />
                 <StatCard t={t} icon="userCheck" label="Active Users" value={userStats.activeUsers.toLocaleString()} />
                 <StatCard t={t} icon="userPlus" label="New This Month" value={userStats.newThisMonth.toLocaleString()} />
-                <StatCard t={t} icon="fileText" label="Total Projects" value={userStats.totalProjects.toLocaleString()} />
+                <StatCard t={t} icon="fileText" label="Total Boards" value={userStats.totalProjects.toLocaleString()} />
               </div>
 
               {/* Recent Users */}
@@ -550,7 +550,7 @@ export function AdminDashboard({ t }) {
                       <th style={{ textAlign: 'left', padding: '12px 0', fontSize: 13, fontWeight: 700, color: t.inkDim, textTransform: 'uppercase' }}>Name</th>
                       <th style={{ textAlign: 'left', padding: '12px 0', fontSize: 13, fontWeight: 700, color: t.inkDim, textTransform: 'uppercase' }}>Email</th>
                       <th style={{ textAlign: 'left', padding: '12px 0', fontSize: 13, fontWeight: 700, color: t.inkDim, textTransform: 'uppercase' }}>Joined</th>
-                      <th style={{ textAlign: 'left', padding: '12px 0', fontSize: 13, fontWeight: 700, color: t.inkDim, textTransform: 'uppercase' }}>Projects</th>
+                      <th style={{ textAlign: 'left', padding: '12px 0', fontSize: 13, fontWeight: 700, color: t.inkDim, textTransform: 'uppercase' }}>Boards</th>
                       <th style={{ textAlign: 'right', padding: '12px 0', fontSize: 13, fontWeight: 700, color: t.inkDim, textTransform: 'uppercase' }}>Actions</th>
                     </tr>
                   </thead>

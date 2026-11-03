@@ -60,7 +60,7 @@ describe('saved inquiries, under Activity', () => {
     const [kept, said] = panel.getAllByRole('heading', { level: 2 });
     expect(kept).toHaveTextContent('Saved inquiries');
     expect(said).toHaveTextContent('Comments');
-    expect(panel.getByText('You have not commented on any projects yet.')).toBeInTheDocument();
+    expect(panel.getByText('You have not commented on any boards yet.')).toBeInTheDocument();
   });
 
   it("count toward the Activity tab on your own profile, and drop from it when deleted", async () => {
@@ -85,7 +85,7 @@ describe('saved inquiries, under Activity', () => {
     const { unmount } = setup({ accountId: 'user-2' });
     fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
     expect(screen.queryByRole('heading', { name: 'Saved inquiries' })).not.toBeInTheDocument();
-    expect(screen.getByText('Mara Quinn has not commented on any projects yet.')).toBeInTheDocument();
+    expect(screen.getByText('Mara Quinn has not commented on any boards yet.')).toBeInTheDocument();
     unmount();
 
     setup();
@@ -241,28 +241,28 @@ describe('PublicProfilePage', () => {
       .toBeTruthy();
   });
 
-  it('has About, Projects and Activity tabs, starting on About', async () => {
+  it('has About, Boards and Activity tabs, starting on About', async () => {
     setup();
 
     const tabs = await screen.findAllByRole('tab');
-    expect(tabs.map((tab) => tab.textContent.replace(/\d+$/, ''))).toEqual(['About', 'Projects', 'Activity']);
+    expect(tabs.map((tab) => tab.textContent.replace(/\d+$/, ''))).toEqual(['About', 'Boards', 'Activity']);
     expect(screen.getByRole('tab', { name: 'About' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tabpanel', { name: 'About' })).toHaveTextContent('Cyclist and tree enthusiast');
   });
 
-  it('lists the projects they own or collaborate on, which open', async () => {
+  it('lists the boards they own or collaborate on, which open', async () => {
     const onOpen = vi.fn();
     setup({ onOpen });
 
-    fireEvent.click(await screen.findByRole('tab', { name: 'Projects (2)' }));
+    fireEvent.click(await screen.findByRole('tab', { name: 'Boards (2)' }));
 
-    const panel = within(screen.getByRole('tabpanel', { name: /Projects/ }));
+    const panel = within(screen.getByRole('tabpanel', { name: /Boards/ }));
     expect(panel.getByRole('button', { name: /Owner.*Riverside Greenway/ })).toBeInTheDocument();
     fireEvent.click(panel.getByRole('button', { name: /Collaborator.*Harbour Steps/ }));
     expect(onOpen).toHaveBeenCalledWith('project', 'proj-2');
   });
 
-  it('lists the comments they have left, each linking to its project', async () => {
+  it('lists the comments they have left, each linking to its board', async () => {
     const onOpen = vi.fn();
     setup({ onOpen });
 
@@ -275,28 +275,28 @@ describe('PublicProfilePage', () => {
     expect(readProfileComments).toHaveBeenCalledWith('user-1');
   });
 
-  it('says so when there are no projects or comments yet', async () => {
+  it('says so when there are no boards or comments yet', async () => {
     vi.mocked(readProfileActivity).mockResolvedValue({ joinedAt: null, projects: [] });
     vi.mocked(readProfileComments).mockResolvedValue([]);
     setup();
 
-    fireEvent.click(await screen.findByRole('tab', { name: 'Projects' }));
-    expect(await screen.findByText('Mara Quinn is not involved in any projects yet.')).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Boards' }));
+    expect(await screen.findByText('Mara Quinn is not involved in any boards yet.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
-    expect(screen.getByText('Mara Quinn has not commented on any projects yet.')).toBeInTheDocument();
+    expect(screen.getByText('Mara Quinn has not commented on any boards yet.')).toBeInTheDocument();
     expect(screen.queryByText(/^Joined/)).not.toBeInTheDocument();
   });
 
-  it('still shows the profile when its projects and comments cannot be read', async () => {
+  it('still shows the profile when its boards and comments cannot be read', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(readProfileActivity).mockRejectedValue(new Error('function does not exist'));
     vi.mocked(readProfileComments).mockRejectedValue(new Error('column does not exist'));
     setup();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Mara Quinn' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: 'Projects' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Boards' }));
     // Generous: under the full suite's load the failed read can take a moment to land.
-    expect(await screen.findByText(/Projects could not be loaded/, {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(await screen.findByText(/Boards could not be loaded/, {}, { timeout: 3000 })).toBeInTheDocument();
   });
 
   it('moves between tabs with the arrow keys', async () => {

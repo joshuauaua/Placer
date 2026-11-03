@@ -72,9 +72,9 @@ const DANGER = '#B3261E';
 const NUMBER = new Intl.NumberFormat('en-GB');
 
 const DASHBOARD_TABS = [
-  { id: 'settings', label: 'Project Settings' },
+  { id: 'settings', label: 'Board Settings' },
   { id: 'toolkit', label: 'My Toolkit' },
-  { id: 'general', label: 'Project Insights' },
+  { id: 'general', label: 'Board Insights' },
 ];
 
 /** A card on the dashboard. `danger` rules it, and heads it, in the alert red. */
@@ -112,7 +112,7 @@ function ProjectNotifications({ t, projectId }) {
       })
       .catch((err) => {
         console.error("Could not load this project's notification settings:", err);
-        if (!cancelled) setError('Your notification settings for this project could not be loaded.');
+        if (!cancelled) setError('Your notification settings for this board could not be loaded.');
       });
     return () => { cancelled = true; };
   }, [projectId]);
@@ -136,8 +136,8 @@ function ProjectNotifications({ t, projectId }) {
   return (
     <Card t={t} title="Notifications">
       <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
-        What you hear when people answer this project&rsquo;s tools. Just for you: everyone
-        who runs the project chooses their own.
+        What you hear when people answer this board&rsquo;s tools. Just for you: everyone
+        who runs the board chooses their own.
       </p>
       {error && (
         <p role="alert" style={{ fontSize: 13.5, color: DANGER, fontWeight: 500, marginBottom: 12 }}>{error}</p>
@@ -165,7 +165,7 @@ function ProjectAccess({ t, projectId }) {
     .then(setRequests)
     .catch((err) => {
       console.error('Could not load who has asked to see the project:', err);
-      setError('Could not load who has asked to see this project.');
+      setError('Could not load who has asked to see this board.');
     }), [projectId]);
 
   useEffect(() => { load(); }, [load]);
@@ -186,7 +186,7 @@ function ProjectAccess({ t, projectId }) {
   const linkButton = { background: 'none', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0 };
 
   return (
-    <Card t={t} title="Who can see this project">
+    <Card t={t} title="Who can see this board">
       <p style={{ fontSize: 13.5, color: t.inkDim, lineHeight: 1.55, marginBottom: 16 }}>
         It is private: only collaborators and the people you let in can see it and take part. Share its
         page&rsquo;s link, and people can ask to be let in.
@@ -403,7 +403,7 @@ function CollaboratingOrganisations({ t, projectId, isOwner, myOrganisationIds }
     <div style={{ marginTop: 24 }}>
       <h3 style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 4 }}>Organisations</h3>
       <p style={{ fontSize: 13, color: t.inkDim, lineHeight: 1.55, marginBottom: 8 }}>
-        Every admin of an organisation added here can work on the project as a collaborator.
+        Every admin of an organisation added here can work on the board as a collaborator.
       </p>
       {organisations.length === 0 ? (
         <p style={{ fontSize: 13.5, color: t.inkFaint, marginBottom: 16 }}>No organisations yet.</p>
@@ -478,7 +478,7 @@ function AddToolkitTool({ t, chosen = [], onChoose }) {
 
 // Where a project's tool is shown on its public page (project_tools.placement).
 const PLACEMENTS = [
-  { id: 'page', label: 'Project page' },
+  { id: 'page', label: 'Board page' },
   { id: 'workshop', label: 'Workshop Room' },
 ];
 
@@ -837,7 +837,7 @@ function DeleteProject({ t, project, onDeleted }) {
     <>
       <Btn t={t} variant="outline" size="sm" icon="trash" onClick={() => setOpen(true)}
         style={{ color: DANGER, borderColor: DANGER }}>
-        Delete project
+        Delete board
       </Btn>
       {open && <DeleteProjectDialog t={t} project={project} onDeleted={onDeleted}
         onClose={() => setOpen(false)} />}
@@ -872,7 +872,7 @@ function DeleteProjectDialog({ t, project, onDeleted, onClose }) {
       onDeleted?.();
     } catch (err) {
       console.error('Could not delete this project:', err);
-      setError(err?.message ?? 'Could not delete this project.');
+      setError(err?.message ?? 'Could not delete this board.');
       setDeleting(false);
     }
   };
@@ -885,10 +885,10 @@ function DeleteProjectDialog({ t, project, onDeleted, onClose }) {
         style={{ width: '100%', maxWidth: 480, padding: 24, background: t.surface, borderRadius: 16,
           boxShadow: t.shadow }}>
         <h2 id="delete-project-title" style={{ fontSize: 18, fontWeight: 700, color: t.ink, marginBottom: 12 }}>
-          Delete project
+          Delete board
         </h2>
         <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
-          Removes the project, its public page, its image, its news and resources, its
+          Removes the board, its public page, its image, its news and resources, its
           collaborators and its page views, and takes it off everyone's followed list. The
           Toolkit sessions made for it stay, no longer linked to it. This cannot be undone.
         </p>
@@ -905,7 +905,7 @@ function DeleteProjectDialog({ t, project, onDeleted, onClose }) {
             <Btn t={t} variant="outline" size="sm" type="button" onClick={onClose} disabled={deleting}>Cancel</Btn>
             <Btn t={t} variant="outline" size="sm" icon="trash" type="submit" disabled={!matches || deleting}
               style={{ color: DANGER, borderColor: DANGER }}>
-              {deleting ? 'Deleting…' : 'Delete project'}
+              {deleting ? 'Deleting…' : 'Delete board'}
             </Btn>
           </div>
         </form>
@@ -1219,7 +1219,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
       { label: 'Rooms open now', value: shown(rooms ? rooms.filter((room) => room.status === 'open').length : null) },
       { label: 'Comments', value: shown(postCounts?.comments) },
     ] },
-    { title: 'Project', rows: [
+    { title: 'Board', rows: [
       { label: 'Tools live', value: `${NUMBER.format(liveTools)} of ${NUMBER.format(chosenTools.length)}` },
       { label: 'Updates posted', value: shown(postCounts?.updates) },
       { label: 'People involved', value: shown(1 + collaborators.length), note: 'The owner and collaborators.' },
@@ -1244,7 +1244,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   if (status === 'error' || !project) {
     return (
       <div role="alert" style={{ padding: 48, fontSize: 14, color: t.ink, fontWeight: 500 }}>
-        Could not load this project's dashboard. See the console for details.
+        Could not load this board's dashboard. See the console for details.
       </div>
     );
   }
@@ -1308,13 +1308,13 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
             <Card t={t} title="My Toolkit"
               action={<AddToolkitTool t={t} chosen={tools} onChoose={handleAddTool} />}>
               <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0 }}>
-                The tools this project uses. Each is a template: configure it for this project
-                and it goes live on the public page, on its Project tab or in its Workshop Room.
+                The tools this board uses. Each is a template: configure it for this board
+                and it goes live on the public page, on its Board tab or in its Workshop Room.
               </p>
 
               {chosenTools.length === 0 ? (
                 <p style={{ fontSize: 13.5, color: t.inkFaint, marginTop: 16, marginBottom: 0 }}>
-                  No tools yet. Add one to configure it for this project.
+                  No tools yet. Add one to configure it for this board.
                 </p>
               ) : (
                 <div style={{ marginTop: 16 }}>
@@ -1356,7 +1356,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
 
           {tab === 'settings' && (
             <>
-              <Card t={t} title="Project setup" action={(
+              <Card t={t} title="Board setup" action={(
                 <Btn t={t} variant="outline" size="sm" icon="pencil" onClick={() => setEditing(true)}>
                   Edit setup
                 </Btn>
@@ -1444,7 +1444,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
                     flexWrap: 'wrap' }}>
                     <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0, flex: '1 1 260px' }}>
-                      Delete this project, its page and everything set up for it. This cannot be undone.
+                      Delete this board, its page and everything set up for it. This cannot be undone.
                     </p>
                     <DeleteProject t={t} project={project} onDeleted={onDeleted} />
                   </div>

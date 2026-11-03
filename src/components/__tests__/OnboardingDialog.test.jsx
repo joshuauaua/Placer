@@ -53,8 +53,8 @@ describe('OnboardingDialog', () => {
   it('goes through all five steps and back, ending on Edit my profile rather than Done', () => {
     setup();
 
-    const titles = ['Projects are where change starts', 'Create a tool', 'Explore what is happening',
-      'Start your own project', 'Make your profile yours'];
+    const titles = ['Boards are where change starts', 'Create a tool', 'Explore what is happening',
+      'Start your own board', 'Make your profile yours'];
     titles.forEach((title, i) => {
       next();
       expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();
@@ -63,7 +63,7 @@ describe('OnboardingDialog', () => {
     expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    expect(screen.getByRole('heading', { name: 'Start your own project' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Start your own board' })).toBeInTheDocument();
 
     next();
     expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
@@ -75,10 +75,10 @@ describe('OnboardingDialog', () => {
     setup();
     next();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Step 4: Start your own project' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Step 4: Start your own board' }));
 
-    expect(screen.getByRole('heading', { name: 'Start your own project' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Step 4: Start your own project' })).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByRole('heading', { name: 'Start your own board' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Step 4: Start your own board' })).toHaveAttribute('aria-current', 'step');
   });
 
   it("shows no category tags on the Create a tool step", () => {
@@ -90,9 +90,9 @@ describe('OnboardingDialog', () => {
   });
 
   it.each([
-    [1, 'See the projects', 'onOpenProjects'],
+    [1, 'See the boards', 'onOpenProjects'],
     [3, 'Open the map', 'onExplore'],
-    [4, 'Create a project', 'onNewProject'],
+    [4, 'Create a board', 'onNewProject'],
   ])('step %i goes to %s and carries on to the next step', (steps, label, handler) => {
     const props = setup();
     for (let i = 0; i < steps; i += 1) next();
@@ -118,9 +118,9 @@ describe('OnboardingDialog', () => {
   it('leaves out a step\'s button when there is nothing for it to do', () => {
     setup({ onNewProject: undefined });
     next();
-    fireEvent.click(screen.getByRole('button', { name: 'Step 4: Start your own project' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Step 4: Start your own board' }));
 
-    expect(screen.queryByRole('button', { name: 'Create a project' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Create a board' })).not.toBeInTheDocument();
   });
 
   it('closes on Escape and the close button, and moves with the arrow keys', () => {
@@ -167,18 +167,18 @@ describe('OnboardingDialog', () => {
       expect(screen.getByText('Step 4 of 5')).toBeInTheDocument();
     });
 
-    it('points at Projects in the menu on the projects step', () => {
+    it('points at Boards in the menu on the boards step', () => {
       withNavItem('projects');
       const { onOpenProjects } = setup();
       next();
 
-      expect(screen.queryByText(/Click Projects in the menu/)).not.toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: 'Projects' }));
+      expect(screen.queryByText(/Click Boards in the menu/)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Boards' }));
       expect(onOpenProjects).toHaveBeenCalled();
       expect(screen.getByText('Step 2 of 5')).toBeInTheDocument();
     });
 
-    it('points at New project in the menu on the start-a-project step', () => {
+    it('points at New board in the menu on the start-a-project step', () => {
       withNavItem('newProject');
       const { onNewProject } = setup();
       next();
@@ -186,8 +186,8 @@ describe('OnboardingDialog', () => {
       next();
       next();
 
-      expect(screen.queryByRole('button', { name: 'Create a project' })).not.toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: 'New project' }));
+      expect(screen.queryByRole('button', { name: 'Create a board' })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'New board' }));
       expect(onNewProject).toHaveBeenCalled();
       expect(screen.getByText('Step 5 of 5')).toBeInTheDocument();
     });

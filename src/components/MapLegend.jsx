@@ -26,8 +26,8 @@ export function MapLegend({ t, area }) {
   const rows = [
     {
       key: 'project',
-      label: 'A project area',
-      hint: 'Click one to see the project',
+      label: 'A board area',
+      hint: 'Click one to see the board',
       swatch: (
         <span style={{ width: 18, height: 14, borderRadius: 3, background: `${area.fill}66`,
           border: `2px solid ${area.stroke}`, boxSizing: 'border-box' }} />

@@ -27,7 +27,7 @@ describe('a tool outside a room', () => {
     expect(readRoom).not.toHaveBeenCalled();
   });
 
-  it('offers no way to start a room: a project opens those from its dashboard', () => {
+  it('offers no way to start a room: a board opens those from its dashboard', () => {
     renderAt('/toolkit/budget-ballot');
 
     expect(screen.queryByRole('button', { name: /start a room/i })).not.toBeInTheDocument();
@@ -35,7 +35,7 @@ describe('a tool outside a room', () => {
   });
 });
 
-describe('a room set up by its project', () => {
+describe('a room set up by its board', () => {
   const ballotSetup = { budget: 50000, items: ['benches', 'lighting'] };
 
   it('shows everybody in the room the posts the organiser wrote', async () => {

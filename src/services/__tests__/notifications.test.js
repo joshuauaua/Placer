@@ -191,7 +191,7 @@ describe('notifications, with a Supabase project', () => {
       .rejects.toThrow('Could not save your notification settings: nope');
   });
 
-  it('reads the new default for answers on your projects', async () => {
+  it('reads the new default for answers on your boards', async () => {
     await load();
     maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
@@ -201,7 +201,7 @@ describe('notifications, with a Supabase project', () => {
     expect(select).toHaveBeenCalledWith(expect.stringContaining('project_responses'));
   });
 
-  it('reads one project\'s setting, or null for the account default', async () => {
+  it('reads one board\'s setting, or null for the account default', async () => {
     await load();
     maybeSingle.mockResolvedValueOnce({ data: { responses: 'session' }, error: null });
     expect(await notifications.readProjectResponses('project-1')).toBe('session');
@@ -213,7 +213,7 @@ describe('notifications, with a Supabase project', () => {
     expect(await notifications.readProjectResponses('project-1')).toBeNull();
   });
 
-  it('saves one project\'s setting as an upsert keyed on account and project', async () => {
+  it('saves one board\'s setting as an upsert keyed on account and board', async () => {
     await load();
     upsert.mockResolvedValueOnce({ error: null });
 
@@ -225,7 +225,7 @@ describe('notifications, with a Supabase project', () => {
     );
   });
 
-  it('goes back to the account default by removing the project\'s row', async () => {
+  it('goes back to the account default by removing the board\'s row', async () => {
     await load();
     eqDeleteSecond.mockResolvedValueOnce({ error: null });
 

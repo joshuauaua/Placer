@@ -175,7 +175,7 @@ export function PostPage({ t, draft, preview, capturedView, canvasAssets = [], l
           {draft.audience?.trim() && <Row t={t} label="Who it is for">{draft.audience}</Row>}
           <Row t={t} label="Photo">
             {capturedView?.source === 'upload' ? 'Your own photo'
-              : capturedView?.source === 'project' ? "The project's photo" : 'Street View'}
+              : capturedView?.source === 'project' ? "The board's photo" : 'Street View'}
           </Row>
           <Row t={t} label="Location">
             {loc || <span style={{ color: t.inkDim }}>Not recorded</span>}

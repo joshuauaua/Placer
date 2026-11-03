@@ -37,7 +37,7 @@ export function ActivityPage({ t, accountId = null, onOpenProject, onOpenProject
     const invitations = accountId
       ? readPendingCollaboratorInvitations().catch((err) => {
         console.error('Could not load project invitations:', err);
-        if (!cancelled) setInvitationError(err?.message ?? 'Could not load project invitations.');
+        if (!cancelled) setInvitationError(err?.message ?? 'Could not load board invitations.');
         return [];
       })
       : Promise.resolve([]);
@@ -68,7 +68,7 @@ export function ActivityPage({ t, accountId = null, onOpenProject, onOpenProject
       if (accept) onOpenProjectDashboard?.(invitation.projectId);
     } catch (err) {
       console.error('Could not respond to the project invitation:', err);
-      setInvitationError(err?.message ?? 'Could not respond to the project invitation.');
+      setInvitationError(err?.message ?? 'Could not respond to the board invitation.');
     } finally {
       setRespondingTo(null);
     }
@@ -107,10 +107,10 @@ export function ActivityPage({ t, accountId = null, onOpenProject, onOpenProject
               border: `1px solid ${t.line}` }}>
             <h2 id="project-invitations-heading" style={{ fontSize: 18, fontWeight: 700, color: t.ink,
               margin: '0 0 8px' }}>
-              Project invitations
+              Board invitations
             </h2>
             <p style={{ fontSize: 14, color: t.inkDim, margin: '0 0 8px' }}>
-              Accept to join a project as a collaborator, or decline to leave it unchanged.
+              Accept to join a board as a collaborator, or decline to leave it unchanged.
             </p>
             {invitations.map((invitation) => (
               <div key={invitation.projectId} style={{ display: 'flex', alignItems: 'center',
@@ -148,7 +148,7 @@ export function ActivityPage({ t, accountId = null, onOpenProject, onOpenProject
         )}
         {status === 'ready' && notifications.length === 0 && invitations.length === 0 && (
           <p style={{ fontSize: 15, color: t.inkDim }}>
-            Nothing yet. Comments, follows, news from the projects you are part of and the tools you
+            Nothing yet. Comments, follows, news from the boards you are part of and the tools you
             save will show up here.
           </p>
         )}

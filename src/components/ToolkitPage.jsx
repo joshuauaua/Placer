@@ -36,12 +36,12 @@ import { FULL_SCREEN_TOOLS, isFullScreenTool, startedToolPath } from '../lib/rou
  * "Project" until its name is in.
  */
 export function projectTrail(projectId, crumb) {
-  const name = crumb?.name || 'Project';
+  const name = crumb?.name || 'Board';
   if (crumb?.canEdit) {
-    return [WORKSPACE_CRUMB, { label: 'Projects', href: '/projects' },
-      { label: name, href: `/projects/${projectId}/dashboard` }];
+    return [WORKSPACE_CRUMB, { label: 'Boards', href: '/boards' },
+      { label: name, href: `/boards/${projectId}/dashboard` }];
   }
-  return [{ label: name, href: `/projects/${projectId}` }];
+  return [{ label: name, href: `/boards/${projectId}` }];
 }
 
 /** The tool id in a path like /toolkit/street-mixer, if there is one. */

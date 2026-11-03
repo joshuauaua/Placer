@@ -116,7 +116,7 @@ function DashboardProjectCard({ t, project, onOpen }) {
       <span style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 20, width: '100%', boxSizing: 'border-box' }}>
         <span className="placer-caption" style={{ textTransform: 'uppercase', letterSpacing: '0.08em',
           fontWeight: 700, color: t.inkDim }}>
-          {PROJECT_TYPE_NAMES[project.projectType] ?? 'Project'}
+          {PROJECT_TYPE_NAMES[project.projectType] ?? 'Board'}
         </span>
         <span style={{ fontSize: 19, fontWeight: 700, lineHeight: 1.25 }}>{project.name}</span>
         <span style={{ marginTop: 8 }}>
@@ -308,10 +308,10 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
           <SectionLabel t={t} id="dashboard-basics-title">Getting Started</SectionLabel>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
             <BasicsCard t={t} hue={PALETTE.purple}
-              label="Quickstart tutorial" title="Create your first Project"
+              label="Quickstart tutorial" title="Create your first Board"
               onClick={() => onNavigate('quickstart')} />
             <BasicsCard t={t} hue={PALETTE.blue}
-              label="Project Examples" title="Explore what other projects exist on the platform"
+              label="Board Examples" title="Explore what other boards exist on the platform"
               onClick={() => onNavigate('projects')} />
             <BasicsCard t={t} hue={PALETTE.orange}
               label="FAQ" title="Answers to common questions about Placer"
@@ -392,7 +392,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
               )}
               {activityStatus === 'ready' && activity.length === 0 && (
                 <p style={{ fontSize: 14, color: t.inkDim }}>
-                  Nothing yet. Comments, follows, news from your projects and the tools you save
+                  Nothing yet. Comments, follows, news from your boards and the tools you save
                   will show up here.
                 </p>
               )}
@@ -410,25 +410,25 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
             )}
           </PanelCard>
 
-          <PanelCard t={t} id="dashboard-projects" title="Projects"
+          <PanelCard t={t} id="dashboard-projects" title="Boards"
             action={(
               <Btn t={t} variant="outline" size="sm" icon="arrowRight" onClick={() => onNavigate('projects')}>
-                View all projects
+                View all boards
               </Btn>
             )}>
             {projectsStatus === 'loading' && (
-              <p style={{ fontSize: 14, color: t.inkDim }}>Loading your projects…</p>
+              <p style={{ fontSize: 14, color: t.inkDim }}>Loading your boards…</p>
             )}
             {projectsStatus === 'error' && (
-              <p style={{ fontSize: 14, color: t.inkDim }}>Your projects could not be loaded. Try again in a moment.</p>
+              <p style={{ fontSize: 14, color: t.inkDim }}>Your boards could not be loaded. Try again in a moment.</p>
             )}
             {projectsStatus === 'ready' && recentProjects.length === 0 && (
               <p style={{ fontSize: 14, color: t.inkDim }}>
-                No projects yet. Projects you run or collaborate on will show up here.
+                No boards yet. Boards you run or collaborate on will show up here.
               </p>
             )}
             {recentProjects.length > 0 && (
-              <div role="group" aria-label="Your projects, latest update first" className="placer-scroll"
+              <div role="group" aria-label="Your boards, latest update first" className="placer-scroll"
                 style={{ display: 'grid', gridAutoFlow: 'column', gridAutoColumns: 'minmax(220px, 1fr)', gap: 12,
                   overflowX: 'auto', scrollSnapType: 'x proximity' }}>
                 {recentProjects.map((project) => (

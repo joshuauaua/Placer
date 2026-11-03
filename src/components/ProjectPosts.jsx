@@ -199,7 +199,7 @@ export function ProjectPosts({ t, kind, posts, status, canPost, prompt = null, m
         <Composer t={t} id={`project-${kind}-body`} max={max} onPost={onPost} postAs={postAs}
           organisationFirst={update}
           label={update ? 'Post an update' : 'Add a comment'}
-          placeholder={update ? 'What is new with the project?' : 'Say what you think'}
+          placeholder={update ? 'What is new with the board?' : 'Say what you think'}
           submitLabel={update ? 'Post update' : 'Comment'} />
       ) : prompt}
 

@@ -41,7 +41,7 @@ describe('saving a survey response', () => {
     api = await import('../api');
   });
 
-  describe('with no project configured', () => {
+  describe('with no board configured', () => {
     it('keeps the response in this browser instead', async () => {
       // The setup file leaves both variables empty.
       expect(supabase.isSupabaseConfigured()).toBe(false);
@@ -57,7 +57,7 @@ describe('saving a survey response', () => {
     });
   });
 
-  describe('with a project configured', () => {
+  describe('with a board configured', () => {
     beforeEach(configure);
 
     it('inserts one row, with the answers as a single jsonb value', async () => {

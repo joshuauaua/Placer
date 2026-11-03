@@ -207,12 +207,12 @@ describe('Stationary Activity Mapping', () => {
     expect(await screen.findByRole('button', { name: 'Standing: Waiting for transportation' })).toBeInTheDocument();
   });
 
-  it("starts from a project's area and location, which the observer cannot change", () => {
+  it("starts from a board's area and location, which the observer cannot change", () => {
     render(<StationaryActivityMap t={THEME} tool={findTool('stationary-activity-mapping')}
       setup={{ area: AREA, location: 'Stortorget' }} />);
     fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
 
-    expect(screen.getByText('The area this project maps, outlined for you.')).toBeInTheDocument();
+    expect(screen.getByText('The area this board maps, outlined for you.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Undo corner' })).not.toBeInTheDocument();
     expect(screen.getByLabelText('Location')).toHaveValue('Stortorget');
     expect(screen.getByLabelText('Location')).toHaveAttribute('readonly');

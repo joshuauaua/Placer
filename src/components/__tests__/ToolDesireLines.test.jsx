@@ -190,7 +190,7 @@ describe('Desire Lines on its own', () => {
   });
 });
 
-describe('Desire Lines in a project room', () => {
+describe('Desire Lines in a board room', () => {
   const other = (id, offset) => ({
     id,
     points: [[13.4, 52.52 + offset], [13.404, 52.52 + offset]],
@@ -269,7 +269,7 @@ describe('Desire Lines in a project room', () => {
   });
 });
 
-describe('Desire Lines on a project page', () => {
+describe('Desire Lines on a board page', () => {
   // What a browser remembers of a room is kept in memory here, fresh for each test (some
   // test environments have no storage at all).
   const original = Object.getOwnPropertyDescriptor(window, 'localStorage');
@@ -375,7 +375,7 @@ describe('marking entrances, obstacles and other things', () => {
   };
   const ready = () => act(async () => { await lastMap().ready; });
 
-  it("offers an entrance, an obstacle, something else, and the project's own kinds", async () => {
+  it("offers an entrance, an obstacle, something else, and the board's own kinds", async () => {
     mount(openRoom());
     await ready();
 
@@ -423,7 +423,7 @@ describe('marking entrances, obstacles and other things', () => {
     expect(screen.getByLabelText('What is it?')).toHaveValue('');
   });
 
-  it("places one of the project's own kinds under its name", async () => {
+  it("places one of the board's own kinds under its name", async () => {
     mount(openRoom());
     await ready();
 
@@ -457,7 +457,7 @@ describe('marking entrances, obstacles and other things', () => {
     expect(screen.getByLabelText('Obstacle')).toBeInTheDocument();
   });
 
-  it("is sent to a project page's room along with the walks", async () => {
+  it("is sent to a board page's room along with the walks", async () => {
     const svc = {
       readContributions: vi.fn().mockResolvedValue([]),
       subscribeToRoom: vi.fn(() => () => {}),

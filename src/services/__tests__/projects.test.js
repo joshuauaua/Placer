@@ -106,7 +106,7 @@ describe('with no Supabase project', () => {
     expect(createClient).not.toHaveBeenCalled();
   });
 
-  it('has no projects to offer with no account either', async () => {
+  it('has no boards to offer with no account either', async () => {
     await load({ configured: false });
 
     await expect(projects.readMyProjects(null)).resolves.toEqual([]);
@@ -114,7 +114,7 @@ describe('with no Supabase project', () => {
   });
 });
 
-describe('starting a project', () => {
+describe('starting a board', () => {
   it('refuses with no owner, before a request is even sent', async () => {
     await load();
 
@@ -160,8 +160,8 @@ describe('starting a project', () => {
   });
 });
 
-describe('reading a project', () => {
-  it('needs no account — a project page is public', async () => {
+describe('reading a board', () => {
+  it('needs no account — a board page is public', async () => {
     await load();
     fromChains.projects = makeChain({ data: ROW, error: null });
 
@@ -183,7 +183,7 @@ describe('reading a project', () => {
     expect(found.locationShapes).toEqual([]);
   });
 
-  it('is null for a project that does not exist, rather than throwing', async () => {
+  it('is null for a board that does not exist, rather than throwing', async () => {
     await load();
     fromChains.projects = makeChain({ data: null, error: null });
 
@@ -191,8 +191,8 @@ describe('reading a project', () => {
   });
 });
 
-describe('projects for Explore', () => {
-  it('reads every project with a drawn shape in full, leaving the rest out', async () => {
+describe('boards for Explore', () => {
+  it('reads every board with a drawn shape in full, leaving the rest out', async () => {
     await load();
     fromChains.projects = makeChain({ data: [ROW, { ...ROW, id: 'proj-2', location_shapes: [] }], error: null });
 
@@ -203,7 +203,7 @@ describe('projects for Explore', () => {
       description: ROW.description });
   });
 
-  it('includes a project with no outline when it has the point of an address', async () => {
+  it('includes a board with no outline when it has the point of an address', async () => {
     await load();
     fromChains.projects = makeChain({ data: [
       { ...ROW, id: 'proj-2', location_shapes: [], address: 'Folkets Park, Malmö', location_lat: 55.59, location_lng: 13.01 },
@@ -224,8 +224,8 @@ describe('projects for Explore', () => {
   });
 });
 
-describe('project locations, for the community map', () => {
-  it('reads every project with a drawn shape, leaving the rest out', async () => {
+describe('board locations, for the community map', () => {
+  it('reads every board with a drawn shape, leaving the rest out', async () => {
     await load();
     fromChains.projects = makeChain({
       data: [
@@ -257,7 +257,7 @@ describe('project locations, for the community map', () => {
   });
 });
 
-describe('your projects', () => {
+describe('your boards', () => {
   it('combines what you own with what you collaborate on', async () => {
     await load();
     const owned = { ...ROW, id: 'proj-owned' };
@@ -349,13 +349,13 @@ describe('collaborating organisations', () => {
 
   it('surfaces a refusal as a readable error', async () => {
     await load();
-    rpc.mockResolvedValue({ data: null, error: { message: "only a project's owner may add a collaborator" } });
+    rpc.mockResolvedValue({ data: null, error: { message: "only a board's owner may add a collaborator" } });
 
-    await expect(projects.addCollaboratingOrganisation('proj-1', 'org-1')).rejects.toThrow('only a project');
+    await expect(projects.addCollaboratingOrganisation('proj-1', 'org-1')).rejects.toThrow('only a board');
   });
 });
 
-describe('editing and removing a project', () => {
+describe('editing and removing a board', () => {
   it('sends only the fields being changed', async () => {
     await load();
     fromChains.projects = makeChain({ data: { ...ROW, name: 'New name' }, error: null });
@@ -378,7 +378,7 @@ describe('editing and removing a project', () => {
     });
   });
 
-  it('removes a project', async () => {
+  it('removes a board', async () => {
     await load();
     fromChains.projects = makeChain({ error: null });
 
@@ -387,7 +387,7 @@ describe('editing and removing a project', () => {
     expect(fromChains.projects.calls).toContainEqual(['eq', ['id', 'proj-1']]);
   });
 
-  it('removes the image along with the project, after the row', async () => {
+  it('removes the image along with the board, after the row', async () => {
     await load();
     fromChains.projects = makeChain({ data: { image_path: 'projects/proj-1/image-1.jpg' }, error: null });
 
@@ -406,8 +406,8 @@ describe('editing and removing a project', () => {
   });
 });
 
-describe('project images', () => {
-  it('uploads into the project\'s own folder, not the uploader\'s', async () => {
+describe('board images', () => {
+  it('uploads into the board\'s own folder, not the uploader\'s', async () => {
     await load();
     const file = { type: 'image/jpeg', size: 1000 };
 
@@ -447,7 +447,7 @@ describe('collaborators', () => {
     ]);
   });
 
-  it('reads pending and declined invitations for the project owner', async () => {
+  it('reads pending and declined invitations for the board owner', async () => {
     await load();
     fromChains.project_collaboration_invitations = makeChain({
       data: [{ user_id: 'user-2', email: 'devon@example.com', display_name: 'Devon Park',
@@ -580,7 +580,7 @@ describe('the dashboard', () => {
     await load();
     rpc.mockReturnValue({
       single: () => Promise.resolve({
-        data: null, error: { message: 'only a project\'s owner or collaborators may read its dashboard' },
+        data: null, error: { message: 'only a board\'s owner or collaborators may read its dashboard' },
       }),
     });
 
@@ -608,7 +608,7 @@ describe("the public page's Toolkit count", () => {
 describe('page views', () => {
   beforeEach(() => sessionStorage.clear());
 
-  it('counts a view once per project per browser session', async () => {
+  it('counts a view once per board per browser session', async () => {
     await load();
     rpc.mockResolvedValue({ data: null, error: null });
 
@@ -649,7 +649,7 @@ describe('page views', () => {
 });
 
 describe('the address', () => {
-  it('saves the address and its point when starting a project', async () => {
+  it('saves the address and its point when starting a board', async () => {
     await load();
     fromChains.projects = makeChain({ data: ROW, error: null });
 
@@ -670,7 +670,7 @@ describe('the address', () => {
     expect(fromChains.projects.calls[0]).toEqual(['update', [{ address: '', location_lat: null, location_lng: null }]]);
   });
 
-  it('reads no point for a project without one', async () => {
+  it('reads no point for a board without one', async () => {
     await load();
     fromChains.projects = makeChain({ data: ROW, error: null });
 
@@ -678,7 +678,7 @@ describe('the address', () => {
   });
 });
 
-describe("a project's tools", () => {
+describe("a board's tools", () => {
   it('reads them as registry ids, oldest first', async () => {
     await load();
     fromChains.project_tools = makeChain({ data: [{ tool: 'open-vote' }, { tool: 'budget-ballot' }], error: null });
@@ -718,7 +718,7 @@ describe("a project's tools", () => {
   });
 });
 
-describe("a tool's setup for a project", () => {
+describe("a tool's setup for a board", () => {
   it('reads Idea Visualizer\'s scene, with an address to show its image from', async () => {
     await load();
     fromChains.project_tools = makeChain({ data: { config: {
@@ -741,7 +741,7 @@ describe("a tool's setup for a project", () => {
     await expect(projects.readProjectToolConfig('proj-1', 'reimagine-a-space')).resolves.toBeNull();
   });
 
-  it('uploads a base image into the project\'s scenes folder', async () => {
+  it('uploads a base image into the board\'s scenes folder', async () => {
     await load();
     const file = { type: 'image/jpeg', size: 1000 };
 
@@ -751,7 +751,7 @@ describe("a tool's setup for a project", () => {
     expect(upload).toHaveBeenCalledWith(expect.anything(), path, expect.objectContaining({ type: 'image/webp' }));
   });
 
-  it('removes the base images along with the project', async () => {
+  it('removes the base images along with the board', async () => {
     await load();
     fromChains.projects = makeChain({ data: { image_path: null }, error: null });
     fromChains.project_tools = makeChain({ data: [{ config: { imagePath: 'scenes/proj-1/scene-1.webp' } }, { config: null }],
@@ -762,7 +762,7 @@ describe("a tool's setup for a project", () => {
     expect(remove).toHaveBeenCalledWith(expect.anything(), 'scenes/proj-1/scene-1.webp');
   });
 
-  it('removes the Street View photo of an Idea Visualizer room along with the project', async () => {
+  it('removes the Street View photo of an Idea Visualizer room along with the board', async () => {
     await load();
     fromChains.projects = makeChain({ data: { image_path: null }, error: null });
     fromChains.project_tools = makeChain({ data: [], error: null });
@@ -775,7 +775,7 @@ describe("a tool's setup for a project", () => {
     expect(remove).toHaveBeenCalledWith(expect.anything(), 'scenes/proj-1/scene-2.webp');
   });
 
-  it('reads the scene from the project\'s open Idea Visualizer room', async () => {
+  it('reads the scene from the board\'s open Idea Visualizer room', async () => {
     await load();
     rpc.mockImplementation((name) => Promise.resolve(name === 'project_open_rooms'
       ? { data: [{ room_id: 'room-1', tool: 'reimagine-a-space', expires_at: null,
@@ -798,7 +798,7 @@ describe("a tool's setup for a project", () => {
   });
 });
 
-describe("a project's breadcrumb", () => {
+describe("a board's breadcrumb", () => {
   it('is its name, and whether this account can edit it', async () => {
     await load();
     rpc.mockImplementation((name) => {
@@ -825,7 +825,7 @@ describe("a project's breadcrumb", () => {
   });
 });
 
-describe("a project's budget", () => {
+describe("a board's budget", () => {
   it('reads the answer, the amount and the currency', async () => {
     await load();
     fromChains.project_budgets = makeChain({ data: { has_budget: true, amount: '250000.00', currency: 'SEK' }, error: null });
@@ -842,7 +842,7 @@ describe("a project's budget", () => {
     await expect(projects.readProjectBudget('proj-1')).resolves.toBeNull();
   });
 
-  it('saves with one write per project, replacing the last answer', async () => {
+  it('saves with one write per board, replacing the last answer', async () => {
     await load();
     fromChains.project_budgets = makeChain({ data: null, error: null });
 
@@ -871,7 +871,7 @@ describe("a project's budget", () => {
   });
 });
 
-describe('private projects', () => {
+describe('private boards', () => {
   it('reads what a locked page may show', async () => {
     await load();
     rpc.mockReturnValue({ maybeSingle: () => Promise.resolve({
@@ -916,7 +916,7 @@ describe('private projects', () => {
 
   it('surfaces a refused request as a readable error', async () => {
     await load();
-    rpc.mockResolvedValue({ data: null, error: { message: 'asking to see a project needs an account' } });
+    rpc.mockResolvedValue({ data: null, error: { message: 'asking to see a board needs an account' } });
 
     await expect(projects.requestProjectAccess('proj-1', 'Ana')).rejects.toThrow('needs an account');
   });

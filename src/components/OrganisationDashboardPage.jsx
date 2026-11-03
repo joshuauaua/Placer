@@ -82,7 +82,7 @@ function CloseOrganisation({ t, organisation, onClosed }) {
   return (
     <Card t={t} title="Close organisation">
       <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 16 }}>
-        Removes the organisation, its public page and its list of admins. Its projects stay,
+        Removes the organisation, its public page and its list of admins. Its boards stay,
         run by whoever started each one, and no longer in the organisation&rsquo;s name.
         This cannot be undone.
       </p>
@@ -262,17 +262,17 @@ export function OrganisationDashboardPage({ t, accountId, organisationId,
           </Btn>
         </div>
 
-        <Card t={t} title="Projects">
+        <Card t={t} title="Boards">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             gap: 12, flexWrap: 'wrap', marginBottom: projects.length > 0 ? 20 : 0 }}>
             <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: 0, flex: '1 1 280px' }}>
               {projects.length === 0
-                ? 'No projects are run in this organisation’s name yet.'
-                : 'Projects run in this organisation’s name, shown on its public page.'}
+                ? 'No boards are run in this organisation’s name yet.'
+                : 'Boards run in this organisation’s name, shown on its public page.'}
             </p>
             {onNewProject && (
               <Btn t={t} variant="primary" size="sm" icon="plus" onClick={() => onNewProject(organisation.id)}>
-                Start a project
+                Start a board
               </Btn>
             )}
           </div>
@@ -288,7 +288,7 @@ export function OrganisationDashboardPage({ t, accountId, organisationId,
 
         <Card t={t} title="Admins">
           <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 12 }}>
-            Every admin can edit the organisation, add and remove admins, start projects in its
+            Every admin can edit the organisation, add and remove admins, start boards in its
             name, and close it. There is always at least one: to leave as the only admin, add
             somebody else first, or close the organisation.
           </p>

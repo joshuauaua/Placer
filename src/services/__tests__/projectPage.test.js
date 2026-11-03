@@ -57,7 +57,7 @@ describe('projectPage', () => {
       collaborators: [{ id: 'user-3', name: 'Ines' }], canPostUpdate: true });
   });
 
-  it('is null for a project that cannot be seen', async () => {
+  it('is null for a board that cannot be seen', async () => {
     await load();
     rpc.mockResolvedValueOnce({ data: null, error: null });
 
@@ -107,7 +107,7 @@ describe('projectPage', () => {
     expect(comments[0].authorPhoto).toBeNull();
   });
 
-  it('posts an update with only its project and its body, trimmed', async () => {
+  it('posts an update with only its board and its body, trimmed', async () => {
     await load();
     single.mockResolvedValueOnce({ data: { ...ROW, id: 'u1', body: 'News' }, error: null });
 
@@ -146,7 +146,7 @@ describe('projectPage', () => {
     expect(eqDelete).toHaveBeenCalledWith('id', 'c1');
   });
 
-  it('reads every reply on a project oldest first, with the post each answers', async () => {
+  it('reads every reply on a board oldest first, with the post each answers', async () => {
     await load();
     order.mockResolvedValueOnce({ data: [
       { ...ROW, id: 'r1', update_id: 'u1', comment_id: null },

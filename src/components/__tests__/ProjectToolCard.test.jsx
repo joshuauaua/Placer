@@ -20,7 +20,7 @@ vi.mock('../../services/rooms', async (importOriginal) => ({
 describe('ProjectToolCard', () => {
   afterEach(() => cleanup());
 
-  it('opens a tool the project set up as it was set up', async () => {
+  it('opens a tool the board set up as it was set up', async () => {
     render(<ProjectToolCard t={THEME} tool={findTool('stationary-activity-mapping')} projectId="proj-1" />);
     fireEvent.click(screen.getByRole('button', { name: /Stationary Activity Mapping/ }));
     fireEvent.click(await screen.findByRole('button', { name: 'Get started' }));
