@@ -199,7 +199,8 @@ describe('where somebody signed in starts', () => {
     identity({ profile: null, status: 'signedOut', accountId: null, email: null });
     const location = renderRecording('/');
 
-    expect(await screen.findByText(/The open toolkit for participatory placemaking/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Understand, Imagine and Plan the City. Together.' }))
+      .toBeInTheDocument();
     expect(location.history.at(-1)).toBe('/');
   });
 });
