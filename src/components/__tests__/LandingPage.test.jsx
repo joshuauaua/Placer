@@ -31,9 +31,11 @@ describe('LandingPage hero', () => {
     render(<LandingPage t={THEME} />);
 
     const partners = screen.getByRole('region', { name: 'Developed with leading design experts' });
-    for (const name of ['Gehl Institute', 'STPLN', 'Ankara Aks']) {
+    for (const name of ['STPLN', 'Ankara Aks']) {
       expect(within(partners).getByRole('link', { name })).toHaveAttribute('target', '_blank');
     }
+    // Hidden for now.
+    expect(within(partners).queryByRole('link', { name: 'Gehl Institute' })).toBeNull();
   });
 
   it('says how it works under the partners', () => {
@@ -105,7 +107,7 @@ describe('LandingPage hero', () => {
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('follows the testimonials with why it matters', () => {
+  it('follows how it works with why it matters', () => {
     render(<LandingPage t={THEME} />);
 
     expect(screen.getByRole('heading', { level: 2, name: 'More engagement,every day.' })).toBeInTheDocument();
@@ -129,29 +131,13 @@ describe('LandingPage hero', () => {
     expect(within(card()).queryByRole('button', { name: 'Run live workshops' })).not.toBeInTheDocument();
   });
 
-  it('shows one of three testimonials at a time, stepping round either way', () => {
+  it('leaves out the testimonials and "Easy to start" for now', () => {
     const { container } = render(<LandingPage t={THEME} />);
-    const shown = () => [...container.querySelectorAll('.placer-landing-testimonial')]
-      .findIndex((card) => !card.hidden);
 
-    expect(container.querySelectorAll('.placer-landing-testimonial')).toHaveLength(3);
-    expect(shown()).toBe(0);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Next testimonial' }));
-    expect(shown()).toBe(1);
-    expect(screen.getByText('2 / 3')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Previous testimonial' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Previous testimonial' }));
-    expect(shown()).toBe(2);
-  });
-
-  it('shows how easy it is to start, over three cards', () => {
-    render(<LandingPage t={THEME} />);
-    const section = screen.getByRole('region', { name: 'Easy to start.Simple to connect.' });
-
-    expect(within(section).getAllByRole('heading', { level: 3 }).map((h) => h.textContent))
-      .toEqual(['Customizable templates', 'Instant presentations', 'Flexible setups']);
+    expect(container.querySelector('.placer-landing-testimonials')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Next testimonial' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Easy to start.Simple to connect.' })).toBeNull();
+    expect(screen.queryByText('Customizable templates')).toBeNull();
   });
 
   it('shows the power of participation through case studies', () => {
