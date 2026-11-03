@@ -16,6 +16,7 @@ import { NotFoundPage } from './components/NotFoundPage';
 import { GlassNavbar } from './components/GlassNavbar';
 import { SiteFooter } from './components/SiteFooter';
 import { SideNav } from './components/SideNav';
+import { findTool } from './toolkit/tools';
 import { useIdentity } from './components/useIdentity';
 import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
 import { CASE_STUDY_FORM_PATH, isFullScreenTool, isToolConfigurator } from './lib/routes';
@@ -35,6 +36,7 @@ const ContactPage = lazy(() => import('./components/ContactPage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const ToolkitPage = lazy(() => import('./components/ToolkitPage'));
 const ChooseToolDialog = lazy(() => import('./components/ChooseToolDialog'));
+const AddToBoardDialog = lazy(() => import('./components/AddToBoardDialog'));
 const ToolConfiguratorPage = lazy(() => import('./components/ToolConfiguratorPage'));
 const JoinPage = lazy(() => import('./components/JoinPage'));
 const DashboardPage = lazy(() => import('./components/DashboardPage'));
@@ -292,10 +294,13 @@ function MainApp({ initialView = 'welcome' }) {
 
   const showNewProject = () => navigate('/boards/new');
   // Create a tool, from the side nav or the dashboard: once the kind is picked, a dialog
-  // of the tools of that kind (ChooseToolDialog), each opening its configuration page.
+  // of the tools of that kind (ChooseToolDialog); once a tool is, which board it goes on
+  // (AddToBoardDialog); and then its configuration page, for that board.
   const [createCategory, setCreateCategory] = useState(null);
-  const showCreateTool = (category) => setCreateCategory(category);
-  const closeCreateTool = useCallback(() => setCreateCategory(null), []);
+  const [createToolId, setCreateToolId] = useState(null);
+  const showCreateTool = (category) => { setCreateToolId(null); setCreateCategory(category); };
+  const closeCreateTool = useCallback(() => { setCreateCategory(null); setCreateToolId(null); }, []);
+  const createTool = createToolId ? findTool(createToolId) : null;
   const showNewOrganisationProject = (organisationId) =>
     navigate(`/boards/new?organisation=${encodeURIComponent(organisationId)}`);
   const showNewOrganisation = () => navigate('/organisations/new');
@@ -530,12 +535,24 @@ function MainApp({ initialView = 'welcome' }) {
               </Suspense>
             )}
 
-            {createCategory && (
+            {createCategory && !createTool && (
               <Suspense fallback={null}>
                 <ChooseToolDialog t={t} category={createCategory} onClose={closeCreateTool}
-                  onPick={(toolId) => {
-                    setCreateCategory(null);
-                    navigate(`/toolkit/${encodeURIComponent(toolId)}/configure`);
+                  onPick={setCreateToolId} />
+              </Suspense>
+            )}
+
+            {createTool && (
+              <Suspense fallback={null}>
+                <AddToBoardDialog t={t} tool={createTool} accountId={accountId} ownerName={profile?.name ?? ''}
+                  onClose={closeCreateTool}
+                  // Back to the tools of the same kind.
+                  onBack={() => setCreateToolId(null)}
+                  onDone={(boardId) => {
+                    const toolId = createTool.id;
+                    closeCreateTool();
+                    navigate(`/toolkit/${encodeURIComponent(toolId)}/configure`
+                      + (boardId ? `?project=${encodeURIComponent(boardId)}` : ''));
                   }} />
               </Suspense>
             )}

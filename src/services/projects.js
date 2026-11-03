@@ -827,6 +827,17 @@ export async function saveProjectTools(projectId, toolIds, addedBy, workshop = [
 }
 
 /**
+ * Add one tool to a project, leaving its other tools as they are — for Create a tool,
+ * which picks a tool first and the board after (AddToBoardDialog). Nothing changes if
+ * the project already has it. Owner or collaborator only.
+ */
+export async function addProjectTool(projectId, toolId, addedBy) {
+  const current = await readProjectTools(projectId);
+  if (current.includes(toolId)) return current;
+  return saveProjectTools(projectId, [...current, toolId], addedBy);
+}
+
+/**
  * The project's tools in its Workshop Room rather than on its page, as a Set of
  * registry ids (project_tools.placement, supabase/project-workshop-room.sql). Public,
  * like the tools themselves.
