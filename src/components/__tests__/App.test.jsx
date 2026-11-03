@@ -181,10 +181,27 @@ describe('App', () => {
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
   });
 
-  it('opens the Resources page with the case study form on a direct visit to its address', async () => {
-    renderAt('/resources/submit-case-study');
-    expect(await screen.findByRole('dialog', { name: 'Submit a case study' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 1, name: 'Resources' })).toBeInTheDocument();
+  it('serves the case study form at its own address', async () => {
+    renderAt('/add-a-case-study');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Add a case study' })).toBeInTheDocument();
+  });
+
+  it('sends the case study form\'s old address under Resources on to it', async () => {
+    const { hook, history } = memoryLocation({ path: '/resources/submit-case-study', record: true });
+    render(<Router hook={hook}><App /></Router>);
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Add a case study' })).toBeInTheDocument();
+    expect(history.at(-1)).toBe('/add-a-case-study');
+  });
+
+  it('opens the case study form from Resources', async () => {
+    const { hook, history } = memoryLocation({ path: '/resources', record: true });
+    render(<Router hook={hook}><App /></Router>);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Submit a case study' }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Add a case study' })).toBeInTheDocument();
+    expect(history.at(-1)).toBe('/add-a-case-study');
   });
 
   describe('an address the app does not know', () => {

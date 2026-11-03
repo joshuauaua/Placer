@@ -2,16 +2,17 @@
  *
  * The home view for anybody signed out: a hero saying what PLACER is for, with
  * Get started opening the waitlist, the practices it is built with, how it
- * works, what people say, who it is for, how it gets going, case studies, and
- * a waitlist form to close, then who builds and funds it. Somebody signed in
- * goes straight to their dashboard instead (see App.jsx).
+ * works, what people say, who it is for, how it gets going, case studies, an
+ * invitation to add one, and a waitlist form to close, then who builds and funds
+ * it. Somebody signed in goes straight to their dashboard instead (see App.jsx).
  *
- * The same page as the landingpage branch's (PR #359), but for the credit strip
- * at its foot: that branch moved the credit into its own footer, and
- * Development's footer does not carry it.
+ * The same page as the landingpage branch's (PRs #359 and #360), but for the
+ * credit strip at its foot: that branch moved the credit into its own footer,
+ * and Development's footer does not carry it.
  */
 
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'wouter';
 
 import cityDrawing from '../assets/landing-city.svg';
 import cityDrawingMobile from '../assets/landing-city-mobile.svg';
@@ -516,6 +517,28 @@ function CreditLink({ href, children }) {
   );
 }
 
+/* Under the case studies: an invitation to add one, which opens the form at
+ * /add-a-case-study (CaseStudyPage). On a lilac band, its one button blue. */
+function AddCaseStudy() {
+  const [, navigate] = useLocation();
+  return (
+    <section className="placer-landing-add-case" aria-labelledby="placer-landing-add-case-title">
+      <div className="placer-landing-add-case-text">
+        <h2 id="placer-landing-add-case-title" className="placer-landing-add-case-title">Add a case study</h2>
+        <p className="placer-landing-add-case-pitch">
+          Ran a project where people helped shape a place? Share what you did, who took part and what came of it,
+          and we will publish it among PLACER&rsquo;s case studies.
+        </p>
+      </div>
+      <a className="placer-landing-add-case-button" href="/add-a-case-study"
+        onClick={(e) => { e.preventDefault(); navigate('/add-a-case-study'); }}>
+        Add a case study
+        <Icon name="arrowRight" size={20} stroke={2} />
+      </a>
+    </section>
+  );
+}
+
 // The waitlist form's sign-ups share the waitlist survey's source, so they land
 // in survey_followups as "Add to the waitlist" beside it, with no answers.
 const WAITLIST_SOURCE = 'landing_survey';
@@ -693,6 +716,8 @@ export function LandingPage({ t }) {
           </>
         )} />
       </section>
+
+      <AddCaseStudy />
 
       <WaitlistSignup />
 
