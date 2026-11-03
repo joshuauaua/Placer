@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent, within, act } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { LandingPage } from '../LandingPage';
 import { THEME } from '../../theme';
 import { lastMap } from '../../test/maplibreStub';
@@ -45,66 +45,13 @@ describe('LandingPage hero', () => {
     expect(screen.getByText(/Start with a question\. Get answers in real time\./)).toBeInTheDocument();
   });
 
-  it('shows one step at a time, the first to begin with', () => {
-    render(<LandingPage t={THEME} />);
-
-    const tabs = within(screen.getByRole('tablist', { name: 'How it works' })).getAllByRole('tab');
-    expect(tabs).toHaveLength(3);
-    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tabpanel', { name: /Ask a question/ })).toBeInTheDocument();
-
-    fireEvent.click(tabs[2]);
-
-    expect(tabs[2]).toHaveAttribute('aria-selected', 'true');
-    expect(tabs[0]).toHaveAttribute('aria-selected', 'false');
-    expect(screen.getByRole('tabpanel', { name: /Shape what comes next/ })).toBeInTheDocument();
-  });
-
-  it('moves to the next step every five seconds, and back to the first', () => {
-    vi.useFakeTimers();
-    render(<LandingPage t={THEME} />);
-    const tabs = screen.getAllByRole('tab');
-
-    act(() => { vi.advanceTimersByTime(4999); });
-    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
-    act(() => { vi.advanceTimersByTime(1); });
-    expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
-    act(() => { vi.advanceTimersByTime(5000); });
-    expect(tabs[2]).toHaveAttribute('aria-selected', 'true');
-    act(() => { vi.advanceTimersByTime(5000); });
-    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
-  });
-
-  it('holds while the pointer is on the steps, then takes up the time it had left', () => {
-    vi.useFakeTimers();
+  it('leaves out the three steps beside their picture for now, keeping the heading', () => {
     const { container } = render(<LandingPage t={THEME} />);
-    const steps = container.querySelector('.placer-landing-steps');
-    const tabs = screen.getAllByRole('tab');
 
-    act(() => { vi.advanceTimersByTime(3000); });
-    fireEvent.mouseEnter(steps);
-    expect(steps).toHaveAttribute('data-paused', 'true');
-    act(() => { vi.advanceTimersByTime(20000); });
-    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
-
-    fireEvent.mouseLeave(steps);
-    act(() => { vi.advanceTimersByTime(1999); });
-    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
-    act(() => { vi.advanceTimersByTime(1); });
-    expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
-  });
-
-  it('gives a clicked step its whole time', () => {
-    vi.useFakeTimers();
-    render(<LandingPage t={THEME} />);
-    const tabs = screen.getAllByRole('tab');
-
-    act(() => { vi.advanceTimersByTime(4000); });
-    fireEvent.click(tabs[2]);
-    act(() => { vi.advanceTimersByTime(4999); });
-    expect(tabs[2]).toHaveAttribute('aria-selected', 'true');
-    act(() => { vi.advanceTimersByTime(1); });
-    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('heading', { level: 2, name: 'Good questions,great insights.' })).toBeInTheDocument();
+    expect(screen.queryByRole('tablist', { name: 'How it works' })).toBeNull();
+    expect(container.querySelector('.placer-landing-steps')).toBeNull();
+    expect(screen.queryByText('Shape what comes next')).toBeNull();
   });
 
   it('follows how it works with why it matters', () => {

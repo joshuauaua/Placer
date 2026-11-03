@@ -26,9 +26,11 @@ import { Icon } from './Icon';
 // MapLibre is heavy, and the map is far down the page, so it loads on its own.
 const LandingCasesMap = lazy(() => import('./LandingCasesMap'));
 
-// Sections kept but off the page for now: the testimonials (placeholder quotes until
-// real ones come in) and "Easy to start" with its three cards. Set one to true to
-// bring it back.
+// Parts kept but off the page for now: the three steps under "Good questions, great
+// insights" (Ask a question, Get answers in real time, Shape what comes next, beside
+// their picture), the testimonials (placeholder quotes until real ones come in) and
+// "Easy to start" with its three cards. Set one to true to bring it back.
+const SHOW_STEPS = false;
 const SHOW_TESTIMONIALS = false;
 const SHOW_START_CARDS = false;
 
@@ -667,7 +669,7 @@ export function LandingPage({ t }) {
           Start with a question. Get answers in real time. Use what you learn to shape what comes next.
         </p>
 
-        <LandingSteps />
+        {SHOW_STEPS && <LandingSteps />}
       </section>
 
       {SHOW_TESTIMONIALS && <LandingTestimonials />}
