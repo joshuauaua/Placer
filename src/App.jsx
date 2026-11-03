@@ -437,8 +437,11 @@ function MainApp({ initialView = 'welcome' }) {
         <div className="placer-app-row">
           {/* Only once somebody is signed in: everything on it is a place an account
               goes back to. Held back while the session is still being read, the same as
-              the nav bar's right-hand end. */}
-          {!identityLoading && profile && (
+              the nav bar's right-hand end. Never on the landing page, which is the public
+              front door: with accounts, somebody signed in is sent on to their dashboard
+              anyway, but without a Supabase project everybody counts as signed in and
+              the landing page stays reachable, so it is ruled out here. */}
+          {!identityLoading && profile && view !== 'welcome' && (
             <SideNav t={t} view={view}
               onNavigate={(next) => { show(next); scrollPageToTop(); }}
               onExplore={() => { handleExplore(); scrollPageToTop(); }}
