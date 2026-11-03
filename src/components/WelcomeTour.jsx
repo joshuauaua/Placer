@@ -20,7 +20,7 @@ import { markOnboarded, needsOnboarding } from '../services/onboarding';
 const OnboardingDialog = lazy(() => import('./OnboardingDialog'));
 
 export function WelcomeTour({ t, accountId = null, name = '', autoOpen = false,
-  onOpenProjects, onExplore, onOpenToolkit, onNewProject, onEditProfile, onOpenChange }) {
+  onOpenProjects, onExplore, onNewProject, onEditProfile, onOpenChange }) {
   const [location, navigate] = useLocation();
   const requested = new URLSearchParams(useSearch()).has('tour');
   const [open, setOpen] = useState(false);
@@ -58,7 +58,7 @@ export function WelcomeTour({ t, accountId = null, name = '', autoOpen = false,
   return (
     <Suspense fallback={null}>
       <OnboardingDialog t={t} name={name} onClose={close} onOpenProjects={onOpenProjects}
-        onExplore={onExplore} onOpenToolkit={onOpenToolkit} onNewProject={onNewProject} onEditProfile={onEditProfile} />
+        onExplore={onExplore} onNewProject={onNewProject} onEditProfile={onEditProfile} />
     </Suspense>
   );
 }

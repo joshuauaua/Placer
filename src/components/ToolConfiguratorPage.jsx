@@ -1,6 +1,6 @@
 /* PLACER — configuring a tool, as a page of its own: /toolkit/<id>/configure.
  *
- * Where Create a tool leads, once a tool has been picked from the Toolkit. It sits
+ * Where Create a tool leads, once a tool has been picked (ChooseToolDialog). It sits
  * under the nav bar, with the rest of the window to itself: no side nav or footer.
  *
  *   slides   — on the left, only for a tool that can run as several slides (`slides`
@@ -8,7 +8,7 @@
  *              slide, pick one to show it on the canvas and configure it in the panel,
  *              or remove one while there are others. It starts with one. Any other
  *              tool is configured as that one slide, with no panel.
- *   top bar  — back to the Toolkit, the tool's name, then the avatars
+ *   top bar  — back to the dashboard, the tool's name, then the avatars
  *              of the tool's collaborators, a ⋯ menu of its settings, Preview (the
  *              tool as it would look on a desktop and on a phone) and, at the
  *              right-hand end, Publish (put the tool live). A tool has no collaborators
@@ -197,8 +197,8 @@ function TopBar({ t, tool, people, notice, onBack, onSetting, onPreview, onPubli
   return (
     <header aria-label="Configure a tool" className="placer-configurator-bar">
       <div className="placer-configurator-bar-start">
-        <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack} ariaLabel="Back to the Toolkit"
-          title="Back to the Toolkit" />
+        <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack} ariaLabel="Back to the dashboard"
+          title="Back to the dashboard" />
         {tool && (
           <div className="placer-configurator-title">
             <span className="placer-configurator-name">{tool.name}</span>
@@ -376,7 +376,7 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
   );
 
   const [notice, setNotice] = useState('');
-  const back = () => navigate('/toolkit');
+  const back = () => navigate('/dashboard');
 
   return (
     <div className="placer-configurator">
@@ -389,7 +389,7 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
       {!tool ? (
         <main className="placer-configurator-missing">
           <p>There is no tool here to configure.</p>
-          <Btn t={t} variant="outline" icon="arrowRight" onClick={back}>Go to the Toolkit</Btn>
+          <Btn t={t} variant="outline" icon="arrowRight" onClick={back}>Go to the dashboard</Btn>
         </main>
       ) : (
         <div className="placer-configurator-body">

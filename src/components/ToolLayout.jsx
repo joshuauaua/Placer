@@ -13,7 +13,7 @@ import { Btn, Chip } from './UI';
  * about this tool rather than inside it — starting a room, so far. Named after
  * the same slot on FlowScreen.
  *
- * `breadcrumb`, when given, replaces All tools, as on ToolCover.
+ * `breadcrumb`, when given, replaces Back, as on ToolCover.
  */
 export function ToolLayout({ t, tool, onBack, actions, breadcrumb = null, children }) {
   return (
@@ -21,7 +21,7 @@ export function ToolLayout({ t, tool, onBack, actions, breadcrumb = null, childr
       {breadcrumb ?? (
         <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack}
           style={{ padding: '0 12px 0 6px', marginBottom: 18, color: t.inkDim }}>
-          All tools
+          Back
         </Btn>
       )}
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import App from '../../App';
@@ -283,10 +283,9 @@ describe('App', () => {
       const location = renderRecording('/dashboard');
       await screen.findByRole('heading', { level: 1, name: /^Welcome back/ });
 
-      fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Toolkit' }));
+      fireEvent.click(within(screen.getByRole('navigation', { name: 'App' })).getByRole('button', { name: 'Projects' }));
 
-      expect(await screen.findByRole('heading', { level: 1, name: 'Toolkit' })).toBeInTheDocument();
-      expect(location.history.at(-1)).toBe('/toolkit');
+      await waitFor(() => expect(location.history.at(-1)).toBe('/projects'));
     });
 
     it('offers Create Account and Log In after logging out, and nothing else', () => {

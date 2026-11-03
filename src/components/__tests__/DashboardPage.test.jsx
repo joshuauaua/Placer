@@ -34,42 +34,6 @@ describe('DashboardPage', () => {
     vi.clearAllMocks();
   });
 
-  it('keeps Getting Started in the Guide shortcut once the first visits are over', () => {
-    const store = { 'placer.dashboardVisits.user-1': '9' };
-    vi.stubGlobal('localStorage', { getItem: (k) => store[k] ?? null, setItem: (k, v) => { store[k] = v; } });
-    vi.stubGlobal('sessionStorage', { getItem: () => '1', setItem: () => {} });
-    try {
-      setup();
-      const guide = screen.getByRole('button', { name: 'Guide' });
-      expect(guide).toHaveAttribute('aria-expanded', 'false');
-      expect(screen.queryByRole('heading', { name: 'Getting Started' })).not.toBeInTheDocument();
-
-      fireEvent.click(guide);
-
-      expect(guide).toHaveAttribute('aria-expanded', 'true');
-      expect(screen.getByRole('heading', { level: 2, name: 'Getting Started' })).toBeInTheDocument();
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it('stops showing Getting Started after a few visits, and counts one visit per session', () => {
-    const store = { 'placer.dashboardVisits.user-1': '5' };
-    const session = {};
-    vi.stubGlobal('localStorage', { getItem: (k) => store[k] ?? null, setItem: (k, v) => { store[k] = v; } });
-    vi.stubGlobal('sessionStorage', { getItem: (k) => session[k] ?? null, setItem: (k, v) => { session[k] = v; } });
-    try {
-      const { unmount } = setup();
-      expect(screen.queryByRole('heading', { level: 2, name: 'Getting Started' })).not.toBeInTheDocument();
-      expect(store['placer.dashboardVisits.user-1']).toBe('6');
-      unmount();
-      setup(); // same session: no further count
-      expect(store['placer.dashboardVisits.user-1']).toBe('6');
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
-
   it('gets you started: a quickstart tutorial, project examples and the FAQ', () => {
     const onNavigate = vi.fn();
     render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={onNavigate} />);
@@ -86,17 +50,11 @@ describe('DashboardPage', () => {
   });
 
   it('lists the quick actions under their own label', () => {
-    const onNavigate = vi.fn();
-    const onNewProject = vi.fn();
-    render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={onNavigate}
-      onNewProject={onNewProject} />);
+    render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={vi.fn()} />);
 
     const section = screen.getByRole('region', { name: 'Quick Actions' });
     expect(within(section).getAllByRole('button').map((button) => button.textContent))
-      .toEqual(['Create a Project', 'Explore the map', 'Edit your profile', 'Guide']);
-
-    fireEvent.click(within(section).getByRole('button', { name: 'Create a Project' }));
-    expect(onNewProject).toHaveBeenCalled();
+      .toEqual(['Create a Tool', 'Explore the map', 'Edit your profile']);
   });
 
   it('welcomes you back by name, in place of a "Dashboard" title', () => {
@@ -137,20 +95,17 @@ describe('DashboardPage', () => {
     expect(onOpenPublicProfile).toHaveBeenCalledWith('user-1');
   });
 
-  it('offers a new project, the map, your profile and the guide', () => {
+  it('offers the map and your profile', () => {
     const onNavigate = vi.fn();
     const onExplore = vi.fn();
-    const onNewProject = vi.fn();
     render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={onNavigate}
-      onExplore={onExplore} onNewProject={onNewProject} />);
+      onExplore={onExplore} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit your profile' }));
     fireEvent.click(screen.getByRole('button', { name: 'Explore the map' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Create a Project' }));
 
     expect(onNavigate).toHaveBeenCalledWith('settings');
     expect(onExplore).toHaveBeenCalled();
-    expect(onNewProject).toHaveBeenCalled();
   });
 
   it('has no imaginations, stat tiles, projects list or followed sections', async () => {
@@ -320,13 +275,13 @@ describe('DashboardPage, beyond the quick actions', () => {
   });
 });
 
-describe('DashboardPage as the Tools page', () => {
+describe('DashboardPage tools', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('has Create a Tool in place of Create a Project, no Guide, and Getting Started always', async () => {
-    setup({ handlers: { variant: 'tools', onNewProject: vi.fn(), onCreateTool: vi.fn() } });
+  it('has Create a Tool, no Guide, and Getting Started always', async () => {
+    setup({ handlers: { onNewProject: vi.fn(), onCreateTool: vi.fn() } });
     const actions = screen.getByRole('region', { name: 'Quick Actions' });
 
     expect(within(actions).getAllByRole('button').map((b) => b.textContent))
@@ -343,7 +298,7 @@ describe('DashboardPage as the Tools page', () => {
 
   it('has Popular Templates, each opening its tool', async () => {
     const onOpenTemplate = vi.fn();
-    setup({ handlers: { variant: 'tools', onOpenTemplate } });
+    setup({ handlers: { onOpenTemplate } });
 
     const templates = screen.getByRole('region', { name: 'Popular Templates' });
     fireEvent.click(within(templates).getByRole('button', { name: /Community Event Ice-breaker/ }));
@@ -353,7 +308,7 @@ describe('DashboardPage as the Tools page', () => {
 
   it('opens Understand, Re-Imagine and Plan from Create a Tool, and creates the kind chosen', async () => {
     const onCreateTool = vi.fn();
-    setup({ handlers: { variant: 'tools', onCreateTool } });
+    setup({ handlers: { onCreateTool } });
     const create = screen.getByRole('button', { name: 'Create a Tool' });
 
     fireEvent.click(create);
@@ -361,16 +316,6 @@ describe('DashboardPage as the Tools page', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: /Plan/ }));
     expect(onCreateTool).toHaveBeenCalledWith('plan');
     expect(screen.queryByRole('menu')).toBeNull();
-    await waitFor(() => expect(readMyProjects).toHaveBeenCalled());
-  });
-
-  it('leaves the dashboard itself as it was', async () => {
-    setup({ handlers: { onNewProject: vi.fn() } });
-    const actions = screen.getByRole('region', { name: 'Quick Actions' });
-
-    expect(within(actions).getAllByRole('button').map((b) => b.textContent))
-      .toEqual(['Create a Project', 'Explore the map', 'Edit your profile', 'Guide']);
-    expect(screen.queryByRole('region', { name: 'Popular Templates' })).toBeNull();
     await waitFor(() => expect(readMyProjects).toHaveBeenCalled());
   });
 });

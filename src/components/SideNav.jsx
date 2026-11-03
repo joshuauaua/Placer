@@ -2,7 +2,7 @@
  *
  * The places someone with an account goes back to: their dashboard, the map, their
  * projects, their organisations (once they run one), the Toolkit and their Tools, under a primary button for creating a tool —
- * a dropdown of the Toolkit's three kinds, Understand, Re-Imagine and Plan (CreateToolMenu) —
+ * a dropdown of the three kinds of tool, Understand, Re-Imagine and Plan (CreateToolMenu) —
  * with small links to the Guides, the FAQ and the terms (which the footer had before it
  * went for anyone signed in) low down above a line, and their settings under that line
  * at the very bottom. It sits under the glass
@@ -72,10 +72,10 @@ const SMALL_LINKS = [
   { label: 'Terms and Privacy', view: 'terms' },
 ];
 
-// What Create a tool offers: one of the Toolkit's categories each. Imagine reads as
+// What Create a tool offers: one of the tool categories each. Imagine reads as
 // Re-Imagine here, the verb for what the tools of that kind are for. Each has a few
 // words of its own rather than the category's full description, to fit a card.
-const TOOL_KINDS = [
+export const TOOL_KINDS = [
   { category: 'understand', label: 'Understand', hint: 'How a place is used', icon: 'eye' },
   { category: 'imagine', label: 'Re-Imagine', hint: 'How it could change', icon: 'sparkle' },
   { category: 'plan', label: 'Plan', hint: 'Shape the change', icon: 'layers' },
@@ -208,10 +208,6 @@ export function SideNav({ view, onNavigate, onExplore, onCreateTool, showOrganis
     // nothing to go back to, and creating one starts from Settings.
     ...(showOrganisations ? [{ key: 'organisations', label: 'Organisations', short: 'Orgs', icon: 'building',
       onSelect: () => onNavigate('organisations'), active: ['organisations', 'organisationNew', 'organisationDashboard'] }] : []),
-    { key: 'toolkit', label: 'Toolkit', icon: 'flask', onSelect: () => onNavigate('toolkit'), active: ['toolkit'] },
-    // Last of the places, under the Toolkit: the tools this account has made. For now
-    // it is a copy of the dashboard (App).
-    { key: 'tools', label: 'Tools', icon: 'layers', onSelect: () => onNavigate('tools'), active: ['tools'] },
     { key: 'settings', label: 'Settings', icon: 'gear', onSelect: () => onNavigate('settings'), active: ['settings'], bottom: true },
   ];
 

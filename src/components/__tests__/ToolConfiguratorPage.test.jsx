@@ -3,7 +3,6 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { ToolConfiguratorPage, configuredToolIdFrom } from '../ToolConfiguratorPage';
-import { ToolkitPage } from '../ToolkitPage';
 import { THEME } from '../../theme';
 import { listStartedTools, saveStartedTool } from '../../services/startedTools';
 
@@ -38,7 +37,7 @@ describe('ToolConfiguratorPage', () => {
     // Its name only: the category is not shown here.
     expect(within(bar).queryByText('Plan')).toBeNull();
     expect(within(bar).getAllByRole('button').map((b) => b.getAttribute('aria-label')))
-      .toEqual(['Back to the Toolkit', 'Tool settings', 'Preview', 'Publish']);
+      .toEqual(['Back to the dashboard', 'Tool settings', 'Preview', 'Publish']);
 
     expect(screen.getByRole('main', { name: 'Canvas' })).toBeInTheDocument();
     const panel = screen.getByRole('complementary', { name: 'Configuration' });
@@ -170,30 +169,12 @@ describe('ToolConfiguratorPage', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Publishing is not built yet.');
   });
 
-  it('goes back to the Toolkit, and offers it for a tool that does not exist', () => {
+  it('goes back to the dashboard, and offers it for a tool that does not exist', () => {
     const { location } = renderAt('/toolkit/no-such-tool/configure');
 
     expect(screen.getByText('There is no tool here to configure.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Publish' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Back to the Toolkit' }));
-    expect(location.history.at(-1)).toBe('/toolkit');
-  });
-});
-
-describe('the Toolkit, from Create a tool', () => {
-  it('opens on the chosen category, and a tool opens into its configuration', () => {
-    const { location } = renderAt('/toolkit?category=plan&create', ToolkitPage);
-
-    expect(screen.getByRole('heading', { level: 2, name: 'Plan' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { level: 2, name: 'Understand' })).toBeNull();
-    fireEvent.click(screen.getAllByText('Co-Budget')[0]);
-    expect(location.history.at(-1)).toBe('/toolkit/budget-ballot/configure');
-  });
-
-  it('still opens a tool onto its cover otherwise', () => {
-    const { location } = renderAt('/toolkit?category=plan', ToolkitPage);
-
-    fireEvent.click(screen.getAllByText('Co-Budget')[0]);
-    expect(location.history.at(-1)).toBe('/toolkit/budget-ballot');
+    fireEvent.click(screen.getByRole('button', { name: 'Back to the dashboard' }));
+    expect(location.history.at(-1)).toBe('/dashboard');
   });
 });

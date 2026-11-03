@@ -3,7 +3,7 @@
  * The layout of the landingpage branch's User Labs page (PhotoSplit there): a
  * block of the tool's colour tint fills the left half where User Labs has
  * its photo, and the copy sits centred on the right, ending in the one button
- * that starts the tool. Who made the tool sits right under its name. The way back (All tools,
+ * that starts the tool. Who made the tool sits right under its name. The way back (Back, home,
  * or the project's breadcrumb) sits on the colour block, top left. On a phone they
  * stack, colour first. Everything on it is
  * read from the registry entry, so the tile, the cover and the header above the
@@ -14,7 +14,7 @@ import { Icon } from '../Icon';
 import { Btn } from '../UI';
 import { findCategory } from '../../toolkit/tools';
 
-// `breadcrumb`, when given, replaces All tools: a tool opened for a project leads
+// `breadcrumb`, when given, replaces Back: a tool opened for a project leads
 // back to the project instead (ToolkitPage's projectTrail).
 export function ToolCover({ t, tool, onStart, onBack, breadcrumb = null }) {
   return (
@@ -24,7 +24,7 @@ export function ToolCover({ t, tool, onStart, onBack, breadcrumb = null }) {
           {breadcrumb ?? (
             <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={onBack}
               style={{ padding: '0 12px 0 6px', color: t.ink }}>
-              All tools
+              Back
             </Btn>
           )}
         </div>

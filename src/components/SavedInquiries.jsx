@@ -55,7 +55,7 @@ export function SavedInquiries({ t, service = inquiryService, onCountChange }) {
   if (state.list.length === 0) {
     return (
       <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.6, maxWidth: 560 }}>
-        Nothing kept yet. Use a tool from the Toolkit on its own, such as Desire Lines, and save it to your
+        Nothing kept yet. Use a tool on its own, such as Desire Lines, and save it to your
         profile to come back to it or start a project from it later.
       </p>
     );

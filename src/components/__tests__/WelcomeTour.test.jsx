@@ -23,7 +23,7 @@ function Harness({ path = '/dashboard', accountId = 'user-1', onOpenChange }) {
     <Router hook={hook} searchHook={searchHook}>
       <h1>{`Page: ${page}`}</h1>
       <WelcomeTour t={THEME} accountId={accountId} name="Mara Quinn" autoOpen={page === 'dashboard'}
-        onOpenProjects={() => setPage('projects')} onExplore={() => setPage('map')} onOpenToolkit={() => setPage('toolkit')}
+        onOpenProjects={() => setPage('projects')} onExplore={() => setPage('map')}
         onNewProject={() => setPage('new project')} onEditProfile={() => setPage('settings')}
         onOpenChange={onOpenChange} />
     </Router>
@@ -70,8 +70,8 @@ describe('WelcomeTour', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Page: projects' })).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toHaveTextContent('Step 2 of 5');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Browse the Toolkit' }));
-    expect(screen.getByRole('heading', { level: 1, name: 'Page: toolkit' })).toBeInTheDocument();
+    // Create a tool only says where to find it: Next moves on.
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByRole('dialog')).toHaveTextContent('Step 3 of 5');
 
     fireEvent.click(screen.getByRole('button', { name: 'Open the map' }));

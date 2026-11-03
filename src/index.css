@@ -2871,9 +2871,7 @@ a {
   }
 }
 
-/* PLACER — the Toolkit's list view (see ToolkitPage.jsx). A row lifts to grey on
- * hover, and on a phone the category and maker drop out so the name has room. */
-/* A gallery's toolbar, under its title (see GalleryToolbar.jsx), on the Toolkit and Projects:
+/* A gallery's toolbar, under its title (see GalleryToolbar.jsx), on Projects and Organisations:
  * the category menu, the sort tabs centred, and the icon buttons at the right. On a
  * narrow screen the sort tabs drop to a line of their own. */
 .placer-gallery-toolbar {
@@ -3013,145 +3011,11 @@ a {
   }
 }
 
-/* PLACER — a tool's card in the Toolkit's grid (see ToolkitPage's Tile). */
-.placer-toolkit-tile {
-  flex: 1;
-  min-width: 0;
-  padding: 0;
-  border: none;
-  background: none;
-  text-align: left;
-  cursor: pointer;
-  font-family: var(--placer-font);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.placer-toolkit-tile-frame {
-  position: relative;
-  display: block;
-  margin: 8px 8px 10px 0;
-  aspect-ratio: 16 / 10;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 0 0 0 var(--tile-shadow);
-  transition: box-shadow 0.25s ease;
-}
-
-.placer-toolkit-tile-image {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.4s ease;
-}
-
-/* A tool with no picture: one flat colour, its category's 100. */
-.placer-toolkit-tile-shades {
-  background: var(--tile-100);
-}
-
-.placer-toolkit-tile-text {
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 18px;
-  color: var(--tile-900);
-}
-
-.placer-toolkit-tile-pictured .placer-toolkit-tile-text {
-  max-width: none;
-  color: #FFFFFF;
-}
-
-.placer-toolkit-tile-pictured::after {
-  content: '';
-  position: absolute;
-  inset: 40% 0 0;
-  background: linear-gradient(to top, var(--tile-900), transparent);
-  pointer-events: none;
-}
-
-.placer-toolkit-tile-tag {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  padding: 4px 10px;
-  border: 1px solid;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 16px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.placer-toolkit-tile-arrow {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #FFFFFF;
-  color: #111111;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.placer-toolkit-tile-arrow svg {
-  transition: transform 0.25s ease;
-}
-
-.placer-toolkit-tile:hover .placer-toolkit-tile-frame,
-.placer-toolkit-tile:focus-visible .placer-toolkit-tile-frame {
-  box-shadow: 8px -8px 0 0 var(--tile-shadow);
-}
-
-.placer-toolkit-tile:hover img.placer-toolkit-tile-image,
-.placer-toolkit-tile:focus-visible img.placer-toolkit-tile-image {
-  transform: scale(1.06);
-}
-
-.placer-toolkit-tile:hover .placer-toolkit-tile-arrow svg,
-.placer-toolkit-tile:focus-visible .placer-toolkit-tile-arrow svg {
-  transform: rotate(-45deg);
-}
-
-.placer-toolkit-tile:focus-visible {
-  outline: none;
-}
-
-.placer-toolkit-tile:focus-visible .placer-toolkit-tile-frame {
-  outline: 2px solid #111111;
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .placer-toolkit-tile-frame,
-  .placer-toolkit-tile-image,
-  .placer-toolkit-tile-arrow svg {
-    transition: none;
-  }
-
-  .placer-toolkit-tile:hover .placer-toolkit-tile-image {
-    transform: none;
-  }
-}
-
+/* PLACER — a row in a list: Projects, Organisations and Create a tool's list of tools
+ * (ChooseToolDialog.jsx). It lifts to grey on hover. */
 .placer-toolkit-row:hover,
 .placer-toolkit-row:focus-visible {
   background: var(--placer-grey-100) !important;
-}
-
-@media (max-width: 640px) {
-  .placer-toolkit-row-meta {
-    display: none !important;
-  }
 }
 
 /* PLACER — Explore (see ExplorePage.jsx). A page that scrolls, with the footer

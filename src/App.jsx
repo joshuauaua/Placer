@@ -1,6 +1,6 @@
 /* PLACER — Reimagine Your City */
 
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
 import { Switch, Route, Redirect, useLocation, useSearch } from 'wouter';
 import { THEME } from './theme';
@@ -34,6 +34,7 @@ const QuickstartPage = lazy(() => import('./components/QuickstartPage'));
 const ContactPage = lazy(() => import('./components/ContactPage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const ToolkitPage = lazy(() => import('./components/ToolkitPage'));
+const ChooseToolDialog = lazy(() => import('./components/ChooseToolDialog'));
 const ToolConfiguratorPage = lazy(() => import('./components/ToolConfiguratorPage'));
 const JoinPage = lazy(() => import('./components/JoinPage'));
 const DashboardPage = lazy(() => import('./components/DashboardPage'));
@@ -60,7 +61,6 @@ const PublicOrganisationPage = lazy(() => import('./components/PublicOrganisatio
 // unmounts MainApp, and nothing held in its state is lost on the way.
 const ACCOUNT_PATHS = {
   dashboard: '/dashboard',
-  tools: '/tools',
   activity: '/activity',
   projects: '/projects',
   organisations: '/organisations',
@@ -75,9 +75,8 @@ const ACCOUNT_VIEWS = {
   // Where Project Examples was, before the dashboard's card went to Projects instead.
   '/project-examples': 'projects',
   '/activity': 'activity',
-  // For now the dashboard again, with Create a Tool and no Guide: what will become the
-  // tool-first account's home for the tools it has made.
-  '/tools': 'tools',
+  // Where the Tools page was, before it became the dashboard.
+  '/tools': 'dashboard',
   '/projects': 'projects',
   '/organisations': 'organisations',
   '/settings': 'settings',
@@ -162,7 +161,7 @@ function LoadingFallback() {
 }
 
 // Views that need an account, and say so to someone who has logged out.
-const SIGNED_IN_VIEWS = ['dashboard', 'tools', 'activity', 'settings', 'projects', 'organisations',
+const SIGNED_IN_VIEWS = ['dashboard', 'activity', 'settings', 'projects', 'organisations',
   'projectNew', 'projectDashboard', 'organisationNew', 'organisationDashboard'];
 
 // What /dashboard, /projects and /settings show to someone who has logged out. Not a redirect,
@@ -291,8 +290,11 @@ function MainApp({ initialView = 'welcome' }) {
   }, [view, location]);
 
   const showNewProject = () => navigate('/projects/new');
-  // Create a tool, from the side nav or the Tools page: the Toolkit, on the kind picked.
-  const showCreateTool = (category) => navigate(`/toolkit?category=${encodeURIComponent(category)}&create`);
+  // Create a tool, from the side nav or the dashboard: once the kind is picked, a dialog
+  // of the tools of that kind (ChooseToolDialog), each opening its configuration page.
+  const [createCategory, setCreateCategory] = useState(null);
+  const showCreateTool = (category) => setCreateCategory(category);
+  const closeCreateTool = useCallback(() => setCreateCategory(null), []);
   const showNewOrganisationProject = (organisationId) =>
     navigate(`/projects/new?organisation=${encodeURIComponent(organisationId)}`);
   const showNewOrganisation = () => navigate('/organisations/new');
@@ -317,10 +319,6 @@ function MainApp({ initialView = 'welcome' }) {
     navigate(`/toolkit/${encodeURIComponent(toolId)}?room=${encodeURIComponent(roomId)}`);
 
   const show = (next) => {
-    if (next === 'toolkit') {
-      navigate('/toolkit');
-      return;
-    }
     if (ACCOUNT_PATHS[next]) {
       navigate(ACCOUNT_PATHS[next]);
       return;
@@ -438,20 +436,19 @@ function MainApp({ initialView = 'welcome' }) {
             <SideNav t={t} view={view}
               onNavigate={(next) => { show(next); scrollPageToTop(); }}
               onExplore={() => { handleExplore(); scrollPageToTop(); }}
-              onCreateTool={(category) => { showCreateTool(category); scrollPageToTop(); }}
+              onCreateTool={showCreateTool}
               showOrganisations={isSupabaseConfigured()}
               expanded={tourOpen} />
           )}
 
           {/* The welcome tour, over whichever page it has led to: its steps go to the
-              projects, the map, the Toolkit, a new project and Settings, and it carries on
+              projects, the map, a new project and Settings, and it carries on
               over each. */}
           {!identityLoading && profile && (
             <WelcomeTour t={t} accountId={accountId} name={profile.name}
               autoOpen={view === 'dashboard'}
               onOpenProjects={() => { show('projects'); scrollPageToTop(); }}
               onExplore={() => { handleExplore(); scrollPageToTop(); }}
-              onOpenToolkit={() => { show('toolkit'); scrollPageToTop(); }}
               onNewProject={() => { showNewProject(); scrollPageToTop(); }}
               onEditProfile={() => { navigate('/settings?open=profile'); scrollPageToTop(); }}
               onOpenChange={setTourOpen} />
@@ -532,6 +529,16 @@ function MainApp({ initialView = 'welcome' }) {
               </Suspense>
             )}
 
+            {createCategory && (
+              <Suspense fallback={null}>
+                <ChooseToolDialog t={t} category={createCategory} onClose={closeCreateTool}
+                  onPick={(toolId) => {
+                    setCreateCategory(null);
+                    navigate(`/toolkit/${encodeURIComponent(toolId)}/configure`);
+                  }} />
+              </Suspense>
+            )}
+
             {view === 'toolkit' && (
               <Suspense fallback={<LoadingFallback />}>
                 {/* Passed down rather than read from services/profile inside ToolkitPage: with
@@ -561,20 +568,7 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'dashboard' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
-                  onNewProject={showNewProject}
-                  onSignOut={handleSignOut} onExplore={handleExplore}
-                  onOpenPublicProfile={showPublicProfile}
-                  onOpenProject={showProjectDashboard} onOpenProjectPage={showProjectPublic}
-                  onOpenOrganisationPage={showOrganisationPublic} />
-              </Suspense>
-            )}
-
-            {/* Tools: the dashboard for now, with Create a Tool and no Guide
-                (DashboardPage's 'tools' variant), until it has tools of its own to show. */}
-            {view === 'tools' && profile && (
-              <Suspense fallback={<LoadingFallback />}>
-                <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
-                  variant="tools" onCreateTool={showCreateTool}
+                  onCreateTool={showCreateTool}
                   onOpenTemplate={(toolId) => navigate(`/toolkit/${encodeURIComponent(toolId)}/configure`)}
                   onOpenStartedTool={(toolId, id) =>
                     navigate(`/toolkit/${encodeURIComponent(toolId)}/configure?draft=${encodeURIComponent(id)}`)}

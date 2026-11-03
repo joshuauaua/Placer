@@ -24,24 +24,6 @@ import { responsiveImage } from '../lib/responsiveImage';
 const STEPS_SHOWN = 5;
 const ACTIVITY_SHOWN = 5;
 
-// Getting Started is for newcomers: it is shown for this many visits to the dashboard,
-// counted per account on this device, and then goes away.
-const GETTING_STARTED_VISITS = 5;
-
-/** Counts this visit to the dashboard (once per browser session) and returns the total. */
-function countDashboardVisit(accountId) {
-  const key = `placer.dashboardVisits.${accountId ?? 'local'}`;
-  try {
-    const seen = Number(localStorage.getItem(key)) || 0;
-    if (sessionStorage.getItem(key)) return seen;
-    sessionStorage.setItem(key, '1');
-    localStorage.setItem(key, String(seen + 1));
-    return seen + 1;
-  } catch {
-    return 0; // storage blocked: keep showing it rather than guess
-  }
-}
-
 // A project's picture stand-in, by kind: one theme colour for each kind of project.
 const TYPE_TINTS = { steward: PALETTE.blue, advocate: PALETTE.orange, other: PALETTE.purple };
 
@@ -52,10 +34,10 @@ const STEP_KINDS = {
 };
 
 /** A Quick Actions button: a small grey tile with the icon beside the label. */
-function Shortcut({ t, icon, label, onClick, expanded, controls, popup, buttonRef }) {
+function Shortcut({ t, icon, label, onClick, expanded, popup, buttonRef }) {
   return (
     <button ref={buttonRef} type="button" onClick={onClick} {...ARROW_ITEM} className="placer-quick-action"
-      aria-expanded={expanded} aria-controls={controls} aria-haspopup={popup}
+      aria-expanded={expanded} aria-haspopup={popup}
       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
         minHeight: 56, padding: '12px 20px', textAlign: 'center', background: t.surfaceAlt,
         border: 'none', borderRadius: 14, cursor: 'pointer',
@@ -189,17 +171,15 @@ function PanelCard({ t, id, title, action, children }) {
 }
 
 /**
- * `variant` is 'dashboard', or 'tools' for the Tools page, which is this page for now
- * with two changes: its first shortcut is Create a Tool, opening the same choice of
- * Understand, Re-Imagine and Plan as the side nav's button (`onCreateTool` gets the
- * one picked), and it has no Guide: its Getting Started is always shown, under the
- * shortcuts, with My Tools, Tutorials and Popular Templates after it (`onOpenStartedTool` gets a started
- * tool's tool id and id, `onOpenTemplate` the template's tool id).
+ * The tool-first dashboard. Its first shortcut is Create a Tool, opening the same choice
+ * of Understand, Re-Imagine and Plan as the side nav's button (`onCreateTool` gets the
+ * one picked). Getting Started is always shown, under the shortcuts, with My Tools,
+ * Tutorials and Popular Templates after it (`onOpenStartedTool` gets a started tool's
+ * tool id and id, `onOpenTemplate` the template's tool id).
  */
 export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewProject,
   onSignOut, onExplore, onOpenPublicProfile, onOpenProject, onOpenProjectPage,
-  onOpenOrganisationPage, variant = 'dashboard', onCreateTool, onOpenTemplate, onOpenStartedTool }) {
-  const tools = variant === 'tools';
+  onOpenOrganisationPage, onCreateTool, onOpenTemplate, onOpenStartedTool }) {
   const [createOpen, setCreateOpen] = useState(false);
   const createRef = useRef(null);
   // The account's projects, for the Projects row and Next Steps. Projects need a
@@ -259,10 +239,6 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
     return () => { cancelled = true; };
   }, [accountId]);
 
-  // Getting Started shows for the first few visits; after that it lives in the Guide shortcut.
-  const [visits] = useState(() => countDashboardVisit(accountId));
-  // The Tools page has no Guide, so its Getting Started is always there.
-  const [guideOpen, setGuideOpen] = useState(tools || visits <= GETTING_STARTED_VISITS);
   const [tab, setTab] = useState('steps'); // 'steps' | 'activity'
 
   const name = profile?.name ?? '';
@@ -316,19 +292,11 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
 
         <section aria-label="Quick Actions" style={{ marginBottom: 24 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-            {tools ? (
-              <Shortcut t={t} icon="plus" label="Create a Tool" popup="menu" expanded={createOpen}
-                buttonRef={createRef} onClick={() => setCreateOpen((open) => !open)} />
-            ) : onNewProject && (
-              <Shortcut t={t} icon="plus" label="Create a Project" onClick={onNewProject} />
-            )}
+            <Shortcut t={t} icon="plus" label="Create a Tool" popup="menu" expanded={createOpen}
+              buttonRef={createRef} onClick={() => setCreateOpen((open) => !open)} />
             <Shortcut t={t} icon="pin" label="Explore the map"
               onClick={() => (onExplore ? onExplore() : onNavigate('map'))} />
             <Shortcut t={t} icon="pencil" label="Edit your profile" onClick={() => onNavigate('settings')} />
-            {!tools && (
-              <Shortcut t={t} icon="bookmark" label="Guide" expanded={guideOpen} controls="dashboard-basics"
-                onClick={() => setGuideOpen((open) => !open)} />
-            )}
           </div>
           {createOpen && (
             <CreateToolMenu anchor={createRef} onClose={() => setCreateOpen(false)}
@@ -336,27 +304,25 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
           )}
         </section>
 
-        {guideOpen && (
-          <section id="dashboard-basics" aria-labelledby="dashboard-basics-title" style={{ marginBottom: 32 }}>
-            <SectionLabel t={t} id="dashboard-basics-title">Getting Started</SectionLabel>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
-              <BasicsCard t={t} hue={PALETTE.purple}
-                label="Quickstart tutorial" title="Create your first Project"
-                onClick={() => onNavigate('quickstart')} />
-              <BasicsCard t={t} hue={PALETTE.blue}
-                label="Project Examples" title="Explore what other projects exist on the platform"
-                onClick={() => onNavigate('projects')} />
-              <BasicsCard t={t} hue={PALETTE.orange}
-                label="FAQ" title="Answers to common questions about Placer"
-                onClick={() => onNavigate('faq')} />
-            </div>
-          </section>
-        )}
+        <section id="dashboard-basics" aria-labelledby="dashboard-basics-title" style={{ marginBottom: 32 }}>
+          <SectionLabel t={t} id="dashboard-basics-title">Getting Started</SectionLabel>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+            <BasicsCard t={t} hue={PALETTE.purple}
+              label="Quickstart tutorial" title="Create your first Project"
+              onClick={() => onNavigate('quickstart')} />
+            <BasicsCard t={t} hue={PALETTE.blue}
+              label="Project Examples" title="Explore what other projects exist on the platform"
+              onClick={() => onNavigate('projects')} />
+            <BasicsCard t={t} hue={PALETTE.orange}
+              label="FAQ" title="Answers to common questions about Placer"
+              onClick={() => onNavigate('faq')} />
+          </div>
+        </section>
 
-        {tools && <MyTools t={t} accountId={accountId}
-          onOpen={(toolId, id) => onOpenStartedTool?.(toolId, id)} />}
-        {tools && <Tutorials t={t} />}
-        {tools && <PopularTemplates t={t} onOpen={(toolId) => onOpenTemplate?.(toolId)} />}
+        <MyTools t={t} accountId={accountId}
+          onOpen={(toolId, id) => onOpenStartedTool?.(toolId, id)} />
+        <Tutorials t={t} />
+        <PopularTemplates t={t} onOpen={(toolId) => onOpenTemplate?.(toolId)} />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16,
           marginBottom: 48 }}>
@@ -427,7 +393,7 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
               {activityStatus === 'ready' && activity.length === 0 && (
                 <p style={{ fontSize: 14, color: t.inkDim }}>
                   Nothing yet. Comments, follows, news from your projects and the tools you save
-                  from the Toolkit will show up here.
+                  will show up here.
                 </p>
               )}
               {activityStatus === 'ready' && activity.length > 0 && (

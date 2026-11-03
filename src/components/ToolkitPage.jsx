@@ -1,41 +1,32 @@
-/* PLACER — Toolkit: the participatory methods PLACER hosts, as tools to use.
+/* PLACER — a tool, at /toolkit/<id>: the participatory methods PLACER hosts.
  *
  * Each tool is a method made by an organisation, in one of three categories —
- * Understand, Imagine or Plan. The gallery shows them in a section per category, under
- * a header whose toolbar picks a category, an order within each (Recent, A-Z,
- * Organisation), favourites and list (the default) or grid. Each is self-contained: no sign-in, nothing saved, and something moving within a
- * second of arriving. The register of tools is src/toolkit/tools.js.
+ * Understand, Imagine or Plan. The register of tools is src/toolkit/tools.js. There is
+ * no gallery of them any more: tools are found through Create a tool (ChooseToolDialog)
+ * and the dashboard, so /toolkit on its own, or a link naming no tool there is, goes
+ * home — which, for somebody signed in, is their dashboard.
  *
- * The page is a place to try the tools and see what each one does. They are used for
- * real inside a project: added to it, configured from its dashboard
- * (ConfigureToolDialog) and put in front of people on its public page. So nothing here
- * opens a room. A room a project opened is still shown here, though — this page owns it
- * off the URL, in ?room=, and hands it to the tool as a prop — because that is where
- * people who join with a PIN or a QR code land, and where the dashboard sends its
- * facilitator.
+ * A room a project opened is shown here — this page owns it off the URL, in ?room=, and
+ * hands it to the tool as a prop — because that is where people who join with a PIN or
+ * a QR code land, and where the dashboard sends its facilitator.
  *
  * The page owns the /toolkit part of the URL itself rather than taking the selected
  * tool as a prop, so every tool has a link that can be shared.
  */
 
 import { useEffect, useState } from 'react';
-import { useLocation, useSearch } from 'wouter';
+import { Redirect, useLocation, useSearch } from 'wouter';
 import posthog from 'posthog-js';
-import { Icon } from './Icon';
-import { Breadcrumb, PageHeader, WORKSPACE_CRUMB } from './PageHeader';
-import { FavouriteButton, GalleryToolbar, useFavourites, useGalleryView } from './GalleryToolbar';
-import { Btn } from './UI';
+import { Breadcrumb, WORKSPACE_CRUMB } from './PageHeader';
 import { ToolLayout } from './ToolLayout';
 import { RoomBar } from './toolkit/RoomBar';
 import { ToolCover } from './toolkit/ToolCover';
-import { ContributeToolDialog } from './ContributeToolDialog';
 import { useRoom } from './toolkit/useRoom';
 import { useProjectToolSetup } from './toolkit/useProjectToolSetup';
-import { CATEGORIES, SORTS, TOOLS, filterTools, findCategory, findTool, sortTools } from '../toolkit/tools';
+import { findTool } from '../toolkit/tools';
 import { projectIdFrom, roomIdFrom } from '../toolkit/rooms';
 import { isSupabaseConfigured } from '../services/rooms';
 import { readProjectCrumb } from '../services/projects';
-import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
 import { FULL_SCREEN_TOOLS, isFullScreenTool, startedToolPath } from '../lib/routes';
 
 /**
@@ -64,140 +55,11 @@ export function toolIdFrom(path) {
   }
 }
 
-/** A tool's `added` date as the card shows it: 27 Aug 2026. */
-function publishedOn(added) {
-  return new Date(`${added}T00:00:00Z`).toLocaleDateString('en-GB',
-    { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-}
-
-/**
- * One tool as a card, for the grid: the category's tag at the top left and an arrow
- * at the top right, and the tool's name and tagline written on the card itself, with
- * when it was published underneath. The card is one flat colour, its category's 100,
- * with the words in its 900. On hover the arrow turns up to the right and a shadow in
- * the 300 shows along the card's top and right (index.css). A tool with a picture shows it instead, under a scrim in the
- * 900 that the words are set on in white.
- */
-function Tile({ t, tool, onOpen }) {
-  const category = findCategory(tool.category);
-  const colour = category?.colour;
-  return (
-    <button
-      onClick={onOpen}
-      {...ARROW_ITEM}
-      className="placer-toolkit-tile"
-      style={{ '--tile-shadow': colour?.c300 ?? tool.hover, color: t.ink }}>
-      <span className={`placer-toolkit-tile-frame${tool.image ? ' placer-toolkit-tile-pictured' : ''}`}
-        style={{ '--tile-100': colour?.c100 ?? tool.tint,
-          '--tile-900': colour?.c900 ?? tool.color }}>
-        {tool.image
-          ? <img className="placer-toolkit-tile-image" src={tool.image} alt="" />
-          : <span className="placer-toolkit-tile-image placer-toolkit-tile-shades" aria-hidden="true" />}
-        <span className="placer-toolkit-tile-tag"
-          style={{ background: colour?.c100, color: colour?.c900, borderColor: colour?.c700 }}>
-          {category?.name}
-        </span>
-        <span className="placer-toolkit-tile-arrow" aria-hidden="true">
-          <Icon name="arrowRight" size={18} stroke={2.2} />
-        </span>
-        <span className="placer-toolkit-tile-text">
-          <span className="placer-h3" style={{ display: 'block' }}>{tool.name}</span>
-          <span style={{ display: 'block', fontSize: 15, lineHeight: '22px', marginTop: 4 }}>{tool.tagline}</span>
-        </span>
-      </span>
-
-      {/* Room on the right for the save icon, which sits over the card (see the grid). */}
-      <span className="placer-caption" style={{ color: t.inkDim, paddingRight: 44 }}>
-        {publishedOn(tool.added)}{tool.createdBy && ` · By ${tool.createdBy}`}
-      </span>
-    </button>
-  );
-}
-
-/** The tool's category, small and in capitals, in its colour, as the tile's tag is. */
-function CategoryLabel({ t, tool }) {
-  const category = findCategory(tool.category);
-  return (
-    <span className="placer-caption" style={{ textTransform: 'uppercase', fontWeight: 700,
-      letterSpacing: '0.06em', color: category?.colour?.c700 ?? t.ink }}>
-      {category?.name}
-    </span>
-  );
-}
-
-/**
- * The gallery's tools in a section per category, Understand, Imagine and Plan in that
- * order (CATEGORIES), each under its name in its colour — the colour its tiles, tags
- * and list icons are drawn in — and its description. A category with nothing to show
- * is left out. `children(tools)` draws a section's tools, as a grid or a list.
- */
-function CategorySections({ t, tools, children }) {
-  const sections = CATEGORIES
-    .map((category) => ({ category, tools: tools.filter((tool) => tool.category === category.id) }))
-    .filter((section) => section.tools.length > 0);
-  return (
-    <div onKeyDown={moveWithArrows} style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-      {sections.map(({ category, tools: inCategory }) => {
-        const headingId = `toolkit-category-${category.id}`;
-        return (
-          <section key={category.id} aria-labelledby={headingId}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-              <h2 id={headingId} className="placer-h3" style={{ margin: 0, color: category.colour.c700 }}>
-                {category.name}
-              </h2>
-              <p style={{ margin: 0, fontSize: 14, color: t.inkDim }}>{category.description}</p>
-            </div>
-            {children(inCategory)}
-          </section>
-        );
-      })}
-    </div>
-  );
-}
-
-/**
- * One tool as a row, for the list view: the same facts as a tile, side by side, with
- * its icon in its category's colours, as the tile draws it.
- */
-function Row({ t, tool, onOpen }) {
-  const colour = findCategory(tool.category)?.colour;
-  return (
-    <button
-      onClick={onOpen}
-      {...ARROW_ITEM}
-      className="placer-toolkit-row"
-      style={{ display: 'flex', alignItems: 'center', gap: 16, width: '100%', textAlign: 'left', cursor: 'pointer',
-        flex: 1, minWidth: 0, padding: '16px 20px', border: 'none', background: 'transparent',
-        color: t.ink, fontFamily: 'var(--placer-font)' }}>
-      <span style={{ width: 44, height: 44, borderRadius: 12, background: colour?.c100 ?? tool.tint, flex: '0 0 auto',
-        color: colour?.c700 ?? tool.color, boxShadow: `inset 0 0 0 1px ${colour?.c700 ?? tool.color}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name={tool.icon} size={22} stroke={2.1} />
-      </span>
-      <span style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={{ fontSize: 17, fontWeight: 700 }}>{tool.name}</span>
-        <span style={{ fontSize: 14, color: t.inkDim }}>{tool.tagline}</span>
-      </span>
-      <span className="placer-toolkit-row-meta" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
-        gap: 2, flex: '0 0 auto' }}>
-        <CategoryLabel t={t} tool={tool} />
-        {tool.createdBy && (
-          <span className="placer-caption" style={{ color: t.inkDim }}>By {tool.createdBy}</span>
-        )}
-      </span>
-      <Icon name="arrowRight" size={18} stroke={2.2} style={{ color: t.inkDim }} />
-    </button>
-  );
-}
-
-const NO_FILTERS = { category: null, groupOnly: false };
-
 export function ToolkitPage({ t, displayName = null }) {
   const [location, navigate] = useLocation();
   const search = useSearch();
   const requestedId = toolIdFrom(location);
   const tool = requestedId ? findTool(requestedId) : null;
-  const missing = requestedId && !tool ? requestedId : null;
 
   const projectId = projectIdFrom(search);
 
@@ -236,162 +98,44 @@ export function ToolkitPage({ t, displayName = null }) {
   // opening a different tool lands on that one's cover rather than skipping it,
   // and opening a room (which only changes the query string) does not bring it back.
   const [startedId, setStartedId] = useState(null);
-  // Back in the gallery, nothing is started: opening the same tool again starts on
-  // its cover too. Reset while rendering, so the tool never shows for a frame first.
-  if (!tool && startedId !== null) setStartedId(null);
 
-  // The Contribute button's pop-up form, for offering a tool to the PLACER Toolkit.
-  const [contributing, setContributing] = useState(false);
+  // No tool named, or none by that name: there is no gallery to fall back to, so home.
+  // Only from under /toolkit: on the way out to somewhere else there is nothing to do.
+  if (!tool?.component) return location.startsWith('/toolkit') ? <Redirect to="/" replace /> : null;
 
-  // The gallery's filters. Held here rather than in the URL: they are a
-  // way of browsing, not something worth a link of its own. The one exception is
-  // ?category=, which the side nav's Create a tool menu opens the gallery on: it picks
-  // the category to start from, each time it changes, and the toolbar takes over after.
-  // Arrived from Create a tool (?create): a tool opens into its configuration page
-  // (ToolConfiguratorPage) rather than onto its cover.
-  const creating = new URLSearchParams(search).has('create');
-  const openTool = (id) => navigate(creating ? `/toolkit/${id}/configure` : `/toolkit/${id}`);
-  const requestedCategory = findCategory(new URLSearchParams(search).get('category'))?.id ?? null;
-  const [filters, setFilters] = useState(() => ({ ...NO_FILTERS, category: requestedCategory }));
-  const [appliedCategory, setAppliedCategory] = useState(requestedCategory);
-  if (requestedCategory !== appliedCategory) {
-    setAppliedCategory(requestedCategory);
-    if (requestedCategory) setFilters({ ...NO_FILTERS, category: requestedCategory });
-  }
-  const [sort, setSort] = useState({ id: SORTS[0].id, direction: SORTS[0].direction });
-  const [favourites, toggleFavourite] = useFavourites('placer_toolkit_favourites');
-  const [favouritesOnly, setFavouritesOnly] = useState(false);
-  const matching = sortTools(
-    filterTools(TOOLS, filters).filter((entry) => !favouritesOnly || favourites.includes(entry.id)),
-    sort.id, sort.direction);
-  const [view, changeView] = useGalleryView('placer_toolkit_view', 'list');
-  const clearFilters = () => { setFilters(NO_FILTERS); setFavouritesOnly(false); };
-
-  const Tool = tool?.component;
+  const Tool = tool.component;
   // A full-screen tool (lib/routes.js) is started by its address rather than by
   // startedId, and App gives it the whole window: it is all there is on the page.
-  if (tool && Tool && isFullScreenTool(location, search)) {
+  if (isFullScreenTool(location, search)) {
     return <Tool t={t} tool={tool} />;
   }
 
-  const breadcrumb = tool && projectId ? (
+  const breadcrumb = projectId ? (
     <Breadcrumb t={t} trail={projectTrail(projectId, crumb)} current={tool.name} style={{ marginBottom: 24 }} />
   ) : null;
+  // Back from a tool goes home: the dashboard, for somebody signed in.
+  const goBack = () => navigate('/');
 
   // Every tool opens on its cover, full-bleed rather than inside the padded
   // column the tool itself sits in.
-  if (tool && Tool && startedId !== tool.id) {
+  if (startedId !== tool.id) {
     return (
       <ToolCover t={t} tool={tool} breadcrumb={breadcrumb}
         onStart={() => {
           if (FULL_SCREEN_TOOLS.includes(tool.id)) navigate(startedToolPath(tool.id, search));
           else setStartedId(tool.id);
         }}
-        onBack={() => navigate('/toolkit')} />
+        onBack={goBack} />
     );
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page,
-      padding: tool && Tool ? '48px 40px 80px' : '0 32px 80px' }}>
-      {!(tool && Tool) && (
-        <PageHeader t={t} title="Toolkit" inset={32} maxWidth="none"
-          actions={(
-            <Btn t={t} variant="outline" icon="arrowRight" onClick={() => setContributing(true)}>
-              Contribute
-            </Btn>
-          )}
-          toolbar={(
-            <GalleryToolbar t={t} sorts={SORTS} sort={sort} onSort={setSort}
-              favouritesOnly={favouritesOnly} onFavouritesOnly={setFavouritesOnly}
-              view={view} onView={changeView}
-              menu={{
-                label: 'Category',
-                current: findCategory(filters.category)?.name ?? 'All tools',
-                badge: filters.groupOnly ? 'user' : null,
-                sections: [
-                  [
-                    { key: 'all', label: 'All tools', selected: !filters.category,
-                      onSelect: () => setFilters({ ...filters, category: null }) },
-                    ...CATEGORIES.map((category) => ({ key: category.id, label: category.name,
-                      selected: filters.category === category.id,
-                      onSelect: () => setFilters({ ...filters, category: category.id }) })),
-                  ],
-                  [
-                    { key: 'group', kind: 'checkbox', label: 'Works with a group', selected: filters.groupOnly,
-                      title: 'Tools that can be run in a room, with people joining by PIN or QR code',
-                      onSelect: () => setFilters({ ...filters, groupOnly: !filters.groupOnly }) },
-                  ],
-                ],
-              }} />
-          )} />
-      )}
-      {/* An open tool keeps to a centred column; the gallery runs the page's width, under
-          a header that does too. */}
-      <div style={tool && Tool ? { maxWidth: 1200, margin: '0 auto' } : undefined}>
-        {tool && Tool ? (
-          <ToolLayout
-            t={t}
-            tool={tool}
-            breadcrumb={breadcrumb}
-            onBack={() => navigate('/toolkit')}>
-            <RoomBar t={t} tool={tool} room={room} />
-            {projectSetup.ready && <Tool t={t} tool={tool} room={room} setup={projectSetup.setup} />}
-          </ToolLayout>
-        ) : (
-          <>
-            {missing && (
-              <p role="status" style={{ marginBottom: 24, padding: '12px 16px', borderRadius: 12,
-                background: t.surfaceAlt, border: `1px solid ${t.line}`, fontSize: 14, color: t.ink }}>
-                There is no tool called <span className="placer-mono">{missing}</span>. Here is everything there is.
-              </p>
-            )}
-
-            {matching.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '64px 20px', color: t.inkDim }}>
-                <Icon name="search" size={40} stroke={1.6} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
-                <p style={{ fontSize: 16, marginBottom: 16 }}>
-                  {favouritesOnly && favourites.length === 0
-                    ? 'No favourites yet. Tap the save icon on a tool to keep it here.'
-                    : 'No tools match those filters.'}
-                </p>
-                <Btn t={t} variant="outline" onClick={clearFilters}>Clear filters</Btn>
-              </div>
-            )}
-
-            {matching.length > 0 && (
-              <CategorySections t={t} tools={matching}>
-                {(inCategory) => (view === 'grid' ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
-                    {inCategory.map((entry) => (
-                      <div key={entry.id} style={{ position: 'relative', display: 'flex', alignSelf: 'start' }}>
-                        <Tile t={t} tool={entry} onOpen={() => openTool(entry.id)} />
-                        <FavouriteButton t={t} name={entry.name} favourite={favourites.includes(entry.id)}
-                          onToggle={() => toggleFavourite(entry.id)}
-                          style={{ position: 'absolute', right: 0, bottom: -7 }} />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ borderTop: `1px solid ${t.line}` }}>
-                    {inCategory.map((entry) => (
-                      <div key={entry.id} style={{ display: 'flex', alignItems: 'center',
-                        borderBottom: `1px solid ${t.line}` }}>
-                        <Row t={t} tool={entry} onOpen={() => openTool(entry.id)} />
-                        <FavouriteButton t={t} name={entry.name} favourite={favourites.includes(entry.id)}
-                          onToggle={() => toggleFavourite(entry.id)} style={{ margin: '0 12px' }} />
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </CategorySections>
-            )}
-
-            {contributing && (
-              <ContributeToolDialog t={t} onClose={() => setContributing(false)} />
-            )}
-          </>
-        )}
+    <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page, padding: '48px 40px 80px' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <ToolLayout t={t} tool={tool} breadcrumb={breadcrumb} onBack={goBack}>
+          <RoomBar t={t} tool={tool} room={room} />
+          {projectSetup.ready && <Tool t={t} tool={tool} room={room} setup={projectSetup.setup} />}
+        </ToolLayout>
       </div>
     </div>
   );
