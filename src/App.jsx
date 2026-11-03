@@ -597,7 +597,7 @@ function MainApp({ initialView = 'welcome' }) {
                   onOpenStartedTool={(toolId, id) =>
                     navigate(`/toolkit/${encodeURIComponent(toolId)}/configure?draft=${encodeURIComponent(id)}`)}
                   onNewProject={showNewProject}
-                  onSignOut={handleSignOut} onExplore={handleExplore}
+                  onExplore={handleExplore}
                   onOpenPublicProfile={showPublicProfile}
                   onOpenProject={showProjectDashboard} onOpenProjectPage={showProjectPublic}
                   onOpenOrganisationPage={showOrganisationPublic} />

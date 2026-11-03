@@ -237,3 +237,12 @@ describe('AuthPage, during the closed beta', () => {
     expect(screen.getByLabelText('Invite code')).toBeInTheDocument();
   });
 });
+
+describe('AuthPage, its buttons', () => {
+  it.each([['signin', 'Sign in'], ['signup', 'Create account']])(
+    'shows %s\'s button as words alone, with no tick', (mode, name) => {
+      setup(mode);
+
+      expect(screen.getByRole('button', { name }).querySelector('svg')).toBeNull();
+    });
+});
