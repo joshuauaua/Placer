@@ -1,6 +1,6 @@
 /* PLACER — Reimagine Your City */
 
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
 import { Switch, Route, Redirect, useLocation, useSearch } from 'wouter';
 import { THEME } from './theme';
@@ -18,8 +18,7 @@ import { SiteFooter } from './components/SiteFooter';
 import { SideNav } from './components/SideNav';
 import { useIdentity } from './components/useIdentity';
 import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
-import { isNewProjectShortcut } from './lib/shortcuts';
-import { CASE_STUDY_FORM_PATH, isFullScreenTool } from './lib/routes';
+import { CASE_STUDY_FORM_PATH, isFullScreenTool, isToolConfigurator } from './lib/routes';
 import { WelcomeTour } from './components/WelcomeTour';
 
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -35,6 +34,8 @@ const QuickstartPage = lazy(() => import('./components/QuickstartPage'));
 const ContactPage = lazy(() => import('./components/ContactPage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const ToolkitPage = lazy(() => import('./components/ToolkitPage'));
+const ChooseToolDialog = lazy(() => import('./components/ChooseToolDialog'));
+const ToolConfiguratorPage = lazy(() => import('./components/ToolConfiguratorPage'));
 const JoinPage = lazy(() => import('./components/JoinPage'));
 const DashboardPage = lazy(() => import('./components/DashboardPage'));
 const ActivityPage = lazy(() => import('./components/ActivityPage'));
@@ -74,6 +75,8 @@ const ACCOUNT_VIEWS = {
   // Where Project Examples was, before the dashboard's card went to Projects instead.
   '/project-examples': 'projects',
   '/activity': 'activity',
+  // Where the Tools page was, before it became the dashboard.
+  '/tools': 'dashboard',
   '/projects': 'projects',
   '/organisations': 'organisations',
   '/settings': 'settings',
@@ -264,21 +267,6 @@ function MainApp({ initialView = 'welcome' }) {
   const scrollPageToTop = () => document.querySelector('.placer-scroll-view')?.scrollTo?.(0, 0);
   useEffect(() => { scrollPageToTop(); }, [view, location]);
 
-  // N starts a new project, for anyone with the side nav's New project button to press
-  // — never while something is being typed (lib/shortcuts.js).
-  const canStartProject = !identityLoading && Boolean(profile);
-  useEffect(() => {
-    if (!canStartProject) return undefined;
-    const onKeyDown = (e) => {
-      if (!isNewProjectShortcut(e) || view === 'projectNew') return;
-      e.preventDefault();
-      navigate('/projects/new');
-      scrollPageToTop();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [canStartProject, view, navigate]);
-
   // The side nav is fixed and runs from the nav bar down to the footer: as the footer
   // comes up into the window, tell the CSS how much of the window it has taken.
   useEffect(() => {
@@ -302,6 +290,11 @@ function MainApp({ initialView = 'welcome' }) {
   }, [view, location]);
 
   const showNewProject = () => navigate('/projects/new');
+  // Create a tool, from the side nav or the dashboard: once the kind is picked, a dialog
+  // of the tools of that kind (ChooseToolDialog), each opening its configuration page.
+  const [createCategory, setCreateCategory] = useState(null);
+  const showCreateTool = (category) => setCreateCategory(category);
+  const closeCreateTool = useCallback(() => setCreateCategory(null), []);
   const showNewOrganisationProject = (organisationId) =>
     navigate(`/projects/new?organisation=${encodeURIComponent(organisationId)}`);
   const showNewOrganisation = () => navigate('/organisations/new');
@@ -326,10 +319,6 @@ function MainApp({ initialView = 'welcome' }) {
     navigate(`/toolkit/${encodeURIComponent(toolId)}?room=${encodeURIComponent(roomId)}`);
 
   const show = (next) => {
-    if (next === 'toolkit') {
-      navigate('/toolkit');
-      return;
-    }
     if (ACCOUNT_PATHS[next]) {
       navigate(ACCOUNT_PATHS[next]);
       return;
@@ -385,6 +374,33 @@ function MainApp({ initialView = 'welcome' }) {
 
   // A full-screen tool, started, has the whole window: no nav bar, no side nav and no
   // footer, the tool's own top bar the only chrome (FULL_SCREEN_TOOLS, lib/routes.js).
+  // Configuring a tool keeps the nav bar, with its own top bar under it, but has the
+  // rest of the window for its canvas and panel: no side nav and no footer.
+  if (isToolConfigurator(location)) {
+    return (
+      <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', background: t.page, color: t.ink }}>
+        <GlassNavbar
+          t={t}
+          profile={profile}
+          loading={identityLoading}
+          onNavigate={show}
+          onSignIn={handleLogIn}
+          onCreateAccount={handleCreateAccount}
+          onSignOut={handleSignOut}
+          onSearchSelect={({ kind, id }) => showPublicPage(kind, id)}
+        />
+        <div className="placer-under-glass-nav" style={{ flex: 1, minHeight: 0 }}>
+          {/* Held back while the session is read: what it opens, and where it keeps
+              what is started, are the account's. */}
+          {identityLoading ? <LoadingFallback /> : (
+            <Suspense fallback={<LoadingFallback />}>
+              <ToolConfiguratorPage t={t} profile={profile} accountId={accountId} />
+            </Suspense>
+          )}
+        </div>
+      </div>
+    );
+  }
   if (isFullScreenTool(location, search)) {
     return (
       <Suspense fallback={<LoadingFallback />}>
@@ -420,19 +436,19 @@ function MainApp({ initialView = 'welcome' }) {
             <SideNav t={t} view={view}
               onNavigate={(next) => { show(next); scrollPageToTop(); }}
               onExplore={() => { handleExplore(); scrollPageToTop(); }}
-              onNewProject={() => { showNewProject(); scrollPageToTop(); }} showOrganisations={isSupabaseConfigured()}
+              onCreateTool={showCreateTool}
+              showOrganisations={isSupabaseConfigured()}
               expanded={tourOpen} />
           )}
 
           {/* The welcome tour, over whichever page it has led to: its steps go to the
-              projects, the map, the Toolkit, a new project and Settings, and it carries on
+              projects, the map, a new project and Settings, and it carries on
               over each. */}
           {!identityLoading && profile && (
             <WelcomeTour t={t} accountId={accountId} name={profile.name}
               autoOpen={view === 'dashboard'}
               onOpenProjects={() => { show('projects'); scrollPageToTop(); }}
               onExplore={() => { handleExplore(); scrollPageToTop(); }}
-              onOpenToolkit={() => { show('toolkit'); scrollPageToTop(); }}
               onNewProject={() => { showNewProject(); scrollPageToTop(); }}
               onEditProfile={() => { navigate('/settings?open=profile'); scrollPageToTop(); }}
               onOpenChange={setTourOpen} />
@@ -513,6 +529,16 @@ function MainApp({ initialView = 'welcome' }) {
               </Suspense>
             )}
 
+            {createCategory && (
+              <Suspense fallback={null}>
+                <ChooseToolDialog t={t} category={createCategory} onClose={closeCreateTool}
+                  onPick={(toolId) => {
+                    setCreateCategory(null);
+                    navigate(`/toolkit/${encodeURIComponent(toolId)}/configure`);
+                  }} />
+              </Suspense>
+            )}
+
             {view === 'toolkit' && (
               <Suspense fallback={<LoadingFallback />}>
                 {/* Passed down rather than read from services/profile inside ToolkitPage: with
@@ -542,6 +568,10 @@ function MainApp({ initialView = 'welcome' }) {
             {view === 'dashboard' && profile && (
               <Suspense fallback={<LoadingFallback />}>
                 <DashboardPage t={t} profile={profile} accountId={accountId} onNavigate={show}
+                  onCreateTool={showCreateTool}
+                  onOpenTemplate={(toolId) => navigate(`/toolkit/${encodeURIComponent(toolId)}/configure`)}
+                  onOpenStartedTool={(toolId, id) =>
+                    navigate(`/toolkit/${encodeURIComponent(toolId)}/configure?draft=${encodeURIComponent(id)}`)}
                   onNewProject={showNewProject}
                   onSignOut={handleSignOut} onExplore={handleExplore}
                   onOpenPublicProfile={showPublicProfile}

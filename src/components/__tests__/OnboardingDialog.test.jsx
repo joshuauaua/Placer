@@ -5,7 +5,7 @@ import { THEME } from '../../theme';
 
 const setup = (handlers = {}) => {
   const props = {
-    onClose: vi.fn(), onOpenProjects: vi.fn(), onExplore: vi.fn(), onOpenToolkit: vi.fn(), onNewProject: vi.fn(), onEditProfile: vi.fn(),
+    onClose: vi.fn(), onOpenProjects: vi.fn(), onExplore: vi.fn(), onNewProject: vi.fn(), onEditProfile: vi.fn(),
     ...handlers,
   };
   render(<OnboardingDialog t={THEME} name="Mara" {...props} />);
@@ -53,7 +53,7 @@ describe('OnboardingDialog', () => {
   it('goes through all five steps and back, ending on Edit my profile rather than Done', () => {
     setup();
 
-    const titles = ['Projects are where change starts', 'Check out the Toolkit', 'Explore what is happening',
+    const titles = ['Projects are where change starts', 'Create a tool', 'Explore what is happening',
       'Start your own project', 'Make your profile yours'];
     titles.forEach((title, i) => {
       next();
@@ -81,7 +81,7 @@ describe('OnboardingDialog', () => {
     expect(screen.getByRole('button', { name: 'Step 4: Start your own project' })).toHaveAttribute('aria-current', 'step');
   });
 
-  it("shows no category tags on the Toolkit step", () => {
+  it("shows no category tags on the Create a tool step", () => {
     setup();
     next();
     next();
@@ -91,7 +91,6 @@ describe('OnboardingDialog', () => {
 
   it.each([
     [1, 'See the projects', 'onOpenProjects'],
-    [2, 'Browse the Toolkit', 'onOpenToolkit'],
     [3, 'Open the map', 'onExplore'],
     [4, 'Create a project', 'onNewProject'],
   ])('step %i goes to %s and carries on to the next step', (steps, label, handler) => {
@@ -177,18 +176,6 @@ describe('OnboardingDialog', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Projects' }));
       expect(onOpenProjects).toHaveBeenCalled();
       expect(screen.getByText('Step 2 of 5')).toBeInTheDocument();
-    });
-
-    it('points at Toolkit in the menu on the Toolkit step', () => {
-      withNavItem('toolkit');
-      const { onOpenToolkit } = setup();
-      next();
-      next();
-
-      expect(screen.queryByText(/Click Toolkit in the menu/)).not.toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: 'Toolkit' }));
-      expect(onOpenToolkit).toHaveBeenCalled();
-      expect(screen.getByText('Step 3 of 5')).toBeInTheDocument();
     });
 
     it('points at New project in the menu on the start-a-project step', () => {

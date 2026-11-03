@@ -1878,7 +1878,14 @@ a {
 }
 
 /* Settings, pushed to the foot of the column and ruled off from the places. */
+/* Settings, at the very bottom under a line, with the small links just above it
+   pushed down there too. Collapsed, the small links are hidden, so Settings pushes
+   itself down. */
 .placer-side-nav-bottom {
+  margin-top: 12px;
+}
+
+.placer-side-nav.is-collapsed .placer-side-nav-bottom {
   margin-top: auto;
 }
 
@@ -1891,11 +1898,11 @@ a {
   border-top: 1px solid var(--placer-grey-200);
 }
 
-/* Guides, FAQ and Terms and Privacy, a short list of small grey text links under
-   Settings. */
+/* Guides, FAQ and Terms and Privacy, a short list of small grey text links just
+   above the line over Settings. */
 .placer-side-nav-small {
   list-style: none;
-  margin: 8px 0 0;
+  margin: auto 0 0;
   padding: 0 14px;
   display: flex;
   flex-direction: column;
@@ -1950,6 +1957,93 @@ a {
 
 .placer-side-nav.is-collapsed {
   width: 72px;
+}
+
+/* Create a tool's dropdown (SideNav's CreateToolMenu): drawn into the body and fixed
+   beside the button, above the side nav's 150. Its three kinds of tool sit side by
+   side as cards: the icon on its category's 100, the name, and a few words. */
+.placer-create-tool-menu {
+  position: fixed;
+  z-index: 160;
+  box-sizing: border-box;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-100);
+  border-radius: var(--placer-radius-lg);
+  box-shadow: var(--placer-shadow);
+}
+
+.placer-create-tool-item {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  padding: 20px;
+  border-radius: var(--placer-radius-sm);
+  cursor: pointer;
+  font-family: var(--placer-font);
+  color: var(--placer-ink);
+}
+
+.placer-create-tool-item:hover,
+.placer-create-tool-item:focus-visible {
+  background: var(--placer-grey-100);
+}
+
+.placer-create-tool-item:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: -2px;
+}
+
+.placer-create-tool-icon {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 12px;
+  border-radius: var(--placer-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placer-create-tool-label {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.placer-create-tool-description {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--placer-grey-700);
+  white-space: normal;
+}
+
+/* A phone has room for the three cards only if they give up some padding. */
+@media (max-width: 599px) {
+  .placer-create-tool-item {
+    padding: 14px 10px;
+  }
+
+  .placer-create-tool-icon {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 8px;
+  }
+
+  .placer-create-tool-label {
+    font-size: 16px;
+  }
+
+  .placer-create-tool-description {
+    font-size: 13px;
+    line-height: 18px;
+  }
 }
 
 .placer-side-nav.is-collapsed .placer-side-nav-link {
@@ -2048,7 +2142,8 @@ a {
     margin: 0;
   }
 
-  .placer-side-nav-bottom {
+  .placer-side-nav-bottom,
+  .placer-side-nav.is-collapsed .placer-side-nav-bottom {
     margin: 0;
   }
 
@@ -2776,9 +2871,7 @@ a {
   }
 }
 
-/* PLACER — the Toolkit's list view (see ToolkitPage.jsx). A row lifts to grey on
- * hover, and on a phone the category and maker drop out so the name has room. */
-/* A gallery's toolbar, under its title (see GalleryToolbar.jsx), on the Toolkit and Projects:
+/* A gallery's toolbar, under its title (see GalleryToolbar.jsx), on Projects and Organisations:
  * the category menu, the sort tabs centred, and the icon buttons at the right. On a
  * narrow screen the sort tabs drop to a line of their own. */
 .placer-gallery-toolbar {
@@ -2918,145 +3011,11 @@ a {
   }
 }
 
-/* PLACER — a tool's card in the Toolkit's grid (see ToolkitPage's Tile). */
-.placer-toolkit-tile {
-  flex: 1;
-  min-width: 0;
-  padding: 0;
-  border: none;
-  background: none;
-  text-align: left;
-  cursor: pointer;
-  font-family: var(--placer-font);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.placer-toolkit-tile-frame {
-  position: relative;
-  display: block;
-  margin: 8px 8px 10px 0;
-  aspect-ratio: 16 / 10;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 0 0 0 var(--tile-shadow);
-  transition: box-shadow 0.25s ease;
-}
-
-.placer-toolkit-tile-image {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.4s ease;
-}
-
-/* A tool with no picture: one flat colour, its category's 100. */
-.placer-toolkit-tile-shades {
-  background: var(--tile-100);
-}
-
-.placer-toolkit-tile-text {
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 18px;
-  color: var(--tile-900);
-}
-
-.placer-toolkit-tile-pictured .placer-toolkit-tile-text {
-  max-width: none;
-  color: #FFFFFF;
-}
-
-.placer-toolkit-tile-pictured::after {
-  content: '';
-  position: absolute;
-  inset: 40% 0 0;
-  background: linear-gradient(to top, var(--tile-900), transparent);
-  pointer-events: none;
-}
-
-.placer-toolkit-tile-tag {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  padding: 4px 10px;
-  border: 1px solid;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 16px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.placer-toolkit-tile-arrow {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #FFFFFF;
-  color: #111111;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.placer-toolkit-tile-arrow svg {
-  transition: transform 0.25s ease;
-}
-
-.placer-toolkit-tile:hover .placer-toolkit-tile-frame,
-.placer-toolkit-tile:focus-visible .placer-toolkit-tile-frame {
-  box-shadow: 8px -8px 0 0 var(--tile-shadow);
-}
-
-.placer-toolkit-tile:hover img.placer-toolkit-tile-image,
-.placer-toolkit-tile:focus-visible img.placer-toolkit-tile-image {
-  transform: scale(1.06);
-}
-
-.placer-toolkit-tile:hover .placer-toolkit-tile-arrow svg,
-.placer-toolkit-tile:focus-visible .placer-toolkit-tile-arrow svg {
-  transform: rotate(-45deg);
-}
-
-.placer-toolkit-tile:focus-visible {
-  outline: none;
-}
-
-.placer-toolkit-tile:focus-visible .placer-toolkit-tile-frame {
-  outline: 2px solid #111111;
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .placer-toolkit-tile-frame,
-  .placer-toolkit-tile-image,
-  .placer-toolkit-tile-arrow svg {
-    transition: none;
-  }
-
-  .placer-toolkit-tile:hover .placer-toolkit-tile-image {
-    transform: none;
-  }
-}
-
+/* PLACER — a row in a list: Projects, Organisations and Create a tool's list of tools
+ * (ChooseToolDialog.jsx). It lifts to grey on hover. */
 .placer-toolkit-row:hover,
 .placer-toolkit-row:focus-visible {
   background: var(--placer-grey-100) !important;
-}
-
-@media (max-width: 640px) {
-  .placer-toolkit-row-meta {
-    display: none !important;
-  }
 }
 
 /* PLACER — Explore (see ExplorePage.jsx). A page that scrolls, with the footer
@@ -3412,4 +3371,620 @@ a {
 .placer-name-link:focus-visible {
   text-decoration: underline;
   text-underline-offset: 0.12em;
+}
+
+/* PLACER — configuring a tool (components/ToolConfiguratorPage.jsx).
+ *
+ * Everything under the nav bar: its own top bar, then the canvas with the
+ * configuration panel on its right. The canvas is grey with the tool on a white frame; each scrolls on its own.
+ * Below 900px the panel goes under the canvas and the two scroll as one, under the bar.
+ */
+.placer-configurator {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--placer-white);
+  color: var(--placer-ink);
+  font-family: var(--placer-font);
+}
+
+.placer-configurator-bar {
+  flex: 0 0 auto;
+  height: 64px;
+  box-sizing: border-box;
+  padding: 0 16px 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--placer-grey-200);
+  background: var(--placer-white);
+}
+
+.placer-configurator-bar-start,
+.placer-configurator-bar-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.placer-configurator-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.placer-configurator-name {
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.placer-configurator-notice {
+  font-size: 13px;
+  color: var(--placer-grey-700);
+  margin-right: 4px;
+}
+
+/* The collaborators' avatars, overlapping, each ringed in white. */
+.placer-configurator-people {
+  display: flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.placer-configurator-person {
+  display: flex;
+  border-radius: 50%;
+}
+
+.placer-configurator-person + .placer-configurator-person {
+  margin-left: -8px;
+}
+
+.placer-configurator-more-people {
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  background: var(--placer-grey-100);
+  box-shadow: 0 0 0 2px var(--placer-white);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* The ⋯ button and its menu of the tool's settings, under it at the right. */
+.placer-configurator-settings {
+  position: relative;
+}
+
+.placer-configurator-dots {
+  all: unset;
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--placer-radius-sm);
+  cursor: pointer;
+  color: var(--placer-ink);
+}
+
+.placer-configurator-dots:hover,
+.placer-configurator-dots[aria-expanded='true'] {
+  background: var(--placer-grey-100);
+}
+
+.placer-configurator-dots:focus-visible {
+  outline: 2px solid var(--placer-ink);
+}
+
+.placer-configurator-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 70;
+  min-width: 220px;
+  padding: 6px 0;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  border-radius: var(--placer-radius-sm);
+  box-shadow: var(--placer-shadow);
+}
+
+.placer-configurator-menu-item {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-family: var(--placer-font);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--placer-ink);
+}
+
+.placer-configurator-menu-item.is-divided {
+  border-top: 1px solid var(--placer-grey-200);
+}
+
+.placer-configurator-menu-item:hover,
+.placer-configurator-menu-item:focus-visible {
+  background: var(--placer-grey-100);
+}
+
+.placer-configurator-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+/* The slides, down the left: a numbered thumbnail each, the one on the canvas outlined
+   in ink, a remove button on each while there is more than one, and Add slide under
+   them. */
+.placer-configurator-slides {
+  flex: 0 0 168px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 20px 16px;
+  border-right: 1px solid var(--placer-grey-200);
+  background: var(--placer-white);
+}
+
+.placer-configurator-slides-heading {
+  margin: 0 0 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--placer-grey-700);
+}
+
+.placer-configurator-slide-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.placer-configurator-slide-item {
+  position: relative;
+}
+
+.placer-configurator-slide {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  font-family: var(--placer-font);
+}
+
+.placer-configurator-slide-number {
+  flex: 0 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--placer-grey-500);
+  text-align: right;
+}
+
+.placer-configurator-slide-thumb {
+  flex: 1 1 auto;
+  aspect-ratio: 16 / 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--placer-grey-200);
+  border-radius: var(--placer-radius-sm);
+  transition: border-color 0.15s ease;
+}
+
+.placer-configurator-slide:hover .placer-configurator-slide-thumb {
+  border-color: var(--placer-grey-300);
+}
+
+.placer-configurator-slide.is-selected .placer-configurator-slide-thumb {
+  border-color: var(--placer-ink);
+}
+
+.placer-configurator-slide.is-selected .placer-configurator-slide-number {
+  color: var(--placer-ink);
+}
+
+.placer-configurator-slide:focus-visible .placer-configurator-slide-thumb {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+.placer-configurator-slide-remove {
+  all: unset;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  background: var(--placer-white);
+  color: var(--placer-ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.placer-configurator-slide-item:hover .placer-configurator-slide-remove,
+.placer-configurator-slide-remove:focus-visible {
+  opacity: 1;
+}
+
+.placer-configurator-slide-remove:focus-visible {
+  outline: 2px solid var(--placer-ink);
+}
+
+/* Touch screens have no hover: the remove button is always shown. */
+@media (hover: none) {
+  .placer-configurator-slide-remove {
+    opacity: 1;
+  }
+}
+
+.placer-configurator-slide-add {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  border: 1px dashed var(--placer-grey-300);
+  border-radius: var(--placer-radius-sm);
+  font-family: var(--placer-font);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--placer-ink);
+}
+
+.placer-configurator-slide-add:hover {
+  background: var(--placer-grey-100);
+}
+
+.placer-configurator-slide-add:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+.placer-configurator-canvas {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: auto;
+  padding: 32px;
+  background-color: var(--placer-grey-100);
+  background-image: radial-gradient(var(--placer-grey-300) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.placer-configurator-frame {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px;
+  box-sizing: border-box;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  border-radius: var(--placer-radius-lg);
+  box-shadow: var(--placer-shadow);
+}
+
+.placer-configurator-panel {
+  flex: 0 0 360px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 24px;
+  border-left: 1px solid var(--placer-grey-200);
+  background: var(--placer-white);
+}
+
+.placer-configurator-panel-heading {
+  margin: 0 0 20px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.placer-configurator-section {
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--placer-grey-200);
+}
+
+.placer-configurator-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.placer-configurator-section-heading {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--placer-grey-700);
+}
+
+.placer-configurator-problems {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--placer-grey-700);
+}
+
+.placer-configurator-note {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--placer-grey-700);
+}
+
+.placer-configurator-missing {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+@media (max-width: 899px) {
+  /* Canvas and panel scroll together under the bar, which stays put. */
+  .placer-configurator-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  /* The slides become a row across the top, scrolling sideways. */
+  .placer-configurator-slides {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 12px 16px;
+    border-right: none;
+    border-bottom: 1px solid var(--placer-grey-200);
+  }
+
+  .placer-configurator-slides-heading {
+    display: none;
+  }
+
+  .placer-configurator-slide-list {
+    flex-direction: row;
+    margin: 0;
+  }
+
+  .placer-configurator-slide-item {
+    flex: 0 0 104px;
+  }
+
+  .placer-configurator-slide-add {
+    flex: 0 0 auto;
+    width: auto;
+    height: 48px;
+    padding: 0 14px;
+  }
+
+  .placer-configurator-canvas {
+    padding: 16px;
+    overflow: visible;
+  }
+
+  .placer-configurator-frame {
+    padding: 16px;
+  }
+
+  .placer-configurator-panel {
+    flex: 0 0 auto;
+    overflow: visible;
+    padding: 24px 16px;
+    border-left: none;
+    border-top: 1px solid var(--placer-grey-200);
+  }
+
+  /* The notice would crowd the buttons; the buttons say enough at this width. */
+  .placer-configurator-notice {
+    display: none;
+  }
+}
+
+@media (max-width: 599px) {
+  .placer-configurator-btn-label {
+    display: none;
+  }
+
+  .placer-configurator-bar-end .placer-btn {
+    padding: 0 12px !important;
+  }
+}
+
+/* PLACER — Popular Templates on the Tools page (components/PopularTemplates.jsx): a
+ * grid of cards, each a picture over its title and the kind of tool it is. */
+.placer-template-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  /* Four across, so a row of cards spans the page as Getting Started's does, however
+     wide the window; two on narrower screens, one on a phone. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1099px) {
+  .placer-template-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 599px) {
+  .placer-template-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.placer-template-card {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  border-radius: var(--placer-radius-lg);
+  font-family: var(--placer-font);
+  color: var(--placer-ink);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.placer-template-card:hover {
+  box-shadow: var(--placer-shadow);
+  transform: translateY(-2px);
+}
+
+.placer-template-card:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+.placer-template-image {
+  display: block;
+  aspect-ratio: 16 / 10;
+  background: var(--placer-grey-100);
+  overflow: hidden;
+}
+
+.placer-template-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placer-template-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px 16px;
+}
+
+.placer-template-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  /* Two lines at most: a started tool's title is whatever its first slide asks. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.placer-template-tool {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-template-card {
+    transition: none;
+  }
+
+  .placer-template-card:hover {
+    transform: none;
+  }
+}
+
+/* PLACER — My Tools on the Tools page (components/MyTools.jsx): the same cards as the
+ * templates, with the tool's icon on its category's colour in place of a picture. */
+.placer-started-cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placer-started-details {
+  font-size: 13px;
+  color: var(--placer-grey-700);
+}
+
+.placer-started-empty {
+  margin: 0;
+  padding: 20px;
+  border: 1px dashed var(--placer-grey-300);
+  border-radius: var(--placer-radius-lg);
+  font-size: 14px;
+  color: var(--placer-grey-700);
+}
+
+/* PLACER — Tutorials on the Tools page (components/Tutorials.jsx): the templates' card
+ * shape, with a 16:9 video, or the placeholder that stands in for one, at the top. */
+.placer-tutorial-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  border-radius: var(--placer-radius-lg);
+  font-family: var(--placer-font);
+  color: var(--placer-ink);
+}
+
+.placer-tutorial-video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--placer-ink);
+}
+
+.placer-tutorial-video iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.placer-tutorial-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--placer-grey-700);
+  color: var(--placer-white);
+  font-size: 13px;
+  font-weight: 600;
 }

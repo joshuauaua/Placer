@@ -9,6 +9,8 @@ const ICON_ELEMENTS = {
   ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  // Three dots in a row: a menu of more things to do with what it sits beside.
+  more: <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth="3.2" strokeLinecap="round" />,
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
   chevDown: <path d="M5 9l7 7 7-7" />,
@@ -163,6 +165,8 @@ const ICON_ELEMENTS = {
     </>
   ),
   play: <path d="M5 4l4 8m6-8l-4 8M4 12h16M9 12l-1 8M15 12l1 8" />,
+  // A video's play button: a triangle in a circle. (`play` is a playground.)
+  video: <path d="M12 3a9 9 0 110 18 9 9 0 010-18zM10 8.5v7l6-3.5-6-3.5z" />,
   light: <path d="M12 3v2M9 5h6l1 5a4 4 0 01-8 0l1-5zM12 14v7M9 21h6" />,
   cart: (
     <>

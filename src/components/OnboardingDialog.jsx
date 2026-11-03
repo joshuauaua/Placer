@@ -1,7 +1,7 @@
 /* PLACER — the welcome tour, the first time somebody signs in.
  *
  * A cover saying what PLACER is, with one button, Get started. Then five steps:
- * projects — the heart of it — the Toolkit, Explore, starting a project and the
+ * projects — the heart of it — creating a tool, Explore, starting a project and the
  * profile, each going there. The cover is not counted as a step and
  * has no dot. Going there
  * does not end the tour: the page changes underneath and the tour moves on to its next
@@ -59,8 +59,8 @@ export const ONBOARDING_STEPS = [
     id: 'toolkit',
     icon: 'layers',
     colour: PALETTE.blue,
-    title: () => 'Check out the Toolkit',
-    body: 'In the Toolkit you can explore tools from expert organisations. Each one is for:',
+    title: () => 'Create a tool',
+    body: 'Create a tool, at the top of the side nav, offers methods from expert organisations. Each one is for:',
     points: [
       'Understanding a place and collecting data about it',
       'Imagining and visualising ideas for it',
@@ -68,8 +68,6 @@ export const ONBOARDING_STEPS = [
     ],
     more: 'Some are done solo and others in a group, and they come in all shapes and sizes. '
       + 'We recommend mixing and matching them to fit what your project needs.',
-    spotlight: { target: 'toolkit', label: 'Toolkit', call: 'onOpenToolkit' },
-    action: { label: 'Browse the Toolkit', icon: 'layers', call: 'onOpenToolkit' },
   },
   {
     id: 'explore',
@@ -113,11 +111,11 @@ function findTarget(target) {
   return { top: rect.top, left: rect.left, width: rect.width, height: rect.height };
 }
 
-export function OnboardingDialog({ t, name = '', onClose, onOpenProjects, onExplore, onOpenToolkit, onNewProject,
+export function OnboardingDialog({ t, name = '', onClose, onOpenProjects, onExplore, onNewProject,
   onEditProfile }) {
   const [index, setIndex] = useState(0);
   const panelRef = useRef(null);
-  const handlers = { onOpenProjects, onExplore, onOpenToolkit, onNewProject, onEditProfile };
+  const handlers = { onOpenProjects, onExplore, onNewProject, onEditProfile };
 
   const step = ONBOARDING_STEPS[index];
   const last = index === ONBOARDING_STEPS.length - 1;

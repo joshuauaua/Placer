@@ -18,6 +18,8 @@ export default {
   icon: 'flag',
   createdBy: 'PLACER',
   component: OpenVote,
+  // One question per slide, for a run of them (ToolConfiguratorPage).
+  slides: true,
   Preview: OpenVotePreview,
   setup: {
     defaults: defaultVoteSetup,

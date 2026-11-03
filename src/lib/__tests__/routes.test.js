@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { FULL_SCREEN_TOOLS, isFullScreenTool, startedToolPath } from '../routes';
+import { FULL_SCREEN_TOOLS, isFullScreenTool, isToolConfigurator, startedToolPath } from '../routes';
 import { REGISTERED_TOOLS } from '../../toolkit/tools';
 
 describe('full-screen tools', () => {
@@ -27,5 +27,14 @@ describe('full-screen tools', () => {
       .toBe('/toolkit/reimagine-a-space?project=proj-1&start');
     expect(startedToolPath('reimagine-a-space', '?project=proj-1'))
       .toBe('/toolkit/reimagine-a-space?project=proj-1&start');
+  });
+});
+
+describe('isToolConfigurator', () => {
+  it('is a tool’s /configure address and nothing else', () => {
+    expect(isToolConfigurator('/toolkit/word-cloud/configure')).toBe(true);
+    expect(isToolConfigurator('/toolkit/word-cloud')).toBe(false);
+    expect(isToolConfigurator('/toolkit')).toBe(false);
+    expect(isToolConfigurator('/projects/1/configure')).toBe(false);
   });
 });

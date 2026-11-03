@@ -39,7 +39,7 @@ describe('a tool opened for a project', () => {
     expect(crumbs().getByRole('link', { name: 'Projects' })).toHaveAttribute('href', '/projects');
     expect(project).toHaveAttribute('href', '/projects/proj-1/dashboard');
     expect(crumbs().getByText('Idea Visualizer')).toHaveAttribute('aria-current', 'page');
-    expect(screen.queryByRole('button', { name: 'All tools' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
     expect(readProjectCrumb).toHaveBeenCalledWith('proj-1');
 
     fireEvent.click(project);
@@ -73,10 +73,10 @@ describe('a tool opened for a project', () => {
     expect(await screen.findByRole('link', { name: 'Project' })).toHaveAttribute('href', '/projects/proj-1');
   });
 
-  it('is All tools, as before, for a tool opened on its own', () => {
+  it('is Back, home, for a tool opened on its own', () => {
     renderAt('/toolkit/reimagine-a-space');
 
-    expect(screen.getByRole('button', { name: 'All tools' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Breadcrumb' })).not.toBeInTheDocument();
     expect(readProjectCrumb).not.toHaveBeenCalled();
   });

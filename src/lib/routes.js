@@ -24,3 +24,11 @@ export function startedToolPath(toolId, search) {
   const query = String(search ?? '').replace(/^\?/, '');
   return `/toolkit/${toolId}?${query ? `${query}&` : ''}start`;
 }
+
+/**
+ * Whether a path is a tool's configuration page, /toolkit/<id>/configure, which has
+ * the whole window the same way (components/ToolConfiguratorPage.jsx).
+ */
+export function isToolConfigurator(path) {
+  return /^\/toolkit\/[^/?#]+\/configure\/?$/.test(path);
+}

@@ -1,7 +1,7 @@
 /* PLACER — keyboard shortcuts, and what they need to know about the keyboard.
  *
  *   ⌘K / Ctrl+K  opens the nav bar's search (NavSearch)
- *   N            starts a new project, for somebody signed in (App)
+ *   N            opens the side nav's Create a tool menu, for somebody signed in (SideNav)
  *
  * The browser keeps ⌘N (a new window) and ⌘1–9 (switching tabs) for itself before a
  * page ever sees them, which is why neither is used.
@@ -35,7 +35,7 @@ export function isTyping(event) {
   return Boolean(document.querySelector('[aria-modal="true"]'));
 }
 
-/** Whether a key press is the new-project shortcut: N on its own, outside any field. */
+/** Whether a key press is the create shortcut: N on its own, outside any field. */
 export function isNewProjectShortcut(event) {
   return event.key?.toLowerCase() === 'n' && !event.metaKey && !event.ctrlKey && !event.altKey
     && !event.shiftKey && !event.repeat && !isTyping(event);

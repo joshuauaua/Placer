@@ -119,7 +119,7 @@ export function ReimagineASpace({ t, tool }) {
   }, [step, status, projectId]);
 
   // Out of the tool: back to the project it was opened for, or to the Toolkit.
-  const leave = () => navigate(projectId ? `/projects/${encodeURIComponent(projectId)}` : '/toolkit');
+  const leave = () => navigate(projectId ? `/projects/${encodeURIComponent(projectId)}` : '/');
   const leaveLabel = projectId ? 'Back to project' : 'Back to Toolkit';
   // A project's scene was never picked from the map, so back from it is the project.
   const fromProjectScene = capturedView?.source === 'project' && Boolean(projectId);

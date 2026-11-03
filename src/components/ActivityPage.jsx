@@ -149,7 +149,7 @@ export function ActivityPage({ t, accountId = null, onOpenProject, onOpenProject
         {status === 'ready' && notifications.length === 0 && invitations.length === 0 && (
           <p style={{ fontSize: 15, color: t.inkDim }}>
             Nothing yet. Comments, follows, news from the projects you are part of and the tools you
-            save from the Toolkit will show up here.
+            save will show up here.
           </p>
         )}
         {status === 'ready' && notifications.length > 0 && (

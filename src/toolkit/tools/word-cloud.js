@@ -18,6 +18,8 @@ export default {
   icon: 'cloud',
   createdBy: 'PLACER',
   component: WordCloud,
+  // One question per slide, for a run of them (ToolConfiguratorPage).
+  slides: true,
   setup: {
     defaults: defaultCloudSetup,
     problems: cloudSetupProblems,
