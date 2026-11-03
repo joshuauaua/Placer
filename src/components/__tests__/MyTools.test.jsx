@@ -7,10 +7,27 @@ import { THEME } from '../../theme';
 describe('MyTools', () => {
   beforeEach(() => localStorage.clear());
 
-  it('says so when nothing has been started', () => {
+  it('shows only the card to create a tool when nothing has been started', () => {
     render(<MyTools t={THEME} accountId="a" onOpen={vi.fn()} />);
 
-    expect(screen.getByRole('region', { name: 'My Tools' })).toHaveTextContent('Nothing started yet.');
+    const section = screen.getByRole('region', { name: 'My Tools' });
+    const cards = within(section).getAllByRole('listitem');
+    expect(cards).toHaveLength(1);
+    expect(within(cards[0]).getByRole('button')).toHaveTextContent('Create a tool');
+    expect(within(cards[0]).getByRole('button')).toHaveClass('placer-add-tool-card');
+  });
+
+  it('opens Understand, Re-Imagine and Plan from that card, and creates the kind chosen', () => {
+    const onCreateTool = vi.fn();
+    render(<MyTools t={THEME} accountId="a" onOpen={vi.fn()} onCreateTool={onCreateTool} />);
+    const add = screen.getByRole('button', { name: /Create a tool/ });
+
+    fireEvent.click(add);
+    expect(add).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByRole('menuitem', { name: /Understand/ }));
+
+    expect(onCreateTool).toHaveBeenCalledWith('understand');
+    expect(screen.queryByRole('menu')).toBeNull();
   });
 
   it('lists the account’s started tools by what they ask, and opens one', () => {
@@ -25,7 +42,9 @@ describe('MyTools', () => {
 
     const section = screen.getByRole('region', { name: 'My Tools' });
     const cards = within(section).getAllByRole('button');
-    expect(cards).toHaveLength(1);
+    // The started tool, then the card to create another, to its right.
+    expect(cards).toHaveLength(2);
+    expect(cards[1]).toHaveTextContent('Create a tool');
     expect(cards[0]).toHaveTextContent('Trees or benches?');
     expect(cards[0]).toHaveTextContent('Poll');
     expect(cards[0]).toHaveTextContent('2 slides');
