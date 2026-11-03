@@ -53,9 +53,11 @@ describe('saved inquiries, under Activity', () => {
   it("are on somebody's own profile, above their comments", async () => {
     setup({ accountId: 'user-1' });
 
-    fireEvent.click(await screen.findByRole('tab', { name: /^Activity/ }));
+    // Waits for the count, as the tests below do: clicked before the profile has
+    // loaded, the tab could be clicked and then the page come in under it.
+    fireEvent.click(await screen.findByRole('tab', { name: 'Activity (1)' }));
 
-    const panel = within(screen.getByRole('tabpanel', { name: /^Activity/ }));
+    const panel = within(await screen.findByRole('tabpanel', { name: /^Activity/ }));
     expect(await panel.findByRole('list', { name: 'Saved inquiries' })).toHaveTextContent('Market square');
     const [kept, said] = panel.getAllByRole('heading', { level: 2 });
     expect(kept).toHaveTextContent('Saved inquiries');
