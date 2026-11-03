@@ -192,8 +192,8 @@ function PanelCard({ t, id, title, action, children }) {
  * The tool-first dashboard. Its first shortcut is Create a Tool, opening the same choice
  * of Understand, Re-Imagine and Plan as the side nav's button (`onCreateTool` gets the
  * one picked). Getting Started, under the shortcuts, shows for the first few visits
- * and after that lives in the Guide shortcut; My Tools, Tutorials and Popular
- * Templates come after it (`onOpenStartedTool` gets a started tool's
+ * and after that lives in the Guide shortcut; My Tools, Popular Templates and
+ * Tutorials come after it (`onOpenStartedTool` gets a started tool's
  * tool id and id, `onOpenTemplate` the template's tool id).
  */
 export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewProject,
@@ -343,8 +343,8 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
 
         <MyTools t={t} accountId={accountId}
           onOpen={(toolId, id) => onOpenStartedTool?.(toolId, id)} />
-        <Tutorials t={t} />
         <PopularTemplates t={t} onOpen={(toolId) => onOpenTemplate?.(toolId)} />
+        <Tutorials t={t} />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16,
           marginBottom: 48 }}>
