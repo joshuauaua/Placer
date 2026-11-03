@@ -20,6 +20,7 @@ const MapContainer = lazy(() => import('./components/MapContainer'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
 const ContactPage = lazy(() => import('./components/ContactPage'));
 const UserLabsPage = lazy(() => import('./components/UserLabsPage'));
+const CaseStudyPage = lazy(() => import('./components/CaseStudyPage'));
 const ResourcesPage = lazy(() => import('./components/ResourcesPage'));
 const TermsAndPrivacyPage = lazy(() => import('./components/TermsAndPrivacyPage'));
 const DescribePage = lazy(() => import('./components/DescribePage'));
@@ -37,6 +38,9 @@ const EMPTY_DRAFT = { title: '', cat: '', blurb: '' };
 const VIEW_PATHS = {
   placemakingTrendsSurvey: '/placemaking-trends-survey',
   userLabs: '/user-labs',
+  // Opened from the landing page's "Add a case study"; not in the menu or footer, as
+  // the form is for invited projects only for now.
+  addCaseStudy: '/add-a-case-study',
 };
 const PATH_VIEWS = Object.fromEntries(Object.entries(VIEW_PATHS).map(([view, path]) => [path, view]));
 
@@ -60,7 +64,7 @@ function LoadingFallback() {
 function MainApp({ initialView = 'welcome' }) {
   const t = THEME;
   // 'welcome', 'map', 'street', 'describe', 'post', 'about', 'contact', 'resources', 'sandbox', 'terms',
-  // 'placemakingTrendsSurvey', 'userLabs'
+  // 'placemakingTrendsSurvey', 'userLabs', 'addCaseStudy'
   const [currentView, setCurrentView] = useState(initialView);
   const [capturedView, setCapturedView] = useState(null);
   // The imagination being built. Held here rather than in StreetScreen so that
@@ -277,6 +281,12 @@ function MainApp({ initialView = 'welcome' }) {
         {view === 'userLabs' && (
           <Suspense fallback={<LoadingFallback />}>
             <UserLabsPage t={t} />
+          </Suspense>
+        )}
+
+        {view === 'addCaseStudy' && (
+          <Suspense fallback={<LoadingFallback />}>
+            <CaseStudyPage t={t} />
           </Suspense>
         )}
 

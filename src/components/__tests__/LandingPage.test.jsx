@@ -187,3 +187,12 @@ describe('LandingPage hero', () => {
     expect(saved.at(-1)).toMatchObject({ source: 'landing_survey', email: 'ana@example.com' });
   });
 });
+
+describe('LandingPage, adding a case study', () => {
+  it('invites a case study after the case studies, opening the form', () => {
+    render(<LandingPage t={THEME} />);
+
+    const band = screen.getByRole('region', { name: 'Add a case study' });
+    expect(within(band).getByRole('link', { name: 'Add a case study' })).toHaveAttribute('href', '/add-a-case-study');
+  });
+});

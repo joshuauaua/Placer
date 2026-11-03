@@ -18,6 +18,7 @@ create table if not exists public.survey_responses (
   --   `placemaking_trends_survey` the municipal survey at /placemaking-trends-survey
   --   `user_labs_application`     the sign-up form on the User Labs page
   --   `newsletter_signup`         the newsletter field in the site footer
+  --   `case_study_submission`     the "Add a case study" form at /add-a-case-study
   source       text        not null,
   -- Optional: only present when the visitor asked to be contacted.
   email        text,
@@ -28,6 +29,10 @@ create table if not exists public.survey_responses (
   --     "anonymous" when the respondent chose to leave no details)
   --   user_labs_application: the form's fields, flat (name, phone, lab, ...)
   --   newsletter_signup: {} (the address is in `email`)
+  --   case_study_submission: title, subtitle, place, dates, need, approach, audience,
+  --     outcome, funding, organisation, organisations, members, links, contact,
+  --     consent, and the pictures as data URLs (hero, images), shrunk on the device
+  --     (src/lib/caseStudy.js; the address is in `email`)
   answers      jsonb       not null,
   -- Free text typed against an `other` option, keyed by question.
   other_text   jsonb       not null    default '{}'::jsonb
