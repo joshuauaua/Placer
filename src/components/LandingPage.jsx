@@ -26,10 +26,17 @@ import { Icon } from './Icon';
 // MapLibre is heavy, and the map is far down the page, so it loads on its own.
 const LandingCasesMap = lazy(() => import('./LandingCasesMap'));
 
+// Sections kept but off the page for now: the testimonials (placeholder quotes until
+// real ones come in) and "Easy to start" with its three cards. Set one to true to
+// bring it back.
+const SHOW_TESTIMONIALS = false;
+const SHOW_START_CARDS = false;
+
 /* The practices PLACER is built with, under the hero. Logos are stored at 160px
- * tall. One without a logo file yet shows its name instead. */
+ * tall. One without a logo file yet shows its name instead. `hidden` keeps one off
+ * the page for now without losing it. */
 const PARTNERS = [
-  { name: 'Gehl Institute', href: 'https://gehlinstitute.org/', logo: null },
+  { name: 'Gehl Institute', href: 'https://gehlinstitute.org/', logo: null, hidden: true },
   { name: 'STPLN', href: 'https://stpln.se/', logo: logoStpln },
   { name: 'Ankara Aks', href: 'https://ankaraaks.com/', logo: logoAks },
 ];
@@ -639,7 +646,7 @@ export function LandingPage({ t }) {
           Developed with leading design experts
         </h2>
         <ul className="placer-landing-partners-list">
-          {PARTNERS.map((partner) => (
+          {PARTNERS.filter((partner) => !partner.hidden).map((partner) => (
             <li key={partner.name}>
               <a className="placer-landing-partner" href={partner.href} target="_blank" rel="noopener noreferrer">
                 {partner.logo
@@ -663,7 +670,7 @@ export function LandingPage({ t }) {
         <LandingSteps />
       </section>
 
-      <LandingTestimonials />
+      {SHOW_TESTIMONIALS && <LandingTestimonials />}
 
       {/* Why it matters, after what people say. */}
       <section className="placer-landing-statement" aria-labelledby="placer-landing-engagement-title">
@@ -678,29 +685,31 @@ export function LandingPage({ t }) {
       </section>
 
       {/* How quickly it gets going, over three cards. */}
-      <section className="placer-landing-statement" aria-labelledby="placer-landing-start-title">
-        <h2 id="placer-landing-start-title" className="placer-landing-statement-title" style={{ color: t.ink }}>
-          Easy to start.<br />Simple to connect.
-        </h2>
-        <p className="placer-landing-statement-text">
-          Choose a template, create from scratch, or prompt AI. You’ll be ready to present and interact in no time,
-          no matter where your audience is.
-        </p>
+      {SHOW_START_CARDS && (
+        <section className="placer-landing-statement" aria-labelledby="placer-landing-start-title">
+          <h2 id="placer-landing-start-title" className="placer-landing-statement-title" style={{ color: t.ink }}>
+            Easy to start.<br />Simple to connect.
+          </h2>
+          <p className="placer-landing-statement-text">
+            Choose a template, create from scratch, or prompt AI. You’ll be ready to present and interact in no time,
+            no matter where your audience is.
+          </p>
 
-        <ul className="placer-landing-start-cards">
-          {START_CARDS.map((card) => (
-            <li key={card.key} className="placer-landing-start-card">
-              <div className="placer-landing-start-card-media">
-                {card.media
-                  ? <video src={card.media} autoPlay muted loop playsInline />
-                  : <span className="placer-landing-step-placeholder">{card.title}</span>}
-              </div>
-              <h3 className="placer-landing-start-card-title">{card.title}</h3>
-              <p className="placer-landing-start-card-text">{card.text}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
+          <ul className="placer-landing-start-cards">
+            {START_CARDS.map((card) => (
+              <li key={card.key} className="placer-landing-start-card">
+                <div className="placer-landing-start-card-media">
+                  {card.media
+                    ? <video src={card.media} autoPlay muted loop playsInline />
+                    : <span className="placer-landing-step-placeholder">{card.title}</span>}
+                </div>
+                <h3 className="placer-landing-start-card-title">{card.title}</h3>
+                <p className="placer-landing-start-card-text">{card.text}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* What participation does, beside a map of the case studies and over their cards. */}
       <section className="placer-landing-statement" aria-labelledby="placer-landing-power-title">
