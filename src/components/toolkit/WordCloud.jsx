@@ -39,7 +39,7 @@ import { Btn } from '../UI';
 import { TimerSelect } from './WordCloudSetup';
 import { PALETTE_LIST } from '../../theme';
 import {
-  MAX_WORD_LENGTH, addWord, cloudTimer, cloudWords, countWords, formatCountdown, isPaused,
+  DEFAULT_PROMPT, MAX_WORD_LENGTH, addWord, cloudTimer, cloudWords, countWords, formatCountdown, isPaused,
   pauseTimer, resumeTimer, roomTimer, secondsLeft, startTimer, stopTimer, wordLimit,
 } from '../../lib/wordCloud';
 
@@ -333,14 +333,15 @@ export function WordCloud({ t, room, slide = false }) {
   const empty = !result || result.total === 0;
   const shownPrompt = fixedPrompt ?? prompt.trim();
 
-  // The slide alone: the prompt as its title, over the cloud.
+  // The slide alone: the prompt as its title, over the cloud — straight on whatever card
+  // it is shown in, with none of its own. Until there is a prompt, the one suggested
+  // for it (DEFAULT_PROMPT), greyed.
   if (slide) {
     return (
-      <section aria-label="Word cloud" style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12,
-        padding: 28, boxShadow: t.shadow, minWidth: 0 }}>
+      <section aria-label="Word cloud" style={{ minWidth: 0 }}>
         <h2 style={{ margin: '0 0 12px', fontSize: 26, fontWeight: 700, lineHeight: 1.25, letterSpacing: '-0.01em',
           color: shownPrompt ? t.ink : t.inkFaint, overflowWrap: 'anywhere' }}>
-          {shownPrompt || 'Your question goes here'}
+          {shownPrompt || DEFAULT_PROMPT}
         </h2>
         {empty ? (
           <p style={{ minHeight: 320, display: 'flex', alignItems: 'center', justifyContent: 'center',

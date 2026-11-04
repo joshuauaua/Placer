@@ -4655,7 +4655,7 @@ a {
   flex: 1 1 auto;
   min-width: 0;
   overflow: auto;
-  padding: 48px 32px 32px;
+  padding: 32px;
   background-color: var(--placer-grey-100);
   background-image: radial-gradient(var(--placer-grey-300) 1px, transparent 1px);
   background-size: 20px 20px;
@@ -4906,24 +4906,6 @@ a {
   }
 }
 
-/* Says what the canvas is: a preview of the slide, with nothing in it to change. */
-.placer-configurator-preview-badge {
-  position: absolute;
-  top: 14px;
-  left: 32px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--placer-white);
-  border: 1px solid var(--placer-grey-200);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--placer-grey-700);
-}
-
 /* Inert, so nothing in it can be used; the cursor says so too. */
 .placer-configurator-frame[inert] {
   cursor: default;
@@ -5041,13 +5023,8 @@ a {
   }
 
   .placer-configurator-canvas {
-    padding: 44px 16px 16px;
+    padding: 16px;
     overflow: visible;
-  }
-
-  .placer-configurator-preview-badge {
-    left: 16px;
-    top: 12px;
   }
 
   .placer-configurator-frame {

@@ -285,7 +285,8 @@ describe('ToolConfiguratorPage, its canvas', () => {
     renderAt('/toolkit/word-cloud/configure');
     const canvas = screen.getByRole('main', { name: 'Canvas' });
 
-    expect(within(canvas).getByText('Live preview')).toBeInTheDocument();
+    // No label on it: the preview speaks for itself.
+    expect(within(canvas).queryByText('Live preview')).toBeNull();
     expect(canvas.querySelector('.placer-configurator-frame')).toHaveAttribute('inert');
   });
 
@@ -305,8 +306,12 @@ describe('ToolConfiguratorPage, Word Cloud\'s slide', () => {
   it('shows only the cloud, titled with the question, and nothing else of the tool', () => {
     renderAt('/toolkit/word-cloud/configure');
     const canvas = screen.getByRole('main', { name: 'Canvas' });
-    // Before there is a question, a placeholder holds its place.
-    expect(within(canvas).getByRole('heading', { level: 2, name: 'Your question goes here' })).toBeInTheDocument();
+    // Before there is a question, the one suggested for it holds its place.
+    expect(within(canvas).getByRole('heading', { level: 2, name: 'What do you want to find out?' })).toBeInTheDocument();
+    // On the frame's card itself, with no card of its own inside it.
+    const slide = within(canvas).getByRole('region', { name: 'Word cloud' });
+    expect(slide.style.boxShadow).toBe('');
+    expect(slide.style.border).toBe('');
 
     fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'One word for the square?' } });
 
@@ -316,6 +321,24 @@ describe('ToolConfiguratorPage, Word Cloud\'s slide', () => {
     }
     expect(within(canvas).queryByRole('button', { name: /full screen/i })).toBeNull();
     expect(within(canvas).queryByText(/on your profile/i)).toBeNull();
+  });
+});
+
+describe('ToolConfiguratorPage, Word Cloud\'s configuration', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('is just the prompt\'s field, under PROMPT, then Words per person and Timer', () => {
+    renderAt('/toolkit/word-cloud/configure');
+    const panel = within(screen.getByRole('complementary', { name: 'Configuration' }));
+
+    expect(panel.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Prompt']);
+    const prompt = panel.getByRole('textbox', { name: 'The prompt' });
+    expect(prompt).toHaveAttribute('placeholder', 'What do you want to find out?');
+    expect(panel.getByLabelText('Words per person')).toBeInTheDocument();
+    expect(panel.getByLabelText('Timer')).toBeInTheDocument();
+    for (const gone of [/shown above the cloud/, /sharpest cloud/, /nobody can add more words/]) {
+      expect(panel.queryByText(gone)).toBeNull();
+    }
   });
 });
 

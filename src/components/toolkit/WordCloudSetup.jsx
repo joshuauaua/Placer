@@ -6,6 +6,11 @@
  * before the room opens — the prompt first, then the words, as the stages of the
  * registry entry's `setup.steps` (SetupSteps walks through them, then how long the room
  * stays open). These only edit the setup.
+ *
+ * `compact` is the configuration page's panel (ToolConfiguratorPage), where both stages
+ * sit one under the other under their own headings: the prompt is just its field, and
+ * the words just Words per person and Timer, without the lines explaining them or the
+ * prompt again.
  */
 
 import { useId } from 'react';
@@ -16,16 +21,19 @@ import {
 const LIMITS = Array.from({ length: MAX_LIMIT - MIN_LIMIT + 1 }, (_, index) => MIN_LIMIT + index);
 
 /** The first stage: the prompt. */
-export function PromptStep({ t, setup, onChange }) {
+export function PromptStep({ t, setup, onChange, compact = false }) {
   const id = useId();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <label htmlFor={`${id}-prompt`} style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>
-        The prompt
-      </label>
+      {!compact && (
+        <label htmlFor={`${id}-prompt`} style={{ fontSize: 14, fontWeight: 700, color: t.ink }}>
+          The prompt
+        </label>
+      )}
       <input
         id={`${id}-prompt`}
-        aria-describedby={`${id}-prompt-hint`}
+        aria-label={compact ? 'The prompt' : undefined}
+        aria-describedby={compact ? undefined : `${id}-prompt-hint`}
         type="text"
         maxLength={MAX_PROMPT_LENGTH}
         value={setup.prompt}
@@ -33,14 +41,16 @@ export function PromptStep({ t, setup, onChange }) {
         placeholder={DEFAULT_PROMPT}
         style={{ height: 48, padding: '0 14px', borderRadius: 12, border: `1px solid ${t.lineStrong}`,
           background: t.surface, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 17, fontWeight: 700 }} />
-      <span id={`${id}-prompt-hint`} style={{ fontSize: 12.5, color: t.inkDim }}>
-        On the project&rsquo;s page it is shown above the cloud.
-      </span>
+      {!compact && (
+        <span id={`${id}-prompt-hint`} style={{ fontSize: 12.5, color: t.inkDim }}>
+          On the project&rsquo;s page it is shown above the cloud.
+        </span>
+      )}
     </div>
   );
 }
 
-function LimitField({ t, setup, onChange }) {
+function LimitField({ t, setup, onChange, compact = false }) {
   const id = useId();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -49,7 +59,7 @@ function LimitField({ t, setup, onChange }) {
       </label>
       <select
         id={`${id}-limit`}
-        aria-describedby={`${id}-limit-hint`}
+        aria-describedby={compact ? undefined : `${id}-limit-hint`}
         value={setup.limit ?? DEFAULT_LIMIT}
         onChange={(event) => onChange({ ...setup, limit: Number(event.target.value) })}
         style={{ height: 44, padding: '0 12px', borderRadius: 12, border: `1px solid ${t.lineStrong}`,
@@ -57,9 +67,11 @@ function LimitField({ t, setup, onChange }) {
           width: 'auto', alignSelf: 'flex-start' }}>
         {LIMITS.map((limit) => <option key={limit} value={limit}>{limit}</option>)}
       </select>
-      <span id={`${id}-limit-hint`} style={{ fontSize: 12.5, color: t.inkDim }}>
-        One word each gives the sharpest cloud; more lets people say a little more. Each answer can be up to 20 characters.
-      </span>
+      {!compact && (
+        <span id={`${id}-limit-hint`} style={{ fontSize: 12.5, color: t.inkDim }}>
+          One word each gives the sharpest cloud; more lets people say a little more. Each answer can be up to 20 characters.
+        </span>
+      )}
     </div>
   );
 }
@@ -81,7 +93,7 @@ export function TimerSelect({ t, id, value, onChange, disabled = false }) {
   );
 }
 
-function TimerField({ t, setup, onChange }) {
+function TimerField({ t, setup, onChange, compact = false }) {
   const id = useId();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -90,22 +102,26 @@ function TimerField({ t, setup, onChange }) {
       </label>
       <TimerSelect t={t} id={`${id}-timer`} value={setup.timer}
         onChange={(timer) => onChange({ ...setup, timer })} />
-      <span style={{ fontSize: 12.5, color: t.inkDim }}>
-        Optional. You start it from the room, and when it runs out nobody can add more words.
-      </span>
+      {!compact && (
+        <span style={{ fontSize: 12.5, color: t.inkDim }}>
+          Optional. You start it from the room, and when it runs out nobody can add more words.
+        </span>
+      )}
     </div>
   );
 }
 
 /** The second stage: how many words each person gets and for how long, under the prompt they answer. */
-export function WordsStep({ t, setup, onChange }) {
+export function WordsStep({ t, setup, onChange, compact = false }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <p style={{ fontSize: 17, fontWeight: 700, color: t.ink, lineHeight: 1.35, margin: 0 }}>
-        {setup.prompt}
-      </p>
-      <LimitField t={t} setup={setup} onChange={onChange} />
-      <TimerField t={t} setup={setup} onChange={onChange} />
+      {!compact && (
+        <p style={{ fontSize: 17, fontWeight: 700, color: t.ink, lineHeight: 1.35, margin: 0 }}>
+          {setup.prompt}
+        </p>
+      )}
+      <LimitField t={t} setup={setup} onChange={onChange} compact={compact} />
+      <TimerField t={t} setup={setup} onChange={onChange} compact={compact} />
     </div>
   );
 }

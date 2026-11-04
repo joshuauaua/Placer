@@ -9,7 +9,7 @@
  * and "green!" are one word, and one person saying it twice is still one person.
  */
 
-export const DEFAULT_PROMPT = 'One word for this place?';
+export const DEFAULT_PROMPT = 'What do you want to find out?';
 
 /** The longest word — or short phrase — somebody can add. */
 export const MAX_WORD_LENGTH = 20;

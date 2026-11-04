@@ -63,7 +63,9 @@
  *
  * and optionally `toSave(setup)`, the setup as it is kept (without a room), and `steps`, for a setup asked for in stages rather than on one screen:
  * each a { title, Form, problems } over the same setup, with `problems` covering only
- * its own part (setupSteps, and SetupSteps which walks through them). A tool with
+ * its own part (setupSteps, and SetupSteps which walks through them). A step's
+ * `panelTitle`, if it has one, is its heading on the configuration page instead of its
+ * `title` — null for none; there each Form is given `compact`, for its shortest form. A tool with
  * steps, even one, has when its room starts and how long it stays open as a stage of
  * its own after them.
  *
