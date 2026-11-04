@@ -16,6 +16,7 @@
 import { useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { CreateToolMenu } from './SideNav';
+import { CardRow } from './CardRow';
 import { ARROW_ITEM } from '../lib/arrowKeys';
 import { listStartedTools } from '../services/startedTools';
 import { findCategory, findTool } from '../toolkit/tools';
@@ -101,18 +102,12 @@ export function MyTools({ t, accountId = null, onOpen, onCreateTool }) {
     .filter(({ tool }) => tool));
 
   return (
-    <section aria-labelledby="my-tools-title" style={{ marginBottom: 32 }}>
-      <h2 id="my-tools-title" className="placer-caption" style={{ textTransform: 'uppercase',
-        letterSpacing: '0.08em', fontWeight: 700, color: t.inkDim, marginBottom: 12 }}>
-        My Tools
-      </h2>
-      <ul className="placer-template-grid">
-        {started.map(({ entry, tool }) => (
-          <StartedToolCard key={entry.id} started={entry} tool={tool} onOpen={onOpen} />
-        ))}
-        <AddToolCard onCreateTool={onCreateTool} />
-      </ul>
-    </section>
+    <CardRow t={t} id="my-tools" title="My Tools">
+      {started.map(({ entry, tool }) => (
+        <StartedToolCard key={entry.id} started={entry} tool={tool} onOpen={onOpen} />
+      ))}
+      <AddToolCard onCreateTool={onCreateTool} />
+    </CardRow>
   );
 }
 

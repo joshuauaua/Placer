@@ -43,7 +43,8 @@ describe('MyTools', () => {
     render(<MyTools t={THEME} accountId="a" onOpen={onOpen} />);
 
     const section = screen.getByRole('region', { name: 'My Tools' });
-    const cards = within(section).getAllByRole('button');
+    // The cards, not the row's ‹ › buttons.
+    const cards = within(section).getAllByRole('listitem').map((item) => within(item).getByRole('button'));
     // The started tool, then the card to create another, to its right.
     expect(cards).toHaveLength(2);
     expect(cards[1]).toHaveTextContent('Create a tool');
@@ -64,6 +65,19 @@ describe('MyTools, a renamed tool', () => {
       slides: [{ id: 's1', setup: { question: 'Trees or benches?', answers: ['Trees', 'Benches'] } }] });
     render(<MyTools t={THEME} accountId="a" onOpen={vi.fn()} />);
 
-    expect(screen.getAllByRole('button')[0]).toHaveTextContent('Tuesday workshop poll');
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('Tuesday workshop poll');
+  });
+});
+
+describe('MyTools, as a row of cards', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('has its title as written, and ‹ › at its end that do nothing while it all fits', () => {
+    render(<MyTools t={THEME} accountId="a" onOpen={vi.fn()} />);
+
+    const title = screen.getByRole('heading', { level: 2, name: 'My Tools' });
+    expect(title).not.toHaveStyle({ textTransform: 'uppercase' });
+    expect(screen.getByRole('button', { name: 'My Tools: back' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'My Tools: more' })).toBeDisabled();
   });
 });

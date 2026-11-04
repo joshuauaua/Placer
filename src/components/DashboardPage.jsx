@@ -1,5 +1,6 @@
 /* PLACER — your dashboard: shortcuts to what to do next */
 
+import { CardRow } from './CardRow';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Btn } from './UI';
@@ -66,16 +67,6 @@ function Shortcut({ t, icon, label, onClick, expanded, controls, popup, buttonRe
   );
 }
 
-/** A section's heading, set as a small label above its cards. */
-function SectionLabel({ t, id, children, style }) {
-  return (
-    <h2 id={id} className="placer-caption" style={{ textTransform: 'uppercase',
-      letterSpacing: '0.08em', fontWeight: 700, color: t.inkDim, marginBottom: 12, ...style }}>
-      {children}
-    </h2>
-  );
-}
-
 /**
  * A large card in one of the three brand colours: a 50 field with overlapping circles
  * of the 100, 300 and 700 steps stacked into the lower right corner, a small label over
@@ -91,8 +82,7 @@ function BasicsCard({ t, hue, label, title, onClick }) {
         background: hue.c50, color: t.ink, fontFamily: 'var(--placer-font)' }}>
       <LayeredCircles hue={hue} />
       <span style={{ position: 'relative' }}>
-        <span className="placer-caption" style={{ display: 'block', textTransform: 'uppercase',
-          letterSpacing: '0.08em', fontWeight: 700, marginBottom: 10 }}>
+        <span className="placer-caption" style={{ display: 'block', fontWeight: 700, marginBottom: 10 }}>
           {label}
         </span>
         <span className="placer-disp" style={{ display: 'block', fontSize: 'clamp(24px, 3vw, 32px)',
@@ -132,8 +122,7 @@ function DashboardProjectCard({ t, project, onOpen }) {
           : <Icon name="grid" size={30} stroke={1.8} />}
       </span>
       <span style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 20, width: '100%', boxSizing: 'border-box' }}>
-        <span className="placer-caption" style={{ textTransform: 'uppercase', letterSpacing: '0.08em',
-          fontWeight: 700, color: t.inkDim }}>
+        <span className="placer-caption" style={{ fontWeight: 700, color: t.inkDim }}>
           {PROJECT_TYPE_NAMES[project.projectType] ?? 'Project'}
         </span>
         <span style={{ fontSize: 19, fontWeight: 700, lineHeight: 1.25 }}>{project.name}</span>
@@ -325,20 +314,17 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
         </section>
 
         {guideOpen && (
-          <section id="dashboard-basics" aria-labelledby="dashboard-basics-title" style={{ marginBottom: 32 }}>
-            <SectionLabel t={t} id="dashboard-basics-title">Getting Started</SectionLabel>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
-              <BasicsCard t={t} hue={PALETTE.purple}
-                label="Quickstart tutorial" title="Create your first Project"
-                onClick={() => onNavigate('quickstart')} />
-              <BasicsCard t={t} hue={PALETTE.blue}
-                label="Project Examples" title="Explore what other projects exist on the platform"
-                onClick={() => onNavigate('projects')} />
-              <BasicsCard t={t} hue={PALETTE.orange}
-                label="FAQ" title="Answers to common questions about Placer"
-                onClick={() => onNavigate('faq')} />
-            </div>
-          </section>
+          <CardRow t={t} id="dashboard-basics" title="Getting Started" perView={3}>
+            <li><BasicsCard t={t} hue={PALETTE.purple}
+              label="Quickstart tutorial" title="Create your first Project"
+              onClick={() => onNavigate('quickstart')} /></li>
+            <li><BasicsCard t={t} hue={PALETTE.blue}
+              label="Project Examples" title="Explore what other projects exist on the platform"
+              onClick={() => onNavigate('projects')} /></li>
+            <li><BasicsCard t={t} hue={PALETTE.orange}
+              label="FAQ" title="Answers to common questions about Placer"
+              onClick={() => onNavigate('faq')} /></li>
+          </CardRow>
         )}
 
         <MyTools t={t} accountId={accountId}
