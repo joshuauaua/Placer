@@ -193,7 +193,7 @@ describe('Idea Visualizer', () => {
     expect(screen.getByText('Imagine')).toBeInTheDocument();
   });
 
-  it('starts at an address of its own, keeping the board it was opened for', () => {
+  it('starts at an address of its own, keeping the project it was opened for', () => {
     const location = renderWith('/toolkit/reimagine-a-space', 'project=proj-1');
 
     fireEvent.click(screen.getByRole('button', { name: 'Get started' }));

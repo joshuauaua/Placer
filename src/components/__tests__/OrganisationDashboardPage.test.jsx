@@ -41,14 +41,14 @@ describe('OrganisationDashboardPage', () => {
     vi.mocked(readOrganisationProjects).mockResolvedValue([]);
   });
 
-  it('shows the organisation, its admins, and a way to start a board in its name', async () => {
+  it('shows the organisation, its admins, and a way to start a project in its name', async () => {
     const { onNewProject } = setup();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Malmö Stad' })).toBeInTheDocument();
     expect(screen.getByText('Mara Quinn (you)')).toBeInTheDocument();
     expect(screen.getByText('Sam Berg')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Start a board/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Start a project/ }));
     expect(onNewProject).toHaveBeenCalledWith('org-1');
   });
 

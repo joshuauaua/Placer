@@ -58,7 +58,7 @@ describe('onboarding', () => {
     await expect(onboarding.needsOnboarding('user-1')).resolves.toBe(false);
   });
 
-  it('is never needed without an account or a board', async () => {
+  it('is never needed without an account or a project', async () => {
     await load();
     await expect(onboarding.needsOnboarding(null)).resolves.toBe(false);
 

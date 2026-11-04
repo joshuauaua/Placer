@@ -123,7 +123,7 @@ export function GalleryPicker({
     run('uploading', async () => {
       await onAdd(files.slice(0, room));
       if (files.length > room) {
-        throw new Error(`A board can have up to ${max} photos, so only ${room === 1 ? 'one more was' : `${room} more were`} added.`);
+        throw new Error(`A project can have up to ${max} photos, so only ${room === 1 ? 'one more was' : `${room} more were`} added.`);
       }
     }, 'Could not add those photos. Try again.')();
   };

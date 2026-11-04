@@ -27,7 +27,7 @@ export async function readProfileActivity(userId) {
   const supabase = await client();
   const { data, error } = await supabase.rpc('profile_public_activity', { p_user_id: userId });
 
-  if (error) throw new Error(`Could not load this profile's boards: ${error.message}`);
+  if (error) throw new Error(`Could not load this profile's projects: ${error.message}`);
   if (!data) return null;
 
   return {
@@ -62,6 +62,6 @@ export async function readProfileComments(userId, limit = 50) {
     body: row.body,
     createdAt: row.created_at,
     projectId: row.project_id,
-    projectName: row.projects?.name ?? 'A board',
+    projectName: row.projects?.name ?? 'A project',
   }));
 }

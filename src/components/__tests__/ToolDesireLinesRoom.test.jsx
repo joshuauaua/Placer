@@ -56,7 +56,7 @@ describe('Desire Lines in a room', () => {
   });
 });
 
-describe('setting Desire Lines up for a board', () => {
+describe('setting Desire Lines up for a project', () => {
   it('asks for a site, framed on the map, and opens the room with it', async () => {
     createRoom.mockResolvedValue({ id: 'room-1', pin: '123456', facilitatorToken: 'facilitator-1' });
     const { onConfigured } = configureTool('desire-lines');

@@ -76,14 +76,14 @@ describe('ActivityPage', () => {
     expect(await screen.findByText('Sam commented on Riverside Greenway')).toBeInTheDocument();
   });
 
-  it('opens a board a notification is about', async () => {
+  it('opens a project a notification is about', async () => {
     const onOpenProject = vi.fn();
     render(<ActivityPage t={THEME} onOpenProject={onOpenProject} />);
     fireEvent.click(await screen.findByRole('link', { name: /sam commented/i }));
     expect(onOpenProject).toHaveBeenCalledWith('p1');
   });
 
-  it('shows pending board invitations on Activity and opens the dashboard after accepting', async () => {
+  it('shows pending project invitations on Activity and opens the dashboard after accepting', async () => {
     vi.mocked(readPendingCollaboratorInvitations).mockResolvedValue([
       { projectId: 'p-invited', projectName: 'Harbour steps', inviterName: 'Mara Quinn' },
     ]);
@@ -99,7 +99,7 @@ describe('ActivityPage', () => {
     expect(screen.queryByText('Harbour steps')).not.toBeInTheDocument();
   });
 
-  it('lets an invited account decline from Activity without opening the board', async () => {
+  it('lets an invited account decline from Activity without opening the project', async () => {
     vi.mocked(readPendingCollaboratorInvitations).mockResolvedValue([
       { projectId: 'p-invited', projectName: 'Harbour steps', inviterName: 'Mara Quinn' },
     ]);

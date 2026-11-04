@@ -14,11 +14,11 @@ describe('SideNav', () => {
     localStorage.clear();
   });
 
-  it('puts the collapse toggle and Create a tool first, then the dashboard and boards, then the small links', () => {
+  it('puts the collapse toggle and Create a tool first, then the dashboard and projects, then the small links', () => {
     setup();
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
-      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Boards',
+      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Projects',
         'Explore', 'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
   });
 
@@ -48,7 +48,7 @@ describe('SideNav', () => {
     const { onNavigate } = setup({ showOrganisations: true });
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
-      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Boards',
+      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Projects',
         'Explore', 'Organisations', 'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
     fireEvent.click(screen.getByRole('button', { name: 'Organisations' }));
     expect(onNavigate).toHaveBeenCalledWith('organisations');
@@ -101,7 +101,7 @@ describe('SideNav', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Explore' }));
     expect(onExplore).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Boards' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Projects' }));
     fireEvent.click(screen.getByRole('button', { name: 'Dashboard' }));
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     expect(onNavigate.mock.calls.map(([view]) => view)).toEqual(['projects', 'dashboard', 'settings']);
@@ -139,10 +139,10 @@ describe('SideNav', () => {
     expect(onCreateTool).not.toHaveBeenCalled();
   });
 
-  it('marks the current view, and keeps Boards marked on a board dashboard', () => {
+  it('marks the current view, and keeps Projects marked on a project dashboard', () => {
     setup({ view: 'projectDashboard' });
 
-    expect(screen.getByRole('button', { name: 'Boards' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('button', { name: 'Projects' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('button', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
   });
 });
@@ -163,6 +163,6 @@ describe('SideNav on a phone', () => {
   it('gives no short form to a label that already fits', () => {
     setup();
 
-    expect(screen.getByRole('button', { name: 'Boards' }).querySelector('.placer-side-nav-label-short')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Projects' }).querySelector('.placer-side-nav-label-short')).toBeNull();
   });
 });

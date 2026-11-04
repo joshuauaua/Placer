@@ -34,12 +34,12 @@ import { responsiveImage } from '../lib/responsiveImage';
 // everywhere else; case studies orange; organisations purple.
 // Pins are the 100 with a 2px ring in the 700, areas the 300 outlined in the 700.
 export const LAYERS = [
-  { key: 'projects', label: 'Boards', kind: 'project', colour: PALETTE.blue },
+  { key: 'projects', label: 'Projects', kind: 'project', colour: PALETTE.blue },
   { key: 'caseStudies', label: 'Case studies', kind: 'caseStudy', colour: PALETTE.orange, soon: true },
   { key: 'organisations', label: 'Organisations', kind: 'organisation', colour: PALETTE.purple },
 ];
 
-const KIND_NAMES = { project: 'Board', organisation: 'Organisation', caseStudy: 'Case study' };
+const KIND_NAMES = { project: 'Project', organisation: 'Organisation', caseStudy: 'Case study' };
 
 // STPLN, Malmöhusvägen 5, Malmö — where MapContainer opens too.
 const DEFAULT_CENTER = { lat: 55.6054, lng: 12.9854 };
@@ -72,7 +72,7 @@ function toPlace(kind, item, position) {
   return kind === 'project'
     ? { kind, id: item.id, title: item.name, image: item.image, position,
       location: (item.locations ?? []).join(', '), line: shortLine(item.summary || item.description),
-      href: `/boards/${encodeURIComponent(item.id)}`, shapes: item.locationShapes }
+      href: `/projects/${encodeURIComponent(item.id)}`, shapes: item.locationShapes }
     : { kind, id: item.id, title: item.name, image: item.cover, position,
       location: item.location, address: item.address, line: shortLine(item.description),
       href: `/organisations/${encodeURIComponent(item.id)}` };
@@ -249,7 +249,7 @@ function ExploreSearch({ t, places, onPick, onPlace }) {
         <input type="search" role="combobox" aria-label="Search Explore"
           aria-expanded={listOpen} aria-controls="explore-search-results" aria-autocomplete="list"
           aria-activedescendant={listOpen ? `explore-option-${active}` : undefined}
-          placeholder="Search boards, organisations or a place…"
+          placeholder="Search projects, organisations or a place…"
           value={query}
           onChange={(e) => { setQuery(e.target.value); setActive(0); setOpen(true); }}
           onFocus={() => setOpen(true)}

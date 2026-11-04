@@ -72,8 +72,8 @@ function StartsField({ t, project, starts, onChange, busy }) {
       </div>
       <div style={{ fontSize: 13, color: t.inkDim, marginTop: 8, lineHeight: 1.5 }}>
         {range
-          ? `Any day from ${formatRoomDate(range.min)} to ${formatRoomDate(range.max)}, within the board's dates. It is not on the board's page until then.`
-          : 'Give the board start and end dates to schedule it for later.'}
+          ? `Any day from ${formatRoomDate(range.min)} to ${formatRoomDate(range.max)}, within the project's dates. It is not on the project's page until then.`
+          : 'Give the project start and end dates to schedule it for later.'}
       </div>
     </fieldset>
   );
@@ -87,7 +87,7 @@ function startsProblems(project, starts, now = new Date()) {
   const range = scheduleRange(project);
   if (!starts.date) return ['Choose the day it starts.'];
   if (!range || starts.date < range.min || starts.date > range.max) {
-    return ['Choose a day within the board\u2019s dates, from today on.'];
+    return ['Choose a day within the project\u2019s dates, from today on.'];
   }
   if (!starts.time) return ['Choose the time it starts.'];
   if (starts.date === localToday(now) && starts.time <= localTime(now)) {
@@ -152,7 +152,7 @@ function RoomForm({ t, project, tool, room = null, busy, setBusy, onDone, onErro
   );
   const intro = (
     <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '0 0 20px' }}>
-      Everybody who takes part sees {tool.name} the way you set it up here, on the board&rsquo;s
+      Everybody who takes part sees {tool.name} the way you set it up here, on the project&rsquo;s
       page, until it closes — so their answers are all about the same thing.
     </p>
   );
@@ -252,8 +252,8 @@ function NothingForm({ t, project, tool, busy, setBusy, onDone, onError, onCance
   return (
     <form onSubmit={save}>
       <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '0 0 20px' }}>
-        {tool.name} has nothing to set up for a board. Putting it live adds it to the
-        board&rsquo;s page, for people to try.
+        {tool.name} has nothing to set up for a project. Putting it live adds it to the
+        project&rsquo;s page, for people to try.
       </p>
       <Actions t={t} busy={busy} label="Go live" onCancel={onCancel} />
     </form>
@@ -278,9 +278,9 @@ const FORMS = { room: RoomForm, config: ConfigForm, none: NothingForm };
 
 // What configuring each kind of tool involves, for the introduction.
 const WHAT_YOU_SET_UP = {
-  room: 'You will set it up for this board and choose how long it stays open on the board\u2019s page.',
-  config: 'You will set it up for this board, and saving puts it live on the board\u2019s page.',
-  none: 'There is nothing to fill in: going live adds it to the board\u2019s page, for people to try.',
+  room: 'You will set it up for this project and choose how long it stays open on the project\u2019s page.',
+  config: 'You will set it up for this project, and saving puts it live on the project\u2019s page.',
+  none: 'There is nothing to fill in: going live adds it to the project\u2019s page, for people to try.',
 };
 
 /** The tool introduced, as its Toolkit cover does, before anything is filled in. */

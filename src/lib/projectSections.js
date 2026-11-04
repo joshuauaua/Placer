@@ -50,7 +50,7 @@ export function projectIntro(project) {
 export function projectSections({ project, tools = [], openRooms = [], configured = new Set() }) {
   const { intro, goals } = projectIntro(project);
   const sections = [];
-  if (intro) sections.push({ key: 'about', kind: 'about', defaultTitle: 'About the board', domId: 'project-about' });
+  if (intro) sections.push({ key: 'about', kind: 'about', defaultTitle: 'About the project', domId: 'project-about' });
   if (goals) sections.push({ key: 'goals', kind: 'goals', defaultTitle: 'Goals', domId: 'project-goals' });
   const gallery = (project.gallery ?? []).filter((photo) => !photo.standalone);
   if (gallery.length > 0) {

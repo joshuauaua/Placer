@@ -39,7 +39,7 @@ afterEach(() => {
   localStorage.clear();
 });
 
-describe('Idea Visualizer on a board page', () => {
+describe('Idea Visualizer on a project page', () => {
   it('opens on the photo, and the whole tool on Visualize', async () => {
     render(<IdeaVisualizerOnPage t={THEME} room={ROOM} service={fakeService()} />);
 
@@ -51,7 +51,7 @@ describe('Idea Visualizer on a board page', () => {
     expect(screen.getByRole('button', { name: 'Record my visualization' })).toBeDisabled();
   });
 
-  it('records the idea to the board, without a name, and remembers it', async () => {
+  it('records the idea to the project, without a name, and remembers it', async () => {
     const service = fakeService();
     render(<IdeaVisualizerOnPage t={THEME} room={ROOM} service={service} />);
     fireEvent.click(screen.getByRole('button', { name: 'Visualize' }));
@@ -68,7 +68,7 @@ describe('Idea Visualizer on a board page', () => {
         { assets: [{ type: 'bench', x: 500, y: 350, scale: 1, rotation: 0 }], title: 'Somewhere to sit', description: '' },
       ] },
     }));
-    expect(await screen.findByText('Recorded to the board. Thank you.')).toBeInTheDocument();
+    expect(await screen.findByText('Recorded to the project. Thank you.')).toBeInTheDocument();
   });
 
   it('shows a grid of the results once recorded, its own first, then Create another', async () => {
@@ -161,7 +161,7 @@ describe('Idea Visualizer on a board page', () => {
   });
 });
 
-describe('Idea Visualizer for a board, the logic', () => {
+describe('Idea Visualizer for a project, the logic', () => {
   it('needs the address and a photo before the room can open', () => {
     expect(sceneProblems({ point: null, imagePath: null })).toHaveLength(2);
     expect(sceneProblems({ point: { lat: 1, lng: 2 }, imagePath: 'scenes/p/s.webp' })).toEqual([]);

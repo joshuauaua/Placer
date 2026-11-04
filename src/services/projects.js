@@ -39,7 +39,7 @@ export const ACCESS_REQUESTS_TABLE = 'project_access_requests';
  * listed nowhere.
  */
 export const VISIBILITIES = [
-  { key: 'public', title: 'Public', description: 'Anyone can find the board, see its page and take part.' },
+  { key: 'public', title: 'Public', description: 'Anyone can find the project, see its page and take part.' },
   { key: 'private', title: 'Private',
     description: 'Only you, your collaborators and people you let in can see it and take part. It is not listed '
       + 'anywhere; people you share its link with can ask to be let in.' },
@@ -62,7 +62,7 @@ async function client() {
   const supabase = await getSupabase();
   if (!supabase) {
     throw new Error(
-      'Boards need a Supabase project: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
+      'Projects need a Supabase project: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
     );
   }
   return supabase;
@@ -91,8 +91,8 @@ export const PROJECT_TYPES = [
   {
     key: 'other',
     title: 'Something else',
-    description: 'Your board does not fit either of these.',
-    goalsHint: 'What is this board trying to find out or bring about?',
+    description: 'Your project does not fit either of these.',
+    goalsHint: 'What is this project trying to find out or bring about?',
   },
 ];
 
@@ -176,7 +176,7 @@ function fromRow(row) {
 export async function createProject({ ownerId, ownerName, name, subtitle = '', summary = '', description = '',
   startDate = null, endDate = null, locations = [], locationShapes = [], address = '',
   locationPoint = null, projectType = null, organisationId = null, visibility = 'public' }) {
-  if (!ownerId) throw new Error('Starting a board needs an account.');
+  if (!ownerId) throw new Error('Starting a project needs an account.');
 
   const supabase = await client();
   const { data, error } = await supabase
@@ -202,7 +202,7 @@ export async function createProject({ ownerId, ownerName, name, subtitle = '', s
     .select(PROJECT_COLUMNS)
     .single();
 
-  if (error) throw new Error(`Could not start that board: ${error.message}`);
+  if (error) throw new Error(`Could not start that project: ${error.message}`);
   track('project_created', {
     project_id: data.id, project_type: projectType, visibility,
     has_organisation: Boolean(organisationId), has_dates: Boolean(startDate || endDate),
@@ -220,7 +220,7 @@ export async function readProject(id) {
     .eq('id', id)
     .maybeSingle();
 
-  if (error) throw new Error(`Could not load that board: ${error.message}`);
+  if (error) throw new Error(`Could not load that project: ${error.message}`);
   return data ? fromRow(data) : null;
 }
 
@@ -236,7 +236,7 @@ export async function readProjectLocations() {
     .from(PROJECTS_TABLE)
     .select('id, name, location_shapes');
 
-  if (error) throw new Error(`Could not load board locations: ${error.message}`);
+  if (error) throw new Error(`Could not load project locations: ${error.message}`);
   return (data ?? [])
     .map((row) => ({ id: row.id, name: row.name, locationShapes: row.location_shapes ?? [] }))
     .filter((project) => project.locationShapes.length > 0);
@@ -254,7 +254,7 @@ export async function readMapProjects() {
     .from(PROJECTS_TABLE)
     .select(PROJECT_COLUMNS);
 
-  if (error) throw new Error(`Could not load boards for the map: ${error.message}`);
+  if (error) throw new Error(`Could not load projects for the map: ${error.message}`);
   return (data ?? []).map(fromRow)
     .filter((project) => project.locationShapes.length > 0 || project.locationPoint);
 }
@@ -278,7 +278,7 @@ export async function readRelatedProjects(project, limit = 3) {
     .order('created_at', { ascending: false })
     .limit(RELATED_POOL);
 
-  if (error) throw new Error(`Could not load related boards: ${error.message}`);
+  if (error) throw new Error(`Could not load related projects: ${error.message}`);
 
   const places = new Set((project.locations ?? []).map((place) => place.toLowerCase()));
   const shared = (candidate) => candidate.locations.filter((place) => places.has(place.toLowerCase())).length;
@@ -299,7 +299,7 @@ export async function readOrganisationProjects(organisationId) {
     .eq('organisation_id', organisationId)
     .order('created_at', { ascending: false });
 
-  if (error) throw new Error(`Could not load the organisation's boards: ${error.message}`);
+  if (error) throw new Error(`Could not load the organisation's projects: ${error.message}`);
   return (data ?? []).map(fromRow);
 }
 
@@ -315,7 +315,7 @@ export async function readOrganisationCollaborations(organisationId) {
     .select('project_id')
     .eq('organisation_id', organisationId);
 
-  if (error) throw new Error(`Could not load the organisation's boards: ${error.message}`);
+  if (error) throw new Error(`Could not load the organisation's projects: ${error.message}`);
   const ids = (rows ?? []).map((row) => row.project_id);
   if (ids.length === 0) return [];
 
@@ -325,7 +325,7 @@ export async function readOrganisationCollaborations(organisationId) {
     .in('id', ids)
     .order('created_at', { ascending: false });
 
-  if (projectsError) throw new Error(`Could not load the organisation's boards: ${projectsError.message}`);
+  if (projectsError) throw new Error(`Could not load the organisation's projects: ${projectsError.message}`);
   return (data ?? []).map(fromRow);
 }
 
@@ -356,8 +356,8 @@ export async function readMyProjects(accountId) {
     owned, collaboratingOn, readProjectIdsOfMyOrganisations(supabase, accountId),
   ]);
 
-  if (ownedResult.error) throw new Error(`Could not load your boards: ${ownedResult.error.message}`);
-  if (collabResult.error) throw new Error(`Could not load your boards: ${collabResult.error.message}`);
+  if (ownedResult.error) throw new Error(`Could not load your projects: ${ownedResult.error.message}`);
+  if (collabResult.error) throw new Error(`Could not load your projects: ${collabResult.error.message}`);
 
   const ownedIds = new Set((ownedResult.data ?? []).map((row) => row.id));
   const collabIds = [...new Set([...(collabResult.data ?? []).map((row) => row.project_id), ...orgCollabIds])]
@@ -370,7 +370,7 @@ export async function readMyProjects(accountId) {
       .select(PROJECT_COLUMNS)
       .in('id', collabIds)
       .order('created_at', { ascending: false });
-    if (error) throw new Error(`Could not load your boards: ${error.message}`);
+    if (error) throw new Error(`Could not load your projects: ${error.message}`);
     collaborating = data ?? [];
   }
 
@@ -383,7 +383,7 @@ async function readProjectIdsOfMyOrganisations(supabase, accountId) {
     .from('organisation_admins')
     .select('organisation_id')
     .eq('user_id', accountId);
-  if (error) throw new Error(`Could not load your boards: ${error.message}`);
+  if (error) throw new Error(`Could not load your projects: ${error.message}`);
 
   const organisationIds = (memberships ?? []).map((row) => row.organisation_id);
   if (organisationIds.length === 0) return [];
@@ -392,7 +392,7 @@ async function readProjectIdsOfMyOrganisations(supabase, accountId) {
     .from(COLLABORATING_ORGANISATIONS_TABLE)
     .select('project_id')
     .in('organisation_id', organisationIds);
-  if (collabError) throw new Error(`Could not load your boards: ${collabError.message}`);
+  if (collabError) throw new Error(`Could not load your projects: ${collabError.message}`);
   return (data ?? []).map((row) => row.project_id);
 }
 
@@ -410,7 +410,7 @@ export async function readVisibleProjects(accountId) {
     readMyProjects(accountId),
   ]);
 
-  if (all.error) throw new Error(`Could not load boards: ${all.error.message}`);
+  if (all.error) throw new Error(`Could not load projects: ${all.error.message}`);
 
   const myIds = new Set(mine.map((project) => project.id));
   const roleOf = (project) => {
@@ -448,7 +448,7 @@ export async function updateProject(id, patch) {
     .select(PROJECT_COLUMNS)
     .single();
 
-  if (error) throw new Error(`Could not save that board: ${error.message}`);
+  if (error) throw new Error(`Could not save that project: ${error.message}`);
   track('project_updated', { project_id: id, fields: Object.keys(row) });
   return fromRow(data);
 }
@@ -460,12 +460,12 @@ export async function updateProject(id, patch) {
  */
 export async function uploadProjectImage(projectId, file) {
   // Resized and stripped of its metadata (location included) before anything is sent.
-  const photo = await preparePhoto(file, 'project', 'A board image');
+  const photo = await preparePhoto(file, 'project', 'A project image');
   const supabase = await client();
   try {
     return await uploadPhoto(supabase, `${PROJECT_IMAGES_FOLDER}/${projectId}/image-${Date.now()}`, photo);
   } catch (error) {
-    throw new Error(`Could not upload the board image: ${error.message}`);
+    throw new Error(`Could not upload the project image: ${error.message}`);
   }
 }
 
@@ -513,7 +513,7 @@ export async function deleteProject(id) {
   const roomRows = (await supabase.rpc('project_rooms', { p_project_id: id }))?.data;
 
   const { error } = await supabase.from(PROJECTS_TABLE).delete().eq('id', id);
-  if (error) throw new Error(`Could not remove that board: ${error.message}`);
+  if (error) throw new Error(`Could not remove that project: ${error.message}`);
 
   // After the row, not before: a refused delete must not cost the project its image.
   // The media function lets anyone clear the files of a project that no longer exists.
@@ -534,7 +534,7 @@ export async function readCollaborators(projectId) {
     .eq('project_id', projectId)
     .order('created_at', { ascending: true });
 
-  if (error) throw new Error(`Could not load the board's collaborators: ${error.message}`);
+  if (error) throw new Error(`Could not load the project's collaborators: ${error.message}`);
   return (data ?? []).map((row) => ({
     userId: row.user_id, email: row.email, displayName: row.display_name, createdAt: row.created_at,
   }));
@@ -550,7 +550,7 @@ export async function readCollaboratorInvitations(projectId) {
     .in('status', ['pending', 'declined'])
     .order('created_at', { ascending: true });
 
-  if (error) throw new Error(`Could not load the board's invitations: ${error.message}`);
+  if (error) throw new Error(`Could not load the project's invitations: ${error.message}`);
   return (data ?? []).map((row) => ({
     userId: row.user_id, email: row.email, displayName: row.display_name,
     status: row.status, createdAt: row.created_at,
@@ -562,7 +562,7 @@ export async function readPendingCollaboratorInvitations() {
   const supabase = await client();
   const { data, error } = await supabase.rpc('project_collaboration_invitations');
 
-  if (error) throw new Error(`Could not load board invitations: ${error.message}`);
+  if (error) throw new Error(`Could not load project invitations: ${error.message}`);
   return (data ?? []).map((row) => ({
     projectId: row.project_id, projectName: row.project_name, inviterName: row.inviter_name,
     createdAt: row.created_at,
@@ -615,7 +615,7 @@ export async function readCollaboratingOrganisations(projectId) {
     .eq('project_id', projectId)
     .order('created_at', { ascending: true });
 
-  if (error) throw new Error(`Could not load the board's organisations: ${error.message}`);
+  if (error) throw new Error(`Could not load the project's organisations: ${error.message}`);
   return (data ?? []).map((row) => ({
     id: row.organisation_id,
     name: row.organisations?.name ?? 'Organisation',
@@ -653,7 +653,7 @@ export async function readLinks(projectId) {
     .eq('project_id', projectId)
     .order('created_at', { ascending: true });
 
-  if (error) throw new Error(`Could not load the board's links: ${error.message}`);
+  if (error) throw new Error(`Could not load the project's links: ${error.message}`);
   return (data ?? []).map((row) => ({
     id: row.id, title: row.title, url: row.url, addedBy: row.added_by, createdAt: row.created_at,
   }));
@@ -693,7 +693,7 @@ export async function readProjectAccess(projectId) {
     .rpc('project_access_preview', { p_project_id: projectId })
     .maybeSingle();
 
-  if (error) throw new Error(`Could not check that board: ${error.message}`);
+  if (error) throw new Error(`Could not check that project: ${error.message}`);
   if (!data) return null;
   return {
     name: data.name, visibility: data.visibility, canView: data.can_view === true,
@@ -724,7 +724,7 @@ export async function requestProjectAccess(projectId, displayName) {
     p_project_id: projectId, p_display_name: displayName ?? '',
   });
 
-  if (error) throw new Error(`Could not ask to see that board: ${error.message}`);
+  if (error) throw new Error(`Could not ask to see that project: ${error.message}`);
   track('project_access_requested', { project_id: projectId });
   return data;
 }
@@ -741,7 +741,7 @@ export async function readAccessRequests(projectId) {
     .eq('project_id', projectId)
     .order('created_at', { ascending: true });
 
-  if (error) throw new Error(`Could not load who has asked to see the board: ${error.message}`);
+  if (error) throw new Error(`Could not load who has asked to see the project: ${error.message}`);
   return (data ?? []).map((row) => ({
     userId: row.user_id, displayName: row.display_name || 'Somebody', status: row.status,
     createdAt: row.created_at, decidedAt: row.decided_at ?? null,
@@ -778,7 +778,7 @@ export async function readProjectTools(projectId) {
     .eq('project_id', projectId)
     .order('created_at', { ascending: true });
 
-  if (error) throw new Error(`Could not load the board's tools: ${error.message}`);
+  if (error) throw new Error(`Could not load the project's tools: ${error.message}`);
   return (data ?? []).map((row) => row.tool);
 }
 
@@ -850,7 +850,7 @@ export async function readWorkshopTools(projectId) {
     .eq('project_id', projectId)
     .eq('placement', 'workshop');
 
-  if (error) throw new Error(`Could not load the board's Workshop Room: ${error.message}`);
+  if (error) throw new Error(`Could not load the project's Workshop Room: ${error.message}`);
   return new Set((data ?? []).map((row) => row.tool));
 }
 
@@ -868,7 +868,7 @@ export async function setProjectToolPlacement(projectId, tool, placement) {
     .select('tool');
 
   if (error) throw new Error(`Could not move that tool: ${error.message}`);
-  if (!data?.length) throw new Error('Could not move that tool: it is not one of the board\'s tools.');
+  if (!data?.length) throw new Error('Could not move that tool: it is not one of the project\'s tools.');
   track('project_tool_placed', { project_id: projectId, tool, placement });
 }
 
@@ -908,7 +908,7 @@ export async function readConfiguredProjectTools(projectId) {
     .eq('project_id', projectId)
     .not('config', 'is', null);
 
-  if (error) throw new Error(`Could not load how the board's tools are set up: ${error.message}`);
+  if (error) throw new Error(`Could not load how the project's tools are set up: ${error.message}`);
   return new Set((data ?? []).map((row) => row.tool));
 }
 
@@ -945,7 +945,7 @@ export async function saveProjectToolSetup(projectId, tool, config) {
     .select('tool');
 
   if (error) throw new Error(`Could not save how that tool is set up: ${error.message}`);
-  if (!data?.length) throw new Error('Could not save how that tool is set up: it is not one of the board\'s tools.');
+  if (!data?.length) throw new Error('Could not save how that tool is set up: it is not one of the project\'s tools.');
   track('tool_configured', { project_id: projectId, tool, setup: 'config' });
 }
 
@@ -964,7 +964,7 @@ export async function markProjectToolConfigured(projectId, tool) {
     .select('tool');
 
   if (error) throw new Error(`Could not put that tool live: ${error.message}`);
-  if (!data?.length) throw new Error('Could not put that tool live: it is not one of the board\'s tools.');
+  if (!data?.length) throw new Error('Could not put that tool live: it is not one of the project\'s tools.');
   track('tool_configured', { project_id: projectId, tool, setup: 'none' });
 }
 
@@ -1000,7 +1000,7 @@ export async function readReimagineScene(projectId) {
   if (!image) return null;
 
   const response = await fetch(image);
-  if (!response.ok) throw new Error(`Could not load the board's base image (${response.status}).`);
+  if (!response.ok) throw new Error(`Could not load the project's base image (${response.status}).`);
   const blob = await response.blob();
   const screenshot = await new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1024,7 +1024,7 @@ export async function readProjectBudget(projectId) {
     .eq('project_id', projectId)
     .maybeSingle();
 
-  if (error) throw new Error(`Could not load the board's budget: ${error.message}`);
+  if (error) throw new Error(`Could not load the project's budget: ${error.message}`);
   if (!data) return null;
   return {
     hasBudget: data.has_budget,
@@ -1050,7 +1050,7 @@ export async function saveProjectBudget(projectId, { hasBudget, amount = null, c
       updated_at: new Date().toISOString(),
     }, { onConflict: 'project_id' });
 
-  if (error) throw new Error(`Could not save the board's budget: ${error.message}`);
+  if (error) throw new Error(`Could not save the project's budget: ${error.message}`);
   track('project_budget_saved', { project_id: projectId, has_budget: hasBudget, currency });
 }
 
@@ -1066,7 +1066,7 @@ export async function readStats(projectId) {
     .rpc('project_stats', { p_project_id: projectId })
     .single();
 
-  if (error) throw new Error(`Could not load the board's dashboard: ${error.message}`);
+  if (error) throw new Error(`Could not load the project's dashboard: ${error.message}`);
   return {
     toolkitRoomsCount: data?.toolkit_rooms_count ?? 0,
   };
@@ -1120,7 +1120,7 @@ export async function readProjectViews(projectId, days = 30) {
   ]);
 
   const error = total.error ?? daily.error;
-  if (error) throw new Error(`Could not load this board's views: ${error.message}`);
+  if (error) throw new Error(`Could not load this project's views: ${error.message}`);
   return {
     total: total.data ?? 0,
     daily: (daily.data ?? []).map((row) => ({ day: row.day, views: row.views ?? 0 })),
@@ -1138,7 +1138,7 @@ export async function readProjectRooms(projectId) {
   const supabase = await client();
   const { data, error } = await supabase.rpc('project_rooms', { p_project_id: projectId });
 
-  if (error) throw new Error(`Could not load this board's rooms: ${error.message}`);
+  if (error) throw new Error(`Could not load this project's rooms: ${error.message}`);
   return (data ?? []).map((row) => ({
     id: row.room_id,
     tool: row.tool,
@@ -1165,6 +1165,6 @@ export async function readPublicToolkitActivity(projectId) {
   const supabase = await client();
   const { data, error } = await supabase.rpc('project_toolkit_activity', { p_project_id: projectId });
 
-  if (error) throw new Error(`Could not load this board's Toolkit activity: ${error.message}`);
+  if (error) throw new Error(`Could not load this project's Toolkit activity: ${error.message}`);
   return typeof data === 'number' ? data : 0;
 }

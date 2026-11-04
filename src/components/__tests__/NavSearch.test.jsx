@@ -19,7 +19,7 @@ const RESULTS = [
 
 // jsdom applies no stylesheet, so the box and its phone magnifier are both in the
 // page here; index.css shows only one of them at a time.
-const box = () => screen.getByRole('button', { name: /Search tools, boards, people and case studies/ });
+const box = () => screen.getByRole('button', { name: /Search tools, projects, people and case studies/ });
 
 const setup = () => {
   const onSelect = vi.fn();
@@ -81,14 +81,14 @@ describe('NavSearch', () => {
     expect(screen.getByRole('dialog', { name: 'Search' })).toBeInTheDocument();
   });
 
-  it('suggests tools, boards, people, organisations and case studies as you type, grouped by kind', async () => {
+  it('suggests tools, projects, people, organisations and case studies as you type, grouped by kind', async () => {
     const { modal, input } = setup();
 
     fireEvent.change(input, { target: { value: 'mal' } });
 
     expect(await within(modal).findByRole('option', { name: /Mara Quinn/ })).toBeInTheDocument();
     expect(within(modal).getAllByRole('group').map((group) => group.getAttribute('aria-label')))
-      .toEqual(['Tools', 'Boards', 'People', 'Organisations', 'Case studies']);
+      .toEqual(['Tools', 'Projects', 'People', 'Organisations', 'Case studies']);
     expect(within(modal).getByRole('option', { name: /Desire Lines/ })).toBeInTheDocument();
     expect(within(modal).getByRole('option', { name: /Folkets Park/ })).toBeInTheDocument();
     expect(search).toHaveBeenCalledWith('mal');

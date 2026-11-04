@@ -40,7 +40,7 @@ describe("Desire Lines' room", () => {
   });
 });
 
-describe("Desire Lines on a board's page", () => {
+describe("Desire Lines on a project's page", () => {
   const { onProjectPage } = findTool('desire-lines');
 
   it('says what the tool is, and wants the width of the page', () => {

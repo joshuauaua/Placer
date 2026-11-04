@@ -27,7 +27,7 @@ afterEach(() => {
 });
 
 describe('profileActivity', () => {
-  it('reads when they joined and their boards', async () => {
+  it('reads when they joined and their projects', async () => {
     await load();
     rpc.mockResolvedValueOnce({ data: { joined_at: '2025-03-10T10:00:00Z', projects: [
       { id: 'p1', name: 'Greenway', summary: 'A park', description: '', image_path: null,

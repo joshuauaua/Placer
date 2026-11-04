@@ -223,7 +223,7 @@ export function UserLabsPage({ t }) {
       t={t}
       src={userLabsPhoto}
       srcSet={bundledImage(userLabsPhotoSmall, userLabsPhoto).srcSet}
-      alt="A User Labs session outside an orange-red brick building: people pin notes to a map and sketch on wooden boards by a picnic table, beside a banner reading Designing Participatory Spaces."
+      alt="A User Labs session outside an orange-red brick building: people pin notes to a map and sketch on wooden projects by a picnic table, beside a banner reading Designing Participatory Spaces."
     >
       {step === 'pitch' && (
         <>

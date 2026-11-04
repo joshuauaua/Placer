@@ -25,8 +25,8 @@ import { responsiveImage } from '../lib/responsiveImage';
 
 /** What kind of section a row is, said under its title field. */
 function describe(section) {
-  if (section.kind === 'about') return 'The board’s description';
-  if (section.kind === 'goals') return 'The board’s goals';
+  if (section.kind === 'about') return 'The project’s description';
+  if (section.kind === 'goals') return 'The project’s goals';
   if (section.kind === 'photos') return 'Its photo gallery';
   if (section.kind === 'photo') return 'A photo on its own';
   return section.tool.name;

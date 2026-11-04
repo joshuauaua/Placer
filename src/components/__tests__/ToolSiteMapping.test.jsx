@@ -211,7 +211,7 @@ function answerAllYesFrom(questionNumber) {
   }
 }
 
-describe('Site-Specific Spatial Mapping Tool, in a board', () => {
+describe('Site-Specific Spatial Mapping Tool, in a project', () => {
   const SITE = {
     name: 'Folkets Park', address: 'Folkets Park, Malmö', point: { lat: 55.59, lng: 13.01 }, zoom: 17,
     bounds: [13.0, 55.585, 13.02, 55.595],
@@ -220,7 +220,7 @@ describe('Site-Specific Spatial Mapping Tool, in a board', () => {
     <SiteMapping t={THEME} tool={findTool('site-spatial-mapping')} room={{ config: SITE }} />,
   );
 
-  it('opens on the board\'s site, with no picker', () => {
+  it('opens on the project\'s site, with no picker', () => {
     mountInProject();
 
     expect(screen.getByText('Where are you? · Folkets Park')).toBeInTheDocument();
@@ -288,7 +288,7 @@ describe('Site-Specific Spatial Mapping Tool, in a board', () => {
   });
 });
 
-describe('Site-Specific Spatial Mapping Tool, recorded to a board\'s room', () => {
+describe('Site-Specific Spatial Mapping Tool, recorded to a project\'s room', () => {
   it('asks the organiser for a name and a place before the room can open', () => {
     expect(siteSetupProblems({ name: '', point: null })).toEqual([
       'Give the site a name.', 'Search for the address, then frame the site on the map.',

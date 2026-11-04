@@ -343,18 +343,18 @@ export function TermsAndPrivacyPage({ t }) {
           <>
             <strong style={{ color: t.ink }}>A room shows everybody&rsquo;s answers combined.</strong>{' '}
             While it is open, the individual answers behind those results, with any display
-            name, can be read by anyone who can see its board &mdash; on a private board, only
+            name, can be read by anyone who can see its project &mdash; on a private project, only
             the people let into it.
           </>,
           <>
             <strong style={{ color: t.ink }}>Room answers are not kept.</strong> They are stored
             on our server only while the room runs, and deleted at most a day after it ends.
-            The board&rsquo;s organisers may be notified that somebody answered, by display name
+            The project&rsquo;s organisers may be notified that somebody answered, by display name
             if they had one, and that notification stays in their account.
           </>,
           <>
-            <strong style={{ color: t.ink }}>Comments, posts and replies on a board are
-            public</strong>, with your display name &mdash; on a private board, to the people
+            <strong style={{ color: t.ink }}>Comments, posts and replies on a project are
+            public</strong>, with your display name &mdash; on a private project, to the people
             let into it.
           </>,
         ]} />
@@ -389,7 +389,7 @@ export function TermsAndPrivacyPage({ t }) {
           <strong style={{ color: t.ink }}>Organisations.</strong> If you create an organisation
           or are made an admin of one, we store its name and whatever its admins fill in &mdash; a
           description, a location, a contact email and a website &mdash; all of which are public on
-          its page, together with the boards run in its name. We also store who its admins
+          its page, together with the projects run in its name. We also store who its admins
           are. Which organisations you are an admin of is shown on your public profile. The full
           list of an organisation&rsquo;s admins is not public: its other admins see each
           admin&rsquo;s display name and the email they sign in with, since that is how an admin
@@ -398,9 +398,9 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
         <P t={t}>
           <strong style={{ color: t.ink }}>Following.</strong> When you follow a person, an
-          organisation or a board, we store that you follow it and when you started. This is
+          organisation or a project, we store that you follow it and when you started. This is
           public: your profile shows how many people follow you and how many people,
-          organisations and boards you follow, and anyone who opens it can see both lists.
+          organisations and projects you follow, and anyone who opens it can see both lists.
           Unfollowing removes the record.
         </P>
         <P t={t}>
@@ -443,7 +443,7 @@ export function TermsAndPrivacyPage({ t }) {
           <strong style={{ color: t.ink }}>Your email address, if you give one.</strong> The last
           step of the survey asks for an address, and only asks because you have said you would
           like to be involved beyond the survey — testing a prototype, a short interview, or a
-          board as a case study. It is optional, it is stored alongside your answers, and it is
+          project as a case study. It is optional, it is stored alongside your answers, and it is
           used to reply to you about that and nothing else. You can leave it blank and still
           submit. It is separate from any account you may have, and neither is looked up from the
           other.
@@ -463,7 +463,7 @@ export function TermsAndPrivacyPage({ t }) {
           and you join it with a PIN or a QR code. Then what you allocate in that tool is
           stored in our database so the room can show everybody&rsquo;s answers combined, along with
           the display name your browser is set to, if you have set one. A room lasts two hours from
-          being opened, unless a board opened it to run for longer — a week, 30 days or at most
+          being opened, unless a project opened it to run for longer — a week, 30 days or at most
           90 days, which the room shows while it is open. Whoever opened it can end it sooner.
           After that nobody can reach it, and it is deleted within a day.
         </P>
@@ -476,7 +476,7 @@ export function TermsAndPrivacyPage({ t }) {
           <strong style={{ color: t.ink }}>Usage analytics, if you accept them.</strong> PLACER can
           send usage data to PostHog, an analytics provider, to see how the app is actually used.
           That covers the pages you visit and the features you open, the events PLACER emits (such
-          as creating a board or setting up a tool), and the device, browser and IP-derived approximate location
+          as creating a project or setting up a tool), and the device, browser and IP-derived approximate location
           behind them. Your session is not recorded. It is off until you accept: PLACER does not
           contact PostHog at all &mdash; no request, no cookie &mdash; until you do, and rejecting
           the banner keeps it that way. Once you sign in, these events are linked to your
@@ -541,7 +541,7 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
         <P t={t}>
           Survey answers are kept while this research runs. Toolkit rooms expire two hours after
-          being opened, or at most 90 days after for one a board opened to run longer, and are
+          being opened, or at most 90 days after for one a project opened to run longer, and are
           deleted within a day of ending. A screenshot sent with a bug report is deleted 30 days
           after it is sent. Analytics you have consented to are held for
           as long as our PostHog project is configured to keep them, and withdrawing consent stops
@@ -657,10 +657,10 @@ export function TermsAndPrivacyPage({ t }) {
               'Toolkit room contributions — what you allocate in a shared tool, and the name your browser is set to display, if any',
               'Letting a roomful of people work through the same tool together and see the result combined',
               'Consent (Art. 6(1)(a)) — you choose to join a room, and only what you allocate is sent',
-              'Two hours from the room being opened — or up to 90 days, for a room a board opened to run longer — or sooner if the facilitator closes it. After that it cannot be reached at all, and it is deleted within a day',
+              'Two hours from the room being opened — or up to 90 days, for a room a project opened to run longer — or sooner if the facilitator closes it. After that it cannot be reached at all, and it is deleted within a day',
             ],
             [
-              'Usage analytics sent to PostHog: the features you use, the events PLACER emits (for example creating a board or setting up a tool), the ID of your account when you are signed in, and the device, browser and IP-derived approximate location behind them',
+              'Usage analytics sent to PostHog: the features you use, the events PLACER emits (for example creating a project or setting up a tool), the ID of your account when you are signed in, and the device, browser and IP-derived approximate location behind them',
               'Understanding how PLACER is used',
               'Consent (Art. 6(1)(a)) — off unless you accept, withdrawable at any time',
               'As configured in our PostHog project; nothing at all before you accept',
@@ -785,7 +785,7 @@ export function TermsAndPrivacyPage({ t }) {
           'Nothing uploaded by default — the upload happens when you press Post, and until then the work is on your device. Imaginations saved before accounts existed are left there rather than migrated, because they were saved under a policy that promised they would not leave.',
           'Ownership enforced in the database — row-level security, not app code, is what makes a posted imagination readable by everyone and writable only by the account that posted it. A stolen or inspected browser key cannot change or delete somebody else’s work.',
           'Consent before capture — the analytics SDK is not even loaded until consent exists, so a visitor who rejects the banner, or never answers it, is never contacted or measured.',
-          'Storage limitation — deleting an imagination deletes its picture; deleting an account cascades to the profile and to everything posted under it; Toolkit rooms expire after two hours (at most 90 days for a board’s long-running room) and are deleted within a day.',
+          'Storage limitation — deleting an imagination deletes its picture; deleting an account cascades to the profile and to everything posted under it; Toolkit rooms expire after two hours (at most 90 days for a project’s long-running room) and are deleted within a day.',
           'No passwords of ours to lose — the login is held by Supabase Auth and we never see or store a password.',
           'Write-only submission — the key in your browser can add a survey response and cannot read, change or delete any response, including its own. Reading them needs a separate credential that never leaves our side.',
           'Local processing — Street View frames are analysed in your browser, not uploaded. The only image that reaches us is the one you post.',

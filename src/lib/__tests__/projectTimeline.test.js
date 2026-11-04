@@ -7,26 +7,26 @@ const NOW = new Date(2026, 9, 5, 12);
 const project = (fields) => ({ id: fields.name, locationShapes: [{ path: [] }], image: 'x.webp', ...fields });
 
 describe('projectProgress', () => {
-  it('measures how much of a running board\'s time has gone', () => {
+  it('measures how much of a running project\'s time has gone', () => {
     expect(projectProgress(project({ startDate: '2026-10-01', endDate: '2026-10-11' }), NOW))
       .toEqual({ state: 'ongoing', percent: 40, daysLeft: 6, label: '6 days left' });
   });
 
-  it('counts down a board with an end but no start, with no percentage', () => {
+  it('counts down a project with an end but no start, with no percentage', () => {
     expect(projectProgress(project({ endDate: '2026-10-06' }), NOW))
       .toEqual({ state: 'ongoing', percent: null, daysLeft: 1, label: '1 day left' });
   });
 
-  it('says a board ends today on its last day', () => {
+  it('says a project ends today on its last day', () => {
     expect(projectProgress(project({ startDate: '2026-09-05', endDate: '2026-10-05' }), NOW).label).toBe('Ends today');
   });
 
-  it('says how long until a board starts', () => {
+  it('says how long until a project starts', () => {
     expect(projectProgress(project({ startDate: '2026-10-15', endDate: '2026-11-15' }), NOW))
       .toMatchObject({ state: 'upcoming', percent: 0, label: 'Starts in 10 days' });
   });
 
-  it('fills the bar once a board is over', () => {
+  it('fills the bar once a project is over', () => {
     expect(projectProgress(project({ startDate: '2026-01-01', endDate: '2026-02-01' }), NOW))
       .toMatchObject({ state: 'ended', percent: 100, label: 'Ended' });
   });
@@ -38,7 +38,7 @@ describe('projectProgress', () => {
 });
 
 describe('byUrgency', () => {
-  it('puts running boards first, soonest to end, then upcoming, undated and ended', () => {
+  it('puts running projects first, soonest to end, then upcoming, undated and ended', () => {
     const ordered = byUrgency([
       project({ name: 'Ended', startDate: '2026-01-01', endDate: '2026-02-01' }),
       project({ name: 'Undated' }),
@@ -69,7 +69,7 @@ describe('nextSteps', () => {
       .toEqual([]);
   });
 
-  it('asks for what a board is still missing', () => {
+  it('asks for what a project is still missing', () => {
     const steps = nextSteps([project({ name: 'Bare', locationShapes: [], image: null })], profile, NOW);
     expect(steps.map(({ title }) => title)).toEqual([
       'Set an end date for Bare', 'Draw where Bare is', 'Add a picture to Bare',
@@ -77,11 +77,11 @@ describe('nextSteps', () => {
     expect(steps.every(({ target, projectId }) => target === 'project' && projectId === 'Bare')).toBe(true);
   });
 
-  it('asks nothing more of a board that is over', () => {
+  it('asks nothing more of a project that is over', () => {
     expect(nextSteps([project({ name: 'Done', endDate: '2026-01-01', image: null })], profile, NOW)).toEqual([]);
   });
 
-  it('suggests a first board, and a location for an account without one', () => {
+  it('suggests a first project, and a location for an account without one', () => {
     expect(nextSteps([], { name: 'Mara', location: '' }, NOW).map(({ target }) => target))
       .toEqual(['newProject', 'settings']);
   });

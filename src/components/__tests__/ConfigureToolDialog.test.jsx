@@ -121,7 +121,7 @@ describe('ConfigureToolDialog, Idea Visualizer', () => {
 
     expect(screen.getByText(findTool('reimagine-a-space').blurb)).toBeInTheDocument();
     expect(screen.queryByText(/You will pick the place/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/You will set it up for this board/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/You will set it up for this project/)).not.toBeInTheDocument();
   });
 
   it('asks for the address and a view of it first, and will not move on without both', () => {
@@ -226,7 +226,7 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
     });
     afterEach(() => vi.useRealTimers());
 
-    it('schedules it for a time on a day within the board\'s dates', async () => {
+    it('schedules it for a time on a day within the project\'s dates', async () => {
       const { onConfigured } = setup('open-vote', { project: DATED });
       toLastStep();
 
@@ -265,7 +265,7 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
       expect(createRoom).not.toHaveBeenCalled();
     });
 
-    it('offers only days within the board\'s dates, and asks for one', async () => {
+    it('offers only days within the project\'s dates, and asks for one', async () => {
       setup('open-vote', { project: DATED });
       toLastStep();
 
@@ -282,12 +282,12 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
       expect(createRoom).not.toHaveBeenCalled();
     });
 
-    it('only starts now for a board without dates', () => {
+    it('only starts now for a project without dates', () => {
       setup('open-vote');
       toLastStep();
 
       expect(screen.getByLabelText('On a date and time')).toBeDisabled();
-      expect(screen.getByText(/Give the board start and end dates/)).toBeInTheDocument();
+      expect(screen.getByText(/Give the project start and end dates/)).toBeInTheDocument();
     });
   });
 
@@ -313,7 +313,7 @@ describe('ConfigureToolDialog, a tool that runs in a room', () => {
     expect(screen.getByLabelText('The question')).toHaveValue('Car-free on Sundays?');
   });
 
-  it('starts a Co-Budget in the currency where the board is', () => {
+  it('starts a Co-Budget in the currency where the project is', () => {
     setup('budget-ballot', { project: { ...PROJECT, locations: ['Izmir, Türkiye'] } });
 
     expect(screen.getByLabelText('Currency')).toHaveValue('TRY');
@@ -354,7 +354,7 @@ describe('ConfigureToolDialog, Stationary Activity Mapping', () => {
   it('goes as the tool does: introduced, then the instructions, then the area and location', async () => {
     const { onConfigured } = setup('stationary-activity-mapping', {}, { intro: true });
     // The introduction says what setting it up involves, and keeps its tagline for the tile.
-    expect(screen.getByText(/outline the area this board maps/)).toBeInTheDocument();
+    expect(screen.getByText(/outline the area this project maps/)).toBeInTheDocument();
     expect(screen.queryByText(/one person at a time/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
 
@@ -447,7 +447,7 @@ describe('ConfigureToolDialog, Site-Specific Spatial Mapping', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Search for the address, then frame the site on the map.');
   });
 
-  it('then when it starts and how long it stays open, and opens the board\'s room on the site', async () => {
+  it('then when it starts and how long it stays open, and opens the project\'s room on the site', async () => {
     const { onConfigured } = setup('site-spatial-mapping');
     fireEvent.change(screen.getByLabelText('Site name *'), { target: { value: 'Lindenplatz' } });
     next();

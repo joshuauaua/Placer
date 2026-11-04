@@ -158,7 +158,7 @@ export function SurveyAreaMap({ t, tool, area, onChange, readOnly = false, heigh
     <>
       <p style={{ margin: '0 0 12px', fontSize: 14, color: t.inkDim, lineHeight: 1.5 }}>
         {readOnly
-          ? 'The area this board maps, outlined for you.'
+          ? 'The area this project maps, outlined for you.'
           : 'Outline the area you will map: pick the polygon tool, then click its corners on the map, in order around the edge.'}
       </p>
       <div style={{ position: 'relative' }}>

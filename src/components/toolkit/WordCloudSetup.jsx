@@ -34,7 +34,7 @@ export function PromptStep({ t, setup, onChange }) {
         style={{ height: 48, padding: '0 14px', borderRadius: 12, border: `1px solid ${t.lineStrong}`,
           background: t.surface, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 17, fontWeight: 700 }} />
       <span id={`${id}-prompt-hint`} style={{ fontSize: 12.5, color: t.inkDim }}>
-        On the board&rsquo;s page it is shown above the cloud.
+        On the project&rsquo;s page it is shown above the cloud.
       </span>
     </div>
   );

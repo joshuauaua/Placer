@@ -10,17 +10,17 @@ const PROJECT = {
 };
 
 describe('ProjectLocationMap', () => {
-  it('needs no API key: a board with an outline always has a map', () => {
+  it('needs no API key: a project with an outline always has a map', () => {
     expect(hasProjectMap(PROJECT)).toBe(true);
   });
 
-  it('renders nothing when the board has neither a drawn shape nor an address point', () => {
+  it('renders nothing when the project has neither a drawn shape nor an address point', () => {
     const { container } = render(<ProjectLocationMap t={THEME} project={{ ...PROJECT, locationShapes: [] }} />);
     expect(container).toBeEmptyDOMElement();
     expect(maps).toHaveLength(0);
   });
 
-  it('pins the address of a board with no outline', () => {
+  it('pins the address of a project with no outline', () => {
     const project = { ...PROJECT, locationShapes: [], locationPoint: { lat: 55.59, lng: 13.01 } };
     render(<ProjectLocationMap t={THEME} project={project} />);
 
@@ -30,7 +30,7 @@ describe('ProjectLocationMap', () => {
     expect(map.markers[0].getLngLat()).toEqual({ lat: 55.59, lng: 13.01 });
   });
 
-  it('draws the outline rather than the pin when a board has both', async () => {
+  it('draws the outline rather than the pin when a project has both', async () => {
     render(<ProjectLocationMap t={THEME} project={{ ...PROJECT, locationPoint: { lat: 55.59, lng: 13.01 } }} />);
 
     const map = lastMap();
@@ -46,7 +46,7 @@ describe('ProjectLocationMap', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows a map that cannot be moved, named for the board', async () => {
+  it('shows a map that cannot be moved, named for the project', async () => {
     render(<ProjectLocationMap t={THEME} project={PROJECT} />);
 
     expect(screen.getByRole('img', { name: /Riverside Greenway/ })).toBeInTheDocument();
