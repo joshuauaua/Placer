@@ -14,7 +14,8 @@
  *
  * A project sets the same tool up from its dashboard, in ConfigureToolDialog, in the
  * same order: the instructions (InstructionsStep), then the area and the location
- * (SurveyAreaStep). Those two are then the project's (`fixed`): everybody mapping for
+ * (SurveyAreaStep). On the configuration page the instructions are left out and the
+ * map is drawn on the canvas (SurveyAreaCanvas). Those two are then the project's (`fixed`): everybody mapping for
  * it sees them already there, and adds only their name, the date and time and the
  * weather.
  */
@@ -211,18 +212,38 @@ export function InstructionsStep({ t }) {
   return <StationaryInstructions t={t} />;
 }
 
-/** Configuring for a project, stage 2: the area and the location, which observers then share. */
-export function SurveyAreaStep({ t, tool, setup, onChange }) {
+/**
+ * Configuring for a project, stage 2: the area and the location, which observers then
+ * share. On the configuration page (`compact`) the map is on the canvas
+ * (SurveyAreaCanvas), so the panel keeps only the location.
+ */
+export function SurveyAreaStep({ t, tool, setup, onChange, compact = false }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <SurveyAreaMap t={t} tool={tool} area={setup.area} height={300}
-        onChange={(area) => onChange({ ...setup, area })} />
+      {compact ? (
+        <p style={{ margin: 0, fontSize: 13, color: t.inkDim, lineHeight: 1.5 }}>
+          Outlined on the map: {setup.area.length} {setup.area.length === 1 ? 'corner' : 'corners'}.
+        </p>
+      ) : (
+        <SurveyAreaMap t={t} tool={tool} area={setup.area} height={300}
+          onChange={(area) => onChange({ ...setup, area })} />
+      )}
       <Field t={t} spacing={0} label="Location" htmlFor="stationary-project-location">
         <input id="stationary-project-location" type="text" maxLength={120} placeholder="e.g. Stortorget, Malmö"
           value={setup.location} onChange={(event) => onChange({ ...setup, location: event.target.value })}
           style={inputStyle(t)} />
       </Field>
     </div>
+  );
+}
+
+/** The configuration page's canvas: the survey area's map, to outline it on. */
+export function SurveyAreaCanvas({ t, tool, setup, onChange }) {
+  return (
+    <Panel t={t} title="Survey area">
+      <SurveyAreaMap t={t} tool={tool} area={setup.area} height={520}
+        onChange={(area) => onChange({ ...setup, area })} />
+    </Panel>
   );
 }
 

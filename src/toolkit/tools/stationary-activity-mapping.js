@@ -1,5 +1,5 @@
 import { StationaryActivityMap } from '../../components/toolkit/StationaryActivityMap';
-import { InstructionsStep, SurveyAreaStep } from '../../components/toolkit/StationaryActivitySetup';
+import { InstructionsStep, SurveyAreaCanvas, SurveyAreaStep } from '../../components/toolkit/StationaryActivitySetup';
 import { defaultProjectSetup, projectSetupProblems, projectSetupToSave } from '../../lib/toolkit/stationaryActivity';
 import { PALETTE } from '../../theme';
 import { PUBLIC_LIFE_PROTOCOL_CREDIT, tone } from '../toolParts';
@@ -29,8 +29,10 @@ export default {
     defaults: defaultProjectSetup,
     problems: projectSetupProblems,
     toSave: projectSetupToSave,
+    // On the configuration page the area is outlined on the canvas, not in the panel.
+    Canvas: SurveyAreaCanvas,
     steps: [
-      { title: 'Instructions', Form: InstructionsStep, problems: () => [] },
+      { title: 'Instructions', Form: InstructionsStep, problems: () => [], inPanel: false },
       { title: 'Survey area', Form: SurveyAreaStep, problems: projectSetupProblems },
     ],
   },
