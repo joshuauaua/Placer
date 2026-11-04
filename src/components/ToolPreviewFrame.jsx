@@ -7,7 +7,9 @@
  * `window.parent[PREVIEW_KEY]`: the same site, so the frame can read it. Opened any other
  * way, it shows the tool with its defaults.
  *
- * Like the canvas it is a preview and nothing more: the tool is inert, so nothing in it
+ * It shows what somebody answering the tool sees: each tool is given `answering`, which
+ * one that can draws as only that (Word Cloud: its prompt over the cloud, and Add your
+ * words). Like the canvas it is a preview and nothing more: the tool is inert, so nothing in it
  * can be clicked, typed in or reached, while the frame itself still scrolls.
  */
 
@@ -73,8 +75,8 @@ export function ToolPreviewFrame({ t }) {
       <div inert aria-label="Preview of the slide" style={{ cursor: 'default', userSelect: 'none' }}>
         <Boundary>
           {tool.room
-            ? <Tool t={t} tool={tool} room={previewRoom(setup)} />
-            : <Tool t={t} tool={tool} setup={setup} />}
+            ? <Tool t={t} tool={tool} room={previewRoom(setup)} answering />
+            : <Tool t={t} tool={tool} setup={setup} answering />}
         </Boundary>
       </div>
     </div>
