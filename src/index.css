@@ -2774,6 +2774,12 @@ a {
   color: var(--placer-ink);
 }
 
+.placer-create-tool-types {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--placer-grey-500);
+}
+
 /* A phone: the cards one under another, each a band beside its words. */
 @media (max-width: 699px) {
   .placer-create-tool-dialog {

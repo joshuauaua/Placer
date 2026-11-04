@@ -137,6 +137,7 @@ describe('SideNav', () => {
     expect(cards.map((card) => card.querySelector('.placer-create-tool-label').textContent))
       .toEqual(['Understand', 'Imagine', 'Plan']);
     expect(cards[0]).toHaveTextContent('What is here today?');
+    expect(cards[0]).toHaveTextContent('Surveys, Data Collection');
     expect(cards[1]).toHaveTextContent('What could be here?');
     expect(cards[2]).toHaveTextContent('What will we build?');
     expect(cards[0]).toHaveFocus();

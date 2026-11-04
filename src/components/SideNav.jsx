@@ -75,15 +75,17 @@ const SMALL_LINKS = [
 
 // What Create a tool offers: one of the tool categories each, by its own name.
 export const TOOL_KINDS = [
-  { category: 'understand', label: 'Understand', icon: 'eye' },
-  { category: 'imagine', label: 'Imagine', icon: 'sparkle' },
-  { category: 'plan', label: 'Plan', icon: 'layers' },
+  // `types`: the sorts of tools in it, in grey under its question in Create a tool.
+  { category: 'understand', label: 'Understand', icon: 'eye', types: 'Surveys, Data Collection' },
+  { category: 'imagine', label: 'Imagine', icon: 'sparkle', types: 'Visioning, Design Games' },
+  { category: 'plan', label: 'Plan', icon: 'layers', types: 'Polls, Budgeting' },
 ];
 
 /**
  * What opens from Create a tool: a dialog in the middle of the page asking "What kind of
  * tool do you want to create?", the three kinds side by side as large cards — the
- * category's colour and icon, its name and its question ("What is here today?") — one
+ * category's colour and icon, its name, its question ("What is here today?") and, in grey, the
+ * types of tool in it ("Surveys, Data Collection") — one
  * under another on a phone. Picking one calls `onChoose` with its
  * category. It is drawn into document.body, over everything. Escape, the close button
  * or a press anywhere outside the panel closes it, and Escape hands focus back to
@@ -142,7 +144,7 @@ export function CreateToolMenu({ anchor, onChoose, onClose }) {
         </div>
         <div ref={menuRef} role="menu" aria-label="Create a tool" onKeyDown={onMenuKeyDown}
           className="placer-create-tool-menu">
-          {TOOL_KINDS.map(({ category, label, icon }) => {
+          {TOOL_KINDS.map(({ category, label, icon, types }) => {
             const kind = findCategory(category);
             return (
               <button key={category} role="menuitem" onClick={() => onChoose(category)}
@@ -153,6 +155,7 @@ export function CreateToolMenu({ anchor, onChoose, onClose }) {
                 <span className="placer-create-tool-text">
                   <span className="placer-create-tool-label">{label}</span>
                   {kind?.question && <span className="placer-create-tool-question">{kind.question}</span>}
+                  {types && <span className="placer-create-tool-types">{types}</span>}
                 </span>
               </button>
             );
