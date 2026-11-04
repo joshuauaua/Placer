@@ -7,6 +7,8 @@ import { ToolConfiguratorPage, configuredToolIdFrom } from '../ToolConfiguratorP
 import { THEME } from '../../theme';
 import { listStartedTools, saveStartedTool } from '../../services/startedTools';
 import { addCollaborator, isSupabaseConfigured, readCollaborators, readProjectCrumb } from '../../services/projects';
+import { createRoom } from '../../services/rooms';
+import { hostedRoom } from '../../toolkit/rooms';
 
 // Only what the top bar reads, for the project's name; with no Supabase project, as
 // in a clean checkout, there is none.
@@ -16,6 +18,13 @@ vi.mock('../../services/projects', async (importOriginal) => ({
   readProjectCrumb: vi.fn(() => Promise.resolve(null)),
   readCollaborators: vi.fn(() => Promise.resolve([])),
   addCollaborator: vi.fn(() => Promise.resolve({ success: true })),
+}));
+
+// Publish opens rooms; nothing here reaches a server.
+vi.mock('../../services/rooms', async (importOriginal) => ({
+  ...(await importOriginal()),
+  createRoom: vi.fn(() => Promise.resolve({ id: 'room-1', pin: '123456', joinCode: null, facilitatorToken: 'f-1',
+    expiresAt: '2026-12-04T10:00:00Z', opensAt: null })),
 }));
 
 // The Poll's question, as its setup form in the Configuration panel labels it.
@@ -193,11 +202,51 @@ describe('ToolConfiguratorPage', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
-  it('says Publish is not built yet', () => {
-    renderAt('/toolkit/word-cloud/configure');
+  it('will not publish a tool that is not part of a project', () => {
+    renderAt('/toolkit/word-cloud/configure', ToolConfiguratorPage, { accountId: 'user-1' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
-    expect(screen.getByRole('status')).toHaveTextContent('Publishing is not built yet.');
+    const dialog = within(screen.getByRole('dialog', { name: 'Publish Word Cloud' }));
+    expect(dialog.getByRole('status')).toHaveTextContent('Add this tool to a project to publish it.');
+    expect(dialog.getByRole('button', { name: 'Go live' })).toBeDisabled();
+  });
+
+  it('publishes a Live tool as a room open now, until the session is ended, and goes into it', async () => {
+    const { location } = renderAt('/toolkit/word-cloud/configure?project=proj-1', ToolConfiguratorPage,
+      { accountId: 'user-1' });
+    fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'One word for the square?' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    const dialog = within(screen.getByRole('dialog', { name: 'Publish Word Cloud' }));
+    expect(dialog.getByText(/stays open until you end the session/)).toHaveTextContent('after 12 hours at the latest');
+    expect(dialog.queryByLabelText('Live for')).toBeNull();
+    await act(async () => { fireEvent.click(dialog.getByRole('button', { name: 'Go live' })); });
+
+    expect(createRoom).toHaveBeenCalledWith('word-cloud', 'proj-1', '12h',
+      expect.objectContaining({ prompt: 'One word for the square?' }));
+    expect(hostedRoom('room-1')).toMatchObject({ pin: '123456', token: 'f-1' });
+    expect(location.history.at(-1)).toBe('/toolkit/word-cloud?room=room-1');
+  });
+
+  it('publishes a Self-paced tool for as long as is picked', async () => {
+    const { location } = renderAt('/toolkit/word-cloud/configure?project=proj-1', ToolConfiguratorPage,
+      { accountId: 'user-1' });
+    fireEvent.click(screen.getByRole('switch', { name: /Live/ }));
+    fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'One word for the square?' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    const dialog = within(screen.getByRole('dialog', { name: 'Publish Word Cloud' }));
+    const lifetime = dialog.getByLabelText('Live for');
+    expect([...lifetime.options].map((option) => option.textContent)).toEqual(['1 week', '30 days', '90 days']);
+    expect(lifetime).toHaveValue('30d');
+    fireEvent.change(lifetime, { target: { value: '1w' } });
+    await act(async () => { fireEvent.click(dialog.getByRole('button', { name: 'Publish' })); });
+
+    expect(createRoom).toHaveBeenCalledWith('word-cloud', 'proj-1', '1w', expect.any(Object));
+    const done = within(screen.getByRole('dialog', { name: 'Published' }));
+    expect(done.getByText(/is open/)).toHaveTextContent('until 4 December 2026');
+    fireEvent.click(done.getByRole('button', { name: 'Go to the project' }));
+    expect(location.history.at(-1)).toBe('/projects/proj-1/dashboard');
   });
 
   it('previews the slide on a desktop and a phone, side by side, and closes', () => {

@@ -19,9 +19,9 @@
  *              tool as it would look on a desktop and on a phone, side by side in a
  *              dialog: each a frame of that width, scrollable but not to be used) and,
  *              at the
- *              right-hand end, Publish (put the tool live). A tool has no collaborators
- *              of its own yet, so the avatars are whoever is signed in; and nothing in
- *              the menu, Preview or Publish is built yet: each only says so.
+ *              right-hand end, Publish: open the tool, now — Live, until the session is
+ *              ended, or Self-paced, for as long as is picked (PublishToolDialog).
+ *              Nothing in the ⋯ menu is built yet: each item only says so.
  *   canvas   — a live preview of the slide as it is set up so far, and nothing to
  *              change: it cannot be clicked, typed in or tabbed into (inert). It is
  *              the Toolkit's own component, given the setup the way it would get it
@@ -53,6 +53,8 @@ import { newId, readStartedTool, saveStartedTool } from '../services/startedTool
 import { previewRoom } from '../toolkit/previewRoom';
 import { PREVIEW_KEY } from './ToolPreviewFrame';
 import { toolPreviewFramePath } from '../lib/routes';
+import { PublishToolDialog } from './PublishToolDialog';
+import { roomPath } from '../toolkit/rooms';
 import { addCollaborator, isSupabaseConfigured, readCollaborators, readProjectCrumb } from '../services/projects';
 
 /** The tool id in /toolkit/<id>/configure, or null for any other address. */
@@ -621,6 +623,9 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
     setPreviewing(true);
   };
   const closePreview = useCallback(() => setPreviewing(false), []);
+  // Publish: open the tool, Live or Self-paced (PublishToolDialog).
+  const [publishing, setPublishing] = useState(false);
+  const closePublish = useCallback(() => setPublishing(false), []);
   const back = () => navigate('/dashboard');
 
   return (
@@ -633,7 +638,7 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
         ]}
         onSetting={(label) => setNotice(`${label} is not built yet.`)}
         onPreview={openPreview}
-        onPublish={() => setNotice('Publishing is not built yet.')} />
+        onPublish={() => setPublishing(true)} />
 
       {!tool ? (
         <main className="placer-configurator-missing">
@@ -671,6 +676,12 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
       )}
 
       {previewing && tool && <PreviewDialog tool={tool} onClose={closePreview} />}
+      {publishing && tool && (
+        <PublishToolDialog t={t} tool={tool} name={name} slides={slides} live={live} accountId={accountId}
+          projectId={projectId} projectName={projectName} onClose={closePublish}
+          onGoLive={(room) => navigate(roomPath(tool.id, room.id))}
+          onOpenProject={() => navigate(`/projects/${encodeURIComponent(projectId)}/dashboard`)} />
+      )}
     </div>
   );
 }

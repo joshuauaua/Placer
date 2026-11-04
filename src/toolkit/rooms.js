@@ -48,13 +48,27 @@ export const ROOM_LIFETIMES = [
 export const DEFAULT_LIFETIME = '2h';
 
 /**
- * True for a room opened for longer than a workshop — the same test toolkit_room_join
- * applies in supabase/rooms-schedule.sql, counted from when it opens, and the reason
- * such a room is reached by its join code and never its PIN.
+ * A live session's room, as a tool published Live opens it (PublishToolDialog): open
+ * until its host closes it, and twelve hours at most. Joined by its PIN, like a
+ * workshop's — see supabase/rooms-live-session.sql. Not one of ROOM_LIFETIMES, which
+ * are what can be picked.
+ */
+export const LIVE_SESSION_LIFETIME = '12h';
+
+/** The lifetimes of a room joined by its PIN; any other is joined by its code. */
+export const PIN_LIFETIMES = ['2h', LIVE_SESSION_LIFETIME];
+
+// The longest a room can be open for and still be joined by its PIN.
+const PIN_ROOM_MS = 12 * 60 * 60 * 1000;
+
+/**
+ * True for a room opened for longer than a live session (twelve hours) — the same
+ * test toolkit_room_join applies in supabase/rooms-live-session.sql, counted from when
+ * it opens, and the reason such a room is reached by its join code and never its PIN.
  */
 export function isLongRoom({ createdAt, opensAt = null, expiresAt }) {
   const span = new Date(expiresAt ?? NaN).getTime() - new Date(opensAt ?? createdAt ?? NaN).getTime();
-  return Number.isFinite(span) && span > 2 * 60 * 60 * 1000;
+  return Number.isFinite(span) && span > PIN_ROOM_MS;
 }
 
 /**

@@ -13,6 +13,7 @@
  */
 
 import { getSupabase, isSupabaseConfigured } from './supabase';
+import { PIN_LIFETIMES } from '../toolkit/rooms';
 import { track } from '../analytics';
 
 export const CONTRIBUTIONS_TABLE = 'toolkit_contributions';
@@ -95,7 +96,7 @@ export async function createRoom(toolId, projectId = null, lifetime = '2h', conf
   return {
     id: data.room_id,
     pin: data.pin,
-    joinCode: lifetime && lifetime !== '2h' ? (data.join_code ?? null) : null,
+    joinCode: lifetime && !PIN_LIFETIMES.includes(lifetime) ? (data.join_code ?? null) : null,
     facilitatorToken: data.facilitator_token,
     expiresAt: data.expires_at,
     opensAt: data.opens_at ?? null,

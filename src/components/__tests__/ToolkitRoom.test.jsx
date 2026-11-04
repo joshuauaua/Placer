@@ -336,7 +336,7 @@ describe('a room running out of time', () => {
     // Anchored: the sentence below the PIN names the time left as well, and an
     // unanchored match would find both.
     expect(await screen.findByText(/^2h left$/)).toBeInTheDocument();
-    expect(screen.getByText(/lasts two hours from opening/i)).toBeInTheDocument();
+    expect(screen.getByText(/stays open until you close it/i)).toBeInTheDocument();
   });
 
   it('says it has run out of time, not that somebody closed it', async () => {

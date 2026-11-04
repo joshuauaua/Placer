@@ -173,6 +173,9 @@ describe('rooms that stay open for weeks', () => {
 
   it('tells a workshop room from a long one by how long it was opened for', () => {
     expect(isLongRoom({ createdAt: opened, expiresAt: '2026-09-24T14:00:00Z' })).toBe(false);
+    // A live session's twelve hours is still joined by its PIN; a week is not.
+    expect(isLongRoom({ createdAt: opened, expiresAt: '2026-09-25T00:00:00Z' })).toBe(false);
+    expect(isLongRoom({ createdAt: opened, expiresAt: '2026-10-01T12:00:00Z' })).toBe(true);
     expect(isLongRoom({ createdAt: opened, expiresAt: '2026-10-24T12:00:00Z' })).toBe(true);
     expect(isLongRoom({ createdAt: null, expiresAt: null })).toBe(false);
   });

@@ -8,7 +8,8 @@
  * The QR encodes the join URL rather than the room id: scanning it has to land
  * somebody in the room without them typing anything.
  *
- * A workshop room lasts two hours from being opened, so the time left is on screen
+ * A workshop room lasts two hours from being opened (a live session, twelve at most),
+ * so the time left is on screen
  * next to the PIN — a facilitator needs to know whether there is room for one more
  * round before they start it.
  *
@@ -240,7 +241,7 @@ export function RoomBar({ t, tool, room }) {
           <p style={{ fontSize: 12.5, color: t.inkFaint, lineHeight: 1.55, marginTop: 12 }}>
             {long
               ? `The room stays open until ${closesOn}${left ? ` — ${left} left` : ''}. You can close it sooner from here or from the project's dashboard. Either way what it held is let go a day after it ends.`
-              : `The room lasts two hours from opening${left ? ` — ${left} left` : ''}, and closing it ends it sooner. Either way what it held is let go.`}
+              : `The room stays open until you close it${left ? ` — ${left} left at most` : ''}. Either way what it held is let go.`}
           </p>
         </div>
       </div>
