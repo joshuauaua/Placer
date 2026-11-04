@@ -253,6 +253,19 @@ const ICON_ELEMENTS = {
       <path d="M8.5 10.5V7.5a3.5 3.5 0 017 0v3" />
     </>
   ),
+  // A desktop screen on its stand, and a phone: the two sizes a Preview shows.
+  monitor: (
+    <>
+      <rect x="3" y="4" width="18" height="12" rx="2" />
+      <path d="M8 20h8M12 16v4" />
+    </>
+  ),
+  phone: (
+    <>
+      <rect x="7" y="2.5" width="10" height="19" rx="2.5" />
+      <path d="M11 18.5h2" />
+    </>
+  ),
   // Analytics: three bars rising from a baseline.
   chart: <path d="M4 20.5h16M7 17v-5M12 17V7M17 17v-8" />,
   // An organisation: a building with a door and two rows of windows.

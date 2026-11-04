@@ -35,3 +35,14 @@ export function startedToolPath(toolId, search) {
 export function isToolConfigurator(path) {
   return /^\/toolkit\/[^/?#]+\/configure\/?$/.test(path);
 }
+
+/**
+ * A tool's slide on its own, for the Preview on its configuration page to load into a
+ * frame the width of a desktop or of a phone: /toolkit/<id>/preview-frame. Nothing else
+ * of the app is drawn there (App.jsx), not even the cookie banner (components/ToolPreviewFrame.jsx).
+ */
+export function isToolPreviewFrame(path) {
+  return /^\/toolkit\/[^/?#]+\/preview-frame\/?$/.test(path);
+}
+
+export const toolPreviewFramePath = (toolId) => `/toolkit/${encodeURIComponent(toolId)}/preview-frame`;

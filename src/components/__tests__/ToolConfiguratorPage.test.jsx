@@ -1,10 +1,21 @@
-import { describe, it, expect } from 'vite-plus/test';
+import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { ToolConfiguratorPage, configuredToolIdFrom } from '../ToolConfiguratorPage';
 import { THEME } from '../../theme';
 import { listStartedTools, saveStartedTool } from '../../services/startedTools';
+import { addCollaborator, isSupabaseConfigured, readCollaborators, readProjectCrumb } from '../../services/projects';
+
+// Only what the top bar reads, for the project's name; with no Supabase project, as
+// in a clean checkout, there is none.
+vi.mock('../../services/projects', async (importOriginal) => ({
+  ...(await importOriginal()),
+  isSupabaseConfigured: vi.fn(() => false),
+  readProjectCrumb: vi.fn(() => Promise.resolve(null)),
+  readCollaborators: vi.fn(() => Promise.resolve([])),
+  addCollaborator: vi.fn(() => Promise.resolve({ success: true })),
+}));
 
 // The Poll's question, as its setup form in the Configuration panel labels it.
 const QUESTION_LABEL = 'The question';
@@ -33,11 +44,11 @@ describe('ToolConfiguratorPage', () => {
     renderAt('/toolkit/budget-ballot/configure');
 
     const bar = screen.getByRole('banner', { name: 'Configure a tool' });
-    expect(within(bar).getByText('Co-Budget')).toBeInTheDocument();
+    expect(within(bar).getByRole('textbox', { name: 'Tool name' })).toHaveValue('Co-Budget');
     // Its name only: the category is not shown here.
     expect(within(bar).queryByText('Plan')).toBeNull();
     expect(within(bar).getAllByRole('button').map((b) => b.getAttribute('aria-label')))
-      .toEqual(['Back to the dashboard', 'Tool settings', 'Preview', 'Publish']);
+      .toEqual(['Back to the dashboard', 'Add a collaborator', 'Tool settings', 'Preview', 'Publish']);
 
     expect(screen.getByRole('main', { name: 'Canvas' })).toBeInTheDocument();
     const panel = screen.getByRole('complementary', { name: 'Configuration' });
@@ -54,8 +65,8 @@ describe('ToolConfiguratorPage', () => {
 
     fireEvent.change(budget, { target: { value: '' } });
     expect(screen.getByText(/Set a budget as a whole number/)).toBeInTheDocument();
-    // The canvas falls back to the tool's own defaults rather than an unusable setup.
-    expect(within(canvas).queryByText('€90,000')).toBeNull();
+    // The canvas keeps the last setup the tool would take rather than an unusable one.
+    expect(within(canvas).getAllByText('€90,000').length).toBeGreaterThan(0);
   });
 
   it('has no Slides panel for a tool that runs as one', () => {
@@ -160,13 +171,32 @@ describe('ToolConfiguratorPage', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
-  it('says Preview and Publish are not built yet', () => {
+  it('says Publish is not built yet', () => {
     renderAt('/toolkit/word-cloud/configure');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
-    expect(screen.getByRole('status')).toHaveTextContent('Preview is not built yet.');
     fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
     expect(screen.getByRole('status')).toHaveTextContent('Publishing is not built yet.');
+  });
+
+  it('previews the slide on a desktop and a phone, side by side, and closes', () => {
+    renderAt('/toolkit/word-cloud/configure');
+    fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'One word for the square?' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    const dialog = screen.getByRole('dialog', { name: 'Preview: Word Cloud' });
+    const desktop = within(dialog).getByTitle('Desktop preview');
+    const phone = within(dialog).getByTitle('Phone preview');
+    expect(desktop).toHaveAttribute('src', '/toolkit/word-cloud/preview-frame');
+    expect(desktop).toHaveAttribute('width', '1280');
+    expect(phone).toHaveAttribute('width', '390');
+    // Desktop first, on the left.
+    expect(desktop.compareDocumentPosition(phone) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The frames read the slide off the opening window.
+    expect(window.__placerToolPreview).toEqual({ toolId: 'word-cloud',
+      setup: expect.objectContaining({ prompt: 'One word for the square?' }) });
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Preview: Word Cloud' })).toBeNull();
   });
 
   it('goes back to the dashboard, and offers it for a tool that does not exist', () => {
@@ -176,5 +206,141 @@ describe('ToolConfiguratorPage', () => {
     expect(screen.queryByRole('button', { name: 'Publish' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Back to the dashboard' }));
     expect(location.history.at(-1)).toBe('/dashboard');
+  });
+});
+
+describe('ToolConfiguratorPage, its top bar', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.mocked(isSupabaseConfigured).mockReturnValue(false);
+    vi.mocked(readProjectCrumb).mockResolvedValue(null);
+  });
+
+  const nameField = () => screen.getByRole('textbox', { name: 'Tool name' });
+
+  it('lets this tool be renamed, keeps the name, and goes back to the tool\'s own when emptied', () => {
+    renderAt('/toolkit/open-vote/configure', ToolConfiguratorPage, { accountId: 'acc' });
+
+    fireEvent.change(nameField(), { target: { value: '  Tuesday workshop poll ' } });
+    fireEvent.blur(nameField());
+    expect(nameField()).toHaveValue('Tuesday workshop poll');
+    expect(listStartedTools('acc')[0].name).toBe('Tuesday workshop poll');
+
+    fireEvent.change(nameField(), { target: { value: '   ' } });
+    fireEvent.keyDown(nameField(), { key: 'Enter' });
+    fireEvent.blur(nameField());
+    expect(nameField()).toHaveValue('Poll');
+    expect(listStartedTools('acc')[0].name).toBeNull();
+  });
+
+  it('says when the tool is not in a project', () => {
+    renderAt('/toolkit/open-vote/configure');
+
+    expect(screen.getByRole('banner', { name: 'Configure a tool' })).toHaveTextContent('Not in a project');
+  });
+
+  it('names the project it was added to, under its own name, and keeps it with the tool', async () => {
+    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+    vi.mocked(readProjectCrumb).mockResolvedValue({ name: 'Möllan', canEdit: true });
+    renderAt('/toolkit/open-vote/configure?project=proj-1', ToolConfiguratorPage, { accountId: 'acc' });
+
+    expect(await screen.findByText('In Möllan')).toBeInTheDocument();
+    expect(readProjectCrumb).toHaveBeenCalledWith('proj-1');
+    fireEvent.click(screen.getByRole('switch', { name: /Live/ }));
+    expect(listStartedTools('acc')[0].projectId).toBe('proj-1');
+  });
+
+  it('runs a tool for a group Live to begin with, and switches it to Self-paced', () => {
+    renderAt('/toolkit/open-vote/configure', ToolConfiguratorPage, { accountId: 'acc' });
+    const live = screen.getByRole('switch', { name: /Live/ });
+
+    expect(live).toHaveAttribute('aria-checked', 'true');
+    expect(live).toHaveTextContent('With a group');
+    fireEvent.click(live);
+    expect(live).toHaveAttribute('aria-checked', 'false');
+    expect(live).toHaveTextContent('Self-paced, by link');
+    expect(listStartedTools('acc')[0].live).toBe(false);
+  });
+
+  it('starts a tool with no room Self-paced', () => {
+    renderAt('/toolkit/street-mixer/configure');
+
+    expect(screen.getByRole('switch', { name: /Live/ })).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('opens a kept tool with its name, project and setting', () => {
+    saveStartedTool('acc', { id: 'poll-9', tool: 'open-vote', name: 'Market vote', projectId: null, live: false,
+      slides: [{ id: 's1', setup: { question: 'Trees?', answers: ['Yes', 'No'] } }] });
+    renderAt('/toolkit/open-vote/configure?draft=poll-9', ToolConfiguratorPage, { accountId: 'acc' });
+
+    expect(nameField()).toHaveValue('Market vote');
+    expect(screen.getByRole('switch', { name: /Live/ })).toHaveAttribute('aria-checked', 'false');
+  });
+});
+
+describe('ToolConfiguratorPage, its canvas', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('is a live preview, with nothing in it to use', () => {
+    renderAt('/toolkit/word-cloud/configure');
+    const canvas = screen.getByRole('main', { name: 'Canvas' });
+
+    expect(within(canvas).getByText('Live preview')).toBeInTheDocument();
+    expect(canvas.querySelector('.placer-configurator-frame')).toHaveAttribute('inert');
+  });
+
+  it('never shows a tool\'s own editors, even before its setup is one it would take', () => {
+    renderAt('/toolkit/word-cloud/configure');
+    const canvas = screen.getByRole('main', { name: 'Canvas' });
+
+    // Word Cloud, handed no setup, offers its own prompt and timer to fill in.
+    expect(within(canvas).queryByPlaceholderText('One word for this place?')).toBeNull();
+    expect(within(canvas).queryByRole('combobox')).toBeNull();
+  });
+});
+
+describe('ToolConfiguratorPage, adding a collaborator', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.mocked(isSupabaseConfigured).mockReturnValue(false);
+    vi.mocked(readProjectCrumb).mockResolvedValue(null);
+  });
+
+  it('says collaborators join through a project, for a tool that is not in one', () => {
+    renderAt('/toolkit/open-vote/configure');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add a collaborator' }));
+
+    expect(screen.getByRole('dialog', { name: 'Invite a collaborator' }))
+      .toHaveTextContent('Collaborators join through a project');
+    expect(screen.queryByRole('textbox', { name: 'Their email' })).toBeNull();
+  });
+
+  it('invites somebody to the tool\'s project by email', async () => {
+    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+    vi.mocked(readProjectCrumb).mockResolvedValue({ name: 'Möllan', canEdit: true });
+    vi.mocked(readCollaborators).mockResolvedValue([]);
+    vi.mocked(addCollaborator).mockResolvedValue({ success: true });
+    renderAt('/toolkit/open-vote/configure?project=proj-1');
+    await screen.findByText('In Möllan');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add a collaborator' }));
+    const dialog = screen.getByRole('dialog', { name: 'Invite a collaborator' });
+    expect(dialog).toHaveTextContent('They join Möllan');
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Their email' }), { target: { value: 'Ines@Example.org' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Invite' }));
+
+    expect(await within(dialog).findByRole('status')).toHaveTextContent('Invited ines@example.org');
+    expect(addCollaborator).toHaveBeenCalledWith('proj-1', 'ines@example.org');
+  });
+
+  it('shows the project\'s collaborators among the avatars', async () => {
+    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+    vi.mocked(readProjectCrumb).mockResolvedValue({ name: 'Möllan', canEdit: true });
+    vi.mocked(readCollaborators).mockResolvedValue([{ userId: 'u-2', displayName: 'Ines Berg', email: 'ines@example.org' }]);
+    renderAt('/toolkit/open-vote/configure?project=proj-1', ToolConfiguratorPage,
+      { accountId: 'u-1', profile: { id: 'u-1', name: 'Mara Quinn' } });
+
+    expect(await screen.findByRole('group', { name: 'Collaborators: Mara Quinn, Ines Berg' })).toBeInTheDocument();
   });
 });

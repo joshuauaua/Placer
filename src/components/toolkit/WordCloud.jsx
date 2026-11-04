@@ -380,8 +380,10 @@ export function WordCloud({ t, room }) {
         alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
           {/* A prompt fixed by the room's setup is already on the cloud card, so only one
-              still being written gets a card here. */}
-          {!fixedPrompt && (
+              still being written gets a card here. A setup whose prompt is still empty
+              (the configuration page, before it is filled in) fixes it all the same:
+              writing it is the setup's to do. */}
+          {fixedPrompt === null && (
             <Panel t={t} title="Ask something">
               <label htmlFor="word-cloud-prompt"
                 style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: t.inkDim, marginBottom: 8 }}>

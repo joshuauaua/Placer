@@ -5,9 +5,12 @@
  * started on. A database table can take its place later without the pages changing:
  * they only call these functions.
  *
- * A started tool is { id, tool, slides, createdAt, updatedAt }: `tool` is the id of the
- * tool in the register, and `slides` its slides, each { id, setup }. A tool that runs
- * as one has a single slide.
+ * A started tool is { id, tool, slides, name, projectId, live, createdAt, updatedAt }:
+ * `tool` is the id of the tool in the register, and `slides` its slides, each
+ * { id, setup }. A tool that runs as one has a single slide. `name` is what its owner
+ * has called this one (null for the tool's own name), `projectId` the project it was
+ * added to (null for none), and `live` whether it is to be run live with a group
+ * (true) or left open at its link for people to fill in in their own time (false).
  *
  * Every read and write may fail — a private window, storage blocked or full — and a
  * failure is treated as there being nothing kept, never as an error to show.
@@ -52,14 +55,15 @@ export function readStartedTool(accountId, id) {
 }
 
 /**
- * Keep a started tool: `{ id, tool, slides }`, added if new and replaced if not.
- * Resolves nothing; returns what was kept, with its dates.
+ * Keep a started tool: `{ id, tool, slides, name, projectId, live }`, added if new and
+ * replaced if not. Resolves nothing; returns what was kept, with its dates.
  */
-export function saveStartedTool(accountId, { id, tool, slides }) {
+export function saveStartedTool(accountId, { id, tool, slides, name = null, projectId = null, live = null }) {
   const list = readAll(accountId);
   const now = new Date().toISOString();
   const existing = list.find((entry) => entry.id === id);
-  const kept = { id, tool, slides, createdAt: existing?.createdAt ?? now, updatedAt: now };
+  const kept = { id, tool, slides, name: name?.trim() || null, projectId, live,
+    createdAt: existing?.createdAt ?? now, updatedAt: now };
   writeAll(accountId, [kept, ...list.filter((entry) => entry.id !== id)]);
   return kept;
 }
