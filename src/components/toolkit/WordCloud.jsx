@@ -337,8 +337,9 @@ export function WordCloud({ t, room, slide = false, answering = false }) {
   const shownPrompt = fixedPrompt ?? prompt.trim();
 
   // Answering it: the main card, the prompt over the cloud as the words come in, and
-  // the card to add yours. Nothing else: no full screen, answers, how it works,
-  // keeping it, or timer to run.
+  // the card to add yours, and the time left once the facilitator has started it.
+  // Nothing else: no full screen, answers, how it works, keeping it, or timer to run.
+  // It is what somebody who joined a room sees (ToolkitPage), as well as the Preview.
   if (answering) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -348,6 +349,9 @@ export function WordCloud({ t, room, slide = false, answering = false }) {
             color: shownPrompt ? t.ink : t.inkFaint, overflowWrap: 'anywhere' }}>
             {shownPrompt || DEFAULT_PROMPT}
           </h2>
+          {left !== null && (
+            <div style={{ margin: '0 0 12px' }}><Countdown t={t} left={left} paused={paused} /></div>
+          )}
           {empty ? (
             <p style={{ minHeight: 260, display: 'flex', alignItems: 'center', justifyContent: 'center',
               textAlign: 'center', fontSize: 14, color: t.inkDim, lineHeight: 1.65, margin: 0 }}>

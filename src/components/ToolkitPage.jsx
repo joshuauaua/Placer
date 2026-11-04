@@ -10,6 +10,14 @@
  * hands it to the tool as a prop — because that is where people who join with a PIN or
  * a QR code land, and where the dashboard sends its facilitator.
  *
+ * A room opens on its invitation (InviteCover) rather than the tool's cover: who invites
+ * people, to what, as part of which project. Past it, somebody who joined sees only
+ * what answering the tool takes — the tool drawn `answering`, as the configuration
+ * page's Preview shows it (ToolPreviewFrame) — with none of the page around it: no
+ * header, credits or the strip saying they are in a room, unless the room is not open.
+ * Its facilitator sees the room as before: the strip with its PIN and QR code, and the
+ * whole tool.
+ *
  * The page owns the /toolkit part of the URL itself rather than taking the selected
  * tool as a prop, so every tool has a link that can be shared.
  */
@@ -21,6 +29,8 @@ import { Breadcrumb, WORKSPACE_CRUMB } from './PageHeader';
 import { ToolLayout } from './ToolLayout';
 import { RoomBar } from './toolkit/RoomBar';
 import { ToolCover } from './toolkit/ToolCover';
+import { InviteCover } from './toolkit/InviteCover';
+import { roomInvite } from '../toolkit/invite';
 import { useRoom } from './toolkit/useRoom';
 import { useProjectToolSetup } from './toolkit/useProjectToolSetup';
 import { findTool } from '../toolkit/tools';
@@ -136,6 +146,34 @@ export function ToolkitPage({ t, displayName = null }) {
   ) : null;
   // Back from a tool goes home: the dashboard, for somebody signed in.
   const goBack = () => navigate('/');
+
+  // Known from the address, so the page never shows the tool's own cover first while
+  // the room is being read.
+  const inRoom = Boolean(roomIdFrom(search));
+
+  // A room opens on its invitation, whoever comes in: the people taking part, and its
+  // facilitator, who can put it up for the group.
+  if (inRoom && startedId !== tool.id) {
+    return <InviteCover t={t} tool={tool} invite={roomInvite(room.config)} onStart={() => setStartedId(tool.id)} />;
+  }
+
+  // Somebody taking part: the tool as they answer it, and nothing else (as Preview shows).
+  if (inRoom && !room.isHost) {
+    return (
+      <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page, padding: '24px 16px 64px',
+        boxSizing: 'border-box' }}>
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+          {/* Only to say it is not open (yet, or any more): no strip saying they are in it. */}
+          {room.status !== 'open' && <RoomBar t={t} tool={tool} room={room} />}
+          {projectSetup.ready && <Tool t={t} tool={tool} room={room} setup={projectSetup.setup} answering />}
+          {sequence && (
+            <SlideSteps t={t} index={sequence.index} count={sequence.count}
+              onNext={sequence.next ? goToNextSlide : undefined} />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // Every tool opens on its cover, full-bleed rather than inside the padded
   // column the tool itself sits in.

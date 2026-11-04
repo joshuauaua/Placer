@@ -5,10 +5,11 @@ import { memoryLocation } from 'wouter/memory-location';
 import { THEME } from '../../theme';
 import { rememberHostedRoom } from '../../toolkit/rooms';
 import ToolkitPage from '../ToolkitPage';
+import { withInvite } from '../../toolkit/invite';
 import {
   createRoom, readRoom, readContributions, saveContribution, closeRoom, deleteRoom, subscribeToRoom,
 } from '../../test/roomServices';
-import { hours, renderAt, useRoomServices } from '../../test/toolkitRoom';
+import { hours, renderAt, useRoomServices, joined } from '../../test/toolkitRoom';
 
 vi.mock('../../services/rooms', () => import('../../test/roomServices'));
 
@@ -222,15 +223,43 @@ describe('a room seen by the facilitator', () => {
   });
 });
 
+describe("a room's invitation", () => {
+  const page = (search) => {
+    const location = memoryLocation({ path: '/toolkit/word-cloud', searchPath: search });
+    render(<Router hook={location.hook}><ToolkitPage t={THEME} /></Router>);
+  };
+
+  it('opens on who invites them, to what, for which project', async () => {
+    readRoom.mockResolvedValue({ tool: 'word-cloud', status: 'open', expiresAt: hours(2),
+      config: withInvite({ prompt: 'One word?' }, { organiser: 'Mara Quinn', project: 'Möllan', title: 'Square words' }) });
+    page('room=room-1');
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Mara Quinn invites you to take part in Square words' }))
+      .toBeInTheDocument();
+    expect(screen.getByText(/part of the/)).toHaveTextContent('It’s part of the Möllan project.');
+    expect(screen.getByRole('button', { name: 'Get started' })).toBeInTheDocument();
+  });
+
+  it("makes do with the tool's name for a room opened without one, never its own cover", () => {
+    readRoom.mockReturnValue(new Promise(() => {}));
+    page('room=room-1');
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Take part in Word Cloud' })).toBeInTheDocument();
+  });
+});
+
 describe('a room seen by somebody who joined it', () => {
   beforeEach(() => {
     readRoom.mockResolvedValue(openRoom());
   });
 
-  it('tells them they are in it, without showing them the PIN or the close button', async () => {
+  it('shows them only the tool: no strip, header, PIN or close button', async () => {
     renderAt('/toolkit/budget-ballot', 'room=room-1');
 
-    expect(await screen.findByText(/you are in a room/i)).toBeInTheDocument();
+    await joined();
+    expect(screen.getByRole('group', { name: 'Benches with backs' })).toBeInTheDocument();
+    expect(screen.queryByText(/you are in a room/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1, name: 'Co-Budget' })).not.toBeInTheDocument();
     expect(screen.queryByText('839-201')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /close room/i })).not.toBeInTheDocument();
   });
@@ -238,7 +267,7 @@ describe('a room seen by somebody who joined it', () => {
   it('publishes their ballot once they move something', async () => {
     renderAt('/toolkit/budget-ballot', 'room=room-1');
 
-    await screen.findByText(/you are in a room/i);
+    await joined();
 
     // Nothing is sent for a ballot nobody has touched: a room full of zeroes would
     // count people who have not chosen and drag the average down with them.
@@ -270,7 +299,7 @@ describe('a Co-Budget room that lets people add their own posts', () => {
     readRoom.mockResolvedValue({ ...openRoom(), config });
 
     renderAt('/toolkit/budget-ballot', 'room=room-1');
-    await screen.findByText(/you are in a room/i);
+    await joined();
     expect(screen.getByText('£20,000 left')).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Your post's name"), { target: { value: 'Bike racks' } });
@@ -292,7 +321,7 @@ describe('a Co-Budget room that lets people add their own posts', () => {
     readRoom.mockResolvedValue({ ...openRoom(), config });
 
     renderAt('/toolkit/budget-ballot', 'room=room-1');
-    await screen.findByText(/you are in a room/i);
+    await joined();
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
     expect(screen.getByRole('alert')).toHaveTextContent('Give your post a name.');
@@ -317,7 +346,7 @@ describe('a Co-Budget room that lets people add their own posts', () => {
     readRoom.mockResolvedValue({ ...openRoom(), config: { ...config, ownPosts: false } });
 
     renderAt('/toolkit/budget-ballot', 'room=room-1');
-    await screen.findByText(/you are in a room/i);
+    await joined();
 
     expect(screen.queryByLabelText("Your post's name")).not.toBeInTheDocument();
   });
@@ -344,7 +373,8 @@ describe('a room running out of time', () => {
 
     renderAt('/toolkit/budget-ballot', 'room=room-1');
 
-    const notice = await screen.findByRole('status');
+    // "Opening the room…" first, while it is read.
+    const notice = (await screen.findByText(/run out of time/i)).closest('[role="status"]');
     expect(notice).toHaveTextContent(/run out of time/i);
     expect(notice).not.toHaveTextContent(/is closed/i);
     expect(readContributions).not.toHaveBeenCalled();
@@ -415,7 +445,6 @@ describe('a room that has gone', () => {
     renderAt('/toolkit/budget-ballot', 'room=room-1');
 
     await screen.findByRole('status');
-    expect(screen.getByRole('heading', { level: 1, name: 'Co-Budget' })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Benches with backs' })).toBeInTheDocument();
   });
 });
@@ -435,7 +464,7 @@ describe('joining a room takes no account', () => {
 
     renderAt('/toolkit/budget-ballot', 'room=room-1');
 
-    expect(await screen.findByText(/2h left/)).toBeInTheDocument();
+    await joined();
     expect(screen.getByRole('group', { name: 'Benches with backs' })).toBeInTheDocument();
   });
 
@@ -443,7 +472,7 @@ describe('joining a room takes no account', () => {
     readRoom.mockResolvedValue(openRoom());
 
     renderAt('/toolkit/budget-ballot', 'room=room-1');
-    await screen.findByText(/2h left/);
+    await joined();
 
     for (let i = 0; i < 3; i += 1) fireEvent.click(screen.getByRole('button', { name: 'One more: Benches with backs' }));
 

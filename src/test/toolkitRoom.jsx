@@ -3,13 +3,13 @@
  * and room deadlines. The file also has to mock src/services/rooms with
  * roomServices.js — see there.
  */
-import { beforeEach, afterEach } from 'vite-plus/test';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { beforeEach, afterEach, expect } from 'vite-plus/test';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { THEME } from '../theme';
 import ToolkitPage from '../components/ToolkitPage';
-import { resetRoomServices } from './roomServices';
+import { readContributions, resetRoomServices } from './roomServices';
 
 /**
  * An ISO deadline this many hours from now. Future deadlines get half a minute of
@@ -18,7 +18,7 @@ import { resetRoomServices } from './roomServices';
  */
 export const hours = (n) => new Date(Date.now() + n * 3600000 + (n > 0 ? 30000 : 0)).toISOString();
 
-/** The page at `path`, past the tool's cover page — these are about the tool. */
+/** The page at `path`, past its cover page (a room's invitation) — these are about the tool. */
 export function renderAt(path, searchPath = '', props = {}) {
   const location = memoryLocation({ path, searchPath, record: true });
   render(
@@ -34,4 +34,12 @@ export function renderAt(path, searchPath = '', props = {}) {
 export function useRoomServices() {
   beforeEach(resetRoomServices);
   afterEach(() => localStorage.clear());
+}
+
+/**
+ * Once somebody is in the room: its contributions have been read. A participant sees no
+ * strip saying so (ToolkitPage), so this is what the tests wait on instead.
+ */
+export function joined() {
+  return waitFor(() => expect(readContributions).toHaveBeenCalled());
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vite-plus/test';
 import { screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { createRoom, readRoom, readContributions, saveContribution } from '../../test/roomServices';
-import { hours, renderAt, useRoomServices } from '../../test/toolkitRoom';
+import { hours, renderAt, useRoomServices, joined } from '../../test/toolkitRoom';
 import { configureTool, save } from '../../test/configureTool';
 import { lastMap } from '../../test/maplibreStub';
 
@@ -24,7 +24,7 @@ describe('Desire Lines in a room', () => {
     });
 
     renderAt('/toolkit/desire-lines', 'room=room-1');
-    await screen.findByText(/you are in a room/i);
+    await joined();
     await act(async () => { await lastMap().ready; });
 
     expect(screen.getByText('Market square')).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('Desire Lines in a room', () => {
     ]);
 
     renderAt('/toolkit/desire-lines', 'room=room-1');
-    await screen.findByText(/you are in a room/i);
+    await joined();
     await act(async () => { await lastMap().ready; });
     fireEvent.click(await screen.findByRole('button', { name: /show other people/i }));
 
