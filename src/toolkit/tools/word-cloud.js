@@ -11,6 +11,8 @@ export default {
   id: 'word-cloud',
   added: '2026-10-12',
   category: 'understand',
+  setting: 'public',
+  delivery: ['live', 'self-paced'],
   name: 'Word Cloud',
   tagline: 'Ask anything, and watch the answers live.',
   blurb: 'Ask a question to a group of people and let everybody answer in a few words of their own. Each word joins the cloud as it is added, and grows every time another person says it.',

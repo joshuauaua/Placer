@@ -118,6 +118,75 @@ Placer will be **the** definitive digital platform connecting citizens, urban pr
 - **Tool Publishing:** Deploy native PLACER tools or practitioner-submitted tools (direct or consent-based).
 - **Technical Workshops:** Book or attend workshops on converting static placemaking PDFs into live interactive web applications.
 
+#### Tool categories: the Golden Rules
+
+Every tool belongs to exactly one of three categories. They are the order a project works
+in, so a practitioner can always tell which tool comes next:
+
+```
+ UNDERSTAND                       IMAGINE                          PLAN
+ "What IS here today?"     ──>    "What COULD be here?"     ──>    "What WILL we build?"
+ Objective data &                 Visioning, spatial ideas         Voting, budgeting
+ baseline feedback                & interactive                    & execution
+```
+
+1. **Understand — baseline & reality check.** A tool belongs here **only** if it
+   evaluates existing conditions, current behaviour or past experience.
+   - Gehl Public Life Data Protocol tools: public life / public space audits —
+     counting, mapping activities (Site-Specific Spatial Mapping, The Social Space
+     Survey, Stationary Activity Mapping).
+   - Desire Lines: mapping existing movement paths across a site.
+   - 15-Minute Reach: what is in reach of a place today.
+   - Word Cloud: live or async feedback on current perceptions ("describe this park in
+     one word today").
+   - *Planned:* Basic Survey — structured questions on current sentiment or demographics.
+2. **Imagine — visioning & possibility.** A tool belongs here if it asks participants
+   to **draw, place or pitch** future ideas, solutions or interventions.
+   - Idea Visualizer: drawing or sketching over site photos.
+   - Dream It and Street Section Mixer: proposing what a place or a street could become.
+   - Pop Quiz: a playful prompt to challenge assumptions or kick off visioning ("guess
+     how many people use this plaza daily — how could we double it?").
+   - *Planned:* Pin on Image — marking specific locations for future additions or changes
+     ("pin where you want seating").
+3. **Plan — decision & execution.** A tool belongs here if it moves from open ideation to
+   **concrete trade-offs, consensus, prioritisation or task management**.
+   - Poll: voting on top choices or narrowing down competing options.
+   - Co-Budget: allocating real or virtual funds to competing ideas.
+   - *Planned:* Kanban — task tracking and milestone planning after a decision.
+
+A new tool is placed by asking the three questions in order and taking the first that
+fits; a tool that both audits and proposes is split, or placed by its main use.
+
+#### Secondary tags (UI level)
+
+The three categories stay simple. How a tool is deployed is shown as small tags on its
+card, so a practitioner can tell at a glance which fits the situation:
+
+- **Field audit** vs **Public feedback** — run by somebody on site observing and
+  counting, or answered by the people who use the place.
+- **Live presentation** vs **Self-paced mobile** — run by a facilitator in front of a
+  group, everyone joining from their phones; or filled in on a phone in people's own
+  time, at a link. A tool may be both; only a tool that runs in a room can be live.
+
+#### Tool flow
+
+1. **Choose.** Create a tool → pick a category → pick a tool from that category's cards
+   (each with its tags).
+2. **Attach to a project.** Add it to an existing project, or create one (name, private
+   or public, a group project with collaborators invited by email). A tool's results
+   always belong to a project.
+3. **Configure.** One layout for every tool: slides on the left (where a tool runs as
+   several), a **live preview** in the centre that cannot be interacted with, the
+   configuration on the right, and a top bar with the tool's own name (renameable per
+   instance), its project, a **Live / Self-paced** switch, its collaborators (+ to
+   invite), **Preview** (desktop and phone side by side, scrollable, not clickable) and
+   **Publish**.
+4. **Publish.** Live: a room opens, participants join with a PIN or QR code and their
+   answers combine on screen in real time. Self-paced: the tool stays open at its link
+   for people to answer whenever they like.
+5. **Results.** Answers are combined on the project, and the tool stays under the
+   practitioner's My Tools to reuse or run again.
+
 ### Notifications
 
 - **Engagement Alerts:** Receive updates when users comment on or vote for your Imaginations.

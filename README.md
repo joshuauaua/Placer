@@ -35,16 +35,78 @@ section: a Poll's question, for example, appears right on the page.
 Projects are public by default. A **private** project can be seen only by people its
 organisers let in, and anybody else can ask for access.
 
-### Use the Toolkit
+### Use the tools
 
-The Toolkit at `/toolkit` is a gallery of small tools, grouped by what they help with:
-**Understand** how a place is used, **Imagine** how it could change, and **Plan** the
-change. Each tool is a file of its own in `src/toolkit/tools/`; see `CONTRIBUTING.md`
-for adding one.
+Tools are participatory methods made into small web apps, each one file in
+`src/toolkit/tools/` (see `CONTRIBUTING.md` for adding one). Every tool belongs to
+exactly one of three categories, and the categories follow one another as a project
+does: understand the place first, then imagine what it could be, then plan the change.
 
-Some tools can run in a **room**: a facilitator opens one, participants join from their
-own phones with a PIN or QR code, and their answers combine live. A project can attach
-rooms so that the results sit on its page.
+```
+ ┌─────────────────────────┐     ┌─────────────────────────┐     ┌─────────────────────────┐
+ │       UNDERSTAND        │     │         IMAGINE         │     │          PLAN           │
+ │ Core question:          │     │ Core question:          │     │ Core question:          │
+ │ "What IS here today?"   │ ──> │ "What COULD be here?"   │ ──> │ "What WILL we build?"   │
+ │                         │     │                         │     │                         │
+ │ Objective data &        │     │ Visioning, spatial      │     │ Voting, budgeting, &    │
+ │ baseline feedback       │     │ ideas, & interactive    │     │ execution               │
+ └─────────────────────────┘     └─────────────────────────┘     └─────────────────────────┘
+```
+
+#### The rule for each category
+
+| Category | A tool belongs here if… | Tools |
+|---|---|---|
+| **Understand** — baseline & reality check | it **only** evaluates existing conditions, current behaviour or past experience. | Gehl Public Life Data Protocol tools (Site-Specific Spatial Mapping, The Social Space Survey, Stationary Activity Mapping) · Desire Lines · 15-Minute Reach · Word Cloud |
+| **Imagine** — visioning & possibility | it asks people to **draw, place or pitch** future ideas, solutions or interventions. | Idea Visualizer · Dream It · Street Section Mixer · Pop Quiz |
+| **Plan** — decision & execution | it moves from open ideas to **concrete trade-offs, consensus, prioritisation or task management**. | Poll · Co-Budget |
+
+Planned, and where they will go: **Basic Survey** (Understand: structured questions on
+current sentiment or demographics), **Pin on Image** (Imagine: marking where future
+additions or changes should go — "pin where you want seating"), and **Kanban** (Plan:
+tasks and milestones after a decision).
+
+Two of these are judgement calls worth knowing: **Word Cloud** is Understand because it
+asks about a place as it is ("describe this park in one word today"), and **Pop Quiz** is
+Imagine because it is used as a playful prompt to challenge assumptions and start
+visioning ("guess how many people use this plaza daily — how could we double it?"). A
+tool's category is its `category` in its file.
+
+#### Secondary tags
+
+The three categories stay simple; how a tool is *used* is shown as small tags on its
+card instead (`setting` and `delivery` in its file, `toolTags` in
+`src/toolkit/tools.js`):
+
+- **Field audit** vs **Public feedback** — somebody on site observing and counting, or
+  the people who use the place answering.
+- **Live presentation** vs **Self-paced mobile** — a facilitator running it in front of
+  a group, everyone joining from their phones; or people filling it in on their phone
+  in their own time, at its link. A tool can be both. Only a tool that runs in a
+  **room** can be live.
+
+#### How a tool flows
+
+1. **Create a tool** (side nav, or the dashboard's Create a Tool and My Tools card) asks
+   for a category — Understand, Imagine or Plan — then shows that category's tools
+   as cards, with their tags.
+2. Picking one asks **which project it is for**: an existing one from a dropdown, or a
+   new one (name, private or not, and a group project with collaborators invited by
+   email).
+3. Its **configuration page** follows, the same for every tool:
+   - **top bar** — the tool's name (renameable, just this instance), the project it is
+     in, a **Live** switch (live with a group, or self-paced by link), the
+     collaborators and a + to invite more, **Preview** and **Publish**;
+   - **left** — its slides, for a tool that runs as several (Poll, Word Cloud);
+   - **centre** — a live preview of the slide, nothing in it to use;
+   - **right** — the configuration, every setting the tool has.
+
+   **Preview** shows the slide as people taking part will see it, on a desktop and on a
+   phone side by side.
+4. **Publish** puts it live *(not built yet)*: run in a room, people join with a PIN or
+   QR code and their answers combine on screen as they come in; or left open at its
+   link, people answer in their own time. Either way, the results sit on the project.
+5. It is kept under **My Tools** on the dashboard, to come back to.
 
 ### Everything around it
 

@@ -12,6 +12,8 @@ export default {
   id: 'reimagine-a-space',
   added: '2026-10-06',
   category: 'imagine',
+  setting: 'public',
+  delivery: ['live', 'self-paced'],
   name: 'Idea Visualizer',
   tagline: 'A tool to help anyone quickly create a visualization of an idea they have.',
   blurb: 'Pin a place and take its photo in Street View, or upload one you took there. Place trees, benches, stalls, lighting and more where they would go, describe your idea, and save it to your profile.',

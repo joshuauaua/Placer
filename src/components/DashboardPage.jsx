@@ -190,7 +190,7 @@ function PanelCard({ t, id, title, action, children }) {
 
 /**
  * The tool-first dashboard. Its first shortcut is Create a Tool, opening the same choice
- * of Understand, Re-Imagine and Plan as the side nav's button (`onCreateTool` gets the
+ * of Understand, Imagine and Plan as the side nav's button (`onCreateTool` gets the
  * one picked). Getting Started, under the shortcuts, shows for the first few visits
  * and after that lives in the Guide shortcut; My Tools, Popular Templates and
  * Tutorials come after it (`onOpenStartedTool` gets a started tool's

@@ -1,9 +1,11 @@
 /* PLACER — the second step of Create a tool: the tools there are of the kind picked.
  *
  * Create a tool (the side nav's button, or the dashboard's shortcut) first asks which
- * kind, Understand, Re-Imagine or Plan (CreateToolMenu). This dialog then shows every
+ * kind, Understand, Imagine or Plan (CreateToolMenu). This dialog then shows every
  * tool of that kind, A-Z, as a card in a grid: its picture, or its icon on its
- * category's colour, then its name, tagline and who made it. The dialog is large —
+ * category's colour, then its name, tagline, its tags — a field audit or public
+ * feedback, and whether it runs live, self-paced on a phone, or both (toolTags) — and
+ * who made it. The dialog is large —
  * nearly the window on a laptop — under a header in the category's colour; on a phone
  * the grid is one column. Choosing one calls `onPick` with its id; App opens its configuration
  * page. Escape, the close button or a click outside the panel closes it.
@@ -12,7 +14,7 @@
 import { useEffect, useRef } from 'react';
 import { Icon } from './Icon';
 import { TOOL_KINDS } from './SideNav';
-import { TOOLS, filterTools, findCategory, sortTools } from '../toolkit/tools';
+import { TOOLS, filterTools, findCategory, sortTools, toolTags } from '../toolkit/tools';
 import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
 
 function ToolCard({ t, tool, onPick }) {
@@ -35,6 +37,14 @@ function ToolCard({ t, tool, onPick }) {
             <Icon name="arrowRight" size={18} stroke={2.2} style={{ color: t.inkDim, flex: '0 0 auto' }} />
           </span>
           <span style={{ fontSize: 14, lineHeight: 1.5, color: t.inkDim }}>{tool.tagline}</span>
+          <span className="placer-tool-tags" aria-label="Tags">
+            {toolTags(tool).map((tag) => (
+              <span key={tag.id} className="placer-tool-tag">
+                <Icon name={tag.icon} size={12} stroke={2.2} />
+                {tag.name}
+              </span>
+            ))}
+          </span>
           {tool.createdBy && (
             <span className="placer-caption" style={{ color: t.inkDim, marginTop: 'auto', paddingTop: 6 }}>
               By {tool.createdBy}

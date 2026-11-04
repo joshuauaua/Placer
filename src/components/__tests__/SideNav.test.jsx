@@ -108,7 +108,7 @@ describe('SideNav', () => {
     expect(screen.queryByRole('button', { name: 'Tools' })).toBeNull();
   });
 
-  it('opens a menu of Understand, Re-Imagine and Plan from Create a tool, and creates the kind chosen', () => {
+  it('opens a menu of Understand, Imagine and Plan from Create a tool, and creates the kind chosen', () => {
     const { onCreateTool } = setup();
     const create = screen.getByRole('button', { name: 'Create a tool' });
 
@@ -116,11 +116,11 @@ describe('SideNav', () => {
     fireEvent.click(create);
     expect(create).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getAllByRole('menuitem').map((item) => item.querySelector('.placer-create-tool-label').textContent))
-      .toEqual(['Understand', 'Re-Imagine', 'Plan']);
+      .toEqual(['Understand', 'Imagine', 'Plan']);
     expect(screen.getAllByRole('menuitem').map((item) => item.querySelector('.placer-create-tool-description').textContent))
       .toEqual(['How a place is used', 'How it could change', 'Shape the change']);
 
-    fireEvent.click(screen.getByRole('menuitem', { name: /Re-Imagine/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Imagine/ }));
     expect(onCreateTool).toHaveBeenCalledWith('imagine');
     expect(screen.queryByRole('menu')).toBeNull();
   });

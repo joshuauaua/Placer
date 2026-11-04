@@ -2,7 +2,7 @@
  *
  * The places someone with an account goes back to: their dashboard and their boards,
  * under a primary button for creating a tool — a dropdown of the three kinds of tool,
- * Understand, Re-Imagine and Plan (CreateToolMenu) — with small links low down above a
+ * Understand, Imagine and Plan (CreateToolMenu) — with small links low down above a
  * line: Explore, their organisations (once they run one), the Guides, the FAQ and the
  * terms (which the footer had before it went for anyone signed in). Their settings
  * are under that line at the very bottom. It sits under the glass
@@ -73,12 +73,11 @@ const SMALL_LINKS = [
   { key: 'terms', label: 'Terms and Privacy', view: 'terms' },
 ];
 
-// What Create a tool offers: one of the tool categories each. Imagine reads as
-// Re-Imagine here, the verb for what the tools of that kind are for. Each has a few
-// words of its own rather than the category's full description, to fit a card.
+// What Create a tool offers: one of the tool categories each, by its own name. Each has
+// a few words of its own rather than the category's full description, to fit a card.
 export const TOOL_KINDS = [
   { category: 'understand', label: 'Understand', hint: 'How a place is used', icon: 'eye' },
-  { category: 'imagine', label: 'Re-Imagine', hint: 'How it could change', icon: 'sparkle' },
+  { category: 'imagine', label: 'Imagine', hint: 'How it could change', icon: 'sparkle' },
   { category: 'plan', label: 'Plan', hint: 'Shape the change', icon: 'layers' },
 ];
 
