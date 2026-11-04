@@ -34,7 +34,7 @@ describe('ChooseToolDialog', () => {
     expect(dialog).toHaveStyle({ maxWidth: '960px' });
     // The kind as a small heading, and what its tools are for under it, in bold.
     expect(within(dialog).getByRole('heading', { level: 2, name: 'Plan' })).toHaveStyle({ fontSize: '15px' });
-    expect(within(dialog).getByText('Tools for planning the change, together, in one place.'))
+    expect(within(dialog).getByText('Tools for deciding: weighing the ideas, agreeing on priorities and planning the work.'))
       .toHaveStyle({ fontWeight: '700' });
     expect(within(dialog).getByRole('list', { name: 'Tools' })).toHaveClass('placer-choose-tool-grid');
     const card = within(dialog).getByRole('button', { name: /Co-Budget/ });
@@ -44,10 +44,10 @@ describe('ChooseToolDialog', () => {
     expect(card).toHaveTextContent(`By ${budget.createdBy}`);
   });
 
-  it('calls Imagine Re-Imagine, as Create a tool does', () => {
+  it('calls the kind Imagine, as Create a tool does', () => {
     setup({ category: 'imagine' });
 
-    expect(screen.getByRole('dialog', { name: 'Re-Imagine' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Imagine' })).toBeInTheDocument();
   });
 
   it('picks a tool by its id', () => {

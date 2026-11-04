@@ -11,6 +11,8 @@ export default {
   id: 'site-spatial-mapping',
   added: '2026-09-17',
   category: 'understand',
+  setting: 'field',
+  delivery: ['self-paced'],
   name: 'Site-Specific Spatial Mapping Tool',
   tagline: 'Pin a site on the map, answer eighteen cards, stay in touch.',
   blurb: 'Pick a specific site on a map. Work through the eighteen-question survey. Then reflect.',

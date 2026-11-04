@@ -11,6 +11,8 @@ export default {
   id: 'budget-ballot',
   added: '2026-08-27',
   category: 'plan',
+  setting: 'public',
+  delivery: ['live', 'self-paced'],
   name: 'Co-Budget',
   tagline: 'A fixed budget, more on the list than it buys. Choose.',
   blurb: 'Every post has a price per item, and the money runs out well before the list does. Spend the budget the way you would, and see what the room would fund together.',

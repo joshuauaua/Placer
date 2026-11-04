@@ -12,6 +12,8 @@ export default {
   id: 'desire-lines',
   added: '2026-08-27',
   category: 'understand',
+  setting: 'public',
+  delivery: ['live', 'self-paced'],
   name: 'Desire Lines',
   tagline: 'The path people take, not the one that got paved.',
   blurb: 'Pick a site on the map and draw the walks you actually make across it — the shortcuts, the detours around what was built. Run for a project, its organisers choose the sites and everyone draws on them, and you can lay the others’ walks over your own to see where you walk the same way and where you do not.',

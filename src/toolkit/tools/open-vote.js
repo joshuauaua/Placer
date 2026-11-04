@@ -11,6 +11,8 @@ export default {
   id: 'open-vote',
   added: '2026-09-22',
   category: 'plan',
+  setting: 'public',
+  delivery: ['live', 'self-paced'],
   name: 'Poll',
   tagline: 'Ask anything, get answers.',
   blurb: 'Ask a question to a group of people and let them vote. Just a question, answers, and a live tally as people pick.',

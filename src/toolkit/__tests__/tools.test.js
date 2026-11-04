@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vite-plus/test';
 import {
-  CATEGORIES, ORGANISATIONS, REGISTERED_TOOLS, TOOLS, filterTools, findCategory, findTool, projectSetupKind, shownTools,
+  CATEGORIES, ORGANISATIONS, REGISTERED_TOOLS, TOOLS, filterTools, findCategory, findTool, projectSetupKind, shownTools, toolTags,
 } from '../tools';
 
 describe('the register', () => {
@@ -22,6 +22,35 @@ describe('the register', () => {
     for (const tool of REGISTERED_TOOLS) {
       expect(findCategory(tool.category), tool.id).not.toBeNull();
     }
+  });
+
+  it('says of every tool who it is for and how it is run, for the tags on its card', () => {
+    for (const tool of TOOLS) {
+      expect(['field', 'public'], tool.id).toContain(tool.setting);
+      expect(tool.delivery.length, tool.id).toBeGreaterThan(0);
+      for (const way of tool.delivery) expect(['live', 'self-paced'], tool.id).toContain(way);
+    }
+  });
+
+  it('can run live only what can run in a room', () => {
+    for (const tool of TOOLS.filter((entry) => entry.delivery.includes('live'))) {
+      expect(tool.room, tool.id).toBeTruthy();
+    }
+  });
+
+  it('tags a tool with its setting first, then how it is run', () => {
+    expect(toolTags(findTool('word-cloud')).map((tag) => tag.name))
+      .toEqual(['Public feedback', 'Live presentation', 'Self-paced mobile']);
+    expect(toolTags(findTool('stationary-activity-mapping')).map((tag) => tag.name))
+      .toEqual(['Field audit', 'Self-paced mobile']);
+  });
+
+  it('puts the tools in the categories the Golden Rules give them', () => {
+    const inCategory = (id) => TOOLS.filter((tool) => tool.category === id).map((tool) => tool.id).sort();
+    expect(inCategory('understand')).toEqual(['desire-lines', 'fifteen-minute', 'site-spatial-mapping',
+      'social-space-survey', 'stationary-activity-mapping', 'word-cloud']);
+    expect(inCategory('imagine')).toEqual(['dream-it', 'pop-quiz', 'reimagine-a-space', 'street-mixer']);
+    expect(inCategory('plan')).toEqual(['budget-ballot', 'open-vote']);
   });
 
   it('says which organisation created every tool', () => {
@@ -153,7 +182,7 @@ describe('filterTools', () => {
     expect(ids({ category: 'understand', query: 'map' })).toEqual(
       expect.arrayContaining(['site-spatial-mapping', 'stationary-activity-mapping']),
     );
-    expect(ids({ category: 'imagine', groupOnly: true })).toEqual(['reimagine-a-space']);
+    expect(ids({ category: 'imagine', groupOnly: true }).sort()).toEqual(['pop-quiz', 'reimagine-a-space']);
   });
 
   it('lists each organisation once, alphabetically', () => {

@@ -6,6 +6,8 @@ export default {
   id: 'street-mixer',
   added: '2026-08-27',
   category: 'imagine',
+  setting: 'public',
+  delivery: ['self-paced'],
   name: 'Street Section Mixer',
   tagline: 'Twenty metres, and everything wants some.',
   blurb: 'A street is a fixed width. Cycle track, bus lane, trees, parking, footway — they are all bidding for the same metres, and the only way to give one more is to take it from another.',

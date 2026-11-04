@@ -339,7 +339,7 @@ describe('DashboardPage tools', () => {
     await waitFor(() => expect(readMyProjects).toHaveBeenCalled());
   });
 
-  it('opens Understand, Re-Imagine and Plan from Create a Tool, and creates the kind chosen', async () => {
+  it('opens Understand, Imagine and Plan from Create a Tool, and creates the kind chosen', async () => {
     const onCreateTool = vi.fn();
     setup({ handlers: { onCreateTool } });
     const create = screen.getByRole('button', { name: 'Create a Tool' });

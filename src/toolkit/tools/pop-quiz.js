@@ -10,7 +10,11 @@ import { counted, roomText, tone } from '../toolParts';
 export default {
   id: 'pop-quiz',
   added: '2026-10-12',
-  category: 'understand',
+  // Imagine rather than Understand: a playful prompt that challenges assumptions
+  // and kicks off visioning ("Guess how many use this plaza daily — how could we double it?").
+  category: 'imagine',
+  setting: 'public',
+  delivery: ['live'],
   name: 'Pop Quiz',
   tagline: 'Twenty questions, a clock, and a scoreboard.',
   blurb: 'Write a quiz of up to twenty questions, each with four choices or a blank to fill in. Everybody joins with a nickname, the questions go up one at a time, and a right answer scores more the sooner it comes — a quick way to find out what a room already knows about a place.',

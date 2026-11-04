@@ -17,7 +17,7 @@ describe('MyTools', () => {
     expect(within(cards[0]).getByRole('button')).toHaveClass('placer-add-tool-card');
   });
 
-  it('opens Understand, Re-Imagine and Plan from that card, and creates the kind chosen', () => {
+  it('opens Understand, Imagine and Plan from that card, and creates the kind chosen', () => {
     const onCreateTool = vi.fn();
     render(<MyTools t={THEME} accountId="a" onOpen={vi.fn()} onCreateTool={onCreateTool} />);
     const add = screen.getByRole('button', { name: /Create a tool/ });

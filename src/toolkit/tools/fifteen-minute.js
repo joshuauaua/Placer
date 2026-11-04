@@ -6,6 +6,8 @@ export default {
   id: 'fifteen-minute',
   added: '2026-08-27',
   category: 'understand',
+  setting: 'field',
+  delivery: ['self-paced'],
   name: '15-Minute Reach',
   tagline: 'Everything within a quarter-hour walk. Everything.',
   blurb: 'Place a food shop, a school, a clinic, a park and a transit stop, and see how much of the neighbourhood can really walk to all five — around the railway rather than through it.',

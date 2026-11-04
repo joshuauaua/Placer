@@ -9,7 +9,7 @@
  *
  * After them, in the next place in the grid, is the outline of a card, dashed, with a +
  * in it: Create a tool. With nothing started it is the only card. It opens the same
- * choice of Understand, Re-Imagine and Plan as the side nav's button, beside it, and
+ * choice of Understand, Imagine and Plan as the side nav's button, beside it, and
  * `onCreateTool` gets the kind picked.
  */
 
@@ -84,7 +84,7 @@ function AddToolCard({ onCreateTool }) {
         </span>
         <span className="placer-template-text">
           <span className="placer-template-title">Create a tool</span>
-          <span className="placer-started-details">Understand, Re-Imagine or Plan</span>
+          <span className="placer-started-details">Understand, Imagine or Plan</span>
         </span>
       </button>
       {open && (

@@ -1,9 +1,25 @@
 /* PLACER — the Toolkit register.
  *
  * The Toolkit hosts tools: participatory methods, each made by an organisation
- * (`createdBy`) and each in one of three categories (`category`, see CATEGORIES) —
- * understanding how a place is used, imagining how it could change, or planning
- * that change in one place.
+ * (`createdBy`) and each in one of three categories (`category`, see CATEGORIES), which
+ * follow one another as a project does — Understand, then Imagine, then Plan. The
+ * rule for which (README.md, Tools; docs/PRD.md, Toolkit):
+ *
+ *   understand — "What IS here today?" Only a tool that evaluates existing conditions,
+ *                current behaviour or past experience: audits, counts, maps of how a
+ *                place is used, feedback on it as it is.
+ *   imagine    — "What COULD be here?" A tool that asks people to draw, place or pitch
+ *                future ideas, solutions or interventions.
+ *   plan       — "What WILL we build?" A tool that moves from open ideas to concrete
+ *                trade-offs, consensus, priorities or the tasks that follow a decision.
+ *
+ * Two more say how a tool is used, shown as small tags on its card (toolTags):
+ *
+ *   `setting`  — 'field', a field audit: somebody on site observing or counting; or
+ *                'public', public feedback: the people who use the place answering.
+ *   `delivery` — one or both of 'live', a live presentation: a facilitator runs it in
+ *                front of a group, everyone joining from their phones; and
+ *                'self-paced', on a phone in people's own time, at its link.
  *
  * `added` is the day the tool joined the Toolkit (YYYY-MM-DD), which is what the
  * gallery's Recent order goes by, and what its card gives as the published date.
@@ -81,6 +97,9 @@
  * started, with no nav bar or footer, and its `component` is given only { t, tool }.
  * Idea Visualizer is one: its steps are screens of their own, each with its own top bar.
  *
+ * `setting` and `delivery` are required: see the top of this file, and SETTINGS and
+ * DELIVERIES below.
+ *
  * `inquiry` is optional, for a tool that can be kept on a profile when it is used on its
  * own (components/toolkit/KeepOnProfile.jsx, services/inquiries.js). It says how one of
  * its saved inquiries is listed there (SavedInquiries):
@@ -119,19 +138,22 @@ export const CATEGORIES = [
   {
     id: 'understand',
     name: 'Understand',
-    description: 'Tools for understanding how a place is used today.',
+    question: 'What is here today?',
+    description: 'Tools for the baseline: how a place is used today, and what people make of it.',
     colour: PALETTE.blue,
   },
   {
     id: 'imagine',
     name: 'Imagine',
-    description: 'Tools for imagining how a place could change.',
+    question: 'What could be here?',
+    description: 'Tools for visioning: drawing, placing and pitching ideas for how a place could change.',
     colour: PALETTE.orange,
   },
   {
     id: 'plan',
     name: 'Plan',
-    description: 'Tools for planning the change, together, in one place.',
+    question: 'What will we build?',
+    description: 'Tools for deciding: weighing the ideas, agreeing on priorities and planning the work.',
     colour: PALETTE.purple,
   },
 ];
@@ -251,6 +273,25 @@ export function projectSetupKind(tool) {
  */
 export function isToolLive(tool, { configured = false, openRoom = null } = {}) {
   return projectSetupKind(tool) === 'room' ? Boolean(openRoom) : configured;
+}
+
+/** Who a tool is for: somebody auditing the site, or the public it is for. */
+export const SETTINGS = [
+  { id: 'field', name: 'Field audit', icon: 'crosshair' },
+  { id: 'public', name: 'Public feedback', icon: 'user' },
+];
+
+/** How a tool is run: live, in front of a group, or in people's own time on a phone. */
+export const DELIVERIES = [
+  { id: 'live', name: 'Live presentation', icon: 'eye' },
+  { id: 'self-paced', name: 'Self-paced mobile', icon: 'phone' },
+];
+
+/** A tool's tags for its card: its setting, then how it is delivered, in that order. */
+export function toolTags(tool) {
+  const setting = SETTINGS.find((entry) => entry.id === tool?.setting);
+  const delivery = DELIVERIES.filter((entry) => (tool?.delivery ?? []).includes(entry.id));
+  return [...(setting ? [setting] : []), ...delivery];
 }
 
 /** The category with this id, or null. */
