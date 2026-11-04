@@ -1,3 +1,4 @@
+import { WordCloudResults } from '../../components/toolkit/WordCloudResults';
 import { WordCloud } from '../../components/toolkit/WordCloud';
 import { WordCloudOnPage } from '../../components/toolkit/WordCloudOnPage';
 import { PromptStep, WordCloudSetup, WordsStep } from '../../components/toolkit/WordCloudSetup';
@@ -35,6 +36,8 @@ export default {
   inquiry: {
     summary: (config) => (config?.words?.length > 0 ? counted(config.words.length, 'word', 'words') : ''),
   },
+  // Everything a room of it was told, live or once it has ended (WordCloudResults).
+  results: { View: WordCloudResults },
   onProjectPage: {
     heading: 'Tell us in a word',
     Embed: WordCloudOnPage,

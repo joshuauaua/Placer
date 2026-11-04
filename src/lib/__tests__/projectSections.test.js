@@ -120,3 +120,21 @@ describe('layoutFor', () => {
     expect(layoutFor(shown)).toEqual([{ key: 'photo:g/1.webp', hideTitle: false }, { key: 'about' }, { key: 'goals' }]);
   });
 });
+
+describe('projectSections, results', () => {
+  const ended = (roomId, prompt) => ({ roomId, tool: 'word-cloud', config: { prompt }, status: 'ended', states: [] });
+
+  it('adds a section for each ended room of a tool that shows its results, and none for live ones', () => {
+    const sections = projectSections({
+      project: { ...PROJECT, summary: '', description: '' },
+      tools: [findTool('word-cloud'), findTool('open-vote')],
+      results: [
+        { ...ended('live', 'Now?'), status: 'open' },
+        ended('room-a', 'One word for the river'),
+        { ...ended('poll', 'Car-free?'), tool: 'open-vote' },
+      ],
+    });
+    expect(sections.map(({ key }) => key)).toEqual(['results:room-a']);
+    expect(sections[0]).toMatchObject({ kind: 'results', defaultTitle: 'Word Cloud results: One word for the river' });
+  });
+});

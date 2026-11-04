@@ -23,7 +23,7 @@ import {
   setProjectToolPlacement,
   updateProject,
 } from '../../services/projects';
-import { closeRoom, createRoom, deleteRoom, rescheduleRoom, setRoomCloses } from '../../services/rooms';
+import { closeRoom, createRoom, deleteRoom, readProjectToolResults, rescheduleRoom, setRoomCloses } from '../../services/rooms';
 import {
   addCollaboratingOrganisation, decideAccess, readAccessRequests, readCollaboratingOrganisations, removeAccess,
   removeCollaboratingOrganisation,
@@ -111,6 +111,8 @@ vi.mock('../../services/rooms', () => ({
   closeRoom: vi.fn(() => Promise.resolve(true)),
   deleteRoom: vi.fn(() => Promise.resolve(true)),
   readProjectOpenRooms: vi.fn(() => Promise.resolve([])),
+  readProjectToolResults: vi.fn(() => Promise.resolve([])),
+  isSupabaseConfigured: vi.fn(() => true),
 }));
 
 const PROJECT = {
@@ -1089,5 +1091,60 @@ describe('ProjectDashboardPage, a private project', () => {
 
     await screen.findByRole('heading', { name: 'Collaborators' });
     expect(screen.queryByText('Who can see this project')).not.toBeInTheDocument();
+  });
+});
+
+describe('ProjectDashboardPage, a tool\'s results', () => {
+  const now = Date.now();
+  const CLOUD_ROOM = {
+    id: 'room-live', tool: 'word-cloud', pin: '111111', joinCode: 'c'.repeat(32), facilitatorToken: 'f',
+    config: { prompt: 'One word for the river' }, createdAt: new Date(now).toISOString(),
+    expiresAt: new Date(now + 86400000).toISOString(), status: 'open', contributions: 2,
+  };
+  const result = (roomId, status, words, prompt) => ({
+    roomId, tool: 'word-cloud', config: { prompt }, status, openedAt: '2026-10-01T10:00:00Z',
+    endsAt: '2026-10-02T10:00:00Z', states: words.map((list) => ({ words: list })),
+  });
+
+  beforeEach(() => {
+    tab = 'toolkit';
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    vi.mocked(readStats).mockResolvedValue(STATS);
+    vi.mocked(readCollaborators).mockResolvedValue([]);
+    vi.mocked(readLinks).mockResolvedValue([]);
+    vi.mocked(readProjectTools).mockResolvedValue(['word-cloud']);
+    vi.mocked(readProjectRooms).mockResolvedValue([CLOUD_ROOM]);
+    vi.mocked(readProjectToolResults).mockResolvedValue([
+      result('room-live', 'open', [['green', 'calm'], ['green']], 'One word for the river'),
+      result('room-old', 'ended', [['loud'], ['loud'], ['busy']], 'One word for the square'),
+    ]);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  it('shows a live room\'s results under it, and an ended room\'s as a completed row', async () => {
+    setup();
+    fireEvent.click(await screen.findByRole('button', { name: /Word Cloud/, expanded: false }));
+    const rooms = within(screen.getByRole('region', { name: 'Word Cloud rooms' }));
+
+    expect(rooms.getByText(/Completed/)).toBeInTheDocument();
+    expect(rooms.getByText(/3 responses/)).toBeInTheDocument();
+    const [liveButton, pastButton] = rooms.getAllByRole('button', { name: 'Results' });
+
+    fireEvent.click(liveButton);
+    const live = within(screen.getByRole('region', { name: 'Word Cloud results' }));
+    expect(live.getByText('Live')).toBeInTheDocument();
+    expect(live.getByText('2 people · 2 words')).toBeInTheDocument();
+    expect(live.getByRole('heading', { name: 'One word for the river' })).toBeInTheDocument();
+    fireEvent.click(liveButton);
+    expect(screen.queryByRole('region', { name: 'Word Cloud results' })).not.toBeInTheDocument();
+
+    fireEvent.click(pastButton);
+    const past = within(screen.getByRole('region', { name: 'Word Cloud results' }));
+    expect(past.getByText(/^Completed/)).toBeInTheDocument();
+    expect(past.getByText('3 people · 2 words')).toBeInTheDocument();
   });
 });

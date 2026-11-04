@@ -127,6 +127,7 @@ const PLAN = [
   { name: '20261028100001_bug_report_screenshots.sql', src: 'bug-report-screenshots.sql' },
   { name: '20261028120001_survey_followups_landing.sql', src: 'survey-followups-landing.sql' },
   { name: '20261030140000_project_collaboration_invitations.sql', src: 'project-collaboration-invitations.sql' },
+  { name: '20261104120001_toolkit_room_results.sql', src: 'room-results.sql' },
 ]
 
 const ROOM_TOOLS = 'room-tools'

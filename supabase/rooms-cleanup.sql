@@ -1,5 +1,10 @@
 -- PLACER — clearing out toolkit rooms.
 --
+-- NOTE: room-results.sql has since replaced step 4's job. The sweep now keeps a
+-- project's room results (toolkit_room_results) before it deletes, through
+-- public.toolkit_rooms_sweep(). Run room-results.sql after this file, or step 4 here
+-- puts the delete-only job back.
+--
 -- A room stops working when its time runs out — two hours after it is opened, or up
 -- to 90 days for a project's long-running room (rooms-lifetime.sql) — or the moment
 -- its facilitator closes it. That is enforced in the predicates in rooms.sql, so an expired room is

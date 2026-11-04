@@ -143,6 +143,7 @@ describe('the privacy safeguards', () => {
     expect(section).toHaveTextContent('If you are signed in, your display name goes with your answers');
     expect(section).toHaveTextContent('can be read by anyone who can see its project');
     expect(section).toHaveTextContent('deleted at most a day after it ends');
+    expect(section).toHaveTextContent('with no name or anything else that says who gave them');
     expect(section).toHaveTextContent('that notification stays in their account');
     expect(section).not.toHaveTextContent(/anonymi[sz]ed by default|full compliance/i);
   });

@@ -187,6 +187,29 @@ export async function readProjectOpenRooms(projectId) {
 }
 
 /**
+ * Every room of a project that has opened, newest first, with what it was told —
+ * `states`, each participant's state without who gave it — for its results: read from
+ * the room while it exists, and from what was kept once the hourly sweep has deleted
+ * it (supabase/room-results.sql). `status` is 'open' or 'ended'. Anybody who can see
+ * the project.
+ */
+export async function readProjectToolResults(projectId) {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('project_tool_results', { p_project_id: projectId });
+
+  if (error) throw new Error(`Could not read the project's results: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    roomId: row.room_id,
+    tool: row.tool,
+    config: row.config ?? null,
+    status: row.status === 'open' ? 'open' : 'ended',
+    openedAt: row.opened_at ?? null,
+    endsAt: row.ends_at ?? null,
+    states: Array.isArray(row.states) ? row.states.filter(Boolean) : [],
+  }));
+}
+
+/**
  * Every room of a project, earliest first, with when it opens and closes and its
  * status: 'scheduled' | 'open' | 'closed' | 'expired'. Anybody who can see the
  * project; a room not yet started comes without its setup. See

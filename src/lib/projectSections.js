@@ -19,6 +19,8 @@
  *   tool:<tool id>         a tool configured for the project that runs on its own
  *   room:<room id>         an open room of a tool that runs in one — a project can run
  *                          several Polls at once, each with a section of its own
+ *   results:<room id>      what a room that has ended was told, for a tool that shows
+ *                          its results (`results` in toolkit/tools.js), newest first
  *
  * A room's key is its room's, so a title given to one Poll does not pass to the next
  * one opened.
@@ -47,7 +49,7 @@ export function projectIntro(project) {
  * { key, kind, defaultTitle, domId } plus `tool` and `room` for a tool's: `domId` is
  * the element id the page gives it, which links to a section go by.
  */
-export function projectSections({ project, tools = [], openRooms = [], configured = new Set() }) {
+export function projectSections({ project, tools = [], openRooms = [], configured = new Set(), results = [] }) {
   const { intro, goals } = projectIntro(project);
   const sections = [];
   if (intro) sections.push({ key: 'about', kind: 'about', defaultTitle: 'About the project', domId: 'project-about' });
@@ -84,6 +86,23 @@ export function projectSections({ project, tools = [], openRooms = [], configure
         tool,
         room,
       });
+    });
+  }
+
+  // The results of the rooms that have ended, of the tools that show them (`results`
+  // from useToolResults, newest first).
+  for (const result of results) {
+    if (result.status !== 'ended') continue;
+    const tool = tools.find((candidate) => candidate.id === result.tool);
+    if (!tool?.results?.View) continue;
+    const label = tool.room?.label?.(result.config) ?? null;
+    sections.push({
+      key: `results:${result.roomId}`,
+      kind: 'results',
+      defaultTitle: label ? `${tool.name} results: ${label}` : `${tool.name} results`,
+      domId: `project-results-${result.roomId}`,
+      tool,
+      result,
     });
   }
   return sections;
