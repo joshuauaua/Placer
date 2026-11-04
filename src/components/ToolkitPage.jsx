@@ -24,8 +24,10 @@ import { ToolCover } from './toolkit/ToolCover';
 import { useRoom } from './toolkit/useRoom';
 import { useProjectToolSetup } from './toolkit/useProjectToolSetup';
 import { findTool } from '../toolkit/tools';
-import { projectIdFrom, roomIdFrom } from '../toolkit/rooms';
-import { isSupabaseConfigured } from '../services/rooms';
+import { hostedRoom, projectIdFrom, roomIdFrom } from '../toolkit/rooms';
+import { rememberedSequence, roomSequence } from '../toolkit/sequence';
+import { closeRoom, isSupabaseConfigured } from '../services/rooms';
+import { SlideSteps } from './toolkit/SlideSteps';
 import { readProjectCrumb } from '../services/projects';
 import { FULL_SCREEN_TOOLS, isFullScreenTool, startedToolPath } from '../lib/routes';
 
@@ -76,7 +78,7 @@ export function ToolkitPage({ t, displayName = null }) {
     return () => { cancelled = true; };
   }, [projectId]);
 
-  const room = useRoom({
+  const thisRoom = useRoom({
     tool,
     roomId: roomIdFrom(search),
     // Whatever the person calls themselves, so a facilitator can see who has answered.
@@ -85,6 +87,25 @@ export function ToolkitPage({ t, displayName = null }) {
     // identity — a room is joined with its PIN, not with an account.
     displayName,
   });
+  // One slide of a run (toolkit/sequence.js): Next goes on to the slide after it, and
+  // its host ending the session here ends every slide's room this browser opened.
+  const sequence = roomSequence(thisRoom.config);
+  const room = sequence && thisRoom.isHost ? {
+    ...thisRoom,
+    close: async () => {
+      const others = rememberedSequence(sequence.id).filter((id) => id !== thisRoom.roomId);
+      await Promise.all(others.map((id) => {
+        const token = hostedRoom(id)?.token;
+        return token ? closeRoom(id, token).catch((err) => console.error('Could not close a slide\'s room:', err)) : null;
+      }));
+      return thisRoom.close();
+    },
+  } : thisRoom;
+  const goToNextSlide = () => {
+    const query = new URLSearchParams(search);
+    query.set('room', sequence.next);
+    navigate(`${location}?${query.toString()}`);
+  };
 
   // Opened for a project, a tool it has set up starts from that (useProjectToolSetup).
   const projectSetup = useProjectToolSetup(projectId, tool);
@@ -135,6 +156,10 @@ export function ToolkitPage({ t, displayName = null }) {
         <ToolLayout t={t} tool={tool} breadcrumb={breadcrumb} onBack={goBack}>
           <RoomBar t={t} tool={tool} room={room} />
           {projectSetup.ready && <Tool t={t} tool={tool} room={room} setup={projectSetup.setup} />}
+          {sequence && room.status !== 'none' && (
+            <SlideSteps t={t} index={sequence.index} count={sequence.count}
+              onNext={sequence.next ? goToNextSlide : undefined} />
+          )}
         </ToolLayout>
       </div>
     </div>

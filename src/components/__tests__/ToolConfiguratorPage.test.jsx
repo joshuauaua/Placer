@@ -228,6 +228,33 @@ describe('ToolConfiguratorPage', () => {
     expect(location.history.at(-1)).toBe('/toolkit/word-cloud?room=room-1');
   });
 
+  it('publishes several slides as rooms gone through in order, the last opened first', async () => {
+    let made = 0;
+    vi.mocked(createRoom).mockClear();
+    vi.mocked(createRoom).mockImplementation(() => {
+      made += 1;
+      return Promise.resolve({ id: `room-${made}`, pin: `00000${made}`, joinCode: null, facilitatorToken: `f-${made}`,
+        expiresAt: '2026-12-04T10:00:00Z', opensAt: null });
+    });
+    const { location } = renderAt('/toolkit/word-cloud/configure?project=proj-1', ToolConfiguratorPage,
+      { accountId: 'user-1' });
+    fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'First?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add slide' }));
+    fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'Second?' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    const dialog = within(screen.getByRole('dialog', { name: 'Publish Word Cloud' }));
+    expect(dialog.getByText(/go through its 2 slides in order/)).toBeInTheDocument();
+    await act(async () => { fireEvent.click(dialog.getByRole('button', { name: 'Go live' })); });
+
+    const [[, , , last], [, , , first]] = vi.mocked(createRoom).mock.calls;
+    expect(last).toMatchObject({ prompt: 'Second?', sequence: { index: 1, count: 2, next: null } });
+    expect(first).toMatchObject({ prompt: 'First?', sequence: { index: 0, count: 2, next: 'room-1' } });
+    expect(first.sequence.id).toBe(last.sequence.id);
+    // Into the first slide's room.
+    expect(location.history.at(-1)).toBe('/toolkit/word-cloud?room=room-2');
+  });
+
   it('publishes a Self-paced tool for as long as is picked', async () => {
     const { location } = renderAt('/toolkit/word-cloud/configure?project=proj-1', ToolConfiguratorPage,
       { accountId: 'user-1' });

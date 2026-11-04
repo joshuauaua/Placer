@@ -23,10 +23,13 @@
  *                          its results (`results` in toolkit/tools.js), newest first
  *
  * A room's key is its room's, so a title given to one Poll does not pass to the next
- * one opened.
+ * one opened. A tool published as several slides is one section, under its first
+ * slide's room, with `run`: its slides' rooms, in order, to go through one at a time
+ * (toolkit/sequence.js).
  */
 
 import { isToolLive, projectSetupKind } from '../toolkit/tools';
+import { groupSequences, roomSequence } from '../toolkit/sequence';
 
 // How long a title can be, here and in the editor's field.
 export const SECTION_TITLE_MAX = 120;
@@ -75,7 +78,13 @@ export function projectSections({ project, tools = [], openRooms = [], configure
         tool, room: null });
       continue;
     }
-    const rooms = openRooms.filter((candidate) => candidate.tool === tool.id);
+    // A run of slides is one section, under the first of its rooms that is open.
+    const toolRooms = openRooms.filter((candidate) => candidate.tool === tool.id);
+    const runs = groupSequences(toolRooms);
+    const rooms = toolRooms.filter((candidate) => {
+      const sequence = roomSequence(candidate.config);
+      return !sequence || runs.get(sequence.id)[0] === candidate;
+    });
     rooms.forEach((room, index) => {
       const label = rooms.length > 1 ? tool.room?.label?.(room.config) ?? `${index + 1}` : null;
       sections.push({
@@ -85,6 +94,7 @@ export function projectSections({ project, tools = [], openRooms = [], configure
         domId: index === 0 ? `project-tool-${tool.id}` : `project-tool-${tool.id}-${room.id}`,
         tool,
         room,
+        run: roomSequence(room.config) ? runs.get(roomSequence(room.config).id) : null,
       });
     });
   }
