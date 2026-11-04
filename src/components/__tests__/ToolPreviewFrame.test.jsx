@@ -18,8 +18,21 @@ describe('ToolPreviewFrame', () => {
     window[PREVIEW_KEY] = { toolId: 'word-cloud', setup: { prompt: 'One word for the square?', limit: 3, timer: null } };
     const { container } = renderAt('/toolkit/word-cloud/preview-frame', ToolPreviewFrame);
 
-    expect(screen.getByText('One word for the square?')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'One word for the square?' })).toBeInTheDocument();
     expect(container.querySelector('[aria-label="Preview of the slide"]')).toHaveAttribute('inert');
+  });
+
+  it('shows Word Cloud as somebody answering sees it: the prompt over the cloud, and Add your words', () => {
+    window[PREVIEW_KEY] = { toolId: 'word-cloud', setup: { prompt: 'One word for the square?', limit: 3, timer: null } };
+    renderAt('/toolkit/word-cloud/preview-frame', ToolPreviewFrame);
+
+    expect(screen.getByRole('heading', { level: 2, name: 'One word for the square?' })).toBeInTheDocument();
+    expect(screen.getByText('Add your words')).toBeInTheDocument();
+    for (const gone of ['Answers', 'How it works', 'Your cloud']) {
+      expect(screen.queryByText(gone)).toBeNull();
+    }
+    expect(screen.queryByRole('button', { name: /full screen/i })).toBeNull();
+    expect(screen.queryByText(/on your profile/i)).toBeNull();
   });
 
   it('shows the tool\'s defaults when nothing was handed over for it', () => {
