@@ -44,6 +44,7 @@ const AddToBoardDialog = lazy(() => import('./components/AddToBoardDialog'));
 const ToolConfiguratorPage = lazy(() => import('./components/ToolConfiguratorPage'));
 const JoinPage = lazy(() => import('./components/JoinPage'));
 const DashboardPage = lazy(() => import('./components/DashboardPage'));
+const MyToolsPage = lazy(() => import('./components/MyToolsPage'));
 const ActivityPage = lazy(() => import('./components/ActivityPage'));
 const SettingsPage = lazy(() => import('./components/SettingsPage'));
 const AuthPage = lazy(() => import('./components/AuthPage'));
@@ -67,6 +68,7 @@ const PublicOrganisationPage = lazy(() => import('./components/PublicOrganisatio
 // unmounts MainApp, and nothing held in its state is lost on the way.
 const ACCOUNT_PATHS = {
   dashboard: '/dashboard',
+  myTools: '/my-tools',
   activity: '/activity',
   projects: '/projects',
   organisations: '/organisations',
@@ -76,6 +78,7 @@ const ACCOUNT_PATHS = {
 };
 const ACCOUNT_VIEWS = {
   '/dashboard': 'dashboard',
+  '/my-tools': 'myTools',
   // The dashboard's old address, so a bookmark from when it was the profile still works.
   '/profile': 'dashboard',
   // Where Project Examples was, before the dashboard's card went to Projects instead.
@@ -166,7 +169,7 @@ function LoadingFallback() {
 }
 
 // Views that need an account, and say so to someone who has logged out.
-const SIGNED_IN_VIEWS = ['dashboard', 'activity', 'settings', 'projects', 'organisations',
+const SIGNED_IN_VIEWS = ['dashboard', 'myTools', 'activity', 'settings', 'projects', 'organisations',
   'projectNew', 'projectDashboard', 'organisationNew', 'organisationDashboard'];
 
 // What /dashboard, /projects and /settings show to someone who has logged out. Not a redirect,
@@ -592,6 +595,14 @@ function MainApp({ initialView = 'welcome' }) {
 
             {SIGNED_IN_VIEWS.includes(view) && !identityLoading && !profile && (
               <SignedOutNotice t={t} onSignIn={handleSignIn} />
+            )}
+
+            {view === 'myTools' && profile && (
+              <Suspense fallback={<LoadingFallback />}>
+                <MyToolsPage t={t} accountId={accountId} onCreateTool={showCreateTool}
+                  onOpen={(toolId, id) =>
+                    navigate(`/toolkit/${encodeURIComponent(toolId)}/configure?draft=${encodeURIComponent(id)}`)} />
+              </Suspense>
             )}
 
             {view === 'dashboard' && profile && (

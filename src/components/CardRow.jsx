@@ -7,6 +7,8 @@
  * one with the next peeking in), so a swipe or a trackpad moves it too. `children` are
  * the cards, each its own <li>.
  *
+ * `action`, if given, sits before the arrows — My Tools' View all.
+ *
  * Used for Getting Started (DashboardPage), My Tools, Popular Templates and Tutorials.
  */
 
@@ -18,7 +20,7 @@ function prefersReducedMotion() {
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-export function CardRow({ t, id, title, perView = 4, children }) {
+export function CardRow({ t, id, title, perView = 4, action = null, children }) {
   const track = useRef(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(true);
@@ -53,6 +55,7 @@ export function CardRow({ t, id, title, perView = 4, children }) {
       <div className="placer-card-row-head">
         <h2 id={titleId} className="placer-card-row-title" style={{ color: t.ink }}>{title}</h2>
         <div className="placer-card-row-arrows">
+          {action}
           <button type="button" onClick={() => move(-1)} disabled={atStart} aria-controls={trackId}
             aria-label={`${title}: back`} className="placer-card-row-arrow">
             <Icon name="chevLeft" size={18} stroke={2.2} />

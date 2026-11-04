@@ -18,7 +18,7 @@ describe('SideNav', () => {
     setup();
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
-      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Projects',
+      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'My Tools', 'Projects',
         'Explore', 'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
   });
 
@@ -48,7 +48,7 @@ describe('SideNav', () => {
     const { onNavigate } = setup({ showOrganisations: true });
 
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent))
-      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'Projects',
+      .toEqual(['Collapse side nav', 'Create a tool', 'Dashboard', 'My Tools', 'Projects',
         'Explore', 'Organisations', 'Guides', 'FAQ', 'Terms and Privacy', 'Settings']);
     fireEvent.click(screen.getByRole('button', { name: 'Organisations' }));
     expect(onNavigate).toHaveBeenCalledWith('organisations');
@@ -117,8 +117,11 @@ describe('SideNav', () => {
     expect(create).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getAllByRole('menuitem').map((item) => item.querySelector('.placer-create-tool-label').textContent))
       .toEqual(['Understand', 'Imagine', 'Plan']);
-    expect(screen.getAllByRole('menuitem').map((item) => item.querySelector('.placer-create-tool-description').textContent))
-      .toEqual(['How a place is used', 'How it could change', 'Shape the change']);
+    // The name and its question only: no line of description under them.
+    for (const item of screen.getAllByRole('menuitem')) {
+      expect(item.querySelector('.placer-create-tool-description')).toBeNull();
+    }
+    expect(screen.queryByText('How a place is used')).toBeNull();
 
     fireEvent.click(screen.getByRole('menuitem', { name: /Imagine/ }));
     expect(onCreateTool).toHaveBeenCalledWith('imagine');
@@ -181,5 +184,16 @@ describe('SideNav on a phone', () => {
     setup();
 
     expect(screen.getByRole('button', { name: 'Projects' }).querySelector('.placer-side-nav-label-short')).toBeNull();
+  });
+});
+
+describe('SideNav, My Tools', () => {
+  it('opens My Tools from under the dashboard, and marks it while it shows', () => {
+    const { onNavigate } = setup({ view: 'myTools' });
+
+    const item = screen.getByRole('button', { name: 'My Tools' });
+    expect(item).toHaveAttribute('aria-current', 'page');
+    fireEvent.click(item);
+    expect(onNavigate).toHaveBeenCalledWith('myTools');
   });
 });

@@ -43,7 +43,7 @@ function edited(iso) {
   return `Edited ${date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
 }
 
-function StartedToolCard({ started, tool, onOpen }) {
+export function StartedToolCard({ started, tool, onOpen }) {
   const colour = findCategory(tool.category)?.colour;
   const title = startedToolTitle(tool, started);
   const slides = started.slides?.length ?? 1;
@@ -72,7 +72,7 @@ function StartedToolCard({ started, tool, onOpen }) {
 }
 
 /** The outline of a card, dashed, to start a new tool from. */
-function AddToolCard({ onCreateTool }) {
+export function AddToolCard({ onCreateTool }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   return (
@@ -95,14 +95,23 @@ function AddToolCard({ onCreateTool }) {
   );
 }
 
-export function MyTools({ t, accountId = null, onOpen, onCreateTool }) {
+/** The account's started tools whose tool is still on the platform, newest first. */
+export function useStartedTools(accountId) {
   // Read once, when the page opens: nothing here changes them.
   const [started] = useState(() => listStartedTools(accountId)
     .map((entry) => ({ entry, tool: findTool(entry.tool) }))
     .filter(({ tool }) => tool));
+  return started;
+}
+
+// `onViewAll`, if given, puts View all beside the row's arrows: the My Tools page.
+export function MyTools({ t, accountId = null, onOpen, onCreateTool, onViewAll }) {
+  const started = useStartedTools(accountId);
 
   return (
-    <CardRow t={t} id="my-tools" title="My Tools">
+    <CardRow t={t} id="my-tools" title="My Tools" action={onViewAll && (
+      <button type="button" onClick={onViewAll} className="placer-card-row-link">View all</button>
+    )}>
       {started.map(({ entry, tool }) => (
         <StartedToolCard key={entry.id} started={entry} tool={tool} onOpen={onOpen} />
       ))}

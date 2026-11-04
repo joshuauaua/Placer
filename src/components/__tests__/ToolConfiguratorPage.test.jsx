@@ -299,6 +299,26 @@ describe('ToolConfiguratorPage, its canvas', () => {
   });
 });
 
+describe('ToolConfiguratorPage, Word Cloud\'s slide', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('shows only the cloud, titled with the question, and nothing else of the tool', () => {
+    renderAt('/toolkit/word-cloud/configure');
+    const canvas = screen.getByRole('main', { name: 'Canvas' });
+    // Before there is a question, a placeholder holds its place.
+    expect(within(canvas).getByRole('heading', { level: 2, name: 'Your question goes here' })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'One word for the square?' } });
+
+    expect(within(canvas).getByRole('heading', { level: 2, name: 'One word for the square?' })).toBeInTheDocument();
+    for (const gone of ['Your cloud', 'Add your words', 'Answers', 'How it works']) {
+      expect(within(canvas).queryByText(gone)).toBeNull();
+    }
+    expect(within(canvas).queryByRole('button', { name: /full screen/i })).toBeNull();
+    expect(within(canvas).queryByText(/on your profile/i)).toBeNull();
+  });
+});
+
 describe('ToolConfiguratorPage, adding a collaborator', () => {
   beforeEach(() => {
     localStorage.clear();
