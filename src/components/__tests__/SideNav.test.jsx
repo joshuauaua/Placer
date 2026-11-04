@@ -125,6 +125,23 @@ describe('SideNav', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
+  it('asks what kind of tool to create, in a dialog with each kind as a card, and closes from its button', () => {
+    setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Create a tool' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'What kind of tool do you want to create?' });
+    const cards = within(dialog).getAllByRole('menuitem');
+    expect(cards.map((card) => card.querySelector('.placer-create-tool-label').textContent))
+      .toEqual(['Understand', 'Imagine', 'Plan']);
+    expect(cards[0]).toHaveTextContent('What is here today?');
+    expect(cards[1]).toHaveTextContent('What could be here?');
+    expect(cards[2]).toHaveTextContent('What will we build?');
+    expect(cards[0]).toHaveFocus();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('closes the Create a tool menu on Escape or a press elsewhere, and opens it with N', () => {
     const { onCreateTool } = setup();
 

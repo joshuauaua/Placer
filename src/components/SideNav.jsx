@@ -81,46 +81,34 @@ export const TOOL_KINDS = [
   { category: 'plan', label: 'Plan', hint: 'Shape the change', icon: 'layers' },
 ];
 
-// The menu's width: three cards side by side, narrower if the window is.
-const MENU_WIDTH = 640;
-
 /**
- * The dropdown off Create a tool, its three choices side by side as cards. It is drawn into document.body, fixed beside the
- * button, because the side nav scrolls (overflow-y: auto) and would clip anything
- * hanging out of it: under the button in the side nav, above it in the phone's tab
- * bar. Escape or a press anywhere else closes it, the same as UserMenu. The Tools
- * page's Create a Tool shortcut opens it too (DashboardPage).
+ * What opens from Create a tool: a dialog in the middle of the page asking "What kind of
+ * tool do you want to create?", the three kinds side by side as large cards — the
+ * category's colour and icon, its name, its question ("What is here today?") and a few
+ * words — one under another on a phone. Picking one calls `onChoose` with its
+ * category. It is drawn into document.body, over everything. Escape, the close button
+ * or a press anywhere outside the panel closes it, and Escape hands focus back to
+ * `anchor`, the button that opened it (the side nav's, the dashboard's Create a Tool,
+ * My Tools' card). The cards are a menu: the first takes focus, and the arrow keys move
+ * between them.
  */
 export function CreateToolMenu({ anchor, onChoose, onClose }) {
+  const panelRef = useRef(null);
   const menuRef = useRef(null);
-  const [place, setPlace] = useState(null);
 
-  // Layout effects, so the menu is placed and its first choice focused before the
-  // browser paints or takes the next key: an arrow pressed straight after N still lands.
+  // Before the browser paints, so a key pressed straight after N lands on a card.
   useLayoutEffect(() => {
-    const measure = () => {
-      const rect = anchor.current?.getBoundingClientRect();
-      if (!rect) return;
-      const above = rect.top > window.innerHeight / 2;
-      const width = Math.min(MENU_WIDTH, window.innerWidth - 16);
-      const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
-      setPlace(above
-        ? { left, width, bottom: window.innerHeight - rect.top + 8 }
-        : { left, width, top: rect.bottom + 8 });
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, [anchor]);
+    menuRef.current?.querySelector('[role="menuitem"]')?.focus();
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.key !== 'Escape') return;
       onClose();
-      anchor.current?.focus();
+      anchor?.current?.focus();
     };
     const onPointerDown = (e) => {
-      if (menuRef.current?.contains(e.target) || anchor.current?.contains(e.target)) return;
+      if (panelRef.current?.contains(e.target)) return;
       onClose();
     };
     window.addEventListener('keydown', onKeyDown);
@@ -131,12 +119,7 @@ export function CreateToolMenu({ anchor, onChoose, onClose }) {
     };
   }, [anchor, onClose]);
 
-  // The first choice takes focus once the menu is placed, so it can be used from the keyboard.
-  useLayoutEffect(() => {
-    if (place) menuRef.current?.querySelector('[role="menuitem"]')?.focus();
-  }, [Boolean(place)]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // The arrow keys move between the choices: left and right, as they are laid out, and
+  // The arrow keys move between the cards: left and right, as they are laid out, and
   // up and down as well.
   const onMenuKeyDown = (e) => {
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
@@ -148,24 +131,36 @@ export function CreateToolMenu({ anchor, onChoose, onClose }) {
     items[next]?.focus();
   };
 
+  const titleId = 'create-tool-title';
   return createPortal(
-    <div ref={menuRef} role="menu" aria-label="Create a tool" onKeyDown={onMenuKeyDown}
-      className="placer-create-tool-menu"
-      style={{ ...place, visibility: place ? 'visible' : 'hidden' }}>
-      {TOOL_KINDS.map(({ category, label, hint, icon }) => {
-        const kind = findCategory(category);
-        return (
-          <button key={category} role="menuitem" onClick={() => onChoose(category)}
-            className="placer-create-tool-item">
-            <span className="placer-create-tool-icon"
-              style={{ background: kind?.colour?.c100, color: kind?.colour?.c900 }}>
-              <Icon name={icon} size={24} stroke={2} />
-            </span>
-            <span className="placer-create-tool-label">{label}</span>
-            <span className="placer-create-tool-description">{hint}</span>
+    <div className="placer-create-tool-backdrop">
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="placer-create-tool-dialog">
+        <div className="placer-create-tool-head">
+          <h2 id={titleId} className="placer-create-tool-title">What kind of tool do you want to create?</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="placer-create-tool-close">
+            <Icon name="close" size={20} stroke={2} />
           </button>
-        );
-      })}
+        </div>
+        <div ref={menuRef} role="menu" aria-label="Create a tool" onKeyDown={onMenuKeyDown}
+          className="placer-create-tool-menu">
+          {TOOL_KINDS.map(({ category, label, hint, icon }) => {
+            const kind = findCategory(category);
+            return (
+              <button key={category} role="menuitem" onClick={() => onChoose(category)}
+                className="placer-create-tool-item">
+                <span className="placer-create-tool-band" style={{ background: kind?.colour?.c100, color: kind?.colour?.c700 }}>
+                  <span className="placer-create-tool-icon"><Icon name={icon} size={30} stroke={2} /></span>
+                </span>
+                <span className="placer-create-tool-text">
+                  <span className="placer-create-tool-label">{label}</span>
+                  {kind?.question && <span className="placer-create-tool-question">{kind.question}</span>}
+                  <span className="placer-create-tool-description">{hint}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>,
     document.body,
   );

@@ -2646,21 +2646,69 @@ a {
   width: 72px;
 }
 
-/* Create a tool's dropdown (SideNav's CreateToolMenu): drawn into the body and fixed
-   beside the button, above the side nav's 150. Its three kinds of tool sit side by
-   side as cards: the icon on its category's 100, the name, and a few words. */
-.placer-create-tool-menu {
+/* What Create a tool opens (SideNav's CreateToolMenu): a dialog in the middle of the
+ * page, over everything, asking what kind of tool to create. The three kinds are large
+ * cards side by side — a band in the category's colour with its icon, then its name,
+ * its question in bold and a few words — one under another on a phone. */
+.placer-create-tool-backdrop {
   position: fixed;
-  z-index: 160;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.placer-create-tool-dialog {
+  width: 100%;
+  max-width: 960px;
+  max-height: 100%;
+  overflow: auto;
   box-sizing: border-box;
-  padding: 8px;
+  padding: 32px;
+  background: var(--placer-white);
+  border-radius: 24px;
+  box-shadow: var(--placer-shadow);
+  font-family: var(--placer-font);
+  color: var(--placer-ink);
+}
+
+.placer-create-tool-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.placer-create-tool-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.placer-create-tool-close {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: var(--placer-grey-100);
+  color: var(--placer-ink);
+  cursor: pointer;
+}
+
+.placer-create-tool-menu {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  background: var(--placer-white);
-  border: 1px solid var(--placer-grey-100);
-  border-radius: var(--placer-radius-lg);
-  box-shadow: var(--placer-shadow);
+  gap: 20px;
 }
 
 .placer-create-tool-item {
@@ -2668,68 +2716,118 @@ a {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
   min-width: 0;
-  padding: 20px;
-  border-radius: var(--placer-radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--placer-grey-200);
+  border-radius: 18px;
+  background: var(--placer-white);
   cursor: pointer;
   font-family: var(--placer-font);
   color: var(--placer-ink);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-.placer-create-tool-item:hover,
-.placer-create-tool-item:focus-visible {
-  background: var(--placer-grey-100);
+.placer-create-tool-item:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--placer-shadow);
+  border-color: transparent;
 }
 
 .placer-create-tool-item:focus-visible {
   outline: 2px solid var(--placer-ink);
-  outline-offset: -2px;
+  outline-offset: 2px;
 }
 
-.placer-create-tool-icon {
-  flex: 0 0 auto;
-  width: 52px;
-  height: 52px;
-  margin-bottom: 12px;
-  border-radius: var(--placer-radius-sm);
+/* The category's colour across the top of the card, its icon on white in the middle. */
+.placer-create-tool-band {
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 150px;
+}
+
+.placer-create-tool-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: var(--placer-white);
+}
+
+.placer-create-tool-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 22px 24px;
 }
 
 .placer-create-tool-label {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.placer-create-tool-question {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--placer-ink);
 }
 
 .placer-create-tool-description {
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 15px;
+  line-height: 22px;
   color: var(--placer-grey-700);
   white-space: normal;
 }
 
-/* A phone has room for the three cards only if they give up some padding. */
-@media (max-width: 599px) {
+/* A phone: the cards one under another, each a band beside its words. */
+@media (max-width: 699px) {
+  .placer-create-tool-dialog {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .placer-create-tool-title {
+    font-size: 22px;
+  }
+
+  .placer-create-tool-menu {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
   .placer-create-tool-item {
-    padding: 14px 10px;
+    flex-direction: row;
+  }
+
+  .placer-create-tool-band {
+    flex: 0 0 96px;
+    height: auto;
   }
 
   .placer-create-tool-icon {
-    width: 44px;
-    height: 44px;
-    margin-bottom: 8px;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+  }
+
+  .placer-create-tool-text {
+    padding: 14px 16px;
   }
 
   .placer-create-tool-label {
-    font-size: 16px;
+    font-size: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-create-tool-item {
+    transition: none;
   }
 
-  .placer-create-tool-description {
-    font-size: 13px;
-    line-height: 18px;
+  .placer-create-tool-item:hover {
+    transform: none;
   }
 }
 
