@@ -62,8 +62,7 @@ describe('Word Cloud in a room', () => {
     const cloud = within(screen.getByRole('list', { name: 'Word cloud' }));
     expect(cloud.getByText('green').closest('li')).toHaveAttribute('title', '2 people');
     expect(cloud.getByText('quiet').closest('li')).toHaveAttribute('title', '1 person');
-    const answers = within(screen.getByRole('list', { name: /answers and how many times/i }));
-    expect(answers.getAllByRole('listitem').map((item) => item.textContent)).toEqual(['green2', 'quiet1']);
+    expect(screen.queryByRole('list', { name: /answers and how many times/i })).toBeNull();
   });
 
   it('shows the prompt the room was set up with, and takes only as many words as it allows', async () => {

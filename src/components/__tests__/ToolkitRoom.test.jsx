@@ -248,6 +248,39 @@ describe("a room's invitation", () => {
   });
 });
 
+describe("the facilitator's room page", () => {
+  beforeEach(() => {
+    rememberHostedRoom('room-1', { pin: '839201', token: 'facilitator-1' });
+  });
+
+  it('has the tool and Close and Delete room in a bar along the top, and the QR code and PIN', async () => {
+    readRoom.mockResolvedValue({ tool: 'word-cloud', status: 'open', expiresAt: hours(2),
+      config: withInvite({ prompt: 'One word?' }, { organiser: 'Mara', project: 'Möllan', title: 'Square words' }) });
+    renderAt('/toolkit/word-cloud', 'room=room-1');
+
+    const bar = within(await screen.findByRole('banner', { name: 'Room' }));
+    expect(bar.getByRole('heading', { level: 1, name: 'Square words' })).toBeInTheDocument();
+    expect(await bar.findByRole('button', { name: 'Close room' })).toBeInTheDocument();
+    expect(bar.getByRole('button', { name: 'Delete room' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Close room' })).toHaveLength(1);
+    expect(screen.getByTestId('room-qr')).toBeInTheDocument();
+    expect(screen.getByLabelText('Room PIN 839-201')).toBeInTheDocument();
+    // No description of the tool.
+    expect(screen.queryByText(/Ask a question to a group/)).toBeNull();
+  });
+
+  it('leaves the QR code and PIN to the first slide', async () => {
+    readRoom.mockResolvedValue({ tool: 'word-cloud', status: 'open', expiresAt: hours(2),
+      config: { prompt: 'Two?', sequence: { id: 'run-1', index: 1, count: 2, next: null } } });
+    renderAt('/toolkit/word-cloud', 'room=room-1');
+
+    const bar = within(await screen.findByRole('banner', { name: 'Room' }));
+    expect(bar.getByText('Slide 2 of 2')).toBeInTheDocument();
+    await bar.findByRole('button', { name: 'Close room' });
+    expect(screen.queryByTestId('room-qr')).toBeNull();
+  });
+});
+
 describe('a room seen by somebody who joined it', () => {
   beforeEach(() => {
     readRoom.mockResolvedValue(openRoom());
