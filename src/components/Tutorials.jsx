@@ -2,6 +2,7 @@
  * player above its title and how long it runs. A tutorial with an `embedUrl` plays in
  * place, in an iframe; one without shows a placeholder where the video will go. */
 
+import { CardRow } from './CardRow';
 import { Icon } from './Icon';
 import { TUTORIALS } from '../toolkit/tutorials';
 
@@ -31,15 +32,9 @@ function TutorialCard({ tutorial }) {
 export function Tutorials({ t }) {
   if (TUTORIALS.length === 0) return null;
   return (
-    <section aria-labelledby="tutorials-title" style={{ marginBottom: 32 }}>
-      <h2 id="tutorials-title" className="placer-caption" style={{ textTransform: 'uppercase',
-        letterSpacing: '0.08em', fontWeight: 700, color: t.inkDim, marginBottom: 12 }}>
-        Tutorials
-      </h2>
-      <ul className="placer-template-grid">
-        {TUTORIALS.map((tutorial) => <TutorialCard key={tutorial.id} tutorial={tutorial} />)}
-      </ul>
-    </section>
+    <CardRow t={t} id="tutorials" title="Tutorials">
+      {TUTORIALS.map((tutorial) => <TutorialCard key={tutorial.id} tutorial={tutorial} />)}
+    </CardRow>
   );
 }
 

@@ -4,6 +4,7 @@
  * one calls `onOpen` with the tool's id. The register is toolkit/templates.js. */
 
 import { Icon } from './Icon';
+import { CardRow } from './CardRow';
 import { bundledImage } from '../lib/responsiveImage';
 import { ARROW_ITEM } from '../lib/arrowKeys';
 import { TEMPLATES } from '../toolkit/templates';
@@ -46,15 +47,9 @@ function TemplateCard({ template, onOpen }) {
 export function PopularTemplates({ t, onOpen }) {
   if (TEMPLATES.length === 0) return null;
   return (
-    <section aria-labelledby="popular-templates-title" style={{ marginBottom: 32 }}>
-      <h2 id="popular-templates-title" className="placer-caption" style={{ textTransform: 'uppercase',
-        letterSpacing: '0.08em', fontWeight: 700, color: t.inkDim, marginBottom: 12 }}>
-        Popular Templates
-      </h2>
-      <ul className="placer-template-grid">
-        {TEMPLATES.map((template) => <TemplateCard key={template.id} template={template} onOpen={onOpen} />)}
-      </ul>
-    </section>
+    <CardRow t={t} id="popular-templates" title="Popular Templates">
+      {TEMPLATES.map((template) => <TemplateCard key={template.id} template={template} onOpen={onOpen} />)}
+    </CardRow>
   );
 }
 
