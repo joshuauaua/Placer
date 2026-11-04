@@ -20,8 +20,12 @@ import { ARROW_ITEM } from '../lib/arrowKeys';
 import { listStartedTools } from '../services/startedTools';
 import { findCategory, findTool } from '../toolkit/tools';
 
-/** What a started tool is about, from its first slide, or the tool's name. */
+/**
+ * What a started tool is called: the name its owner gave it, or else what it is about,
+ * from its first slide, or else the tool's name.
+ */
 export function startedToolTitle(tool, started) {
+  if (started.name) return started.name;
   const setup = started.slides?.[0]?.setup;
   let label = null;
   try {

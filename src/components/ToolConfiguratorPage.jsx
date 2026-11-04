@@ -8,18 +8,29 @@
  *              slide, pick one to show it on the canvas and configure it in the panel,
  *              or remove one while there are others. It starts with one. Any other
  *              tool is configured as that one slide, with no panel.
- *   top bar  — back to the dashboard, the tool's name, then the avatars
+ *   top bar  — back to the dashboard; this tool's name, which can be changed (the
+ *              tool's own until it is), over the project it is part of; a switch
+ *              for whether it is run Live, with a group, or left Self-paced at its
+ *              link for people to fill in in their own time; then the avatars
+ *              of whoever works on it — the account, and its project's collaborators
+ *              — and a + to invite another to the project (a tool has none of its
+ *              own: they join through its project); then
  *              of the tool's collaborators, a ⋯ menu of its settings, Preview (the
- *              tool as it would look on a desktop and on a phone) and, at the
+ *              tool as it would look on a desktop and on a phone, side by side in a
+ *              dialog: each a frame of that width, scrollable but not to be used) and,
+ *              at the
  *              right-hand end, Publish (put the tool live). A tool has no collaborators
  *              of its own yet, so the avatars are whoever is signed in; and nothing in
  *              the menu, Preview or Publish is built yet: each only says so.
- *   canvas   — the tool itself, as it is set up so far. It is the Toolkit's own
- *              component, given the setup the way it would get it live: a tool that
- *              runs in a room gets it as `room.config` on a room that is not open, any
- *              other as `setup`. A setup with problems is not handed over, so the tool
- *              shows its defaults until it is a setup it can take — the same rule a
- *              room follows (roomSetup in toolkit/useRoom.js).
+ *   canvas   — a live preview of the slide as it is set up so far, and nothing to
+ *              change: it cannot be clicked, typed in or tabbed into (inert). It is
+ *              the Toolkit's own component, given the setup the way it would get it
+ *              live: a tool that runs in a room gets it as `room.config` on a room that
+ *              is not open, any other as `setup`. It is always given one — the setup
+ *              as it is, while the tool would take it (roomSetup in
+ *              toolkit/useRoom.js), or else the last one it would, or else the tool's
+ *              defaults — because a tool handed none offers its own editors, and the
+ *              editing is the panel's to do.
  *   panel    — on the right, the tool's own configuration: each stage of its setup
  *              (setupSteps in toolkit/tools.js) as a section, one under another,
  *              with whatever is wrong with it underneath. A tool without a setup says
@@ -32,12 +43,16 @@
  * Below 900px any slides become a row over the canvas, and the panel goes under it.
  */
 
-import { Component, useEffect, useMemo, useRef, useState } from 'react';
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { Avatar, Btn } from './UI';
 import { Icon } from './Icon';
 import { findCategory, findTool, setupSteps } from '../toolkit/tools';
 import { newId, readStartedTool, saveStartedTool } from '../services/startedTools';
+import { previewRoom } from '../toolkit/previewRoom';
+import { PREVIEW_KEY } from './ToolPreviewFrame';
+import { toolPreviewFramePath } from '../lib/routes';
+import { addCollaborator, isSupabaseConfigured, readCollaborators, readProjectCrumb } from '../services/projects';
 
 /** The tool id in /toolkit/<id>/configure, or null for any other address. */
 export function configuredToolIdFrom(path) {
@@ -84,27 +99,6 @@ class CanvasBoundary extends Component {
   }
 }
 
-// A room that is not open: what a room tool is given outside one, carrying the setup.
-function previewRoom(config) {
-  return {
-    capable: false,
-    status: 'none',
-    error: null,
-    roomId: null,
-    pin: null,
-    joinCode: null,
-    expiresAt: null,
-    opensAt: null,
-    config,
-    isHost: false,
-    contributions: [],
-    participantCount: 0,
-    combined: null,
-    publish: () => {},
-    close: () => {},
-    remove: () => {},
-  };
-}
 
 // How many collaborators' avatars show before the rest are a count.
 const MAX_AVATARS = 3;
@@ -123,6 +117,145 @@ function Collaborators({ people }) {
         </span>
       ))}
       {more > 0 && <span className="placer-configurator-person placer-configurator-more-people">+{more}</span>}
+    </div>
+  );
+}
+
+// The desktop the Preview shows: a window this wide, drawn at this scale.
+const DESKTOP = { width: 1280, height: 800, scale: 0.56 };
+// The phone: an iPhone's width and height, at this scale.
+const PHONE = { width: 390, height: 844, scale: 0.72 };
+
+/**
+ * Preview: the slide as it would look on a desktop, on the left, and on a phone, on the
+ * right, each a frame of that width (ToolPreviewFrame) that scrolls but cannot be used.
+ * The slide is handed to the frames on `window[PREVIEW_KEY]` as the dialog opens.
+ * Escape, the close button or a press outside closes it.
+ */
+function PreviewDialog({ tool, onClose }) {
+  const panelRef = useRef(null);
+  useEffect(() => {
+    panelRef.current?.focus();
+    const onKeyDown = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
+  const src = toolPreviewFramePath(tool.id);
+  const frame = (device, title) => (
+    <div className="placer-preview-screen" style={{ width: device.width * device.scale, height: device.height * device.scale }}>
+      <iframe title={title} src={src} width={device.width} height={device.height}
+        style={{ transform: `scale(${device.scale})` }} />
+    </div>
+  );
+
+  return (
+    <div className="placer-preview-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label={`Preview: ${tool.name}`} tabIndex={-1}
+        className="placer-preview-dialog">
+        <div className="placer-preview-head">
+          <div>
+            <h2 className="placer-preview-title">Preview</h2>
+            <p className="placer-preview-note">How this slide looks to the people taking part. Scroll each to see it all.</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="placer-preview-close">
+            <Icon name="close" size={20} stroke={2} />
+          </button>
+        </div>
+        <div className="placer-preview-devices">
+          <figure className="placer-preview-device">
+            <div className="placer-preview-desktop">
+              <div className="placer-preview-desktop-bar" aria-hidden="true"><span /><span /><span /></div>
+              {frame(DESKTOP, 'Desktop preview')}
+            </div>
+            <figcaption><Icon name="monitor" size={15} stroke={2} /> Desktop</figcaption>
+          </figure>
+          <figure className="placer-preview-device">
+            <div className="placer-preview-phone">{frame(PHONE, 'Phone preview')}</div>
+            <figcaption><Icon name="phone" size={15} stroke={2} /> Phone</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * The + after the avatars, and what it opens: an email to invite to the tool's project
+ * as a collaborator (addCollaborator — by address, as there is no directory to search).
+ * A tool not in a project says that is how collaborators join. Escape, or a press
+ * anywhere else, closes it.
+ */
+function AddCollaborator({ projectId, projectName }) {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [state, setState] = useState({ busy: false, said: '', failed: false });
+  const wrapRef = useRef(null);
+  const canInvite = Boolean(projectId) && isSupabaseConfigured();
+
+  useEffect(() => {
+    if (!open) return undefined;
+    wrapRef.current?.querySelector('input')?.focus();
+    const onKeyDown = (e) => { if (e.key === 'Escape') setOpen(false); };
+    const onPointerDown = (e) => { if (!wrapRef.current?.contains(e.target)) setOpen(false); };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('mousedown', onPointerDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('mousedown', onPointerDown);
+    };
+  }, [open]);
+
+  const invite = async (e) => {
+    e.preventDefault();
+    const address = email.trim().toLowerCase();
+    if (!EMAIL.test(address)) { setState({ busy: false, said: 'That does not look like an email address.', failed: true }); return; }
+    setState({ busy: true, said: '', failed: false });
+    try {
+      await addCollaborator(projectId, address);
+      setEmail('');
+      setState({ busy: false, said: `Invited ${address}. They accept from their Activity.`, failed: false });
+    } catch (err) {
+      console.error('Could not invite a collaborator:', err);
+      setState({ busy: false, said: err?.message ?? 'Could not send that invitation.', failed: true });
+    }
+  };
+
+  return (
+    <div ref={wrapRef} className="placer-configurator-invite-wrap">
+      <button type="button" onClick={() => setOpen((was) => !was)} aria-label="Add a collaborator"
+        aria-expanded={open} aria-haspopup="dialog" title="Add a collaborator" className="placer-configurator-add-person">
+        <Icon name="plus" size={16} stroke={2.4} />
+      </button>
+      {open && (
+        <div role="dialog" aria-label="Invite a collaborator" className="placer-configurator-invite">
+          <p className="placer-configurator-invite-title">Invite a collaborator</p>
+          {canInvite ? (
+            <form onSubmit={invite} noValidate>
+              <p className="placer-configurator-invite-note">
+                They join {projectName ? <strong>{projectName}</strong> : 'its project'}, and can work on its tools.
+              </p>
+              <div className="placer-configurator-invite-row">
+                <input type="email" value={email} placeholder="name@example.org" aria-label="Their email"
+                  onChange={(e) => { setEmail(e.target.value); setState({ busy: false, said: '', failed: false }); }} />
+                <button type="submit" disabled={state.busy} className="placer-configurator-invite-send">
+                  {state.busy ? 'Inviting…' : 'Invite'}
+                </button>
+              </div>
+              {state.said && (
+                <p role={state.failed ? 'alert' : 'status'}
+                  className={`placer-configurator-invite-said${state.failed ? ' is-error' : ''}`}>{state.said}</p>
+              )}
+            </form>
+          ) : (
+            <p className="placer-configurator-invite-note">
+              Collaborators join through a project. Add this tool to a project to invite them.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -193,7 +326,52 @@ function SettingsMenu({ onChoose }) {
   );
 }
 
-function TopBar({ t, tool, people, notice, onBack, onSetting, onPreview, onPublish }) {
+/**
+ * This tool's name, as a field that reads as the title: the tool's own name until it is
+ * changed. Typing changes it as you go; leaving it empty, or as the tool's own name,
+ * goes back to that. Enter or Escape is done.
+ */
+function NameField({ tool, name, onRename }) {
+  const [draft, setDraft] = useState(name ?? tool.name);
+  const [shownFor, setShownFor] = useState(name);
+  if (name !== shownFor) { setShownFor(name); setDraft(name ?? tool.name); }
+  const settle = () => {
+    const trimmed = draft.trim();
+    const next = trimmed && trimmed !== tool.name ? trimmed : null;
+    setDraft(next ?? tool.name);
+    if (next !== name) onRename(next);
+  };
+  return (
+    <input className="placer-configurator-name" aria-label="Tool name" value={draft}
+      maxLength={80} spellCheck={false} title="Rename this tool"
+      onChange={(e) => { setDraft(e.target.value); }}
+      onBlur={settle}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget.blur(); }}
+      // Sized to the name, with room to spare: a ch is a narrow 0, and names have Ws.
+      style={{ width: `${Math.max(8, Math.min(34, Math.ceil(draft.length * 1.15) + 2))}ch` }} />
+  );
+}
+
+/** Live with a group, or Self-paced at its link: a switch, saying which it is. */
+function LiveSwitch({ t, live, onChange }) {
+  return (
+    <button type="button" role="switch" aria-checked={live} onClick={() => onChange(!live)}
+      className="placer-configurator-live"
+      title={live ? 'Run live, with a group, as a presentation' : 'Open at its link, for anyone to fill in in their own time'}>
+      <span aria-hidden="true" className="placer-configurator-live-track"
+        style={{ background: live ? t.ink : 'var(--placer-grey-300)' }}>
+        <span className="placer-configurator-live-thumb" style={{ left: live ? 18 : 2 }} />
+      </span>
+      <span className="placer-configurator-live-label">
+        <strong>Live</strong>
+        <span className="placer-configurator-live-hint">{live ? 'With a group' : 'Self-paced, by link'}</span>
+      </span>
+    </button>
+  );
+}
+
+function TopBar({ t, tool, name, onRename, projectId, projectName, live, onLive, people, notice, onBack, onSetting,
+  onPreview, onPublish }) {
   return (
     <header aria-label="Configure a tool" className="placer-configurator-bar">
       <div className="placer-configurator-bar-start">
@@ -201,15 +379,20 @@ function TopBar({ t, tool, people, notice, onBack, onSetting, onPreview, onPubli
           title="Back to the dashboard" />
         {tool && (
           <div className="placer-configurator-title">
-            <span className="placer-configurator-name">{tool.name}</span>
+            <NameField tool={tool} name={name} onRename={onRename} />
+            <span className="placer-configurator-project">
+              {projectName === undefined ? '\u00a0' : projectName ? `In ${projectName}` : 'Not in a project'}
+            </span>
           </div>
         )}
+        {tool && <LiveSwitch t={t} live={live} onChange={onLive} />}
       </div>
       <div className="placer-configurator-bar-end">
         <span role="status" className="placer-configurator-notice">{notice}</span>
         {tool && (
           <>
             <Collaborators people={people} />
+            <AddCollaborator projectId={projectId} projectName={projectName} />
             <SettingsMenu onChoose={onSetting} />
             {/* Their words go below 600px (index.css), leaving the icons; the names stay. */}
             <Btn t={t} variant="quiet" size="sm" icon="eye" onClick={onPreview} ariaLabel="Preview">
@@ -263,12 +446,16 @@ function newSlide(tool) {
  * What the page opens on: the started tool in ?draft= when it is this tool's, or a
  * fresh one, not yet kept, of one slide of the tool's defaults.
  */
-function opening(tool, accountId, draftId) {
+function opening(tool, accountId, draftId, projectId = null) {
   const kept = tool && draftId ? readStartedTool(accountId, draftId) : null;
+  // Live to begin with for a tool that runs in a room, with a group; Self-paced for
+  // the rest.
+  const live = Boolean(tool?.room);
   if (kept && kept.tool === tool.id && Array.isArray(kept.slides) && kept.slides.length > 0) {
-    return { draftId: kept.id, slides: kept.slides };
+    return { draftId: kept.id, slides: kept.slides, name: kept.name ?? null,
+      projectId: kept.projectId ?? projectId, live: typeof kept.live === 'boolean' ? kept.live : live };
   }
-  return { draftId: null, slides: [newSlide(tool)] };
+  return { draftId: null, slides: [newSlide(tool)], name: null, projectId, live };
 }
 
 function SlidesPanel({ tool, slides, selectedId, onSelect, onAdd, onRemove }) {
@@ -314,21 +501,29 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
   const tool = findTool(configuredToolIdFrom(location));
   const Tool = tool?.component;
   const requestedDraft = new URLSearchParams(search).get('draft');
+  // The project it was added to, on the way in (AddToBoardDialog), until it is kept.
+  const requestedProject = new URLSearchParams(search).get('project');
 
   // The tool's slides, each with its own setup, and the one on the canvas; and the id
   // it is kept under, null until it has been changed and so kept.
-  const [start] = useState(() => opening(tool, accountId, requestedDraft));
+  const [start] = useState(() => opening(tool, accountId, requestedDraft, requestedProject));
   const [draftId, setDraftId] = useState(start.draftId);
   const [slides, setSlidesNow] = useState(start.slides);
+  const [name, setNameNow] = useState(start.name);
+  const [projectId, setProjectId] = useState(start.projectId);
+  const [live, setLiveNow] = useState(start.live);
   const [selectedId, setSelectedId] = useState(() => start.slides[0].id);
   const [changed, setChanged] = useState(false);
   // Another tool, from the same page: start again on it.
   const [slidesFor, setSlidesFor] = useState(tool?.id ?? null);
   if ((tool?.id ?? null) !== slidesFor) {
-    const next = opening(tool, accountId, requestedDraft);
+    const next = opening(tool, accountId, requestedDraft, requestedProject);
     setSlidesFor(tool?.id ?? null);
     setDraftId(next.draftId);
     setSlidesNow(next.slides);
+    setNameNow(next.name);
+    setProjectId(next.projectId);
+    setLiveNow(next.live);
     setSelectedId(next.slides[0].id);
     setChanged(false);
   }
@@ -337,20 +532,53 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
     setSlidesNow(update);
     setChanged(true);
   };
+  const setName = (next) => { setNameNow(next); setChanged(true); };
+  const setLive = (next) => { setLiveNow(next); setChanged(true); };
+
+  // The project's collaborators, for the avatars beside the signed-in account's.
+  const [projectPeople, setProjectPeople] = useState([]);
+  useEffect(() => {
+    setProjectPeople([]);
+    if (!projectId || !isSupabaseConfigured()) return undefined;
+    let cancelled = false;
+    readCollaborators(projectId)
+      .then((found) => {
+        if (cancelled) return;
+        setProjectPeople(found.map((person) => ({ id: person.userId, name: person.displayName || person.email, photo: null })));
+      })
+      .catch((err) => console.error('Could not read the project\'s collaborators:', err));
+    return () => { cancelled = true; };
+  }, [projectId]);
+
+  // The project's name, for under the tool's. undefined while it is being read; null
+  // for none, or one that cannot be read (no Supabase project, or not allowed to see it).
+  const [projectName, setProjectName] = useState(projectId ? undefined : null);
+  useEffect(() => {
+    if (!projectId || !isSupabaseConfigured()) { setProjectName(null); return undefined; }
+    let cancelled = false;
+    setProjectName(undefined);
+    readProjectCrumb(projectId)
+      .then((crumb) => { if (!cancelled) setProjectName(crumb?.name ?? null); })
+      .catch((err) => {
+        console.error('Could not read the project this tool is part of:', err);
+        if (!cancelled) setProjectName(null);
+      });
+    return () => { cancelled = true; };
+  }, [projectId]);
 
   // Keep the tool once something has changed, and from then on with every change. The
   // first time, it gets its id, and the address takes it, in place.
   useEffect(() => {
     if (!changed || !tool) return;
     const id = draftId ?? newId('tool');
-    saveStartedTool(accountId, { id, tool: tool.id, slides });
+    saveStartedTool(accountId, { id, tool: tool.id, slides, name, projectId, live });
     if (!draftId) {
       setDraftId(id);
       const query = new URLSearchParams(search);
       query.set('draft', id);
       navigate(`${location}?${query.toString()}`, { replace: true });
     }
-  }, [changed, slides]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [changed, slides, name, live]); // eslint-disable-line react-hooks/exhaustive-deps
   const selected = slides.find((slide) => slide.id === selectedId) ?? slides[0];
   const setup = selected.setup;
   const setSetup = (next) => setSlides((all) => all.map((slide) => (slide.id === selected.id ? { ...slide, setup: next } : slide)));
@@ -369,21 +597,39 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
     if (id === selected.id) setSelectedId(rest[Math.max(0, at - 1)].id);
   };
 
-  // Only a setup the tool would accept reaches the canvas.
-  const usable = useMemo(
-    () => (tool?.setup && setup && tool.setup.problems(setup).length === 0 ? setup : null),
-    [tool, setup],
-  );
+  // What the canvas previews: the setup while the tool would accept it, or else the
+  // last one it would on this slide, or else the tool's defaults. Never nothing, which
+  // would bring the tool's own editors onto the canvas.
+  const lastUsable = useRef({});
+  const usable = useMemo(() => {
+    if (!tool?.setup) return null;
+    if (setup && tool.setup.problems(setup).length === 0) {
+      lastUsable.current[selected.id] = setup;
+      return setup;
+    }
+    return lastUsable.current[selected.id] ?? tool.setup.defaults();
+  }, [tool, setup, selected.id]);
 
   const [notice, setNotice] = useState('');
+  // Preview: the slide on the canvas, handed to the frames it opens.
+  const [previewing, setPreviewing] = useState(false);
+  const openPreview = () => {
+    window[PREVIEW_KEY] = { toolId: tool.id, setup: usable };
+    setPreviewing(true);
+  };
+  const closePreview = useCallback(() => setPreviewing(false), []);
   const back = () => navigate('/dashboard');
 
   return (
     <div className="placer-configurator">
       <TopBar t={t} tool={tool} notice={notice} onBack={back}
-        people={profile?.name ? [{ id: profile.id ?? 'me', name: profile.name, photo: profile.photo ?? null }] : []}
+        name={name} onRename={setName} projectId={projectId} projectName={projectName} live={live} onLive={setLive}
+        people={[
+          ...(profile?.name ? [{ id: profile.id ?? 'me', name: profile.name, photo: profile.photo ?? null }] : []),
+          ...projectPeople.filter((person) => person.id !== (profile?.id ?? accountId)),
+        ]}
         onSetting={(label) => setNotice(`${label} is not built yet.`)}
-        onPreview={() => setNotice('Preview is not built yet.')}
+        onPreview={openPreview}
         onPublish={() => setNotice('Publishing is not built yet.')} />
 
       {!tool ? (
@@ -398,7 +644,12 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
               onSelect={setSelectedId} onAdd={addSlide} onRemove={removeSlide} />
           )}
           <main aria-label="Canvas" className="placer-configurator-canvas">
-            <div className="placer-configurator-frame">
+            <span className="placer-configurator-preview-badge">
+              <Icon name="eye" size={14} stroke={2.2} />
+              Live preview
+            </span>
+            {/* A preview only: nothing in it can be clicked, typed in or reached. */}
+            <div className="placer-configurator-frame" inert aria-label="Live preview of the slide">
               {/* Keyed by slide, so each slide's tool starts afresh rather than keeping
                   what was typed into the one before. */}
               <CanvasBoundary key={selected.id} resetKey={usable}>
@@ -411,6 +662,8 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
           <ConfigPanel t={t} tool={tool} setup={setup} onChange={setSetup} />
         </div>
       )}
+
+      {previewing && tool && <PreviewDialog tool={tool} onClose={closePreview} />}
     </div>
   );
 }

@@ -53,3 +53,15 @@ describe('MyTools', () => {
     expect(onOpen).toHaveBeenCalledWith('open-vote', 'poll-1');
   });
 });
+
+describe('MyTools, a renamed tool', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('goes by the name its owner gave it', () => {
+    saveStartedTool('a', { id: 'poll-1', tool: 'open-vote', name: 'Tuesday workshop poll',
+      slides: [{ id: 's1', setup: { question: 'Trees or benches?', answers: ['Trees', 'Benches'] } }] });
+    render(<MyTools t={THEME} accountId="a" onOpen={vi.fn()} />);
+
+    expect(screen.getAllByRole('button')[0]).toHaveTextContent('Tuesday workshop poll');
+  });
+});

@@ -19,7 +19,9 @@ import { SideNav } from './components/SideNav';
 import { findTool } from './toolkit/tools';
 import { useIdentity } from './components/useIdentity';
 import { isSupabaseConfigured, readMyOrganisations } from './services/organisations';
-import { CASE_STUDY_FORM_PATH, OLD_CASE_STUDY_FORM_PATH, isFullScreenTool, isToolConfigurator } from './lib/routes';
+import {
+  CASE_STUDY_FORM_PATH, OLD_CASE_STUDY_FORM_PATH, isFullScreenTool, isToolConfigurator, isToolPreviewFrame,
+} from './lib/routes';
 import { WelcomeTour } from './components/WelcomeTour';
 
 const SurveyPage = lazy(() => import('./components/SurveyPage'));
@@ -28,6 +30,7 @@ const ExplorePage = lazy(() => import('./components/ExplorePage'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
 const UserLabsPage = lazy(() => import('./components/UserLabsPage'));
 const CaseStudyPage = lazy(() => import('./components/CaseStudyPage'));
+const ToolPreviewFrame = lazy(() => import('./components/ToolPreviewFrame'));
 const ResourcesPage = lazy(() => import('./components/ResourcesPage'));
 const ResourceArticlePage = lazy(() => import('./components/ResourceArticlePage'));
 const GuidesPage = lazy(() => import('./components/GuidesPage'));
@@ -787,6 +790,13 @@ function BoardsRedirect() {
 
 function App() {
   const t = THEME;
+  const [location] = useLocation();
+
+  // A tool's slide inside the Preview's frames: that and nothing else — no nav bar, no
+  // cookie banner, no bug button (components/ToolPreviewFrame.jsx).
+  if (isToolPreviewFrame(location)) {
+    return <Suspense fallback={null}><ToolPreviewFrame t={t} /></Suspense>;
+  }
 
   return (
     <>

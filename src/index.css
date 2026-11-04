@@ -4141,19 +4141,154 @@ a {
   min-width: 0;
 }
 
+/* The tool's name over the project it is part of. */
 .placer-configurator-title {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
   min-width: 0;
 }
 
+/* This tool's name, as a field that reads as the title until it is clicked into. */
 .placer-configurator-name {
+  max-width: 32ch;
+  min-width: 6ch;
+  margin: 0 0 0 -6px;
+  padding: 1px 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  font-family: var(--placer-font);
   font-size: 17px;
   font-weight: 700;
+  line-height: 1.3;
+  color: var(--placer-ink);
+  text-overflow: ellipsis;
+}
+
+.placer-configurator-name:hover {
+  border-color: var(--placer-grey-300);
+}
+
+.placer-configurator-name:focus {
+  outline: none;
+  border-color: var(--placer-ink);
+  background: var(--placer-white);
+}
+
+.placer-configurator-project {
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--placer-grey-700);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 32ch;
+}
+
+/* Live with a group, or Self-paced at its link. */
+.placer-configurator-live {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--placer-grey-200);
+  border-radius: 12px;
+  background: var(--placer-white);
+  cursor: pointer;
+  font-family: var(--placer-font);
+  color: var(--placer-ink);
+  text-align: left;
+}
+
+.placer-configurator-live:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+.placer-configurator-live-track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  transition: background 0.15s ease;
+}
+
+.placer-configurator-live-thumb {
+  position: absolute;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--placer-white);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: left 0.15s ease;
+}
+
+.placer-configurator-live-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.placer-configurator-live-hint {
+  font-size: 12px;
+  color: var(--placer-grey-700);
+  white-space: nowrap;
+}
+
+/* On a phone the name and the project take what room there is, the switch keeps only
+ * its track (its words still name it to a screen reader), and the avatars go. */
+@media (max-width: 600px) {
+  .placer-configurator-bar-start {
+    flex: 1 1 auto;
+  }
+
+  /* The title takes only what the buttons leave: from nothing, not its own width,
+   * since a text field will not shrink below the size it is born with. */
+  .placer-configurator-bar-start .placer-configurator-title {
+    flex: 1 1 0;
+    width: 0;
+  }
+
+  .placer-configurator-bar-start .placer-configurator-name {
+    width: 100% !important;
+    min-width: 0;
+  }
+
+  .placer-configurator-project {
+    max-width: 100%;
+  }
+
+  .placer-configurator-live {
+    flex: 0 0 auto;
+    margin-left: 0;
+    padding: 6px;
+    border: none;
+  }
+
+  .placer-configurator-live-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .placer-configurator-people {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-configurator-live-track,
+  .placer-configurator-live-thumb {
+    transition: none;
+  }
 }
 
 .placer-configurator-notice {
@@ -4404,13 +4539,283 @@ a {
 }
 
 .placer-configurator-canvas {
+  position: relative;
   flex: 1 1 auto;
   min-width: 0;
   overflow: auto;
-  padding: 32px;
+  padding: 48px 32px 32px;
   background-color: var(--placer-grey-100);
   background-image: radial-gradient(var(--placer-grey-300) 1px, transparent 1px);
   background-size: 20px 20px;
+}
+
+/* The + after the avatars, the same size as one, dashed, and what it opens. */
+.placer-configurator-invite-wrap {
+  position: relative;
+}
+
+.placer-configurator-add-person {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1.5px dashed var(--placer-grey-500);
+  border-radius: 999px;
+  background: var(--placer-white);
+  color: var(--placer-ink);
+  cursor: pointer;
+}
+
+.placer-configurator-add-person:hover,
+.placer-configurator-add-person[aria-expanded="true"] {
+  border-style: solid;
+  border-color: var(--placer-ink);
+}
+
+.placer-configurator-add-person:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+.placer-configurator-invite {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  width: 300px;
+  padding: 16px;
+  box-sizing: border-box;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  border-radius: 14px;
+  box-shadow: var(--placer-shadow);
+  font-family: var(--placer-font);
+  color: var(--placer-ink);
+}
+
+.placer-configurator-invite-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.placer-configurator-invite-note {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--placer-grey-700);
+}
+
+.placer-configurator-invite-row {
+  display: flex;
+  gap: 8px;
+}
+
+.placer-configurator-invite-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--placer-grey-300);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.placer-configurator-invite-send {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--placer-ink);
+  color: var(--placer-white);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.placer-configurator-invite-send:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.placer-configurator-invite-said {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--placer-grey-700);
+}
+
+.placer-configurator-invite-said.is-error {
+  color: #B3261E;
+}
+
+/* Preview (ToolConfiguratorPage's PreviewDialog): the slide on a desktop, left, and a
+ * phone, right, each a frame of that width drawn smaller, so the tool lays itself out as
+ * on that screen. The frames scroll; what is in them cannot be used (ToolPreviewFrame). */
+.placer-preview-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.placer-preview-dialog {
+  max-width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  padding: 24px 28px 28px;
+  box-sizing: border-box;
+  background: var(--placer-grey-100);
+  border-radius: 20px;
+  box-shadow: var(--placer-shadow);
+  outline: none;
+  font-family: var(--placer-font);
+  color: var(--placer-ink);
+}
+
+.placer-preview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.placer-preview-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.placer-preview-note {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--placer-grey-700);
+}
+
+.placer-preview-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 12px;
+  background: var(--placer-white);
+  color: var(--placer-ink);
+  cursor: pointer;
+}
+
+.placer-preview-devices {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 32px;
+}
+
+.placer-preview-device {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.placer-preview-device figcaption {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--placer-grey-700);
+}
+
+/* The frame drawn smaller: the iframe keeps the device's own width and is scaled from
+ * its top-left corner into a box the scaled size. */
+.placer-preview-screen {
+  position: relative;
+  overflow: hidden;
+  background: var(--placer-white);
+}
+
+.placer-preview-screen iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform-origin: 0 0;
+  background: var(--placer-white);
+}
+
+.placer-preview-desktop {
+  border: 1px solid var(--placer-grey-300);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--placer-white);
+  box-shadow: var(--placer-shadow);
+}
+
+.placer-preview-desktop-bar {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--placer-grey-200);
+}
+
+.placer-preview-desktop-bar span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--placer-grey-300);
+}
+
+.placer-preview-phone {
+  padding: 10px;
+  border-radius: 34px;
+  background: var(--placer-ink);
+  box-shadow: var(--placer-shadow);
+}
+
+.placer-preview-phone .placer-preview-screen {
+  border-radius: 24px;
+}
+
+/* Too narrow for both side by side: the phone goes under the desktop. */
+@media (max-width: 1100px) {
+  .placer-preview-devices {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+/* Says what the canvas is: a preview of the slide, with nothing in it to change. */
+.placer-configurator-preview-badge {
+  position: absolute;
+  top: 14px;
+  left: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--placer-grey-700);
+}
+
+/* Inert, so nothing in it can be used; the cursor says so too. */
+.placer-configurator-frame[inert] {
+  cursor: default;
+  user-select: none;
 }
 
 .placer-configurator-frame {
@@ -4524,8 +4929,13 @@ a {
   }
 
   .placer-configurator-canvas {
-    padding: 16px;
+    padding: 44px 16px 16px;
     overflow: visible;
+  }
+
+  .placer-configurator-preview-badge {
+    left: 16px;
+    top: 12px;
   }
 
   .placer-configurator-frame {
