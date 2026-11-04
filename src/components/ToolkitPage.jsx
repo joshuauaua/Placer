@@ -15,8 +15,10 @@
  * what answering the tool takes — the tool drawn `answering`, as the configuration
  * page's Preview shows it (ToolPreviewFrame) — with none of the page around it: no
  * header, credits or the strip saying they are in a room, unless the room is not open.
- * Its facilitator sees the room as before: the strip with its PIN and QR code, and the
- * whole tool.
+ * Its facilitator gets a page of their own: a top bar with the tool's name and Close
+ * and Delete room, the QR code and PIN on the first slide, and the tool `presenting` —
+ * what goes up on the screen, with nothing to answer (Word Cloud: the prompt over the
+ * cloud, and its timer).
  *
  * The page owns the /toolkit part of the URL itself rather than taking the selected
  * tool as a prop, so every tool has a link that can be shared.
@@ -27,7 +29,8 @@ import { Redirect, useLocation, useSearch } from 'wouter';
 import posthog from 'posthog-js';
 import { Breadcrumb, WORKSPACE_CRUMB } from './PageHeader';
 import { ToolLayout } from './ToolLayout';
-import { RoomBar } from './toolkit/RoomBar';
+import { CloseRoom, DeleteRoom, RoomBar } from './toolkit/RoomBar';
+import { Icon } from './Icon';
 import { ToolCover } from './toolkit/ToolCover';
 import { InviteCover } from './toolkit/InviteCover';
 import { roomInvite } from '../toolkit/invite';
@@ -167,6 +170,52 @@ export function ToolkitPage({ t, displayName = null }) {
           {room.status !== 'open' && <RoomBar t={t} tool={tool} room={room} />}
           {projectSetup.ready && <Tool t={t} tool={tool} room={room} setup={projectSetup.setup} answering />}
           {sequence && (
+            <SlideSteps t={t} index={sequence.index} count={sequence.count}
+              onNext={sequence.next ? goToNextSlide : undefined} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Its facilitator, presenting it: a bar along the top with the tool's name and Close
+  // and Delete room; on the first slide the QR code and the PIN (or, for a room open for
+  // weeks, its link) for people to join by; then the tool as it is put up for the room
+  // (`presenting`) — for Word Cloud, the prompt over the cloud, with nothing to answer.
+  if (inRoom && room.isHost) {
+    const open = room.status === 'open';
+    const firstSlide = !sequence || sequence.index === 0;
+    const title = roomInvite(room.config)?.title || tool.name;
+    return (
+      <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page }}>
+        <header aria-label="Room" style={{ position: 'sticky', top: 0, zIndex: 5, display: 'flex', alignItems: 'center',
+          gap: 12, flexWrap: 'wrap', padding: '12px 24px', background: t.surface, borderBottom: `1px solid ${t.line}` }}>
+          <span style={{ width: 36, height: 36, borderRadius: 10, background: tool.tint, color: t.ink,
+            boxShadow: `inset 0 0 0 1px ${tool.color}`, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', flex: '0 0 auto' }}>
+            <Icon name={tool.icon} size={20} stroke={2.2} />
+          </span>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: t.ink, lineHeight: 1.2, minWidth: 0,
+            overflowWrap: 'anywhere' }}>
+            {title}
+          </h1>
+          {sequence && (
+            <span className="placer-mono" style={{ fontSize: 12, color: t.inkDim }}>
+              Slide {sequence.index + 1} of {sequence.count}
+            </span>
+          )}
+          <div style={{ flex: 1 }} />
+          {open && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <CloseRoom t={t} onClose={room.close} />
+              <DeleteRoom t={t} onDelete={room.remove} />
+            </div>
+          )}
+        </header>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 24px 80px', boxSizing: 'border-box' }}>
+          {(!open || firstSlide) && <RoomBar t={t} tool={tool} room={room} controls={false} />}
+          {projectSetup.ready && <Tool t={t} tool={tool} room={room} setup={projectSetup.setup} presenting />}
+          {sequence && open && (
             <SlideSteps t={t} index={sequence.index} count={sequence.count}
               onNext={sequence.next ? goToNextSlide : undefined} />
           )}

@@ -54,8 +54,11 @@ describe('Word Cloud in a room', () => {
 
     renderAt('/toolkit/word-cloud', 'room=room-1');
 
-    expect(await screen.findByText("The room's cloud")).toBeInTheDocument();
-    expect(screen.getByText('2 people')).toBeInTheDocument();
+    // Presenting it: the cloud and its count, and nothing to answer.
+    expect(await screen.findByText('2 people')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Your word')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Answers' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'How it works' })).toBeNull();
     const cloud = within(screen.getByRole('list', { name: 'Word cloud' }));
     expect(cloud.getByText('green').closest('li')).toHaveAttribute('title', '2 people');
     expect(cloud.getByText('quiet').closest('li')).toHaveAttribute('title', '1 person');
@@ -118,7 +121,6 @@ describe('Word Cloud in a room', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Stop' }));
 
       expect(screen.getByRole('timer')).toHaveTextContent('Finished');
-      expect(screen.getByLabelText('Your word')).toBeDisabled();
       expect(screen.queryByRole('button', { name: /start the/i })).not.toBeInTheDocument();
       await sent({ words: [], timer: { endsAt: expect.any(Number) } });
     });

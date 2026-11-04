@@ -45,7 +45,7 @@ function useTimeRemaining(expiresAt) {
   return left;
 }
 
-function CloseRoom({ t, onClose }) {
+export function CloseRoom({ t, onClose }) {
   // Closing ends it for everybody in the room, so it asks once first — the same
   // two-step the GDPR page uses for erasing data.
   const [confirming, setConfirming] = useState(false);
@@ -64,7 +64,7 @@ function CloseRoom({ t, onClose }) {
   );
 }
 
-function DeleteRoom({ t, onDelete }) {
+export function DeleteRoom({ t, onDelete }) {
   // Deleting takes everybody's contributions with it, for good, so it asks first the
   // same way closing does.
   const [confirming, setConfirming] = useState(false);
@@ -83,7 +83,11 @@ function DeleteRoom({ t, onDelete }) {
   );
 }
 
-export function RoomBar({ t, tool, room }) {
+/**
+ * `controls`: Close room and Delete room beside the link. Off where the page puts them
+ * elsewhere (the facilitator's top bar, ToolkitPage).
+ */
+export function RoomBar({ t, tool, room, controls = true }) {
   const left = useTimeRemaining(room.expiresAt);
   const qrRef = useRef(null);
 
@@ -232,8 +236,8 @@ export function RoomBar({ t, tool, room }) {
                     Download QR
                   </Btn>
                 )}
-                <CloseRoom t={t} onClose={room.close} />
-                <DeleteRoom t={t} onDelete={room.remove} />
+                {controls && <CloseRoom t={t} onClose={room.close} />}
+                {controls && <DeleteRoom t={t} onDelete={room.remove} />}
               </>
             )}
           />
