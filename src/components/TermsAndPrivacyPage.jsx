@@ -466,7 +466,7 @@ export function TermsAndPrivacyPage({ t }) {
           and you join it with a PIN or a QR code. Then what you allocate in that tool is
           stored in our database so the room can show everybody&rsquo;s answers combined, along with
           the display name your browser is set to, if you have set one. A room lasts two hours from
-          being opened, unless a project opened it to run for longer — a week, 30 days or at most
+          being opened, or up to twelve for a live session, unless a project opened it to run for longer — a week, 30 days or at most
           90 days, which the room shows while it is open. Whoever opened it can end it sooner.
           After that nobody can reach it, and it is deleted within a day.
         </P>
@@ -544,7 +544,7 @@ export function TermsAndPrivacyPage({ t }) {
         </P>
         <P t={t}>
           Survey answers are kept while this research runs. Toolkit rooms expire two hours after
-          being opened, or at most 90 days after for one a project opened to run longer, and are
+          being opened (twelve for a live session), or at most 90 days after for one a project opened to run longer, and are
           deleted within a day of ending. A screenshot sent with a bug report is deleted 30 days
           after it is sent. Analytics you have consented to are held for
           as long as our PostHog project is configured to keep them, and withdrawing consent stops
@@ -788,7 +788,7 @@ export function TermsAndPrivacyPage({ t }) {
           'Nothing uploaded by default — the upload happens when you press Post, and until then the work is on your device. Imaginations saved before accounts existed are left there rather than migrated, because they were saved under a policy that promised they would not leave.',
           'Ownership enforced in the database — row-level security, not app code, is what makes a posted imagination readable by everyone and writable only by the account that posted it. A stolen or inspected browser key cannot change or delete somebody else’s work.',
           'Consent before capture — the analytics SDK is not even loaded until consent exists, so a visitor who rejects the banner, or never answers it, is never contacted or measured.',
-          'Storage limitation — deleting an imagination deletes its picture; deleting an account cascades to the profile and to everything posted under it; Toolkit rooms expire after two hours (at most 90 days for a project’s long-running room) and are deleted within a day.',
+          'Storage limitation — deleting an imagination deletes its picture; deleting an account cascades to the profile and to everything posted under it; Toolkit rooms expire after two hours (twelve for a live session; at most 90 days for a project’s long-running room) and are deleted within a day.',
           'No passwords of ours to lose — the login is held by Supabase Auth and we never see or store a password.',
           'Write-only submission — the key in your browser can add a survey response and cannot read, change or delete any response, including its own. Reading them needs a separate credential that never leaves our side.',
           'Local processing — Street View frames are analysed in your browser, not uploaded. The only image that reaches us is the one you post.',
