@@ -653,9 +653,10 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
               {/* Keyed by slide, so each slide's tool starts afresh rather than keeping
                   what was typed into the one before. */}
               <CanvasBoundary key={selected.id} resetKey={usable}>
+                {/* `slide`: just the slide, for a tool that can draw it alone (Word Cloud). */}
                 {Tool && (tool.room
-                  ? <Tool t={t} tool={tool} room={previewRoom(usable)} />
-                  : <Tool t={t} tool={tool} setup={usable} />)}
+                  ? <Tool t={t} tool={tool} room={previewRoom(usable)} slide />
+                  : <Tool t={t} tool={tool} setup={usable} slide />)}
               </CanvasBoundary>
             </div>
           </main>

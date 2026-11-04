@@ -73,19 +73,18 @@ const SMALL_LINKS = [
   { key: 'terms', label: 'Terms and Privacy', view: 'terms' },
 ];
 
-// What Create a tool offers: one of the tool categories each, by its own name. Each has
-// a few words of its own rather than the category's full description, to fit a card.
+// What Create a tool offers: one of the tool categories each, by its own name.
 export const TOOL_KINDS = [
-  { category: 'understand', label: 'Understand', hint: 'How a place is used', icon: 'eye' },
-  { category: 'imagine', label: 'Imagine', hint: 'How it could change', icon: 'sparkle' },
-  { category: 'plan', label: 'Plan', hint: 'Shape the change', icon: 'layers' },
+  { category: 'understand', label: 'Understand', icon: 'eye' },
+  { category: 'imagine', label: 'Imagine', icon: 'sparkle' },
+  { category: 'plan', label: 'Plan', icon: 'layers' },
 ];
 
 /**
  * What opens from Create a tool: a dialog in the middle of the page asking "What kind of
  * tool do you want to create?", the three kinds side by side as large cards — the
- * category's colour and icon, its name, its question ("What is here today?") and a few
- * words — one under another on a phone. Picking one calls `onChoose` with its
+ * category's colour and icon, its name and its question ("What is here today?") — one
+ * under another on a phone. Picking one calls `onChoose` with its
  * category. It is drawn into document.body, over everything. Escape, the close button
  * or a press anywhere outside the panel closes it, and Escape hands focus back to
  * `anchor`, the button that opened it (the side nav's, the dashboard's Create a Tool,
@@ -143,7 +142,7 @@ export function CreateToolMenu({ anchor, onChoose, onClose }) {
         </div>
         <div ref={menuRef} role="menu" aria-label="Create a tool" onKeyDown={onMenuKeyDown}
           className="placer-create-tool-menu">
-          {TOOL_KINDS.map(({ category, label, hint, icon }) => {
+          {TOOL_KINDS.map(({ category, label, icon }) => {
             const kind = findCategory(category);
             return (
               <button key={category} role="menuitem" onClick={() => onChoose(category)}
@@ -154,7 +153,6 @@ export function CreateToolMenu({ anchor, onChoose, onClose }) {
                 <span className="placer-create-tool-text">
                   <span className="placer-create-tool-label">{label}</span>
                   {kind?.question && <span className="placer-create-tool-question">{kind.question}</span>}
-                  <span className="placer-create-tool-description">{hint}</span>
                 </span>
               </button>
             );
@@ -197,6 +195,8 @@ export function SideNav({ view, onNavigate, onExplore, onCreateTool, showOrganis
   const items = [
     // First, straight under Create a tool: the dashboard is home for a signed-in account.
     { key: 'dashboard', label: 'Dashboard', short: 'Home', icon: 'home', onSelect: () => onNavigate('dashboard'), active: ['dashboard', 'activity'] },
+    // The tools this account has started, all of them (MyToolsPage).
+    { key: 'myTools', label: 'My Tools', short: 'Tools', icon: 'layers', onSelect: () => onNavigate('myTools'), active: ['myTools'] },
     { key: 'projects', label: 'Projects', icon: 'grid', onSelect: () => onNavigate('projects'), active: ['projects', 'projectDashboard'] },
     { key: 'settings', label: 'Settings', icon: 'gear', onSelect: () => onNavigate('settings'), active: ['settings'], bottom: true },
   ];

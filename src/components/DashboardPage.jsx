@@ -328,7 +328,8 @@ export function DashboardPage({ t, profile, accountId = null, onNavigate, onNewP
         )}
 
         <MyTools t={t} accountId={accountId}
-          onOpen={(toolId, id) => onOpenStartedTool?.(toolId, id)} onCreateTool={onCreateTool} />
+          onOpen={(toolId, id) => onOpenStartedTool?.(toolId, id)} onCreateTool={onCreateTool}
+          onViewAll={() => onNavigate('myTools')} />
         <PopularTemplates t={t} onOpen={(toolId) => onOpenTemplate?.(toolId)} />
         <Tutorials t={t} />
 

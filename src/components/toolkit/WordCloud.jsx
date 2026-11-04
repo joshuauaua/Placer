@@ -23,6 +23,10 @@
  * The cloud can be shown over the whole screen (FullScreenCloud), to put up on a
  * projector while people answer; it carries on filling in there.
  *
+ * `slide` draws only the slide: the cloud, under the prompt as its title, and nothing to
+ * do — no words to add, answers, full screen, how it works or keeping it. That is what
+ * the configuration page's canvas shows (ToolConfiguratorPage).
+ *
  * Cloud, WordCounts, WordEntry and FullScreenCloud are those parts on their own, which
  * the project page's version (WordCloudOnPage) uses too. The counting is in src/lib/wordCloud.js.
  */
@@ -257,7 +261,7 @@ export function FullScreenCloud({ t, prompt, result, people = null, left = null,
   );
 }
 
-export function WordCloud({ t, room }) {
+export function WordCloud({ t, room, slide = false }) {
   const [prompt, setPrompt] = useState('');
   const [words, setWords] = useState([]);
   const [draft, setDraft] = useState('');
@@ -328,6 +332,27 @@ export function WordCloud({ t, room }) {
   const result = inRoom ? roomResult : soloResult;
   const empty = !result || result.total === 0;
   const shownPrompt = fixedPrompt ?? prompt.trim();
+
+  // The slide alone: the prompt as its title, over the cloud.
+  if (slide) {
+    return (
+      <section aria-label="Word cloud" style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12,
+        padding: 28, boxShadow: t.shadow, minWidth: 0 }}>
+        <h2 style={{ margin: '0 0 12px', fontSize: 26, fontWeight: 700, lineHeight: 1.25, letterSpacing: '-0.01em',
+          color: shownPrompt ? t.ink : t.inkFaint, overflowWrap: 'anywhere' }}>
+          {shownPrompt || 'Your question goes here'}
+        </h2>
+        {empty ? (
+          <p style={{ minHeight: 320, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            textAlign: 'center', fontSize: 14, color: t.inkDim, lineHeight: 1.65, margin: 0 }}>
+            The words people give will grow here.
+          </p>
+        ) : (
+          <Cloud result={result} minHeight={320} scale={1.5} />
+        )}
+      </section>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

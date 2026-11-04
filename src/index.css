@@ -2648,8 +2648,8 @@ a {
 
 /* What Create a tool opens (SideNav's CreateToolMenu): a dialog in the middle of the
  * page, over everything, asking what kind of tool to create. The three kinds are large
- * cards side by side — a band in the category's colour with its icon, then its name,
- * its question in bold and a few words — one under another on a phone. */
+ * cards side by side — a band in the category's colour with its icon, then its name
+ * and its question in bold — one under another on a phone. */
 .placer-create-tool-backdrop {
   position: fixed;
   inset: 0;
@@ -2772,13 +2772,6 @@ a {
   font-size: 16px;
   font-weight: 700;
   color: var(--placer-ink);
-}
-
-.placer-create-tool-description {
-  font-size: 15px;
-  line-height: 22px;
-  color: var(--placer-grey-700);
-  white-space: normal;
 }
 
 /* A phone: the cards one under another, each a band beside its words. */
@@ -5262,6 +5255,25 @@ a {
   display: flex;
   gap: 8px;
   flex: 0 0 auto;
+}
+
+/* My Tools' View all, before the arrows: a text link. */
+.placer-card-row-link {
+  margin-right: 4px;
+  padding: 0 6px;
+  border: none;
+  background: none;
+  font-family: var(--placer-font);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--placer-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.placer-card-row-arrows {
+  align-items: center;
 }
 
 .placer-card-row-arrow {
