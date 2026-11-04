@@ -49,6 +49,7 @@ import { ProjectToolCard } from './toolkit/ProjectToolCard';
 import { findTool } from '../toolkit/tools';
 import { arrangeSections, projectIntro, projectSections } from '../lib/projectSections';
 import { useToolResults } from './toolkit/useToolResults';
+import { SlideRun } from './toolkit/SlideSteps';
 import {
   readConfiguredProjectTools, readLinks, readOrganisationProjects, readProject, readProjectAccess, readProjectTools,
   readWorkshopTools, requestProjectAccess, readRelatedProjects, recordProjectView,
@@ -534,6 +535,20 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const currentWorkshop = workshopSections.find((section) => section.key === workshopPick) ?? workshopSections[0];
   const shownSections = tab === 'workshop' ? [currentWorkshop].filter(Boolean) : sections;
 
+  // A tool's part of its section: its room's own embed, or else its card.
+  const renderTool = (section, room, titled) => (room && section.tool.onProjectPage?.Embed ? (
+    <>
+      <section.tool.onProjectPage.Embed t={t} tool={section.tool} room={room}
+        heading={titled && isCover(section)
+          ? { id: `${section.domId}-heading`, title: section.title, hidden: section.hideTitle }
+          : undefined} />
+      {isCover(section) && <ToolIntro t={t} tool={section.tool} room={room} />}
+    </>
+  ) : (
+    <ProjectToolCard t={t} tool={section.tool} room={room} projectId={projectId}
+      displayName={accountName} />
+  ));
+
   // One section of the Project tab or the Workshop Room. The Workshop Room titles its
   // section itself, above it and under the section's heading id, so `titled` is false there.
   const renderSection = (section, { titled = true } = {}) => (
@@ -576,18 +591,10 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
         </figure>
       )}
 
-      {section.kind === 'tool' && (section.room && section.tool.onProjectPage?.Embed ? (
-        <>
-          <section.tool.onProjectPage.Embed t={t} tool={section.tool} room={section.room}
-            heading={titled && isCover(section)
-              ? { id: `${section.domId}-heading`, title: section.title, hidden: section.hideTitle }
-              : undefined} />
-          {isCover(section) && <ToolIntro t={t} tool={section.tool} room={section.room} />}
-        </>
-      ) : (
-        <ProjectToolCard t={t} tool={section.tool} room={section.room} projectId={projectId}
-          displayName={accountName} />
-      ))}
+      {section.kind === 'tool' && (section.run && section.run.length > 1 ? (
+        // A run of slides, gone through one at a time (toolkit/sequence.js).
+        <SlideRun t={t} rooms={section.run} render={(room) => renderTool(section, room, titled)} />
+      ) : renderTool(section, section.room, titled))}
     </section>
   );
 

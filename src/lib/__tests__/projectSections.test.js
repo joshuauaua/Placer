@@ -138,3 +138,18 @@ describe('projectSections, results', () => {
     expect(sections[0]).toMatchObject({ kind: 'results', defaultTitle: 'Word Cloud results: One word for the river' });
   });
 });
+
+describe('projectSections, slides', () => {
+  const cloud = (id, index, next) => ({ id, tool: 'word-cloud',
+    config: { prompt: `Prompt ${index + 1}`, sequence: { id: 'run-1', index, count: 2, next } } });
+
+  it('makes a run of slides one section, under its first slide, with all of them in order', () => {
+    const sections = projectSections({
+      project: { ...PROJECT, summary: '', description: '' },
+      tools: [findTool('word-cloud')],
+      openRooms: [cloud('second', 1, null), cloud('first', 0, 'second')],
+    });
+    expect(sections.map(({ key }) => key)).toEqual(['room:first']);
+    expect(sections[0].run.map((room) => room.id)).toEqual(['first', 'second']);
+  });
+});

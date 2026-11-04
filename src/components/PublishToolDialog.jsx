@@ -13,7 +13,8 @@
  *                be closed sooner from the project's dashboard.
  *
  * Each slide is a room of its own, with that slide's setup, so each has its own
- * results. Either way the room belongs to the tool's project, which it needs: a room
+ * results; several are chained into one run that people go through in order
+ * (toolkit/sequence.js), and ending the session from any of them ends them all. Either way the room belongs to the tool's project, which it needs: a room
  * open for longer than a workshop has to belong to one, and a tool's results are
  * kept for its project (supabase/room-results.sql).
  */
@@ -23,6 +24,7 @@ import { Icon } from './Icon';
 import { Btn, Field, inputStyle } from './UI';
 import { createRoom } from '../services/rooms';
 import { LIVE_SESSION_LIFETIME, ROOM_LIFETIMES, formatRoomDate, rememberHostedRoom } from '../toolkit/rooms';
+import { newSequenceId, rememberSequence, withSequence } from '../toolkit/sequence';
 
 /** How long a Self-paced tool can be left open for: anything past a workshop. */
 export const SELF_PACED_LIFETIMES = ROOM_LIFETIMES.filter(({ id }) => id !== '2h');
@@ -74,14 +76,20 @@ export function PublishToolDialog({ t, tool, name, slides, live, accountId, proj
     setBusy(true);
     setError(null);
     try {
+      // Last slide first, so each room's setup can name the room after it.
+      const sequenceId = slides.length > 1 ? newSequenceId() : null;
       const rooms = [];
-      for (const slide of slides) {
+      let next = null;
+      for (let index = slides.length - 1; index >= 0; index -= 1) {
+        const setup = slides[index].setup ?? tool.setup?.defaults() ?? null;
         const opened = await createRoom(tool.id, projectId, live ? LIVE_LIFETIME : lifetime,
-          slide.setup ?? tool.setup?.defaults() ?? null);
+          sequenceId ? withSequence(setup, { id: sequenceId, index, count: slides.length, next }) : setup);
         // This browser runs the room as its facilitator, from here on.
         rememberHostedRoom(opened.id, { pin: opened.pin, token: opened.facilitatorToken, code: opened.joinCode ?? null });
-        rooms.push(opened);
+        rooms.unshift(opened);
+        next = opened.id;
       }
+      if (sequenceId) rememberSequence(sequenceId, rooms.map((room) => room.id));
       if (live) {
         onGoLive(rooms[0]);
         return;
@@ -125,13 +133,13 @@ export function PublishToolDialog({ t, tool, name, slides, live, accountId, proj
             <strong>{title}</strong> goes live now, and people join with its PIN or QR code.
             It stays open until you end the session with <strong>Close room</strong>{' '}
             &mdash; or after 12 hours at the latest.
-            {several && ' Each slide opens as a room of its own.'}
+            {several && ` People go through its ${slides.length} slides in order.`}
           </p>
         ) : (
           <>
             <p style={{ fontSize: 15, color: t.ink, lineHeight: 1.6, margin: '0 0 18px' }}>
               <strong>{title}</strong> opens now, at its link and on the project&rsquo;s page, for people
-              to fill in in their own time.{several && ' Each slide opens as a room of its own.'}
+              to fill in in their own time.{several && ` They go through its ${slides.length} slides in order.`}
             </p>
             <Field t={t} spacing={0} label="Live for" htmlFor="publish-lifetime"
               hint="How long people can take part. You can close it sooner from the project's dashboard.">
