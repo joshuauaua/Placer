@@ -28,7 +28,8 @@ export default {
     Form: WordCloudSetup,
     steps: [
       { title: 'Prompt', Form: PromptStep, problems: promptProblems },
-      { title: 'Words', Form: WordsStep, problems: wordsProblems },
+      // No heading of its own on the configuration page: just its two choices, under the prompt.
+      { title: 'Words', panelTitle: null, Form: WordsStep, problems: wordsProblems },
     ],
   },
   inquiry: {

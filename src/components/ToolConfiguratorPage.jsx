@@ -419,11 +419,13 @@ function ConfigPanel({ t, tool, setup, onChange }) {
         steps.map((step, index) => {
           const problems = step.problems(setup);
           const Form = step.Form;
+          // Its heading here, which a step can leave out (`panelTitle: null`).
+          const heading = step.panelTitle !== undefined ? step.panelTitle : step.title;
           return (
             <section key={step.title ?? index} className="placer-configurator-section"
               aria-label={step.title ?? tool.name}>
-              {step.title && <h3 className="placer-configurator-section-heading">{step.title}</h3>}
-              <Form t={t} tool={tool} setup={setup} onChange={onChange} />
+              {heading && <h3 className="placer-configurator-section-heading">{heading}</h3>}
+              <Form t={t} tool={tool} setup={setup} onChange={onChange} compact />
               {problems.length > 0 && (
                 <ul className="placer-configurator-problems">
                   {problems.map((problem) => <li key={problem}>{problem}</li>)}
@@ -644,10 +646,6 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
               onSelect={setSelectedId} onAdd={addSlide} onRemove={removeSlide} />
           )}
           <main aria-label="Canvas" className="placer-configurator-canvas">
-            <span className="placer-configurator-preview-badge">
-              <Icon name="eye" size={14} stroke={2.2} />
-              Live preview
-            </span>
             {/* A preview only: nothing in it can be clicked, typed in or reached. */}
             <div className="placer-configurator-frame" inert aria-label="Live preview of the slide">
               {/* Keyed by slide, so each slide's tool starts afresh rather than keeping
