@@ -65,7 +65,10 @@
  * each a { title, Form, problems } over the same setup, with `problems` covering only
  * its own part (setupSteps, and SetupSteps which walks through them). A step's
  * `panelTitle`, if it has one, is its heading on the configuration page instead of its
- * `title` — null for none; there each Form is given `compact`, for its shortest form. A tool with
+ * `title` — null for none; there each Form is given `compact`, for its shortest form, and
+ * a step with `inPanel: false` is left out. `Canvas`, if the setup has one, takes the
+ * page's canvas in place of the inert preview: an editor given { setup, onChange }, for
+ * a setup made by pointing (Stationary Activity Mapping's area, on a map). A tool with
  * steps, even one, has when its room starts and how long it stays open as a stage of
  * its own after them.
  *

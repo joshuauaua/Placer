@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, within } from '@testing-library/react';
+import { clickMap, lastMap } from '../../test/maplibreStub';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { ToolConfiguratorPage, configuredToolIdFrom } from '../ToolConfiguratorPage';
@@ -67,6 +68,27 @@ describe('ToolConfiguratorPage', () => {
     expect(screen.getByText(/Set a budget as a whole number/)).toBeInTheDocument();
     // The canvas keeps the last setup the tool would take rather than an unusable one.
     expect(within(canvas).getAllByText('€90,000').length).toBeGreaterThan(0);
+  });
+
+  it('outlines Stationary Activity Mapping\'s survey area on the canvas, with its location in the panel', () => {
+    renderAt('/toolkit/stationary-activity-mapping/configure');
+    const canvas = screen.getByRole('main', { name: 'Canvas' });
+    const panel = screen.getByRole('complementary', { name: 'Configuration' });
+
+    // No instructions on this page: the panel is the survey area, the map on the canvas.
+    expect(within(panel).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Survey area']);
+    expect(within(canvas).queryByRole('list', { name: 'Postures' })).toBeNull();
+    expect(within(canvas).getByRole('region', { name: 'Survey area map' })).toBeInTheDocument();
+    expect(within(panel).queryByRole('region', { name: 'Survey area map' })).toBeNull();
+
+    // The canvas is to be used here: drawing on it outlines the area.
+    fireEvent.click(within(canvas).getByRole('button', { name: 'Draw the area' }));
+    [{ lat: 55.6, lng: 12.98 }, { lat: 55.6, lng: 13.0 }, { lat: 55.61, lng: 13.0 }]
+      .forEach((corner) => act(() => clickMap(lastMap(), corner)));
+    expect(within(panel).getByText(/3 corners/)).toBeInTheDocument();
+
+    fireEvent.change(within(panel).getByLabelText('Location'), { target: { value: 'Stortorget, Malmö' } });
+    expect(within(panel).queryByRole('listitem')).toBeNull();
   });
 
   it('has no Slides panel for a tool that runs as one', () => {

@@ -30,7 +30,8 @@
  *              as it is, while the tool would take it (roomSetup in
  *              toolkit/useRoom.js), or else the last one it would, or else the tool's
  *              defaults — because a tool handed none offers its own editors, and the
- *              editing is the panel's to do.
+ *              editing is the panel's to do. A tool whose setup is made by pointing
+ *              (`Canvas` in toolkit/tools.js) has its editor here instead, to use.
  *   panel    — on the right, the tool's own configuration: each stage of its setup
  *              (setupSteps in toolkit/tools.js) as a section, one under another,
  *              with whatever is wrong with it underneath. A tool without a setup says
@@ -409,7 +410,7 @@ function TopBar({ t, tool, name, onRename, projectId, projectName, live, onLive,
 }
 
 function ConfigPanel({ t, tool, setup, onChange }) {
-  const steps = setupSteps(tool);
+  const steps = setupSteps(tool).filter((step) => step.inPanel !== false);
   return (
     <aside aria-label="Configuration" className="placer-configurator-panel">
       <h2 className="placer-configurator-panel-heading">Configure</h2>
@@ -646,17 +647,24 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
               onSelect={setSelectedId} onAdd={addSlide} onRemove={removeSlide} />
           )}
           <main aria-label="Canvas" className="placer-configurator-canvas">
-            {/* A preview only: nothing in it can be clicked, typed in or reached. */}
-            <div className="placer-configurator-frame" inert aria-label="Live preview of the slide">
-              {/* Keyed by slide, so each slide's tool starts afresh rather than keeping
-                  what was typed into the one before. */}
-              <CanvasBoundary key={selected.id} resetKey={usable}>
-                {/* `slide`: just the slide, for a tool that can draw it alone (Word Cloud). */}
-                {Tool && (tool.room
-                  ? <Tool t={t} tool={tool} room={previewRoom(usable)} slide />
-                  : <Tool t={t} tool={tool} setup={usable} slide />)}
-              </CanvasBoundary>
-            </div>
+            {tool.setup?.Canvas ? (
+              // A setup made by pointing: its editor, on the canvas (`Canvas` in toolkit/tools.js).
+              <div className="placer-configurator-frame" aria-label="Live preview of the slide">
+                <tool.setup.Canvas key={selected.id} t={t} tool={tool} setup={setup ?? tool.setup.defaults()} onChange={setSetup} />
+              </div>
+            ) : (
+              /* A preview only: nothing in it can be clicked, typed in or reached. */
+              <div className="placer-configurator-frame" inert aria-label="Live preview of the slide">
+                {/* Keyed by slide, so each slide's tool starts afresh rather than keeping
+                    what was typed into the one before. */}
+                <CanvasBoundary key={selected.id} resetKey={usable}>
+                  {/* `slide`: just the slide, for a tool that can draw it alone (Word Cloud). */}
+                  {Tool && (tool.room
+                    ? <Tool t={t} tool={tool} room={previewRoom(usable)} slide />
+                    : <Tool t={t} tool={tool} setup={usable} slide />)}
+                </CanvasBoundary>
+              </div>
+            )}
           </main>
           <ConfigPanel t={t} tool={tool} setup={setup} onChange={setSetup} />
         </div>
