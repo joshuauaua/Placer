@@ -84,7 +84,6 @@ function AddToolCard({ onCreateTool }) {
         </span>
         <span className="placer-template-text">
           <span className="placer-template-title">Create a tool</span>
-          <span className="placer-started-details">Understand, Imagine or Plan</span>
         </span>
       </button>
       {open && (

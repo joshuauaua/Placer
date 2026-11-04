@@ -15,6 +15,8 @@ describe('MyTools', () => {
     expect(cards).toHaveLength(1);
     expect(within(cards[0]).getByRole('button')).toHaveTextContent('Create a tool');
     expect(within(cards[0]).getByRole('button')).toHaveClass('placer-add-tool-card');
+    // Just the words: the kinds are in what it opens.
+    expect(within(cards[0]).getByRole('button')).not.toHaveTextContent('Understand');
   });
 
   it('opens Understand, Imagine and Plan from that card, and creates the kind chosen', () => {
