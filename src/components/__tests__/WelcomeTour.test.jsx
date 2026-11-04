@@ -24,7 +24,7 @@ function Harness({ path = '/dashboard', accountId = 'user-1', onOpenChange }) {
       <h1>{`Page: ${page}`}</h1>
       <WelcomeTour t={THEME} accountId={accountId} name="Mara Quinn" autoOpen={page === 'dashboard'}
         onOpenProjects={() => setPage('projects')} onExplore={() => setPage('map')}
-        onNewProject={() => setPage('new board')} onEditProfile={() => setPage('settings')}
+        onNewProject={() => setPage('new project')} onEditProfile={() => setPage('settings')}
         onOpenChange={onOpenChange} />
     </Router>
   );
@@ -66,7 +66,7 @@ describe('WelcomeTour', () => {
     await screen.findByRole('dialog');
 
     fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
-    fireEvent.click(screen.getByRole('button', { name: 'See the boards' }));
+    fireEvent.click(screen.getByRole('button', { name: 'See the projects' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Page: projects' })).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toHaveTextContent('Step 2 of 5');
 
@@ -78,8 +78,8 @@ describe('WelcomeTour', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Page: map' })).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toHaveTextContent('Step 4 of 5');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Create a board' }));
-    expect(screen.getByRole('heading', { level: 1, name: 'Page: new board' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Create a project' }));
+    expect(screen.getByRole('heading', { level: 1, name: 'Page: new project' })).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toHaveTextContent('Step 5 of 5');
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit my profile' }));

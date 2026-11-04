@@ -63,7 +63,7 @@ export function ProjectLocationMap({ t, project, size = SIZE, style }) {
 
   return (
     <div ref={containerRef} role="img"
-      aria-label={`Map of the area for ${project?.name || 'this board'}`}
+      aria-label={`Map of the area for ${project?.name || 'this project'}`}
       style={{ width: '100%', height: size.height, borderRadius: 16, overflow: 'hidden',
         border: `1px solid ${t.line}`, marginBottom: 28, display: 'block', background: t.surfaceAlt,
         ...style }} />

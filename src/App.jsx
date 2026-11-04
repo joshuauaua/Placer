@@ -65,7 +65,7 @@ const PublicOrganisationPage = lazy(() => import('./components/PublicOrganisatio
 const ACCOUNT_PATHS = {
   dashboard: '/dashboard',
   activity: '/activity',
-  projects: '/boards',
+  projects: '/projects',
   organisations: '/organisations',
   settings: '/settings',
   signin: '/signin',
@@ -80,7 +80,7 @@ const ACCOUNT_VIEWS = {
   '/activity': 'activity',
   // Where the Tools page was, before it became the dashboard.
   '/tools': 'dashboard',
-  '/boards': 'projects',
+  '/projects': 'projects',
   '/organisations': 'organisations',
   '/settings': 'settings',
   '/signin': 'signin',
@@ -109,16 +109,15 @@ const STATIC_PATHS = {
 const STATIC_VIEWS = Object.fromEntries(Object.entries(STATIC_PATHS).map(([view, path]) => [path, view]));
 
 /**
- * `/boards/new`, `/boards/<id>` (the public page) or `/boards/<id>/dashboard`,
- * read off the location the same way the Toolkit is — a board's dashboard and its
+ * `/projects/new`, `/projects/<id>` (the public page) or `/projects/<id>/dashboard`,
+ * read off the location the same way the Toolkit is — a project's dashboard and its
  * public page both need a link worth bookmarking or sharing. Null for anything else,
- * including a bare `/boards` with nothing after it. (Boards are projects inside the
- * code and the database; only what people see calls them boards.)
+ * including a bare `/projects` with nothing after it.
  */
 function projectRouteFrom(path) {
-  if (!path.startsWith('/boards/')) return null;
-  if (path === '/boards/new') return { mode: 'new' };
-  const match = /^\/boards\/([^/]+)(\/dashboard)?$/.exec(path);
+  if (!path.startsWith('/projects/')) return null;
+  if (path === '/projects/new') return { mode: 'new' };
+  const match = /^\/projects\/([^/]+)(\/dashboard)?$/.exec(path);
   if (!match) return null;
   return { mode: match[2] ? 'dashboard' : 'public', id: match[1] };
 }
@@ -167,7 +166,7 @@ function LoadingFallback() {
 const SIGNED_IN_VIEWS = ['dashboard', 'activity', 'settings', 'projects', 'organisations',
   'projectNew', 'projectDashboard', 'organisationNew', 'organisationDashboard'];
 
-// What /dashboard, /boards and /settings show to someone who has logged out. Not a redirect,
+// What /dashboard, /projects and /settings show to someone who has logged out. Not a redirect,
 // so the URL still works once they log back in.
 function SignedOutNotice({ t, onSignIn }) {
   return (
@@ -179,7 +178,7 @@ function SignedOutNotice({ t, onSignIn }) {
           You are logged out
         </h1>
         <p style={{ fontSize: 15, color: t.inkDim, marginBottom: 24 }}>
-          Log back in to see your dashboard, boards and settings.
+          Log back in to see your dashboard, projects and settings.
         </p>
         <Btn t={t} variant="primary" onClick={onSignIn}>Sign in</Btn>
       </div>
@@ -250,7 +249,7 @@ function MainApp({ initialView = 'welcome' }) {
   const organisationRoute = organisationRouteFrom(location);
   const organisationView = organisationRoute
     && { new: 'organisationNew', public: 'organisationPublic', dashboard: 'organisationDashboard' }[organisationRoute.mode];
-  // `/boards/new?organisation=<id>`, from an organisation's dashboard: the new
+  // `/projects/new?organisation=<id>`, from an organisation's dashboard: the new
   // project starts out run in that organisation's name.
   const search = useSearch();
   const newProjectOrganisationId = new URLSearchParams(search).get('organisation');
@@ -292,7 +291,7 @@ function MainApp({ initialView = 'welcome' }) {
     };
   }, [view, location]);
 
-  const showNewProject = () => navigate('/boards/new');
+  const showNewProject = () => navigate('/projects/new');
   // Create a tool, from the side nav or the dashboard: once the kind is picked, a dialog
   // of the tools of that kind (ChooseToolDialog); once a tool is, which board it goes on
   // (AddToBoardDialog); and then its configuration page, for that board.
@@ -302,7 +301,7 @@ function MainApp({ initialView = 'welcome' }) {
   const closeCreateTool = useCallback(() => { setCreateCategory(null); setCreateToolId(null); }, []);
   const createTool = createToolId ? findTool(createToolId) : null;
   const showNewOrganisationProject = (organisationId) =>
-    navigate(`/boards/new?organisation=${encodeURIComponent(organisationId)}`);
+    navigate(`/projects/new?organisation=${encodeURIComponent(organisationId)}`);
   const showNewOrganisation = () => navigate('/organisations/new');
   const showOrganisationDashboard = (id) => navigate(`/organisations/${encodeURIComponent(id)}/dashboard`);
   const showOrganisationPublic = (id) => navigate(`/organisations/${encodeURIComponent(id)}`);
@@ -316,8 +315,8 @@ function MainApp({ initialView = 'welcome' }) {
     else if (kind === 'caseStudy') navigate(`/resources/${encodeURI(id)}`);
     else showProjectPublic(id);
   };
-  const showProjectDashboard = (id) => navigate(`/boards/${id}/dashboard`);
-  const showProjectPublic = (id) => navigate(`/boards/${id}`);
+  const showProjectDashboard = (id) => navigate(`/projects/${id}/dashboard`);
+  const showProjectPublic = (id) => navigate(`/projects/${id}`);
   const showPublicProfile = (id) => navigate(`/people/${encodeURIComponent(id)}`);
   // A room the project already has, from its dashboard — the dashboard has already
   // told this browser it may run it, so it opens as the facilitator's view.
@@ -451,7 +450,7 @@ function MainApp({ initialView = 'welcome' }) {
           )}
 
           {/* The welcome tour, over whichever page it has led to: its steps go to the
-              boards, the map, a new board and Settings, and it carries on
+              projects, the map, a new project and Settings, and it carries on
               over each. */}
           {!identityLoading && profile && (
             <WelcomeTour t={t} accountId={accountId} name={profile.name}
@@ -682,8 +681,8 @@ function MainApp({ initialView = 'welcome' }) {
             )}
 
             {/* projectNew and projectDashboard need an account (SIGNED_IN_VIEWS) —
-                starting or managing a board is not something a signed-out visitor can
-                do. projectPublic needs nothing: a board's public page is exactly the
+                starting or managing a project is not something a signed-out visitor can
+                do. projectPublic needs nothing: a project's public page is exactly the
                 thing anyone should be able to open cold, unsignedin, from a shared link. */}
             {view === 'projectNew' && profile && (
               <Suspense fallback={<LoadingFallback />}>
@@ -775,15 +774,15 @@ function SandboxRedirect() {
 }
 
 /**
- * Boards used to be called projects, at /projects. Links to them are out there in
- * messages, QR codes and bookmarks, so they are sent on to the same place under
- * /boards, query string and all.
+ * Projects were briefly called boards, at /boards (November 2026). Links made then are
+ * out there in messages, QR codes and bookmarks, so they are sent on to the same place
+ * under /projects, query string and all.
  */
-function ProjectsRedirect() {
+function BoardsRedirect() {
   const [rest] = useLocation();
   const search = useSearch();
   const path = rest === '/' ? '' : rest;
-  return <Redirect to={`~/boards${path}${search ? `?${search}` : ''}`} replace />;
+  return <Redirect to={`~/projects${path}${search ? `?${search}` : ''}`} replace />;
 }
 
 function App() {
@@ -800,7 +799,7 @@ function App() {
           <Route path="/sandbox" nest><SandboxRedirect /></Route>
           {/* The case study form used to open over Resources. */}
           <Route path={OLD_CASE_STUDY_FORM_PATH}><Redirect to={CASE_STUDY_FORM_PATH} replace /></Route>
-          <Route path="/projects" nest><ProjectsRedirect /></Route>
+          <Route path="/boards" nest><BoardsRedirect /></Route>
           <Route path="/join"><Suspense fallback={<LoadingFallback />}><JoinPage t={t} /></Suspense></Route>
           {/* Where every link Supabase mails out comes back to, and the screen that
               link leads to. Both are only ever arrived at cold, from another

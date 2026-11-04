@@ -33,8 +33,8 @@ const GUIDES = [
   },
   {
     id: 4,
-    title: 'Setting Up a Board',
-    excerpt: 'Gather ideas, research and feedback for one place on a dedicated board page that anyone can follow.',
+    title: 'Setting Up a Project',
+    excerpt: 'Gather ideas, research and feedback for one place on a dedicated project page that anyone can follow.',
     image: { bg: '#C6DEF8', icon: 'flag' },
     tags: ['Plan'],
     readTime: '6 min read'
@@ -50,7 +50,7 @@ const GUIDES = [
   {
     id: 6,
     title: 'Working as an Organisation',
-    excerpt: 'Create an organisation, invite fellow admins, and run boards in its name.',
+    excerpt: 'Create an organisation, invite fellow admins, and run projects in its name.',
     image: { bg: '#FFD9B8', icon: 'building' },
     tags: ['Plan', 'Organisations'],
     readTime: '5 min read'

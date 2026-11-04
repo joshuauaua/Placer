@@ -29,7 +29,7 @@ export function timeAgo(value, now = new Date()) {
 
 // Where each kind of link goes: its page's path, and which handler opens it in the app.
 const LINKS = {
-  project: { path: (id) => `/boards/${encodeURIComponent(id)}`, handler: 'onOpenProject' },
+  project: { path: (id) => `/projects/${encodeURIComponent(id)}`, handler: 'onOpenProject' },
   organisation: { path: (id) => `/organisations/${encodeURIComponent(id)}`, handler: 'onOpenOrganisation' },
   profile: { path: (id) => `/people/${encodeURIComponent(id)}`, handler: 'onOpenProfile' },
 };

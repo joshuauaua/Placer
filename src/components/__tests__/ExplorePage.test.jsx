@@ -88,10 +88,10 @@ describe('ExplorePage', () => {
     expect(screen.queryByRole('group', { name: 'Show on the map' })).not.toBeInTheDocument();
   });
 
-  it('offers Boards, Case studies and Organisations, with case studies not yet available', () => {
+  it('offers Projects, Case studies and Organisations, with case studies not yet available', () => {
     renderPage();
     openFilter();
-    expect(screen.getByRole('checkbox', { name: /boards/i })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /projects/i })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: /organisations/i })).toBeChecked();
     const caseStudies = screen.getByRole('checkbox', { name: /case studies/i });
     expect(caseStudies).toBeDisabled();
@@ -99,7 +99,7 @@ describe('ExplorePage', () => {
     expect(screen.getByText('Coming soon')).toBeInTheDocument();
   });
 
-  it('draws each board as its outline with a pin in the middle', async () => {
+  it('draws each project as its outline with a pin in the middle', async () => {
     vi.mocked(readMapProjects).mockResolvedValue([PROJECT]);
     renderPage();
 
@@ -157,7 +157,7 @@ describe('ExplorePage', () => {
     const drawn = markerFor('Riverside Greenway').getElement();
 
     openFilter();
-    fireEvent.click(screen.getByRole('checkbox', { name: /boards/i }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /projects/i }));
 
     expect(markerFor('Riverside Greenway')).toBeUndefined();
     expect(drawn).not.toBeInTheDocument();
@@ -203,7 +203,7 @@ describe('ExplorePage', () => {
     it('shows the image, type, location, title and first sentence of what was picked', async () => {
       const card = await pickProject();
       expect(card.querySelector('img')).toHaveAttribute('src', PROJECT.image);
-      expect(card).toHaveTextContent('Board');
+      expect(card).toHaveTextContent('Project');
       expect(card).toHaveTextContent('Malmö');
       expect(within(card).getByRole('heading', { name: 'Riverside Greenway' })).toBeInTheDocument();
       expect(card).toHaveTextContent('Planting along the canal.');
@@ -215,11 +215,11 @@ describe('ExplorePage', () => {
       expect(lastMap().center).toEqual(shapeCentre(PROJECT.locationShapes));
     });
 
-    it('links through to the board page, staying in the app on a plain click', async () => {
+    it('links through to the project page, staying in the app on a plain click', async () => {
       const onOpenProject = vi.fn();
       const card = await pickProject({ onOpenProject });
-      const link = within(card).getByRole('link', { name: /view board/i });
-      expect(link).toHaveAttribute('href', '/boards/proj-1');
+      const link = within(card).getByRole('link', { name: /view project/i });
+      expect(link).toHaveAttribute('href', '/projects/proj-1');
 
       fireEvent.click(link);
 
@@ -246,7 +246,7 @@ describe('ExplorePage', () => {
   });
 
   describe('search', () => {
-    it('lists matching boards and organisations, then the words as a place to go', async () => {
+    it('lists matching projects and organisations, then the words as a place to go', async () => {
       vi.mocked(readMapProjects).mockResolvedValue([PROJECT]);
       vi.mocked(readMapOrganisations).mockResolvedValue([ORGANISATION]);
       renderPage();

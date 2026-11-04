@@ -20,7 +20,7 @@ describe('AdminDashboard', () => {
     expect(screen.getByText('Total Users')).toBeInTheDocument();
     expect(screen.getByText('Total Visits')).toBeInTheDocument();
     expect(screen.getAllByText('Survey Responses').length).toBeGreaterThan(0);
-    expect(screen.getByText('Active Boards')).toBeInTheDocument();
+    expect(screen.getByText('Active Projects')).toBeInTheDocument();
   });
 
   it('shows analytics content when the "Analytics" tab is clicked', () => {

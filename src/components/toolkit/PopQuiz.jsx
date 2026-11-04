@@ -428,7 +428,7 @@ function SoloGame({ t, keep = false }) {
               for speed; a wrong one, a skipped one or none in time scores nothing.
             </p>
             <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '12px 0 0' }}>
-              To play with a group, add Pop Quiz to a board and set it up from the board's
+              To play with a group, add Pop Quiz to a project and set it up from the project's
               dashboard. Everybody joins the room with its PIN or QR code and picks a nickname, you
               put the questions up one at a time, and the scoreboard follows. A quiz written here is
               not saved.

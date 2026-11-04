@@ -70,12 +70,12 @@ describe('room URLs', () => {
     expect(roomIdFrom(undefined)).toBeNull();
   });
 
-  it('reads the board a room should attach to out of the query string', () => {
+  it('reads the project a room should attach to out of the query string', () => {
     expect(projectIdFrom('?project=proj-1')).toBe('proj-1');
     expect(projectIdFrom('project=proj-1')).toBe('proj-1');
   });
 
-  it('has no board when the query says nothing about one', () => {
+  it('has no project when the query says nothing about one', () => {
     expect(projectIdFrom('')).toBeNull();
     expect(projectIdFrom('?room=abc-123')).toBeNull();
     expect(projectIdFrom(undefined)).toBeNull();
@@ -192,12 +192,12 @@ describe('rooms that stay open for weeks', () => {
 describe('scheduleRange', () => {
   const project = { startDate: '2026-11-01', endDate: '2026-12-31' };
 
-  it('is the board\'s dates, from today on', () => {
+  it('is the project\'s dates, from today on', () => {
     expect(scheduleRange(project, '2026-10-10')).toEqual({ min: '2026-11-01', max: '2026-12-31' });
     expect(scheduleRange(project, '2026-11-20')).toEqual({ min: '2026-11-20', max: '2026-12-31' });
   });
 
-  it('is null for a board without both dates, or one that has ended', () => {
+  it('is null for a project without both dates, or one that has ended', () => {
     expect(scheduleRange({ startDate: '2026-11-01', endDate: null }, '2026-10-10')).toBeNull();
     expect(scheduleRange({}, '2026-10-10')).toBeNull();
     expect(scheduleRange(project, '2027-01-01')).toBeNull();

@@ -54,7 +54,7 @@ beforeEach(() => {
   order.mockReturnValue(result({ data: [], error: null }));
 });
 
-describe('toolkit rooms without a board configured', () => {
+describe('toolkit rooms without a project configured', () => {
   beforeEach(async () => {
     await load({ configured: false });
   });
@@ -102,7 +102,7 @@ describe('opening a room', () => {
     });
   });
 
-  it('schedules a board\'s room for a time on a day, in this browser\'s time zone', async () => {
+  it('schedules a project\'s room for a time on a day, in this browser\'s time zone', async () => {
     rpc.mockReturnValue(result({
       data: { room_id: 'room-1', pin: '839201', facilitator_token: 'facilitator-1', join_code: 'c'.repeat(32),
         expires_at: '2026-12-01T18:30:00Z', opens_at: '2026-11-01T18:30:00Z' },
@@ -135,7 +135,7 @@ describe('opening a room', () => {
     });
   });
 
-  it('attaches a board when one is given, so its dashboard can see the room', async () => {
+  it('attaches a project when one is given, so its dashboard can see the room', async () => {
     rpc.mockReturnValue(result({
       data: { room_id: 'room-1', pin: '839201', facilitator_token: 'facilitator-1',
         expires_at: '2026-09-11T12:00:00Z' },

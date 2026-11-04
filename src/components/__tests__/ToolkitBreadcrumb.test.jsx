@@ -25,25 +25,25 @@ const renderAt = (path, searchPath = '') => {
 
 const crumbs = () => within(screen.getByRole('navigation', { name: 'Breadcrumb' }));
 
-describe('a tool opened for a board', () => {
+describe('a tool opened for a project', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('leads an organiser back through My Workspace and Boards to the board\'s dashboard', async () => {
+  it('leads an organiser back through My Workspace and Projects to the project\'s dashboard', async () => {
     vi.mocked(readProjectCrumb).mockResolvedValue({ name: 'Riverside Greenway', canEdit: true });
     const location = renderAt('/toolkit/reimagine-a-space', 'project=proj-1');
 
     const project = await screen.findByRole('link', { name: 'Riverside Greenway' });
     expect(crumbs().getByRole('link', { name: 'My Workspace' })).toHaveAttribute('href', '/dashboard');
-    expect(crumbs().getByRole('link', { name: 'Boards' })).toHaveAttribute('href', '/boards');
-    expect(project).toHaveAttribute('href', '/boards/proj-1/dashboard');
+    expect(crumbs().getByRole('link', { name: 'Projects' })).toHaveAttribute('href', '/projects');
+    expect(project).toHaveAttribute('href', '/projects/proj-1/dashboard');
     expect(crumbs().getByText('Idea Visualizer')).toHaveAttribute('aria-current', 'page');
     expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
     expect(readProjectCrumb).toHaveBeenCalledWith('proj-1');
 
     fireEvent.click(project);
-    expect(location.history.at(-1)).toBe('/boards/proj-1/dashboard');
+    expect(location.history.at(-1)).toBe('/projects/proj-1/dashboard');
   });
 
   it('keeps the breadcrumb past the cover, on the tool itself', async () => {
@@ -57,20 +57,20 @@ describe('a tool opened for a board', () => {
     expect(crumbs().getByText('Desire Lines')).toBeInTheDocument();
   });
 
-  it('leads anybody else back to the board\'s public page', async () => {
+  it('leads anybody else back to the project\'s public page', async () => {
     vi.mocked(readProjectCrumb).mockResolvedValue({ name: 'Riverside Greenway', canEdit: false });
     renderAt('/toolkit/reimagine-a-space', 'project=proj-1');
 
-    expect(await screen.findByRole('link', { name: 'Riverside Greenway' })).toHaveAttribute('href', '/boards/proj-1');
+    expect(await screen.findByRole('link', { name: 'Riverside Greenway' })).toHaveAttribute('href', '/projects/proj-1');
     expect(crumbs().queryByRole('link', { name: 'My Workspace' })).not.toBeInTheDocument();
   });
 
-  it('still leads back when the board could not be read', async () => {
+  it('still leads back when the project could not be read', async () => {
     vi.mocked(readProjectCrumb).mockRejectedValue(new Error('offline'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
     renderAt('/toolkit/reimagine-a-space', 'project=proj-1');
 
-    expect(await screen.findByRole('link', { name: 'Board' })).toHaveAttribute('href', '/boards/proj-1');
+    expect(await screen.findByRole('link', { name: 'Project' })).toHaveAttribute('href', '/projects/proj-1');
   });
 
   it('is Back, home, for a tool opened on its own', () => {
@@ -83,7 +83,7 @@ describe('a tool opened for a board', () => {
 });
 
 describe('projectTrail', () => {
-  it('names the board "Board" until its name is in', () => {
-    expect(projectTrail('proj-1', null)).toEqual([{ label: 'Board', href: '/boards/proj-1' }]);
+  it('names the project "Project" until its name is in', () => {
+    expect(projectTrail('proj-1', null)).toEqual([{ label: 'Project', href: '/projects/proj-1' }]);
   });
 });

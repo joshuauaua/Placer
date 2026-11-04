@@ -119,8 +119,8 @@ export function ReimagineASpace({ t, tool }) {
   }, [step, status, projectId]);
 
   // Out of the tool: back to the project it was opened for, or to the Toolkit.
-  const leave = () => navigate(projectId ? `/boards/${encodeURIComponent(projectId)}` : '/');
-  const leaveLabel = projectId ? 'Back to board' : 'Back to Toolkit';
+  const leave = () => navigate(projectId ? `/projects/${encodeURIComponent(projectId)}` : '/');
+  const leaveLabel = projectId ? 'Back to project' : 'Back to Toolkit';
   // A project's scene was never picked from the map, so back from it is the project.
   const fromProjectScene = capturedView?.source === 'project' && Boolean(projectId);
 
@@ -158,7 +158,7 @@ export function ReimagineASpace({ t, tool }) {
           <StreetScreen
             t={t}
             onBack={fromProjectScene ? leave : () => setStep('map')}
-            backLabel={fromProjectScene ? 'Back to board' : 'Back to the view'}
+            backLabel={fromProjectScene ? 'Back to project' : 'Back to the view'}
             onNext={(canvasPreview) => { setPreview(canvasPreview); setStep('describe'); }}
             capturedView={capturedView}
             canvasAssets={canvasAssets}

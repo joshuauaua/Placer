@@ -64,7 +64,7 @@ describe('the GDPR data rights cover toolkit room tokens', () => {
     });
   });
 
-  it('includes, and erases, what this browser answered on a board page', async () => {
+  it('includes, and erases, what this browser answered on a project page', async () => {
     rememberAnswer('room-1', { choice: 'yes' });
 
     const { data } = await exportAllData();

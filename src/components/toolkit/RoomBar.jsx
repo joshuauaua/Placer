@@ -239,7 +239,7 @@ export function RoomBar({ t, tool, room }) {
 
           <p style={{ fontSize: 12.5, color: t.inkFaint, lineHeight: 1.55, marginTop: 12 }}>
             {long
-              ? `The room stays open until ${closesOn}${left ? ` — ${left} left` : ''}. You can close it sooner from here or from the board's dashboard. Either way what it held is let go a day after it ends.`
+              ? `The room stays open until ${closesOn}${left ? ` — ${left} left` : ''}. You can close it sooner from here or from the project's dashboard. Either way what it held is let go a day after it ends.`
               : `The room lasts two hours from opening${left ? ` — ${left} left` : ''}, and closing it ends it sooner. Either way what it held is let go.`}
           </p>
         </div>

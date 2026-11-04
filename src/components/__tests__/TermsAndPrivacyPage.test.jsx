@@ -141,7 +141,7 @@ describe('the privacy safeguards', () => {
 
     expect(section).toHaveTextContent('Surveys are anonymous unless you choose to leave an email address');
     expect(section).toHaveTextContent('If you are signed in, your display name goes with your answers');
-    expect(section).toHaveTextContent('can be read by anyone who can see its board');
+    expect(section).toHaveTextContent('can be read by anyone who can see its project');
     expect(section).toHaveTextContent('deleted at most a day after it ends');
     expect(section).toHaveTextContent('that notification stays in their account');
     expect(section).not.toHaveTextContent(/anonymi[sz]ed by default|full compliance/i);

@@ -35,7 +35,7 @@ describe('PublicOrganisationPage', () => {
     ]);
   });
 
-  it('shows the details, the description and the boards run in its name', async () => {
+  it('shows the details, the description and the projects run in its name', async () => {
     const onOpenProject = vi.fn();
     setup({ onOpenProject });
 
@@ -48,7 +48,7 @@ describe('PublicOrganisationPage', () => {
     expect(onOpenProject).toHaveBeenCalledWith('proj-1');
   });
 
-  it('lists the boards it collaborates on beside those it runs, newest first, once each', async () => {
+  it('lists the projects it collaborates on beside those it runs, newest first, once each', async () => {
     vi.mocked(readOrganisationProjects).mockResolvedValue([
       { id: 'proj-1', name: 'Riverside Greenway', description: '', createdAt: '2026-09-01T00:00:00Z' },
     ]);
@@ -65,7 +65,7 @@ describe('PublicOrganisationPage', () => {
     ]);
   });
 
-  it('still shows the boards it runs when its collaborations cannot be read', async () => {
+  it('still shows the projects it runs when its collaborations cannot be read', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(readOrganisationCollaborations).mockRejectedValue(new Error('relation does not exist'));
     setup();

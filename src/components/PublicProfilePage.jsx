@@ -28,7 +28,7 @@ import { readProfileActivity, readProfileComments } from '../services/profileAct
 
 const TABS = [
   { id: 'about', label: 'About' },
-  { id: 'projects', label: 'Boards' },
+  { id: 'projects', label: 'Projects' },
   { id: 'activity', label: 'Activity' },
 ];
 
@@ -287,9 +287,9 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
 
           {tab === 'projects' && (
             activity.status === 'loading' ? loading
-              : activity.status === 'error' ? empty('Boards could not be loaded. Try again in a moment.')
-              : activity.projects.length === 0 ? empty(isYou ? 'You are not involved in any boards yet.'
-                : `${person.name} is not involved in any boards yet.`)
+              : activity.status === 'error' ? empty('Projects could not be loaded. Try again in a moment.')
+              : activity.projects.length === 0 ? empty(isYou ? 'You are not involved in any projects yet.'
+                : `${person.name} is not involved in any projects yet.`)
               : (
                 <div className="placer-profile-projects">
                   {activity.projects.map((project) => (
@@ -314,8 +314,8 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
           {tab === 'activity' && (
             comments.status === 'loading' ? loading
               : comments.status === 'error' ? empty('Comments could not be loaded. Try again in a moment.')
-              : comments.list.length === 0 ? empty(isYou ? 'You have not commented on any boards yet.'
-                : `${person.name} has not commented on any boards yet.`)
+              : comments.list.length === 0 ? empty(isYou ? 'You have not commented on any projects yet.'
+                : `${person.name} has not commented on any projects yet.`)
               : (
                 <ul aria-label="Comments" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                   {comments.list.map((comment) => (
@@ -324,7 +324,7 @@ export function PublicProfilePage({ t, userId, accountId = null, onOpen }) {
                         marginBottom: 6, fontSize: 14, color: t.inkDim }}>
                         <span>
                           On{' '}
-                          <a href={`/boards/${comment.projectId}`}
+                          <a href={`/projects/${comment.projectId}`}
                             onClick={(e) => { e.preventDefault(); onOpen?.('project', comment.projectId); }}
                             style={{ color: t.ink, fontWeight: 700 }}>
                             {comment.projectName}

@@ -28,7 +28,7 @@ const REPLY_COLUMNS = `${POST_COLUMNS}, update_id, comment_id`;
 async function client() {
   const supabase = await getSupabase();
   if (!supabase) {
-    throw new Error('Boards need a Supabase project: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+    throw new Error('Projects need a Supabase project: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
   }
   return supabase;
 }
@@ -65,7 +65,7 @@ export async function readProjectSummary(projectId) {
   const supabase = await client();
   const { data, error } = await supabase.rpc('project_public_summary', { p_project_id: projectId });
 
-  if (error) throw new Error(`Could not load this board's numbers: ${error.message}`);
+  if (error) throw new Error(`Could not load this project's numbers: ${error.message}`);
   if (!data) return null;
 
   const owner = data.owner ? {
@@ -117,7 +117,7 @@ async function readPosts(table, projectId, what) {
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });
 
-  if (error) throw new Error(`Could not load this board's ${what}: ${error.message}`);
+  if (error) throw new Error(`Could not load this project's ${what}: ${error.message}`);
   return withAuthorPhotos(supabase, (data ?? []).map(postFrom));
 }
 
@@ -180,7 +180,7 @@ export async function readReplies(projectId) {
     .eq('project_id', projectId)
     .order('created_at', { ascending: true });
 
-  if (error) throw new Error(`Could not load the replies on this board: ${error.message}`);
+  if (error) throw new Error(`Could not load the replies on this project: ${error.message}`);
   return withAuthorPhotos(supabase, (data ?? []).map(replyFrom));
 }
 

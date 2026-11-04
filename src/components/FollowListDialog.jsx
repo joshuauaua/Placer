@@ -15,7 +15,7 @@ const TABS = [
   { key: 'following', label: 'Following', read: readFollowing },
 ];
 
-const KIND_LABELS = { user: 'Person', organisation: 'Organisation', project: 'Board' };
+const KIND_LABELS = { user: 'Person', organisation: 'Organisation', project: 'Project' };
 
 function Thumbnail({ t, entry }) {
   if (entry.type === 'user') return <Avatar name={entry.name} photo={entry.image} size={40} />;

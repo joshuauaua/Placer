@@ -45,7 +45,7 @@ const EDIT_TABS = [
 ];
 
 /** The six steps of starting a project, in order. */
-const STEPS = ['What is a board', 'Board type', 'The basics', 'Tools', 'Visuals'];
+const STEPS = ['What is a project', 'Project type', 'The basics', 'Tools', 'Visuals'];
 const LAST_STEP = STEPS.length - 1;
 
 
@@ -136,7 +136,7 @@ function BudgetQuestion({ t, hasBudget, onHasBudget, amount, onAmount, currency,
   return (
     <fieldset style={{ border: 0, padding: 0, margin: '0 0 26px' }}>
       <legend style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 8, padding: 0 }}>
-        Do you have a budget for this board?
+        Do you have a budget for this project?
       </legend>
       <div style={{ fontSize: 13, color: t.inkDim, marginBottom: 10, lineHeight: 1.5 }}>
         Only you and your collaborators can see this. Optional.
@@ -193,7 +193,7 @@ function ProjectTypeChoice({ t, value, onChange }) {
   return (
     <fieldset style={{ border: 0, padding: 0, margin: '0 0 26px', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <legend style={{ fontSize: 14, fontWeight: 700, color: t.ink, marginBottom: 10, padding: 0 }}>
-        What kind of board is it?
+        What kind of project is it?
       </legend>
       {PROJECT_TYPES.map((type) => {
         const checked = value === type.key;
@@ -242,7 +242,7 @@ function RunByChoice({ t, accountName, organisations, value, onChange }) {
 /**
  * `project` is null to start a new one, or an existing project (from services/projects'
  * fromRow shape) to edit it in place — the same field set either way, so this is the
- * one form both `/boards/new` and a dashboard's "Edit setup" reach.
+ * one form both `/projects/new` and a dashboard's "Edit setup" reach.
  */
 export function ProjectSetupPage({ t, accountId, accountName, accountLocation = '', project: initialProject = null,
   organisations = [], initialOrganisationId = null, onSaved, onCancel }) {
@@ -380,7 +380,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
   };
 
   const pickPendingImage = async (file) => {
-    checkPickedImage(file, 'A board image'); // Throws the same sentence the upload would.
+    checkPickedImage(file, 'A project image'); // Throws the same sentence the upload would.
     setPending({ file, url: URL.createObjectURL(file) });
   };
 
@@ -462,7 +462,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
           console.error('Could not add the project image:', imageError);
           setProject(saved);
           setPending(null);
-          setError(`The board was started, but its image could not be added: ${imageError.message} `
+          setError(`The project was started, but its image could not be added: ${imageError.message} `
             + 'Try it again below, or save without one.');
           setStatus('idle');
           return;
@@ -478,7 +478,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
           console.error('Could not save the project\'s tools:', toolsError);
           setProject(saved);
           setPending(null);
-          setError(`The board was saved, but its tools could not be: ${toolsError.message} `
+          setError(`The project was saved, but its tools could not be: ${toolsError.message} `
             + 'Save again to try once more.');
           setStatus('idle');
           return;
@@ -494,7 +494,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
           console.error('Could not save the project\'s budget:', budgetError);
           setProject(saved);
           setPending(null);
-          setError(`The board was saved, but its budget could not be: ${budgetError.message} `
+          setError(`The project was saved, but its budget could not be: ${budgetError.message} `
             + 'Save again to try once more.');
           setStatus('idle');
           return;
@@ -504,13 +504,13 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
       onSaved(saved);
     } catch (err) {
       console.error(`Could not ${editing ? 'save' : 'start'} that project:`, err);
-      setError(err?.message ?? `Could not ${editing ? 'save' : 'start'} that board. Try again.`);
+      setError(err?.message ?? `Could not ${editing ? 'save' : 'start'} that project. Try again.`);
       setStatus('idle');
     }
   };
 
   const goalsHint = PROJECT_TYPES.find(({ key }) => key === projectType)?.goalsHint
-    ?? 'What is this board trying to find out or bring about?';
+    ?? 'What is this project trying to find out or bring about?';
 
   // The fields, each once, so the steps and the single edit page lay out the same ones.
   const basics = (
@@ -527,14 +527,14 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
       </Field>
 
       <Field t={t} label="Subtitle" htmlFor="project-subtitle"
-        hint="A line under the board's name at the top of its page. Optional.">
+        hint="A line under the project's name at the top of its page. Optional.">
         <input id="project-subtitle" type="text" value={subtitle} maxLength={SUBTITLE_MAX_LENGTH}
           onChange={(e) => setSubtitle(e.target.value)}
           placeholder="e.g., A park for the whole neighbourhood" style={inputStyle(t)} />
       </Field>
 
       <Field t={t} label="Description" htmlFor="project-summary"
-        hint="What the board is, in a sentence or two. Shown on its card and under About the board on its page.">
+        hint="What the project is, in a sentence or two. Shown on its card and under About the project on its page.">
         <textarea id="project-summary" value={summary} rows={3} maxLength={SUMMARY_MAX_LENGTH}
           onChange={(e) => setSummary(e.target.value)}
           placeholder="e.g., Turning the disused rail line along the river into a park."
@@ -544,7 +544,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
       <Field t={t} label="Goals" htmlFor="project-description" hint={goalsHint}>
         <textarea id="project-description" value={description} rows={5}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="What the board is for, and what success looks like."
+          placeholder="What the project is for, and what success looks like."
           style={{ ...inputStyle(t), resize: 'vertical' }} />
       </Field>
 
@@ -566,7 +566,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
 
   const image = (
     <Field t={t} label="Header Image"
-      hint="Shown at the top of the board's page and on its card, instead of the map of its area. A landscape photo works best. It is resized, and saved without its location data. Optional.">
+      hint="Shown at the top of the project's page and on its card, instead of the map of its area. A landscape photo works best. It is resized, and saved without its location data. Optional.">
       {shownImage && (
         <img src={shownImage} alt="" style={{ display: 'block', width: '100%', aspectRatio: '16 / 9',
           objectFit: 'cover', borderRadius: 12, border: `1px solid ${t.line}`, marginBottom: 14 }} />
@@ -590,7 +590,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
     : [];
   const pageField = editing && pageReady && (
     <Field t={t} label="Page Layout"
-      hint="The order of the sections on the board's page, and what each is called. Drag a section, or use its arrows, to move it; type over a title to change it, or empty it to go back to the usual one, and tick Hide title to leave it off the page. A tool or room added later goes at the end. Saved with Save changes.">
+      hint="The order of the sections on the project's page, and what each is called. Drag a section, or use its arrows, to move it; type over a title to change it, or empty it to go back to the usual one, and tick Hide title to leave it off the page. A tool or room added later goes at the end. Saved with Save changes.">
       <PageLayoutEditor t={t} sections={pageSections} disabled={status === 'saving'}
         onChange={(next) => setPageLayout(next.map(({ key, customTitle, hideTitle }) => ({
           key, title: customTitle, hideTitle,
@@ -601,7 +601,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
   // Only once the project exists, since its id names the photos' folder.
   const gallery = editing && (
     <Field t={t} label="Gallery Images"
-      hint={`Shown in a Photos section on the board's page, in this order. Up to ${GALLERY_MAX}. Each is resized, and saved without its location data. A caption is shown under its photo, and saved with Save changes. Tick On its own to show a photo by itself rather than in the gallery; Page Layout puts it where it goes. Optional.`}>
+      hint={`Shown in a Photos section on the project's page, in this order. Up to ${GALLERY_MAX}. Each is resized, and saved without its location data. A caption is shown under its photo, and saved with Save changes. Tick On its own to show a photo by itself rather than in the gallery; Page Layout puts it where it goes. Optional.`}>
       <GalleryPicker t={t} photos={project.gallery ?? []} max={GALLERY_MAX} captions={galleryCaptions}
         onCaption={(path, caption) => setGalleryCaptions((current) => ({ ...current, [path]: caption }))}
         onStandalone={setPhotoStandalone}
@@ -611,7 +611,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
 
   const place = (
     <Field t={t} label="Address" htmlFor="project-address"
-      hint={'The place this board is about. Pick it from the suggestions and the board is pinned there on the map.'}>
+      hint={'The place this project is about. Pick it from the suggestions and the project is pinned there on the map.'}>
       <AddressInput id="project-address" value={address}
         placeholder="e.g. Folkets Park, Malmö" style={inputStyle(t)}
         onChange={(next) => { setAddress(next); setPoint(null); setTown(''); }}
@@ -657,13 +657,13 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
     return page(
       <form onSubmit={handleSubmit} style={{ maxWidth: 640, margin: '0 auto' }}>
         <div style={{ marginBottom: 36 }}>
-          {heading('Edit board')}
+          {heading('Edit project')}
           <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6 }}>
             Change the setup. Collaborators, links and Toolkit sessions live on the dashboard.
           </p>
         </div>
 
-        <div role="tablist" aria-label="Edit board sections" onKeyDown={onEditTabKey}
+        <div role="tablist" aria-label="Edit project sections" onKeyDown={onEditTabKey}
           style={{ display: 'flex', gap: 4, overflowX: 'auto', borderBottom: `1px solid ${t.line}`, marginBottom: 32 }}>
           {EDIT_TABS.map(({ id, label }) => {
             const current = id === editTab;
@@ -723,7 +723,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
     return page(
       <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
-        {heading('Start a Board')}
+        {heading('Start a Project')}
         <p style={{ fontSize: 18, color: t.inkDim, lineHeight: 1.6, marginBottom: 28 }}>
           Bring people together around a place to understand it, collaborate on ideas, and shape
           decisions that drive real change.
@@ -735,7 +735,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
           </li>
           <li>
             <strong>Team Collaboration:</strong> Invite co-hosts and contributors to help build, run, and
-            manage the board.
+            manage the project.
           </li>
           <li>
             <strong>Interactive Toolkit:</strong> Gather feedback, map ideas, and launch interactive tools
@@ -744,7 +744,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
         </ul>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <Btn t={t} variant="primary" icon="plus" onClick={() => setStep(1)}>
-            Create a new board
+            Create a new project
           </Btn>
           {onCancel && (
             <Btn t={t} type="button" variant="ghost" onClick={onCancel}>Cancel</Btn>
@@ -780,17 +780,17 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
               background: i <= step ? t.ink : t.line }} />
           ))}
         </div>
-        {heading(step === 1 ? 'What kind of board?' : step === 2 ? 'The basics'
+        {heading(step === 1 ? 'What kind of project?' : step === 2 ? 'The basics'
           : step === 3 ? 'Add tools' : 'Add visuals')}
         {step === 1 && (
           <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6 }}>
-            This shapes how the rest of the board is set up. You can change it later.
+            This shapes how the rest of the project is set up. You can change it later.
           </p>
         )}
         {step === 3 && (
           <p style={{ fontSize: 16, color: t.inkDim, lineHeight: 1.6 }}>
-            Choose the tools this board will use. Each is a template: once the board is started,
-            configure it from the board&rsquo;s dashboard and it goes live on its page.
+            Choose the tools this project will use. Each is a template: once the project is started,
+            configure it from the project&rsquo;s dashboard and it goes live on its page.
           </p>
         )}
       </div>
@@ -814,7 +814,7 @@ export function ProjectSetupPage({ t, accountId, accountName, accountLocation = 
         ) : (
           <Btn t={t} type="submit" variant="primary" icon="check"
             disabled={!complete || status === 'saving'}>
-            {status === 'saving' ? 'Saving…' : 'Start board'}
+            {status === 'saving' ? 'Saving…' : 'Start project'}
           </Btn>
         )}
         {onCancel && (

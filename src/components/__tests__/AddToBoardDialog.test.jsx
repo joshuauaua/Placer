@@ -34,52 +34,52 @@ describe('AddToBoardDialog', () => {
     vi.mocked(readMyProjects).mockResolvedValue([]);
   });
 
-  it('offers your boards in one dropdown, with Create a new board last, and adds the tool to the one picked', async () => {
+  it('offers your projects in one dropdown, with Create a new project last, and adds the tool to the one picked', async () => {
     vi.mocked(readMyProjects).mockResolvedValue(BOARDS);
     const { onDone } = setup();
 
-    const dropdown = await screen.findByRole('combobox', { name: 'Board' });
+    const dropdown = await screen.findByRole('combobox', { name: 'Project' });
     expect(within(dropdown).getAllByRole('option').map((o) => o.textContent))
-      .toEqual(['Möllan', 'Folkets Park', '+ Create a new board']);
+      .toEqual(['Möllan', 'Folkets Park', '+ Create a new project']);
     expect(dropdown).toHaveValue('b-1');
     // A board is picked, so nothing about a new one is asked.
-    expect(screen.queryByLabelText('Board name')).toBeNull();
+    expect(screen.queryByLabelText('Project name')).toBeNull();
     fireEvent.change(dropdown, { target: { value: 'b-2' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Add to board' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add to project' }));
 
     await waitFor(() => expect(onDone).toHaveBeenCalledWith('b-2'));
     expect(addProjectTool).toHaveBeenCalledWith('b-2', 'budget-ballot', 'user-1');
     expect(createProject).not.toHaveBeenCalled();
   });
 
-  it('brings out the new board\'s options when Create a new board is picked, and puts them away again', async () => {
+  it('brings out the new project\'s options when Create a new project is picked, and puts them away again', async () => {
     vi.mocked(readMyProjects).mockResolvedValue(BOARDS);
     setup();
-    const dropdown = await screen.findByRole('combobox', { name: 'Board' });
+    const dropdown = await screen.findByRole('combobox', { name: 'Project' });
 
     fireEvent.change(dropdown, { target: { value: '__new__' } });
-    expect(screen.getByLabelText('Board name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Project name')).toBeInTheDocument();
     expect(screen.getByRole('switch', { name: 'Private' })).toBeInTheDocument();
-    expect(screen.getByRole('switch', { name: 'Group board' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Group project' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument();
 
     fireEvent.change(dropdown, { target: { value: 'b-1' } });
-    expect(screen.queryByLabelText('Board name')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Add to board' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Project name')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add to project' })).toBeInTheDocument();
   });
 
-  it('starts on a new board when there are none to add to', async () => {
+  it('starts on a new project when there are none to add to', async () => {
     setup();
 
-    const dropdown = await screen.findByRole('combobox', { name: 'Board' });
-    expect(within(dropdown).getAllByRole('option').map((o) => o.textContent)).toEqual(['+ Create a new board']);
-    expect(screen.getByLabelText('Board name')).toBeInTheDocument();
-    expect(screen.getByText('You have no boards yet.')).toBeInTheDocument();
+    const dropdown = await screen.findByRole('combobox', { name: 'Project' });
+    expect(within(dropdown).getAllByRole('option').map((o) => o.textContent)).toEqual(['+ Create a new project']);
+    expect(screen.getByLabelText('Project name')).toBeInTheDocument();
+    expect(screen.getByText('You have no projects yet.')).toBeInTheDocument();
   });
 
-  it('creates a public board by name, with the tool on it', async () => {
+  it('creates a public project by name, with the tool on it', async () => {
     const { onDone } = setup();
-    fireEvent.change(await screen.findByLabelText('Board name'), { target: { value: '  Möllan  ' } });
+    fireEvent.change(await screen.findByLabelText('Project name'), { target: { value: '  Möllan  ' } });
     create();
 
     await waitFor(() => expect(onDone).toHaveBeenCalledWith('new-board'));
@@ -92,17 +92,17 @@ describe('AddToBoardDialog', () => {
 
   it('asks for a name before creating anything', async () => {
     const { onDone } = setup();
-    await screen.findByLabelText('Board name');
+    await screen.findByLabelText('Project name');
     create();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Give the board a name.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Give the project a name.');
     expect(createProject).not.toHaveBeenCalled();
     expect(onDone).not.toHaveBeenCalled();
   });
 
-  it('makes the board private from its switch', async () => {
+  it('makes the project private from its switch', async () => {
     setup();
-    fireEvent.change(await screen.findByLabelText('Board name'), { target: { value: 'Möllan' } });
+    fireEvent.change(await screen.findByLabelText('Project name'), { target: { value: 'Möllan' } });
     const toggle = screen.getByRole('switch', { name: 'Private' });
     expect(toggle).toHaveAttribute('aria-checked', 'false');
     fireEvent.click(toggle);
@@ -112,13 +112,13 @@ describe('AddToBoardDialog', () => {
     await waitFor(() => expect(createProject).toHaveBeenCalledWith(expect.objectContaining({ visibility: 'private' })));
   });
 
-  it('invites collaborators by email on a group board', async () => {
+  it('invites collaborators by email on a group project', async () => {
     const { onDone } = setup();
-    fireEvent.change(await screen.findByLabelText('Board name'), { target: { value: 'Möllan' } });
-    expect(screen.queryByLabelText('Invite collaborators to join this board')).toBeNull();
-    fireEvent.click(screen.getByRole('switch', { name: 'Group board' }));
+    fireEvent.change(await screen.findByLabelText('Project name'), { target: { value: 'Möllan' } });
+    expect(screen.queryByLabelText('Invite collaborators to join this project')).toBeNull();
+    fireEvent.click(screen.getByRole('switch', { name: 'Group project' }));
 
-    const invite = screen.getByLabelText('Invite collaborators to join this board');
+    const invite = screen.getByLabelText('Invite collaborators to join this project');
     fireEvent.change(invite, { target: { value: 'Ines@Example.org' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
     fireEvent.change(invite, { target: { value: 'sam@example.org' } });
@@ -137,12 +137,12 @@ describe('AddToBoardDialog', () => {
     expect(addCollaborator.mock.calls).toEqual([['new-board', 'ines@example.org']]);
   });
 
-  it('keeps the board when an invitation fails, says which, and carries on', async () => {
+  it('keeps the project when an invitation fails, says which, and carries on', async () => {
     vi.mocked(addCollaborator).mockRejectedValueOnce(new Error('No account with that email'));
     const { onDone } = setup();
-    fireEvent.change(await screen.findByLabelText('Board name'), { target: { value: 'Möllan' } });
-    fireEvent.click(screen.getByRole('switch', { name: 'Group board' }));
-    fireEvent.change(screen.getByLabelText('Invite collaborators to join this board'),
+    fireEvent.change(await screen.findByLabelText('Project name'), { target: { value: 'Möllan' } });
+    fireEvent.click(screen.getByRole('switch', { name: 'Group project' }));
+    fireEvent.change(screen.getByLabelText('Invite collaborators to join this project'),
       { target: { value: 'nobody@example.org' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
     create();
@@ -153,10 +153,10 @@ describe('AddToBoardDialog', () => {
     expect(onDone).toHaveBeenCalledWith('new-board');
   });
 
-  it('says what went wrong when the board cannot be made, and lets you try again', async () => {
-    vi.mocked(createProject).mockRejectedValueOnce(new Error('Could not start that board: offline'));
+  it('says what went wrong when the project cannot be made, and lets you try again', async () => {
+    vi.mocked(createProject).mockRejectedValueOnce(new Error('Could not start that project: offline'));
     setup();
-    fireEvent.change(await screen.findByLabelText('Board name'), { target: { value: 'Möllan' } });
+    fireEvent.change(await screen.findByLabelText('Project name'), { target: { value: 'Möllan' } });
     create();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('offline');
@@ -165,7 +165,7 @@ describe('AddToBoardDialog', () => {
 
   it('goes back to the tools, or closes', async () => {
     const { onBack, onClose } = setup();
-    await screen.findByLabelText('Board name');
+    await screen.findByLabelText('Project name');
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
@@ -175,11 +175,11 @@ describe('AddToBoardDialog', () => {
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 
-  it('carries on without a board where there can be none', () => {
+  it('carries on without a project where there can be none', () => {
     vi.mocked(isSupabaseConfigured).mockReturnValue(false);
     const { onDone } = setup();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Continue without a board' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue without a project' }));
 
     expect(onDone).toHaveBeenCalledWith(null);
     expect(readMyProjects).not.toHaveBeenCalled();

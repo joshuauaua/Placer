@@ -70,15 +70,15 @@ describe('DashboardPage', () => {
     }
   });
 
-  it('gets you started: a quickstart tutorial, board examples and the FAQ', () => {
+  it('gets you started: a quickstart tutorial, project examples and the FAQ', () => {
     const onNavigate = vi.fn();
     render(<DashboardPage t={THEME} profile={PROFILE} accountId="user-1" onNavigate={onNavigate} />);
 
     expect(screen.getByRole('heading', { level: 2, name: 'Getting Started' })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Quickstart tutorial\s*Create your first Board/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Quickstart tutorial\s*Create your first Project/ }));
     fireEvent.click(screen.getByRole('button',
-      { name: /Board Examples\s*Explore what other boards exist on the platform/ }));
+      { name: /Project Examples\s*Explore what other projects exist on the platform/ }));
 
     fireEvent.click(screen.getByRole('button', { name: /FAQ\s*Answers to common questions about Placer/ }));
 
@@ -141,14 +141,14 @@ describe('DashboardPage', () => {
     expect(onExplore).toHaveBeenCalled();
   });
 
-  it('has no imaginations, stat tiles, boards list or followed sections', async () => {
+  it('has no imaginations, stat tiles, projects list or followed sections', async () => {
     setup();
     await waitFor(() => expect(readMyProjects).toHaveBeenCalled());
 
     expect(screen.queryByRole('heading', { name: 'Created imaginations' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Saved on this device' })).not.toBeInTheDocument();
     expect(screen.queryByText('Imaginations posted')).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Your boards' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Your projects' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /^Followed/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Following' })).not.toBeInTheDocument();
   });
@@ -159,7 +159,7 @@ describe('DashboardPage, beyond the quick actions', () => {
     vi.clearAllMocks();
   });
 
-  describe('boards, next steps and activity', () => {
+  describe('projects, next steps and activity', () => {
     // Today, and a month either side of it, so the dates stay live whenever this runs.
     const day = (offset) => {
       const date = new Date();
@@ -188,9 +188,9 @@ describe('DashboardPage, beyond the quick actions', () => {
         onNavigate={vi.fn()} {...handlers} />);
     };
 
-    it('shows every board, latest update first, with a bar of the time gone', async () => {
+    it('shows every project, latest update first, with a bar of the time gone', async () => {
       renderWith({ projects: PROJECTS });
-      const section = screen.getByRole('region', { name: 'Boards' });
+      const section = screen.getByRole('region', { name: 'Projects' });
       await within(section).findByText('Riverside Greenway');
 
       const names = within(section).getAllByRole('button').map((card) => card.textContent);
@@ -206,22 +206,22 @@ describe('DashboardPage, beyond the quick actions', () => {
       expect(bar).toHaveAttribute('aria-valuetext', '10 days left');
     });
 
-    it('opens a board on its dashboard, and all of them from View all boards', async () => {
+    it('opens a project on its dashboard, and all of them from View all projects', async () => {
       const onOpenProject = vi.fn();
       const onNavigate = vi.fn();
       renderWith({ projects: PROJECTS, onOpenProject, onNavigate });
-      const section = screen.getByRole('region', { name: 'Boards' });
+      const section = screen.getByRole('region', { name: 'Projects' });
 
       fireEvent.click(await within(section).findByText('Market Square'));
-      fireEvent.click(within(section).getByRole('button', { name: 'View all boards' }));
+      fireEvent.click(within(section).getByRole('button', { name: 'View all projects' }));
 
       expect(onOpenProject).toHaveBeenCalledWith('p2');
       expect(onNavigate).toHaveBeenCalledWith('projects');
     });
 
-    it('says so when there are no boards yet', async () => {
+    it('says so when there are no projects yet', async () => {
       renderWith();
-      expect(await screen.findByText(/no boards yet/i)).toBeInTheDocument();
+      expect(await screen.findByText(/no projects yet/i)).toBeInTheDocument();
     });
 
     it('lists next steps, soonest first, and acts on one', async () => {

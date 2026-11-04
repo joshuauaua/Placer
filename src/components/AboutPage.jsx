@@ -38,14 +38,14 @@ const PILLARS = [
   {
     image: streetBicycle,
     title: 'Plan',
-    body: 'Bring everything together on a dedicated board page. Research, community ideas, and interactive outputs are displayed in one transparent space—creating a living repository for your placemaking journey.',
+    body: 'Bring everything together on a dedicated project page. Research, community ideas, and interactive outputs are displayed in one transparent space—creating a living repository for your placemaking journey.',
   },
 ];
 
 const FEATURES = [
   {
     image: bundledImage(placemakingTrendsPhotoSmall, placemakingTrendsPhoto, '(max-width: 1023px) 100vw, 50vw'),
-    alt: 'A deck of cards clipped to a plywood board beside a street map dotted with pins, from a workshop.',
+    alt: 'A deck of cards clipped to a plywood project beside a street map dotted with pins, from a workshop.',
     kicker: 'User Labs',
     title: 'Built with the people who will use it',
     body: [
@@ -96,7 +96,7 @@ export function AboutPage({ t }) {
         t={t}
         src={userLabsPhoto}
         srcSet={bundledImage(userLabsPhotoSmall, userLabsPhoto).srcSet}
-        alt="People at a User Labs session pinning notes to a map and sketching on wooden boards outdoors."
+        alt="People at a User Labs session pinning notes to a map and sketching on wooden projects outdoors."
       >
         <PhotoSplitHeading
           t={t}

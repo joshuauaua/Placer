@@ -130,7 +130,7 @@ export function OrganisationSetupPage({ t, accountId, organisation: initialOrgan
               ? 'Everything here but the exact address is shown on the organisation’s public '
                 + 'page; the address places it on the Explore map.'
               : 'A page for a municipality, studio, association or any other group. You will be '
-                + 'its first admin, you can add others, and boards can be run in its name. '
+                + 'its first admin, you can add others, and projects can be run in its name. '
                 + 'Everything here but the exact address is shown on its public page; the address '
                 + 'places it on the Explore map.'}
           </p>

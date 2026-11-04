@@ -10,13 +10,13 @@ describe('projectIntro', () => {
     expect(projectIntro(PROJECT)).toEqual({ intro: 'A park on the old rail line.', goals: 'Ask who uses it.' });
   });
 
-  it('shows the goals in its place for a board with no description', () => {
+  it('shows the goals in its place for a project with no description', () => {
     expect(projectIntro({ summary: '', description: 'Ask who uses it.' })).toEqual({ intro: 'Ask who uses it.', goals: '' });
   });
 });
 
 describe('projectSections', () => {
-  it('lists the board\'s own sections, then a section per live tool', () => {
+  it('lists the project\'s own sections, then a section per live tool', () => {
     const sections = projectSections({
       project: { ...PROJECT, gallery: [{ path: 'gallery/p/1.webp', url: 'u' }] },
       tools: [findTool('open-vote')],
@@ -24,7 +24,7 @@ describe('projectSections', () => {
     });
     expect(sections.map(({ key }) => key)).toEqual(['about', 'goals', 'photos', 'room:room-1']);
     expect(sections.map(({ defaultTitle }) => defaultTitle))
-      .toEqual(['About the board', 'Goals', 'Photos', 'We want your opinion']);
+      .toEqual(['About the project', 'Goals', 'Photos', 'We want your opinion']);
   });
 
   it('gives each photo shown on its own a section of its own, after the gallery of the rest', () => {
@@ -67,7 +67,7 @@ describe('arrangeSections', () => {
 
   it('keeps the default order and titles with no layout', () => {
     expect(arrangeSections(sections, []).map(({ key, title }) => [key, title])).toEqual([
-      ['about', 'About the board'], ['goals', 'Goals'], ['room:room-1', 'We want your opinion'],
+      ['about', 'About the project'], ['goals', 'Goals'], ['room:room-1', 'We want your opinion'],
     ]);
   });
 
@@ -76,7 +76,7 @@ describe('arrangeSections', () => {
       { key: 'room:room-1', title: 'Should the square be car-free?' }, { key: 'about' }, { key: 'goals', title: '  ' },
     ]);
     expect(arranged.map(({ key, title }) => [key, title])).toEqual([
-      ['room:room-1', 'Should the square be car-free?'], ['about', 'About the board'], ['goals', 'Goals'],
+      ['room:room-1', 'Should the square be car-free?'], ['about', 'About the project'], ['goals', 'Goals'],
     ]);
   });
 

@@ -55,7 +55,7 @@ function ClaimNotice({ t, organisation, accountId, onClaimed }) {
         This organisation has no admin at the moment.
       </p>
       <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: canClaim ? 16 : 0 }}>
-        Nobody can change it or start boards in its name until somebody who used to run it
+        Nobody can change it or start projects in its name until somebody who used to run it
         claims it back.
       </p>
       {canClaim && (
@@ -224,10 +224,10 @@ export function PublicOrganisationPage({ t, organisationId, accountId = null, is
 
           <h2 className="placer-disp" style={{ fontSize: 28, fontWeight: 700, color: t.ink,
             letterSpacing: '-0.02em', marginBottom: 16 }}>
-            Boards
+            Projects
           </h2>
           {projects.length === 0 ? (
-            <p style={{ fontSize: 16, color: t.inkFaint }}>No boards yet.</p>
+            <p style={{ fontSize: 16, color: t.inkFaint }}>No projects yet.</p>
           ) : (
             <div onKeyDown={moveWithArrows}
               style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>

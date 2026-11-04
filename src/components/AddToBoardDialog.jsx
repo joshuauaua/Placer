@@ -68,7 +68,7 @@ function Invitees({ t, emails, onChange }) {
   return (
     <div style={{ margin: '-4px 0 20px 56px' }}>
       <label htmlFor="board-invite" style={{ ...labelStyle(t), fontSize: 14 }}>
-        Invite collaborators to join this board
+        Invite collaborators to join this project
       </label>
       <div style={{ display: 'flex', gap: 8 }}>
         <input id="board-invite" type="email" value={draft} placeholder="name@example.org"
@@ -155,8 +155,8 @@ export function AddToBoardDialog({ t, tool, accountId, ownerName = '', onDone, o
   const submit = async (e) => {
     e.preventDefault();
     setError('');
-    if (mode === 'new' && !name.trim()) { setError('Give the board a name.'); return; }
-    if (mode === 'existing' && !boardId) { setError('Pick a board.'); return; }
+    if (mode === 'new' && !name.trim()) { setError('Give the project a name.'); return; }
+    if (mode === 'existing' && !boardId) { setError('Pick a project.'); return; }
     setBusy(true);
     try {
       if (mode === 'existing') {
@@ -200,9 +200,9 @@ export function AddToBoardDialog({ t, tool, accountId, ownerName = '', onDone, o
         <Icon name={tool.icon} size={20} stroke={2} />
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <h2 id={titleId} className="placer-h3" style={{ margin: 0, color: t.ink }}>Add {tool.name} to a board</h2>
+        <h2 id={titleId} className="placer-h3" style={{ margin: 0, color: t.ink }}>Add {tool.name} to a project</h2>
         <p style={{ margin: '2px 0 0', fontSize: 14, color: t.inkDim }}>
-          A board is where a tool is run, shared and its answers gathered.
+          A project is where a tool is run, shared and its answers gathered.
         </p>
       </div>
       <button type="button" onClick={onClose} aria-label="Close" disabled={busy}
@@ -218,48 +218,48 @@ export function AddToBoardDialog({ t, tool, accountId, ownerName = '', onDone, o
   if (!available) {
     body = (
       <p style={{ fontSize: 15, color: t.inkDim, lineHeight: 1.55 }}>
-        Boards need an account, and this copy of PLACER has no Supabase project to keep them in.
+        Projects need an account, and this copy of PLACER has no Supabase project to keep them in.
         You can still set the tool up on its own.
       </p>
     );
-    actions = <Btn t={t} type="button" icon="arrowRight" onClick={() => onDone(null)}>Continue without a board</Btn>;
+    actions = <Btn t={t} type="button" icon="arrowRight" onClick={() => onDone(null)}>Continue without a project</Btn>;
   } else if (partly) {
     body = (
       <div role="alert" style={{ fontSize: 15, color: t.ink, lineHeight: 1.55 }}>
-        <p style={{ marginBottom: 8 }}>The board is made and {tool.name} is on it, but these invitations could not be sent:</p>
+        <p style={{ marginBottom: 8 }}>The project is made and {tool.name} is on it, but these invitations could not be sent:</p>
         <ul style={{ margin: '0 0 8px 20px' }}>{partly.failed.map((email) => <li key={email}>{email}</li>)}</ul>
-        <p style={{ color: t.inkDim }}>You can invite them again from the board&rsquo;s dashboard.</p>
+        <p style={{ color: t.inkDim }}>You can invite them again from the project&rsquo;s dashboard.</p>
       </div>
     );
     actions = <Btn t={t} type="button" icon="arrowRight" onClick={() => onDone(partly.boardId)}>Continue</Btn>;
   } else if (!boards) {
-    body = <p style={{ fontSize: 15, color: t.inkDim }}>Loading your boards…</p>;
+    body = <p style={{ fontSize: 15, color: t.inkDim }}>Loading your projects…</p>;
   } else {
     body = (
       <div>
-        <label htmlFor="board-pick" style={labelStyle(t)}>Board</label>
+        <label htmlFor="board-pick" style={labelStyle(t)}>Project</label>
         <select id="board-pick" value={picked ?? NEW_BOARD} onChange={(e) => setPicked(e.target.value)}
           style={{ ...inputStyle(t), marginBottom: 8 }}>
           {boards.map((board) => <option key={board.id} value={board.id}>{board.name}</option>)}
-          <option value={NEW_BOARD}>+ Create a new board</option>
+          <option value={NEW_BOARD}>+ Create a new project</option>
         </select>
         {boards.length === 0 && (
           <p style={{ fontSize: 14, color: t.inkDim, margin: '0 0 8px' }}>
-            {loadFailed ? 'Your boards could not be loaded, but you can make a new one.' : 'You have no boards yet.'}
+            {loadFailed ? 'Your projects could not be loaded, but you can make a new one.' : 'You have no projects yet.'}
           </p>
         )}
         {mode === 'new' && (
           <div style={{ marginTop: 16, padding: '18px 18px 2px', borderRadius: 14, background: t.surfaceAlt }}>
-            <label htmlFor="board-name" style={labelStyle(t)}>Board name</label>
+            <label htmlFor="board-name" style={labelStyle(t)}>Project name</label>
             <input id="board-name" type="text" value={name} maxLength={NAME_MAX} required
               onChange={(e) => setName(e.target.value)} placeholder="e.g. Rethinking Möllevångstorget"
               style={{ ...inputStyle(t), marginBottom: 20 }} />
             <Switch t={t} id="board-private" label="Private" checked={isPrivate} onChange={setPrivate}
               description={isPrivate
                 ? 'Only you, your collaborators and people you let in can see it.'
-                : 'Anyone can find the board, see its page and take part.'} />
-            <Switch t={t} id="board-group" label="Group board" checked={group} onChange={setGroup}
-              description="Run it with others: invite collaborators to join this board." />
+                : 'Anyone can find the project, see its page and take part.'} />
+            <Switch t={t} id="board-group" label="Group project" checked={group} onChange={setGroup}
+              description="Run it with others: invite collaborators to join this project." />
             {group && <Invitees t={t} emails={emails} onChange={setEmails} />}
           </div>
         )}
@@ -267,7 +267,7 @@ export function AddToBoardDialog({ t, tool, accountId, ownerName = '', onDone, o
     );
     actions = (
       <Btn t={t} type="submit" icon={mode === 'new' ? 'plus' : 'arrowRight'} disabled={busy}>
-        {busy ? 'Saving…' : mode === 'new' ? 'Create' : 'Add to board'}
+        {busy ? 'Saving…' : mode === 'new' ? 'Create' : 'Add to project'}
       </Btn>
     );
   }

@@ -173,7 +173,7 @@ describe('comparing walks', () => {
   });
 });
 
-describe("a board's setup", () => {
+describe("a project's setup", () => {
   const scope = { point: { lat: 52.52, lng: 13.4 }, zoom: 17, bounds: [13.39, 52.51, 13.41, 52.53] };
 
   it('needs at least one site, each named and on the map', () => {
@@ -258,7 +258,7 @@ describe('entrances, obstacles and other things', () => {
     expect(cleanElements('nope')).toEqual([]);
   });
 
-  it("offers a board's own kinds after the base ones", () => {
+  it("offers a project's own kinds after the base ones", () => {
     const config = { types: [{ id: 't1', label: 'Bench' }, { id: 't2', label: ' ' }, null] };
     expect(paletteOf(config).map((type) => type.label)).toEqual(['Entrance', 'Obstacle', 'Something else', 'Bench']);
     expect(typesOf(config)).toEqual([{ id: 't1', label: 'Bench' }]);
@@ -308,7 +308,7 @@ describe('inquiries kept on a profile', () => {
     });
   });
 
-  it('becomes a board site carrying the marks', () => {
+  it('becomes a project site carrying the marks', () => {
     const site = inquirySite(config);
     expect(site).toMatchObject({ id: 's1', name: 'Market square', point: scope.point });
     expect(site.elements).toEqual([mark]);

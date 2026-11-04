@@ -203,7 +203,7 @@ export function SideNav({ view, onNavigate, onExplore, onCreateTool, showOrganis
   const items = [
     // First, straight under Create a tool: the dashboard is home for a signed-in account.
     { key: 'dashboard', label: 'Dashboard', short: 'Home', icon: 'home', onSelect: () => onNavigate('dashboard'), active: ['dashboard', 'activity'] },
-    { key: 'projects', label: 'Boards', icon: 'grid', onSelect: () => onNavigate('projects'), active: ['projects', 'projectDashboard'] },
+    { key: 'projects', label: 'Projects', icon: 'grid', onSelect: () => onNavigate('projects'), active: ['projects', 'projectDashboard'] },
     { key: 'settings', label: 'Settings', icon: 'gear', onSelect: () => onNavigate('settings'), active: ['settings'], bottom: true },
   ];
 

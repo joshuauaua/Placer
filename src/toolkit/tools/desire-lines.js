@@ -14,7 +14,7 @@ export default {
   category: 'understand',
   name: 'Desire Lines',
   tagline: 'The path people take, not the one that got paved.',
-  blurb: 'Pick a site on the map and draw the walks you actually make across it — the shortcuts, the detours around what was built. Run for a board, its organisers choose the sites and everyone draws on them, and you can lay the others’ walks over your own to see where you walk the same way and where you do not.',
+  blurb: 'Pick a site on the map and draw the walks you actually make across it — the shortcuts, the detours around what was built. Run for a project, its organisers choose the sites and everyone draws on them, and you can lay the others’ walks over your own to see where you walk the same way and where you do not.',
   ...tone(PALETTE.purple),
   icon: 'path',
   createdBy: 'PLACER',
@@ -36,7 +36,7 @@ export default {
     intro: 'A desire line is the path people actually take, not the one that was paved. Draw the walks you really make across the site, and mark the entrances and obstacles you meet on the way.',
     why: (config) => roomText(config?.note)
       ?? (sitesOf(config).length > 0
-        ? `The board team wants to see how people really move through ${naturalList(sitesOf(config).map((site) => site.name))}, to plan around it.`
+        ? `The project team wants to see how people really move through ${naturalList(sitesOf(config).map((site) => site.name))}, to plan around it.`
         : null),
     Embed: DesireLinesOnPage,
   },

@@ -244,7 +244,7 @@ export function IdeaVisualizerOnPage({ t, room, service = roomService }) {
       {mode === 'results' && (
         <>
           <p role="status" aria-live="polite" style={{ fontSize: 14, color: t.inkDim, margin: '0 0 16px' }}>
-            {status === 'recorded' ? 'Recorded to the board. Thank you.' : `You have recorded ${mine.length === 1
+            {status === 'recorded' ? 'Recorded to the project. Thank you.' : `You have recorded ${mine.length === 1
               ? 'a visualization' : `${mine.length} visualizations`} here.`}
           </p>
           <div role="list" aria-label="Visualizations" style={{ display: 'grid', gap: 16,

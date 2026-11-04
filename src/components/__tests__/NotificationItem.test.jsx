@@ -19,7 +19,7 @@ describe('NotificationItem', () => {
     expect(onOpenOrganisation).toHaveBeenCalledWith('org-1');
   });
 
-  it('opens the board a notification links to', () => {
+  it('opens the project a notification links to', () => {
     const onOpenProject = vi.fn();
     render(<NotificationItem t={THEME}
       notification={note({ category: 'engagement', title: 'New response', linkType: 'project', linkId: 'proj-1' })}

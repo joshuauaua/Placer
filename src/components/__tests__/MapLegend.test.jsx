@@ -10,7 +10,7 @@ describe('MapLegend', () => {
     render(<MapLegend t={THEME} area={AREA} />);
 
     expect(screen.getByRole('region', { name: 'Map legend' })).toBeInTheDocument();
-    expect(screen.getByText('A board area')).toBeInTheDocument();
+    expect(screen.getByText('A project area')).toBeInTheDocument();
     expect(screen.getByText('Your search result')).toBeInTheDocument();
     expect(screen.queryByText('An imagination')).not.toBeInTheDocument();
   });
@@ -21,9 +21,9 @@ describe('MapLegend', () => {
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('A board area')).not.toBeInTheDocument();
+    expect(screen.queryByText('A project area')).not.toBeInTheDocument();
 
     fireEvent.click(toggle);
-    expect(screen.getByText('A board area')).toBeInTheDocument();
+    expect(screen.getByText('A project area')).toBeInTheDocument();
   });
 });

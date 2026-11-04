@@ -236,7 +236,7 @@ export function DesireLinesSetup({ t, tool, setup, onChange }) {
           placeholder="Which way do you really walk across the square?"
           style={{ height: 44, padding: '0 14px', borderRadius: 12, border: `1px solid ${t.lineStrong}`,
             background: t.surface, color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 15 }} />
-        <span style={{ fontSize: 12.5, color: t.inkDim }}>Shown above the map on the board&rsquo;s page.</span>
+        <span style={{ fontSize: 12.5, color: t.inkDim }}>Shown above the map on the project&rsquo;s page.</span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -248,7 +248,7 @@ export function DesireLinesSetup({ t, tool, setup, onChange }) {
           placeholder="What you want to learn about how people move around here."
           style={{ padding: 14, borderRadius: 12, border: `1px solid ${t.lineStrong}`, background: t.surface,
             color: t.ink, fontFamily: 'var(--placer-font)', fontSize: 15, lineHeight: 1.5, resize: 'vertical' }} />
-        <span style={{ fontSize: 12.5, color: t.inkDim }}>Shown beside the map on the board&rsquo;s page.</span>
+        <span style={{ fontSize: 12.5, color: t.inkDim }}>Shown beside the map on the project&rsquo;s page.</span>
       </div>
 
       <FromInquiry t={t} setup={setup} onChange={onChange} />
