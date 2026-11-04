@@ -10,6 +10,7 @@
  * tabs, so switching tab never loses one half-way.
  */
 
+import { useToolResults } from './toolkit/useToolResults';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { Icon } from './Icon';
@@ -549,13 +550,16 @@ function AddToolDialog({ t, tools, onChoose, onClose }) {
 // A room still to come counts as well as one running: its QR code can go up early.
 const isCurrentRoom = (room) => room.status === 'open' || room.status === 'scheduled';
 
-function ChosenToolRow({ t, tool, live, scheduled = null, rooms = [], placement = 'page', onPlace, onConfigure,
-  onOpenRoom, onEditRoom, onCloseRoom, onDeleteRoom, onRemove }) {
+function ChosenToolRow({ t, tool, live, scheduled = null, rooms = [], results = [], placement = 'page', onPlace,
+  onConfigure, onOpenRoom, onEditRoom, onCloseRoom, onDeleteRoom, onRemove }) {
   const [expanded, setExpanded] = useState(false);
   // Removing asks once more, in the row, since it takes the tool's setup with it.
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const panelId = useId();
-  const expandable = rooms.length > 0;
+  // The results of its rooms that have ended, for a tool that shows them (`results` in
+  // toolkit/tools.js): kept after the room is gone (supabase/room-results.sql).
+  const pastResults = tool.results ? results.filter((result) => result.status === 'ended') : [];
+  const expandable = rooms.length > 0 || pastResults.length > 0;
   const liveRooms = rooms.filter((room) => room.status === 'open').length;
   const badge = live ? (liveRooms > 1 ? `${liveRooms} live` : 'Live')
     : scheduled ? `Starts ${formatRoomStart(scheduled.opensAt)}` : 'Not configured';
@@ -646,7 +650,11 @@ function ChosenToolRow({ t, tool, live, scheduled = null, rooms = [], placement 
         <div id={panelId} role="region" aria-label={`${tool.name} rooms`} style={{ padding: '0 0 8px 48px' }}>
           {rooms.map((room) => (
             <RoomRow key={room.id} t={t} room={room} named={false} onOpen={onOpenRoom} onEdit={onEditRoom}
-              onClose={onCloseRoom} onDelete={onDeleteRoom} />
+              onClose={onCloseRoom} onDelete={onDeleteRoom}
+              result={results.find((result) => result.roomId === room.id) ?? null} />
+          ))}
+          {pastResults.map((result) => (
+            <PastResultRow key={result.roomId} t={t} tool={tool} result={result} />
           ))}
         </div>
       )}
@@ -662,8 +670,10 @@ function ChosenToolRow({ t, tool, live, scheduled = null, rooms = [], placement 
  * having these here rather than only on the room itself is that a poll left running for
  * a month outlives the browser tab, and often the device, it was opened on.
  */
-function RoomRow({ t, room, named = true, onOpen, onEdit, onClose, onDelete }) {
+function RoomRow({ t, room, named = true, onOpen, onEdit, onClose, onDelete, result = null }) {
   const qrRef = useRef(null);
+  const [showingResults, setShowingResults] = useState(false);
+  const resultsId = useId();
   const [confirming, setConfirming] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const tool = findTool(room.tool);
@@ -706,6 +716,10 @@ function RoomRow({ t, room, named = true, onOpen, onEdit, onClose, onDelete }) {
         <Btn t={t} variant="outline" size="sm" icon="arrowRight" onClick={() => onOpen(room)}>
           Open
         </Btn>
+        {tool?.results && result && (
+          <ResultsButton t={t} open={showingResults}
+            onClick={() => setShowingResults((was) => !was)} />
+        )}
         {editable && (
           <Btn t={t} variant="quiet" size="sm" icon="pencil" onClick={() => onEdit(room)}
             ariaLabel={scheduled ? `Edit ${label ?? name}` : `Change when ${label ?? name} closes`}>
@@ -731,6 +745,61 @@ function RoomRow({ t, room, named = true, onOpen, onEdit, onClose, onDelete }) {
           {confirmingDelete ? 'Delete — confirm' : 'Delete'}
         </Btn>
       </div>
+      {showingResults && tool?.results && result && (
+        <ResultsPanel t={t} id={resultsId} tool={tool} result={result} />
+      )}
+    </div>
+  );
+}
+
+/** Results, as a toggle: the results panel under the row it is on. */
+function ResultsButton({ t, open, onClick }) {
+  return (
+    <Btn t={t} variant={open ? 'primary' : 'quiet'} size="sm" icon="layers" onClick={onClick}
+      ariaPressed={open} title={open ? 'Hide the results' : 'Show the results'}>
+      Results
+    </Btn>
+  );
+}
+
+/** One room's results, full width under its row: the tool's own `results.View`. */
+function ResultsPanel({ t, id, tool, result }) {
+  const View = tool.results.View;
+  return (
+    <div id={id} role="region" aria-label={`${tool.name} results`}
+      style={{ flexBasis: '100%', margin: '4px 0 6px', padding: 20, borderRadius: 14,
+        border: `1px solid ${t.line}`, background: t.surface }}>
+      <View t={t} tool={tool} result={result} />
+    </div>
+  );
+}
+
+/**
+ * A room that has ended, for its results: which it was (its label), when it ended and
+ * how many answered, and Results to see them all. The room itself may be gone by now;
+ * the results are kept (supabase/room-results.sql).
+ */
+function PastResultRow({ t, tool, result }) {
+  const [showing, setShowing] = useState(false);
+  const panelId = useId();
+  const label = result.config ? tool.room?.label?.(result.config) ?? null : null;
+  const people = result.states.length;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0',
+      borderTop: `1px solid ${t.line}`, flexWrap: 'wrap' }}>
+      <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+        {label && (
+          <div style={{ fontSize: 14, fontWeight: 700, color: t.ink, overflowWrap: 'anywhere' }}>{label}</div>
+        )}
+        <div style={{ fontSize: 12.5, color: t.inkDim, lineHeight: 1.5 }}>
+          Completed{result.endsAt ? ` ${formatRoomDate(result.endsAt)}` : ''}
+          {` · ${people} ${people === 1 ? 'response' : 'responses'}`}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <ResultsButton t={t} open={showing} onClick={() => setShowing((was) => !was)} />
+      </div>
+      {showing && <ResultsPanel t={t} id={panelId} tool={tool} result={result} />}
     </div>
   );
 }
@@ -945,6 +1014,9 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
   // Null until loaded, and left null if the database has not had rooms-lifetime.sql
   // yet — the rest of the dashboard does not depend on it, so it should not fail with it.
   const [rooms, setRooms] = useState(null);
+  // What the project's rooms have been told, for the tools that show results; kept up
+  // to date while a room is live (useToolResults).
+  const toolResults = useToolResults(projectId);
   // The tools chosen for it at setup or added since, as registry ids. Like rooms, the
   // dashboard stands without them, so a failure leaves the list empty.
   const [tools, setTools] = useState([]);
@@ -1329,6 +1401,7 @@ export function ProjectDashboardPage({ t, accountId, projectId, organisations = 
                         placement={workshop.has(tool.id) ? 'workshop' : 'page'}
                         onPlace={(placement) => handlePlaceTool(tool.id, placement)}
                         rooms={(rooms ?? []).filter((room) => room.tool === tool.id && isCurrentRoom(room))}
+                        results={(toolResults ?? []).filter((result) => result.tool === tool.id)}
                         onConfigure={() => setConfiguring(tool.id)}
                         onOpenRoom={handleOpenRoom} onEditRoom={setEditingRoom} onCloseRoom={handleCloseRoom}
                         onDeleteRoom={handleDeleteRoom} onRemove={() => handleRemoveTool(tool.id)} />

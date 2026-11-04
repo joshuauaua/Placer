@@ -347,8 +347,11 @@ export function TermsAndPrivacyPage({ t }) {
             the people let into it.
           </>,
           <>
-            <strong style={{ color: t.ink }}>Room answers are not kept.</strong> They are stored
-            on our server only while the room runs, and deleted at most a day after it ends.
+            <strong style={{ color: t.ink }}>Room answers are not kept with your name.</strong> They
+            are stored with any display name only while the room runs, and that copy is deleted
+            at most a day after it ends. For a room run for a project, the answers themselves
+            are kept for its results, with no name or anything else that says who gave them,
+            and shown combined to anyone who can see the project.
             The project&rsquo;s organisers may be notified that somebody answered, by display name
             if they had one, and that notification stays in their account.
           </>,

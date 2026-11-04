@@ -48,6 +48,7 @@ import { ProjectLocationMap, hasProjectMap } from './ProjectLocationMap';
 import { ProjectToolCard } from './toolkit/ProjectToolCard';
 import { findTool } from '../toolkit/tools';
 import { arrangeSections, projectIntro, projectSections } from '../lib/projectSections';
+import { useToolResults } from './toolkit/useToolResults';
 import {
   readConfiguredProjectTools, readLinks, readOrganisationProjects, readProject, readProjectAccess, readProjectTools,
   readWorkshopTools, requestProjectAccess, readRelatedProjects, recordProjectView,
@@ -280,6 +281,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   // The rooms opened for it that are still open: what "set up" means for a tool that
   // runs in a room.
   const [openRooms, setOpenRooms] = useState([]);
+  // What its rooms were told, for the results of those that have ended (useToolResults).
+  const toolResults = useToolResults(projectId);
   const [configuredTools, setConfiguredTools] = useState(new Set());
   // Those of its tools kept for its Workshop Room tab rather than its Project tab.
   const [workshopTools, setWorkshopTools] = useState(new Set());
@@ -519,6 +522,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const { intro, goals } = projectIntro(project);
   const sections = arrangeSections(projectSections({
     project, tools: tools.filter((tool) => !workshopTools.has(tool.id)), openRooms, configured: configuredTools,
+    results: toolResults ?? [],
   }), project.pageLayout);
   const workshopSections = arrangeSections(projectSections({
     project, tools: tools.filter((tool) => workshopTools.has(tool.id)), openRooms, configured: configuredTools,
@@ -556,6 +560,8 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
       )}
 
       {section.kind === 'photos' && <ProjectGallery t={t} photos={section.photos} />}
+
+      {section.kind === 'results' && <section.tool.results.View t={t} tool={section.tool} result={section.result} />}
 
       {section.kind === 'photo' && (
         <figure className="placer-project-photo">

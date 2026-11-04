@@ -11,7 +11,9 @@ import {
   removeReply,
 } from '../../services/projectPage';
 import { readOrganisation } from '../../services/organisations';
-import { readContributions, readProjectOpenRooms, readProjectRoomSchedule, saveContribution } from '../../services/rooms';
+import {
+  readContributions, readProjectOpenRooms, readProjectRoomSchedule, readProjectToolResults, saveContribution,
+} from '../../services/rooms';
 import { THEME } from '../../theme';
 import { rememberAnswer } from '../../toolkit/rooms';
 
@@ -60,6 +62,7 @@ vi.mock('../../services/rooms', () => ({
   saveContribution: vi.fn(() => Promise.resolve(true)),
   subscribeToRoom: vi.fn(() => () => {}),
   isSupabaseConfigured: vi.fn(() => true),
+  readProjectToolResults: vi.fn(() => Promise.resolve([])),
 }));
 
 vi.mock('../../services/follows', () => ({
@@ -108,6 +111,22 @@ describe('PublicProjectPage', () => {
     expect(screen.getByText('1 Jan 2026 – 31 Dec 2026')).toBeInTheDocument();
     expect(screen.getByText('Malmö, Folkets Park')).toBeInTheDocument();
     expect(screen.getByText(/Turn the old rail corridor/)).toBeInTheDocument();
+  });
+
+  it('shows what an ended Word Cloud was told, as its results', async () => {
+    vi.mocked(readProject).mockResolvedValue(PROJECT);
+    vi.mocked(readProjectTools).mockResolvedValue(['word-cloud']);
+    vi.mocked(readProjectToolResults).mockResolvedValue([{
+      roomId: 'room-1', tool: 'word-cloud', config: { prompt: 'One word for the river' }, status: 'ended',
+      openedAt: '2026-10-01T10:00:00Z', endsAt: '2026-10-02T10:00:00Z',
+      states: [{ words: ['green'] }, { words: ['green', 'calm'] }],
+    }]);
+
+    setup();
+
+    const section = within(await screen.findByRole('region', { name: 'Word Cloud results: One word for the river' }));
+    expect(section.getByText(/^Completed/)).toBeInTheDocument();
+    expect(section.getByText('2 people · 2 words')).toBeInTheDocument();
   });
 
   it('shows the photos added beside the header image as a gallery, in their order', async () => {

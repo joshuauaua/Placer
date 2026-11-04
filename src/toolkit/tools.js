@@ -102,6 +102,12 @@
  * started, with no nav bar or footer, and its `component` is given only { t, tool }.
  * Idea Visualizer is one: its steps are screens of their own, each with its own top bar.
  *
+ * `results` is optional, for a tool that runs in a room: { View }, a component
+ * { t, tool, result } that shows one of its rooms' results — `result` is one of
+ * readProjectToolResults's (services/rooms.js), live while the room is open and kept
+ * once it has ended (supabase/room-results.sql). With one, a project's dashboard offers
+ * Results on each of its rooms, and its public page keeps an ended room's results.
+ *
  * `setting` and `delivery` are required: see the top of this file, and SETTINGS and
  * DELIVERIES below.
  *
