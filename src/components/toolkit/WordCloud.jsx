@@ -267,7 +267,7 @@ export function FullScreenCloud({ t, prompt, result, people = null, left = null,
   );
 }
 
-export function WordCloud({ t, room, slide = false, answering = false, presenting = false }) {
+export function WordCloud({ t, room, slide = false, untitled = false, answering = false, presenting = false }) {
   const [prompt, setPrompt] = useState('');
   const [words, setWords] = useState([]);
   const [draft, setDraft] = useState('');
@@ -378,10 +378,13 @@ export function WordCloud({ t, room, slide = false, answering = false, presentin
   if (slide) {
     return (
       <section aria-label="Word cloud" style={{ minWidth: 0 }}>
-        <h2 style={{ margin: '0 0 12px', fontSize: 26, fontWeight: 700, lineHeight: 1.25, letterSpacing: '-0.01em',
-          color: shownPrompt ? t.ink : t.inkFaint, overflowWrap: 'anywhere' }}>
-          {shownPrompt || DEFAULT_PROMPT}
-        </h2>
+        {/* `untitled`: the setup page puts the title above it, to type into (SlideTitle). */}
+        {!untitled && (
+          <h2 style={{ margin: '0 0 12px', fontSize: 26, fontWeight: 700, lineHeight: 1.25, letterSpacing: '-0.01em',
+            color: shownPrompt ? t.ink : t.inkFaint, overflowWrap: 'anywhere' }}>
+            {shownPrompt || DEFAULT_PROMPT}
+          </h2>
+        )}
         {empty ? (
           <p style={{ minHeight: 320, display: 'flex', alignItems: 'center', justifyContent: 'center',
             textAlign: 'center', fontSize: 14, color: t.inkDim, lineHeight: 1.65, margin: 0 }}>

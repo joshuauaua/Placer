@@ -418,7 +418,7 @@ describe('ToolConfiguratorPage, its canvas', () => {
 
     // No label on it: the preview speaks for itself.
     expect(within(canvas).queryByText('Live preview')).toBeNull();
-    expect(canvas.querySelector('.placer-configurator-frame')).toHaveAttribute('inert');
+    expect(canvas.querySelector('.placer-configurator-slide-preview')).toHaveAttribute('inert');
   });
 
   it('never shows a tool\'s own editors, even before its setup is one it would take', () => {
@@ -438,7 +438,10 @@ describe('ToolConfiguratorPage, Word Cloud\'s slide', () => {
     renderAt('/toolkit/word-cloud/configure');
     const canvas = screen.getByRole('main', { name: 'Canvas' });
     // Before there is a question, the one suggested for it holds its place.
-    expect(within(canvas).getByRole('heading', { level: 2, name: 'What do you want to find out?' })).toBeInTheDocument();
+    const title = within(canvas).getByRole('textbox', { name: 'Slide title' });
+    expect(title).toHaveValue('');
+    expect(title).toHaveAttribute('placeholder', 'What do you want to find out?');
+    expect(within(canvas).queryByRole('heading', { level: 2 })).toBeNull();
     // On the frame's card itself, with no card of its own inside it.
     const slide = within(canvas).getByRole('region', { name: 'Word cloud' });
     expect(slide.style.boxShadow).toBe('');
@@ -446,7 +449,7 @@ describe('ToolConfiguratorPage, Word Cloud\'s slide', () => {
 
     fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'One word for the square?' } });
 
-    expect(within(canvas).getByRole('heading', { level: 2, name: 'One word for the square?' })).toBeInTheDocument();
+    expect(title).toHaveValue('One word for the square?');
     for (const gone of ['Your cloud', 'Add your words', 'Answers', 'How it works']) {
       expect(within(canvas).queryByText(gone)).toBeNull();
     }
@@ -516,5 +519,17 @@ describe('ToolConfiguratorPage, adding a collaborator', () => {
       { accountId: 'u-1', profile: { id: 'u-1', name: 'Mara Quinn' } });
 
     expect(await screen.findByRole('group', { name: 'Collaborators: Mara Quinn, Ines Berg' })).toBeInTheDocument();
+  });
+
+  it('changes the slide\'s title by typing into it on the canvas, as the prompt in the panel', () => {
+    renderAt('/toolkit/word-cloud/configure');
+    const title = within(screen.getByRole('main', { name: 'Canvas' })).getByRole('textbox', { name: 'Slide title' });
+
+    fireEvent.change(title, { target: { value: 'Where do you sit?' } });
+    expect(screen.getByLabelText('The prompt')).toHaveValue('Where do you sit?');
+
+    // One line: a line break typed or pasted in is a space.
+    fireEvent.change(title, { target: { value: 'Where do\nyou sit?' } });
+    expect(title).toHaveValue('Where do you sit?');
   });
 });

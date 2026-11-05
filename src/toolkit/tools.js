@@ -68,7 +68,10 @@
  * `title` — null for none; there each Form is given `compact`, for its shortest form, and
  * a step with `inPanel: false` is left out. `Canvas`, if the setup has one, takes the
  * page's canvas in place of the inert preview: an editor given { setup, onChange }, for
- * a setup made by pointing (Stationary Activity Mapping's area, on a map). A tool with
+ * a setup made by pointing (Stationary Activity Mapping's area, on a map). `title`, if
+ * the setup has one — { key, placeholder, max } — names the field that is its slide's
+ * title (Word Cloud's prompt): the configuration page puts it on the canvas to be
+ * typed into in place, and draws the slide under it with `untitled`. A tool with
  * steps, even one, has when its room starts and how long it stays open as a stage of
  * its own after them.
  *

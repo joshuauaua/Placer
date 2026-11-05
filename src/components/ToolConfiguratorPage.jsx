@@ -486,6 +486,28 @@ function ConfigPanel({ t, tool, setup, onChange }) {
   );
 }
 
+/**
+ * A slide's title on the canvas, to type into in place: drawn as the slide draws it,
+ * with a line under it on hover and focus to say it can be changed. One line — Enter
+ * is done — that wraps as the title does, and the tool's suggestion while it is empty.
+ */
+function SlideTitle({ spec, value, onChange }) {
+  const ref = useRef(null);
+  // As tall as what is in it, so it wraps like the title it stands for.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
+  return (
+    <textarea ref={ref} rows={1} value={value} maxLength={spec.max} placeholder={spec.placeholder}
+      aria-label="Slide title" spellCheck className="placer-slide-title"
+      onChange={(e) => onChange(e.target.value.replace(/\n/g, ' '))}
+      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }} />
+  );
+}
+
 // Slides need ids of their own, so removing one never confuses which is which.
 function newSlide(tool) {
   return { id: newId('slide'), setup: tool?.setup?.defaults() ?? null };
@@ -709,16 +731,24 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
                 <tool.setup.Canvas key={selected.id} t={t} tool={tool} setup={setup ?? tool.setup.defaults()} onChange={setSetup} />
               </div>
             ) : (
-              /* A preview only: nothing in it can be clicked, typed in or reached. */
-              <div className="placer-configurator-frame" inert aria-label="Live preview of the slide">
-                {/* Keyed by slide, so each slide's tool starts afresh rather than keeping
-                    what was typed into the one before. */}
-                <CanvasBoundary key={selected.id} resetKey={usable}>
-                  {/* `slide`: just the slide, for a tool that can draw it alone (Word Cloud). */}
-                  {Tool && (tool.room
-                    ? <Tool t={t} tool={tool} room={previewRoom(usable)} slide />
-                    : <Tool t={t} tool={tool} setup={usable} slide />)}
-                </CanvasBoundary>
+              <div className="placer-configurator-frame" aria-label="Live preview of the slide">
+                {/* The slide's title, typed into in place (`title` in toolkit/tools.js). */}
+                {tool.setup?.title && (
+                  <SlideTitle key={selected.id} spec={tool.setup.title}
+                    value={setup?.[tool.setup.title.key] ?? ''}
+                    onChange={(value) => setSetup({ ...(setup ?? tool.setup.defaults()), [tool.setup.title.key]: value })} />
+                )}
+                {/* The rest a preview only: nothing in it can be clicked, typed in or reached. */}
+                <div inert className="placer-configurator-slide-preview">
+                  {/* Keyed by slide, so each slide's tool starts afresh rather than keeping
+                      what was typed into the one before. */}
+                  <CanvasBoundary key={selected.id} resetKey={usable}>
+                    {/* `slide`: just the slide, for a tool that can draw it alone (Word Cloud). */}
+                    {Tool && (tool.room
+                      ? <Tool t={t} tool={tool} room={previewRoom(usable)} slide untitled={Boolean(tool.setup?.title)} />
+                      : <Tool t={t} tool={tool} setup={usable} slide untitled={Boolean(tool.setup?.title)} />)}
+                  </CanvasBoundary>
+                </div>
               </div>
             )}
           </main>
