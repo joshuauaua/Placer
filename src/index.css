@@ -6085,3 +6085,96 @@ textarea.placer-case-input {
   overflow-y: auto;
 }
 
+/* A project's tools on its page (ProjectToolTile): a card each, its tool's icon on its
+   category's colour, its title and tool, and where it stands — in a grid. */
+.placer-project-tool-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.placer-project-tool-tile {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  cursor: pointer;
+  background: var(--placer-white);
+  border: 1px solid var(--placer-grey-200);
+  border-radius: var(--placer-radius-lg);
+  font-family: var(--placer-font);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.placer-project-tool-tile:hover {
+  box-shadow: var(--placer-shadow);
+  transform: translateY(-2px);
+}
+
+.placer-project-tool-tile:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+.placer-project-tool-tile-icon {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placer-project-tool-tile-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.placer-project-tool-tile-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.placer-project-tool-tile-tool {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.placer-project-tool-tile-tag {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--placer-grey-100);
+  color: var(--placer-grey-700);
+}
+
+.placer-project-tool-tile-tag.is-live,
+.placer-project-tool-tile-tag.is-open {
+  background: #E3F5E9;
+  color: #1E6B3A;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placer-project-tool-tile { transition: none; }
+  .placer-project-tool-tile:hover { transform: none; }
+}
+

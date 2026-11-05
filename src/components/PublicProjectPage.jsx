@@ -50,6 +50,9 @@ import { findTool } from '../toolkit/tools';
 import { arrangeSections, projectIntro, projectSections } from '../lib/projectSections';
 import { useToolResults } from './toolkit/useToolResults';
 import { SlideRun } from './toolkit/SlideSteps';
+import { ProjectToolTile, ToolResultsDialog, sectionRooms } from './toolkit/ProjectToolTile';
+import { useLocation } from 'wouter';
+import { roomPath } from '../toolkit/rooms';
 import {
   readConfiguredProjectTools, readLinks, readOrganisationProjects, readProject, readProjectAccess, readProjectTools,
   readWorkshopTools, requestProjectAccess, readRelatedProjects, recordProjectView,
@@ -284,6 +287,9 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   const [openRooms, setOpenRooms] = useState([]);
   // What its rooms were told, for the results of those that have ended (useToolResults).
   const toolResults = useToolResults(projectId);
+  const [, navigate] = useLocation();
+  // The tool whose results are open in a dialog, from its card (ProjectToolTile).
+  const [resultsFor, setResultsFor] = useState(null);
   const [configuredTools, setConfiguredTools] = useState(new Set());
   // Those of its tools kept for its Workshop Room tab rather than its Project tab.
   const [workshopTools, setWorkshopTools] = useState(new Set());
@@ -534,6 +540,35 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
   // schedule, or the first.
   const currentWorkshop = workshopSections.find((section) => section.key === workshopPick) ?? workshopSections[0];
   const shownSections = tab === 'workshop' ? [currentWorkshop].filter(Boolean) : sections;
+
+  // A tool's card, chosen: on to take part while it is live and not answered from
+  // here, else its results (ProjectToolTile).
+  const openTile = (section, state) => {
+    const [room] = sectionRooms(section);
+    const project = `project=${encodeURIComponent(projectId)}`;
+    if (state === 'live' && room) navigate(`${roomPath(section.tool.id, room.id)}&${project}`);
+    else if (state === 'open') navigate(`/toolkit/${encodeURIComponent(section.tool.id)}?${project}`);
+    else setResultsFor(section);
+  };
+  // The Project tab: its sections in order, with its tools — however many, wherever the
+  // first of them was arranged — together as one grid of cards.
+  const isToolSection = (section) => section.kind === 'tool' || section.kind === 'results';
+  const toolSections = sections.filter(isToolSection);
+  // A function, as renderSection is only defined further down.
+  const renderProjectTab = () => sections.flatMap((section) => {
+    if (!isToolSection(section)) return [renderSection(section)];
+    if (section !== toolSections[0]) return [];
+    return [(
+      <section key="tools" id="project-tools" aria-labelledby="project-tools-heading" className="placer-project-section">
+        <h2 id="project-tools-heading" className="placer-h2" style={{ color: t.ink, marginBottom: 20 }}>Take part</h2>
+        <ul className="placer-project-tool-tiles">
+          {toolSections.map((tile) => (
+            <li key={tile.key} id={tile.domId}><ProjectToolTile t={t} section={tile} onOpen={openTile} /></li>
+          ))}
+        </ul>
+      </section>
+    )];
+  });
 
   // A tool's part of its section: its room's own embed, or else its card.
   const renderTool = (section, room, titled) => (room && section.tool.onProjectPage?.Embed ? (
@@ -794,7 +829,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
           : tab === 'project' && shownSections.some(isWide) ? ' placer-project-panel--wide' : ''}`}>
         {(tab === 'project' || tab === 'workshop') && (
           <>
-            {tab === 'project' && sections.map(renderSection)}
+            {tab === 'project' && renderProjectTab()}
 
             {tab === 'workshop' && currentWorkshop && (
               <>
@@ -853,6 +888,11 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
           <div>{links.map((link) => <LinkRow key={link.id} t={t} link={link} />)}</div>
         ))}
       </div>
+
+      {resultsFor && (
+        <ToolResultsDialog t={t} section={resultsFor} results={toolResults} onClose={() => setResultsFor(null)}
+          fallback={resultsFor.kind === 'tool' && resultsFor.room ? renderTool(resultsFor, resultsFor.room, false) : null} />
+      )}
 
       <ProjectPeople t={t} organiser={organiser} people={people} accountId={accountId}
         onOpenOrganisation={onOpenOrganisation} onOpenProfile={onOpenProfile} />
