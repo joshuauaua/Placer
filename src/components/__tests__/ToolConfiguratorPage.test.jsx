@@ -213,7 +213,7 @@ describe('ToolConfiguratorPage', () => {
 
   it('publishes a Live tool as a room open now, until the session is ended, and goes into it', async () => {
     const { location } = renderAt('/toolkit/word-cloud/configure?project=proj-1', ToolConfiguratorPage,
-      { accountId: 'user-1' });
+      { accountId: 'user-1', profile: { id: 'user-1', name: 'Mara Quinn' } });
     fireEvent.change(screen.getByLabelText('The prompt'), { target: { value: 'One word for the square?' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
@@ -223,7 +223,9 @@ describe('ToolConfiguratorPage', () => {
     await act(async () => { fireEvent.click(dialog.getByRole('button', { name: 'Go live' })); });
 
     expect(createRoom).toHaveBeenCalledWith('word-cloud', 'proj-1', '12h',
-      expect.objectContaining({ prompt: 'One word for the square?' }));
+      expect.objectContaining({ prompt: 'One word for the square?',
+        // What its cover says (InviteCover). No project name is read in this test.
+        invite: { organiser: 'Mara Quinn', project: '', title: 'Word Cloud' } }));
     expect(hostedRoom('room-1')).toMatchObject({ pin: '123456', token: 'f-1' });
     expect(location.history.at(-1)).toBe('/toolkit/word-cloud?room=room-1');
   });

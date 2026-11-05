@@ -678,7 +678,7 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
       {previewing && tool && <PreviewDialog tool={tool} onClose={closePreview} />}
       {publishing && tool && (
         <PublishToolDialog t={t} tool={tool} name={name} slides={slides} live={live} accountId={accountId}
-          projectId={projectId} projectName={projectName} onClose={closePublish}
+          projectId={projectId} projectName={projectName} organiser={profile?.name ?? ''} onClose={closePublish}
           onGoLive={(room) => navigate(roomPath(tool.id, room.id))}
           onOpenProject={() => navigate(`/projects/${encodeURIComponent(projectId)}/dashboard`)} />
       )}

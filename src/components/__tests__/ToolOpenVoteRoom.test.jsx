@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vite-plus/test';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { rememberHostedRoom } from '../../toolkit/rooms';
 import { readRoom, readContributions, saveContribution } from '../../test/roomServices';
-import { hours, renderAt, useRoomServices } from '../../test/toolkitRoom';
+import { hours, renderAt, useRoomServices, joined } from '../../test/toolkitRoom';
 
 vi.mock('../../services/rooms', () => import('../../test/roomServices'));
 
@@ -18,7 +18,7 @@ describe('Poll in a room', () => {
     readRoom.mockResolvedValue(openVoteRoom());
 
     renderAt('/toolkit/open-vote', 'room=room-1');
-    await screen.findByText(/you are in a room/i);
+    await joined();
 
     fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
 

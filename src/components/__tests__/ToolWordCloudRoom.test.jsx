@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { rememberHostedRoom } from '../../toolkit/rooms';
 import { createRoom, readRoom, readContributions, saveContribution } from '../../test/roomServices';
-import { hours, renderAt, useRoomServices } from '../../test/toolkitRoom';
+import { hours, renderAt, useRoomServices, joined } from '../../test/toolkitRoom';
 import { configureTool, next, save } from '../../test/configureTool';
 
 vi.mock('../../services/rooms', () => import('../../test/roomServices'));
@@ -16,7 +16,7 @@ describe('Word Cloud in a room', () => {
     readRoom.mockResolvedValue(wordCloudRoom());
 
     renderAt('/toolkit/word-cloud', 'room=room-1');
-    await screen.findByText(/you are in a room/i);
+    await joined();
 
     fireEvent.change(screen.getByLabelText('Your word'), { target: { value: 'Green' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
@@ -31,6 +31,19 @@ describe('Word Cloud in a room', () => {
     );
   });
 
+  it('shows somebody who joined only what answering takes, as Preview does', async () => {
+    readRoom.mockResolvedValue({ ...wordCloudRoom(), config: { prompt: 'One word for the square?' } });
+
+    renderAt('/toolkit/word-cloud', 'room=room-1');
+    await joined();
+
+    expect(screen.getByRole('heading', { name: 'One word for the square?' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Your word')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'How it works' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Answers' })).toBeNull();
+    expect(screen.queryByText(/you are in a room/i)).toBeNull();
+  });
+
   it("gathers everybody's words into the room's cloud", async () => {
     rememberHostedRoom('room-1', { pin: '839201', token: 'facilitator-1' });
     readRoom.mockResolvedValue(wordCloudRoom());
@@ -41,13 +54,15 @@ describe('Word Cloud in a room', () => {
 
     renderAt('/toolkit/word-cloud', 'room=room-1');
 
-    expect(await screen.findByText("The room's cloud")).toBeInTheDocument();
-    expect(screen.getByText('2 people')).toBeInTheDocument();
+    // Presenting it: the cloud and its count, and nothing to answer.
+    expect(await screen.findByText('2 people')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Your word')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Answers' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'How it works' })).toBeNull();
     const cloud = within(screen.getByRole('list', { name: 'Word cloud' }));
     expect(cloud.getByText('green').closest('li')).toHaveAttribute('title', '2 people');
     expect(cloud.getByText('quiet').closest('li')).toHaveAttribute('title', '1 person');
-    const answers = within(screen.getByRole('list', { name: /answers and how many times/i }));
-    expect(answers.getAllByRole('listitem').map((item) => item.textContent)).toEqual(['green2', 'quiet1']);
+    expect(screen.queryByRole('list', { name: /answers and how many times/i })).toBeNull();
   });
 
   it('shows the prompt the room was set up with, and takes only as many words as it allows', async () => {
@@ -105,7 +120,6 @@ describe('Word Cloud in a room', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Stop' }));
 
       expect(screen.getByRole('timer')).toHaveTextContent('Finished');
-      expect(screen.getByLabelText('Your word')).toBeDisabled();
       expect(screen.queryByRole('button', { name: /start the/i })).not.toBeInTheDocument();
       await sent({ words: [], timer: { endsAt: expect.any(Number) } });
     });
@@ -114,7 +128,7 @@ describe('Word Cloud in a room', () => {
       readRoom.mockResolvedValue(timedRoom());
 
       renderAt('/toolkit/word-cloud', 'room=room-1');
-      await screen.findByText(/you are in a room/i);
+      await joined();
 
       expect(screen.queryByRole('button', { name: /start the/i })).not.toBeInTheDocument();
       expect(screen.queryByRole('timer')).not.toBeInTheDocument();

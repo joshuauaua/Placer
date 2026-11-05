@@ -14,7 +14,9 @@
  *
  * Each slide is a room of its own, with that slide's setup, so each has its own
  * results; several are chained into one run that people go through in order
- * (toolkit/sequence.js), and ending the session from any of them ends them all. Either way the room belongs to the tool's project, which it needs: a room
+ * (toolkit/sequence.js), and ending the session from any of them ends them all. Each
+ * also carries its invitation (toolkit/invite.js): who published it, the project and
+ * the tool's name, for the cover people land on (InviteCover). Either way the room belongs to the tool's project, which it needs: a room
  * open for longer than a workshop has to belong to one, and a tool's results are
  * kept for its project (supabase/room-results.sql).
  */
@@ -25,6 +27,7 @@ import { Btn, Field, inputStyle } from './UI';
 import { createRoom } from '../services/rooms';
 import { LIVE_SESSION_LIFETIME, ROOM_LIFETIMES, formatRoomDate, rememberHostedRoom } from '../toolkit/rooms';
 import { newSequenceId, rememberSequence, withSequence } from '../toolkit/sequence';
+import { withInvite } from '../toolkit/invite';
 
 /** How long a Self-paced tool can be left open for: anything past a workshop. */
 export const SELF_PACED_LIFETIMES = ROOM_LIFETIMES.filter(({ id }) => id !== '2h');
@@ -49,7 +52,7 @@ export function publishProblem({ tool, slides, accountId, projectId }) {
   return null;
 }
 
-export function PublishToolDialog({ t, tool, name, slides, live, accountId, projectId, projectName,
+export function PublishToolDialog({ t, tool, name, slides, live, accountId, projectId, projectName, organiser = '',
   onClose, onGoLive, onOpenProject }) {
   const titleId = useId();
   const panelRef = useRef(null);
@@ -81,7 +84,9 @@ export function PublishToolDialog({ t, tool, name, slides, live, accountId, proj
       const rooms = [];
       let next = null;
       for (let index = slides.length - 1; index >= 0; index -= 1) {
-        const setup = slides[index].setup ?? tool.setup?.defaults() ?? null;
+        // With what its cover says: who invites people, to what, for which project (InviteCover).
+        const setup = withInvite(slides[index].setup ?? tool.setup?.defaults() ?? null,
+          { organiser, project: projectName ?? '', title });
         const opened = await createRoom(tool.id, projectId, live ? LIVE_LIFETIME : lifetime,
           sequenceId ? withSequence(setup, { id: sequenceId, index, count: slides.length, next }) : setup);
         // This browser runs the room as its facilitator, from here on.

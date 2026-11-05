@@ -30,6 +30,9 @@
  * do — no words to add, answers, full screen, how it works or keeping it. That is what
  * the configuration page's canvas shows (ToolConfiguratorPage).
  *
+ * `presenting` is the facilitator's, in a room they published (ToolkitPage): the prompt
+ * over the cloud, with its count, full screen and timer, and nothing to answer.
+ *
  * Cloud, WordCounts, WordEntry and FullScreenCloud are those parts on their own, which
  * the project page's version (WordCloudOnPage) uses too. The counting is in src/lib/wordCloud.js.
  */
@@ -264,7 +267,7 @@ export function FullScreenCloud({ t, prompt, result, people = null, left = null,
   );
 }
 
-export function WordCloud({ t, room, slide = false, answering = false }) {
+export function WordCloud({ t, room, slide = false, answering = false, presenting = false }) {
   const [prompt, setPrompt] = useState('');
   const [words, setWords] = useState([]);
   const [draft, setDraft] = useState('');
@@ -337,8 +340,9 @@ export function WordCloud({ t, room, slide = false, answering = false }) {
   const shownPrompt = fixedPrompt ?? prompt.trim();
 
   // Answering it: the main card, the prompt over the cloud as the words come in, and
-  // the card to add yours. Nothing else: no full screen, answers, how it works,
-  // keeping it, or timer to run.
+  // the card to add yours, and the time left once the facilitator has started it.
+  // Nothing else: no full screen, answers, how it works, keeping it, or timer to run.
+  // It is what somebody who joined a room sees (ToolkitPage), as well as the Preview.
   if (answering) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -348,6 +352,9 @@ export function WordCloud({ t, room, slide = false, answering = false }) {
             color: shownPrompt ? t.ink : t.inkFaint, overflowWrap: 'anywhere' }}>
             {shownPrompt || DEFAULT_PROMPT}
           </h2>
+          {left !== null && (
+            <div style={{ margin: '0 0 12px' }}><Countdown t={t} left={left} paused={paused} /></div>
+          )}
           {empty ? (
             <p style={{ minHeight: 260, display: 'flex', alignItems: 'center', justifyContent: 'center',
               textAlign: 'center', fontSize: 14, color: t.inkDim, lineHeight: 1.65, margin: 0 }}>
@@ -387,6 +394,63 @@ export function WordCloud({ t, room, slide = false, answering = false }) {
     );
   }
 
+  // The cloud's footing: how many have answered, full screen, the time left and the
+  // timer to run.
+  const controls = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minHeight: 36, marginTop: 8 }}>
+      {inRoom && (
+        <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
+          {roomResult?.people ?? 0} {roomResult?.people === 1 ? 'person' : 'people'}
+        </span>
+      )}
+      <div style={{ flex: 1 }} />
+      <FullScreenCloud t={t} prompt={shownPrompt} result={result} people={inRoom ? roomResult?.people ?? 0 : null}
+        left={left} paused={paused} emptyText={emptyText} />
+      <Countdown t={t} left={left} paused={paused} />
+      {canStart && (
+        <Btn t={t} variant="primary" size="sm" icon="clock" onClick={() => setTimer(startTimer(seconds))}>
+          Start the {seconds} second timer
+        </Btn>
+      )}
+      {underWay && (
+        <>
+          <Btn t={t} variant="outline" size="sm"
+            onClick={() => setTimer(paused ? resumeTimer(timer) : pauseTimer(timer))}>
+            {paused ? 'Continue' : 'Pause'}
+          </Btn>
+          <Btn t={t} variant="primary" size="sm" onClick={() => setTimer(stopTimer())}>Stop</Btn>
+        </>
+      )}
+      {over && editable && (
+        <Btn t={t} variant="outline" size="sm" onClick={() => setOwnTimer(null)}>Reset the timer</Btn>
+      )}
+    </div>
+  );
+
+  // Presenting it to the room, as its facilitator: the prompt over the cloud as it
+  // fills, and the controls under it. Nothing to answer, no answers listed, and no how
+  // it works: that is for the people taking part, on their phones.
+  if (presenting) {
+    return (
+      <section aria-label="Word cloud" style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12,
+        padding: 24, boxShadow: t.shadow, minWidth: 0 }}>
+        <h2 style={{ margin: '0 0 12px', fontSize: 28, fontWeight: 700, lineHeight: 1.25, letterSpacing: '-0.01em',
+          color: shownPrompt ? t.ink : t.inkFaint, overflowWrap: 'anywhere' }}>
+          {shownPrompt || DEFAULT_PROMPT}
+        </h2>
+        {empty ? (
+          <p style={{ minHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            textAlign: 'center', fontSize: 14, color: t.inkDim, lineHeight: 1.65, margin: 0 }}>
+            Words will appear here as people add them.
+          </p>
+        ) : (
+          <Cloud result={result} minHeight={360} scale={1.6} />
+        )}
+        {controls}
+      </section>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <Panel t={t} title={inRoom ? "The room's cloud" : 'Your cloud'} aside={shownPrompt && (
@@ -404,34 +468,7 @@ export function WordCloud({ t, room, slide = false, answering = false }) {
           <Cloud result={result} minHeight={320} scale={1.5} />
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minHeight: 36, marginTop: 8 }}>
-          {inRoom && (
-            <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
-              {roomResult?.people ?? 0} {roomResult?.people === 1 ? 'person' : 'people'}
-            </span>
-          )}
-          <div style={{ flex: 1 }} />
-          <FullScreenCloud t={t} prompt={shownPrompt} result={result} people={inRoom ? roomResult?.people ?? 0 : null}
-            left={left} paused={paused} emptyText={emptyText} />
-          <Countdown t={t} left={left} paused={paused} />
-          {canStart && (
-            <Btn t={t} variant="primary" size="sm" icon="clock" onClick={() => setTimer(startTimer(seconds))}>
-              Start the {seconds} second timer
-            </Btn>
-          )}
-          {underWay && (
-            <>
-              <Btn t={t} variant="outline" size="sm"
-                onClick={() => setTimer(paused ? resumeTimer(timer) : pauseTimer(timer))}>
-                {paused ? 'Continue' : 'Pause'}
-              </Btn>
-              <Btn t={t} variant="primary" size="sm" onClick={() => setTimer(stopTimer())}>Stop</Btn>
-            </>
-          )}
-          {over && editable && (
-            <Btn t={t} variant="outline" size="sm" onClick={() => setOwnTimer(null)}>Reset the timer</Btn>
-          )}
-        </div>
+        {controls}
       </Panel>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20,
