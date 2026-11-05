@@ -63,9 +63,9 @@ export function ToolLayout({ t, tool, onBack, actions, breadcrumb = null, childr
 }
 
 /** A card with a small mono label, matching the "how it works" card on the welcome view. */
-export function Panel({ t, title, aside, children, style }) {
+export function Panel({ t, title, aside, children, style, className }) {
   return (
-    <section style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, padding: 20,
+    <section className={className} style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12, padding: 20,
       boxShadow: t.shadow, minWidth: 0, ...style }}>
       {(title || aside) && (
         <header style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 }}>

@@ -345,26 +345,29 @@ export function WordCloud({ t, room, slide = false, untitled = false, answering 
   // It is what somebody who joined a room sees (ToolkitPage), as well as the Preview.
   if (answering) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <section aria-label="Word cloud" style={{ background: t.surface, border: `1px solid ${t.line}`, borderRadius: 12,
-          padding: 24, boxShadow: t.shadow, minWidth: 0 }}>
-          <h2 style={{ margin: '0 0 12px', fontSize: 24, fontWeight: 700, lineHeight: 1.25, letterSpacing: '-0.01em',
+      // The screen's height (index.css): the cloud's card takes all of it but the lower
+      // fifth, which is Add your words.
+      <div className="placer-answering">
+        <section aria-label="Word cloud" className="placer-answering-main" style={{ background: t.surface,
+          border: `1px solid ${t.line}`, borderRadius: 12, padding: 24, boxShadow: t.shadow, minWidth: 0 }}>
+          <h2 style={{ margin: '0 0 12px', fontSize: 28, fontWeight: 700, lineHeight: 1.25, letterSpacing: '-0.01em',
             color: shownPrompt ? t.ink : t.inkFaint, overflowWrap: 'anywhere' }}>
             {shownPrompt || DEFAULT_PROMPT}
           </h2>
           {left !== null && (
             <div style={{ margin: '0 0 12px' }}><Countdown t={t} left={left} paused={paused} /></div>
           )}
-          {empty ? (
-            <p style={{ minHeight: 260, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              textAlign: 'center', fontSize: 14, color: t.inkDim, lineHeight: 1.65, margin: 0 }}>
-              Words will appear here as people add them.
-            </p>
-          ) : (
-            <Cloud result={result} minHeight={260} scale={1.5} />
-          )}
+          <div className="placer-answering-cloud">
+            {empty ? (
+              <p style={{ textAlign: 'center', fontSize: 14, color: t.inkDim, lineHeight: 1.65, margin: 0 }}>
+                Words will appear here as people add them.
+              </p>
+            ) : (
+              <Cloud result={result} minHeight={260} scale={1.6} />
+            )}
+          </div>
         </section>
-        <Panel t={t} title="Add your words">
+        <Panel t={t} title="Add your words" className="placer-answering-entry">
           <WordEntry t={t} words={words} limit={limit} draft={draft} onDraft={setDraft} onChange={change}
             over={over} />
         </Panel>

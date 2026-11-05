@@ -23,7 +23,8 @@ describe('Pop Quiz', () => {
     mount(PopQuiz, 'pop-quiz');
 
     expect(screen.getByLabelText('Question 1')).toHaveValue('Who wrote “The Death and Life of Great American Cities”?');
-    expect(screen.getByText('3 of 20 questions')).toBeInTheDocument();
+    expect(screen.getByText('3 questions')).toBeInTheDocument();
+    expect(screen.queryByText(/of 20/)).not.toBeInTheDocument();
     expect(screen.getByLabelText('Kind of question 2')).toHaveValue('blank');
     expect(screen.getByLabelText('Time per question')).toHaveValue('20');
   });
@@ -35,7 +36,7 @@ describe('Pop Quiz', () => {
     // whole page, and thirty-odd in a row came close to timing the test out on CI.
     const add = screen.getByRole('button', { name: 'Add a question' });
     for (let i = 0; i < 17; i += 1) fireEvent.click(add);
-    expect(screen.getByText('20 of 20 questions')).toBeInTheDocument();
+    expect(screen.getByText('20 questions, the most a quiz can have')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add a question' })).not.toBeInTheDocument();
 
     for (let i = 20; i > 1; i -= 1) fireEvent.click(screen.getByLabelText(`Remove question ${i}`));

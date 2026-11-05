@@ -2,8 +2,8 @@ import { PopQuiz } from '../../components/toolkit/PopQuiz';
 import { PopQuizSetup, QuestionsStep, TimeStep } from '../../components/toolkit/PopQuizSetup';
 import { PALETTE } from '../../theme';
 import {
-  combineQuiz, defaultQuizSetup, emptyQuizState, questionProblems as quizQuestionProblems, quizSetupProblems,
-  timeProblems,
+  combineQuiz, defaultQuizSetup, emptyQuizState, questionPanelProblems, questionProblems as quizQuestionProblems,
+  quizSetupProblems, timeProblems,
 } from '../../lib/popQuiz';
 import { counted, roomText, tone } from '../toolParts';
 
@@ -27,7 +27,7 @@ export default {
     problems: quizSetupProblems,
     Form: PopQuizSetup,
     steps: [
-      { title: 'Questions', Form: QuestionsStep, problems: quizQuestionProblems },
+      { title: 'Questions', Form: QuestionsStep, problems: quizQuestionProblems, panelProblems: questionPanelProblems },
       { title: 'Time', Form: TimeStep, problems: timeProblems },
     ],
   },

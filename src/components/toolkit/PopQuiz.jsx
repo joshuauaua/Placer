@@ -167,14 +167,18 @@ function Blank({ t, answer, open, canAnswer, onAnswer }) {
  * One question: asked while it is open, and marked once it has closed. `canAnswer` is
  * false for the facilitator, who sees it as the room does but takes no part.
  */
-function QuestionCard({ t, config, index, left, closed, answer = null, canAnswer = true, onAnswer, children }) {
+function QuestionCard({ t, config, index, left, closed, answer = null, canAnswer = true, onAnswer, flat = false,
+  children }) {
   const questions = quizQuestions(config);
   const question = questions[index];
   const seconds = quizSeconds(config);
   const open = !closed;
 
   return (
-    <Panel t={t} title={`Question ${index + 1} of ${questions.length}`} aside={open && (
+    // `flat`: straight on the card it is shown in (the canvas), with none of its own.
+    <Panel t={t} title={`Question ${index + 1} of ${questions.length}`}
+      style={flat ? { border: 0, boxShadow: 'none', padding: 0, borderRadius: 0, background: 'transparent' } : undefined}
+      aside={open && (
       <span role="timer" aria-label="Time left" className="placer-mono"
         style={{ fontSize: 20, fontWeight: 700, color: left <= 5 ? WRONG : t.ink }}>
         {left}
@@ -182,8 +186,9 @@ function QuestionCard({ t, config, index, left, closed, answer = null, canAnswer
     )}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <p className="placer-disp" style={{ margin: 0, fontSize: 'clamp(22px, 3.2vw, 32px)', fontWeight: 700,
-          color: t.ink, lineHeight: 1.25, letterSpacing: '-0.02em', overflowWrap: 'anywhere' }}>
-          {question.text}
+          color: question.text?.trim() ? t.ink : t.inkFaint, lineHeight: 1.25, letterSpacing: '-0.02em',
+          overflowWrap: 'anywhere' }}>
+          {question.text?.trim() || (flat ? 'What do you want to ask?' : question.text)}
         </p>
 
         {question.kind === 'blank' ? (
@@ -490,7 +495,31 @@ function SoloGame({ t, keep = false }) {
   );
 }
 
-export function PopQuiz({ t, room }) {
+/**
+ * The quiz as slides, for the configuration page's canvas: its questions, each as it
+ * goes up, one under another, and nothing else — no writing it, How it works or
+ * keeping it. The tool there is inert, so nothing in them can be answered.
+ */
+function QuizSlides({ t, config }) {
+  const questions = quizQuestions(config);
+  if (questions.length === 0) {
+    return <p style={{ fontSize: 15, color: t.inkDim, margin: 0 }}>The questions will show here as you write them.</p>;
+  }
+  return (
+    <div aria-label="Questions" style={{ display: 'flex', flexDirection: 'column' }}>
+      {questions.map((question, index) => (
+        <div key={index} style={index > 0 ? { borderTop: `1px solid ${t.line}`, marginTop: 28, paddingTop: 28 } : undefined}>
+          <QuestionCard t={t} config={config} index={index} left={quizSeconds(config)} closed={false}
+            canAnswer={false} flat />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function PopQuiz({ t, room, setup = null, slide = false }) {
+  // `slide`: the questions alone, for the configuration page's canvas.
+  if (slide) return <QuizSlides t={t} config={room?.config ?? setup} />;
   if (room?.status === 'open') {
     if (!room.config) {
       return (

@@ -66,7 +66,8 @@
  * its own part (setupSteps, and SetupSteps which walks through them). A step's
  * `panelTitle`, if it has one, is its heading on the configuration page instead of its
  * `title` — null for none; there each Form is given `compact`, for its shortest form, and
- * a step with `inPanel: false` is left out. `Canvas`, if the setup has one, takes the
+ * a step with `inPanel: false` is left out, and one with `panelProblems` lists those
+ * under it rather than its `problems` (which still decide whether it can be published). `Canvas`, if the setup has one, takes the
  * page's canvas in place of the inert preview: an editor given { setup, onChange }, for
  * a setup made by pointing (Stationary Activity Mapping's area, on a map). `title`, if
  * the setup has one — { key, placeholder, max } — names the field that is its slide's
