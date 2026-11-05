@@ -184,7 +184,7 @@ describe('ToolConfiguratorPage', () => {
     expect(screen.queryByRole('group', { name: /Collaborators/ })).toBeNull();
   });
 
-  it('opens the tool’s settings from the three dots, each saying it is not built yet', () => {
+  it('opens the tool’s settings from the three dots, those not built yet saying so', () => {
     renderAt('/toolkit/word-cloud/configure');
     const dots = screen.getByRole('button', { name: 'Tool settings' });
 
@@ -193,13 +193,44 @@ describe('ToolConfiguratorPage', () => {
     expect(screen.getAllByRole('menuitem').map((item) => item.textContent))
       .toEqual(['Rename', 'Duplicate', 'Manage collaborators', 'Delete tool']);
 
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete tool' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Duplicate' }));
     expect(screen.queryByRole('menu')).toBeNull();
-    expect(screen.getByRole('status')).toHaveTextContent('Delete tool is not built yet.');
+    expect(screen.getByRole('status')).toHaveTextContent('Duplicate is not built yet.');
 
     fireEvent.click(dots);
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('deletes the tool from the three dots, once asked, and goes to My Tools', () => {
+    localStorage.clear();
+    saveStartedTool('acc', { id: 'poll-1', tool: 'open-vote', name: 'Tuesday workshop poll', slides: [{ id: 's1', setup: { question: 'Trees or benches?', answers: ['Trees', 'Benches'] } }] });
+    saveStartedTool('acc', { id: 'poll-2', tool: 'open-vote', slides: [{ id: 's1', setup: { question: 'Trees or benches?', answers: ['Trees', 'Benches'] } }] });
+    const { location } = renderAt('/toolkit/open-vote/configure?draft=poll-1', ToolConfiguratorPage, { accountId: 'acc' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tool settings' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete tool' }));
+    const dialog = screen.getByRole('dialog', { name: 'Delete “Tuesday workshop poll”?' });
+    // Cancel is where it starts, so Enter does not delete.
+    expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveFocus();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete tool' }));
+    expect(listStartedTools('acc').map((entry) => entry.id)).toEqual(['poll-2']);
+    expect(location.history.at(-1)).toBe('/my-tools');
+  });
+
+  it('keeps the tool when the delete is cancelled', () => {
+    localStorage.clear();
+    saveStartedTool('acc', { id: 'poll-1', tool: 'open-vote', slides: [{ id: 's1', setup: { question: 'Trees or benches?', answers: ['Trees', 'Benches'] } }] });
+    const { location } = renderAt('/toolkit/open-vote/configure?draft=poll-1', ToolConfiguratorPage, { accountId: 'acc' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tool settings' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete tool' }));
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(listStartedTools('acc')).toHaveLength(1);
+    expect(location.history.at(-1)).toBe('/toolkit/open-vote/configure?draft=poll-1');
   });
 
   it('will not publish a tool that is not part of a project', () => {
