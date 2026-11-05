@@ -4,13 +4,14 @@
  * dashboard's My Tools (MyTools.jsx) — the most recently changed first — but all of
  * them, in a grid rather than one row, with the dashed Create a tool card after them.
  * `onOpen(toolId, id)` opens one on its configuration page; `onCreateTool(category)`
- * goes on to Create a tool's list of that kind.
+ * goes on to Create a tool's list of that kind. Each card's bin deletes it, as on the
+ * dashboard.
  */
 
 import { AddToolCard, StartedToolCard, useStartedTools } from './MyTools';
 
 export function MyToolsPage({ t, accountId = null, onOpen, onCreateTool }) {
-  const started = useStartedTools(accountId);
+  const [started, remove] = useStartedTools(accountId);
   const count = started.length;
 
   return (
@@ -28,7 +29,7 @@ export function MyToolsPage({ t, accountId = null, onOpen, onCreateTool }) {
         </p>
         <ul aria-label="My Tools" className="placer-template-grid">
           {started.map(({ entry, tool }) => (
-            <StartedToolCard key={entry.id} started={entry} tool={tool} onOpen={onOpen} />
+            <StartedToolCard key={entry.id} started={entry} tool={tool} onOpen={onOpen} onDelete={remove} />
           ))}
           <AddToolCard onCreateTool={onCreateTool} />
         </ul>

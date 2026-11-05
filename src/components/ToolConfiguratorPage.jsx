@@ -21,7 +21,9 @@
  *              at the
  *              right-hand end, Publish: open the tool, now — Live, until the session is
  *              ended, or Self-paced, for as long as is picked (PublishToolDialog).
- *              Nothing in the ⋯ menu is built yet: each item only says so.
+ *              Of the ⋯ menu only Delete tool is built: it asks first
+ *              (DeleteToolDialog), then forgets the tool and goes to My Tools. Each
+ *              other item only says it is not built yet.
  *   canvas   — a live preview of the slide as it is set up so far, and nothing to
  *              change: it cannot be clicked, typed in or tabbed into (inert). It is
  *              the Toolkit's own component, given the setup the way it would get it
@@ -49,7 +51,7 @@ import { useLocation, useSearch } from 'wouter';
 import { Avatar, Btn } from './UI';
 import { Icon } from './Icon';
 import { findCategory, findTool, setupSteps } from '../toolkit/tools';
-import { newId, readStartedTool, saveStartedTool } from '../services/startedTools';
+import { newId, readStartedTool, removeStartedTool, saveStartedTool } from '../services/startedTools';
 import { previewRoom } from '../toolkit/previewRoom';
 import { PREVIEW_KEY } from './ToolPreviewFrame';
 import { toolPreviewFramePath } from '../lib/routes';
@@ -263,7 +265,7 @@ function AddCollaborator({ projectId, projectName }) {
   );
 }
 
-// What the ⋯ menu offers. None of it is built yet.
+// What the ⋯ menu offers. Only Delete tool is built yet.
 const TOOL_SETTINGS = [
   { key: 'rename', label: 'Rename', icon: 'pencil' },
   { key: 'duplicate', label: 'Duplicate', icon: 'layers' },
@@ -317,7 +319,7 @@ function SettingsMenu({ onChoose }) {
       {open && (
         <div role="menu" aria-label="Tool settings" onKeyDown={onMenuKeyDown} className="placer-configurator-menu">
           {TOOL_SETTINGS.map(({ key, label, icon, divided }) => (
-            <button key={key} role="menuitem" onClick={() => { setOpen(false); onChoose(label); }}
+            <button key={key} role="menuitem" onClick={() => { setOpen(false); onChoose(key, label); }}
               className={`placer-configurator-menu-item${divided ? ' is-divided' : ''}`}>
               <Icon name={icon} size={17} stroke={2} />
               {label}
@@ -325,6 +327,48 @@ function SettingsMenu({ onChoose }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+const DANGER = '#B3261E';
+
+/**
+ * Asks before deleting the tool, which cannot be undone. Escape, Cancel or a press
+ * outside it closes it; Delete calls `onDelete`.
+ */
+function DeleteToolDialog({ t, title, onDelete, onClose }) {
+  const dialogRef = useRef(null);
+  useEffect(() => {
+    // Cancel first, so Enter on arrival does not delete.
+    dialogRef.current?.querySelector('button')?.focus();
+    const onKeyDown = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
+  return (
+    <div onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: 'fixed', inset: 0, zIndex: 180, background: 'rgba(0, 0, 0, 0.4)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="delete-tool-title" aria-describedby="delete-tool-text"
+        style={{ width: '100%', maxWidth: 440, padding: 24, background: t.surface, borderRadius: 16,
+          boxShadow: t.shadow }}>
+        <h2 id="delete-tool-title" style={{ fontSize: 18, fontWeight: 700, color: t.ink, marginBottom: 12 }}>
+          {`Delete “${title}”?`}
+        </h2>
+        <p id="delete-tool-text" style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, marginBottom: 20 }}>
+          Its slides and their setup go, and it leaves My Tools. Any session already
+          published from it stays open. This cannot be undone.
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Btn t={t} variant="outline" size="sm" onClick={onClose}>Cancel</Btn>
+          <Btn t={t} variant="outline" size="sm" icon="trash" onClick={onDelete}
+            style={{ color: DANGER, borderColor: DANGER }}>
+            Delete tool
+          </Btn>
+        </div>
+      </div>
     </div>
   );
 }
@@ -627,6 +671,13 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
   const [publishing, setPublishing] = useState(false);
   const closePublish = useCallback(() => setPublishing(false), []);
   const back = () => navigate('/dashboard');
+  // Delete tool, from the ⋯ menu: forget it, if it was ever kept, and go to My Tools.
+  const [deleting, setDeleting] = useState(false);
+  const closeDelete = useCallback(() => setDeleting(false), []);
+  const deleteTool = () => {
+    if (draftId) removeStartedTool(accountId, draftId);
+    navigate('/my-tools');
+  };
 
   return (
     <div className="placer-configurator">
@@ -636,7 +687,7 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
           ...(profile?.name ? [{ id: profile.id ?? 'me', name: profile.name, photo: profile.photo ?? null }] : []),
           ...projectPeople.filter((person) => person.id !== (profile?.id ?? accountId)),
         ]}
-        onSetting={(label) => setNotice(`${label} is not built yet.`)}
+        onSetting={(key, label) => (key === 'delete' ? setDeleting(true) : setNotice(`${label} is not built yet.`))}
         onPreview={openPreview}
         onPublish={() => setPublishing(true)} />
 
@@ -675,6 +726,9 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
         </div>
       )}
 
+      {deleting && tool && (
+        <DeleteToolDialog t={t} title={name ?? tool.name} onDelete={deleteTool} onClose={closeDelete} />
+      )}
       {previewing && tool && <PreviewDialog tool={tool} onClose={closePreview} />}
       {publishing && tool && (
         <PublishToolDialog t={t} tool={tool} name={name} slides={slides} live={live} accountId={accountId}
