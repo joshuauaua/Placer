@@ -54,7 +54,9 @@ describe('WelcomeTour', () => {
     render(<Harness onOpenChange={onOpenChange} />);
 
     const tour = await screen.findByRole('dialog');
-    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    // Said from an effect, which can run just after the dialog is in the page: on a slow
+    // machine, findByRole can see the dialog first.
+    await waitFor(() => expect(onOpenChange).toHaveBeenLastCalledWith(true));
 
     fireEvent.click(within(tour).getByRole('button', { name: 'Close the welcome tour' }));
     await waitFor(() => expect(onOpenChange).toHaveBeenLastCalledWith(false));
