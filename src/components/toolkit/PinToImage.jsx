@@ -7,9 +7,10 @@
  * (lib/pinToImage.js).
  *
  * `answering` is what somebody taking part sees, in a room and in the setup page's
- * Preview: the question over the picture with everybody's dots, theirs picked out —
- * tap the picture to pin it, tap again to move it — and under it, in the lower fifth,
- * the card saying what to do, with Remove my pin. `slide` is only the slide, with
+ * Preview: one card — what to do, over the question, over the picture with everybody's
+ * dots, and Submit pin and Remove pin under it. Tapping the picture places their dot
+ * (tap again to move it), which only reaches the room once they submit it; Remove pin
+ * takes it back, from the room too once it was sent. `slide` is only the slide, with
  * nothing to do. `presenting` is the facilitator's: the question over the picture as it
  * fills with dots, how many have pinned, and the timer to run.
  *
@@ -107,7 +108,9 @@ export function PinToImage({ t, room, slide = false, untitled = false, answering
   const over = left === 0;
   const paused = isPaused(timer);
 
-  // This person's pin: theirs as they last placed it, sent to the room with every change.
+  // This person's pin: where they have placed it (`draft`), and what they submitted
+  // (`own`), which is what the room has. Submitting sends it; removing takes it back.
+  const [draft, setDraft] = useState(null);
   const [own, setOwn] = useState(null);
   const roomRef = useRef(room);
   roomRef.current = room;
@@ -125,9 +128,21 @@ export function PinToImage({ t, room, slide = false, untitled = false, answering
   }, [own]); // eslint-disable-line react-hooks/exhaustive-deps
   const pin = (next) => {
     if (over) return;
-    touched.current = true;
-    setOwn(readPin(next));
+    setDraft(readPin(next));
   };
+  const submit = () => {
+    if (over || !draft) return;
+    touched.current = true;
+    setOwn(draft);
+  };
+  const remove = () => {
+    setDraft(null);
+    if (own) {
+      touched.current = true;
+      setOwn(null);
+    }
+  };
+  const submitted = Boolean(own && draft && own.x === draft.x && own.y === draft.y);
 
   // Everybody else's dots: the room's, less the one that is this person's own.
   const others = useMemo(() => {
@@ -144,27 +159,34 @@ export function PinToImage({ t, room, slide = false, untitled = false, answering
       <div className="placer-answering">
         <section aria-label="Pin to Image" className="placer-answering-main" style={{ background: t.surface,
           border: `1px solid ${t.line}`, borderRadius: 12, padding: 24, boxShadow: t.shadow, minWidth: 0 }}>
+          {/* What to do, over the question. */}
+          <p role="status" style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, letterSpacing: '0.04em',
+            textTransform: 'uppercase', color: t.inkDim }}>
+            {over ? 'Time is up'
+              : submitted ? 'Pin submitted · tap to move it'
+                : draft ? 'Submit your pin, or tap to move it'
+                  : 'Place your pin · tap the picture'}
+          </p>
           <Title t={t} prompt={prompt} />
           {left !== null && <div style={{ margin: '0 0 12px' }}><Countdown t={t} left={left} paused={paused} /></div>}
           <div className="placer-answering-cloud">
             {imageUrl ? (
-              <PinBoard t={t} imageUrl={imageUrl} pins={others} own={own} onPin={over ? null : pin}
-                maxHeight="calc(80dvh - 180px)" />
+              <PinBoard t={t} imageUrl={imageUrl} pins={others} own={draft ?? own} onPin={over ? null : pin}
+                maxHeight="calc(100dvh - 300px)" />
             ) : <NoPicture t={t} />}
           </div>
-        </section>
-        <Panel t={t} title="Place your pin" className="placer-answering-entry">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-            <p role="status" style={{ margin: 0, fontSize: 15, color: t.inkDim, lineHeight: 1.5 }}>
-              {over ? 'Time is up.' : own ? 'Pinned. Tap somewhere else to move it.' : 'Tap the picture where your answer is.'}
-            </p>
-            {own && !over && (
-              <Btn t={t} variant="outline" size="sm" icon="close" onClick={() => { touched.current = true; setOwn(null); }}>
-                Remove my pin
-              </Btn>
-            )}
+          {/* Side by side, on a phone too. */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 16 }}>
+            <Btn t={t} variant="outline" icon="close" onClick={remove} disabled={!draft && !own}
+              style={{ flex: '1 1 0', maxWidth: 220, padding: '0 12px' }}>
+              Remove pin
+            </Btn>
+            <Btn t={t} variant="primary" icon="check" onClick={submit} disabled={over || !draft || submitted}
+              style={{ flex: '1 1 0', maxWidth: 220, padding: '0 12px' }}>
+              {submitted ? 'Submitted' : own ? 'Submit new pin' : 'Submit pin'}
+            </Btn>
           </div>
-        </Panel>
+        </section>
       </div>
     );
   }
