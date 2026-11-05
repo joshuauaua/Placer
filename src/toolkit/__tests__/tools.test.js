@@ -49,7 +49,7 @@ describe('the register', () => {
     const inCategory = (id) => TOOLS.filter((tool) => tool.category === id).map((tool) => tool.id).sort();
     expect(inCategory('understand')).toEqual(['desire-lines', 'fifteen-minute', 'site-spatial-mapping',
       'social-space-survey', 'stationary-activity-mapping', 'word-cloud']);
-    expect(inCategory('imagine')).toEqual(['dream-it', 'pop-quiz', 'reimagine-a-space', 'street-mixer']);
+    expect(inCategory('imagine')).toEqual(['dream-it', 'pin-to-image', 'pop-quiz', 'reimagine-a-space', 'street-mixer']);
     expect(inCategory('plan')).toEqual(['budget-ballot', 'open-vote']);
   });
 
@@ -182,7 +182,7 @@ describe('filterTools', () => {
     expect(ids({ category: 'understand', query: 'map' })).toEqual(
       expect.arrayContaining(['site-spatial-mapping', 'stationary-activity-mapping']),
     );
-    expect(ids({ category: 'imagine', groupOnly: true }).sort()).toEqual(['pop-quiz', 'reimagine-a-space']);
+    expect(ids({ category: 'imagine', groupOnly: true }).sort()).toEqual(['pin-to-image', 'pop-quiz', 'reimagine-a-space']);
   });
 
   it('lists each organisation once, alphabetically', () => {

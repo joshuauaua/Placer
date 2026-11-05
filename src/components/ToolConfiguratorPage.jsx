@@ -686,7 +686,9 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
   // Preview: the slide on the canvas, handed to the frames it opens.
   const [previewing, setPreviewing] = useState(false);
   const openPreview = () => {
-    window[PREVIEW_KEY] = { toolId: tool.id, setup: usable };
+    // A setup made on the canvas (`Canvas`) as it is so far — its question shows before
+    // its picture is in; any other, as the canvas previews it.
+    window[PREVIEW_KEY] = { toolId: tool.id, setup: tool.setup?.Canvas ? (setup ?? usable) : usable };
     setPreviewing(true);
   };
   const closePreview = useCallback(() => setPreviewing(false), []);
@@ -729,7 +731,14 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
             {tool.setup?.Canvas ? (
               // A setup made by pointing: its editor, on the canvas (`Canvas` in toolkit/tools.js).
               <div className="placer-configurator-frame" aria-label="Live preview of the slide">
-                <tool.setup.Canvas key={selected.id} t={t} tool={tool} setup={setup ?? tool.setup.defaults()} onChange={setSetup} />
+                {/* Its title too, typed into in place, over the editor (Pin to Image's picture). */}
+                {tool.setup.title && (
+                  <SlideTitle key={`title-${selected.id}`} spec={tool.setup.title}
+                    value={setup?.[tool.setup.title.key] ?? ''}
+                    onChange={(value) => setSetup({ ...(setup ?? tool.setup.defaults()), [tool.setup.title.key]: value })} />
+                )}
+                <tool.setup.Canvas key={selected.id} t={t} tool={tool} setup={setup ?? tool.setup.defaults()}
+                  onChange={setSetup} projectId={projectId} />
               </div>
             ) : (
               <div className="placer-configurator-frame" aria-label="Live preview of the slide">
