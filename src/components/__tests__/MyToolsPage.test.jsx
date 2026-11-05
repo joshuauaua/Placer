@@ -29,8 +29,19 @@ describe('MyToolsPage', () => {
     expect(cards).toHaveLength(7);
     expect(cards.at(-1)).toHaveTextContent('Create a tool');
 
-    fireEvent.click(within(cards[0]).getByRole('button'));
+    fireEvent.click(within(cards[0]).getAllByRole('button')[0]);
     expect(onOpen).toHaveBeenCalledWith('street-mixer', 't5');
+  });
+
+  it('deletes a tool from the page, and counts what is left', () => {
+    startSome(2);
+    render(<MyToolsPage t={THEME} accountId="a" onOpen={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Workshop tool 2' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Delete Workshop tool 2\?/ }));
+
+    expect(screen.getByText('1 tool you have started, the most recently changed first.')).toBeInTheDocument();
+    expect(screen.queryByText('Workshop tool 2')).toBeNull();
   });
 
   it('says so when nothing has been started, with the card to create one', () => {

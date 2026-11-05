@@ -7,6 +7,10 @@
  * last changed. Choosing one calls `onOpen(toolId, id)`. A tool since taken off the
  * platform is left out.
  *
+ * In each card's top corner is a bin, shown on hover or focus (always, on a touch
+ * screen). It asks before it deletes: the first press turns it to Delete? in red, the
+ * second deletes the tool, and leaving it puts it back. Deleting cannot be undone.
+ *
  * After them, in the next place in the grid, is the outline of a card, dashed, with a +
  * in it: Create a tool. With nothing started it is the only card. It opens the same
  * choice of Understand, Imagine and Plan as the side nav's button, beside it, and
@@ -18,7 +22,7 @@ import { Icon } from './Icon';
 import { CreateToolMenu } from './SideNav';
 import { CardRow } from './CardRow';
 import { ARROW_ITEM } from '../lib/arrowKeys';
-import { listStartedTools } from '../services/startedTools';
+import { listStartedTools, removeStartedTool } from '../services/startedTools';
 import { findCategory, findTool } from '../toolkit/tools';
 
 /**
@@ -43,13 +47,14 @@ function edited(iso) {
   return `Edited ${date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
 }
 
-export function StartedToolCard({ started, tool, onOpen }) {
+export function StartedToolCard({ started, tool, onOpen, onDelete }) {
+  const [confirming, setConfirming] = useState(false);
   const colour = findCategory(tool.category)?.colour;
   const title = startedToolTitle(tool, started);
   const slides = started.slides?.length ?? 1;
   const details = [tool.name, slides > 1 ? `${slides} slides` : null, edited(started.updatedAt)].filter(Boolean);
   return (
-    <li>
+    <li className="placer-started-item">
       <button type="button" {...ARROW_ITEM} onClick={() => onOpen(tool.id, started.id)}
         className="placer-template-card" aria-label={`${title}, ${details.join(', ')}`}>
         <span className="placer-template-image placer-started-cover"
@@ -67,6 +72,16 @@ export function StartedToolCard({ started, tool, onOpen }) {
           )}
         </span>
       </button>
+      {onDelete && (
+        <button type="button" className="placer-started-delete" data-confirming={confirming || undefined}
+          aria-label={confirming ? `Delete ${title}? Press again to delete` : `Delete ${title}`}
+          title={confirming ? 'Press again to delete' : 'Delete'}
+          onClick={() => (confirming ? onDelete(started.id) : setConfirming(true))}
+          onBlur={() => setConfirming(false)}>
+          <Icon name="trash" size={16} stroke={2} />
+          {confirming && <span>Delete?</span>}
+        </button>
+      )}
     </li>
   );
 }
@@ -95,25 +110,32 @@ export function AddToolCard({ onCreateTool }) {
   );
 }
 
-/** The account's started tools whose tool is still on the platform, newest first. */
+/**
+ * The account's started tools whose tool is still on the platform, newest first, and
+ * a function that deletes one by its id.
+ */
 export function useStartedTools(accountId) {
-  // Read once, when the page opens: nothing here changes them.
-  const [started] = useState(() => listStartedTools(accountId)
+  // Read once, when the page opens: only deleting one here changes them.
+  const [started, setStarted] = useState(() => listStartedTools(accountId)
     .map((entry) => ({ entry, tool: findTool(entry.tool) }))
     .filter(({ tool }) => tool));
-  return started;
+  const remove = (id) => {
+    removeStartedTool(accountId, id);
+    setStarted((was) => was.filter(({ entry }) => entry.id !== id));
+  };
+  return [started, remove];
 }
 
 // `onViewAll`, if given, puts View all beside the row's arrows: the My Tools page.
 export function MyTools({ t, accountId = null, onOpen, onCreateTool, onViewAll }) {
-  const started = useStartedTools(accountId);
+  const [started, remove] = useStartedTools(accountId);
 
   return (
     <CardRow t={t} id="my-tools" title="My Tools" action={onViewAll && (
       <button type="button" onClick={onViewAll} className="placer-card-row-link">View all</button>
     )}>
       {started.map(({ entry, tool }) => (
-        <StartedToolCard key={entry.id} started={entry} tool={tool} onOpen={onOpen} />
+        <StartedToolCard key={entry.id} started={entry} tool={tool} onOpen={onOpen} onDelete={remove} />
       ))}
       <AddToolCard onCreateTool={onCreateTool} />
     </CardRow>

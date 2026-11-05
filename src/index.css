@@ -5176,6 +5176,58 @@ a {
   color: var(--placer-grey-700);
 }
 
+/* A started tool's card holds its bin, in the top corner, over the picture. */
+.placer-started-item {
+  position: relative;
+}
+
+.placer-started-delete {
+  all: unset;
+  box-sizing: border-box;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--placer-white);
+  color: var(--placer-ink);
+  font-family: var(--placer-font);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--placer-shadow);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.placer-started-item:hover .placer-started-delete,
+.placer-started-item:focus-within .placer-started-delete,
+.placer-started-delete[data-confirming] {
+  opacity: 1;
+}
+
+.placer-started-delete:hover,
+.placer-started-delete[data-confirming] {
+  color: #B3261E;
+}
+
+.placer-started-delete:focus-visible {
+  outline: 2px solid var(--placer-ink);
+  outline-offset: 2px;
+}
+
+@media (hover: none) {
+  .placer-started-delete {
+    opacity: 1;
+  }
+}
+
 .placer-add-tool-card {
   background: transparent;
   border: 2px dashed var(--placer-grey-300);

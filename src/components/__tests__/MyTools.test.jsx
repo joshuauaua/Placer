@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MyTools } from '../MyTools';
-import { saveStartedTool } from '../../services/startedTools';
+import { listStartedTools, saveStartedTool } from '../../services/startedTools';
 import { THEME } from '../../theme';
 
 describe('MyTools', () => {
@@ -44,7 +44,7 @@ describe('MyTools', () => {
 
     const section = screen.getByRole('region', { name: 'My Tools' });
     // The cards, not the row's ‹ › buttons.
-    const cards = within(section).getAllByRole('listitem').map((item) => within(item).getByRole('button'));
+    const cards = within(section).getAllByRole('listitem').map((item) => within(item).getAllByRole('button')[0]);
     // The started tool, then the card to create another, to its right.
     expect(cards).toHaveLength(2);
     expect(cards[1]).toHaveTextContent('Create a tool');
@@ -54,6 +54,41 @@ describe('MyTools', () => {
 
     fireEvent.click(cards[0]);
     expect(onOpen).toHaveBeenCalledWith('open-vote', 'poll-1');
+  });
+});
+
+describe('MyTools, deleting a tool', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('asks first, then deletes the tool from the row and from what is kept', () => {
+    saveStartedTool('a', { id: 'poll-1', tool: 'open-vote', name: 'Tuesday workshop poll', slides: [] });
+    saveStartedTool('a', { id: 'cloud-1', tool: 'word-cloud', name: 'Street words', slides: [] });
+    const onOpen = vi.fn();
+    render(<MyTools t={THEME} accountId="a" onOpen={onOpen} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Tuesday workshop poll' }));
+    // Once only asks.
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    const confirm = screen.getByRole('button', { name: /^Delete Tuesday workshop poll\? Press again/ });
+    expect(confirm).toHaveTextContent('Delete?');
+
+    fireEvent.click(confirm);
+    expect(screen.queryByText('Tuesday workshop poll')).toBeNull();
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    expect(listStartedTools('a').map((entry) => entry.id)).toEqual(['cloud-1']);
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it('stops asking when you leave the bin', () => {
+    saveStartedTool('a', { id: 'poll-1', tool: 'open-vote', name: 'Tuesday workshop poll', slides: [] });
+    render(<MyTools t={THEME} accountId="a" onOpen={vi.fn()} />);
+
+    const bin = screen.getByRole('button', { name: 'Delete Tuesday workshop poll' });
+    fireEvent.click(bin);
+    fireEvent.blur(bin);
+
+    expect(bin).toHaveAccessibleName('Delete Tuesday workshop poll');
+    expect(listStartedTools('a')).toHaveLength(1);
   });
 });
 
