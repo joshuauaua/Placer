@@ -11,7 +11,7 @@
 import { AddToolCard, StartedToolCard, useStartedTools } from './MyTools';
 
 export function MyToolsPage({ t, accountId = null, onOpen, onCreateTool }) {
-  const [started, remove] = useStartedTools(accountId);
+  const [started, remove, status] = useStartedTools(accountId);
   const count = started.length;
 
   return (
@@ -22,9 +22,10 @@ export function MyToolsPage({ t, accountId = null, onOpen, onCreateTool }) {
           letterSpacing: '-0.03em', lineHeight: 1.15, margin: '0 0 8px' }}>
           My Tools
         </h1>
-        <p style={{ fontSize: 16, color: t.inkDim, margin: '0 0 32px' }}>
-          {count === 0
-            ? 'Nothing started yet. Create a tool to begin.'
+        <p role="status" style={{ fontSize: 16, color: t.inkDim, margin: '0 0 32px' }}>
+          {status === 'loading' ? 'Loading your tools…'
+            : status === 'failed' ? 'Your tools could not be loaded. Try again in a moment.'
+            : count === 0 ? 'Nothing started yet. Create a tool to begin.'
             : `${count} ${count === 1 ? 'tool' : 'tools'} you have started, the most recently changed first.`}
         </p>
         <ul aria-label="My Tools" className="placer-template-grid">

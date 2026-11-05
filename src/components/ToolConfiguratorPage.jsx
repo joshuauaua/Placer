@@ -39,9 +39,12 @@
  *              with whatever is wrong with it underneath. A tool without a setup says
  *              there is nothing to configure.
  *
- * Each tool started here is kept (services/startedTools.js) as soon as something in it
- * is changed, and listed under My Tools on the Tools page. From then on its address
- * carries its id, ?draft=<id>, which is how My Tools opens it again.
+ * Each tool started here is kept (services/startedTools.js: in the database for a
+ * signed-in account, else in the browser) once something in it is changed, and listed
+ * under My Tools. From then on its address carries its id, ?draft=<id>, which is how
+ * My Tools opens it again. Changes are kept half a second after the last one, so typing
+ * is not a save per key, and at once when the page is left. Opening a draft reads it
+ * first: until it is read the page says so, and if it cannot be, says that.
  *
  * Below 900px any slides become a row over the canvas, and the panel goes under it.
  */
@@ -333,6 +336,9 @@ function SettingsMenu({ onChoose }) {
 
 const DANGER = '#B3261E';
 
+// How long after the last change a tool is kept.
+const SAVE_DELAY = 500;
+
 /**
  * Asks before deleting the tool, which cannot be undone. Escape, Cancel or a press
  * outside it closes it; Delete calls `onDelete`.
@@ -492,11 +498,11 @@ function newSlide(tool) {
 }
 
 /**
- * What the page opens on: the started tool in ?draft= when it is this tool's, or a
- * fresh one, not yet kept, of one slide of the tool's defaults.
+ * What the page opens on: `kept`, the started tool in ?draft= once it has been read,
+ * when it is this tool's, or a fresh one, not yet kept, of one slide of the tool's
+ * defaults.
  */
-function opening(tool, accountId, draftId, projectId = null) {
-  const kept = tool && draftId ? readStartedTool(accountId, draftId) : null;
+function opening(tool, kept, projectId = null) {
   // Live to begin with for a tool that runs in a room, with a group; Self-paced for
   // the rest.
   const live = Boolean(tool?.room);
@@ -555,7 +561,10 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
 
   // The tool's slides, each with its own setup, and the one on the canvas; and the id
   // it is kept under, null until it has been changed and so kept.
-  const [start] = useState(() => opening(tool, accountId, requestedDraft, requestedProject));
+  const [start] = useState(() => opening(tool, null, requestedProject));
+  // A draft in the address has to be read before it can be shown: 'loading', then
+  // 'ready', or 'failed' if it could not be read. 'none' with no draft to read.
+  const [draftState, setDraftState] = useState(tool && requestedDraft ? 'loading' : 'none');
   const [draftId, setDraftId] = useState(start.draftId);
   const [slides, setSlidesNow] = useState(start.slides);
   const [name, setNameNow] = useState(start.name);
@@ -566,8 +575,9 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
   // Another tool, from the same page: start again on it.
   const [slidesFor, setSlidesFor] = useState(tool?.id ?? null);
   if ((tool?.id ?? null) !== slidesFor) {
-    const next = opening(tool, accountId, requestedDraft, requestedProject);
+    const next = opening(tool, null, requestedProject);
     setSlidesFor(tool?.id ?? null);
+    setDraftState(tool && requestedDraft ? 'loading' : 'none');
     setDraftId(next.draftId);
     setSlidesNow(next.slides);
     setNameNow(next.name);
@@ -576,6 +586,32 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
     setSelectedId(next.slides[0].id);
     setChanged(false);
   }
+  // Read the draft in the address, unless it is the one already here: keeping a new
+  // tool for the first time puts its id there.
+  useEffect(() => {
+    if (!tool || !requestedDraft || requestedDraft === draftId) return undefined;
+    let cancelled = false;
+    setDraftState('loading');
+    readStartedTool(accountId, requestedDraft)
+      .then((kept) => {
+        if (cancelled) return;
+        const next = opening(tool, kept, requestedProject);
+        setDraftId(next.draftId);
+        setSlidesNow(next.slides);
+        setNameNow(next.name);
+        setProjectId(next.projectId);
+        setLiveNow(next.live);
+        setSelectedId(next.slides[0].id);
+        setChanged(false);
+        setDraftState('ready');
+      })
+      .catch((err) => {
+        console.error('Could not read this tool:', err);
+        if (!cancelled) setDraftState('failed');
+      });
+    return () => { cancelled = true; };
+  }, [tool?.id, requestedDraft, accountId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Every change to the slides goes through here, which is what starts keeping them.
   const setSlides = (update) => {
     setSlidesNow(update);
@@ -615,19 +651,41 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
     return () => { cancelled = true; };
   }, [projectId]);
 
-  // Keep the tool once something has changed, and from then on with every change. The
-  // first time, it gets its id, and the address takes it, in place.
+  // Keep the tool once something has changed, and from then on with every change, half
+  // a second after the last; at once when the page is left, or another tool opened.
+  // The first time, it gets its id, and the address takes it, in place.
+  const [notice, setNotice] = useState('');
+  const pendingSave = useRef(null);
+  const flushSave = useCallback(() => {
+    const pending = pendingSave.current;
+    pendingSave.current = null;
+    if (!pending) return;
+    saveStartedTool(pending.accountId, pending.entry).catch((err) => {
+      console.error('Could not keep this tool:', err);
+      setNotice('Your last changes could not be saved. They will be with the next one.');
+    });
+  }, []);
   useEffect(() => {
-    if (!changed || !tool) return;
+    if (!changed || !tool) { flushSave(); return undefined; }
     const id = draftId ?? newId('tool');
-    saveStartedTool(accountId, { id, tool: tool.id, slides, name, projectId, live });
+    if (pendingSave.current && pendingSave.current.entry.id !== id) flushSave();
+    pendingSave.current = { accountId, entry: { id, tool: tool.id, slides, name, projectId, live } };
     if (!draftId) {
       setDraftId(id);
       const query = new URLSearchParams(search);
       query.set('draft', id);
       navigate(`${location}?${query.toString()}`, { replace: true });
     }
-  }, [changed, slides, name, live]); // eslint-disable-line react-hooks/exhaustive-deps
+    const timer = setTimeout(flushSave, SAVE_DELAY);
+    return () => clearTimeout(timer);
+  }, [changed, slides, name, live, tool?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    window.addEventListener('pagehide', flushSave);
+    return () => {
+      window.removeEventListener('pagehide', flushSave);
+      flushSave();
+    };
+  }, [flushSave]);
   const selected = slides.find((slide) => slide.id === selectedId) ?? slides[0];
   const setup = selected.setup;
   const setSetup = (next) => setSlides((all) => all.map((slide) => (slide.id === selected.id ? { ...slide, setup: next } : slide)));
@@ -659,7 +717,6 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
     return lastUsable.current[selected.id] ?? tool.setup.defaults();
   }, [tool, setup, selected.id]);
 
-  const [notice, setNotice] = useState('');
   // Preview: the slide on the canvas, handed to the frames it opens.
   const [previewing, setPreviewing] = useState(false);
   const openPreview = () => {
@@ -674,14 +731,28 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
   // Delete tool, from the ⋯ menu: forget it, if it was ever kept, and go to My Tools.
   const [deleting, setDeleting] = useState(false);
   const closeDelete = useCallback(() => setDeleting(false), []);
-  const deleteTool = () => {
-    if (draftId) removeStartedTool(accountId, draftId);
+  const deleteTool = async () => {
+    // A change not yet kept is not to be kept now.
+    pendingSave.current = null;
+    if (draftId) {
+      try {
+        await removeStartedTool(accountId, draftId);
+      } catch (err) {
+        console.error('Could not delete this tool:', err);
+        setDeleting(false);
+        setNotice('This tool could not be deleted. Try again in a moment.');
+        return;
+      }
+    }
     navigate('/my-tools');
   };
 
+  // Only once the draft in the address has been read is there a tool to show.
+  const shown = draftState === 'loading' || draftState === 'failed' ? null : tool;
+
   return (
     <div className="placer-configurator">
-      <TopBar t={t} tool={tool} notice={notice} onBack={back}
+      <TopBar t={t} tool={shown} notice={notice} onBack={back}
         name={name} onRename={setName} projectId={projectId} projectName={projectName} live={live} onLive={setLive}
         people={[
           ...(profile?.name ? [{ id: profile.id ?? 'me', name: profile.name, photo: profile.photo ?? null }] : []),
@@ -691,7 +762,16 @@ export function ToolConfiguratorPage({ t, profile = null, accountId = null }) {
         onPreview={openPreview}
         onPublish={() => setPublishing(true)} />
 
-      {!tool ? (
+      {tool && draftState === 'loading' ? (
+        <main className="placer-configurator-missing">
+          <p>Opening this tool…</p>
+        </main>
+      ) : tool && draftState === 'failed' ? (
+        <main className="placer-configurator-missing">
+          <p role="alert">This tool could not be opened. Check your connection and try again.</p>
+          <Btn t={t} variant="outline" icon="arrowRight" onClick={() => navigate('/my-tools')}>Go to My Tools</Btn>
+        </main>
+      ) : !tool ? (
         <main className="placer-configurator-missing">
           <p>There is no tool here to configure.</p>
           <Btn t={t} variant="outline" icon="arrowRight" onClick={back}>Go to the dashboard</Btn>

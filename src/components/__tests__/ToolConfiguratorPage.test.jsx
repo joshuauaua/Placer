@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
-import { act, render, screen, fireEvent, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { clickMap, lastMap } from '../../test/maplibreStub';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { ToolConfiguratorPage, configuredToolIdFrom } from '../ToolConfiguratorPage';
 import { THEME } from '../../theme';
+import * as startedTools from '../../services/startedTools';
 import { listStartedTools, saveStartedTool } from '../../services/startedTools';
 import { addCollaborator, isSupabaseConfigured, readCollaborators, readProjectCrumb } from '../../services/projects';
 import { createRoom } from '../../services/rooms';
@@ -30,6 +31,17 @@ vi.mock('../../services/rooms', async (importOriginal) => ({
 // The Poll's question, as its setup form in the Configuration panel labels it.
 const QUESTION_LABEL = 'The question';
 const panelQuestion = () => within(screen.getByRole('complementary', { name: 'Configuration' })).getByLabelText(QUESTION_LABEL);
+
+// What is kept for the account once `check` holds of it: a change is kept half a
+// second after the last one.
+const keptOnce = (check) => waitFor(async () => {
+  const list = await listStartedTools('acc');
+  check(list);
+  return list;
+});
+
+// A draft in the address is read before it is shown.
+const opened = () => screen.findByRole('main', { name: 'Canvas' });
 
 function renderAt(path, Page = ToolConfiguratorPage, props = {}) {
   const location = memoryLocation({ path, record: true });
@@ -140,26 +152,28 @@ describe('ToolConfiguratorPage', () => {
     expect(panelQuestion()).toHaveValue('Trees or benches?');
   });
 
-  it('keeps a tool once something in it changes, not before, and gives its address the id', () => {
+  it('keeps a tool once something in it changes, not before, and gives its address the id', async () => {
     localStorage.clear();
     const { location } = renderAt('/toolkit/open-vote/configure', ToolConfiguratorPage, { accountId: 'acc' });
-    expect(listStartedTools('acc')).toEqual([]);
+    await expect(listStartedTools('acc')).resolves.toEqual([]);
 
     fireEvent.change(panelQuestion(), { target: { value: 'Trees or benches?' } });
-    const [kept] = listStartedTools('acc');
+    const [kept] = await keptOnce((list) => expect(list).toHaveLength(1));
     expect(kept.tool).toBe('open-vote');
     expect(kept.slides[0].setup.question).toBe('Trees or benches?');
     expect(location.history.at(-1)).toBe(`/toolkit/open-vote/configure?draft=${kept.id}`);
   });
 
-  it('opens a started tool again from its id, slides and all', () => {
+  it('opens a started tool again from its id, slides and all', async () => {
     localStorage.clear();
-    saveStartedTool('acc', { id: 'poll-1', tool: 'open-vote', slides: [
+    await saveStartedTool('acc', { id: 'poll-1', tool: 'open-vote', slides: [
       { id: 's1', setup: { question: 'Trees or benches?', answers: ['Trees', 'Benches'] } },
       { id: 's2', setup: { question: 'More light?', answers: ['Yes', 'No'] } },
     ] });
     renderAt('/toolkit/open-vote/configure?draft=poll-1', ToolConfiguratorPage, { accountId: 'acc' });
 
+    expect(screen.getByText('Opening this tool…')).toBeInTheDocument();
+    await opened();
     expect(within(screen.getByRole('navigation', { name: 'Slides' })).getAllByRole('button', { name: /^Slide \d$/ }))
       .toHaveLength(2);
     expect(panelQuestion()).toHaveValue('Trees or benches?');
@@ -202,11 +216,12 @@ describe('ToolConfiguratorPage', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
-  it('deletes the tool from the three dots, once asked, and goes to My Tools', () => {
+  it('deletes the tool from the three dots, once asked, and goes to My Tools', async () => {
     localStorage.clear();
-    saveStartedTool('acc', { id: 'poll-1', tool: 'open-vote', name: 'Tuesday workshop poll', slides: [{ id: 's1', setup: { question: 'Trees or benches?', answers: ['Trees', 'Benches'] } }] });
-    saveStartedTool('acc', { id: 'poll-2', tool: 'open-vote', slides: [{ id: 's1', setup: { question: 'Trees or benches?', answers: ['Trees', 'Benches'] } }] });
+    await saveStartedTool('acc', { id: 'poll-1', tool: 'open-vote', name: 'Tuesday workshop poll', slides: [{ id: 's1', setup: { question: 'Trees or benches?', answers: ['Trees', 'Benches'] } }] });
+    await saveStartedTool('acc', { id: 'poll-2', tool: 'open-vote', slides: [{ id: 's1', setup: { question: 'Trees or benches?', answers: ['Trees', 'Benches'] } }] });
     const { location } = renderAt('/toolkit/open-vote/configure?draft=poll-1', ToolConfiguratorPage, { accountId: 'acc' });
+    await opened();
 
     fireEvent.click(screen.getByRole('button', { name: 'Tool settings' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Delete tool' }));
@@ -215,22 +230,47 @@ describe('ToolConfiguratorPage', () => {
     expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveFocus();
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Delete tool' }));
-    expect(listStartedTools('acc').map((entry) => entry.id)).toEqual(['poll-2']);
-    expect(location.history.at(-1)).toBe('/my-tools');
+    await waitFor(() => expect(location.history.at(-1)).toBe('/my-tools'));
+    expect((await listStartedTools('acc')).map((entry) => entry.id)).toEqual(['poll-2']);
   });
 
-  it('keeps the tool when the delete is cancelled', () => {
+  it('keeps the tool when the delete is cancelled', async () => {
     localStorage.clear();
-    saveStartedTool('acc', { id: 'poll-1', tool: 'open-vote', slides: [{ id: 's1', setup: { question: 'Trees or benches?', answers: ['Trees', 'Benches'] } }] });
+    await saveStartedTool('acc', { id: 'poll-1', tool: 'open-vote', slides: [{ id: 's1', setup: { question: 'Trees or benches?', answers: ['Trees', 'Benches'] } }] });
     const { location } = renderAt('/toolkit/open-vote/configure?draft=poll-1', ToolConfiguratorPage, { accountId: 'acc' });
+    await opened();
 
     fireEvent.click(screen.getByRole('button', { name: 'Tool settings' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Delete tool' }));
     fireEvent.keyDown(window, { key: 'Escape' });
 
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(listStartedTools('acc')).toHaveLength(1);
+    await expect(listStartedTools('acc')).resolves.toHaveLength(1);
     expect(location.history.at(-1)).toBe('/toolkit/open-vote/configure?draft=poll-1');
+  });
+
+  it('keeps nothing of a tool deleted before its last change was kept', async () => {
+    localStorage.clear();
+    const { location } = renderAt('/toolkit/open-vote/configure', ToolConfiguratorPage, { accountId: 'acc' });
+
+    fireEvent.change(panelQuestion(), { target: { value: 'Trees or benches?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Tool settings' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete tool' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete tool' }));
+
+    await waitFor(() => expect(location.history.at(-1)).toBe('/my-tools'));
+    await new Promise((resolve) => { setTimeout(resolve, 600); });
+    await expect(listStartedTools('acc')).resolves.toEqual([]);
+  });
+
+  it('says so when a tool cannot be opened', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(startedTools, 'readStartedTool').mockRejectedValueOnce(new Error('offline'));
+    renderAt('/toolkit/open-vote/configure?draft=poll-1', ToolConfiguratorPage, { accountId: 'acc' });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('This tool could not be opened.');
+    expect(screen.getByRole('button', { name: /Go to My Tools/ })).toBeInTheDocument();
+    vi.restoreAllMocks();
   });
 
   it('will not publish a tool that is not part of a project', () => {
@@ -347,19 +387,19 @@ describe('ToolConfiguratorPage, its top bar', () => {
 
   const nameField = () => screen.getByRole('textbox', { name: 'Tool name' });
 
-  it('lets this tool be renamed, keeps the name, and goes back to the tool\'s own when emptied', () => {
+  it('lets this tool be renamed, keeps the name, and goes back to the tool\'s own when emptied', async () => {
     renderAt('/toolkit/open-vote/configure', ToolConfiguratorPage, { accountId: 'acc' });
 
     fireEvent.change(nameField(), { target: { value: '  Tuesday workshop poll ' } });
     fireEvent.blur(nameField());
     expect(nameField()).toHaveValue('Tuesday workshop poll');
-    expect(listStartedTools('acc')[0].name).toBe('Tuesday workshop poll');
+    await keptOnce((list) => expect(list[0].name).toBe('Tuesday workshop poll'));
 
     fireEvent.change(nameField(), { target: { value: '   ' } });
     fireEvent.keyDown(nameField(), { key: 'Enter' });
     fireEvent.blur(nameField());
     expect(nameField()).toHaveValue('Poll');
-    expect(listStartedTools('acc')[0].name).toBeNull();
+    await keptOnce((list) => expect(list[0].name).toBeNull());
   });
 
   it('says when the tool is not in a project', () => {
@@ -376,10 +416,10 @@ describe('ToolConfiguratorPage, its top bar', () => {
     expect(await screen.findByText('In Möllan')).toBeInTheDocument();
     expect(readProjectCrumb).toHaveBeenCalledWith('proj-1');
     fireEvent.click(screen.getByRole('switch', { name: /Live/ }));
-    expect(listStartedTools('acc')[0].projectId).toBe('proj-1');
+    await keptOnce((list) => expect(list[0].projectId).toBe('proj-1'));
   });
 
-  it('runs a tool for a group Live to begin with, and switches it to Self-paced', () => {
+  it('runs a tool for a group Live to begin with, and switches it to Self-paced', async () => {
     renderAt('/toolkit/open-vote/configure', ToolConfiguratorPage, { accountId: 'acc' });
     const live = screen.getByRole('switch', { name: /Live/ });
 
@@ -388,7 +428,7 @@ describe('ToolConfiguratorPage, its top bar', () => {
     fireEvent.click(live);
     expect(live).toHaveAttribute('aria-checked', 'false');
     expect(live).toHaveTextContent('Self-paced, by link');
-    expect(listStartedTools('acc')[0].live).toBe(false);
+    await keptOnce((list) => expect(list[0].live).toBe(false));
   });
 
   it('starts a tool with no room Self-paced', () => {
@@ -397,10 +437,11 @@ describe('ToolConfiguratorPage, its top bar', () => {
     expect(screen.getByRole('switch', { name: /Live/ })).toHaveAttribute('aria-checked', 'false');
   });
 
-  it('opens a kept tool with its name, project and setting', () => {
-    saveStartedTool('acc', { id: 'poll-9', tool: 'open-vote', name: 'Market vote', projectId: null, live: false,
+  it('opens a kept tool with its name, project and setting', async () => {
+    await saveStartedTool('acc', { id: 'poll-9', tool: 'open-vote', name: 'Market vote', projectId: null, live: false,
       slides: [{ id: 's1', setup: { question: 'Trees?', answers: ['Yes', 'No'] } }] });
     renderAt('/toolkit/open-vote/configure?draft=poll-9', ToolConfiguratorPage, { accountId: 'acc' });
+    await opened();
 
     expect(nameField()).toHaveValue('Market vote');
     expect(screen.getByRole('switch', { name: /Live/ })).toHaveAttribute('aria-checked', 'false');

@@ -5,26 +5,27 @@ import { memoryLocation } from 'wouter/memory-location';
 import App from '../../App';
 import { MyToolsPage } from '../MyToolsPage';
 import { MyTools } from '../MyTools';
+import * as startedTools from '../../services/startedTools';
 import { saveStartedTool } from '../../services/startedTools';
 import { THEME } from '../../theme';
 
-const startSome = (count) => {
+const startSome = async (count) => {
   const tools = ['open-vote', 'word-cloud', 'budget-ballot', 'pop-quiz', 'desire-lines', 'street-mixer'];
   for (let i = 0; i < count; i += 1) {
-    saveStartedTool('a', { id: `t${i}`, tool: tools[i % tools.length], name: `Workshop tool ${i + 1}`, slides: [] });
+    await saveStartedTool('a', { id: `t${i}`, tool: tools[i % tools.length], name: `Workshop tool ${i + 1}`, slides: [] });
   }
 };
 
 describe('MyToolsPage', () => {
   beforeEach(() => localStorage.clear());
 
-  it('lists every started tool in a grid, then the card to create another', () => {
-    startSome(6);
+  it('lists every started tool in a grid, then the card to create another', async () => {
+    await startSome(6);
     const onOpen = vi.fn();
     render(<MyToolsPage t={THEME} accountId="a" onOpen={onOpen} />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'My Tools' })).toBeInTheDocument();
-    expect(screen.getByText('6 tools you have started, the most recently changed first.')).toBeInTheDocument();
+    expect(await screen.findByText('6 tools you have started, the most recently changed first.')).toBeInTheDocument();
     const cards = within(screen.getByRole('list', { name: 'My Tools' })).getAllByRole('listitem');
     expect(cards).toHaveLength(7);
     expect(cards.at(-1)).toHaveTextContent('Create a tool');
@@ -33,21 +34,32 @@ describe('MyToolsPage', () => {
     expect(onOpen).toHaveBeenCalledWith('street-mixer', 't5');
   });
 
-  it('deletes a tool from the page, and counts what is left', () => {
-    startSome(2);
+  it('deletes a tool from the page, and counts what is left', async () => {
+    await startSome(2);
     render(<MyToolsPage t={THEME} accountId="a" onOpen={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Delete Workshop tool 2' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete Workshop tool 2' }));
     fireEvent.click(screen.getByRole('button', { name: /^Delete Workshop tool 2\?/ }));
 
     expect(screen.getByText('1 tool you have started, the most recently changed first.')).toBeInTheDocument();
     expect(screen.queryByText('Workshop tool 2')).toBeNull();
   });
 
-  it('says so when nothing has been started, with the card to create one', () => {
+  it('says so while it reads them, and when they cannot be read', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(startedTools, 'listStartedTools').mockRejectedValueOnce(new Error('offline'));
     render(<MyToolsPage t={THEME} accountId="a" onOpen={vi.fn()} />);
 
-    expect(screen.getByText('Nothing started yet. Create a tool to begin.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Loading your tools…');
+    expect(await screen.findByText('Your tools could not be loaded. Try again in a moment.')).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    vi.restoreAllMocks();
+  });
+
+  it('says so when nothing has been started, with the card to create one', async () => {
+    render(<MyToolsPage t={THEME} accountId="a" onOpen={vi.fn()} />);
+
+    expect(await screen.findByText('Nothing started yet. Create a tool to begin.')).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
   });
 

@@ -1217,6 +1217,33 @@ or R2 refusing the listing — and a run that fails leaves everything for the ne
 report with a screenshot is refused (the column does not exist), though one without
 still goes through.
 
+## 24. My Tools, kept with the account
+
+`started-tools.sql` (also a migration) creates `public.started_tools`: the tools somebody
+has started on the configuration page, which My Tools lists. Before it, they were kept
+only in the browser's localStorage, so they showed only on the device they were started
+on.
+
+- **Who:** each row is private to its owner. Nobody else can read, change or delete it,
+  not even the project's collaborators. What is published from a tool is a room
+  (`rooms.sql`), which has its own rules. Rows are deleted with the account.
+- **How:** the app saves a tool half a second after the last change to it, as an
+  upsert by its id. The first time an account's tools are listed, whatever that browser
+  had kept for the account is carried over with its dates, and the browser's copy is
+  forgotten. Signed out, or with no Supabase project, tools stay in the browser as
+  before.
+
+Run it after `projects.sql`. **Push it before merging** the app change: until the table
+exists, a signed-in account's My Tools cannot be read, and the configuration page cannot
+save.
+
+### Verify
+
+```sql
+select relrowsecurity from pg_class where relname = 'started_tools';         -- true
+select policyname, cmd from pg_policies where tablename = 'started_tools';   -- four
+```
+
 ## Still to decide
 
 - **Projects have one role beyond the owner, not several.** A collaborator can edit
