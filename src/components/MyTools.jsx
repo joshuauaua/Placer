@@ -7,6 +7,10 @@
  * last changed. Choosing one calls `onOpen(toolId, id)`. A tool since taken off the
  * platform is left out.
  *
+ * The tools are read when the row opens (services/startedTools.js keeps them in the
+ * database for a signed-in account, else in the browser); until then, and if they
+ * cannot be read, only the Create a tool card shows.
+ *
  * In each card's top corner is a bin, shown on hover or focus (always, on a touch
  * screen). It asks before it deletes: the first press turns it to Delete? in red, the
  * second deletes the tool, and leaving it puts it back. Deleting cannot be undone.
@@ -17,7 +21,7 @@
  * `onCreateTool` gets the kind picked.
  */
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { CreateToolMenu } from './SideNav';
 import { CardRow } from './CardRow';
@@ -111,19 +115,41 @@ export function AddToolCard({ onCreateTool }) {
 }
 
 /**
- * The account's started tools whose tool is still on the platform, newest first, and
- * a function that deletes one by its id.
+ * The account's started tools whose tool is still on the platform, newest first; a
+ * function that deletes one by its id; and whether they are 'loading', 'ready' or
+ * 'failed' (the database could not be reached). Read when the page opens, and again
+ * if the account changes. A tool deleted here goes at once, and comes back if the
+ * delete fails.
  */
 export function useStartedTools(accountId) {
-  // Read once, when the page opens: only deleting one here changes them.
-  const [started, setStarted] = useState(() => listStartedTools(accountId)
-    .map((entry) => ({ entry, tool: findTool(entry.tool) }))
-    .filter(({ tool }) => tool));
+  const [started, setStarted] = useState([]);
+  const [status, setStatus] = useState('loading');
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus('loading');
+    listStartedTools(accountId)
+      .then((list) => {
+        if (cancelled) return;
+        setStarted(list.map((entry) => ({ entry, tool: findTool(entry.tool) })).filter(({ tool }) => tool));
+        setStatus('ready');
+      })
+      .catch((err) => {
+        console.error('Could not read the started tools:', err);
+        if (!cancelled) setStatus('failed');
+      });
+    return () => { cancelled = true; };
+  }, [accountId]);
+
   const remove = (id) => {
-    removeStartedTool(accountId, id);
-    setStarted((was) => was.filter(({ entry }) => entry.id !== id));
+    const was = started;
+    setStarted((list) => list.filter(({ entry }) => entry.id !== id));
+    removeStartedTool(accountId, id).catch((err) => {
+      console.error('Could not delete the started tool:', err);
+      setStarted(was);
+    });
   };
-  return [started, remove];
+  return [started, remove, status];
 }
 
 // `onViewAll`, if given, puts View all beside the row's arrows: the My Tools page.
