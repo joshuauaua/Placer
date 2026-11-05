@@ -4,7 +4,8 @@ import { WordCloudOnPage } from '../../components/toolkit/WordCloudOnPage';
 import { PromptStep, WordCloudSetup, WordsStep } from '../../components/toolkit/WordCloudSetup';
 import { PALETTE } from '../../theme';
 import {
-  cloudSetupProblems, combineWords, defaultCloudSetup, emptyWords, promptProblems, wordsProblems,
+  DEFAULT_PROMPT, MAX_PROMPT_LENGTH, cloudSetupProblems, combineWords, defaultCloudSetup, emptyWords, promptProblems,
+  wordsProblems,
 } from '../../lib/wordCloud';
 import { counted, roomText, tone } from '../toolParts';
 
@@ -27,6 +28,8 @@ export default {
     defaults: defaultCloudSetup,
     problems: cloudSetupProblems,
     Form: WordCloudSetup,
+    // The prompt is the slide's title, typed into on the canvas as well as in the panel.
+    title: { key: 'prompt', placeholder: DEFAULT_PROMPT, max: MAX_PROMPT_LENGTH },
     steps: [
       { title: 'Prompt', Form: PromptStep, problems: promptProblems },
       // No heading of its own on the configuration page: just its two choices, under the prompt.

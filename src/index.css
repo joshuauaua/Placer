@@ -4918,6 +4918,48 @@ a {
   user-select: none;
 }
 
+.placer-configurator-slide-preview {
+  cursor: default;
+  user-select: none;
+}
+
+/* A slide's title, typed into in place on the canvas: the slide's own h2, as a field. */
+.placer-slide-title {
+  display: block;
+  width: calc(100% + 12px);
+  margin: 0 0 12px -6px;
+  padding: 2px 6px;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--placer-ink, #111);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  resize: none;
+  overflow: hidden;
+  outline: none;
+  cursor: text;
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.placer-slide-title::placeholder {
+  color: var(--placer-grey-400, #9a9a9a);
+}
+
+.placer-slide-title:hover {
+  background: var(--placer-grey-100, #f4f4f4);
+}
+
+.placer-slide-title:focus-visible,
+.placer-slide-title:focus {
+  background: var(--placer-white, #fff);
+  box-shadow: 0 0 0 2px var(--placer-grey-300, #d0d0d0);
+}
+
 .placer-configurator-frame {
   max-width: 1100px;
   margin: 0 auto;
