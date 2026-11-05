@@ -33,6 +33,7 @@ import {
   forgetHostedRoom,
   hostedRoom,
   participantToken,
+  rememberAnswer,
 } from '../../toolkit/rooms';
 import * as roomService from '../../services/rooms';
 
@@ -45,6 +46,20 @@ const PUBLISH_DELAY = 500;
  * moment it opened. Longer waits are taken in steps of this.
  */
 const MAX_TIMER_DELAY = 2 ** 31 - 1;
+
+/**
+ * Whether a state sent to a room is an answer: something in it that is not empty — a
+ * word, a pin, a layout — rather than a cleared one, or only a facilitator's timer.
+ */
+export function hasAnswer(state) {
+  if (!state || typeof state !== 'object') return false;
+  return Object.entries(state).some(([key, value]) => {
+    if (key === 'timer' || value === null || value === undefined || value === '') return false;
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === 'object') return Object.keys(value).length > 0;
+    return true;
+  });
+}
 
 /**
  * The setup a room's tool should use: null when the tool takes none or the room was
@@ -64,6 +79,9 @@ export function useRoom({ tool, roomId, displayName, service = roomService }) {
   const [pin, setPin] = useState(null);
   const [joinCode, setJoinCode] = useState(null);
   const [isHost, setIsHost] = useState(false);
+  // For publish, which outlives the render it was made in.
+  const isHostRef = useRef(false);
+  isHostRef.current = isHost;
   const [contributions, setContributions] = useState([]);
   const [expiresAt, setExpiresAt] = useState(null);
   const [opensAt, setOpensAt] = useState(null);
@@ -225,6 +243,9 @@ export function useRoom({ tool, roomId, displayName, service = roomService }) {
             displayName: nameRef.current,
             state: payload,
           });
+          // Remembered here, so the project's page can tell it has been answered from
+          // this browser (ProjectToolTile) — a facilitator's own, or a cleared answer, is not one.
+          if (saved && !isHostRef.current && hasAnswer(payload)) rememberAnswer(roomId, payload);
           if (!saved) {
             // The room ended while somebody was still moving a slider. Which of the
             // two endings it was decides what they are told, so it is read rather
