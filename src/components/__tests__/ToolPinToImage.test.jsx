@@ -16,21 +16,38 @@ const openRoom = (contributions = [], publish = vi.fn()) => ({
 });
 
 describe('PinToImage, answering', () => {
-  it('shows the question over the picture, and sends a pin where it is tapped', () => {
+  it('shows what to do over the question, and sends a pin only once it is submitted', () => {
     const publish = vi.fn();
     render(<PinToImage t={THEME} room={openRoom([{ state: { pin: { x: 0.9, y: 0.9 } } }], publish)} answering />);
 
-    expect(screen.getByRole('heading', { name: 'Where would you sit?' })).toBeInTheDocument();
-    expect(screen.getByText('Tap the picture where your answer is.')).toBeInTheDocument();
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Place your pin');
+    // Above the question, on the one card; no card of its own under it.
+    expect(status.compareDocumentPosition(screen.getByRole('heading', { name: 'Where would you sit?' })))
+      .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(screen.getByRole('button', { name: 'Submit pin' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Remove pin' })).toBeDisabled();
+
     const board = screen.getByRole('button', { name: /tap to pin your dot/ });
     board.getBoundingClientRect = () => ({ left: 0, top: 0, width: 200, height: 100 });
     fireEvent.click(board, { clientX: 50, clientY: 25 });
+    expect(publish).not.toHaveBeenCalled();
+    expect(status).toHaveTextContent('Submit your pin');
 
+    fireEvent.click(screen.getByRole('button', { name: 'Submit pin' }));
     expect(publish).toHaveBeenLastCalledWith({ pin: { x: 0.25, y: 0.25 } });
-    expect(screen.getByText('Pinned. Tap somewhere else to move it.')).toBeInTheDocument();
+    expect(status).toHaveTextContent('Pin submitted');
+    expect(screen.getByRole('button', { name: 'Submitted' })).toBeDisabled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove my pin' }));
+    // Moved, it is sent again only when submitted again.
+    fireEvent.click(board, { clientX: 100, clientY: 50 });
+    expect(publish).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Submit new pin' }));
+    expect(publish).toHaveBeenLastCalledWith({ pin: { x: 0.5, y: 0.5 } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove pin' }));
     expect(publish).toHaveBeenLastCalledWith({ pin: null });
+    expect(status).toHaveTextContent('Place your pin');
   });
 });
 
