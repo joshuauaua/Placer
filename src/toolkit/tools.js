@@ -68,8 +68,9 @@
  * `title` — null for none; there each Form is given `compact`, for its shortest form, and
  * a step with `inPanel: false` is left out, and one with `panelProblems` lists those
  * under it rather than its `problems` (which still decide whether it can be published). `Canvas`, if the setup has one, takes the
- * page's canvas in place of the inert preview: an editor given { setup, onChange }, for
- * a setup made by pointing (Stationary Activity Mapping's area, on a map). `title`, if
+ * page's canvas in place of the inert preview: an editor given { setup, onChange,
+ * projectId }, for a setup made by pointing (Stationary Activity Mapping's area, on a
+ * map) or a picture added there (Pin to Image's), under the slide's `title` if it has one. `title`, if
  * the setup has one — { key, placeholder, max } — names the field that is its slide's
  * title (Word Cloud's prompt): the configuration page puts it on the canvas to be
  * typed into in place, and draws the slide under it with `untitled`. A tool with
