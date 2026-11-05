@@ -533,3 +533,33 @@ describe('ToolConfiguratorPage, adding a collaborator', () => {
     expect(title).toHaveValue('Where do you sit?');
   });
 });
+
+describe('ToolConfiguratorPage, Pop Quiz\'s slide', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('shows only the questions, as they go up, and none of the tool around them', () => {
+    renderAt('/toolkit/pop-quiz/configure');
+    const canvas = within(screen.getByRole('main', { name: 'Canvas' }));
+
+    expect(canvas.getByText('Question 1 of 1')).toBeInTheDocument();
+    // Before it is written, the question suggested holds its place.
+    expect(canvas.getByText('What do you want to ask?')).toBeInTheDocument();
+    for (const gone of ['Write your quiz', 'How it works', /keep/i, 'Play this quiz']) {
+      expect(canvas.queryByText(gone)).toBeNull();
+    }
+  });
+});
+
+describe('ToolConfiguratorPage, Pop Quiz\'s panel', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('does not list blank or matching choices, or explain the scoring', () => {
+    renderAt('/toolkit/pop-quiz/configure');
+    const panel = within(screen.getByRole('complementary', { name: 'Configuration' }));
+
+    expect(panel.getByText('Write question 1.')).toBeInTheDocument();
+    expect(panel.queryByText(/Fill in all 4 choices/)).toBeNull();
+    expect(panel.queryByText(/different from each other/)).toBeNull();
+    expect(panel.queryByText(/scores more the sooner it comes/)).toBeNull();
+  });
+});

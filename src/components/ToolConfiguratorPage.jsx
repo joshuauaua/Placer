@@ -464,7 +464,8 @@ function ConfigPanel({ t, tool, setup, onChange }) {
         <p className="placer-configurator-note">This tool has nothing to configure. It is ready as it is.</p>
       ) : (
         steps.map((step, index) => {
-          const problems = step.problems(setup);
+          // What the step says is wrong here: `panelProblems` if it says less in the panel.
+          const problems = (step.panelProblems ?? step.problems)(setup);
           const Form = step.Form;
           // Its heading here, which a step can leave out (`panelTitle: null`).
           const heading = step.panelTitle !== undefined ? step.panelTitle : step.title;

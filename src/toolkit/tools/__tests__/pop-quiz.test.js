@@ -56,3 +56,17 @@ describe('telling its rooms apart', () => {
     }
   });
 });
+
+describe('questionPanelProblems', () => {
+  it('leaves out blank and matching choices, which still stop the quiz being published', async () => {
+    const { questionPanelProblems, questionProblems } = await import('../../../lib/popQuiz');
+    const setup = { questions: [
+      { kind: 'choice', text: 'One?', choices: ['', '', '', ''], correct: 0 },
+      { kind: 'choice', text: 'Two?', choices: ['a', 'a', 'b', 'c'], correct: 0 },
+    ] };
+    expect(questionProblems(setup)).toEqual([
+      'Fill in all 4 choices for question 1.', 'Make the choices for question 2 different from each other.',
+    ]);
+    expect(questionPanelProblems(setup)).toEqual([]);
+  });
+});

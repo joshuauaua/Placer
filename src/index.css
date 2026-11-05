@@ -6052,3 +6052,36 @@ textarea.placer-case-input {
     grid-row: 1;
   }
 }
+
+/* Answering a tool (Word Cloud's `answering`, in a room and in the setup page's
+   Preview frames): as tall as the screen, less the page's padding. The main card
+   takes all of it but the lower fifth, which is the card to answer in; that card
+   scrolls within itself if what is in it outgrows it. */
+.placer-answering {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: calc(100dvh - 40px);
+}
+
+.placer-answering-main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.placer-answering-cloud {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.placer-answering-entry {
+  flex: 0 0 20dvh;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+

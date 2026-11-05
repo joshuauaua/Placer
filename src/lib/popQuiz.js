@@ -103,8 +103,12 @@ export function quizQuestions(config) {
   return Array.isArray(config?.questions) ? config.questions : [];
 }
 
-/** What is wrong with one question, as sentences that name it by its number. */
-function oneQuestionProblems(question, number) {
+/**
+ * What is wrong with one question, as sentences that name it by its number. Without
+ * `choices`, what is wrong with its choices being blank or the same goes unsaid (the
+ * configuration page, where they can be seen).
+ */
+function oneQuestionProblems(question, number, { choices: sayChoices = true } = {}) {
   const problems = [];
   const asked = text(question?.text);
   if (!asked) problems.push(`Write question ${number}.`);
@@ -125,12 +129,12 @@ function oneQuestionProblems(question, number) {
 
   const choices = Array.isArray(question.choices) ? question.choices.map(text) : [];
   if (choices.length !== CHOICE_COUNT || choices.some((choice) => !choice)) {
-    problems.push(`Fill in all ${CHOICE_COUNT} choices for question ${number}.`);
+    if (sayChoices) problems.push(`Fill in all ${CHOICE_COUNT} choices for question ${number}.`);
   } else {
     if (choices.some((choice) => choice.length > MAX_CHOICE_LENGTH)) {
       problems.push(`Keep each choice for question ${number} under ${MAX_CHOICE_LENGTH} characters.`);
     }
-    if (new Set(choices.map((choice) => choice.toLowerCase())).size !== choices.length) {
+    if (sayChoices && new Set(choices.map((choice) => choice.toLowerCase())).size !== choices.length) {
       problems.push(`Make the choices for question ${number} different from each other.`);
     }
   }
@@ -141,11 +145,20 @@ function oneQuestionProblems(question, number) {
 }
 
 /** What is wrong with the setup's questions: the first stage of writing a quiz. */
-export function questionProblems(setup) {
+export function questionProblems(setup, options = {}) {
   const questions = setup?.questions;
   if (!Array.isArray(questions) || questions.length < MIN_QUESTIONS) return ['Add at least one question.'];
   if (questions.length > MAX_QUESTIONS) return [`A quiz can have at most ${MAX_QUESTIONS} questions.`];
-  return questions.flatMap((question, index) => oneQuestionProblems(question, index + 1));
+  return questions.flatMap((question, index) => oneQuestionProblems(question, index + 1, options));
+}
+
+/**
+ * The same, as the configuration page's panel lists them: without the choices being
+ * blank or the same, which the questions right above show. They still stop it being
+ * published (questionProblems).
+ */
+export function questionPanelProblems(setup) {
+  return questionProblems(setup, { choices: false });
 }
 
 /** What is wrong with the setup's time per question: the second stage. None said is the default. */

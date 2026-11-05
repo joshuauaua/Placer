@@ -122,8 +122,10 @@ export function QuestionsEditor({ t, questions, onChange }) {
             Add a question
           </Btn>
         )}
+        {/* How many there are, as many as wanted: the most a quiz takes only once it is reached. */}
         <span style={{ fontSize: 12.5, color: t.inkDim }}>
-          {questions.length} of {MAX_QUESTIONS} questions
+          {questions.length} {questions.length === 1 ? 'question' : 'questions'}
+          {questions.length >= MAX_QUESTIONS && ', the most a quiz can have'}
         </span>
       </div>
     </div>
@@ -131,7 +133,7 @@ export function QuestionsEditor({ t, questions, onChange }) {
 }
 
 /** How long each question stays up. */
-export function TimeField({ t, seconds, onChange }) {
+export function TimeField({ t, seconds, onChange, hint = true }) {
   const id = useId();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -143,9 +145,11 @@ export function TimeField({ t, seconds, onChange }) {
         style={{ ...field(t), width: 'auto', alignSelf: 'flex-start' }}>
         {TIME_OPTIONS.map((option) => <option key={option} value={option}>{option} seconds</option>)}
       </select>
-      <span style={{ fontSize: 12.5, color: t.inkDim }}>
-        A right answer scores more the sooner it comes, and nothing once the time is up.
-      </span>
+      {hint && (
+        <span style={{ fontSize: 12.5, color: t.inkDim }}>
+          A right answer scores more the sooner it comes, and nothing once the time is up.
+        </span>
+      )}
     </div>
   );
 }
@@ -159,8 +163,12 @@ export function QuestionsStep({ t, setup, onChange }) {
 }
 
 /** The second stage: the time each question gets. */
-export function TimeStep({ t, setup, onChange }) {
-  return <TimeField t={t} seconds={setup.seconds} onChange={(seconds) => onChange({ ...setup, seconds })} />;
+export function TimeStep({ t, setup, onChange, compact = false }) {
+  // Compact, on the configuration page: the choice alone.
+  return (
+    <TimeField t={t} seconds={setup.seconds} hint={!compact}
+      onChange={(seconds) => onChange({ ...setup, seconds })} />
+  );
 }
 
 /** Both stages on one screen, for a host that does not walk through `steps`. */
