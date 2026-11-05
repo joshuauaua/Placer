@@ -3,7 +3,7 @@
  * Create a tool (the side nav's button, or the dashboard's shortcut) first asks which
  * kind, Understand, Imagine or Plan (CreateToolMenu). This dialog then shows every
  * tool of that kind, A-Z, as a card in a grid: its picture, or its icon on its
- * category's colour, then its name, tagline, its tags — a field audit or public
+ * category's colour, then its name, its tags — a field audit or public
  * feedback, and whether it runs live, self-paced on a phone, or both (toolTags) — and
  * who made it. The dialog is large —
  * nearly the window on a laptop — under a header in the category's colour; on a phone
@@ -36,7 +36,6 @@ function ToolCard({ t, tool, onPick }) {
             <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, lineHeight: 1.3 }}>{tool.name}</h3>
             <Icon name="arrowRight" size={18} stroke={2.2} style={{ color: t.inkDim, flex: '0 0 auto' }} />
           </span>
-          <span style={{ fontSize: 14, lineHeight: 1.5, color: t.inkDim }}>{tool.tagline}</span>
           <span className="placer-tool-tags" aria-label="Tags">
             {toolTags(tool).map((tag) => (
               <span key={tag.id} className="placer-tool-tag">

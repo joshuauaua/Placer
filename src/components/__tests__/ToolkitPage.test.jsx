@@ -88,7 +88,7 @@ describe("a tool's own page", () => {
     renderPageAt('/toolkit/street-mixer');
 
     await screen.findByRole('heading', { level: 1, name: 'Street Section Mixer' });
-    expect(screen.getByText('Twenty metres, and everything wants some.')).toBeInTheDocument();
+    expect(screen.queryByText('Twenty metres, and everything wants some.')).not.toBeInTheDocument();
     expect(screen.getByText(/By PLACER/)).toBeInTheDocument();
     start();
 
@@ -189,7 +189,7 @@ describe('Idea Visualizer', () => {
     renderWith('/toolkit/reimagine-a-space', '');
 
     expect(screen.getByRole('heading', { name: 'Idea Visualizer' })).toBeInTheDocument();
-    expect(screen.getByText('A tool to help anyone quickly create a visualization of an idea they have.')).toBeInTheDocument();
+    expect(screen.queryByText('A tool to help anyone quickly create a visualization of an idea they have.')).not.toBeInTheDocument();
     expect(screen.getByText('Imagine')).toBeInTheDocument();
   });
 

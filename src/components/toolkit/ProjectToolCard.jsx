@@ -46,9 +46,6 @@ export function ProjectToolCard({ t, tool, room = null, projectId = null, displa
         </span>
         <span style={{ minWidth: 0, flex: 1 }}>
           <span style={{ display: 'block', fontSize: 16, lineHeight: '24px', fontWeight: 700 }}>{tool.name}</span>
-          <span style={{ display: 'block', fontSize: 14, lineHeight: '20px', color: t.inkDim, marginTop: 2 }}>
-            {tool.tagline}
-          </span>
         </span>
         <Icon name={open ? 'chevUp' : 'chevDown'} size={18} stroke={2.2} style={{ color: t.inkDim, flex: '0 0 auto' }} />
       </button>
