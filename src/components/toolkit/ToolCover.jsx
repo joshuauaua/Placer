@@ -45,11 +45,6 @@ export function ToolCover({ t, tool, onStart, onBack, breadcrumb = null }) {
             By {tool.createdBy}
           </p>
         )}
-        {tool.tagline && tool.taglineOnCover !== false && (
-          <p className="placer-h3" style={{ marginTop: 16, color: t.ink }}>
-            {tool.tagline}
-          </p>
-        )}
         <p className="placer-body-lg" style={{ marginTop: 16, color: t.inkDim }}>
           {tool.blurb}
         </p>

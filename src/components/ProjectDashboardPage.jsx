@@ -582,7 +582,6 @@ function ChosenToolRow({ t, tool, live, scheduled = null, rooms = [], results = 
             {badge}
           </span>
         </span>
-        {tool.tagline && <span style={{ display: 'block', fontSize: 12.5, color: t.inkDim }}>{tool.tagline}</span>}
       </span>
     </>
   );

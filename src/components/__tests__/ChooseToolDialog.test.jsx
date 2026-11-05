@@ -27,7 +27,7 @@ describe('ChooseToolDialog', () => {
     }
   });
 
-  it('shows the tools as cards in a large panel, each with its tagline and maker', () => {
+  it('shows the tools as cards in a large panel, each with its maker and no subtitle', () => {
     setup({ category: 'plan' });
 
     const dialog = screen.getByRole('dialog', { name: 'Plan' });
@@ -40,7 +40,7 @@ describe('ChooseToolDialog', () => {
     const card = within(dialog).getByRole('button', { name: /Co-Budget/ });
     expect(card).toHaveClass('placer-choose-tool-card');
     const budget = TOOLS.find((tool) => tool.id === 'budget-ballot');
-    expect(card).toHaveTextContent(budget.tagline);
+    expect(card).not.toHaveTextContent(budget.tagline);
     expect(card).toHaveTextContent(`By ${budget.createdBy}`);
   });
 

@@ -31,7 +31,6 @@ function ToolRow({ t, tool, colour, chosen, onClick }) {
       </span>
       <span style={{ flex: 1, minWidth: 0, display: 'block' }}>
         <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, letterSpacing: '-0.01em' }}>{tool.name}</span>
-        {tool.tagline && <span style={{ display: 'block', fontSize: 12.5, color: t.inkDim }}>{tool.tagline}</span>}
       </span>
       {toggle && (
         <span aria-hidden="true" style={{ width: 22, height: 22, borderRadius: 11, flex: '0 0 auto',

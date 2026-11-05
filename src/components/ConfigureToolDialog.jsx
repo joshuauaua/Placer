@@ -297,11 +297,6 @@ function Intro({ t, tool, kind, onStart, onCancel }) {
         fontWeight: 700, marginBottom: 8 }}>
         {findCategory(tool.category)?.name ?? 'Tool'}
       </div>
-      {tool.tagline && tool.taglineOnCover !== false && (
-        <p style={{ fontSize: 17, fontWeight: 700, color: t.ink, lineHeight: 1.4, margin: '0 0 10px' }}>
-          {tool.tagline}
-        </p>
-      )}
       <p style={{ fontSize: 14, color: t.inkDim, lineHeight: 1.6, margin: '0 0 12px' }}>{tool.blurb}</p>
       {tool.Preview && (
         <div style={{ margin: '4px 0 16px' }}>
