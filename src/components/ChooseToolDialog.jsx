@@ -2,8 +2,9 @@
  *
  * Create a tool (the side nav's button, or the dashboard's shortcut) first asks which
  * kind, Understand, Imagine or Plan (CreateToolMenu). This dialog then shows every
- * tool of that kind, A-Z, as a list of wide cards, one under another: its picture, or
- * its icon on its category's colour, on the left; then its name, its tags — a field audit or public
+ * tool of that kind as a list of wide cards, one under another — A-Z, with the tools
+ * still being made (Work in Progress) after the finished ones: its picture, or
+ * its icon on its category's colour, on the left; then its name, who made it, its tags — a field audit or public
  * feedback, and whether it runs live, self-paced on a phone, or both (toolTags) — and
  * who made it. The dialog is large —
  * nearly the window on a laptop — under a header in the category's colour. Choosing one calls `onPick` with its id; App opens its configuration
@@ -12,7 +13,7 @@
 
 import { useEffect, useRef } from 'react';
 import { Icon } from './Icon';
-import { WorkInProgressLabel } from './toolkit/WorkInProgressLabel';
+import { WorkInProgressLabel, isWorkInProgress } from './toolkit/WorkInProgressLabel';
 import { TOOL_KINDS } from './SideNav';
 import { TOOLS, filterTools, findCategory, sortTools, toolTags } from '../toolkit/tools';
 import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
@@ -35,6 +36,10 @@ function ToolCard({ t, tool, onPick }) {
         <span style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6,
           padding: '14px 18px', flex: 1, minWidth: 0 }}>
           <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, lineHeight: 1.3 }}>{tool.name}</h3>
+          {/* Who made it, straight under its name; its tags under that. */}
+          {tool.createdBy && (
+            <span className="placer-caption" style={{ color: t.inkDim, marginTop: -4 }}>By {tool.createdBy}</span>
+          )}
           <span className="placer-tool-tags" aria-label="Tags">
             {toolTags(tool).map((tag) => (
               <span key={tag.id} className="placer-tool-tag">
@@ -43,9 +48,6 @@ function ToolCard({ t, tool, onPick }) {
               </span>
             ))}
           </span>
-          {tool.createdBy && (
-            <span className="placer-caption" style={{ color: t.inkDim }}>By {tool.createdBy}</span>
-          )}
         </span>
         <span className="placer-choose-tool-arrow"
           style={{ display: 'flex', alignItems: 'center', padding: '0 18px 0 4px', flex: '0 0 auto' }}>
@@ -60,7 +62,9 @@ export function ChooseToolDialog({ t, category, onPick, onClose }) {
   const panelRef = useRef(null);
   const kind = TOOL_KINDS.find((entry) => entry.category === category);
   const colour = findCategory(category)?.colour;
-  const tools = sortTools(filterTools(TOOLS, { category }), 'az', 'asc');
+  // A-Z, the finished tools first and those still being made (Work in Progress) after.
+  const sorted = sortTools(filterTools(TOOLS, { category }), 'az', 'asc');
+  const tools = [...sorted.filter((tool) => !isWorkInProgress(tool)), ...sorted.filter(isWorkInProgress)];
   const titleId = 'choose-tool-title';
 
   useEffect(() => {
