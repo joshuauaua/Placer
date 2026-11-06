@@ -5,6 +5,7 @@ import { memoryLocation } from 'wouter/memory-location';
 import App from '../../App';
 import { ChooseToolDialog } from '../ChooseToolDialog';
 import { TOOLS } from '../../toolkit/tools';
+import { isWorkInProgress } from '../toolkit/WorkInProgressLabel';
 import { THEME } from '../../theme';
 
 const setup = (props = {}) => {
@@ -16,15 +17,30 @@ const setup = (props = {}) => {
 const toolsIn = (category) => TOOLS.filter((tool) => tool.category === category);
 
 describe('ChooseToolDialog', () => {
-  it('lists every tool of the kind picked, A-Z, and none of the others', () => {
+  it('lists every tool of the kind picked, A-Z with the Work in Progress ones last, and none of the others', () => {
     setup({ category: 'understand' });
 
     const dialog = screen.getByRole('dialog', { name: 'Understand' });
     const names = within(dialog).getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent);
-    expect(names).toEqual(toolsIn('understand').map((tool) => tool.name).sort((a, b) => a.localeCompare(b)));
+    const az = (tools) => tools.map((tool) => tool.name).sort((a, b) => a.localeCompare(b));
+    const understand = toolsIn('understand');
+    expect(names).toEqual([
+      ...az(understand.filter((tool) => !isWorkInProgress(tool))),
+      ...az(understand.filter(isWorkInProgress)),
+    ]);
+    // Word Cloud and People Moving Count are finished: they come before 15-Minute Reach.
+    expect(names.slice(0, 2)).toEqual(['People Moving Count', 'Word Cloud']);
     for (const tool of TOOLS.filter((entry) => entry.category !== 'understand')) {
       expect(within(dialog).queryByText(tool.name)).toBeNull();
     }
+  });
+
+  it('puts who made a tool straight under its name, and its tags under that', () => {
+    setup({ category: 'understand' });
+    const card = screen.getByRole('heading', { level: 3, name: 'People Moving Count' }).closest('button');
+    const text = card.textContent;
+    expect(text.indexOf('People Moving Count')).toBeLessThan(text.indexOf('By Gehl Institute'));
+    expect(text.indexOf('By Gehl Institute')).toBeLessThan(text.indexOf('Field audit'));
   });
 
   it('shows the tools as cards in a large panel, each with its maker and no subtitle', () => {
