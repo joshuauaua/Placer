@@ -134,7 +134,7 @@ in, so a practitioner can always tell which tool comes next:
    evaluates existing conditions, current behaviour or past experience.
    - Gehl Public Life Data Protocol tools: public life / public space audits —
      counting, mapping activities (Site-Specific Spatial Mapping, The Social Space
-     Survey, Stationary Activity Mapping).
+     Survey, Stationary Activity Mapping, People Moving Count).
    - Desire Lines: mapping existing movement paths across a site.
    - 15-Minute Reach: what is in reach of a place today.
    - Word Cloud: live or async feedback on current perceptions ("describe this park in

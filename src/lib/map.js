@@ -211,6 +211,51 @@ export function showAreas(map, id, areas, { fillOpacity = 0.4, onClick } = {}) {
 }
 
 /**
+ * Draw `lines` on `map` under the id `id` (one source, two line layers: a white casing
+ * so the line reads against the streets, and the line itself over it). Each line is
+ * { path: [{ lat, lng }, ...], stroke }; ones with fewer than two points are skipped.
+ * Returns a function that takes them all off again.
+ */
+export function showLines(map, id, lines, { width = 5 } = {}) {
+  const drawn = lines.filter((line) => (line?.path?.length ?? 0) >= 2);
+  const casingId = `${id}-casing`;
+  const lineId = `${id}-line`;
+  let removed = false;
+
+  const data = {
+    type: 'FeatureCollection',
+    features: drawn.map((line, index) => ({
+      type: 'Feature',
+      id: index,
+      properties: { stroke: line.stroke },
+      geometry: { type: 'LineString', coordinates: line.path.map(toLngLat) },
+    })),
+  };
+  const layout = { 'line-cap': 'round', 'line-join': 'round' };
+
+  map.ready.then(() => {
+    if (removed) return;
+    map.addSource(id, { type: 'geojson', data });
+    map.addLayer({ id: casingId, type: 'line', source: id, layout,
+      paint: { 'line-color': '#FFFFFF', 'line-width': width + 4 } });
+    map.addLayer({ id: lineId, type: 'line', source: id, layout,
+      paint: { 'line-color': ['get', 'stroke'], 'line-width': width } });
+  });
+
+  return () => {
+    removed = true;
+    // The map may already be gone — removed with its page — and with it the style.
+    try {
+      if (map.getLayer(lineId)) map.removeLayer(lineId);
+      if (map.getLayer(casingId)) map.removeLayer(casingId);
+      if (map.getSource(id)) map.removeSource(id);
+    } catch {
+      // Nothing left to take off.
+    }
+  };
+}
+
+/**
  * Call `handler(point)` for a click on the map itself — not on a pin and not on a
  * clickable area — with the { lat, lng } clicked. MapLibre reports a click on a pin or
  * an area as a click on the map too, so without this, picking a pin would also be read

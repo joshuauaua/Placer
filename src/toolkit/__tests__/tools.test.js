@@ -7,7 +7,7 @@ describe('the register', () => {
   it('credits the Public Life Data Protocol on the tools built on it, and only those', () => {
     const credited = TOOLS.filter((tool) => tool.credit?.startsWith('The Public Life Data Protocol'));
     expect(credited.map((tool) => tool.id).sort())
-      .toEqual(['site-spatial-mapping', 'social-space-survey', 'stationary-activity-mapping']);
+      .toEqual(['people-moving-count', 'site-spatial-mapping', 'social-space-survey', 'stationary-activity-mapping']);
   });
 
   it('finds a tool by the id in its URL', () => {
@@ -47,7 +47,7 @@ describe('the register', () => {
 
   it('puts the tools in the categories the Golden Rules give them', () => {
     const inCategory = (id) => TOOLS.filter((tool) => tool.category === id).map((tool) => tool.id).sort();
-    expect(inCategory('understand')).toEqual(['desire-lines', 'fifteen-minute', 'site-spatial-mapping',
+    expect(inCategory('understand')).toEqual(['desire-lines', 'fifteen-minute', 'people-moving-count', 'site-spatial-mapping',
       'social-space-survey', 'stationary-activity-mapping', 'word-cloud']);
     expect(inCategory('imagine')).toEqual(['birds-eye-view', 'dream-it', 'pin-to-image', 'pop-quiz', 'reimagine-a-space', 'street-mixer']);
     expect(inCategory('plan')).toEqual(['budget-ballot', 'open-vote']);
@@ -144,7 +144,7 @@ describe('filterTools', () => {
 
   it('searches names, taglines, descriptions and organisations, ignoring case', () => {
     expect(ids({ query: 'BUDGET' })).toEqual(['budget-ballot']);
-    expect(ids({ query: 'gehl' })).toEqual(['site-spatial-mapping', 'social-space-survey', 'stationary-activity-mapping']);
+    expect(ids({ query: 'gehl' })).toEqual(['site-spatial-mapping', 'social-space-survey', 'stationary-activity-mapping', 'people-moving-count']);
     expect(ids({ query: 'cycle track' })).toContain('street-mixer');
   });
 
@@ -167,7 +167,7 @@ describe('filterTools', () => {
 
   it('filters by the organisation that made the tool', () => {
     expect(ids({ organisation: 'Gehl Institute' }))
-      .toEqual(['site-spatial-mapping', 'social-space-survey', 'stationary-activity-mapping']);
+      .toEqual(['site-spatial-mapping', 'social-space-survey', 'stationary-activity-mapping', 'people-moving-count']);
   });
 
   it('keeps only the tools that can run in a room when asked', () => {

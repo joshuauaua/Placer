@@ -3,7 +3,7 @@ import { act, render, screen, fireEvent, within } from '@testing-library/react';
 import { clickMap, lastMap } from '../../test/maplibreStub';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
-import { ToolConfiguratorPage, configuredToolIdFrom } from '../ToolConfiguratorPage';
+import { ToolConfiguratorPage, configuredToolIdFrom, previewFit } from '../ToolConfiguratorPage';
 import { THEME } from '../../theme';
 import { listStartedTools, saveStartedTool } from '../../services/startedTools';
 import { addCollaborator, isSupabaseConfigured, readCollaborators, readProjectCrumb } from '../../services/projects';
@@ -561,5 +561,17 @@ describe('ToolConfiguratorPage, Pop Quiz\'s panel', () => {
     expect(panel.queryByText(/Fill in all 4 choices/)).toBeNull();
     expect(panel.queryByText(/different from each other/)).toBeNull();
     expect(panel.queryByText(/scores more the sooner it comes/)).toBeNull();
+  });
+});
+
+describe('previewFit', () => {
+  it('draws the frames at their own scale when the window has room', () => {
+    expect(previewFit(1000)).toBe(1);
+  });
+
+  it('shrinks them on a short window so the Preview does not scroll, but not past half', () => {
+    expect(previewFit(700)).toBeLessThan(1);
+    expect(previewFit(700)).toBeGreaterThan(0.5);
+    expect(previewFit(200)).toBe(0.5);
   });
 });
