@@ -19,6 +19,7 @@ import { BirdsEyePlan } from './BirdsEyePlan';
 import { Countdown, useCountdown } from './WordCloud';
 import { DEFAULT_PROMPT, combineLayouts, readAssets, readLayout, readOutline, roomTimer } from '../../lib/birdsEye';
 import { cloudTimer, isPaused, pauseTimer, resumeTimer, startTimer, stopTimer } from '../../lib/wordCloud';
+import { TimerButton } from './TimerButton';
 
 function Title({ t, prompt, size = 28 }) {
   return (
@@ -156,16 +157,14 @@ export function BirdsEyeView({ t, room, slide = false, untitled = false, answeri
           <div style={{ flex: 1 }} />
           <Countdown t={t} left={left} paused={paused} />
           {runs && seconds && timer === null && (
-            <Btn t={t} variant="primary" size="sm" icon="clock" onClick={() => setTimer(startTimer(seconds))}>
-              Start the {seconds} second timer
-            </Btn>
+            <TimerButton t={t} primary icon="start" label={`Start the ${seconds} second timer`}
+              onClick={() => setTimer(startTimer(seconds))} />
           )}
           {runs && left !== null && left > 0 && (
             <>
-              <Btn t={t} variant="outline" size="sm" onClick={() => setTimer(paused ? resumeTimer(timer) : pauseTimer(timer))}>
-                {paused ? 'Continue' : 'Pause'}
-              </Btn>
-              <Btn t={t} variant="primary" size="sm" onClick={() => setTimer(stopTimer())}>Stop</Btn>
+              <TimerButton t={t} icon={paused ? 'start' : 'pause'} label={paused ? 'Continue' : 'Pause'}
+                onClick={() => setTimer(paused ? resumeTimer(timer) : pauseTimer(timer))} />
+              <TimerButton t={t} icon="stop" label="Stop" onClick={() => setTimer(stopTimer())} />
             </>
           )}
         </div>

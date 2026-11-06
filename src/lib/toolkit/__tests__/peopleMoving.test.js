@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vite-plus/test';
 import {
-  MODES, MAX_POINTS, bump, clock, emptyCounts, emptySession, hasProjectSetup, modesIn, projectSetupProblems,
-  projectSetupToSave, sessionFromSetup, sessionProblems, summaryText, totals,
+  MODES, MAX_CORNERS, MAX_POINTS, bump, clock, defaultProjectSetup, emptyCounts, emptySession, hasProjectSetup,
+  modesIn, projectSetupProblems, projectSetupToSave, sessionFromSetup, sessionProblems, summaryText, timerSeconds,
+  totals,
 } from '../peopleMoving';
 
+const AREA = [{ lat: 55.6, lng: 12.98 }, { lat: 55.6, lng: 12.99 }, { lat: 55.61, lng: 12.99 }];
 const LINE = [{ lat: 55.6, lng: 12.98 }, { lat: 55.601, lng: 12.981 }];
+const SETUP = { area: AREA, line: LINE, location: 'Södergatan', minutes: 10 };
 
 describe('the modes', () => {
   it('counts five kinds of pedestrian, and people on bicycles apart', () => {
@@ -48,32 +51,53 @@ describe('the count', () => {
   });
 });
 
-describe("a project's setup", () => {
-  it('needs a line of two points or more and a location', () => {
-    expect(projectSetupProblems({ line: [LINE[0]], location: '' })).toEqual([
-      'Draw the count line on the map: at least two points.',
+describe("a slide's setup", () => {
+  it('starts with no area or line, and the ten-minute timer', () => {
+    expect(defaultProjectSetup()).toEqual({ area: [], line: [], location: '', minutes: 10 });
+  });
+
+  it('needs the area first, then a line on it, then a location', () => {
+    expect(projectSetupProblems(defaultProjectSetup())).toEqual([
+      'Outline the area on the map with the polygon tool: at least three corners.',
+      'Draw the count line over the area with the line tool: at least two points.',
       'Name the location.',
     ]);
-    expect(hasProjectSetup({ line: LINE, location: 'Södergatan' })).toBe(true);
+    expect(hasProjectSetup(SETUP)).toBe(true);
+  });
+
+  it('takes no timer, or one of its lengths, but not any other', () => {
+    expect(projectSetupProblems({ ...SETUP, minutes: null })).toEqual([]);
+    expect(projectSetupProblems({ ...SETUP, minutes: 7 })).toEqual(['Pick how long the timer runs.']);
+  });
+
+  it('runs the timer for its minutes, none, or ten without a setup', () => {
+    expect(timerSeconds({ ...SETUP, minutes: 15 })).toBe(900);
+    expect(timerSeconds({ ...SETUP, minutes: null })).toBeNull();
+    expect(timerSeconds(null)).toBe(600);
   });
 
   it('is kept small: points rounded and capped, the location trimmed', () => {
-    const many = Array.from({ length: MAX_POINTS + 3 }, (_, i) => ({ lat: 55.123456789 + i, lng: 12.987654321 }));
-    const saved = projectSetupToSave({ line: many, location: '  Södergatan ' });
+    const many = (count) => Array.from({ length: count }, (_, i) => ({ lat: 55.123456789 + i, lng: 12.987654321 }));
+    const saved = projectSetupToSave({ area: many(MAX_CORNERS + 3), line: many(MAX_POINTS + 3), location: '  Södergatan ', minutes: null });
+    expect(saved.area).toHaveLength(MAX_CORNERS);
     expect(saved.line).toHaveLength(MAX_POINTS);
     expect(saved.line[0]).toEqual({ lat: 55.123457, lng: 12.987654 });
     expect(saved.location).toBe('Södergatan');
+    expect(saved.minutes).toBeNull();
+    // Within project_tools.config's 2000 characters, at the most it can hold.
+    expect(JSON.stringify({ slides: [saved] }).length).toBeLessThan(2000);
   });
 
-  it('starts every session from its line and location', () => {
-    const session = sessionFromSetup({ line: LINE, location: 'Södergatan' });
+  it('starts every session from its area, line and location', () => {
+    const session = sessionFromSetup(SETUP);
+    expect(session.area).toBe(AREA);
     expect(session.line).toBe(LINE);
     expect(session.location).toBe('Södergatan');
     expect(sessionProblems(session)).toEqual(['Add your name.', 'Pick the weather.']);
   });
 
   it('starts from nothing when the setup is not complete', () => {
-    expect(sessionFromSetup({ line: [], location: 'Somewhere' }).line).toEqual([]);
+    expect(sessionFromSetup({ ...SETUP, area: [] }).line).toEqual([]);
     expect(sessionFromSetup(null).location).toBe('');
   });
 });

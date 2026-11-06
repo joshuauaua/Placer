@@ -43,6 +43,7 @@ import { Panel } from '../ToolLayout';
 import { KeepOnProfile, onItsOwn } from './KeepOnProfile';
 import { Btn } from '../UI';
 import { TimerSelect } from './WordCloudSetup';
+import { TimerButton } from './TimerButton';
 import { PALETTE_LIST } from '../../theme';
 import {
   DEFAULT_PROMPT, MAX_WORD_LENGTH, addWord, cloudTimer, cloudWords, countWords, formatCountdown, isPaused,
@@ -414,21 +415,18 @@ export function WordCloud({ t, room, slide = false, untitled = false, answering 
         left={left} paused={paused} emptyText={emptyText} />
       <Countdown t={t} left={left} paused={paused} />
       {canStart && (
-        <Btn t={t} variant="primary" size="sm" icon="clock" onClick={() => setTimer(startTimer(seconds))}>
-          Start the {seconds} second timer
-        </Btn>
+        <TimerButton t={t} primary icon="start" label={`Start the ${seconds} second timer`}
+          onClick={() => setTimer(startTimer(seconds))} />
       )}
       {underWay && (
         <>
-          <Btn t={t} variant="outline" size="sm"
-            onClick={() => setTimer(paused ? resumeTimer(timer) : pauseTimer(timer))}>
-            {paused ? 'Continue' : 'Pause'}
-          </Btn>
-          <Btn t={t} variant="primary" size="sm" onClick={() => setTimer(stopTimer())}>Stop</Btn>
+          <TimerButton t={t} icon={paused ? 'start' : 'pause'} label={paused ? 'Continue' : 'Pause'}
+            onClick={() => setTimer(paused ? resumeTimer(timer) : pauseTimer(timer))} />
+          <TimerButton t={t} icon="stop" label="Stop" onClick={() => setTimer(stopTimer())} />
         </>
       )}
       {over && editable && (
-        <Btn t={t} variant="outline" size="sm" onClick={() => setOwnTimer(null)}>Reset the timer</Btn>
+        <TimerButton t={t} icon="refresh" label="Reset the timer" onClick={() => setOwnTimer(null)} />
       )}
     </div>
   );
