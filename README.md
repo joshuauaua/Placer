@@ -57,7 +57,7 @@ does: understand the place first, then imagine what it could be, then plan the c
 
 | Category | A tool belongs here if… | Tools |
 |---|---|---|
-| **Understand** — baseline & reality check | it **only** evaluates existing conditions, current behaviour or past experience. | Gehl Public Life Data Protocol tools (Site-Specific Spatial Mapping, The Social Space Survey, Stationary Activity Mapping) · Desire Lines · 15-Minute Reach · Word Cloud |
+| **Understand** — baseline & reality check | it **only** evaluates existing conditions, current behaviour or past experience. | Gehl Public Life Data Protocol tools (Site-Specific Spatial Mapping, The Social Space Survey, Stationary Activity Mapping, People Moving Count) · Desire Lines · 15-Minute Reach · Word Cloud |
 | **Imagine** — visioning & possibility | it asks people to **draw, place or pitch** future ideas, solutions or interventions. | Idea Visualizer · Dream It · Street Section Mixer · Pop Quiz |
 | **Plan** — decision & execution | it moves from open ideas to **concrete trade-offs, consensus, prioritisation or task management**. | Poll · Co-Budget |
 

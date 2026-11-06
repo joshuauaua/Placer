@@ -4830,9 +4830,10 @@ a {
   cursor: pointer;
 }
 
+/* Top-aligned: the desktop, the shorter of the two, sits up under the heading. */
 .placer-preview-devices {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
   gap: 32px;
 }

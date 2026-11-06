@@ -130,6 +130,29 @@ function Collaborators({ people }) {
 const DESKTOP = { width: 1280, height: 800, scale: 0.56 };
 // The phone: an iPhone's width and height, at this scale.
 const PHONE = { width: 390, height: 844, scale: 0.72 };
+// Everything in the dialog that is not a frame, top to bottom: the backdrop's and the
+// dialog's padding, the heading, and a frame's caption — the phone's bezel too, as the
+// phone is the taller of the two.
+const PREVIEW_CHROME = 32 + 52 + 72 + 38 + 20;
+
+/**
+ * How much smaller than their own scale the frames are drawn, so the dialog fits a window
+ * `height` tall without scrolling: 1 when there is room, less on a short window.
+ */
+export function previewFit(height) {
+  const tallest = Math.max(DESKTOP.height * DESKTOP.scale, PHONE.height * PHONE.scale);
+  return Math.max(0.5, Math.min(1, (height - PREVIEW_CHROME) / tallest));
+}
+
+function useWindowHeight() {
+  const [height, setHeight] = useState(() => (typeof window === 'undefined' ? 900 : window.innerHeight));
+  useEffect(() => {
+    const onResize = () => setHeight(window.innerHeight);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return height;
+}
 
 /**
  * Preview: the slide as it would look on a desktop, on the left, and on a phone, on the
@@ -147,12 +170,17 @@ function PreviewDialog({ tool, onClose }) {
   }, [onClose]);
 
   const src = toolPreviewFramePath(tool.id);
-  const frame = (device, title) => (
-    <div className="placer-preview-screen" style={{ width: device.width * device.scale, height: device.height * device.scale }}>
-      <iframe title={title} src={src} width={device.width} height={device.height}
-        style={{ transform: `scale(${device.scale})` }} />
-    </div>
-  );
+  // Both frames shrink together on a short window, so the whole dialog is in view.
+  const fit = previewFit(useWindowHeight());
+  const frame = (device, title) => {
+    const scale = device.scale * fit;
+    return (
+      <div className="placer-preview-screen" style={{ width: device.width * scale, height: device.height * scale }}>
+        <iframe title={title} src={src} width={device.width} height={device.height}
+          style={{ transform: `scale(${scale})` }} />
+      </div>
+    );
+  };
 
   return (
     <div className="placer-preview-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
