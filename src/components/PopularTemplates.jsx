@@ -4,6 +4,7 @@
  * one calls `onOpen` with the tool's id. The register is toolkit/templates.js. */
 
 import { Icon } from './Icon';
+import { WorkInProgressLabel } from './toolkit/WorkInProgressLabel';
 import { CardRow } from './CardRow';
 import { bundledImage } from '../lib/responsiveImage';
 import { ARROW_ITEM } from '../lib/arrowKeys';
@@ -20,7 +21,8 @@ function TemplateCard({ template, onOpen }) {
       <button type="button" {...ARROW_ITEM} onClick={() => onOpen(tool.id)} className="placer-template-card"
         aria-label={`${template.title}, ${tool.name}`}>
         {template.image ? (
-          <span className="placer-template-image">
+          <span className="placer-template-image" style={{ position: 'relative' }}>
+            <WorkInProgressLabel tool={tool} />
             <img {...bundledImage(template.image.small, template.image.large, CARD_SIZES)}
               alt={template.image.alt} loading="lazy" />
           </span>
@@ -28,7 +30,8 @@ function TemplateCard({ template, onOpen }) {
           // A placeholder until the template has a picture: its tool's icon on its
           // category's colour, as My Tools draws a started tool.
           <span className="placer-template-image placer-started-cover"
-            style={{ background: colour?.c100, color: colour?.c700 }}>
+            style={{ position: 'relative', background: colour?.c100, color: colour?.c700 }}>
+            <WorkInProgressLabel tool={tool} />
             <Icon name={tool.icon} size={40} stroke={1.8} />
           </span>
         )}

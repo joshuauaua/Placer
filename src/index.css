@@ -6179,3 +6179,41 @@ textarea.placer-case-input {
   .placer-project-tool-tile:hover { transform: none; }
 }
 
+
+/* "Work in Progress", on a tool's picture (WorkInProgressLabel): ink on white, in a
+ * corner of the picture, which is positioned for it. */
+.placer-wip-label {
+  position: absolute;
+  top: 10px;
+  z-index: 1;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--placer-white);
+  color: var(--placer-ink);
+  border: 1px solid var(--placer-ink);
+  font-family: var(--placer-font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.placer-wip-label-left { left: 10px; }
+.placer-wip-label-right { right: 10px; }
+
+.placer-wip-label-lg {
+  top: 24px;
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.placer-wip-label-lg.placer-wip-label-right { right: 24px; }
+
+@media (max-width: 700px) {
+  .placer-wip-label-lg {
+    top: 16px;
+  }
+  .placer-wip-label-lg.placer-wip-label-right { right: 12px; }
+}

@@ -22,6 +22,8 @@ export default {
   ...tone(PALETTE.purple),
   icon: 'pin',
   createdBy: 'PLACER',
+  // Finished: its picture carries no Work in Progress label (WorkInProgressLabel).
+  ready: true,
   component: PinToImage,
   // One picture and question per slide, for a run of them (ToolConfiguratorPage).
   slides: true,

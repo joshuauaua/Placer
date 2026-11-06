@@ -19,6 +19,8 @@ export default {
   ...tone(PALETTE.blue),
   icon: 'flag',
   createdBy: 'PLACER',
+  // Finished: its picture carries no Work in Progress label (WorkInProgressLabel).
+  ready: true,
   component: OpenVote,
   // One question per slide, for a run of them (ToolConfiguratorPage).
   slides: true,
