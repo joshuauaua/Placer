@@ -3802,13 +3802,23 @@ a {
 }
 
 /* PLACER — Create a tool's tools of one kind (ChooseToolDialog.jsx): a large panel with
- * the tools as cards, as many across as fit at 260px or more — three on a laptop, one
- * on a phone. A card rises on hover, with a shadow, and takes an ink ring on focus. */
+ * the tools as a list of wide cards, one under another — the picture on the left, the
+ * words beside it. A card rises on hover, with a shadow, and takes an ink ring on focus. */
 .placer-choose-tool-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   padding: 28px;
+}
+
+/* A tool's picture, on the left of its row: wide enough for its Work in Progress label. */
+.placer-choose-tool-thumb {
+  position: relative;
+  flex: 0 0 160px;
+  min-height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* A tool's tags on its card: small grey pills, each an icon and a few words. */
@@ -3850,7 +3860,16 @@ a {
 @media (max-width: 640px) {
   .placer-choose-tool-grid {
     padding: 16px;
-    gap: 14px;
+    gap: 10px;
+  }
+
+  .placer-choose-tool-thumb {
+    flex-basis: 120px;
+  }
+
+  /* The whole row is the button: on a phone the arrow gives its room to the words. */
+  .placer-choose-tool-arrow {
+    display: none !important;
   }
 
   .placer-choose-tool-panel {
@@ -5281,8 +5300,11 @@ a {
   border-color: var(--placer-grey-500);
 }
 
-/* The card's picture, empty: the + in a circle at its middle. */
+/* The whole card, empty: the + in a circle at its middle. As tall as the cards beside
+ * it, and never shorter than one of their pictures. */
 .placer-add-tool-plus {
+  flex: 1;
+  min-height: 160px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5294,8 +5316,8 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  height: 72px;
   border-radius: 999px;
   background: var(--placer-grey-100);
   transition: background 0.15s ease;

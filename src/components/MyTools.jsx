@@ -96,12 +96,10 @@ export function AddToolCard({ onCreateTool }) {
     <li>
       <button ref={ref} type="button" {...ARROW_ITEM} onClick={() => setOpen((was) => !was)}
         className="placer-template-card placer-add-tool-card"
-        aria-haspopup="menu" aria-expanded={open}>
-        <span className="placer-template-image placer-add-tool-plus">
-          <span className="placer-add-tool-circle"><Icon name="plus" size={28} stroke={2.2} /></span>
-        </span>
-        <span className="placer-template-text">
-          <span className="placer-template-title">Create a tool</span>
+        aria-label="Create a tool" title="Create a tool" aria-haspopup="menu" aria-expanded={open}>
+        {/* Only the +, larger, in the middle of the card: no words under it. */}
+        <span className="placer-add-tool-plus">
+          <span className="placer-add-tool-circle"><Icon name="plus" size={36} stroke={2.2} /></span>
         </span>
       </button>
       {open && (

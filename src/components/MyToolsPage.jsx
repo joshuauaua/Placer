@@ -22,11 +22,12 @@ export function MyToolsPage({ t, accountId = null, onOpen, onCreateTool }) {
           letterSpacing: '-0.03em', lineHeight: 1.15, margin: '0 0 8px' }}>
           My Tools
         </h1>
-        <p style={{ fontSize: 16, color: t.inkDim, margin: '0 0 32px' }}>
-          {count === 0
-            ? 'Nothing started yet. Create a tool to begin.'
-            : `${count} ${count === 1 ? 'tool' : 'tools'} you have started, the most recently changed first.`}
-        </p>
+        {/* Only when there is nothing yet; with tools, the cards say it all. */}
+        {count === 0 ? (
+          <p style={{ fontSize: 16, color: t.inkDim, margin: '0 0 32px' }}>Create a tool to begin.</p>
+        ) : (
+          <div style={{ height: 24 }} />
+        )}
         <ul aria-label="My Tools" className="placer-template-grid">
           {started.map(({ entry, tool }) => (
             <StartedToolCard key={entry.id} started={entry} tool={tool} onOpen={onOpen} onDelete={remove} />

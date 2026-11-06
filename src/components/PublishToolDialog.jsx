@@ -163,7 +163,7 @@ export function PublishToolDialog({ t, tool, name, slides, live, accountId, proj
     actions = (
       <>
         <Btn t={t} type="button" variant="ghost" onClick={onClose} disabled={busy}>Cancel</Btn>
-        <Btn t={t} type="submit" icon={live ? 'play' : 'send'} disabled={busy || Boolean(problem)}>
+        <Btn t={t} type="submit" icon={live ? undefined : 'send'} disabled={busy || Boolean(problem)}>
           {busy ? 'Publishing…' : live ? 'Go live' : 'Publish'}
         </Btn>
       </>

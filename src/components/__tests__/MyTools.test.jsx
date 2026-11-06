@@ -13,10 +13,10 @@ describe('MyTools', () => {
     const section = screen.getByRole('region', { name: 'My Tools' });
     const cards = within(section).getAllByRole('listitem');
     expect(cards).toHaveLength(1);
-    expect(within(cards[0]).getByRole('button')).toHaveTextContent('Create a tool');
-    expect(within(cards[0]).getByRole('button')).toHaveClass('placer-add-tool-card');
-    // Just the words: the kinds are in what it opens.
-    expect(within(cards[0]).getByRole('button')).not.toHaveTextContent('Understand');
+    const add = within(cards[0]).getByRole('button', { name: 'Create a tool' });
+    expect(add).toHaveClass('placer-add-tool-card');
+    // Only the +: no words on it, and the kinds are in what it opens.
+    expect(add).toHaveTextContent('');
   });
 
   it('opens Understand, Imagine and Plan from that card, and creates the kind chosen', () => {
@@ -47,7 +47,7 @@ describe('MyTools', () => {
     const cards = within(section).getAllByRole('listitem').map((item) => within(item).getAllByRole('button')[0]);
     // The started tool, then the card to create another, to its right.
     expect(cards).toHaveLength(2);
-    expect(cards[1]).toHaveTextContent('Create a tool');
+    expect(cards[1]).toHaveAccessibleName('Create a tool');
     expect(cards[0]).toHaveTextContent('Trees or benches?');
     expect(cards[0]).toHaveTextContent('Poll');
     expect(cards[0]).toHaveTextContent('2 slides');
