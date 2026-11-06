@@ -351,7 +351,7 @@ describe('ConfigureToolDialog, Stationary Activity Mapping', () => {
     { lat: 55.6000001, lng: 12.98 }, { lat: 55.6, lng: 13.0 }, { lat: 55.61, lng: 13.0 },
   ];
 
-  it('goes as the tool does: introduced, then the instructions, then the area and location', async () => {
+  it('goes as the tool does: introduced, the instructions, the area and location, then opens a room', async () => {
     const { onConfigured } = setup('stationary-activity-mapping', {}, { intro: true });
     // The introduction says what setting it up involves, and keeps its tagline for the tile.
     expect(screen.getByText(/outline the area this project maps/)).toBeInTheDocument();
@@ -363,31 +363,23 @@ describe('ConfigureToolDialog, Stationary Activity Mapping', () => {
     next();
 
     expect(screen.getByRole('heading', { name: 'Survey area' })).toBeInTheDocument();
-    save();
+    next();
     const alert = screen.getByRole('alert');
     expect(alert).toHaveTextContent('at least three corners');
     expect(alert).toHaveTextContent('Name the location.');
 
     fireEvent.click(screen.getByRole('button', { name: 'Draw the area' }));
     CORNERS.forEach((corner) => act(() => clickMap(lastMap(), corner)));
-    fireEvent.change(screen.getByLabelText('Location'), { target: { value: '  Stortorget, Malmö ' } });
+    fireEvent.change(screen.getByLabelText('Location'), { target: { value: 'Stortorget, Malmö' } });
+    next();
+
+    // It runs in a room now, for the project's team to join by its link, PIN or QR code.
+    expect(screen.getByRole('heading', { name: 'Open for' })).toBeInTheDocument();
     save();
 
     await waitFor(() => expect(onConfigured).toHaveBeenCalled());
-    expect(saveProjectToolSetup).toHaveBeenCalledWith('proj-1', 'stationary-activity-mapping', {
-      area: [{ lat: 55.6, lng: 12.98 }, { lat: 55.6, lng: 13.0 }, { lat: 55.61, lng: 13.0 }],
-      location: 'Stortorget, Malmö',
-    });
-  });
-
-  it('starts a change from what was saved', async () => {
-    readProjectToolSetup.mockResolvedValueOnce({ area: CORNERS, location: 'Stortorget' });
-    setup('stationary-activity-mapping');
-    await screen.findByRole('heading', { name: 'Instructions' });
-    next();
-
-    expect(screen.getByLabelText('Location')).toHaveValue('Stortorget');
-    expect(screen.getByText('3 corners')).toBeInTheDocument();
+    expect(createRoom).toHaveBeenCalledWith('stationary-activity-mapping', 'proj-1', '30d',
+      expect.objectContaining({ area: CORNERS, location: 'Stortorget, Malmö' }), null);
   });
 });
 

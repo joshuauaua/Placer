@@ -276,7 +276,7 @@ const NUMBER = new Intl.NumberFormat('en-GB');
  * this page is the one a shared link actually points at, so it has to work reached
  * cold with nothing but the id in the URL.
  */
-export function PublicProjectPage({ t, projectId, accountId, accountName = null, accountPhoto = null, onSignIn,
+export function PublicProjectPage({ t, projectId, accountId, identity = null, accountName = null, accountPhoto = null, onSignIn,
   onBack, onOpenProject, onOpenOrganisation, onOpenProfile, onEdit }) {
   const [project, setProject] = useState(null);
   // The tools its organisers added, as registry entries. A tool no longer in the
@@ -581,7 +581,7 @@ export function PublicProjectPage({ t, projectId, accountId, accountName = null,
     </>
   ) : (
     <ProjectToolCard t={t} tool={section.tool} room={room} projectId={projectId}
-      displayName={accountName} />
+      displayName={accountName} identity={identity} />
   ));
 
   // One section of the Project tab or the Workshop Room. The Workshop Room titles its

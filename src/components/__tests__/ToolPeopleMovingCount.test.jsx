@@ -195,3 +195,38 @@ describe('People Moving Count, configured on the canvas', () => {
     expect(onChange).toHaveBeenLastCalledWith({ ...SETUP, minutes: null });
   });
 });
+
+describe('People Moving Count, in a room', () => {
+  afterEach(() => cleanup());
+
+  const SESSION = { name: 'Ada Lovelace', date: '2026-11-06', time: '08:15', weather: 'Overcast' };
+  const room = (more = {}) => ({ roomId: 'room-1', status: 'open', config: SETUP, publish: vi.fn(), ...more });
+
+  it("counts at the room's site as the session filled in first, with no session form of its own", () => {
+    const thisRoom = room();
+    open({ room: thisRoom, fieldSession: SESSION, answering: true });
+    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+
+    expect(screen.queryByLabelText('Weather')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Session')).toHaveTextContent('Observer: Ada Lovelace');
+    expect(screen.getByLabelText('Session')).toHaveTextContent('Weather: Overcast');
+    expect(screen.getByLabelText('Session')).toHaveTextContent('Location: Södergatan');
+    // Nothing is sent before the first tap; then each tally, with who counted it.
+    expect(thisRoom.publish).not.toHaveBeenCalled();
+    tap('Walking');
+    expect(thisRoom.publish).toHaveBeenLastCalledWith({
+      counts: expect.objectContaining({ walking: 1 }), session: SESSION,
+    });
+    // A counter in a room keeps the way to their results.
+    expect(screen.getByRole('button', { name: 'See results' })).toBeInTheDocument();
+  });
+
+  it("shows its facilitator everybody's counts added up", () => {
+    open({ room: room({ combined: { counts: { walking: 5, running: 0, supported: 1, carried: 0, rolling: 0, bicycle: 4 }, observers: 2 } }), presenting: true });
+    expect(screen.getByLabelText('Total crossed')).toHaveTextContent('10');
+    expect(screen.getByLabelText('Pedestrians')).toHaveTextContent('6');
+    expect(screen.getByLabelText('People on bicycles')).toHaveTextContent('4');
+    expect(screen.getByText('2 counters')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Add one$/ })).not.toBeInTheDocument();
+  });
+});

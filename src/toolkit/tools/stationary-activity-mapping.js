@@ -1,8 +1,10 @@
 import { StationaryActivityMap } from '../../components/toolkit/StationaryActivityMap';
 import { InstructionsStep, SurveyAreaCanvas, SurveyAreaStep } from '../../components/toolkit/StationaryActivitySetup';
-import { defaultProjectSetup, projectSetupProblems, projectSetupToSave } from '../../lib/toolkit/stationaryActivity';
+import {
+  combineObservations, defaultProjectSetup, projectSetupProblems, projectSetupToSave,
+} from '../../lib/toolkit/stationaryActivity';
 import { PALETTE } from '../../theme';
-import { PUBLIC_LIFE_PROTOCOL_CREDIT, tone } from '../toolParts';
+import { PUBLIC_LIFE_PROTOCOL_CREDIT, roomText, tone } from '../toolParts';
 
 export default {
   id: 'stationary-activity-mapping',
@@ -22,6 +24,9 @@ export default {
   blurbOnCover: true,
   credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
   component: StationaryActivityMap,
+  // Its rooms are for the project's team: signed in, on the project, and asked for their
+  // name, the date, time and weather first (FieldSessionGate).
+  fieldSession: true,
   // A project sets it up as the tool itself starts: the instructions, then the area
   // and location everybody mapping for the project shares (StationaryActivitySetup.jsx).
   setupNote: 'You will outline the area this project maps and name its location. Everybody mapping for the project then starts from them, adding their own name, date, time and weather.',
@@ -35,5 +40,11 @@ export default {
       { title: 'Instructions', Form: InstructionsStep, problems: () => [], inPanel: false },
       { title: 'Survey area', Form: SurveyAreaStep, problems: projectSetupProblems },
     ],
+  },
+  // Each observer's points, shared with the room; its facilitator sees them tallied.
+  room: {
+    empty: () => ({ observations: [] }),
+    combine: (states) => combineObservations(states),
+    label: (config) => roomText(config?.location),
   },
 };

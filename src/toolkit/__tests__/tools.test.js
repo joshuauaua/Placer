@@ -84,7 +84,9 @@ describe('the register', () => {
   });
 
   it('keeps a setup without a room on the project\'s tool', () => {
-    expect(projectSetupKind(findTool('stationary-activity-mapping'))).toBe('config');
+    // No tool in the register is set up this way any more; the kind is still there.
+    expect(projectSetupKind({ id: 'kept', setup: { defaults: () => ({}), problems: () => [] } })).toBe('config');
+    expect(projectSetupKind(findTool('stationary-activity-mapping'))).toBe('room');
     expect(projectSetupKind(findTool('word-cloud'))).toBe('room');
   });
 

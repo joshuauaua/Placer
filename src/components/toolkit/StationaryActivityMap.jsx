@@ -9,6 +9,12 @@
  * first clicks the map to pick a location, then selects posture and activities,
  * then records. Every posture is drawn as its symbol (PostureSymbol.jsx).
  * The site's text face (--placer-font) is used throughout.
+ *
+ * In a room (opened by Publish) the area and location are the room's setup: the
+ * project's team come in by its link, PIN or QR code and fill in who they are, the date,
+ * time and weather first (FieldSessionGate, `fieldSession`), so the tool skips its own
+ * session form and goes from the instructions to the map. Each observer's points are
+ * shared with the room as they go; its facilitator (`presenting`) sees them all tallied.
  */
 
 import { useState, useRef, useEffect, useMemo } from 'react';
@@ -92,7 +98,12 @@ function popupContent(person, id) {
 // `setup` is a project's (project_tools.config, set in ConfigureToolDialog): the area
 // and location everybody mapping for it shares. Without one, the observer outlines
 // their own.
-export function StationaryActivityMap({ t, tool, setup = null }) {
+export function StationaryActivityMap({
+  t, tool, setup: ownSetup = null, room = null, fieldSession = null, presenting = false,
+}) {
+  // In a room, the room's setup; otherwise the project's, or none.
+  const inRoom = Boolean(room?.roomId);
+  const setup = inRoom ? (room.config ?? null) : ownSetup;
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
   const [mapFailed, setMapFailed] = useState(false);
@@ -106,10 +117,27 @@ export function StationaryActivityMap({ t, tool, setup = null }) {
   // or the results.
   const [step, setStep] = useState('instructions');
   const fixed = hasProjectSetup(setup);
-  const [session, setSession] = useState(() => sessionFromSetup(setup));
+  const [ownSession, setSession] = useState(() => sessionFromSetup(setup));
+  // In a room the session is the one filled in on its first screen, in the room's area.
+  const session = useMemo(
+    () => (inRoom ? { ...sessionFromSetup(setup), ...fieldSession } : ownSession),
+    [inRoom, setup, fieldSession, ownSession],
+  );
   const nextId = useRef(1);
 
   const counts = useMemo(() => tally(observations), [observations]);
+
+  // An observer's points go to the room as they record them, with who recorded them.
+  const publish = room?.publish;
+  const roomOpen = inRoom && room.status === 'open' && !presenting;
+  const recorded = useRef(false);
+  useEffect(() => {
+    if (!roomOpen || !publish || !recorded.current) return;
+    publish({
+      observations: observations.map(({ posture: kind, activities: what, position }) => ({ posture: kind, activities: what, position })),
+      session: fieldSession,
+    });
+  }, [roomOpen, publish, observations, fieldSession]);
   const activityList = posture ? ACTIVITIES_BY_POSTURE[posture] : [];
   const outside = selectedLocation && !insideArea(selectedLocation, session.area);
   const recordDisabled = !posture || activities.length === 0 || !selectedLocation || outside;
@@ -203,6 +231,7 @@ export function StationaryActivityMap({ t, tool, setup = null }) {
     const cell = Math.floor(Math.random() * 40);
     const person = { id: nextId.current, posture, activities: [...activities], cell, position: selectedLocation };
     nextId.current += 1;
+    recorded.current = true;
     setObservations((current) => [...current, person]);
     setLast(person);
     setPosture(null);
@@ -226,6 +255,11 @@ export function StationaryActivityMap({ t, tool, setup = null }) {
     ? `${selectedLocation.lat.toFixed(4)}, ${selectedLocation.lng.toFixed(4)}`
     : '';
 
+  // Its facilitator, putting the room up: everybody's observations, tallied.
+  if (presenting) {
+    return <RoomTally t={t} tool={tool} setup={setup} combined={room?.combined} />;
+  }
+
   // Step 3: outlining the area and filling in the sheet's header.
   if (step === 'configure') {
     return (
@@ -242,7 +276,7 @@ export function StationaryActivityMap({ t, tool, setup = null }) {
       <Panel t={t} title="Instructions">
         <StationaryInstructions t={t} />
         <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
-          <Btn t={t} onClick={() => setStep('configure')}>Get started</Btn>
+          <Btn t={t} onClick={() => setStep(inRoom ? 'map' : 'configure')}>Get started</Btn>
         </div>
       </Panel>
 
@@ -344,7 +378,9 @@ export function StationaryActivityMap({ t, tool, setup = null }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: 'var(--placer-font)' }}>
       <div>
-        <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={() => setStep('configure')}>Session</Btn>
+        <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={() => setStep(inRoom ? 'instructions' : 'configure')}>
+          {inRoom ? 'Instructions' : 'Session'}
+        </Btn>
       </div>
 
       {/* The sheet's header, as set up in step 3. */}
@@ -495,6 +531,38 @@ export function StationaryActivityMap({ t, tool, setup = null }) {
         </div>
       </Panel>
     </div>
+  );
+}
+
+/**
+ * A room put up by its facilitator: everybody's observations (`combined`, from
+ * combineObservations) tallied by posture, with how many people are observing.
+ */
+function RoomTally({ t, tool, setup, combined }) {
+  const counts = tally(combined?.observations ?? []);
+  const observers = combined?.observers ?? 0;
+  return (
+    <Panel t={t} title={setup?.location?.trim() || tool.name} aside={
+      <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
+        {observers} {observers === 1 ? 'observer' : 'observers'}
+      </span>
+    }>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 16, fontFamily: 'var(--placer-font)' }}>
+        <span aria-label="People recorded" className="placer-disp"
+          style={{ fontSize: 56, fontWeight: 700, color: t.ink, lineHeight: 1 }}>{counts.total}</span>
+        <span style={{ fontSize: 14, color: t.inkDim }}>{peopleWord(counts.total)} recorded</span>
+      </div>
+      <ul aria-label="By posture" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
+        {POSTURE_LIST.map((item) => (
+          <li key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: t.ink }}>
+            <PostureSymbol posture={item.key} size={14} />
+            <span style={{ flex: 1 }}>{item.label}</span>
+            <strong>{counts.byPosture[item.key]}</strong>
+          </li>
+        ))}
+      </ul>
+    </Panel>
   );
 }
 

@@ -240,6 +240,24 @@ export function tally(observations = []) {
   return counts;
 }
 
+/**
+ * Everybody's observations in a room, together: each observer's state is
+ * { observations, session }, as StationaryActivityMap sends it. Observations that are
+ * not sound (normaliseObservation) are left out.
+ */
+export function combineObservations(states = []) {
+  const observations = [];
+  let observers = 0;
+  for (const state of states) {
+    if (!Array.isArray(state?.observations)) continue;
+    observers += 1;
+    for (const observation of state.observations) {
+      if (normaliseObservation(observation)) observations.push(observation);
+    }
+  }
+  return { observations, observers };
+}
+
 export function peopleWord(count) {
   return count === 1 ? 'person' : 'people';
 }

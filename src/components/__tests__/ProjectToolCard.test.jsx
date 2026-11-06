@@ -21,11 +21,25 @@ describe('ProjectToolCard', () => {
   afterEach(() => cleanup());
 
   it('opens a tool the project set up as it was set up', async () => {
-    render(<ProjectToolCard t={THEME} tool={findTool('stationary-activity-mapping')} projectId="proj-1" />);
-    fireEvent.click(screen.getByRole('button', { name: /Stationary Activity Mapping/ }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Get started' }));
+    // No tool in the register is kept on the project's tool any more (they run in rooms),
+    // so a stand-in that is.
+    const kept = {
+      ...findTool('stationary-activity-mapping'), id: 'kept-tool', name: 'Kept tool', room: undefined,
+      component: ({ setup }) => <p>Set up at {setup?.location}</p>,
+    };
+    render(<ProjectToolCard t={THEME} tool={kept} projectId="proj-1" />);
+    fireEvent.click(screen.getByRole('button', { name: /Kept tool/ }));
 
-    expect(readProjectToolSetup).toHaveBeenCalledWith('proj-1', 'stationary-activity-mapping');
-    expect(screen.getByLabelText('Location')).toHaveValue('Stortorget');
+    expect(await screen.findByText('Set up at Stortorget')).toBeInTheDocument();
+    expect(readProjectToolSetup).toHaveBeenCalledWith('proj-1', 'kept-tool');
+  });
+
+  it("opens a Gehl field tool's room on who is observing, for its project's team only", () => {
+    render(<ProjectToolCard t={THEME} tool={findTool('people-moving-count')} projectId="proj-1"
+      room={{ id: 'room-1' }} identity={{ status: 'signedOut', accountId: null, name: null }} />);
+    fireEvent.click(screen.getByRole('button', { name: /People Moving Count/ }));
+
+    expect(screen.getByRole('heading', { name: 'Sign in to take part' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Get started' })).not.toBeInTheDocument();
   });
 });

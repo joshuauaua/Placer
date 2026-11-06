@@ -21,6 +21,9 @@ export default {
   createdBy: 'Gehl Institute',
   credit: PUBLIC_LIFE_PROTOCOL_CREDIT,
   component: SiteMapping,
+  // Its rooms are for the project's team: signed in, on the project, and asked for their
+  // name, the date, time and weather first (FieldSessionGate).
+  fieldSession: true,
   // Not on plcr.org or beta.plcr.org for now; only locally.
   hidden: 'production',
   setup: {

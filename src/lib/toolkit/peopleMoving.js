@@ -191,6 +191,26 @@ export function totals(counts) {
   return { pedestrian, bicycle, total: pedestrian + bicycle };
 }
 
+/**
+ * Everybody's counts in a room, added up: each counter's state is { counts, session },
+ * as PeopleMovingCount sends it. Anything that is not a count is ignored, so a broken
+ * or hostile state cannot throw the total off by more than its own numbers.
+ */
+export function combineCounts(states = []) {
+  const counts = emptyCounts();
+  let observers = 0;
+  for (const state of states) {
+    const theirs = state?.counts;
+    if (!theirs || typeof theirs !== 'object') continue;
+    observers += 1;
+    for (const mode of MODES) {
+      const value = Number(theirs[mode.key]);
+      if (Number.isFinite(value) && value > 0) counts[mode.key] += Math.floor(value);
+    }
+  }
+  return { counts, observers };
+}
+
 /** Seconds as a clock: "4:07", or "1:02:09" past the hour. */
 export function clock(seconds) {
   const whole = Math.max(0, Math.floor(seconds));
