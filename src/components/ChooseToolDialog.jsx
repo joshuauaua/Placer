@@ -2,12 +2,11 @@
  *
  * Create a tool (the side nav's button, or the dashboard's shortcut) first asks which
  * kind, Understand, Imagine or Plan (CreateToolMenu). This dialog then shows every
- * tool of that kind, A-Z, as a card in a grid: its picture, or its icon on its
- * category's colour, then its name, its tags — a field audit or public
+ * tool of that kind, A-Z, as a list of wide cards, one under another: its picture, or
+ * its icon on its category's colour, on the left; then its name, its tags — a field audit or public
  * feedback, and whether it runs live, self-paced on a phone, or both (toolTags) — and
  * who made it. The dialog is large —
- * nearly the window on a laptop — under a header in the category's colour; on a phone
- * the grid is one column. Choosing one calls `onPick` with its id; App opens its configuration
+ * nearly the window on a laptop — under a header in the category's colour. Choosing one calls `onPick` with its id; App opens its configuration
  * page. Escape, the close button or a click outside the panel closes it.
  */
 
@@ -22,22 +21,20 @@ function ToolCard({ t, tool, onPick }) {
   const colour = findCategory(tool.category)?.colour;
   return (
     <li style={{ display: 'flex' }}>
+      {/* A row: the picture on the left, then the name, tags and who made it, and the arrow. */}
       <button type="button" {...ARROW_ITEM} onClick={() => onPick(tool.id)} className="placer-choose-tool-card"
-        style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, textAlign: 'left',
+        style={{ flex: 1, display: 'flex', alignItems: 'stretch', padding: 0, textAlign: 'left',
           cursor: 'pointer', border: `1px solid ${t.line}`, borderRadius: 16, background: t.surface,
           overflow: 'hidden', fontFamily: 'var(--placer-font)', color: t.ink }}>
-        <span style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          height: 132, background: colour?.c100, color: colour?.c700 }}>
+        <span className="placer-choose-tool-thumb" style={{ background: colour?.c100, color: colour?.c700 }}>
           <WorkInProgressLabel tool={tool} />
           {tool.image
             ? <img src={tool.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <Icon name={tool.icon} size={44} stroke={1.8} />}
+            : <Icon name={tool.icon} size={36} stroke={1.8} />}
         </span>
-        <span style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '16px 18px 18px', flex: 1 }}>
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, lineHeight: 1.3 }}>{tool.name}</h3>
-            <Icon name="arrowRight" size={18} stroke={2.2} style={{ color: t.inkDim, flex: '0 0 auto' }} />
-          </span>
+        <span style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6,
+          padding: '14px 18px', flex: 1, minWidth: 0 }}>
+          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, lineHeight: 1.3 }}>{tool.name}</h3>
           <span className="placer-tool-tags" aria-label="Tags">
             {toolTags(tool).map((tag) => (
               <span key={tag.id} className="placer-tool-tag">
@@ -47,10 +44,12 @@ function ToolCard({ t, tool, onPick }) {
             ))}
           </span>
           {tool.createdBy && (
-            <span className="placer-caption" style={{ color: t.inkDim, marginTop: 'auto', paddingTop: 6 }}>
-              By {tool.createdBy}
-            </span>
+            <span className="placer-caption" style={{ color: t.inkDim }}>By {tool.createdBy}</span>
           )}
+        </span>
+        <span className="placer-choose-tool-arrow"
+          style={{ display: 'flex', alignItems: 'center', padding: '0 18px 0 4px', flex: '0 0 auto' }}>
+          <Icon name="arrowRight" size={18} stroke={2.2} style={{ color: t.inkDim }} />
         </span>
       </button>
     </li>

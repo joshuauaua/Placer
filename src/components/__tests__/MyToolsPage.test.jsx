@@ -24,30 +24,32 @@ describe('MyToolsPage', () => {
     render(<MyToolsPage t={THEME} accountId="a" onOpen={onOpen} />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'My Tools' })).toBeInTheDocument();
-    expect(screen.getByText('6 tools you have started, the most recently changed first.')).toBeInTheDocument();
+    // With tools, no line about them: the cards say it all.
+    expect(screen.queryByText(/you have started/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Create a tool to begin.')).not.toBeInTheDocument();
     const cards = within(screen.getByRole('list', { name: 'My Tools' })).getAllByRole('listitem');
     expect(cards).toHaveLength(7);
-    expect(cards.at(-1)).toHaveTextContent('Create a tool');
+    expect(within(cards.at(-1)).getByRole('button')).toHaveAccessibleName('Create a tool');
 
     fireEvent.click(within(cards[0]).getAllByRole('button')[0]);
     expect(onOpen).toHaveBeenCalledWith('street-mixer', 't5');
   });
 
-  it('deletes a tool from the page, and counts what is left', () => {
+  it('deletes a tool from the page', () => {
     startSome(2);
     render(<MyToolsPage t={THEME} accountId="a" onOpen={vi.fn()} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete Workshop tool 2' }));
     fireEvent.click(screen.getByRole('button', { name: /^Delete Workshop tool 2\?/ }));
 
-    expect(screen.getByText('1 tool you have started, the most recently changed first.')).toBeInTheDocument();
     expect(screen.queryByText('Workshop tool 2')).toBeNull();
+    expect(screen.getByText('Workshop tool 1')).toBeInTheDocument();
   });
 
   it('says so when nothing has been started, with the card to create one', () => {
     render(<MyToolsPage t={THEME} accountId="a" onOpen={vi.fn()} />);
 
-    expect(screen.getByText('Nothing started yet. Create a tool to begin.')).toBeInTheDocument();
+    expect(screen.getByText('Create a tool to begin.')).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
   });
 
