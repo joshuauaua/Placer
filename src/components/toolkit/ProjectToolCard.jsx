@@ -14,24 +14,33 @@ import { Icon } from '../Icon';
 import { RoomBar } from './RoomBar';
 import { useRoom } from './useRoom';
 import { useProjectToolSetup } from './useProjectToolSetup';
+import { FieldSessionGate } from './FieldSessionGate';
+import { asksForFieldSession } from '../../lib/toolkit/fieldSession';
 
 /** The tool itself, in its room if it has one, and as the project set it up if it did. */
-function ProjectToolRun({ t, tool, room, projectId, displayName }) {
+function ProjectToolRun({ t, tool, room, projectId, displayName, identity }) {
   const roomState = useRoom({ tool, roomId: room?.id ?? null, displayName });
   const projectSetup = useProjectToolSetup(projectId, tool);
   const Tool = tool.component;
+  // A Gehl field tool's room asks first who is observing, when and in what weather,
+  // and only its project's team can answer (FieldSessionGate) — here as from its link.
+  const [fieldSession, setFieldSession] = useState(null);
+
+  if (room && asksForFieldSession(tool) && !fieldSession) {
+    return <FieldSessionGate t={t} tool={tool} roomId={room.id} identity={identity} onReady={setFieldSession} />;
+  }
 
   return (
     <>
       <RoomBar t={t} tool={tool} room={roomState} />
       {projectSetup.ready
-        ? <Tool t={t} tool={tool} room={roomState} setup={projectSetup.setup} />
+        ? <Tool t={t} tool={tool} room={roomState} setup={projectSetup.setup} fieldSession={fieldSession} />
         : <p style={{ fontSize: 14, color: t.inkDim, margin: 0 }}>Loading…</p>}
     </>
   );
 }
 
-export function ProjectToolCard({ t, tool, room = null, projectId = null, displayName = null }) {
+export function ProjectToolCard({ t, tool, room = null, projectId = null, displayName = null, identity = null }) {
   const panelId = useId();
   const [open, setOpen] = useState(false);
 
@@ -52,7 +61,8 @@ export function ProjectToolCard({ t, tool, room = null, projectId = null, displa
 
       {open && (
         <div id={panelId} style={{ padding: 20, borderTop: `1px solid ${t.line}` }}>
-          <ProjectToolRun t={t} tool={tool} room={room} projectId={projectId} displayName={displayName} />
+          <ProjectToolRun t={t} tool={tool} room={room} projectId={projectId} displayName={displayName}
+            identity={identity} />
         </div>
       )}
     </div>

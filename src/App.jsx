@@ -1,6 +1,6 @@
 /* PLACER — Reimagine Your City */
 
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import posthog from 'posthog-js';
 import { Switch, Route, Redirect, useLocation, useSearch } from 'wouter';
 import { THEME } from './theme';
@@ -206,6 +206,11 @@ function MainApp({ initialView = 'welcome' }) {
   const { profile, status: identityStatus, accountId, email: accountEmail, signIn: handleSignIn,
     signOut: signOutOfPlacer, saveProfile: handleSaveProfile } = useIdentity();
   const identityLoading = identityStatus === 'loading';
+  // Who is signed in, for a Gehl field tool's room: only its project's team takes part.
+  const toolkitIdentity = useMemo(
+    () => ({ status: identityStatus, accountId, name: profile?.name ?? null }),
+    [identityStatus, accountId, profile?.name],
+  );
 
   // The organisations this account is an admin of, which the Organisations page lists
   // first, and in the name of any of which a new project can be run. Re-read whenever something here changes the answer —
@@ -415,7 +420,7 @@ function MainApp({ initialView = 'welcome' }) {
   if (isFullScreenTool(location, search)) {
     return (
       <Suspense fallback={<LoadingFallback />}>
-        <ToolkitPage t={t} displayName={profile?.name ?? null} />
+        <ToolkitPage t={t} displayName={profile?.name ?? null} identity={toolkitIdentity} />
       </Suspense>
     );
   }
@@ -579,6 +584,7 @@ function MainApp({ initialView = 'welcome' }) {
                 <ToolkitPage
                   t={t}
                   displayName={profile?.name ?? null}
+                  identity={toolkitIdentity}
                 />
               </Suspense>
             )}
@@ -728,7 +734,7 @@ function MainApp({ initialView = 'welcome' }) {
 
             {view === 'projectPublic' && (
               <Suspense fallback={<LoadingFallback />}>
-                <PublicProjectPage t={t} projectId={projectRoute.id} accountId={accountId}
+                <PublicProjectPage t={t} projectId={projectRoute.id} accountId={accountId} identity={toolkitIdentity}
                   accountName={profile?.name ?? null} accountPhoto={profile?.photo ?? null} onSignIn={handleSignIn}
                   onBack={() => show('projects')}
                   onOpenProject={showProjectPublic}

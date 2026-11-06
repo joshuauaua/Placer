@@ -170,6 +170,19 @@ export async function readRoom(roomId) {
 }
 
 /**
+ * Whether the signed-in account is on this room's project — its owner or one of its
+ * collaborators (supabase/rooms-member.sql). A Gehl field tool asks before anybody
+ * takes part (FieldSessionGate). False for somebody signed out, and for a room opened
+ * without a project.
+ */
+export async function isRoomMember(roomId) {
+  const supabase = await client();
+  const { data, error } = await supabase.rpc('toolkit_room_is_member', { p_room_id: roomId });
+  if (error) throw new Error(`Could not check whether you are on this project: ${error.message}`);
+  return data === true;
+}
+
+/**
  * The rooms a project has open, newest first, for its public page: each one's id,
  * tool, closing time and setup (supabase/project-open-rooms.sql). Public. Never the
  * PIN, the join code or the facilitator token.

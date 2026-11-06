@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vite-plus/test';
 import {
-  MODES, MAX_CORNERS, MAX_POINTS, bump, clock, defaultProjectSetup, emptyCounts, emptySession, hasProjectSetup,
+  MODES, MAX_CORNERS, combineCounts, MAX_POINTS, bump, clock, defaultProjectSetup, emptyCounts, emptySession, hasProjectSetup,
   modesIn, projectSetupProblems, projectSetupToSave, sessionFromSetup, sessionProblems, summaryText, timerSeconds,
   totals,
 } from '../peopleMoving';
@@ -99,5 +99,18 @@ describe("a slide's setup", () => {
   it('starts from nothing when the setup is not complete', () => {
     expect(sessionFromSetup({ ...SETUP, area: [] }).line).toEqual([]);
     expect(sessionFromSetup(null).location).toBe('');
+  });
+});
+
+describe('a room', () => {
+  it("adds everybody's counts up, ignoring anything that is not a count", () => {
+    const combined = combineCounts([
+      { counts: { ...emptyCounts(), walking: 3, bicycle: 1 } },
+      { counts: { ...emptyCounts(), walking: 2, carried: 1 } },
+      { counts: { walking: -4, rolling: 'lots', bicycle: 2.7 } },
+      { nothing: true },
+    ]);
+    expect(combined.observers).toBe(3);
+    expect(combined.counts).toMatchObject({ walking: 5, carried: 1, rolling: 0, bicycle: 3 });
   });
 });

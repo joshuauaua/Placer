@@ -14,9 +14,15 @@
  * configuration page the site is drawn on the canvas (CountSiteCanvas), not here; in
  * the Preview (`answering`) the tool opens straight on the counting screen, as
  * somebody counting would see it.
+ *
+ * In a room (opened by Publish, one per slide) the setup is the room's: the project's
+ * team come in by its link, PIN or QR code, and fill in who they are, the date, time and
+ * weather first (FieldSessionGate, `fieldSession`), so the tool skips its own session
+ * form and goes from the instructions to the count. Each counter's tally is shared
+ * with the room as they go; its facilitator (`presenting`) sees everybody's added up.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { Panel } from '../ToolLayout';
 import { Btn, CopyButton } from '../UI';
 import { Icon } from '../Icon';
@@ -184,23 +190,45 @@ function ModeButton({ t, tool, mode, count, onAdd, onRemove }) {
 // `setup` is a project's (project_tools.config): the area, line and location everybody
 // counting for it shares, and the timer. Without one, the observer draws their own and
 // counts for the protocol's ten minutes.
-export function PeopleMovingCount({ t, tool, setup = null, answering = false }) {
+export function PeopleMovingCount({
+  t, tool, setup: ownSetup = null, room = null, fieldSession = null, answering = false, presenting = false,
+}) {
+  // In a room, the room's setup; otherwise the project's, or none.
+  const inRoom = Boolean(room?.roomId);
+  const setup = inRoom ? (room.config ?? null) : ownSetup;
   const fixed = hasProjectSetup(setup);
   // Which step after the cover: the instructions, setting up the session, the count,
   // or the results. Somebody answering in the Preview starts on the count.
-  const [step, setStep] = useState(answering ? 'count' : 'instructions');
-  const [session, setSession] = useState(() => sessionFromSetup(setup));
+  const [step, setStep] = useState(answering && !inRoom ? 'count' : 'instructions');
+  const [ownSession, setSession] = useState(() => sessionFromSetup(setup));
+  // In a room the session is the one filled in on its first screen, at the room's site.
+  const session = inRoom ? { ...sessionFromSetup(setup), ...fieldSession } : ownSession;
+  // Where Get started and the count's Back go: a room has no session form of its own.
+  const sessionStep = inRoom ? 'instructions' : 'configure';
+  // Only the Preview hides the way back and the results; a room's counter keeps them.
+  const previewing = answering && !inRoom;
   const [counts, setCounts] = useState(emptyCounts);
   // Each tap in order, so Undo can take off the last.
   const history = useRef([]);
+  // Whether anything has been tapped yet: until then there is nothing to send a room.
+  const counting = useRef(false);
   const [last, setLast] = useState(null);
   // How long the count runs, or null for no timer.
   const limit = timerSeconds(setup);
   const timer = useCountTimer(limit ?? Infinity);
   const sums = useMemo(() => totals(counts), [counts]);
 
+  // A counter's tally goes to the room as they count, with who counted it.
+  const publish = room?.publish;
+  const roomOpen = inRoom && room.status === 'open' && !presenting;
+  useEffect(() => {
+    if (!roomOpen || !publish || !counting.current) return;
+    publish({ counts, session: fieldSession });
+  }, [roomOpen, publish, counts, fieldSession]);
+
   function add(mode) {
     setCounts((current) => bump(current, mode));
+    counting.current = true;
     history.current.push(mode);
     setLast(mode);
     // The first tap starts the clock, if it has not been started.
@@ -229,13 +257,18 @@ export function PeopleMovingCount({ t, tool, setup = null, answering = false }) 
     timer.reset();
   }
 
+  // Its facilitator, putting the room up: the site, and everybody's counts added up.
+  if (presenting) {
+    return <RoomTally t={t} tool={tool} setup={setup} combined={room?.combined} />;
+  }
+
   if (step === 'instructions') {
     return (
       <div style={{ fontFamily: 'var(--placer-font)' }}>
         <Panel t={t} title="Instructions">
           <PeopleMovingInstructions t={t} />
           <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
-            <Btn t={t} onClick={() => setStep('configure')}>Get started</Btn>
+            <Btn t={t} onClick={() => setStep(inRoom ? 'count' : 'configure')}>Get started</Btn>
           </div>
         </Panel>
       </div>
@@ -328,10 +361,12 @@ export function PeopleMovingCount({ t, tool, setup = null, answering = false }) 
   // The count: the timer and the tally at the top, the buttons, and the line beside them.
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: 'var(--placer-font)' }}>
-      {!answering && (
+      {!previewing && (
         <>
           <div>
-            <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={() => setStep('configure')}>Session</Btn>
+            <Btn t={t} variant="ghost" size="sm" icon="chevLeft" onClick={() => setStep(sessionStep)}>
+              {inRoom ? 'Instructions' : 'Session'}
+            </Btn>
           </div>
           <p aria-label="Session" className="placer-mono" style={{ margin: 0, fontSize: 12, color: t.inkDim, lineHeight: 1.6 }}>
             {sessionLines(session).join(' · ')}
@@ -381,11 +416,64 @@ export function PeopleMovingCount({ t, tool, setup = null, answering = false }) 
           </Panel>
         </div>
 
-        {!answering && (
+        {!previewing && (
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
             <Btn t={t} onClick={() => setStep('results')}>See results</Btn>
           </div>
         )}
+      </Panel>
+    </div>
+  );
+}
+
+/**
+ * A room put up by its facilitator: the site, and everybody's counts added up
+ * (`combined`, from combineCounts) — the total, each group and each way of moving, and
+ * how many people are counting.
+ */
+function RoomTally({ t, tool, setup, combined }) {
+  const counts = combined?.counts ?? emptyCounts();
+  const sums = totals(counts);
+  const observers = combined?.observers ?? 0;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: 'var(--placer-font)' }}>
+      <Panel t={t} title={setup?.location?.trim() || tool.name} aside={
+        <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>
+          {observers} {observers === 1 ? 'counter' : 'counters'}
+        </span>
+      }>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
+          <div style={{ flex: '2 1 300px', minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span aria-label="Total crossed" className="placer-disp"
+                style={{ fontSize: 56, fontWeight: 700, color: t.ink, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                {sums.total}
+              </span>
+              <span style={{ fontSize: 14, color: t.inkDim }}>{peopleWord(sums.total)} crossed</span>
+            </div>
+            <dl style={{ margin: '20px 0 0', display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px 16px', fontSize: 14 }}>
+              {GROUPS.map((group) => (
+                <Fragment key={group.key}>
+                  <dt style={{ fontWeight: 700, color: t.ink }}>{group.label}</dt>
+                  <dd aria-label={group.label} style={{ margin: 0, fontWeight: 700, color: t.ink, textAlign: 'right' }}>
+                    {sums[group.key]}
+                  </dd>
+                  {modesIn(group.key).length > 1 && modesIn(group.key).map((mode) => (
+                    <Fragment key={mode.key}>
+                      <dt style={{ paddingLeft: 14, color: t.inkDim }}>{mode.label}</dt>
+                      <dd style={{ margin: 0, color: t.inkDim, textAlign: 'right' }}>{counts[mode.key] ?? 0}</dd>
+                    </Fragment>
+                  ))}
+                </Fragment>
+              ))}
+            </dl>
+          </div>
+          <div style={{ flex: '3 1 360px', minWidth: 0 }}>
+            {(setup?.line?.length ?? 0) >= 2 && (
+              <CountSiteMap t={t} tool={tool} site={setup} readOnly height={360} />
+            )}
+          </div>
+        </div>
       </Panel>
     </div>
   );

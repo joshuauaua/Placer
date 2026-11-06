@@ -41,6 +41,8 @@ import { hostedRoom, projectIdFrom, roomIdFrom } from '../toolkit/rooms';
 import { rememberedSequence, roomSequence } from '../toolkit/sequence';
 import { closeRoom, isSupabaseConfigured } from '../services/rooms';
 import { SlideSteps } from './toolkit/SlideSteps';
+import { FieldSessionGate } from './toolkit/FieldSessionGate';
+import { asksForFieldSession } from '../lib/toolkit/fieldSession';
 import { readProjectCrumb } from '../services/projects';
 import { FULL_SCREEN_TOOLS, isFullScreenTool, startedToolPath } from '../lib/routes';
 
@@ -59,6 +61,9 @@ export function projectTrail(projectId, crumb) {
   return [{ label: name, href: `/projects/${projectId}` }];
 }
 
+// A room in one of these states cannot be taken part in (useRoom).
+const ROOM_GONE = ['error', 'closed', 'deleted', 'expired'];
+
 /** The tool id in a path like /toolkit/street-mixer, if there is one. */
 export function toolIdFrom(path) {
   const match = /^\/toolkit\/([^/?#]+)/.exec(path);
@@ -70,7 +75,9 @@ export function toolIdFrom(path) {
   }
 }
 
-export function ToolkitPage({ t, displayName = null }) {
+// `identity` is { status, accountId, name } from useIdentity, for a Gehl field tool's
+// room, which only its project's team can take part in (FieldSessionGate).
+export function ToolkitPage({ t, displayName = null, identity = null }) {
   const [location, navigate] = useLocation();
   const search = useSearch();
   const requestedId = toolIdFrom(location);
@@ -132,6 +139,9 @@ export function ToolkitPage({ t, displayName = null }) {
   // opening a different tool lands on that one's cover rather than skipping it,
   // and opening a room (which only changes the query string) does not bring it back.
   const [startedId, setStartedId] = useState(null);
+  // A Gehl field tool's session, filled in on its first screen in a room
+  // (FieldSessionGate): kept per tool, so it carries on from one slide's room to the next.
+  const [fieldSession, setFieldSession] = useState(null);
 
   // No tool named, or none by that name: there is no gallery to fall back to, so home.
   // Only from under /toolkit: on the way out to somewhere else there is nothing to do.
@@ -160,6 +170,24 @@ export function ToolkitPage({ t, displayName = null }) {
     return <InviteCover t={t} tool={tool} invite={roomInvite(room.config)} onStart={() => setStartedId(tool.id)} />;
   }
 
+  // A Gehl field tool asks who is observing, when and in what weather before anything
+  // else — and only its project's team can answer (FieldSessionGate).
+  if (inRoom && !room.isHost && asksForFieldSession(tool) && fieldSession?.tool !== tool.id) {
+    return (
+      <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: t.page, padding: '24px 16px 64px',
+        boxSizing: 'border-box' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto' }}>
+          {room.status !== 'open' && room.status !== 'opening' && <RoomBar t={t} tool={tool} room={room} />}
+          {/* A room that is gone, or never was, says only that: nobody signs in to nothing. */}
+          {!ROOM_GONE.includes(room.status) && (
+            <FieldSessionGate t={t} tool={tool} roomId={room.roomId} identity={identity}
+              onReady={(session) => setFieldSession({ tool: tool.id, session })} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // Somebody taking part: the tool as they answer it, and nothing else (as Preview shows).
   if (inRoom && !room.isHost) {
     return (
@@ -168,7 +196,10 @@ export function ToolkitPage({ t, displayName = null }) {
         <div style={{ maxWidth: 760, margin: '0 auto' }}>
           {/* Only to say it is not open (yet, or any more): no strip saying they are in it. */}
           {room.status !== 'open' && <RoomBar t={t} tool={tool} room={room} />}
-          {projectSetup.ready && <Tool t={t} tool={tool} room={room} setup={projectSetup.setup} answering />}
+          {projectSetup.ready && (
+            <Tool t={t} tool={tool} room={room} setup={projectSetup.setup} answering
+              fieldSession={fieldSession?.tool === tool.id ? fieldSession.session : null} />
+          )}
           {sequence && (
             <SlideSteps t={t} index={sequence.index} count={sequence.count}
               onNext={sequence.next ? goToNextSlide : undefined} />

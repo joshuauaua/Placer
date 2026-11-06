@@ -17,6 +17,7 @@ import {
   emptySession,
   insideArea,
   sessionProblems,
+  combineObservations,
 } from '../stationaryActivity';
 
 describe('the field sheet', () => {
@@ -214,5 +215,17 @@ describe('the session', () => {
     expect(insideArea({ lat: 1, lng: 1 }, square)).toBe(true);
     expect(insideArea({ lat: 3, lng: 1 }, square)).toBe(false);
     expect(insideArea({ lat: 1, lng: 1 }, square.slice(0, 2))).toBe(false);
+  });
+});
+
+describe('a room', () => {
+  it("puts everybody's sound observations together", () => {
+    const combined = combineObservations([
+      { observations: [{ posture: 'standing', activities: ['conversing'] }, { posture: 'flying' }] },
+      { observations: [{ posture: 'lying', activities: [] }] },
+      { observations: 'nope' },
+    ]);
+    expect(combined.observers).toBe(2);
+    expect(combined.observations.map((o) => o.posture)).toEqual(['standing', 'lying']);
   });
 });

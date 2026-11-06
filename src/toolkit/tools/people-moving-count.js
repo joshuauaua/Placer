@@ -1,10 +1,10 @@
 import { PeopleMovingCount } from '../../components/toolkit/PeopleMovingCount';
 import { CountSiteCanvas, CountSiteStep, InstructionsStep, TimerStep } from '../../components/toolkit/PeopleMovingSetup';
 import {
-  defaultProjectSetup, locationProblems, projectSetupProblems, projectSetupToSave, siteProblems, timerProblems,
+  combineCounts, defaultProjectSetup, emptyCounts, locationProblems, projectSetupProblems, projectSetupToSave, siteProblems, timerProblems,
 } from '../../lib/toolkit/peopleMoving';
 import { PALETTE } from '../../theme';
-import { PUBLIC_LIFE_PROTOCOL_CREDIT, tone } from '../toolParts';
+import { PUBLIC_LIFE_PROTOCOL_CREDIT, roomText, tone } from '../toolParts';
 
 export default {
   id: 'people-moving-count',
@@ -28,6 +28,9 @@ export default {
   // line on top of it and the location everybody counting for the project shares, and
   // the timer (PeopleMovingSetup.jsx).
   setupNote: 'You will outline the area this project counts in, draw the line people are counted crossing on top of it, name its location and set the timer. Everybody counting for the project then starts from them, and cannot change them; they add their own name, date, time and weather.',
+  // Its rooms are for the project's team: signed in, on the project, and asked for their
+  // name, the date, time and weather first (FieldSessionGate).
+  fieldSession: true,
   // One count site per slide — an area, its line and its timer — for a run of them.
   slides: true,
   setup: {
@@ -45,5 +48,11 @@ export default {
       { title: 'Count site', Form: CountSiteStep, problems: (setup) => [...siteProblems(setup), ...locationProblems(setup)] },
       { title: 'Timer', panelTitle: null, Form: TimerStep, problems: timerProblems },
     ],
+  },
+  // Each counter's tally, shared with the room; its facilitator sees them added up.
+  room: {
+    empty: () => ({ counts: emptyCounts() }),
+    combine: (states) => combineCounts(states),
+    label: (config) => roomText(config?.location),
   },
 };
