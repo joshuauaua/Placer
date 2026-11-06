@@ -1,9 +1,10 @@
 /* PLACER — People Moving Count: everybody who crosses a line, counted as they cross.
  *
- * After Gehl's Public Life Data Protocol. The organiser draws the count line on a map
- * — across a street, a path or a square's entrance — and the observer stands by it and
- * taps once for each person who crosses it, in either direction, by how they move. A
- * timer runs over the count, which the protocol keeps to ten minutes.
+ * After Gehl's Public Life Data Protocol. The organiser outlines the area on a map, then
+ * draws the count line on top of it — across a street, a path or a square's entrance —
+ * and the observer stands by it and taps once for each person who crosses it, in either
+ * direction, by how they move. A timer can run over the count: ten minutes by the
+ * protocol, or another length, or none, as the organiser sets it.
  *
  * Every mode but cycling counts as a pedestrian; people on bicycles are counted apart.
  */
@@ -29,12 +30,22 @@ export const GROUPS = [
 export const modesIn = (group) => MODES.filter((mode) => mode.group === group);
 
 /** How long the protocol counts for, each time: ten minutes. */
-export const COUNT_SECONDS = 10 * 60;
+export const COUNT_MINUTES = 10;
+export const COUNT_SECONDS = COUNT_MINUTES * 60;
+
+/** The lengths the timer can be set to, in minutes. */
+export const TIMER_MINUTES = [5, 10, 15, 20, 30, 60];
+
+/** How long a setup's timer runs, in seconds, or null for no timer. */
+export function timerSeconds(setup) {
+  if (!setup || setup.minutes === undefined) return COUNT_SECONDS;
+  return TIMER_MINUTES.includes(setup.minutes) ? setup.minutes * 60 : null;
+}
 
 /** How to count, after the protocol's field sheet. */
 export const DIRECTIONS = [
   'Stand where you can see the whole count line on your map, and count from the same spot each time.',
-  'Count for 10 minutes. Start the timer as you start counting; the first tap starts it too.',
+  'Count for the time on the timer (10 minutes by the protocol). Start it as you start counting; the first tap starts it too.',
   'Tap once for every person who crosses the line, in either direction, by how they are moving.',
   'Walking, running or jogging, supported (e.g. in a wheelchair), carried (e.g. in a stroller) and rolling (e.g. on a skateboard) all count as pedestrians. People on bicycles are counted on their own.',
   'Count a person only once, as they cross. Do not count people who stop short of the line or are standing on it.',
@@ -43,41 +54,66 @@ export const DIRECTIONS = [
   'Note anything out of the ordinary while you count — an event, roadworks, a sudden downpour.',
 ];
 
-/* --- The line --- */
+/* --- The area, and the line on top of it --- */
 
 // project_tools.config is kept small (supabase/project-tool-config.sql: 2000
-// characters), so a line has at most this many points, each to about 10 cm.
-export const MAX_POINTS = 12;
+// characters), so an area has at most this many corners and a line this many points,
+// each to about 10 cm.
+export const MAX_CORNERS = 24;
+export const MAX_POINTS = 10;
 const round = (value) => Math.round(value * 1e6) / 1e6;
+const rounded = (points, most) => (points ?? []).slice(0, most).map(({ lat, lng }) => ({ lat: round(lat), lng: round(lng) }));
+
+/** What is wrong with the outline of the area, if anything. */
+export function areaProblems(area) {
+  return (area?.length ?? 0) < 3 ? ['Outline the area on the map with the polygon tool: at least three corners.'] : [];
+}
 
 /** What is wrong with the count line, if anything. */
 export function lineProblems(line) {
-  return (line?.length ?? 0) < 2 ? ['Draw the count line on the map: at least two points.'] : [];
+  return (line?.length ?? 0) < 2 ? ['Draw the count line over the area with the line tool: at least two points.'] : [];
 }
 
-/* --- A project's setup: the line and location everybody counting for it shares --- */
+/* --- A project's setup: one slide's area, line, location and timer --- */
 
-/** A project's setup not filled in yet. */
+/** A slide not filled in yet: no area or line, and the protocol's ten-minute timer. */
 export function defaultProjectSetup() {
-  return { line: [], location: '' };
+  return { area: [], line: [], location: '', minutes: COUNT_MINUTES };
 }
 
-/** What a project's setup is missing, as sentences. */
+/** What is wrong with the area and the line, in the order they are drawn. */
+export function siteProblems(setup) {
+  return [...areaProblems(setup?.area), ...lineProblems(setup?.line)];
+}
+
+/** What is wrong with the location, the slide's title. */
+export function locationProblems(setup) {
+  return setup?.location?.trim() ? [] : ['Name the location.'];
+}
+
+/** What is wrong with the timer: a length it cannot be set to. None at all is fine. */
+export function timerProblems(setup) {
+  const minutes = setup?.minutes;
+  return minutes === null || minutes === undefined || TIMER_MINUTES.includes(minutes)
+    ? [] : ['Pick how long the timer runs.'];
+}
+
+/** What a slide's setup is missing, as sentences. */
 export function projectSetupProblems(setup) {
-  const problems = [...lineProblems(setup?.line)];
-  if (!setup?.location?.trim()) problems.push('Name the location.');
-  return problems;
+  return [...siteProblems(setup), ...locationProblems(setup), ...timerProblems(setup)];
 }
 
-/** A project's setup as it is saved: points rounded, the location trimmed. */
+/** A slide's setup as it is saved: points rounded, the location trimmed. */
 export function projectSetupToSave(setup) {
   return {
-    line: (setup.line ?? []).slice(0, MAX_POINTS).map(({ lat, lng }) => ({ lat: round(lat), lng: round(lng) })),
+    area: rounded(setup.area, MAX_CORNERS),
+    line: rounded(setup.line, MAX_POINTS),
     location: setup.location.trim(),
+    minutes: setup.minutes ?? null,
   };
 }
 
-/** Whether a project's setup fixes the line and location, so observers do not choose them. */
+/** Whether a setup fixes the area, line and location, so observers do not choose them. */
 export function hasProjectSetup(setup) {
   return projectSetupProblems(setup).length === 0;
 }
@@ -97,20 +133,21 @@ export function emptySession(now = new Date()) {
     time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
     weather: '',
     location: '',
+    area: [],
     line: [],
   };
 }
 
-/** A session started from a project's setup: its line and location, the rest as emptySession. */
+/** A session started from a project's setup: its area, line and location, the rest as emptySession. */
 export function sessionFromSetup(setup, now = new Date()) {
   const session = emptySession(now);
   if (!hasProjectSetup(setup)) return session;
-  return { ...session, line: setup.line, location: setup.location };
+  return { ...session, area: setup.area, line: setup.line, location: setup.location };
 }
 
 /** What is still missing before counting can start, in the order the form asks. */
 export function sessionProblems(session) {
-  const problems = [...lineProblems(session.line)];
+  const problems = [...siteProblems(session)];
   if (!session.name.trim()) problems.push('Add your name.');
   if (!session.date) problems.push('Add the date.');
   if (!session.time) problems.push('Add the time.');

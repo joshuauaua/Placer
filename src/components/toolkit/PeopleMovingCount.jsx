@@ -2,26 +2,29 @@
  *
  * A field count after Gehl's Public Life Data Protocol: everybody who crosses a line,
  * by how they are moving. After the cover come the instructions; "Get started" moves on
- * to setting up the session (PeopleMovingSetup.jsx): the count line on a map, and the
- * sheet's header. Start counting opens the counting screen: the timer and the tally at
- * the top, then a big button for each way of moving — five kinds of pedestrian, and
- * people on bicycles — with the line beside them on a map that cannot be moved or
- * changed. See results moves on to the count added up, to copy out.
+ * to setting up the session (PeopleMovingSetup.jsx): the area and the count line on a
+ * map, and the sheet's header. Start counting opens the counting screen: the timer (if
+ * the setup has one) and the tally at the top, then a big button for each way of
+ * moving — five kinds of pedestrian, and people on bicycles — with the area and its line
+ * beside them on a map that cannot be moved or changed. See results moves on to the
+ * count added up, to copy out.
  *
- * A project's line (`setup`, project_tools.config) is fixed: everybody counting for it
- * sees it already drawn. On the configuration page's canvas (`slide`) the tool draws
- * only the line under its location; in the Preview (`answering`) it opens straight on
- * the counting screen, as somebody counting would see it.
+ * A project's site (`setup`, one slide of project_tools.config) is fixed: everybody
+ * counting for it sees it already drawn. Its `minutes` sets the timer, or none. On the
+ * configuration page the site is drawn on the canvas (CountSiteCanvas), not here; in
+ * the Preview (`answering`) the tool opens straight on the counting screen, as
+ * somebody counting would see it.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Panel } from '../ToolLayout';
 import { Btn, CopyButton } from '../UI';
 import { Icon } from '../Icon';
-import { CountLineMap, PeopleMovingInstructions, PeopleMovingSessionSetup } from './PeopleMovingSetup';
+import { TimerButton } from './TimerButton';
+import { CountSiteMap, PeopleMovingInstructions, PeopleMovingSessionSetup } from './PeopleMovingSetup';
 import {
-  COUNT_SECONDS, GROUPS, MODE_BY_KEY, bump, clock, emptyCounts, hasProjectSetup, modesIn, peopleWord,
-  sessionFromSetup, sessionLines, summaryText, totals,
+  GROUPS, MODE_BY_KEY, bump, clock, emptyCounts, hasProjectSetup, modesIn, peopleWord,
+  sessionFromSetup, sessionLines, summaryText, timerSeconds, totals,
 } from '../../lib/toolkit/peopleMoving';
 
 // A card inside another card: flat, so it reads as part of the one around it.
@@ -31,10 +34,10 @@ const smallCaps = (t) => ({ fontSize: 11, fontWeight: 700, letterSpacing: '0.06e
   textTransform: 'uppercase', color: t.inkDim });
 
 /**
- * The timer: counts up from 0:00 and stops by itself at the protocol's ten minutes.
+ * The timer: counts up from 0:00 and stops by itself at `limit` seconds (Infinity: never).
  * `seconds` is how long it has run; `start` also runs it on from a pause.
  */
-function useCountTimer(limit = COUNT_SECONDS) {
+function useCountTimer(limit) {
   // Time run before the current stretch, and when the current stretch began (or null).
   const [banked, setBanked] = useState(0);
   const [since, setSince] = useState(null);
@@ -83,39 +86,37 @@ function useCountTimer(limit = COUNT_SECONDS) {
   };
 }
 
-/** The timer and the tally, at the top of the counting screen. */
-function CountHeader({ t, tool, timer, sums }) {
-  const share = Math.min(1, timer.seconds / COUNT_SECONDS);
+/** The timer, unless the setup has none (`limit` null), and the tally: the top of the counting screen. */
+function CountHeader({ t, tool, timer, limit, sums }) {
+  const share = limit ? Math.min(1, timer.seconds / limit) : 0;
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'stretch' }}>
-      <Panel t={t} style={{ ...INNER, flex: '1 1 260px' }}>
+      {limit !== null && <Panel t={t} style={{ ...INNER, flex: '1 1 260px' }}>
         <div style={smallCaps(t)}>Timer</div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
           <span role="timer" aria-label="Time counted" className="placer-disp"
             style={{ fontSize: 44, fontWeight: 700, color: t.ink, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
             {clock(timer.seconds)}
           </span>
-          <span className="placer-mono" style={{ fontSize: 13, color: t.inkFaint }}>of {clock(COUNT_SECONDS)}</span>
+          <span className="placer-mono" style={{ fontSize: 13, color: t.inkFaint }}>of {clock(limit)}</span>
         </div>
         <div aria-hidden="true" style={{ height: 6, borderRadius: 3, background: t.surfaceAlt, margin: '10px 0 12px', overflow: 'hidden' }}>
           <div style={{ width: `${share * 100}%`, height: '100%', background: tool.color, transition: 'width 0.25s linear' }} />
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Icons only: play or pause, and reset. Their names are their labels. */}
           {timer.running ? (
-            <Btn t={t} size="sm" variant="outline" onClick={timer.pause}>Pause</Btn>
+            <TimerButton t={t} icon="pause" label="Pause" onClick={timer.pause} />
           ) : (
-            <Btn t={t} size="sm" icon="play" disabled={timer.done} onClick={timer.start}>
-              {timer.seconds > 0 && !timer.done ? 'Resume' : 'Start'}
-            </Btn>
+            <TimerButton t={t} primary icon="start" disabled={timer.done} onClick={timer.start}
+              label={timer.seconds > 0 && !timer.done ? 'Resume' : 'Start'} />
           )}
-          <Btn t={t} size="sm" variant="ghost" icon="undo" disabled={timer.seconds === 0} onClick={timer.reset}>
-            Reset timer
-          </Btn>
+          <TimerButton t={t} icon="refresh" label="Reset timer" disabled={timer.seconds === 0} onClick={timer.reset} />
           {timer.done && (
             <span role="status" style={{ fontSize: 13, fontWeight: 700, color: t.ink }}>Time is up.</span>
           )}
         </div>
-      </Panel>
+      </Panel>}
 
       <Panel t={t} style={{ ...INNER, flex: '1 1 260px' }}>
         <div style={smallCaps(t)}>Tally</div>
@@ -180,9 +181,10 @@ function ModeButton({ t, tool, mode, count, onAdd, onRemove }) {
   );
 }
 
-// `setup` is a project's (project_tools.config): the line and location everybody
-// counting for it shares. Without one, the observer draws their own.
-export function PeopleMovingCount({ t, tool, setup = null, slide = false, answering = false }) {
+// `setup` is a project's (project_tools.config): the area, line and location everybody
+// counting for it shares, and the timer. Without one, the observer draws their own and
+// counts for the protocol's ten minutes.
+export function PeopleMovingCount({ t, tool, setup = null, answering = false }) {
   const fixed = hasProjectSetup(setup);
   // Which step after the cover: the instructions, setting up the session, the count,
   // or the results. Somebody answering in the Preview starts on the count.
@@ -192,26 +194,10 @@ export function PeopleMovingCount({ t, tool, setup = null, slide = false, answer
   // Each tap in order, so Undo can take off the last.
   const history = useRef([]);
   const [last, setLast] = useState(null);
-  const timer = useCountTimer();
+  // How long the count runs, or null for no timer.
+  const limit = timerSeconds(setup);
+  const timer = useCountTimer(limit ?? Infinity);
   const sums = useMemo(() => totals(counts), [counts]);
-
-  // The configuration page's canvas: the line as counters will see it, as it changes.
-  if (slide) {
-    const line = setup?.line ?? [];
-    return (
-      <div style={{ fontFamily: 'var(--placer-font)' }}>
-        <Panel t={t} title={setup?.location?.trim() || tool.name}>
-          {line.length >= 2 ? (
-            <CountLineMap t={t} tool={tool} line={line} readOnly height={460} />
-          ) : (
-            <p style={{ margin: 0, fontSize: 14, color: t.inkDim, lineHeight: 1.5 }}>
-              Draw the count line in the Configure panel. It shows here as everybody counting will see it.
-            </p>
-          )}
-        </Panel>
-      </div>
-    );
-  }
 
   function add(mode) {
     setCounts((current) => bump(current, mode));
@@ -271,7 +257,7 @@ export function PeopleMovingCount({ t, tool, setup = null, slide = false, answer
         </div>
 
         <p aria-label="Session" className="placer-mono" style={{ margin: 0, fontSize: 12, color: t.inkDim, lineHeight: 1.6 }}>
-          {[...sessionLines(session), `Counted for ${clock(timer.seconds)}`].join(' · ')}
+          {[...sessionLines(session), ...(limit !== null ? [`Counted for ${clock(timer.seconds)}`] : [])].join(' · ')}
         </p>
 
         <Panel t={t} title="Count Tally" aside={
@@ -329,7 +315,7 @@ export function PeopleMovingCount({ t, tool, setup = null, slide = false, answer
 
           <div style={{ marginTop: 14 }}>
             <CopyButton
-              t={t} value={summaryText(counts, session, timer.seconds)} variant="primary" size="sm" icon="send"
+              t={t} value={summaryText(counts, session, limit !== null ? timer.seconds : null)} variant="primary" size="sm" icon="send"
               label="Copy tally" copiedLabel="Copied" fieldLabel="Your tally as text"
               multiline disabled={sums.total === 0}
               style={{ alignItems: 'flex-start' }} />
@@ -353,7 +339,7 @@ export function PeopleMovingCount({ t, tool, setup = null, slide = false, answer
         </>
       )}
 
-      <CountHeader t={t} tool={tool} timer={timer} sums={sums} />
+      <CountHeader t={t} tool={tool} timer={timer} limit={limit} sums={sums} />
 
       <Panel t={t} title="Count" aside={
         <span className="placer-mono" style={{ fontSize: 11, color: t.inkFaint }}>tap once per person crossing</span>
@@ -386,9 +372,9 @@ export function PeopleMovingCount({ t, tool, setup = null, slide = false, answer
             </div>
           </div>
 
-          <Panel t={t} style={{ ...INNER, flex: '2 1 280px' }} title="Count line">
+          <Panel t={t} style={{ ...INNER, flex: '2 1 280px' }} title="Count site">
             {session.line.length >= 2 ? (
-              <CountLineMap t={t} tool={tool} line={session.line} readOnly height={320} />
+              <CountSiteMap t={t} tool={tool} site={session} readOnly height={320} />
             ) : (
               <p style={{ margin: 0, fontSize: 13, color: t.inkDim, lineHeight: 1.5 }}>No line has been drawn yet.</p>
             )}

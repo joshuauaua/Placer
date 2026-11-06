@@ -165,6 +165,17 @@ const ICON_ELEMENTS = {
     </>
   ),
   play: <path d="M5 4l4 8m6-8l-4 8M4 12h16M9 12l-1 8M15 12l1 8" />,
+  // A timer's controls: start (a triangle), pause (two bars), stop (a square, to end it
+  // now), and refresh, to set it back.
+  start: <path d="M7 4.5v15l12-7.5-12-7.5z" />,
+  pause: <path d="M8 5v14M16 5v14" />,
+  stop: <rect x="6" y="6" width="12" height="12" rx="2" />,
+  refresh: (
+    <>
+      <path d="M20 12a8 8 0 11-2.34-5.66" />
+      <path d="M20 4v4h-4" />
+    </>
+  ),
   // A video's play button: a triangle in a circle. (`play` is a playground.)
   video: <path d="M12 3a9 9 0 110 18 9 9 0 010-18zM10 8.5v7l6-3.5-6-3.5z" />,
   light: <path d="M12 3v2M9 5h6l1 5a4 4 0 01-8 0l1-5zM12 14v7M9 21h6" />,
