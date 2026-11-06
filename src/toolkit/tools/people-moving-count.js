@@ -18,6 +18,8 @@ export default {
   ...tone(PALETTE.blue),
   icon: 'walk',
   createdBy: 'Gehl Institute',
+  // Finished: its picture carries no Work in Progress label (WorkInProgressLabel).
+  ready: true,
   // The tagline is for the Toolkit's tile only; the cover goes from the name and its
   // credit straight to the description.
   taglineOnCover: false,

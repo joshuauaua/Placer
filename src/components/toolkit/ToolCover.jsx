@@ -11,6 +11,7 @@
  */
 
 import { Icon } from '../Icon';
+import { WorkInProgressLabel } from './WorkInProgressLabel';
 import { Btn } from '../UI';
 import { findCategory } from '../../toolkit/tools';
 
@@ -28,6 +29,7 @@ export function ToolCover({ t, tool, onStart, onBack, breadcrumb = null }) {
             </Btn>
           )}
         </div>
+        <WorkInProgressLabel tool={tool} corner="right" size="lg" />
         <Icon name={tool.icon} size={120} stroke={1.5} style={{ color: t.ink }} />
       </div>
 

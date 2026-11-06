@@ -19,6 +19,7 @@
 
 import { useRef, useState } from 'react';
 import { Icon } from './Icon';
+import { WorkInProgressLabel } from './toolkit/WorkInProgressLabel';
 import { CreateToolMenu } from './SideNav';
 import { CardRow } from './CardRow';
 import { ARROW_ITEM } from '../lib/arrowKeys';
@@ -58,7 +59,8 @@ export function StartedToolCard({ started, tool, onOpen, onDelete }) {
       <button type="button" {...ARROW_ITEM} onClick={() => onOpen(tool.id, started.id)}
         className="placer-template-card" aria-label={`${title}, ${details.join(', ')}`}>
         <span className="placer-template-image placer-started-cover"
-          style={{ background: colour?.c100, color: colour?.c700 }}>
+          style={{ position: 'relative', background: colour?.c100, color: colour?.c700 }}>
+          <WorkInProgressLabel tool={tool} />
           <Icon name={tool.icon} size={40} stroke={1.8} />
         </span>
         <span className="placer-template-text">

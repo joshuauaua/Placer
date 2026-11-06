@@ -13,6 +13,7 @@
 
 import { useEffect, useRef } from 'react';
 import { Icon } from './Icon';
+import { WorkInProgressLabel } from './toolkit/WorkInProgressLabel';
 import { TOOL_KINDS } from './SideNav';
 import { TOOLS, filterTools, findCategory, sortTools, toolTags } from '../toolkit/tools';
 import { ARROW_ITEM, moveWithArrows } from '../lib/arrowKeys';
@@ -25,8 +26,9 @@ function ToolCard({ t, tool, onPick }) {
         style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, textAlign: 'left',
           cursor: 'pointer', border: `1px solid ${t.line}`, borderRadius: 16, background: t.surface,
           overflow: 'hidden', fontFamily: 'var(--placer-font)', color: t.ink }}>
-        <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+        <span style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
           height: 132, background: colour?.c100, color: colour?.c700 }}>
+          <WorkInProgressLabel tool={tool} />
           {tool.image
             ? <img src={tool.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             : <Icon name={tool.icon} size={44} stroke={1.8} />}

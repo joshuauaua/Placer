@@ -21,6 +21,8 @@ export default {
   ...tone(PALETTE.blue),
   icon: 'cloud',
   createdBy: 'PLACER',
+  // Finished: its picture carries no Work in Progress label (WorkInProgressLabel).
+  ready: true,
   component: WordCloud,
   // One question per slide, for a run of them (ToolConfiguratorPage).
   slides: true,
