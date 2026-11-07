@@ -204,7 +204,7 @@ export function Btn({ t, children, variant = 'primary', icon, size = 'md', style
     <button disabled={disabled} onClick={onClick} onBlur={onBlur} type={type}
       aria-label={ariaLabel} aria-pressed={ariaPressed} title={title ?? ariaLabel}
       className={`placer-btn placer-btn-${hover}`}
-      style={{ height: z.h, padding: `0 ${z.px}px`, borderRadius: 12, cursor: disabled ? 'not-allowed' : 'pointer',
+      style={{ height: z.h, padding: `0 ${z.px}px`, borderRadius: 999, cursor: disabled ? 'not-allowed' : 'pointer',
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: full ? '100%' : 'auto',
       fontFamily: 'var(--placer-font)', fontWeight: 500, fontSize: z.fs, letterSpacing: '0.01em',
       ...variants[variant], ...style, ...disabledLook }}>

@@ -100,7 +100,8 @@ Test widths: 360 · 390 · 768 · 1024 · 1440 · 1920px
 
 | Radius | Use |
 |---|---|
-| 12px | Buttons, inputs, chips, sidebar items, comments |
+| Pill (999px) | Buttons |
+| 12px | Inputs, chips, sidebar items, comments |
 | 16px | Cards, glass panels, sidebar, bottom sheet, modals |
 
 Avatars and pins are circles.
@@ -168,7 +169,7 @@ Used for: map panels, sidebar, mobile tab bar, bottom sheet, map search bar, gla
 | Property | Value |
 |---|---|
 | Height | 48px · 40px compact desktop · 44px min on mobile |
-| Radius | 12px |
+| Radius | Pill (999px), fully rounded ends |
 | Padding | 24px horizontal |
 | Label | 14–16px Medium / Bold |
 | Primary | Ink fill, white text · hover grey-700 |

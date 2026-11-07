@@ -47,7 +47,7 @@ export function ImagePicker({
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
       {/* A label rather than a button, so the native file picker opens on click. */}
       <label className="placer-btn placer-btn-primary" style={{ display: 'inline-flex',
-        alignItems: 'center', gap: 8, height: 44, padding: '0 18px', borderRadius: 12,
+        alignItems: 'center', gap: 8, height: 44, padding: '0 18px', borderRadius: 999,
         background: t.primaryBg, color: t.primaryFg, fontSize: 15, fontWeight: 500,
         cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1 }}>
         <Icon name="image" size={18} stroke={2} />
