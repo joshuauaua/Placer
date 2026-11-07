@@ -38,7 +38,7 @@ export function FlowScreen({ t, step, onBack, backLabel = 'Back to map', actions
     <div className="placer-screen" style={{ background: t.page, color: t.ink, display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ height: 60, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 16, padding: '0 20px',
         background: t.chrome, borderBottom: `1px solid ${t.line}`, zIndex: 30 }}>
-        <button onClick={onBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 12px 0 8px', borderRadius: 12,
+        <button onClick={onBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 12px 0 8px', borderRadius: 999,
           border: 'none', background: 'transparent', cursor: 'pointer', color: t.ink, fontWeight: 700, fontSize: 14 }}>
           <Icon name="chevLeft" size={19} stroke={2.2} />{backLabel}
         </button>

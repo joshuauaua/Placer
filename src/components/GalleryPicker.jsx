@@ -163,7 +163,7 @@ export function GalleryPicker({
         {room > 0 && (
           // A label rather than a button, so the native file picker opens on click.
           <label className="placer-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 8,
-            height: 44, padding: '0 18px', borderRadius: 12, border: `1.5px solid ${t.ink}`, color: t.ink,
+            height: 44, padding: '0 18px', borderRadius: 999, border: `1.5px solid ${t.ink}`, color: t.ink,
             fontSize: 15, fontWeight: 500, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1 }}>
             <Icon name="plus" size={18} stroke={2} />
             {status === 'uploading' ? 'Uploading…' : 'Add photos'}

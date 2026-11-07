@@ -324,7 +324,7 @@ const ImaginationCanvas = ({
               <button
                 onClick={handleDeleteSelected}
                 disabled={!selectedAssetId}
-                style={{ height: 34, padding: '0 14px', borderRadius: 12,
+                style={{ height: 34, padding: '0 14px', borderRadius: 999,
                   cursor: selectedAssetId ? 'pointer' : 'not-allowed',
                   background: '#B3261E', color: '#fff', border: 'none', fontWeight: 700, fontSize: 13,
                   opacity: selectedAssetId ? 1 : 0.5 }}>
